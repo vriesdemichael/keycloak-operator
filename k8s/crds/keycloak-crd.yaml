@@ -1,0 +1,290 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: keycloaks.keycloak.mdvr.nl
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/component: crd
+spec:
+  group: keycloak.mdvr.nl
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        description: "Keycloak instance definition for dynamic identity and access management"
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            description: "Specification for a Keycloak instance"
+            properties:
+              # Core configuration
+              version:
+                type: string
+                description: "Keycloak version to deploy"
+                pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+              image:
+                type: string
+                description: "Container image for Keycloak"
+              replicas:
+                type: integer
+                description: "Number of Keycloak replicas"
+                minimum: 1
+                default: 1
+
+              # Database configuration
+              database:
+                type: object
+                description: "Database configuration"
+                properties:
+                  type:
+                    type: string
+                    enum: ["postgresql", "mysql", "h2"]
+                    default: "postgresql"
+                  host:
+                    type: string
+                    description: "Database host"
+                  port:
+                    type: integer
+                    description: "Database port"
+                    minimum: 1
+                    maximum: 65535
+                  name:
+                    type: string
+                    description: "Database name"
+                  username:
+                    type: string
+                    description: "Database username"
+                  password_secret:
+                    type: object
+                    description: "Secret reference for database password"
+                    properties:
+                      name:
+                        type: string
+                      key:
+                        type: string
+                        default: "password"
+                    required:
+                    - name
+                  ssl_mode:
+                    type: string
+                    enum: ["disable", "require", "verify-ca", "verify-full"]
+                    default: "require"
+                required:
+                - host
+                - name
+                - username
+                - password_secret
+
+              # TLS configuration
+              tls:
+                type: object
+                description: "TLS/SSL configuration"
+                properties:
+                  enabled:
+                    type: boolean
+                    default: true
+                  secret_name:
+                    type: string
+                    description: "Secret containing TLS certificate"
+                  hostname:
+                    type: string
+                    description: "Hostname for TLS certificate"
+                  generate_certificate:
+                    type: boolean
+                    default: false
+                    description: "Generate self-signed certificate if secret not provided"
+
+              # Service configuration
+              service:
+                type: object
+                description: "Service configuration"
+                properties:
+                  type:
+                    type: string
+                    enum: ["ClusterIP", "NodePort", "LoadBalancer"]
+                    default: "ClusterIP"
+                  port:
+                    type: integer
+                    minimum: 1
+                    maximum: 65535
+                    default: 8080
+                  https_port:
+                    type: integer
+                    minimum: 1
+                    maximum: 65535
+                    default: 8443
+                  annotations:
+                    type: object
+                    additionalProperties:
+                      type: string
+
+              # Ingress configuration
+              ingress:
+                type: object
+                description: "Ingress configuration"
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                  hostname:
+                    type: string
+                    description: "Ingress hostname"
+                  tls_enabled:
+                    type: boolean
+                    default: true
+                  annotations:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  class_name:
+                    type: string
+                    description: "Ingress class name"
+
+              # Admin access configuration
+              admin_access:
+                type: object
+                description: "Admin access configuration"
+                properties:
+                  username:
+                    type: string
+                    default: "admin"
+                  password_secret:
+                    type: object
+                    description: "Secret reference for admin password"
+                    properties:
+                      name:
+                        type: string
+                      key:
+                        type: string
+                        default: "password"
+                    required:
+                    - name
+                  restrict_to_namespace:
+                    type: boolean
+                    default: true
+                    description: "Restrict admin access to resources in same namespace"
+                required:
+                - password_secret
+
+              # Resource requirements
+              resources:
+                type: object
+                description: "Resource requirements"
+                properties:
+                  requests:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  limits:
+                    type: object
+                    additionalProperties:
+                      type: string
+
+              # Environment variables
+              env:
+                type: object
+                description: "Environment variables"
+                additionalProperties:
+                  type: string
+
+              # Additional configuration
+              config:
+                type: object
+                description: "Additional Keycloak configuration"
+                additionalProperties:
+                  type: string
+
+            required:
+            - database
+            - admin_access
+
+          status:
+            type: object
+            description: "Current status of the Keycloak instance"
+            properties:
+              phase:
+                type: string
+                description: "Current phase"
+                enum: ["Pending", "Provisioning", "Ready", "Failed", "Updating"]
+              message:
+                type: string
+                description: "Human-readable status message"
+              reason:
+                type: string
+                description: "Reason for current phase"
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                      enum: ["True", "False", "Unknown"]
+                    reason:
+                      type: string
+                    message:
+                      type: string
+                    last_transition_time:
+                      type: string
+                      format: date-time
+                  required:
+                  - type
+                  - status
+              observed_generation:
+                type: integer
+                description: "Generation of spec that was last processed"
+              # Connection details
+              admin_username:
+                type: string
+              admin_secret:
+                type: string
+              internal_url:
+                type: string
+              external_url:
+                type: string
+              # Health status
+              ready_replicas:
+                type: integer
+              last_health_check:
+                type: string
+                format: date-time
+              database_status:
+                type: string
+                enum: ["Connected", "Connecting", "Failed", "Unknown"]
+    additionalPrinterColumns:
+    - name: Phase
+      type: string
+      jsonPath: .status.phase
+    - name: Version
+      type: string
+      jsonPath: .spec.version
+    - name: Replicas
+      type: integer
+      jsonPath: .spec.replicas
+    - name: Ready
+      type: integer
+      jsonPath: .status.ready_replicas
+    - name: External URL
+      type: string
+      jsonPath: .status.external_url
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+  scope: Namespaced
+  names:
+    plural: keycloaks
+    singular: keycloak
+    kind: Keycloak
+    shortNames:
+    - kc
