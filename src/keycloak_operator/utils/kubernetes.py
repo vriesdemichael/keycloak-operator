@@ -148,37 +148,96 @@ def create_keycloak_deployment(
     # TODO: Build deployment manifest
     deployment_name = f"{name}-keycloak"
 
+    # Build environment variables list
+    env_vars = [
+        # Modern Keycloak admin bootstrap variables
+        client.V1EnvVar(name="KC_BOOTSTRAP_ADMIN_USERNAME", value=spec.admin.username),
+    ]
+
+    # Admin password from secret
+    if spec.admin.password_secret:
+        env_vars.append(
+            client.V1EnvVar(
+                name="KC_BOOTSTRAP_ADMIN_PASSWORD",
+                value_from=client.V1EnvVarSource(
+                    secret_key_ref=client.V1SecretKeySelector(
+                        name=spec.admin.password_secret.name,
+                        key=spec.admin.password_secret.key,
+                    )
+                ),
+            )
+        )
+
+    # Add other environment variables
+    env_vars.extend(
+        [
+            # Keycloak feature configuration
+            client.V1EnvVar(name="KC_HEALTH_ENABLED", value="true"),
+            client.V1EnvVar(name="KC_METRICS_ENABLED", value="true"),
+            # Hostname configuration for flexibility
+            client.V1EnvVar(name="KC_HOSTNAME_STRICT", value="false"),
+        ]
+    )
+
+    # Add database configuration environment variables if configured
+    if spec.database and spec.database.type != "h2":
+        # Database type
+        env_vars.append(client.V1EnvVar(name="KC_DB", value=spec.database.type))
+
+        # Database connection details
+        if spec.database.host:
+            env_vars.append(
+                client.V1EnvVar(name="KC_DB_URL_HOST", value=spec.database.host)
+            )
+
+        if spec.database.port:
+            env_vars.append(
+                client.V1EnvVar(name="KC_DB_URL_PORT", value=str(spec.database.port))
+            )
+
+        if spec.database.database:
+            env_vars.append(
+                client.V1EnvVar(name="KC_DB_URL_DATABASE", value=spec.database.database)
+            )
+
+        if spec.database.username:
+            env_vars.append(
+                client.V1EnvVar(name="KC_DB_USERNAME", value=spec.database.username)
+            )
+
+        # Database password from secret if specified
+        if spec.database.password_secret:
+            env_vars.append(
+                client.V1EnvVar(
+                    name="KC_DB_PASSWORD",
+                    value_from=client.V1EnvVarSource(
+                        secret_key_ref=client.V1SecretKeySelector(
+                            name=spec.database.password_secret.name,
+                            key=spec.database.password_secret.key,
+                        )
+                    ),
+                )
+            )
+
     # Container configuration
     container = client.V1Container(
         name="keycloak",
         image=spec.image or "quay.io/keycloak/keycloak:latest",
+        command=["/opt/keycloak/bin/kc.sh"],
+        args=["start-dev"],
         ports=[
             client.V1ContainerPort(container_port=8080, name="http"),
             client.V1ContainerPort(container_port=9000, name="management"),
         ],
-        env=[
-            # TODO: Configure environment variables from spec
-            client.V1EnvVar(name="KEYCLOAK_ADMIN", value="admin"),
-            client.V1EnvVar(
-                name="KEYCLOAK_ADMIN_PASSWORD",
-                value_from=client.V1EnvVarSource(
-                    secret_key_ref=client.V1SecretKeySelector(
-                        name=f"{name}-admin-credentials",
-                        key="password",
-                    )
-                ),
-            ),
-            client.V1EnvVar(name="KC_HEALTH_ENABLED", value="true"),
-            client.V1EnvVar(name="KC_METRICS_ENABLED", value="true"),
-        ],
+        env=env_vars,
         resources=client.V1ResourceRequirements(
             requests={
-                "cpu": spec.resources.get("requests", {}).get("cpu", "500m"),
-                "memory": spec.resources.get("requests", {}).get("memory", "512Mi"),
+                "cpu": spec.resources.requests.get("cpu", "500m"),
+                "memory": spec.resources.requests.get("memory", "512Mi"),
             },
             limits={
-                "cpu": spec.resources.get("limits", {}).get("cpu", "1000m"),
-                "memory": spec.resources.get("limits", {}).get("memory", "1Gi"),
+                "cpu": spec.resources.limits.get("cpu", "1000m"),
+                "memory": spec.resources.limits.get("memory", "1Gi"),
             },
         ),
         liveness_probe=client.V1Probe(
@@ -318,8 +377,8 @@ def create_keycloak_service(
                 protocol="TCP",
             ),
         ],
-        type=spec.service.get("type", "ClusterIP")
-        if hasattr(spec, "service")
+        type=spec.service.type
+        if hasattr(spec, "service") and spec.service
         else "ClusterIP",
     )
 

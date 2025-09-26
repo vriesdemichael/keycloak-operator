@@ -29,14 +29,101 @@ This is an early-stage alternative Keycloak operator project built to replace th
 
 ## Development Setup
 
-Future development will require:
+### Requirements
 - Python environment with Kopf framework setup
-- Kubernetes development environment
+- Kubernetes development environment (local cluster recommended)
 - CRD definitions for Keycloak resources
 - RBAC policies and service account configuration
 - Build and test automation for Python-based operator
-- Lets create some habits around changes, at the end of your task list always do a ruff check with fix and ruff format, run pytest
-also, when running anything from this project use uv run <whatever you want to run> or it wont pick up the dependencies
+
+### Development Habits
+At the end of your task list always do:
+1. `uv run ruff check --fix` - Fix linting issues
+2. `uv run ruff format` - Format code consistently
+3. `uv run pytest` - Run all tests
+
+**Important**: Always use `uv run <command>` when running anything from this project or it won't pick up the dependencies.
+
+### Testing Changes
+
+After making significant changes, test the operator functionality:
+
+**Automated Test (Recommended):**
+```bash
+# Run the complete integration test
+./test-operator.sh
+
+# Cleanup only after manual testing
+./test-operator.sh --cleanup-only
+```
+
+**Manual Test Steps:**
+
+1. **Install/Update CRDs** (if changed):
+   ```bash
+   kubectl apply -f k8s/crds/
+   ```
+
+2. **Start the operator** (in background):
+   ```bash
+   uv run python -m keycloak_operator.operator &
+   ```
+
+3. **Create test namespace and secrets**:
+   ```bash
+   kubectl create namespace keycloak-test
+   kubectl create secret generic keycloak-db-secret --from-literal=password=testpass -n keycloak-test
+   kubectl create secret generic keycloak-admin-secret --from-literal=password=admin123 -n keycloak-test
+   ```
+
+4. **Deploy test Keycloak instance**:
+   ```yaml
+   # test-keycloak.yaml
+   apiVersion: keycloak.mdvr.nl/v1
+   kind: Keycloak
+   metadata:
+     name: test-keycloak
+     namespace: keycloak-test
+   spec:
+     image: "quay.io/keycloak/keycloak:23.0.0"
+     replicas: 1
+     database:
+       type: "h2"
+       host: "localhost"
+       name: "keycloak"
+       username: "keycloak"
+       password_secret:
+         name: "keycloak-db-secret"
+         key: "password"
+     admin_access:
+       username: "admin"
+       password_secret:
+         name: "keycloak-admin-secret"
+         key: "password"
+     service:
+       type: "ClusterIP"
+       port: 8080
+   ```
+
+5. **Apply and verify**:
+   ```bash
+   kubectl apply -f test-keycloak.yaml
+   kubectl get keycloaks.keycloak.mdvr.nl -n keycloak-test
+   kubectl get pods,services -n keycloak-test
+   ```
+
+6. **Test health endpoint**:
+   ```bash
+   kubectl port-forward -n keycloak-test service/test-keycloak-keycloak 8080:8080 &
+   curl http://localhost:8080/health
+   # Should return: {"status": "UP", ...}
+   ```
+
+7. **Cleanup**:
+   ```bash
+   kubectl delete -f test-keycloak.yaml
+   kubectl delete namespace keycloak-test
+   ```
 
 ## Documentation
 Whenever a change in api is made or a significant change for the end user the readme.md is to be updated.

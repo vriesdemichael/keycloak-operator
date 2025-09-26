@@ -36,8 +36,8 @@ from keycloak_operator.utils.kubernetes import (
 logger = logging.getLogger(__name__)
 
 
-@kopf.on.create("keycloakclients")
-@kopf.on.resume("keycloakclients")
+@kopf.on.create("keycloakclients", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.resume("keycloakclients", group="keycloak.mdvr.nl", version="v1")
 def ensure_keycloak_client(
     spec: dict[str, Any],
     name: str,
@@ -215,7 +215,7 @@ def ensure_keycloak_client(
         raise kopf.TemporaryError(f"Client creation failed: {e}", delay=60) from e
 
 
-@kopf.on.update("keycloakclients")
+@kopf.on.update("keycloakclients", group="keycloak.mdvr.nl", version="v1")
 def update_keycloak_client(
     old: dict[str, Any],
     new: dict[str, Any],
@@ -356,7 +356,7 @@ def update_keycloak_client(
         raise kopf.TemporaryError(f"Client update failed: {e}", delay=30) from e
 
 
-@kopf.on.delete("keycloakclients")
+@kopf.on.delete("keycloakclients", group="keycloak.mdvr.nl", version="v1")
 def delete_keycloak_client(
     spec: dict[str, Any],
     name: str,

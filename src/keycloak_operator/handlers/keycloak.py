@@ -14,9 +14,10 @@ ensuring that the desired state is maintained regardless of restart or failure.
 
 import logging
 from datetime import UTC
-from typing import Any
+from typing import Any, Protocol, TypedDict
 
 import kopf
+from kopf import Diff, Meta
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
@@ -33,17 +34,34 @@ from keycloak_operator.utils.kubernetes import (
     get_pod_resource_usage,
 )
 
+
+class StatusProtocol(Protocol):
+    """Protocol for kopf Status objects that allow dynamic attribute assignment."""
+
+    def __setattr__(self, name: str, value: Any) -> None: ...
+    def __getattr__(self, name: str) -> Any: ...
+
+
+class KopfHandlerKwargs(TypedDict, total=False):
+    """Type hints for common kopf handler kwargs."""
+
+    meta: Meta
+    body: dict[str, Any]
+    patch: dict[str, Any]
+    logger: Any
+
+
 logger = logging.getLogger(__name__)
 
 
-@kopf.on.create("keycloaks")
-@kopf.on.resume("keycloaks")
+@kopf.on.create("keycloaks", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.resume("keycloaks", group="keycloak.mdvr.nl", version="v1")
 def ensure_keycloak_instance(
     spec: dict[str, Any],
     name: str,
     namespace: str,
-    status: dict[str, Any],
-    **kwargs: Any,
+    status: StatusProtocol,
+    **kwargs: KopfHandlerKwargs,
 ) -> dict[str, Any]:
     """
         Ensure Keycloak instance exists and is properly configured.
@@ -83,13 +101,9 @@ def ensure_keycloak_instance(
         raise kopf.PermanentError(f"Invalid specification: {e}") from e
 
     # Update status to indicate processing has started
-    status.update(
-        {
-            "phase": "Pending",
-            "message": "Creating Keycloak resources",
-            "observedGeneration": kwargs.get("meta", {}).get("generation", 0),
-        }
-    )
+    status.phase = "Pending"
+    status.message = "Creating Keycloak resources"
+    status.observedGeneration = kwargs.get("meta", {}).get("generation", 0)
 
     try:
         # Get Kubernetes API client
@@ -270,26 +284,26 @@ def ensure_keycloak_instance(
 
     except ApiException as e:
         logger.error(f"Kubernetes API error while creating Keycloak instance: {e}")
-        status["phase"] = "Failed"
-        status["message"] = f"Kubernetes API error: {e.reason}"
+        status.phase = "Failed"
+        status.message = f"Kubernetes API error: {e.reason}"
         raise kopf.TemporaryError(f"Kubernetes API error: {e}", delay=30) from e
 
     except Exception as e:
         logger.error(f"Unexpected error creating Keycloak instance: {e}")
-        status["phase"] = "Failed"
-        status["message"] = f"Unexpected error: {str(e)}"
+        status.phase = "Failed"
+        status.message = f"Unexpected error: {str(e)}"
         raise kopf.PermanentError(f"Failed to create Keycloak instance: {e}") from e
 
 
-@kopf.on.update("keycloaks")
+@kopf.on.update("keycloaks", group="keycloak.mdvr.nl", version="v1")
 def update_keycloak_instance(
-    old: dict[str, Any],
+    _old: dict[str, Any],
     new: dict[str, Any],
-    diff: kopf.Diff,
+    diff: Diff,
     name: str,
     namespace: str,
-    status: dict[str, Any],
-    **kwargs: Any,
+    status: StatusProtocol,
+    **kwargs: KopfHandlerKwargs,
 ) -> dict[str, Any] | None:
     """
         Handle updates to Keycloak instance specifications.
@@ -329,12 +343,8 @@ def update_keycloak_instance(
         )
 
     # Update status to indicate update is in progress
-    status.update(
-        {
-            "phase": "Updating",
-            "message": "Applying configuration changes",
-        }
-    )
+    status.phase = "Updating"
+    status.message = "Applying configuration changes"
 
     try:
         # Parse and validate the new specification
@@ -525,22 +535,18 @@ def update_keycloak_instance(
 
     except Exception as e:
         logger.error(f"Failed to update Keycloak instance: {e}")
-        status.update(
-            {
-                "phase": "Failed",
-                "message": f"Update failed: {str(e)}",
-            }
-        )
+        status.phase = "Failed"
+        status.message = f"Update failed: {str(e)}"
         raise kopf.TemporaryError(f"Update failed: {e}", delay=30) from e
 
 
-@kopf.on.delete("keycloaks")
+@kopf.on.delete("keycloaks", group="keycloak.mdvr.nl", version="v1")
 def delete_keycloak_instance(
-    spec: dict[str, Any],
+    _spec: dict[str, Any],
     name: str,
     namespace: str,
-    status: dict[str, Any],
-    **kwargs: Any,
+    _status: Any,  # kopf.Status object
+    **kwargs: KopfHandlerKwargs,
 ) -> None:
     """
         Handle Keycloak instance deletion.
@@ -571,7 +577,7 @@ def delete_keycloak_instance(
 
     try:
         # Parse the specification to understand deletion policy
-        keycloak_spec = KeycloakSpec.model_validate(spec)
+        keycloak_spec = KeycloakSpec.model_validate(_spec)
         logger.debug(f"Parsed Keycloak spec for deletion: {keycloak_spec}")
 
         # Check for finalizers and data preservation requirements
@@ -757,7 +763,7 @@ def delete_keycloak_instance(
 
         # Handle persistent volume claims based on retention policy
         # This should respect the storage class reclaim policy
-        retention_policy = spec.get("persistence", {}).get("retainPolicy", "Delete")
+        retention_policy = _spec.get("persistence", {}).get("retainPolicy", "Delete")
         if retention_policy == "Delete" and not preserve_data:
             # Delete PVCs if they exist
             try:
@@ -796,11 +802,11 @@ def delete_keycloak_instance(
 
 @kopf.timer("keycloaks", interval=60)
 def monitor_keycloak_health(
-    spec: dict[str, Any],
+    _spec: dict[str, Any],
     name: str,
     namespace: str,
-    status: dict[str, Any],
-    **kwargs: Any,
+    status: StatusProtocol,
+    **_kwargs: Any,
 ) -> dict[str, Any] | None:
     """
         Periodic health check for Keycloak instances.

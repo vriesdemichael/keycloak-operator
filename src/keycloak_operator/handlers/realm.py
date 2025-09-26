@@ -25,8 +25,8 @@ from keycloak_operator.utils.kubernetes import validate_keycloak_reference
 logger = logging.getLogger(__name__)
 
 
-@kopf.on.create("keycloakrealms")
-@kopf.on.resume("keycloakrealms")
+@kopf.on.create("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.resume("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
 def ensure_keycloak_realm(
     spec: dict[str, Any],
     name: str,
@@ -210,7 +210,7 @@ def ensure_keycloak_realm(
         raise kopf.TemporaryError(f"Realm creation failed: {e}", delay=60) from e
 
 
-@kopf.on.update("keycloakrealms")
+@kopf.on.update("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
 def update_keycloak_realm(
     old: dict[str, Any],
     new: dict[str, Any],
@@ -348,7 +348,7 @@ def update_keycloak_realm(
     return None  # No changes needed
 
 
-@kopf.on.delete("keycloakrealms")
+@kopf.on.delete("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
 def delete_keycloak_realm(
     spec: dict[str, Any],
     name: str,
