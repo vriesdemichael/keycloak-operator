@@ -173,6 +173,100 @@ uv run ruff format
 uv run mypy src/
 ```
 
+### Testing the Operator
+
+**Automated Test Script:**
+
+```bash
+# Run the full integration test
+./test-operator.sh
+
+# Cleanup only (useful after manual testing)
+./test-operator.sh --cleanup-only
+```
+
+**Manual Integration Test:**
+
+1. **Install CRDs and start operator**:
+   ```bash
+   # Install Custom Resource Definitions
+   kubectl apply -f k8s/crds/
+
+   # Start operator in background
+   uv run python -m keycloak_operator.operator &
+   ```
+
+2. **Create test environment**:
+   ```bash
+   # Create test namespace
+   kubectl create namespace keycloak-test
+
+   # Create required secrets
+   kubectl create secret generic keycloak-db-secret \
+     --from-literal=password=testpass -n keycloak-test
+   kubectl create secret generic keycloak-admin-secret \
+     --from-literal=password=admin123 -n keycloak-test
+   ```
+
+3. **Deploy test Keycloak instance**:
+   ```yaml
+   # Save as test-keycloak.yaml
+   apiVersion: keycloak.mdvr.nl/v1
+   kind: Keycloak
+   metadata:
+     name: test-keycloak
+     namespace: keycloak-test
+   spec:
+     image: "quay.io/keycloak/keycloak:23.0.0"
+     replicas: 1
+     database:
+       type: "h2"
+       host: "localhost"
+       name: "keycloak"
+       username: "keycloak"
+       password_secret:
+         name: "keycloak-db-secret"
+         key: "password"
+     admin_access:
+       username: "admin"
+       password_secret:
+         name: "keycloak-admin-secret"
+         key: "password"
+     service:
+       type: "ClusterIP"
+       port: 8080
+   ```
+
+4. **Deploy and verify**:
+   ```bash
+   kubectl apply -f test-keycloak.yaml
+
+   # Wait for deployment
+   kubectl wait --for=condition=ready pod -l app=keycloak -n keycloak-test --timeout=300s
+
+   # Check resources
+   kubectl get keycloaks.keycloak.mdvr.nl,pods,services -n keycloak-test
+   ```
+
+5. **Test connectivity**:
+   ```bash
+   # Port forward to Keycloak
+   kubectl port-forward -n keycloak-test service/test-keycloak-keycloak 8080:8080 &
+
+   # Test health endpoint
+   curl http://localhost:8080/health
+   # Expected: {"status": "UP", "checks": [...]}
+   ```
+
+6. **Cleanup**:
+   ```bash
+   kubectl delete -f test-keycloak.yaml
+   kubectl delete namespace keycloak-test
+   # Kill background processes
+   pkill -f "port-forward"
+   pkill -f "keycloak_operator"
+   ```
+
 ### Development with Docker Compose
 
 ```bash
@@ -619,6 +713,42 @@ kubectl run test-pod --rm -it --image=curlimages/curl -- \
   curl -k https://keycloak.identity-system.svc.cluster.local:8443/health
 ```
 
+**4. Operator Development Issues**
+```bash
+# Operator not processing resources
+kubectl get keycloaks.keycloak.mdvr.nl -A
+kubectl describe keycloak test-keycloak -n keycloak-test
+
+# Check for conflicting CRDs (common during development)
+kubectl get crd | grep keycloak
+# If you see multiple keycloak CRDs with different groups, delete old ones:
+kubectl delete crd keycloaks.k8s.keycloak.org keycloakclients.legacy.k8s.keycloak.org
+
+# Schema validation errors
+kubectl get events -n keycloak-test --sort-by='.lastTimestamp'
+
+# Operator process issues
+ps aux | grep keycloak_operator
+# Kill stuck operator: pkill -f keycloak_operator
+```
+
+**5. Test Deployment Issues**
+```bash
+# Keycloak pod not starting
+kubectl describe pod -l app=keycloak -n keycloak-test
+kubectl logs -l app=keycloak -n keycloak-test
+
+# Missing secrets
+kubectl get secrets -n keycloak-test
+# Recreate if needed:
+kubectl create secret generic keycloak-db-secret --from-literal=password=test -n keycloak-test
+
+# Service not accessible
+kubectl get svc -n keycloak-test
+kubectl port-forward -n keycloak-test service/test-keycloak-keycloak 8080:8080
+curl http://localhost:8080/health
+```
+
 ### Debug Mode
 
 ```bash
@@ -655,14 +785,40 @@ uv sync --dev
 # Run tests frequently
 uv run pytest
 
-# Code formatting
+# Code formatting and linting
 uv run ruff check --fix
 uv run ruff format
-
-
 ```
 
-4. **Test Locally**
+4. **Test Changes Thoroughly**
+```bash
+# Unit tests
+uv run pytest
+
+# Integration test with real operator
+kubectl apply -f k8s/crds/
+uv run python -m keycloak_operator.operator &
+
+# Create test environment
+kubectl create namespace keycloak-test
+kubectl create secret generic keycloak-db-secret --from-literal=password=test -n keycloak-test
+kubectl create secret generic keycloak-admin-secret --from-literal=password=admin -n keycloak-test
+
+# Deploy test Keycloak (use example from Testing section above)
+kubectl apply -f test-keycloak.yaml
+
+# Verify functionality
+kubectl get keycloaks.keycloak.mdvr.nl -n keycloak-test
+kubectl port-forward -n keycloak-test service/test-keycloak-keycloak 8080:8080 &
+curl http://localhost:8080/health
+
+# Cleanup
+kubectl delete -f test-keycloak.yaml
+kubectl delete namespace keycloak-test
+pkill -f "keycloak_operator|port-forward"
+```
+
+5. **Alternative: Docker Development**
 ```bash
 # Start development stack
 docker-compose up -d

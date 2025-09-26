@@ -11,6 +11,13 @@ from typing import Any
 from pydantic import BaseModel, Field, field_validator
 
 
+class SecretReference(BaseModel):
+    """Reference to a secret key for sensitive data."""
+
+    name: str = Field(..., description="Name of the secret")
+    key: str = Field("password", description="Key within the secret")
+
+
 class KeycloakInstanceRef(BaseModel):
     """Reference to a Keycloak instance in any namespace."""
 
@@ -113,8 +120,8 @@ class KeycloakDatabaseConfig(BaseModel):
     port: int | None = Field(None, description="Database port")
     database: str | None = Field(None, description="Database name")
     username: str | None = Field(None, description="Database username")
-    password_secret: str | None = Field(
-        None, description="Secret containing database password"
+    password_secret: SecretReference | None = Field(
+        None, description="Secret reference for database password"
     )
     connection_params: dict[str, str] = Field(
         default_factory=dict, description="Additional database connection parameters"
@@ -140,8 +147,8 @@ class KeycloakAdminConfig(BaseModel):
     """Admin user configuration for Keycloak instance."""
 
     username: str = Field("admin", description="Admin username")
-    password_secret: str | None = Field(
-        None, description="Secret containing admin password"
+    password_secret: SecretReference | None = Field(
+        None, description="Secret reference for admin password"
     )
     create_secret: bool = Field(
         True, description="Create admin credentials secret automatically"
