@@ -1,0 +1,125 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: keycloak-operator
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/component: rbac
+rules:
+# Core Keycloak resource management
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloaks
+  - keycloakclients
+  - keycloakrealms
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Status subresource for custom resources
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloaks/status
+  - keycloakclients/status
+  - keycloakrealms/status
+  verbs: ["get", "update", "patch"]
+
+# Finalizers for cleanup coordination
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloaks/finalizers
+  - keycloakclients/finalizers
+  - keycloakrealms/finalizers
+  verbs: ["update"]
+
+# Deployment and StatefulSet management for Keycloak instances
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets", "replicasets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+- apiGroups: ["apps"]
+  resources: ["deployments/status", "statefulsets/status", "replicasets/status"]
+  verbs: ["get"]
+
+# Service management for Keycloak exposure
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Ingress management for external access
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# ConfigMap management for configuration
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Secret management for credentials and TLS
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# PersistentVolumeClaim management for data persistence
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Pod management and monitoring
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+
+- apiGroups: [""]
+  resources: ["pods/log"]
+  verbs: ["get", "list"]
+
+# Events for logging and debugging
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+
+# ServiceMonitor for Prometheus integration
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# NetworkPolicy management for security
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Node access for cluster-wide operations
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list", "watch"]
+
+# Namespace access for cross-namespace operations
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch"]
+
+# CRD management (for operator upgrades)
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "watch"]
+
+# Certificate management for TLS
+- apiGroups: ["cert-manager.io"]
+  resources: ["certificates", "certificaterequests", "issuers", "clusterissuers"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# OpenShift Route support (if running on OpenShift)
+- apiGroups: ["route.openshift.io"]
+  resources: ["routes"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Security context constraints (OpenShift)
+- apiGroups: ["security.openshift.io"]
+  resources: ["securitycontextconstraints"]
+  verbs: ["use"]
+  resourceNames: ["anyuid", "restricted"]
+
+# Admission webhook configuration (for validation)
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingadmissionwebhooks", "mutatingadmissionwebhooks"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]

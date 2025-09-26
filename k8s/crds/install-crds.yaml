@@ -1,0 +1,29 @@
+# Install all Keycloak Operator CRDs
+# Usage: kubectl apply -f k8s/crds/install-crds.yaml
+
+---
+# Keycloak CRD
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- keycloak-crd.yaml
+- keycloakclient-crd.yaml
+- keycloakrealm-crd.yaml
+
+# Add common labels and annotations
+commonLabels:
+  app.kubernetes.io/name: keycloak-operator
+  app.kubernetes.io/component: crd
+  app.kubernetes.io/version: v1
+
+# Add validation webhook configuration
+patches:
+- target:
+    kind: CustomResourceDefinition
+  patch: |-
+    - op: add
+      path: /metadata/annotations
+      value:
+        controller-gen.kubebuilder.io/version: v0.13.0
+        operator.keycloak.mdvr.nl/managed-by: keycloak-operator
