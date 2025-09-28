@@ -1,0 +1,5 @@
+- Consistent event emission
+- Integration test on local cluster (not ready for collaboration on github yet)
+- future: integration test with github actions if at all possible
+- Create a documentation using material-mkdocs (like pydantic has)
+- github actions setup (both here and in github)

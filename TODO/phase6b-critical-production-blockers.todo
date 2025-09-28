@@ -1,0 +1,215 @@
+# Phase 6B: Critical Production Blockers - IMMEDIATE ACTION REQUIRED
+
+## 🚨 DEVELOPER ACCOUNTABILITY NOTICE
+
+**The SRE review has revealed that despite excellent progress in Phase 6A handler refactoring, this operator is STILL NOT PRODUCTION READY due to fundamental Kubernetes operator patterns that have been repeatedly flagged but remain unimplemented.**
+
+**This is unacceptable.** We have a beautiful service layer architecture and comprehensive error handling, but we're ignoring the basic operational safety requirements that prevent **DATA LOSS** and **SYSTEM DOWNTIME** in production. The H2 database is STILL in the CRD enum despite multiple reviews calling this out as a showstopper. Finalizers have been on every todo list for months but remain unimplemented, creating immediate data loss risk.
+
+**Focus and complete these critical items before any feature work. Production safety is non-negotiable.**
+
+---
+
+## 🔥 CRITICAL SHOWSTOPPERS (Complete in Order)
+
+### 1. 🚨 WEEK 1: Implement Finalizers (HIGHEST PRIORITY - DATA LOSS PREVENTION)
+
+**Status**: ❌ Missing - Creates immediate data loss risk
+**Impact**: Resource deletion without cleanup, orphaned K8s resources, potential data loss
+**Timeline**: Complete by end of Week 1
+
+#### Actionable Tasks:
+- [ ] **Add finalizer constants** to `/src/keycloak_operator/constants.py`:
+  ```python
+  KEYCLOAK_FINALIZER = "keycloak.mdvr.nl/cleanup"
+  REALM_FINALIZER = "keycloak.mdvr.nl/realm-cleanup"
+  CLIENT_FINALIZER = "keycloak.mdvr.nl/client-cleanup"
+  ```
+
+- [ ] **Update keycloak handler** in `/src/keycloak_operator/handlers/keycloak.py`:
+  ```python
+  @kopf.on.create("keycloaks", group="keycloak.mdvr.nl", version="v1")
+  async def create_keycloak_instance(meta, **kwargs):
+      # Add finalizer BEFORE creating any resources
+      kopf.append_owner_reference(meta, finalizer=KEYCLOAK_FINALIZER)
+      # ... existing creation logic
+
+  @kopf.on.delete("keycloaks", group="keycloak.mdvr.nl", version="v1")
+  async def delete_keycloak_instance(meta, **kwargs):
+      # Perform cleanup in correct order
+      await cleanup_keycloak_resources()
+      # Remove finalizer LAST
+      kopf.remove_owner_reference(meta, finalizer=KEYCLOAK_FINALIZER)
+  ```
+
+- [ ] **Implement cleanup logic** in `KeycloakInstanceReconciler`:
+  ```python
+  async def cleanup_resources(self, name: str, namespace: str) -> None:
+      # 1. Backup Keycloak data if requested
+      # 2. Delete dependent realms and clients
+      # 3. Delete K8s resources (deployment, services, ingress, secrets)
+      # 4. Clean up external resources (if any)
+  ```
+
+- [ ] **Add finalizers to realm handler** in `/src/keycloak_operator/handlers/realm.py`
+- [ ] **Add finalizers to client handler** in `/src/keycloak_operator/handlers/client.py`
+- [ ] **Write tests** for finalizer behavior in `/tests/unit/test_finalizers.py`
+
+### 2. 🚨 WEEK 1: Remove H2 from CRD (IMMEDIATE SECURITY FIX)
+
+**Status**: ❌ H2 still present in CRD enum despite code enforcement
+**Impact**: Policy enforcement gap, accidental H2 usage in production
+**Timeline**: Complete immediately
+
+#### Actionable Tasks:
+- [ ] **Fix CRD file** in `/k8s/keycloak-crd.yaml` line ~50:
+  ```yaml
+  # REMOVE H2 FROM THIS ENUM:
+  database:
+    type:
+      enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]  # ❌ Remove "h2"
+  ```
+
+- [ ] **Update CRD examples** in `/examples/` to only show supported databases
+- [ ] **Add CRD validation test** to ensure H2 is rejected at API level
+- [ ] **Update documentation** to reflect H2 removal
+
+### 3. 🚨 WEEK 2: Implement ObservedGeneration Tracking (GITOPS COMPATIBILITY)
+
+**Status**: ❌ Missing - GitOps tools can't determine sync status
+**Impact**: ArgoCD/Flux compatibility broken, no drift detection
+**Timeline**: Complete by end of Week 2
+
+#### Actionable Tasks:
+- [ ] **Update base reconciler** in `/src/keycloak_operator/services/base_reconciler.py`:
+  ```python
+  def update_status_ready(self, status: StatusProtocol, generation: int, message: str = "Ready"):
+      status.observedGeneration = generation
+      status.phase = "Ready"
+      status.message = message
+      status.lastUpdated = datetime.now(UTC).isoformat()
+  ```
+
+- [ ] **Update all reconcilers** to track generation:
+  ```python
+  async def do_reconcile(self, spec, name, namespace, status, meta, **kwargs):
+      generation = meta.get("generation", 0)
+      # ... reconciliation logic
+      self.update_status_ready(status, generation, "Reconciliation completed")
+  ```
+
+- [ ] **Add to all handlers** - pass `meta` parameter to reconcilers
+- [ ] **Update status conditions** to include observedGeneration
+- [ ] **Write GitOps integration tests** to verify generation tracking
+
+### 4. 🚨 WEEK 3: Implement Leader Election (HA SAFETY)
+
+**Status**: ❌ Missing - Single point of failure
+**Impact**: No HA for operator, split-brain risk with multiple replicas
+**Timeline**: Complete by end of Week 3
+
+#### Actionable Tasks:
+- [ ] **Add leader election config** in `/src/keycloak_operator/main.py`:
+  ```python
+  import kopf
+
+  @kopf.on.startup()
+  async def configure_leader_election(**kwargs):
+      kopf.configure(
+          standalone=False,  # Enable leader election
+          peering_name="keycloak-operator",
+          priority=100
+      )
+  ```
+
+- [ ] **Update deployment manifest** in `/k8s/operator-deployment.yaml`:
+  ```yaml
+  spec:
+    replicas: 2  # Enable multiple replicas
+    template:
+      spec:
+        serviceAccountName: keycloak-operator
+        containers:
+        - name: operator
+          # ... existing config
+          env:
+          - name: KOPF_PEERING_NAME
+            value: "keycloak-operator"
+  ```
+
+- [ ] **Add RBAC for leader election** in `/k8s/rbac.yaml`:
+  ```yaml
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  ```
+
+- [ ] **Test multi-replica behavior** with chaos engineering tests
+- [ ] **Add leader election metrics** to observability stack
+
+## 🔧 HIGH PRIORITY IMPROVEMENTS (Week 4+)
+
+### 5. Enhance Status Conditions Structure
+- [ ] **Implement proper status conditions** following K8s conventions:
+  ```python
+  conditions = [
+      {
+          "type": "Available",
+          "status": "True",
+          "lastTransitionTime": datetime.now(UTC).isoformat(),
+          "reason": "ReconciliationSuccessful",
+          "message": "Keycloak instance is running and healthy"
+      }
+  ]
+  ```
+
+### 6. Switch to kc.start --optimized
+- [ ] **Update deployment generation** in Keycloak reconciler
+- [ ] **Remove all kc.start-dev references**
+- [ ] **Add production validation checks**
+
+### 7. External Secrets Integration
+- [ ] **Add ExternalSecrets CRD support** in models
+- [ ] **Implement secret rotation handling**
+- [ ] **Add Vault integration examples**
+
+## 📋 TESTING REQUIREMENTS
+
+### Unit Tests (Required for each feature)
+- [ ] Finalizer behavior tests
+- [ ] ObservedGeneration tracking tests
+- [ ] Leader election failure scenarios
+- [ ] Status condition state transitions
+
+### Integration Tests (Week 4)
+- [ ] End-to-end finalizer cleanup validation
+- [ ] GitOps workflow with ArgoCD/Flux
+- [ ] Multi-replica operator behavior
+- [ ] Chaos engineering tests (pod failures, network partitions)
+
+## 🎯 SUCCESS CRITERIA
+
+### Production Readiness Checklist:
+- [ ] **Zero data loss risk**: Finalizers implemented and tested
+- [ ] **GitOps compatible**: ObservedGeneration tracking functional
+- [ ] **High availability**: Leader election working with multiple replicas
+- [ ] **Security enforced**: H2 database completely removed from CRDs
+- [ ] **Status reporting**: Comprehensive conditions for external tools
+- [ ] **Error handling**: All errors provide actionable user guidance
+- [ ] **Observability**: Metrics, health checks, and logging complete
+
+### Definition of Done:
+- [ ] All critical showstoppers resolved
+- [ ] Integration tests passing with GitOps tools
+- [ ] Operator can run safely with 2+ replicas
+- [ ] SRE runbook and troubleshooting guide complete
+- [ ] Performance testing under load completed
+
+---
+
+## 📞 ESCALATION
+
+If any of these critical items are blocked or delayed beyond the specified timeline, escalate immediately. **Production safety is non-negotiable and takes precedence over all feature development.**
+
+**Target Production Ready Date**: 4 weeks from start of Phase 6B
+**Current Risk Level**: HIGH (Due to missing finalizers and data loss potential)

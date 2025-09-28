@@ -413,3 +413,134 @@ class KeycloakClientReconciler(BaseReconciler):
             self.logger.debug(f"Client role: {role}")
 
         self.logger.debug(f"Client roles management completed for {spec.client_id}")
+
+    async def do_update(
+        self,
+        old_spec: dict[str, Any],
+        new_spec: dict[str, Any],
+        diff: Any,
+        name: str,
+        namespace: str,
+        status: StatusProtocol,
+        **kwargs,
+    ) -> dict[str, Any] | None:
+        """
+        Handle updates to Keycloak client specifications.
+
+        Args:
+            old_spec: Previous specification dictionary
+            new_spec: New specification dictionary
+            diff: List of changes between old and new specs
+            name: Resource name
+            namespace: Resource namespace
+            status: Resource status object
+            **kwargs: Additional handler arguments
+
+        Returns:
+            Updated status dictionary or None if no changes needed
+        """
+
+        from ..errors import PermanentError, TemporaryError
+        from ..utils.kubernetes import create_client_secret, validate_keycloak_reference
+
+        self.logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
+
+        # Log changes for debugging
+        for operation, field_path, old_value, new_value in diff:
+            self.logger.info(
+                f"KeycloakClient change - {operation}: {field_path} "
+                f"from {old_value} to {new_value}"
+            )
+
+        status.phase = "Updating"
+        status.message = "Applying client configuration changes"
+
+        # Validate that immutable fields haven't changed
+        old_client_spec = self._validate_spec(old_spec)
+        new_client_spec = self._validate_spec(new_spec)
+
+        # Check for changes to immutable fields
+        if old_client_spec.client_id != new_client_spec.client_id:
+            raise PermanentError("Cannot change client_id of existing KeycloakClient")
+
+        if (
+            old_client_spec.keycloak_instance_ref
+            != new_client_spec.keycloak_instance_ref
+        ):
+            raise PermanentError(
+                "Cannot change keycloak_instance_ref of existing KeycloakClient"
+            )
+
+        # Get admin client for the target Keycloak instance
+        keycloak_ref = new_client_spec.keycloak_instance_ref
+        target_namespace = keycloak_ref.namespace or namespace
+
+        # Get Keycloak instance for URL
+        keycloak_instance = validate_keycloak_reference(
+            keycloak_ref.name, target_namespace
+        )
+        if not keycloak_instance:
+            raise TemporaryError(
+                f"Keycloak instance {keycloak_ref.name} not found or not ready "
+                f"in namespace {target_namespace}",
+                delay=30,
+            )
+
+        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+
+        realm_name = new_client_spec.realm or "master"
+
+        # Apply configuration updates based on the diff
+        configuration_changed = False
+        for _operation, field_path, _old_value, _new_value in diff:
+            if field_path[:2] == ("spec", "redirectUris"):
+                self.logger.info("Updating client redirect URIs")
+                # Update redirect URIs in Keycloak
+                configuration_changed = True
+
+            elif field_path[:2] == ("spec", "scopes"):
+                self.logger.info("Updating client scopes")
+                # Update client scopes
+                configuration_changed = True
+
+            elif field_path[:2] == ("spec", "settings"):
+                self.logger.info("Updating client settings")
+                # Update client configuration
+                configuration_changed = True
+
+        if configuration_changed:
+            # Apply all changes to Keycloak
+            admin_client.update_client(
+                new_client_spec.client_id,
+                new_client_spec.to_keycloak_config(),
+                realm_name,
+            )
+
+        # Handle client secret regeneration
+        regenerate_secret = new_client_spec.regenerate_secret
+        if regenerate_secret and not new_client_spec.public_client:
+            self.logger.info("Regenerating client secret")
+            # Generate new secret in Keycloak
+            new_secret = admin_client.regenerate_client_secret(
+                new_client_spec.client_id, realm_name
+            )
+
+            # Update Kubernetes secret
+            secret_name = f"{name}-credentials"
+            create_client_secret(
+                secret_name=secret_name,
+                namespace=namespace,
+                client_id=new_client_spec.client_id,
+                client_secret=new_secret,
+                keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
+                realm=realm_name,
+                update_existing=True,
+            )
+
+        self.logger.info(f"Successfully updated KeycloakClient {name}")
+
+        return {
+            "phase": "Ready",
+            "message": "Client configuration updated successfully",
+            "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
+        }
