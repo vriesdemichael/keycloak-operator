@@ -14,7 +14,7 @@ and can be managed independently across different namespaces.
 
 import logging
 from datetime import UTC, datetime
-from typing import Any, Protocol, cast
+from typing import Any, Protocol
 
 import kopf
 
@@ -87,7 +87,7 @@ async def ensure_keycloak_realm(
 
 
 @kopf.on.update("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
-def update_keycloak_realm(
+async def update_keycloak_realm(
     old: dict[str, Any],
     new: dict[str, Any],
     diff: kopf.Diff,
@@ -116,167 +116,18 @@ def update_keycloak_realm(
     """
     logger.info(f"Updating KeycloakRealm {name} in namespace {namespace}")
 
-    # Log changes for debugging
-    for operation, field_path, old_value, new_value in diff:
-        logger.info(
-            f"KeycloakRealm change - {operation}: {field_path} "
-            f"from {old_value} to {new_value}"
-        )
-
-    status.update(
-        {
-            "phase": "Updating",
-            "message": "Applying realm configuration changes",
-        }
+    # Create reconciler and delegate to service layer
+    reconciler = KeycloakRealmReconciler()
+    status_wrapper = StatusWrapper(status)
+    return await reconciler.update(
+        old_spec=old.get("spec", {}),
+        new_spec=new.get("spec", {}),
+        diff=diff,
+        name=name,
+        namespace=namespace,
+        status=status_wrapper,
+        **kwargs,
     )
-
-    try:
-        # Validate that immutable fields haven't changed
-        old_spec = KeycloakRealmSpec.model_validate(old["spec"])
-        new_spec = KeycloakRealmSpec.model_validate(new["spec"])
-
-        # Check for changes to immutable fields
-        if old_spec.realm_name != new_spec.realm_name:
-            raise kopf.PermanentError(
-                "Cannot change realm_name of existing KeycloakRealm"
-            )
-
-        if old_spec.keycloak_instance_ref != new_spec.keycloak_instance_ref:
-            raise kopf.PermanentError(
-                "Cannot change keycloak_instance_ref of existing KeycloakRealm"
-            )
-
-        # Get admin client for the target Keycloak instance
-        keycloak_ref = new_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        admin_client = get_keycloak_admin_client(keycloak_ref.name, target_namespace)
-
-        realm_name = new_spec.realm_name
-
-        # Apply configuration updates based on the diff
-        configuration_changed = False
-        for _operation, field_path, _old_value, _new_value in diff:
-            if field_path[:2] == ("spec", "themes"):
-                logger.info("Updating realm themes")
-                try:
-                    if new_spec.themes:
-                        theme_config = {}
-                        if (
-                            hasattr(new_spec.themes, "login_theme")
-                            and new_spec.themes.login_theme
-                        ):
-                            theme_config["login_theme"] = new_spec.themes.login_theme
-                        if (
-                            hasattr(new_spec.themes, "account_theme")
-                            and new_spec.themes.account_theme
-                        ):
-                            theme_config["account_theme"] = (
-                                new_spec.themes.account_theme
-                            )
-                        if (
-                            hasattr(new_spec.themes, "admin_theme")
-                            and new_spec.themes.admin_theme
-                        ):
-                            theme_config["admin_theme"] = new_spec.themes.admin_theme
-                        if (
-                            hasattr(new_spec.themes, "email_theme")
-                            and new_spec.themes.email_theme
-                        ):
-                            theme_config["email_theme"] = new_spec.themes.email_theme
-
-                        if theme_config:
-                            admin_client.update_realm_themes(realm_name, theme_config)
-                    configuration_changed = True
-                except Exception as e:
-                    logger.warning(f"Failed to update themes: {e}")
-
-            elif field_path[:2] == ("spec", "localization"):
-                logger.info("Updating realm localization")
-                try:
-                    if new_spec.localization:
-                        logger.info(
-                            f"Updated localization settings: {new_spec.localization}"
-                        )
-                    configuration_changed = True
-                except Exception as e:
-                    logger.warning(f"Failed to update localization: {e}")
-
-            elif field_path[:2] == ("spec", "authenticationFlows"):
-                logger.info("Updating authentication flows")
-                try:
-                    for flow_config in new_spec.authentication_flows or []:
-                        flow_dict = cast(
-                            dict[str, Any],
-                            flow_config.model_dump()
-                            if hasattr(flow_config, "model_dump")
-                            else flow_config,
-                        )
-                        admin_client.configure_authentication_flow(
-                            realm_name, flow_dict
-                        )
-                    configuration_changed = True
-                except Exception as e:
-                    logger.warning(f"Failed to update authentication flows: {e}")
-
-            elif field_path[:2] == ("spec", "identityProviders"):
-                logger.info("Updating identity providers")
-                try:
-                    for idp_config in new_spec.identity_providers or []:
-                        idp_dict = cast(
-                            dict[str, Any],
-                            idp_config.model_dump()
-                            if hasattr(idp_config, "model_dump")
-                            else idp_config,
-                        )
-                        admin_client.configure_identity_provider(realm_name, idp_dict)
-                    configuration_changed = True
-                except Exception as e:
-                    logger.warning(f"Failed to update identity providers: {e}")
-
-            elif field_path[:2] == ("spec", "userFederation"):
-                logger.info("Updating user federation")
-                try:
-                    for federation_config in new_spec.user_federation or []:
-                        federation_dict = cast(
-                            dict[str, Any],
-                            federation_config.model_dump()
-                            if hasattr(federation_config, "model_dump")
-                            else federation_config,
-                        )
-                        admin_client.configure_user_federation(
-                            realm_name, federation_dict
-                        )
-                    configuration_changed = True
-                except Exception as e:
-                    logger.warning(f"Failed to update user federation: {e}")
-
-            elif field_path[:2] == ("spec", "settings"):
-                logger.info("Updating realm settings")
-                try:
-                    admin_client.update_realm(realm_name, new_spec.to_keycloak_config())
-                    configuration_changed = True
-                except Exception as e:
-                    logger.warning(f"Failed to update realm settings: {e}")
-
-        if configuration_changed:
-            logger.info(f"Successfully updated KeycloakRealm {name}")
-            return {
-                "phase": "Ready",
-                "message": "Realm configuration updated successfully",
-                "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
-            }
-
-    except Exception as e:
-        logger.error(f"Failed to update KeycloakRealm {name}: {e}")
-        status.update(
-            {
-                "phase": "Failed",
-                "message": f"Update failed: {str(e)}",
-            }
-        )
-        raise kopf.TemporaryError(f"Realm update failed: {e}", delay=30) from e
-
-    return None  # No changes needed
 
 
 @kopf.on.delete("keycloakrealms", group="keycloak.mdvr.nl", version="v1")

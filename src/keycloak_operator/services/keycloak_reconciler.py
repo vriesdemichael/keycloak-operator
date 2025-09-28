@@ -8,6 +8,7 @@ deployment, services, persistence, and administrative access.
 from typing import Any
 
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from ..errors import (
     DatabaseValidationError,
@@ -46,6 +47,238 @@ class KeycloakInstanceReconciler(BaseReconciler):
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
+
+    async def do_update(
+        self,
+        old_spec: dict[str, Any],
+        new_spec: dict[str, Any],
+        diff: Any,
+        name: str,
+        namespace: str,
+        status: StatusProtocol,
+        **kwargs,
+    ) -> dict[str, Any] | None:
+        """
+        Handle updates to Keycloak instance specifications.
+
+        Args:
+            old_spec: Previous specification
+            new_spec: New specification
+            diff: List of changes between old and new
+            name: Name of the Keycloak resource
+            namespace: Namespace where the resource exists
+            status: Current status of the resource
+            **kwargs: Additional handler arguments
+
+        Returns:
+            Dictionary with updated status information, or None if no changes needed
+        """
+        from ..models.keycloak import KeycloakSpec
+
+        # Parse and validate the new specification
+        new_keycloak_spec = KeycloakSpec.model_validate(new_spec)
+
+        # Get Kubernetes API clients
+        apps_api = client.AppsV1Api(self.kubernetes_client)
+        networking_api = client.NetworkingV1Api(self.kubernetes_client)
+        deployment_name = f"{name}-keycloak"
+
+        # Track if any changes require deployment update
+        deployment_needs_update = False
+        deployment_changes = {}
+
+        # Log the changes for debugging
+        for operation, field_path, old_value, new_value in diff:
+            self.logger.info(
+                f"Change detected - {operation}: {field_path} "
+                f"from {old_value} to {new_value}"
+            )
+
+        # Handle different types of updates based on the diff
+        for _operation, field_path, old_value, new_value in diff:
+            if field_path == ("spec", "replicas"):
+                self.logger.info(
+                    f"Scaling Keycloak from {old_value} to {new_value} replicas"
+                )
+                deployment_changes["replicas"] = new_value
+                deployment_needs_update = True
+
+            elif field_path == ("spec", "image"):
+                self.logger.info(
+                    f"Updating Keycloak image from {old_value} to {new_value}"
+                )
+                deployment_changes["image"] = new_value
+                deployment_needs_update = True
+
+            elif field_path == ("spec", "resources"):
+                self.logger.info("Updating Keycloak resource requirements")
+                deployment_changes["resources"] = new_value
+                deployment_needs_update = True
+
+            elif field_path[0:2] == ("spec", "ingress"):
+                await self._update_ingress(
+                    new_keycloak_spec, name, namespace, networking_api
+                )
+
+        # Apply deployment updates if needed
+        if deployment_needs_update:
+            await self._update_deployment(
+                deployment_name, namespace, deployment_changes, apps_api
+            )
+
+        # Always reconcile to ensure everything is in sync
+        return await self.do_reconcile(new_spec, name, namespace, status, **kwargs)
+
+    async def _update_ingress(
+        self,
+        spec: KeycloakSpec,
+        name: str,
+        namespace: str,
+        networking_api: client.NetworkingV1Api,
+    ) -> None:
+        """Update ingress configuration."""
+        from ..utils.kubernetes import create_keycloak_ingress
+
+        ingress_name = f"{name}-keycloak"
+
+        try:
+            if spec.ingress.enabled:
+                # Try to read existing ingress
+                try:
+                    existing_ingress = networking_api.read_namespaced_ingress(
+                        name=ingress_name, namespace=namespace
+                    )
+                    # Update existing ingress
+                    ingress = create_keycloak_ingress(
+                        name=name,
+                        namespace=namespace,
+                        spec=spec,
+                        k8s_client=self.kubernetes_client,
+                    )
+                    ingress.metadata.resource_version = (
+                        existing_ingress.metadata.resource_version
+                    )
+                    networking_api.patch_namespaced_ingress(
+                        name=ingress_name, namespace=namespace, body=ingress
+                    )
+                    self.logger.info(f"Updated ingress {ingress_name}")
+                except ApiException as e:
+                    if e.status == 404:
+                        # Create new ingress
+                        create_keycloak_ingress(
+                            name=name,
+                            namespace=namespace,
+                            spec=spec,
+                            k8s_client=self.kubernetes_client,
+                        )
+                        self.logger.info(f"Created ingress {ingress_name}")
+                    else:
+                        raise
+            else:
+                # Ingress disabled, delete if exists
+                try:
+                    networking_api.delete_namespaced_ingress(
+                        name=ingress_name, namespace=namespace
+                    )
+                    self.logger.info(
+                        f"Deleted ingress {ingress_name} (disabled in spec)"
+                    )
+                except ApiException as e:
+                    if e.status != 404:
+                        self.logger.warning(
+                            f"Failed to delete ingress {ingress_name}: {e}"
+                        )
+
+        except Exception as e:
+            self.logger.error(f"Failed to update ingress: {e}")
+            raise TemporaryError(
+                f"Failed to update ingress configuration: {str(e)}"
+            ) from e
+
+    async def _update_deployment(
+        self,
+        deployment_name: str,
+        namespace: str,
+        deployment_changes: dict,
+        apps_api: client.AppsV1Api,
+    ) -> None:
+        """Update deployment with changes."""
+        try:
+            deployment = apps_api.read_namespaced_deployment(
+                name=deployment_name, namespace=namespace
+            )
+
+            # Update deployment spec based on changes
+            if "replicas" in deployment_changes:
+                deployment.spec.replicas = deployment_changes["replicas"]
+
+            if "image" in deployment_changes:
+                deployment.spec.template.spec.containers[0].image = deployment_changes[
+                    "image"
+                ]
+
+            if "resources" in deployment_changes:
+                resources = deployment_changes["resources"]
+                deployment.spec.template.spec.containers[
+                    0
+                ].resources = client.V1ResourceRequirements(
+                    requests=resources.get("requests", {}),
+                    limits=resources.get("limits", {}),
+                )
+
+            # Apply the update
+            apps_api.patch_namespaced_deployment(
+                name=deployment_name, namespace=namespace, body=deployment
+            )
+
+            self.logger.info(f"Updated deployment {deployment_name}")
+
+            # Wait for rollout to complete for critical changes
+            if "image" in deployment_changes or "resources" in deployment_changes:
+                await self._wait_for_rollout(deployment_name, namespace, apps_api)
+
+        except ApiException as e:
+            self.logger.error(f"Failed to update deployment: {e}")
+            raise TemporaryError(f"Failed to update deployment: {str(e)}") from e
+
+    async def _wait_for_rollout(
+        self, deployment_name: str, namespace: str, apps_api: client.AppsV1Api
+    ) -> None:
+        """Wait for deployment rollout to complete."""
+        import asyncio
+
+        self.logger.info("Waiting for rolling update to complete...")
+
+        max_wait = 300  # 5 minutes
+        wait_interval = 10
+        elapsed = 0
+
+        while elapsed < max_wait:
+            deployment_status = apps_api.read_namespaced_deployment_status(
+                name=deployment_name, namespace=namespace
+            )
+
+            ready_replicas = deployment_status.status.ready_replicas or 0
+            updated_replicas = deployment_status.status.updated_replicas or 0
+            desired_replicas = deployment_status.spec.replicas or 1
+
+            if (
+                ready_replicas >= desired_replicas
+                and updated_replicas >= desired_replicas
+            ):
+                self.logger.info("Rolling update completed successfully")
+                break
+
+            self.logger.debug(
+                f"Rolling update progress: {updated_replicas}/{desired_replicas} updated, {ready_replicas} ready"
+            )
+
+            await asyncio.sleep(wait_interval)
+            elapsed += wait_interval
+        else:
+            raise TemporaryError(
+                f"Deployment rollout did not complete within {max_wait} seconds"
+            )
 
     async def do_reconcile(
         self,

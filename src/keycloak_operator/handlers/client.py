@@ -30,9 +30,7 @@ from keycloak_operator.models.client import KeycloakClientSpec
 from keycloak_operator.services import KeycloakClientReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 from keycloak_operator.utils.kubernetes import (
-    create_client_secret,
     get_kubernetes_client,
-    validate_keycloak_reference,
 )
 
 logger = logging.getLogger(__name__)
@@ -107,7 +105,7 @@ async def ensure_keycloak_client(
 
 
 @kopf.on.update("keycloakclients", group="keycloak.mdvr.nl", version="v1")
-def update_keycloak_client(
+async def update_keycloak_client(
     old: dict[str, Any],
     new: dict[str, Any],
     diff: kopf.Diff,
@@ -136,117 +134,18 @@ def update_keycloak_client(
     """
     logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
 
-    # Log changes for debugging
-    for operation, field_path, old_value, new_value in diff:
-        logger.info(
-            f"KeycloakClient change - {operation}: {field_path} "
-            f"from {old_value} to {new_value}"
-        )
-
-    status.update(
-        {
-            "phase": "Updating",
-            "message": "Applying client configuration changes",
-        }
+    # Create reconciler and delegate to service layer
+    reconciler = KeycloakClientReconciler()
+    status_wrapper = StatusWrapper(status)
+    return await reconciler.update(
+        old_spec=old.get("spec", {}),
+        new_spec=new.get("spec", {}),
+        diff=diff,
+        name=name,
+        namespace=namespace,
+        status=status_wrapper,
+        **kwargs,
     )
-
-    try:
-        # Validate that immutable fields haven't changed
-        old_spec = KeycloakClientSpec.model_validate(old["spec"])
-        new_spec = KeycloakClientSpec.model_validate(new["spec"])
-
-        # Check for changes to immutable fields
-        if old_spec.client_id != new_spec.client_id:
-            raise kopf.PermanentError(
-                "Cannot change client_id of existing KeycloakClient"
-            )
-
-        if old_spec.keycloak_instance_ref != new_spec.keycloak_instance_ref:
-            raise kopf.PermanentError(
-                "Cannot change keycloak_instance_ref of existing KeycloakClient"
-            )
-
-        # Get admin client for the target Keycloak instance
-        keycloak_ref = new_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-
-        # Get Keycloak instance for URL
-        keycloak_instance = validate_keycloak_reference(
-            keycloak_ref.name, target_namespace
-        )
-        if not keycloak_instance:
-            raise kopf.TemporaryError(
-                f"Keycloak instance {keycloak_ref.name} not found or not ready "
-                f"in namespace {target_namespace}",
-                delay=30,
-            )
-
-        admin_client = get_keycloak_admin_client(keycloak_ref.name, target_namespace)
-
-        realm_name = new_spec.realm or "master"
-
-        # Apply configuration updates based on the diff
-        configuration_changed = False
-        for _operation, field_path, _old_value, _new_value in diff:
-            if field_path[:2] == ("spec", "redirectUris"):
-                logger.info("Updating client redirect URIs")
-                # Update redirect URIs in Keycloak
-                configuration_changed = True
-
-            elif field_path[:2] == ("spec", "scopes"):
-                logger.info("Updating client scopes")
-                # Update client scopes
-                configuration_changed = True
-
-            elif field_path[:2] == ("spec", "settings"):
-                logger.info("Updating client settings")
-                # Update client configuration
-                configuration_changed = True
-
-        if configuration_changed:
-            # Apply all changes to Keycloak
-            admin_client.update_client(
-                new_spec.client_id, new_spec.to_keycloak_config(), realm_name
-            )
-
-        # Handle client secret regeneration
-        regenerate_secret = new_spec.regenerate_secret
-        if regenerate_secret and not new_spec.public_client:
-            logger.info("Regenerating client secret")
-            # Generate new secret in Keycloak
-            new_secret = admin_client.regenerate_client_secret(
-                new_spec.client_id, realm_name
-            )
-
-            # Update Kubernetes secret
-            secret_name = f"{name}-credentials"
-            create_client_secret(
-                secret_name=secret_name,
-                namespace=namespace,
-                client_id=new_spec.client_id,
-                client_secret=new_secret,
-                keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
-                realm=realm_name,
-                update_existing=True,
-            )
-
-        logger.info(f"Successfully updated KeycloakClient {name}")
-
-        return {
-            "phase": "Ready",
-            "message": "Client configuration updated successfully",
-            "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
-        }
-
-    except Exception as e:
-        logger.error(f"Failed to update KeycloakClient {name}: {e}")
-        status.update(
-            {
-                "phase": "Failed",
-                "message": f"Update failed: {str(e)}",
-            }
-        )
-        raise kopf.TemporaryError(f"Client update failed: {e}", delay=30) from e
 
 
 @kopf.on.delete("keycloakclients", group="keycloak.mdvr.nl", version="v1")

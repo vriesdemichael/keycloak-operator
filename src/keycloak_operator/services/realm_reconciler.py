@@ -388,3 +388,187 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Could also implement backup retention policies, schedule validation, etc.
         self.logger.debug(f"Backup management configured for realm {spec.realm_name}")
+
+    async def do_update(
+        self,
+        old_spec: dict[str, Any],
+        new_spec: dict[str, Any],
+        diff: Any,
+        name: str,
+        namespace: str,
+        status: StatusProtocol,
+        **kwargs,
+    ) -> dict[str, Any] | None:
+        """
+        Handle updates to Keycloak realm specifications.
+
+        Args:
+            old_spec: Previous specification dictionary
+            new_spec: New specification dictionary
+            diff: List of changes between old and new specs
+            name: Resource name
+            namespace: Resource namespace
+            status: Resource status object
+            **kwargs: Additional handler arguments
+
+        Returns:
+            Updated status dictionary or None if no changes needed
+        """
+        from typing import cast
+
+        from ..errors import PermanentError
+
+        self.logger.info(f"Updating KeycloakRealm {name} in namespace {namespace}")
+
+        # Log changes for debugging
+        for operation, field_path, old_value, new_value in diff:
+            self.logger.info(
+                f"KeycloakRealm change - {operation}: {field_path} "
+                f"from {old_value} to {new_value}"
+            )
+
+        status.phase = "Updating"
+        status.message = "Applying realm configuration changes"
+
+        # Validate that immutable fields haven't changed
+        old_realm_spec = self._validate_spec(old_spec)
+        new_realm_spec = self._validate_spec(new_spec)
+
+        # Check for changes to immutable fields
+        if old_realm_spec.realm_name != new_realm_spec.realm_name:
+            raise PermanentError("Cannot change realm_name of existing KeycloakRealm")
+
+        if old_realm_spec.keycloak_instance_ref != new_realm_spec.keycloak_instance_ref:
+            raise PermanentError(
+                "Cannot change keycloak_instance_ref of existing KeycloakRealm"
+            )
+
+        # Get admin client for the target Keycloak instance
+        keycloak_ref = new_realm_spec.keycloak_instance_ref
+        target_namespace = keycloak_ref.namespace or namespace
+        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+
+        realm_name = new_realm_spec.realm_name
+
+        # Apply configuration updates based on the diff
+        configuration_changed = False
+        for _operation, field_path, _old_value, _new_value in diff:
+            if field_path[:2] == ("spec", "themes"):
+                self.logger.info("Updating realm themes")
+                try:
+                    if new_realm_spec.themes:
+                        theme_config = {}
+                        if (
+                            hasattr(new_realm_spec.themes, "login_theme")
+                            and new_realm_spec.themes.login_theme
+                        ):
+                            theme_config["login_theme"] = (
+                                new_realm_spec.themes.login_theme
+                            )
+                        if (
+                            hasattr(new_realm_spec.themes, "account_theme")
+                            and new_realm_spec.themes.account_theme
+                        ):
+                            theme_config["account_theme"] = (
+                                new_realm_spec.themes.account_theme
+                            )
+                        if (
+                            hasattr(new_realm_spec.themes, "admin_theme")
+                            and new_realm_spec.themes.admin_theme
+                        ):
+                            theme_config["admin_theme"] = (
+                                new_realm_spec.themes.admin_theme
+                            )
+                        if (
+                            hasattr(new_realm_spec.themes, "email_theme")
+                            and new_realm_spec.themes.email_theme
+                        ):
+                            theme_config["email_theme"] = (
+                                new_realm_spec.themes.email_theme
+                            )
+
+                        if theme_config:
+                            admin_client.update_realm_themes(realm_name, theme_config)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update themes: {e}")
+
+            elif field_path[:2] == ("spec", "localization"):
+                self.logger.info("Updating realm localization")
+                try:
+                    if new_realm_spec.localization:
+                        self.logger.info(
+                            f"Updated localization settings: {new_realm_spec.localization}"
+                        )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update localization: {e}")
+
+            elif field_path[:2] == ("spec", "authenticationFlows"):
+                self.logger.info("Updating authentication flows")
+                try:
+                    for flow_config in new_realm_spec.authentication_flows or []:
+                        flow_dict = cast(
+                            dict[str, Any],
+                            flow_config.model_dump()
+                            if hasattr(flow_config, "model_dump")
+                            else flow_config,
+                        )
+                        admin_client.configure_authentication_flow(
+                            realm_name, flow_dict
+                        )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update authentication flows: {e}")
+
+            elif field_path[:2] == ("spec", "identityProviders"):
+                self.logger.info("Updating identity providers")
+                try:
+                    for idp_config in new_realm_spec.identity_providers or []:
+                        idp_dict = cast(
+                            dict[str, Any],
+                            idp_config.model_dump()
+                            if hasattr(idp_config, "model_dump")
+                            else idp_config,
+                        )
+                        admin_client.configure_identity_provider(realm_name, idp_dict)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update identity providers: {e}")
+
+            elif field_path[:2] == ("spec", "userFederation"):
+                self.logger.info("Updating user federation")
+                try:
+                    for federation_config in new_realm_spec.user_federation or []:
+                        federation_dict = cast(
+                            dict[str, Any],
+                            federation_config.model_dump()
+                            if hasattr(federation_config, "model_dump")
+                            else federation_config,
+                        )
+                        admin_client.configure_user_federation(
+                            realm_name, federation_dict
+                        )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update user federation: {e}")
+
+            elif field_path[:2] == ("spec", "settings"):
+                self.logger.info("Updating realm settings")
+                try:
+                    admin_client.update_realm(
+                        realm_name, new_realm_spec.to_keycloak_config()
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update realm settings: {e}")
+
+        if configuration_changed:
+            self.logger.info(f"Successfully updated KeycloakRealm {name}")
+            return {
+                "phase": "Ready",
+                "message": "Realm configuration updated successfully",
+                "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
+            }
+
+        return None  # No changes needed

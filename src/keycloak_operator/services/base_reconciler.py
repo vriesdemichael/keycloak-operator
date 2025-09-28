@@ -193,6 +193,117 @@ class BaseReconciler(ABC):
 
                 raise error.as_kopf_error() from e
 
+    async def update(
+        self,
+        old_spec: dict[str, Any],
+        new_spec: dict[str, Any],
+        diff: Any,
+        name: str,
+        namespace: str,
+        status: StatusProtocol,
+        **kwargs,
+    ) -> dict[str, Any] | None:
+        """
+        Main update entry point with metrics tracking and standardized flow.
+
+        Args:
+            old_spec: Previous resource specification
+            new_spec: New resource specification
+            diff: List of changes between old and new
+            name: Resource name
+            namespace: Resource namespace
+            status: Resource status object
+            **kwargs: Additional handler arguments
+
+        Returns:
+            Status dictionary for the resource, or None if no changes needed
+        """
+        from ..observability.metrics import metrics_collector
+
+        resource_type = self.__class__.__name__.replace("Reconciler", "").lower()
+        start_time = time.time()
+
+        # Start correlation ID for this operation
+        _correlation_id = self.logger.log_reconciliation_start(
+            resource_type=resource_type,
+            resource_name=name,
+            namespace=namespace,
+        )
+
+        async with metrics_collector.track_reconciliation(
+            resource_type=resource_type,
+            namespace=namespace,
+            name=name,
+            operation="update",
+        ):
+            try:
+                # Update status to indicate update started
+                self.update_status_reconciling(
+                    status, "Processing configuration changes"
+                )
+
+                # Perform the actual update
+                result = await self.do_update(
+                    old_spec, new_spec, diff, name, namespace, status, **kwargs
+                )
+
+                # Update status to indicate success
+                self.update_status_ready(status, "Update completed successfully")
+
+                # Update resource status metrics
+                metrics_collector.update_resource_status(
+                    resource_type=resource_type, namespace=namespace, phase="Ready"
+                )
+
+                # Log successful completion with duration
+                duration = time.time() - start_time
+                self.logger.log_reconciliation_success(
+                    resource_type=resource_type,
+                    resource_name=name,
+                    namespace=namespace,
+                    duration=duration,
+                )
+
+                return result
+
+            except OperatorError as e:
+                duration = time.time() - start_time
+                self.logger.log_reconciliation_error(
+                    resource_type=resource_type,
+                    resource_name=name,
+                    namespace=namespace,
+                    error=e,
+                    duration=duration,
+                )
+                self.update_status_failed(status, str(e))
+
+                # Update resource status metrics
+                metrics_collector.update_resource_status(
+                    resource_type=resource_type, namespace=namespace, phase="Failed"
+                )
+
+                raise e.as_kopf_error() from e
+
+            except Exception as e:
+                # Wrap unexpected errors as temporary to allow retry
+                error = TemporaryError(f"Unexpected error during update: {str(e)}")
+                duration = time.time() - start_time
+                self.logger.log_reconciliation_error(
+                    resource_type=resource_type,
+                    resource_name=name,
+                    namespace=namespace,
+                    error=error,
+                    duration=duration,
+                )
+                self.update_status_failed(status, str(error))
+
+                # Update resource status metrics
+                metrics_collector.update_resource_status(
+                    resource_type=resource_type, namespace=namespace, phase="Failed"
+                )
+
+                raise error.as_kopf_error() from e
+
     @abstractmethod
     async def do_reconcile(
         self,
@@ -219,6 +330,37 @@ class BaseReconciler(ABC):
             Status dictionary for the resource
         """
         pass
+
+    async def do_update(
+        self,
+        old_spec: dict[str, Any],
+        new_spec: dict[str, Any],
+        diff: Any,
+        name: str,
+        namespace: str,
+        status: StatusProtocol,
+        **kwargs,
+    ) -> dict[str, Any] | None:
+        """
+        Perform the actual update logic.
+
+        Default implementation delegates to reconcile with new spec.
+        Subclasses can override for more efficient update handling.
+
+        Args:
+            old_spec: Previous resource specification
+            new_spec: New resource specification
+            diff: List of changes between old and new
+            name: Resource name
+            namespace: Resource namespace
+            status: Resource status object
+            **kwargs: Additional handler arguments
+
+        Returns:
+            Status dictionary for the resource, or None if no changes needed
+        """
+        # Default implementation: just reconcile with the new spec
+        return await self.do_reconcile(new_spec, name, namespace, status, **kwargs)
 
     async def reconcile_with_retry(
         self,

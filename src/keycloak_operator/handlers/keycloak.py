@@ -27,7 +27,6 @@ from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 from keycloak_operator.utils.kubernetes import (
     backup_keycloak_data,
     check_http_health,
-    create_keycloak_ingress,
     create_persistent_volume_claim,
     get_admin_credentials,
     get_kubernetes_client,
@@ -90,8 +89,8 @@ async def ensure_keycloak_instance(
 
 
 @kopf.on.update("keycloaks", group="keycloak.mdvr.nl", version="v1")
-def update_keycloak_instance(
-    _old: dict[str, Any],
+async def update_keycloak_instance(
+    old: dict[str, Any],
     new: dict[str, Any],
     diff: Diff,
     name: str,
@@ -100,252 +99,35 @@ def update_keycloak_instance(
     **kwargs: KopfHandlerKwargs,
 ) -> dict[str, Any] | None:
     """
-        Handle updates to Keycloak instance specifications.
+    Handle updates to Keycloak instance specifications.
 
-        This handler is called when the Keycloak resource specification changes.
-        It analyzes the differences and applies necessary updates to the
-        Kubernetes resources.
+    This handler is called when the Keycloak resource specification changes.
+    It delegates to the reconciler service layer for all business logic.
 
-        Args:
-            old: Previous specification
-            new: New specification
-            diff: List of changes between old and new
-            name: Name of the Keycloak resource
-            namespace: Namespace where the resource exists
-            status: Current status of the resource
+    Args:
+        old: Previous specification
+        new: New specification
+        diff: List of changes between old and new
+        name: Name of the Keycloak resource
+        namespace: Namespace where the resource exists
+        status: Current status of the resource
 
-        Returns:
-            Dictionary with updated status information, or None if no changes needed
-
-    Implementation includes:
-        ✅ Analyze the diff to determine what changes need to be applied
-        ✅ Handle replica count changes (scaling)
-        ✅ Handle image version updates (rolling updates)
-        ✅ Handle configuration changes (config maps, environment variables)
-        ⚠️  Handle storage changes (volume size expansion) - Future enhancement
-        ✅ Handle ingress configuration changes
-        ✅ Perform rolling updates without downtime where possible
-        ✅ Update resource status to reflect changes
+    Returns:
+        Dictionary with updated status information, or None if no changes needed
     """
     logger.info(f"Updating Keycloak instance {name} in namespace {namespace}")
 
-    # Log the changes for debugging
-    for operation, field_path, old_value, new_value in diff:
-        logger.info(
-            f"Change detected - {operation}: {field_path} "
-            f"from {old_value} to {new_value}"
-        )
-
-    # Update status to indicate update is in progress
-    status.phase = "Updating"
-    status.message = "Applying configuration changes"
-
-    try:
-        # Parse and validate the new specification
-        new_spec = KeycloakSpec.model_validate(new["spec"])
-        logger.debug(f"Validated new Keycloak spec: {new_spec}")
-
-        # Get Kubernetes API clients
-        k8s_client = get_kubernetes_client()
-        apps_api = client.AppsV1Api(k8s_client)
-        deployment_name = f"{name}-keycloak"
-
-        # Track if any changes require deployment update
-        deployment_needs_update = False
-        deployment_changes = {}
-
-        # Handle different types of updates based on the diff
-        for _operation, field_path, old_value, new_value in diff:
-            if field_path == ("spec", "replicas"):
-                logger.info(
-                    f"Scaling Keycloak from {old_value} to {new_value} replicas"
-                )
-                deployment_changes["replicas"] = new_value
-                deployment_needs_update = True
-
-            elif field_path == ("spec", "image"):
-                logger.info(f"Updating Keycloak image from {old_value} to {new_value}")
-                deployment_changes["image"] = new_value
-                deployment_needs_update = True
-
-            elif field_path == ("spec", "resources"):
-                logger.info("Updating Keycloak resource requirements")
-                deployment_changes["resources"] = new_value
-                deployment_needs_update = True
-
-            elif field_path[0:2] == ("spec", "ingress"):
-                logger.info("Updating Keycloak ingress configuration")
-                # Handle ingress updates
-                networking_api = client.NetworkingV1Api(k8s_client)
-                ingress_name = f"{name}-keycloak"
-
-                try:
-                    if new_spec.ingress.enabled:
-                        # Try to read existing ingress
-                        try:
-                            existing_ingress = networking_api.read_namespaced_ingress(
-                                name=ingress_name, namespace=namespace
-                            )
-                            # Update existing ingress
-                            ingress = create_keycloak_ingress(
-                                name=name,
-                                namespace=namespace,
-                                spec=new_spec,
-                                k8s_client=k8s_client,
-                            )
-                            ingress.metadata.resource_version = (
-                                existing_ingress.metadata.resource_version
-                            )
-                            networking_api.patch_namespaced_ingress(
-                                name=ingress_name, namespace=namespace, body=ingress
-                            )
-                            logger.info(f"Updated ingress {ingress_name}")
-                        except ApiException as e:
-                            if e.status == 404:
-                                # Create new ingress
-                                create_keycloak_ingress(
-                                    name=name,
-                                    namespace=namespace,
-                                    spec=new_spec,
-                                    k8s_client=k8s_client,
-                                )
-                                logger.info(f"Created ingress {ingress_name}")
-                            else:
-                                raise
-                    else:
-                        # Ingress disabled, delete if exists
-                        try:
-                            networking_api.delete_namespaced_ingress(
-                                name=ingress_name, namespace=namespace
-                            )
-                            logger.info(
-                                f"Deleted ingress {ingress_name} (disabled in spec)"
-                            )
-                        except ApiException as e:
-                            if e.status != 404:
-                                logger.warning(
-                                    f"Failed to delete ingress {ingress_name}: {e}"
-                                )
-
-                except Exception as e:
-                    logger.error(f"Failed to update ingress: {e}")
-                    # Don't fail the entire update for ingress issues
-                    pass
-
-            else:
-                logger.info(f"Unhandled update for field: {field_path}")
-                # Log but don't fail - some changes might not require immediate action
-
-        # Apply deployment updates if needed
-        if deployment_needs_update:
-            try:
-                deployment = apps_api.read_namespaced_deployment(
-                    name=deployment_name, namespace=namespace
-                )
-
-                # Update deployment spec based on changes
-                if "replicas" in deployment_changes:
-                    deployment.spec.replicas = deployment_changes["replicas"]
-
-                if "image" in deployment_changes:
-                    deployment.spec.template.spec.containers[
-                        0
-                    ].image = deployment_changes["image"]
-
-                if "resources" in deployment_changes:
-                    resources = deployment_changes["resources"]
-                    deployment.spec.template.spec.containers[
-                        0
-                    ].resources = client.V1ResourceRequirements(
-                        requests=resources.get("requests", {}),
-                        limits=resources.get("limits", {}),
-                    )
-
-                # Apply the update
-                apps_api.patch_namespaced_deployment(
-                    name=deployment_name, namespace=namespace, body=deployment
-                )
-
-                logger.info(f"Updated deployment {deployment_name}")
-
-                # Wait for rollout to complete for critical changes
-                if "image" in deployment_changes or "resources" in deployment_changes:
-                    logger.info("Waiting for rolling update to complete...")
-                    import time
-
-                    max_wait = 300  # 5 minutes
-                    wait_interval = 10
-                    elapsed = 0
-
-                    while elapsed < max_wait:
-                        deployment_status = apps_api.read_namespaced_deployment_status(
-                            name=deployment_name, namespace=namespace
-                        )
-
-                        ready_replicas = deployment_status.status.ready_replicas or 0
-                        updated_replicas = (
-                            deployment_status.status.updated_replicas or 0
-                        )
-                        desired_replicas = deployment_status.spec.replicas or 1
-
-                        if (
-                            ready_replicas >= desired_replicas
-                            and updated_replicas >= desired_replicas
-                        ):
-                            logger.info("Rolling update completed successfully")
-                            break
-
-                        logger.debug(
-                            f"Rolling update progress: {updated_replicas}/{desired_replicas} updated, {ready_replicas} ready"
-                        )
-                        time.sleep(wait_interval)
-                        elapsed += wait_interval
-
-                    if elapsed >= max_wait:
-                        logger.warning("Rolling update did not complete within timeout")
-                        return {
-                            "phase": "Updating",
-                            "message": "Update in progress but not completed within timeout",
-                            "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
-                        }
-
-            except ApiException as e:
-                logger.error(f"Failed to update deployment: {e}")
-                raise
-
-        # Verify that the updated configuration is working
-        # Perform health check to ensure the updated Keycloak is responding
-        service_name = f"{name}-keycloak"
-        health_url = (
-            f"http://{service_name}.{namespace}.svc.cluster.local:9000/health/ready"
-        )
-
-        keycloak_responding, health_error = check_http_health(health_url, timeout=10)
-        if not keycloak_responding:
-            logger.warning(f"Keycloak health check failed after update: {health_error}")
-            # Don't fail the update, but note the degraded state
-            return {
-                "phase": "Degraded",
-                "message": f"Update completed but health check failed: {health_error or 'Unknown error'}",
-                "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
-            }
-
-        # Return success status
-        message = "Configuration updated successfully"
-        if not deployment_needs_update:
-            message = "No deployment changes required"
-
-        return {
-            "phase": "Running",
-            "message": message,
-            "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
-        }
-
-    except Exception as e:
-        logger.error(f"Failed to update Keycloak instance: {e}")
-        status.phase = "Failed"
-        status.message = f"Update failed: {str(e)}"
-        raise kopf.TemporaryError(f"Update failed: {e}", delay=30) from e
+    # Create reconciler and delegate to service layer
+    reconciler = KeycloakInstanceReconciler()
+    return await reconciler.update(
+        old_spec=old.get("spec", {}),
+        new_spec=new.get("spec", {}),
+        diff=diff,
+        name=name,
+        namespace=namespace,
+        status=status,
+        **kwargs,
+    )
 
 
 @kopf.on.delete("keycloaks", group="keycloak.mdvr.nl", version="v1")
