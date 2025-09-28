@@ -122,7 +122,7 @@
       )
   ```
 
-- [ ] **Update deployment manifest** in `/k8s/operator-deployment.yaml`:
+- [x] **Update deployment manifest** in `/k8s/operator-deployment.yaml`:
   ```yaml
   spec:
     replicas: 2  # Enable multiple replicas
@@ -144,8 +144,8 @@
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   ```
 
-- [ ] **Test multi-replica behavior** with chaos engineering tests
-- [ ] **Add leader election metrics** to observability stack
+- [x] **Test multi-replica behavior** with chaos engineering tests
+- [x] **Add leader election metrics** to observability stack
 
 ## 🔧 HIGH PRIORITY IMPROVEMENTS (Week 4+)
 
