@@ -22,6 +22,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.models.keycloak import KeycloakSpec
+from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 from keycloak_operator.utils.kubernetes import (
     backup_keycloak_data,
     check_http_health,
@@ -30,6 +31,7 @@ from keycloak_operator.utils.kubernetes import (
     create_keycloak_ingress,
     create_keycloak_service,
     create_persistent_volume_claim,
+    get_admin_credentials,
     get_kubernetes_client,
     get_pod_resource_usage,
 )
@@ -64,31 +66,21 @@ def ensure_keycloak_instance(
     **kwargs: KopfHandlerKwargs,
 ) -> dict[str, Any]:
     """
-        Ensure Keycloak instance exists and is properly configured.
+    Ensure Keycloak instance exists and is properly configured.
 
-        This is the main handler for Keycloak instance creation and resumption.
-        It implements idempotent logic that works for both initial creation
-        and operator restarts (resume).
+    This is the main handler for Keycloak instance creation and resumption.
+    It implements idempotent logic that works for both initial creation
+    and operator restarts (resume).
 
-        Args:
-            spec: Keycloak resource specification
-            name: Name of the Keycloak resource
-            namespace: Namespace where the resource exists
-            status: Current status of the resource
+    Args:
+        spec: Keycloak resource specification
+        name: Name of the Keycloak resource
+        namespace: Namespace where the resource exists
+        status: Current status of the resource
 
-        Returns:
-            Dictionary with status information for the resource
+    Returns:
+        Dictionary with status information for the resource
 
-    Implementation includes:
-        ✅ Validate the Keycloak specification using Pydantic models
-        ✅ Check if deployment already exists (idempotent operation)
-        ✅ Create or update Kubernetes Deployment for Keycloak
-        ✅ Create or update Kubernetes Service for Keycloak
-        ✅ Create or update Ingress if specified
-        ✅ Set up persistent storage if required
-        ✅ Configure initial admin credentials
-        ✅ Wait for Keycloak to become ready
-        ✅ Update resource status with current state
     """
     logger.info(f"Ensuring Keycloak instance {name} in namespace {namespace}")
 
@@ -520,7 +512,21 @@ def update_keycloak_instance(
                 raise
 
         # Verify that the updated configuration is working
-        # TODO: Could add health checks here
+        # Perform health check to ensure the updated Keycloak is responding
+        service_name = f"{name}-keycloak"
+        health_url = (
+            f"http://{service_name}.{namespace}.svc.cluster.local:9000/health/ready"
+        )
+
+        keycloak_responding, health_error = check_http_health(health_url, timeout=10)
+        if not keycloak_responding:
+            logger.warning(f"Keycloak health check failed after update: {health_error}")
+            # Don't fail the update, but note the degraded state
+            return {
+                "phase": "Degraded",
+                "message": f"Update completed but health check failed: {health_error or 'Unknown error'}",
+                "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
+            }
 
         # Return success status
         message = "Configuration updated successfully"
@@ -827,7 +833,7 @@ def monitor_keycloak_health(
         ✅ Check if Keycloak deployment is running and ready
         ✅ Verify that Keycloak is responding to health checks
         ✅ Check resource utilization (CPU, memory, storage)
-        ⚠️  Validate that all configured realms and clients exist - Future enhancement
+        ✅ Validate that Keycloak Admin API is accessible and master realm exists
         ✅ Update status with current health information
         ⚠️  Generate events for significant status changes - Future enhancement
         ⚠️  Implement alerting for persistent failures - Future enhancement
@@ -945,9 +951,59 @@ def monitor_keycloak_health(
             logger.debug(f"Failed to get resource usage metrics: {e}")
             # Don't fail health check for metrics errors
 
-        # TODO: Validate realm and client configuration
-        # This could involve checking that expected realms/clients exist
-        # and are properly configured
+        # Validate realm and client configuration
+        # Check that the Keycloak instance is properly configured
+        try:
+            # Get admin credentials and create Keycloak admin client
+            admin_secret_name = f"{name}-admin-credentials"
+            admin_credentials = get_admin_credentials(admin_secret_name, namespace)
+
+            if admin_credentials:
+                service_name = f"{name}-keycloak"
+                keycloak_url = (
+                    f"http://{service_name}.{namespace}.svc.cluster.local:8080"
+                )
+
+                username, password = admin_credentials
+                admin_client = KeycloakAdminClient(
+                    server_url=keycloak_url,
+                    username=username,
+                    password=password,
+                )
+
+                # Perform basic connectivity test
+                try:
+                    admin_client.authenticate()
+                    # Check if master realm is accessible
+                    master_realm = admin_client.get_realm("master")
+                    if not master_realm:
+                        logger.warning(
+                            f"Master realm not accessible for Keycloak {name}"
+                        )
+                        return {
+                            "phase": "Degraded",
+                            "message": "Master realm not accessible via Admin API",
+                            "lastHealthCheck": current_time,
+                        }
+                    logger.debug(f"Admin API connectivity verified for Keycloak {name}")
+
+                except Exception as api_error:
+                    logger.warning(
+                        f"Keycloak Admin API check failed for {name}: {api_error}"
+                    )
+                    return {
+                        "phase": "Degraded",
+                        "message": f"Admin API not accessible: {str(api_error)}",
+                        "lastHealthCheck": current_time,
+                    }
+            else:
+                logger.debug(
+                    f"Admin credentials not available for Keycloak {name}, skipping API validation"
+                )
+
+        except Exception as e:
+            logger.debug(f"Realm/client validation failed for Keycloak {name}: {e}")
+            # Don't fail health check for validation errors, just log them
 
         # If we get here, everything is healthy
         if current_phase != "Running":

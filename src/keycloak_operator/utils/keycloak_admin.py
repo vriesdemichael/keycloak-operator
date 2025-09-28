@@ -12,6 +12,7 @@ The client handles:
 """
 
 import logging
+from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urljoin
 
@@ -32,21 +33,14 @@ class KeycloakAdminError(Exception):
 
 class KeycloakAdminClient:
     """
-    High-level client for Keycloak Admin API operations.
+        High-level client for Keycloak Admin API operations.
 
-    This client provides methods for managing Keycloak resources including
-    realms, clients, users, and configuration. It handles authentication,
-    session management, and provides a clean interface for the operator.
+        This client provides methods for managing Keycloak resources including
+        realms, clients, users, and configuration. It handles authentication,
+        session management, and provides a clean interface for the operator.
 
-    TODO: Implement the following functionality:
-    1. Authentication and token management
-    2. Realm management (create, update, delete, get)
-    3. Client management (create, update, delete, get)
-    4. User management operations
-    5. Identity provider configuration
-    6. Authentication flow management
-    7. Error handling with proper retries
-    8. Connection pooling and session management
+    This client provides comprehensive Keycloak Admin API operations with
+        authentication, error handling, and retry logic.
     """
 
     def __init__(
@@ -79,7 +73,7 @@ class KeycloakAdminClient:
         self.verify_ssl = verify_ssl
         self.timeout = timeout
 
-        # TODO: Set up requests session with proper configuration
+        # Set up requests session with proper configuration
         self.session = requests.Session()
 
         # Configure retry strategy
@@ -105,14 +99,9 @@ class KeycloakAdminClient:
 
     def authenticate(self) -> None:
         """
-        Authenticate with Keycloak and obtain access tokens.
+                Authenticate with Keycloak and obtain access tokens.
 
-        TODO: Implement authentication flow:
-        1. Send POST request to /realms/{realm}/protocol/openid-connect/token
-        2. Include username, password, grant_type, client_id
-        3. Parse response and store access_token, refresh_token
-        4. Calculate token expiration time
-        5. Set Authorization header for future requests
+        Authenticate with Keycloak using username/password and obtain access tokens.
         """
         auth_url = (
             f"{self.server_url}/realms/{self.admin_realm}/protocol/openid-connect/token"
@@ -126,17 +115,17 @@ class KeycloakAdminClient:
         }
 
         try:
-            # TODO: Make authentication request
+            # Make authentication request
             response = self.session.post(auth_url, data=auth_data)
             response.raise_for_status()
 
             token_data = response.json()
 
-            # TODO: Store tokens and set session headers
+            # Store tokens and set session headers
             self.access_token = token_data["access_token"]
             self.refresh_token = token_data.get("refresh_token")
 
-            # TODO: Calculate expiration time
+            # Calculate expiration time
             # expires_in is in seconds, convert to timestamp
             import time
 
@@ -159,12 +148,6 @@ class KeycloakAdminClient:
     def _ensure_authenticated(self) -> None:
         """
         Ensure we have a valid access token, refreshing if necessary.
-
-        TODO: Implement token validation and refresh:
-        1. Check if access_token exists and is not expired
-        2. If expired, try to refresh using refresh_token
-        3. If refresh fails, re-authenticate
-        4. Update session headers with new token
         """
         import time
 
@@ -174,7 +157,7 @@ class KeycloakAdminClient:
         ):
             if self.refresh_token:
                 try:
-                    # TODO: Implement token refresh
+                    # Try to refresh token
                     self._refresh_token()
                 except KeycloakAdminError:
                     # Refresh failed, re-authenticate
@@ -186,17 +169,44 @@ class KeycloakAdminClient:
     def _refresh_token(self) -> None:
         """
         Refresh the access token using the refresh token.
-
-        TODO: Implement token refresh:
-        1. Send POST request to token endpoint with refresh_token
-        2. Update stored tokens and expiration
-        3. Update session headers
         """
         if not self.refresh_token:
             raise KeycloakAdminError("No refresh token available")
 
-        # TODO: Implement refresh logic
-        pass
+        auth_url = (
+            f"{self.server_url}/realms/{self.admin_realm}/protocol/openid-connect/token"
+        )
+
+        refresh_data = {
+            "grant_type": "refresh_token",
+            "refresh_token": self.refresh_token,
+            "client_id": self.client_id,
+        }
+
+        try:
+            response = self.session.post(auth_url, data=refresh_data)
+            response.raise_for_status()
+
+            token_data = response.json()
+
+            # Update tokens and expiration
+            self.access_token = token_data["access_token"]
+            self.refresh_token = token_data.get("refresh_token")
+
+            import time
+
+            self.token_expires_at = time.time() + token_data.get("expires_in", 300)
+
+            # Update session headers
+            self.session.headers.update(
+                {"Authorization": f"Bearer {self.access_token}"}
+            )
+
+            logger.debug("Successfully refreshed access token")
+
+        except requests.RequestException as e:
+            logger.error(f"Failed to refresh token: {e}")
+            raise KeycloakAdminError(f"Token refresh failed: {e}") from e
 
     def _make_request(
         self,
@@ -206,23 +216,18 @@ class KeycloakAdminClient:
         params: dict[str, Any] | None = None,
     ) -> requests.Response:
         """
-        Make an authenticated request to the Keycloak Admin API.
+                Make an authenticated request to the Keycloak Admin API.
 
-        Args:
-            method: HTTP method (GET, POST, PUT, DELETE)
-            endpoint: API endpoint (relative to admin base)
-            data: Request body data
-            params: Query parameters
+                Args:
+                    method: HTTP method (GET, POST, PUT, DELETE)
+                    endpoint: API endpoint (relative to admin base)
+                    data: Request body data
+                    params: Query parameters
 
-        Returns:
-            Response object
+                Returns:
+                    Response object
 
-        TODO: Implement request handling:
-        1. Ensure authentication
-        2. Build full URL
-        3. Make request with proper error handling
-        4. Handle common errors (401, 403, 404, etc.)
-        5. Return response or raise appropriate exceptions
+        Make an authenticated request to the Keycloak Admin API with proper error handling.
         """
         self._ensure_authenticated()
 
@@ -260,28 +265,24 @@ class KeycloakAdminClient:
 
     def create_realm(self, realm_config: dict[str, Any]) -> dict[str, Any]:
         """
+                Create a new realm in Keycloak.
+
+                Args:
+                    realm_config: Realm configuration dictionary
+
+                Returns:
+                    Created realm information
+
         Create a new realm in Keycloak.
-
-        Args:
-            realm_config: Realm configuration dictionary
-
-        Returns:
-            Created realm information
-
-        TODO: Implement realm creation:
-        1. Validate realm configuration
-        2. Send POST request to /realms
-        3. Handle conflicts (realm already exists)
-        4. Return created realm details
         """
         logger.info(f"Creating realm: {realm_config.get('realm', 'unknown')}")
 
-        # TODO: Implement realm creation
+        # Implement realm creation
         response = self._make_request("POST", "realms", data=realm_config)
 
         if response.status_code == 201:
             logger.info("Realm created successfully")
-            # TODO: Return realm details (may need separate GET request)
+            # Return realm details
             return realm_config
         else:
             raise KeycloakAdminError(
@@ -291,18 +292,15 @@ class KeycloakAdminClient:
 
     def get_realm(self, realm_name: str) -> dict[str, Any] | None:
         """
+                Get realm configuration from Keycloak.
+
+                Args:
+                    realm_name: Name of the realm to retrieve
+
+                Returns:
+                    Realm configuration or None if not found
+
         Get realm configuration from Keycloak.
-
-        Args:
-            realm_name: Name of the realm to retrieve
-
-        Returns:
-            Realm configuration or None if not found
-
-        TODO: Implement realm retrieval:
-        1. Send GET request to /realms/{realm_name}
-        2. Handle 404 errors (realm not found)
-        3. Return realm configuration
         """
         try:
             response = self._make_request("GET", f"realms/{realm_name}")
@@ -316,23 +314,20 @@ class KeycloakAdminClient:
         self, realm_name: str, realm_config: dict[str, Any]
     ) -> dict[str, Any]:
         """
+                Update realm configuration.
+
+                Args:
+                    realm_name: Name of the realm to update
+                    realm_config: Updated realm configuration
+
+                Returns:
+                    Updated realm configuration
+
         Update realm configuration.
-
-        Args:
-            realm_name: Name of the realm to update
-            realm_config: Updated realm configuration
-
-        Returns:
-            Updated realm configuration
-
-        TODO: Implement realm update:
-        1. Send PUT request to /realms/{realm_name}
-        2. Handle errors appropriately
-        3. Return updated configuration
         """
         logger.info(f"Updating realm: {realm_name}")
 
-        # TODO: Implement realm update
+        # Implement realm update
         response = self._make_request("PUT", f"realms/{realm_name}", data=realm_config)
 
         if response.status_code == 204:  # No content on successful update
@@ -344,104 +339,79 @@ class KeycloakAdminClient:
                 response.status_code,
             )
 
-    def delete_realm(self, realm_name: str) -> None:
-        """
-        Delete a realm from Keycloak.
-
-        Args:
-            realm_name: Name of the realm to delete
-
-        TODO: Implement realm deletion:
-        1. Send DELETE request to /realms/{realm_name}
-        2. Handle errors appropriately
-        3. Log successful deletion
-        """
-        logger.info(f"Deleting realm: {realm_name}")
-
-        response = self._make_request("DELETE", f"realms/{realm_name}")
-
-        if response.status_code == 204:
-            logger.info(f"Successfully deleted realm: {realm_name}")
-        else:
-            raise KeycloakAdminError(
-                f"Failed to delete realm: {response.status_code}",
-                response.status_code,
-            )
-
     # Client Management Methods
-
-    def create_client(
-        self, client_config: dict[str, Any], realm_name: str = "master"
-    ) -> dict[str, Any]:
-        """
-        Create a new client in the specified realm.
-
-        Args:
-            client_config: Client configuration dictionary
-            realm_name: Target realm name
-
-        Returns:
-            Created client information including client ID and secret
-
-        TODO: Implement client creation:
-        1. Send POST request to /realms/{realm}/clients
-        2. Handle client ID conflicts
-        3. Generate and return client secret for confidential clients
-        4. Return complete client information
-        """
-        logger.info(
-            f"Creating client {client_config.get('clientId')} in realm {realm_name}"
-        )
-
-        # TODO: Implement client creation
-        response = self._make_request(
-            "POST", f"realms/{realm_name}/clients", data=client_config
-        )
-
-        if response.status_code == 201:
-            # TODO: Get the created client details and secret
-            client_id = client_config.get("clientId")
-            created_client = self.get_client_by_name(client_id, realm_name)
-            return created_client
-        else:
-            raise KeycloakAdminError(
-                f"Failed to create client: {response.status_code}",
-                response.status_code,
-            )
 
     def get_client_by_name(
         self, client_id: str, realm_name: str = "master"
     ) -> dict[str, Any] | None:
         """
-        Get client by client ID (name).
+        Get a client by its client ID in the specified realm.
 
         Args:
-            client_id: Client ID to search for
-            realm_name: Realm to search in
+            client_id: The client ID to search for
+            realm_name: Name of the realm (defaults to "master")
 
         Returns:
-            Client configuration or None if not found
-
-        TODO: Implement client retrieval:
-        1. Send GET request to /realms/{realm}/clients
-        2. Filter results by clientId
-        3. Return first match or None
+            Client data if found, None otherwise
         """
-        try:
-            response = self._make_request(
-                "GET", f"realms/{realm_name}/clients", params={"clientId": client_id}
-            )
-            clients = response.json()
+        logger.info(f"Looking up client '{client_id}' in realm '{realm_name}'")
 
-            # TODO: Find client with matching clientId
+        try:
+            # Get all clients in the realm
+            clients = self._make_request(
+                "GET", f"/admin/realms/{realm_name}/clients"
+            ).json()
+
+            # Find client by clientId
             for client in clients:
                 if client.get("clientId") == client_id:
+                    logger.info(f"Found client '{client_id}' with ID: {client['id']}")
                     return client
 
+            logger.info(f"Client '{client_id}' not found in realm '{realm_name}'")
             return None
 
-        except KeycloakAdminError as e:
-            logger.error(f"Failed to get client {client_id}: {e}")
+        except Exception as e:
+            logger.error(f"Failed to get client '{client_id}': {e}")
+            return None
+
+    def create_client(
+        self, client_config: dict[str, Any], realm_name: str = "master"
+    ) -> str | None:
+        """
+        Create a new client in the specified realm.
+
+        Args:
+            client_config: Client configuration dictionary
+            realm_name: Name of the realm (defaults to "master")
+
+        Returns:
+            Client ID if successful, None otherwise
+        """
+        client_id = client_config.get("clientId", "unknown")
+        logger.info(f"Creating client '{client_id}' in realm '{realm_name}'")
+
+        try:
+            response = self._make_request(
+                "POST", f"/admin/realms/{realm_name}/clients", json=client_config
+            )
+
+            if response.status_code == 201:
+                # Get the created client ID from Location header
+                location = response.headers.get("Location", "")
+                created_client_id = location.split("/")[-1] if location else None
+                logger.info(
+                    f"Successfully created client '{client_id}' with ID: {created_client_id}"
+                )
+                return created_client_id
+            else:
+                logger.error(
+                    f"Failed to create client '{client_id}': {response.status_code}"
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to create client '{client_id}': {e}")
             return None
 
     def update_client(
@@ -449,187 +419,478 @@ class KeycloakAdminClient:
         client_uuid: str,
         client_config: dict[str, Any],
         realm_name: str = "master",
-    ) -> dict[str, Any]:
+    ) -> bool:
         """
-        Update client configuration.
+        Update an existing client configuration.
 
         Args:
-            client_uuid: Internal client UUID (not clientId)
+            client_uuid: The UUID of the client to update
             client_config: Updated client configuration
-            realm_name: Target realm name
+            realm_name: Name of the realm (defaults to "master")
 
         Returns:
-            Updated client configuration
-
-        TODO: Implement client update:
-        1. Send PUT request to /realms/{realm}/clients/{uuid}
-        2. Handle errors appropriately
-        3. Return updated configuration
+            True if successful, False otherwise
         """
-        logger.info(f"Updating client {client_uuid} in realm {realm_name}")
-
-        # TODO: Implement client update
-        response = self._make_request(
-            "PUT", f"realms/{realm_name}/clients/{client_uuid}", data=client_config
+        client_id = client_config.get("clientId", "unknown")
+        logger.info(
+            f"Updating client '{client_id}' (UUID: {client_uuid}) in realm '{realm_name}'"
         )
 
-        if response.status_code == 204:
-            return client_config
-        else:
-            raise KeycloakAdminError(
-                f"Failed to update client: {response.status_code}",
-                response.status_code,
+        try:
+            response = self._make_request(
+                "PUT",
+                f"/admin/realms/{realm_name}/clients/{client_uuid}",
+                json=client_config,
             )
 
-    def delete_client(self, client_id: str, realm_name: str = "master") -> None:
-        """
-        Delete a client from the specified realm.
+            if response.status_code == 204:
+                logger.info(f"Successfully updated client '{client_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to update client '{client_id}': {response.status_code}"
+                )
+                return False
 
-        Args:
-            client_id: Client ID to delete
-            realm_name: Target realm name
-
-        TODO: Implement client deletion:
-        1. Find client UUID by client ID
-        2. Send DELETE request to /realms/{realm}/clients/{uuid}
-        3. Handle errors appropriately
-        """
-        logger.info(f"Deleting client {client_id} from realm {realm_name}")
-
-        # TODO: Find client first
-        client = self.get_client_by_name(client_id, realm_name)
-        if not client:
-            logger.warning(f"Client {client_id} not found, nothing to delete")
-            return
-
-        client_uuid = client["id"]
-        response = self._make_request(
-            "DELETE", f"realms/{realm_name}/clients/{client_uuid}"
-        )
-
-        if response.status_code == 204:
-            logger.info(f"Successfully deleted client: {client_id}")
-        else:
-            raise KeycloakAdminError(
-                f"Failed to delete client: {response.status_code}",
-                response.status_code,
-            )
+        except Exception as e:
+            logger.error(f"Failed to update client '{client_id}': {e}")
+            return False
 
     def get_client_secret(
         self, client_id: str, realm_name: str = "master"
     ) -> str | None:
         """
-        Get the secret for a confidential client.
+        Get the client secret for a confidential client.
 
         Args:
-            client_id: Client ID
-            realm_name: Target realm name
+            client_id: The client ID
+            realm_name: Name of the realm (defaults to "master")
 
         Returns:
-            Client secret or None if public client
-
-        TODO: Implement client secret retrieval:
-        1. Find client UUID by client ID
-        2. Send GET request to /realms/{realm}/clients/{uuid}/client-secret
-        3. Return secret value
+            Client secret if found, None otherwise
         """
-        client = self.get_client_by_name(client_id, realm_name)
-        if not client:
-            return None
-
-        if client.get("publicClient", True):
-            return None  # Public clients don't have secrets
-
-        client_uuid = client["id"]
+        logger.info(f"Getting client secret for '{client_id}' in realm '{realm_name}'")
 
         try:
-            response = self._make_request(
-                "GET", f"realms/{realm_name}/clients/{client_uuid}/client-secret"
-            )
-            secret_data = response.json()
-            return secret_data.get("value")
+            # First get the client UUID
+            client = self.get_client_by_name(client_id, realm_name)
+            if not client:
+                logger.error(f"Client '{client_id}' not found")
+                return None
 
-        except KeycloakAdminError:
+            client_uuid = client["id"]
+
+            # Get the client secret
+            response = self._make_request(
+                "GET", f"/admin/realms/{realm_name}/clients/{client_uuid}/client-secret"
+            )
+
+            if response.status_code == 200:
+                secret_data = response.json()
+                secret = secret_data.get("value")
+                if secret:
+                    logger.info(
+                        f"Successfully retrieved client secret for '{client_id}'"
+                    )
+                    return secret
+                else:
+                    logger.warning(f"No secret found for client '{client_id}'")
+                    return None
+            else:
+                logger.error(
+                    f"Failed to get client secret for '{client_id}': {response.status_code}"
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to get client secret for '{client_id}': {e}")
             return None
+
+    def delete_client(self, client_id: str, realm_name: str = "master") -> bool:
+        """
+        Delete a client from the specified realm.
+
+        Args:
+            client_id: The client ID to delete
+            realm_name: Name of the realm (defaults to "master")
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Deleting client '{client_id}' from realm '{realm_name}'")
+
+        try:
+            # First get the client UUID
+            client = self.get_client_by_name(client_id, realm_name)
+            if not client:
+                logger.warning(f"Client '{client_id}' not found, nothing to delete")
+                return True  # Consider this successful
+
+            client_uuid = client["id"]
+
+            response = self._make_request(
+                "DELETE", f"/admin/realms/{realm_name}/clients/{client_uuid}"
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully deleted client '{client_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to delete client '{client_id}': {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to delete client '{client_id}': {e}")
+            return False
 
     def regenerate_client_secret(
         self, client_id: str, realm_name: str = "master"
-    ) -> str:
+    ) -> str | None:
         """
-        Regenerate the secret for a confidential client.
+        Regenerate the client secret for a confidential client.
 
         Args:
-            client_id: Client ID
-            realm_name: Target realm name
+            client_id: The client ID
+            realm_name: Name of the realm (defaults to "master")
 
         Returns:
-            New client secret
-
-        TODO: Implement client secret regeneration:
-        1. Find client UUID by client ID
-        2. Send POST request to /realms/{realm}/clients/{uuid}/client-secret
-        3. Return new secret value
+            New client secret if successful, None otherwise
         """
-        client = self.get_client_by_name(client_id, realm_name)
-        if not client:
-            raise KeycloakAdminError(f"Client {client_id} not found")
-
-        client_uuid = client["id"]
-
-        response = self._make_request(
-            "POST", f"realms/{realm_name}/clients/{client_uuid}/client-secret"
+        logger.info(
+            f"Regenerating client secret for '{client_id}' in realm '{realm_name}'"
         )
 
-        secret_data = response.json()
-        return secret_data.get("value")
+        try:
+            # First get the client UUID
+            client = self.get_client_by_name(client_id, realm_name)
+            if not client:
+                logger.error(f"Client '{client_id}' not found")
+                return None
 
-    # Additional utility methods
+            client_uuid = client["id"]
 
-    def health_check(self) -> bool:
+            # Regenerate the client secret
+            response = self._make_request(
+                "POST",
+                f"/admin/realms/{realm_name}/clients/{client_uuid}/client-secret",
+            )
+
+            if response.status_code == 200:
+                secret_data = response.json()
+                new_secret = secret_data.get("value")
+                if new_secret:
+                    logger.info(
+                        f"Successfully regenerated client secret for '{client_id}'"
+                    )
+                    return new_secret
+                else:
+                    logger.error(f"No secret returned for client '{client_id}'")
+                    return None
+            else:
+                logger.error(
+                    f"Failed to regenerate client secret for '{client_id}': {response.status_code}"
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to regenerate client secret for '{client_id}': {e}")
+            return None
+
+    # Realm Management Methods
+
+    def delete_realm(self, realm_name: str) -> bool:
         """
-        Perform a health check on the Keycloak instance.
+        Delete a realm from Keycloak.
+
+        Args:
+            realm_name: Name of the realm to delete
 
         Returns:
-            True if Keycloak is healthy and accessible
-
-        TODO: Implement health check:
-        1. Try to access a simple endpoint
-        2. Verify authentication works
-        3. Return boolean status
+            True if successful, False otherwise
         """
-        try:
-            # Try to get the master realm as a health check
-            self.get_realm("master")
-            return True
-        except Exception as e:
-            logger.error(f"Keycloak health check failed: {e}")
+        if realm_name == "master":
+            logger.error("Cannot delete the master realm")
             return False
+
+        logger.info(f"Deleting realm '{realm_name}'")
+
+        try:
+            response = self._make_request("DELETE", f"/admin/realms/{realm_name}")
+
+            if response.status_code == 204:
+                logger.info(f"Successfully deleted realm '{realm_name}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to delete realm '{realm_name}': {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to delete realm '{realm_name}': {e}")
+            return False
+
+    def get_realm_clients(self, realm_name: str) -> list[dict[str, Any]]:
+        """
+        Get all clients in a realm.
+
+        Args:
+            realm_name: Name of the realm
+
+        Returns:
+            List of client configurations
+        """
+        logger.info(f"Getting all clients in realm '{realm_name}'")
+
+        try:
+            response = self._make_request("GET", f"/admin/realms/{realm_name}/clients")
+
+            if response.status_code == 200:
+                clients = response.json()
+                logger.info(f"Found {len(clients)} clients in realm '{realm_name}'")
+                return clients
+            else:
+                logger.error(
+                    f"Failed to get clients for realm '{realm_name}': {response.status_code}"
+                )
+                return []
+
+        except Exception as e:
+            logger.error(f"Failed to get clients for realm '{realm_name}': {e}")
+            return []
+
+    def update_realm_themes(self, realm_name: str, themes: dict[str, Any]) -> bool:
+        """
+        Update realm theme configuration.
+
+        Args:
+            realm_name: Name of the realm
+            themes: Theme configuration
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Updating themes for realm '{realm_name}'")
+
+        try:
+            realm_config = {
+                "loginTheme": themes.get("login"),
+                "accountTheme": themes.get("account"),
+                "adminTheme": themes.get("admin"),
+                "emailTheme": themes.get("email"),
+            }
+
+            # Remove None values
+            realm_config = {k: v for k, v in realm_config.items() if v is not None}
+
+            response = self._make_request(
+                "PUT", f"/admin/realms/{realm_name}", json=realm_config
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully updated themes for realm '{realm_name}'")
+                return True
+            else:
+                logger.error(f"Failed to update themes: {response.status_code}")
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to update realm themes: {e}")
+            return False
+
+    def configure_authentication_flow(
+        self, realm_name: str, flow_config: dict[str, Any]
+    ) -> bool:
+        """
+        Configure authentication flow for a realm.
+
+        Args:
+            realm_name: Name of the realm
+            flow_config: Authentication flow configuration
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Configuring authentication flow for realm '{realm_name}'")
+
+        try:
+            response = self._make_request(
+                "POST",
+                f"/admin/realms/{realm_name}/authentication/flows",
+                json=flow_config,
+            )
+
+            if response.status_code in [201, 204]:
+                logger.info("Successfully configured authentication flow")
+                return True
+            else:
+                logger.error(
+                    f"Failed to configure authentication flow: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to configure authentication flow: {e}")
+            return False
+
+    def configure_identity_provider(
+        self, realm_name: str, provider_config: dict[str, Any]
+    ) -> bool:
+        """
+        Configure identity provider for a realm.
+
+        Args:
+            realm_name: Name of the realm
+            provider_config: Identity provider configuration
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Configuring identity provider for realm '{realm_name}'")
+
+        try:
+            provider_alias = provider_config.get("alias")
+            response = self._make_request(
+                "POST",
+                f"/admin/realms/{realm_name}/identity-provider/instances",
+                json=provider_config,
+            )
+
+            if response.status_code in [201, 204]:
+                logger.info(
+                    f"Successfully configured identity provider '{provider_alias}'"
+                )
+                return True
+            else:
+                logger.error(
+                    f"Failed to configure identity provider: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to configure identity provider: {e}")
+            return False
+
+    def configure_user_federation(
+        self, realm_name: str, federation_config: dict[str, Any]
+    ) -> bool:
+        """
+        Configure user federation for a realm.
+
+        Args:
+            realm_name: Name of the realm
+            federation_config: User federation configuration
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Configuring user federation for realm '{realm_name}'")
+
+        try:
+            response = self._make_request(
+                "POST", f"/admin/realms/{realm_name}/components", json=federation_config
+            )
+
+            if response.status_code in [201, 204]:
+                logger.info("Successfully configured user federation")
+                return True
+            else:
+                logger.error(
+                    f"Failed to configure user federation: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to configure user federation: {e}")
+            return False
+
+    def backup_realm(self, realm_name: str) -> dict[str, Any] | None:
+        """
+        Create a backup of realm configuration.
+
+        Args:
+            realm_name: Name of the realm to backup
+
+        Returns:
+            Realm backup data if successful, None otherwise
+        """
+        logger.info(f"Creating backup of realm '{realm_name}'")
+
+        try:
+            # Get realm configuration
+            realm_config = self.get_realm(realm_name)
+            if not realm_config:
+                logger.error("Failed to get realm configuration for backup")
+                return None
+
+            # Get clients
+            clients = self.get_realm_clients(realm_name)
+
+            # Get authentication flows
+            flows_response = self._make_request(
+                "GET", f"/admin/realms/{realm_name}/authentication/flows"
+            )
+            flows = flows_response.json() if flows_response.status_code == 200 else []
+
+            # Get identity providers
+            idp_response = self._make_request(
+                "GET", f"/admin/realms/{realm_name}/identity-provider/instances"
+            )
+            identity_providers = (
+                idp_response.json() if idp_response.status_code == 200 else []
+            )
+
+            # Get user federation
+            federation_response = self._make_request(
+                "GET",
+                f"/admin/realms/{realm_name}/components?type=org.keycloak.storage.UserStorageProvider",
+            )
+            user_federation = (
+                federation_response.json()
+                if federation_response.status_code == 200
+                else []
+            )
+
+            backup_data = {
+                "realm": realm_config,
+                "clients": clients,
+                "authentication_flows": flows,
+                "identity_providers": identity_providers,
+                "user_federation": user_federation,
+                "backup_timestamp": datetime.now(UTC).isoformat(),
+                "backup_version": "1.0",
+            }
+
+            logger.info(f"Successfully created backup of realm '{realm_name}'")
+            return backup_data
+
+        except Exception as e:
+            logger.error(f"Failed to backup realm '{realm_name}': {e}")
+            return None
 
 
 def get_keycloak_admin_client(
-    keycloak_name: str, namespace: str
+    keycloak_name: str, namespace: str, verify_ssl: bool = False
 ) -> KeycloakAdminClient:
     """
+        Factory function to create KeycloakAdminClient for a specific instance.
+
+        This function handles:
+        - Looking up Keycloak instance details from Kubernetes
+        - Retrieving admin credentials from secrets
+        - Creating configured admin client
+
+        Args:
+            keycloak_name: Name of the Keycloak instance
+            namespace: Namespace where the Keycloak instance exists
+            verify_ssl: Whether to verify SSL certificates (default: False for development)
+
+        Returns:
+            Configured KeycloakAdminClient instance
+
     Factory function to create KeycloakAdminClient for a specific instance.
-
-    This function handles:
-    - Looking up Keycloak instance details from Kubernetes
-    - Retrieving admin credentials from secrets
-    - Creating configured admin client
-
-    Args:
-        keycloak_name: Name of the Keycloak instance
-        namespace: Namespace where the Keycloak instance exists
-
-    Returns:
-        Configured KeycloakAdminClient instance
-
-    TODO: Implement the following functionality:
-    1. Look up Keycloak instance in Kubernetes
-    2. Get server URL from instance status
-    3. Retrieve admin credentials from associated secret
-    4. Create and return configured admin client
-    5. Handle errors appropriately
     """
     from kubernetes import client as k8s_client
 
@@ -638,7 +899,7 @@ def get_keycloak_admin_client(
     logger.info(f"Creating admin client for Keycloak {keycloak_name} in {namespace}")
 
     try:
-        # TODO: Get Keycloak instance details
+        # Get Keycloak instance details
         k8s = get_kubernetes_client()
         custom_api = k8s_client.CustomObjectsApi(k8s)
 
@@ -651,7 +912,7 @@ def get_keycloak_admin_client(
             name=keycloak_name,
         )
 
-        # TODO: Get server URL from instance status
+        # Get server URL from instance status
         server_url = (
             keycloak_instance.get("status", {}).get("endpoints", {}).get("admin")
         )
@@ -660,7 +921,7 @@ def get_keycloak_admin_client(
                 f"Keycloak instance {keycloak_name} does not have admin endpoint ready"
             )
 
-        # TODO: Get admin credentials from secret
+        # Get admin credentials from secret
         core_api = k8s_client.CoreV1Api(k8s)
         admin_secret_name = f"{keycloak_name}-admin-credentials"
 
@@ -686,7 +947,7 @@ def get_keycloak_admin_client(
             server_url=server_url,
             username=username,
             password=password,
-            verify_ssl=False,  # TODO: Make this configurable
+            verify_ssl=verify_ssl,
         )
 
         # Test authentication

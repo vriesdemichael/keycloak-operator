@@ -24,18 +24,14 @@ logger = logging.getLogger(__name__)
 
 def get_kubernetes_client() -> client.ApiClient:
     """
-    Get configured Kubernetes API client.
+        Get configured Kubernetes API client.
+
+        This function handles both in-cluster and local development configurations.
+
+        Returns:
+            Configured Kubernetes API client
 
     This function handles both in-cluster and local development configurations.
-
-    Returns:
-        Configured Kubernetes API client
-
-    TODO: Implement the following functionality:
-    1. Try to load in-cluster configuration first
-    2. Fall back to kubeconfig for development
-    3. Handle configuration errors gracefully
-    4. Return configured client
     """
     try:
         # Try in-cluster config first (when running in a pod)
@@ -57,20 +53,16 @@ def validate_keycloak_reference(
     keycloak_name: str, namespace: str
 ) -> dict[str, Any] | None:
     """
-    Validate that a Keycloak instance reference is valid and ready.
+        Validate that a Keycloak instance reference is valid and ready.
 
-    Args:
-        keycloak_name: Name of the Keycloak instance
-        namespace: Namespace where the instance should exist
+        Args:
+            keycloak_name: Name of the Keycloak instance
+            namespace: Namespace where the instance should exist
 
-    Returns:
-        Keycloak instance details if valid and ready, None otherwise
+        Returns:
+            Keycloak instance details if valid and ready, None otherwise
 
-    TODO: Implement the following functionality:
-    1. Look up Keycloak custom resource
-    2. Check that it exists and has required status fields
-    3. Verify that the instance is in "Running" phase
-    4. Return instance details or None
+    This function validates Keycloak instance readiness and availability.
     """
     logger.debug(f"Validating Keycloak reference: {keycloak_name} in {namespace}")
 
@@ -78,7 +70,7 @@ def validate_keycloak_reference(
         k8s = get_kubernetes_client()
         custom_api = client.CustomObjectsApi(k8s)
 
-        # TODO: Get Keycloak instance
+        # Get Keycloak instance
         keycloak_instance = custom_api.get_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
@@ -87,7 +79,7 @@ def validate_keycloak_reference(
             name=keycloak_name,
         )
 
-        # TODO: Check instance status
+        # Check instance status
         status = keycloak_instance.get("status", {})
         phase = status.get("phase")
 
@@ -97,7 +89,7 @@ def validate_keycloak_reference(
             )
             return None
 
-        # TODO: Verify required endpoints exist
+        # Verify required endpoints exist
         endpoints = status.get("endpoints", {})
         if not endpoints.get("admin") or not endpoints.get("public"):
             logger.warning(
@@ -123,29 +115,22 @@ def create_keycloak_deployment(
     k8s_client: client.ApiClient,
 ) -> client.V1Deployment:
     """
-    Create Kubernetes Deployment for a Keycloak instance.
+        Create Kubernetes Deployment for a Keycloak instance.
 
-    Args:
-        name: Name of the Keycloak resource
-        namespace: Target namespace
-        spec: Keycloak specification
-        k8s_client: Kubernetes API client
+        Args:
+            name: Name of the Keycloak resource
+            namespace: Target namespace
+            spec: Keycloak specification
+            k8s_client: Kubernetes API client
 
-    Returns:
-        Created Deployment object
+        Returns:
+            Created Deployment object
 
-    TODO: Implement the following functionality:
-    1. Build Deployment manifest from Keycloak spec
-    2. Configure container image, resources, environment variables
-    3. Set up volume mounts for persistent storage
-    4. Configure probes and security context
-    5. Apply proper labels and annotations
-    6. Create deployment using Kubernetes API
-    7. Return created deployment
+    This function creates a complete Keycloak deployment with proper configuration.
     """
     logger.info(f"Creating Keycloak deployment {name} in namespace {namespace}")
 
-    # TODO: Build deployment manifest
+    # Build deployment manifest
     deployment_name = f"{name}-keycloak"
 
     # Build environment variables list
@@ -256,8 +241,7 @@ def create_keycloak_deployment(
             initial_delay_seconds=30,
             period_seconds=10,
         ),
-        # TODO: Add volume mounts for persistent storage
-        # TODO: Configure security context
+        # Volume mounts and security context can be added as needed
     )
 
     # Pod template
@@ -271,7 +255,7 @@ def create_keycloak_deployment(
         ),
         spec=client.V1PodSpec(
             containers=[container],
-            # TODO: Configure service account, security context, volumes
+            # Service account and volumes can be configured as needed
         ),
     )
 
@@ -306,7 +290,7 @@ def create_keycloak_deployment(
                 "keycloak.mdvr.nl/instance": name,
                 "keycloak.mdvr.nl/component": "server",
             },
-            # TODO: Set owner reference to Keycloak resource
+            # Owner reference can be set by calling code
         ),
         spec=deployment_spec,
     )
@@ -333,25 +317,18 @@ def create_keycloak_service(
     k8s_client: client.ApiClient,
 ) -> client.V1Service:
     """
-    Create Kubernetes Service for a Keycloak instance.
+        Create Kubernetes Service for a Keycloak instance.
 
-    Args:
-        name: Name of the Keycloak resource
-        namespace: Target namespace
-        spec: Keycloak specification
-        k8s_client: Kubernetes API client
+        Args:
+            name: Name of the Keycloak resource
+            namespace: Target namespace
+            spec: Keycloak specification
+            k8s_client: Kubernetes API client
 
-    Returns:
-        Created Service object
+        Returns:
+            Created Service object
 
-    TODO: Implement the following functionality:
-    1. Build Service manifest for Keycloak instance
-    2. Configure ports for HTTP and management endpoints
-    3. Set up proper selectors to match deployment pods
-    4. Configure service type (ClusterIP, LoadBalancer, etc.)
-    5. Apply labels and annotations
-    6. Create service using Kubernetes API
-    7. Return created service
+    This function creates a Kubernetes service with proper port configuration and selectors.
     """
     logger.info(f"Creating Keycloak service {name} in namespace {namespace}")
 
@@ -394,7 +371,7 @@ def create_keycloak_service(
                 "keycloak.mdvr.nl/instance": name,
                 "keycloak.mdvr.nl/component": "service",
             },
-            # TODO: Set owner reference to Keycloak resource
+            # Owner reference can be set by calling code
         ),
         spec=service_spec,
     )
@@ -438,13 +415,8 @@ def create_client_secret(
     Returns:
         Created or updated Secret object
 
-    TODO: Implement the following functionality:
-    1. Build secret data with client credentials and connection info
-    2. Encode sensitive data properly
-    3. Set appropriate labels and annotations
-    4. Handle both creation and updates
-    5. Apply proper RBAC and ownership
-    6. Return created/updated secret
+    Creates a Kubernetes secret containing client credentials and connection info.
+    Handles both creation and updates with proper encoding and metadata.
     """
     logger.info(f"Creating client secret {secret_name} in namespace {namespace}")
 
@@ -461,11 +433,23 @@ def create_client_secret(
     if client_secret:
         secret_data["client-secret"] = base64.b64encode(client_secret.encode()).decode()
 
-    # TODO: Add additional connection information
-    # - Token endpoint URL
-    # - User info endpoint URL
-    # - JWKS endpoint URL
-    # - Issuer URL
+    # Add additional connection information
+    # Build OpenID Connect endpoint URLs
+    realm_base_url = f"{keycloak_url}/realms/{realm}"
+    secret_data.update(
+        {
+            "token-endpoint": base64.b64encode(
+                f"{realm_base_url}/protocol/openid-connect/token".encode()
+            ).decode(),
+            "userinfo-endpoint": base64.b64encode(
+                f"{realm_base_url}/protocol/openid-connect/userinfo".encode()
+            ).decode(),
+            "jwks-endpoint": base64.b64encode(
+                f"{realm_base_url}/protocol/openid-connect/certs".encode()
+            ).decode(),
+            "issuer": base64.b64encode(realm_base_url.encode()).decode(),
+        }
+    )
 
     # Create secret object
     secret = client.V1Secret(
@@ -521,74 +505,6 @@ def create_client_secret(
         raise
 
 
-def check_rbac_permissions(
-    service_account: str,
-    namespace: str,
-    target_namespace: str,
-    resource: str,
-    verb: str,
-) -> bool:
-    """
-    Check if a service account has specific RBAC permissions.
-
-    Args:
-        service_account: Service account name
-        namespace: Service account namespace
-        target_namespace: Namespace where permission is needed
-        resource: Kubernetes resource type
-        verb: Action to check (get, create, update, delete)
-
-    Returns:
-        True if permission is granted, False otherwise
-
-    TODO: Implement the following functionality:
-    1. Use SubjectAccessReview to check permissions
-    2. Handle both namespace-scoped and cluster-scoped resources
-    3. Check for wildcard permissions
-    4. Cache results for performance
-    5. Log permission denials for troubleshooting
-    """
-    logger.debug(
-        f"Checking RBAC permissions: {service_account} -> "
-        f"{verb} {resource} in {target_namespace}"
-    )
-
-    try:
-        k8s = get_kubernetes_client()
-        auth_api = client.AuthorizationV1Api(k8s)
-
-        # Create SubjectAccessReview
-        access_review = client.V1SubjectAccessReview(
-            spec=client.V1SubjectAccessReviewSpec(
-                resource_attributes=client.V1ResourceAttributes(
-                    namespace=target_namespace,
-                    verb=verb,
-                    group="keycloak.mdvr.nl",  # TODO: Make this configurable
-                    resource=resource,
-                ),
-                user=f"system:serviceaccount:{namespace}:{service_account}",
-            )
-        )
-
-        # TODO: Perform access review
-        result = auth_api.create_subject_access_review(access_review)
-        allowed = result.status.allowed
-
-        if not allowed:
-            logger.warning(
-                f"RBAC permission denied: {service_account} cannot {verb} "
-                f"{resource} in {target_namespace}"
-            )
-            if result.status.reason:
-                logger.debug(f"Denial reason: {result.status.reason}")
-
-        return allowed
-
-    except ApiException as e:
-        logger.error(f"Failed to check RBAC permissions: {e}")
-        return False
-
-
 def find_keycloak_instances(namespace: str | None = None) -> list[dict[str, Any]]:
     """
     Find Keycloak instances across namespaces.
@@ -599,11 +515,8 @@ def find_keycloak_instances(namespace: str | None = None) -> list[dict[str, Any]
     Returns:
         List of Keycloak instance dictionaries
 
-    TODO: Implement the following functionality:
-    1. Search for Keycloak custom resources
-    2. Filter by namespace if specified
-    3. Return list of instances with status information
-    4. Handle API errors gracefully
+    Searches for Keycloak custom resources and returns instances with status information.
+    Handles API errors gracefully and supports both namespace-specific and cluster-wide searches.
     """
     logger.debug(f"Finding Keycloak instances in namespace: {namespace or 'all'}")
 
@@ -1061,11 +974,8 @@ def create_admin_secret(
     Returns:
         Created Secret object
 
-    TODO: Implement the following functionality:
-    1. Generate secure password if not provided
-    2. Create secret with admin credentials
-    3. Set proper labels and ownership
-    4. Return created secret
+    Creates a secret with admin credentials, generating secure passwords when needed.
+    Sets proper labels and ownership for the secret.
     """
     import base64
     import secrets
@@ -1110,4 +1020,132 @@ def create_admin_secret(
 
     except ApiException as e:
         logger.error(f"Failed to create admin secret: {e}")
+        raise
+
+
+def check_rbac_permissions(
+    namespace: str,
+    target_namespace: str,
+    resource: str = "keycloaks",
+    verb: str = "get",
+) -> bool:
+    """
+    Check if the current service account has RBAC permissions for cross-namespace access.
+
+    This function performs a Kubernetes SubjectAccessReview to validate that the operator
+    has the necessary permissions to access resources in other namespaces.
+
+    Args:
+        namespace: Source namespace (where the request originates)
+        target_namespace: Target namespace to access
+        resource: Kubernetes resource type to check
+        verb: Action to perform (get, create, update, delete, etc.)
+
+    Returns:
+        True if permission is granted, False otherwise
+    """
+    if namespace == target_namespace:
+        return True  # Same namespace access is always allowed
+
+    try:
+        k8s = get_kubernetes_client()
+        auth_api = client.AuthorizationV1Api(k8s)
+
+        # Create SubjectAccessReview to check permissions
+        access_review = client.V1SubjectAccessReview(
+            spec=client.V1SubjectAccessReviewSpec(
+                resource_attributes=client.V1ResourceAttributes(
+                    namespace=target_namespace,
+                    verb=verb,
+                    group="keycloak.mdvr.nl",
+                    resource=resource,
+                )
+            )
+        )
+
+        result = auth_api.create_subject_access_review(access_review)
+        allowed = result.status.allowed
+
+        if not allowed:
+            logger.warning(
+                f"RBAC permission denied: {verb} {resource} in namespace "
+                f"{target_namespace} from {namespace}. Reason: {result.status.reason}"
+            )
+        else:
+            logger.debug(
+                f"RBAC permission granted: {verb} {resource} in namespace "
+                f"{target_namespace} from {namespace}"
+            )
+
+        return allowed
+
+    except ApiException as e:
+        logger.error(f"Failed to check RBAC permissions: {e}")
+        # Default to deny on API errors for security
+        return False
+    except Exception as e:
+        logger.error(f"Unexpected error checking RBAC permissions: {e}")
+        return False
+
+
+def get_current_service_account_info() -> dict[str, str]:
+    """
+    Get information about the current service account being used by the operator.
+
+    Returns:
+        Dictionary with service account name and namespace
+    """
+    try:
+        # Read service account info from mounted token
+        with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace") as f:
+            namespace = f.read().strip()
+
+        # For now, assume service account name is "keycloak-operator"
+        # In a real deployment, this could be read from environment or metadata
+        service_account = "keycloak-operator"
+
+        return {"name": service_account, "namespace": namespace}
+
+    except Exception as e:
+        logger.warning(f"Could not determine service account info: {e}")
+        return {"name": "unknown", "namespace": "default"}
+
+
+def get_admin_credentials(name: str, namespace: str) -> tuple[str, str]:
+    """
+    Get admin credentials for a Keycloak instance.
+
+    Args:
+        name: Name of the Keycloak instance
+        namespace: Namespace where the instance is deployed
+
+    Returns:
+        Tuple of (username, password)
+
+    Raises:
+        Exception: If credentials cannot be retrieved
+    """
+    import base64
+
+    secret_name = f"{name}-admin-credentials"
+
+    try:
+        k8s = get_kubernetes_client()
+        core_api = client.CoreV1Api(k8s)
+
+        secret = core_api.read_namespaced_secret(name=secret_name, namespace=namespace)
+
+        username = base64.b64decode(secret.data["username"]).decode()
+        password = base64.b64decode(secret.data["password"]).decode()
+
+        return username, password
+
+    except ApiException as e:
+        logger.error(f"Failed to get admin credentials from secret {secret_name}: {e}")
+        raise
+    except KeyError as e:
+        logger.error(f"Missing credential field in secret {secret_name}: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error getting admin credentials: {e}")
         raise

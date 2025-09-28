@@ -765,6 +765,164 @@ kubectl logs -f deployment/keycloak-operator -n keycloak-system
 kubectl describe keycloak my-keycloak -n identity-system
 ```
 
+## ⚠️ Production Considerations
+
+### Why Not to Use H2 Database in Production
+
+The test examples in this documentation use H2 database for simplicity, but **H2 should never be used in production** environments. Here's why:
+
+#### H2 Database Limitations
+
+**1. Data Persistence Issues**
+- H2 stores data in temporary container storage that is lost when pods restart
+- No backup/restore capabilities for production scenarios
+- Data corruption risks during unexpected shutdowns
+
+**2. Performance Limitations**
+- Single-threaded nature cannot handle concurrent load
+- No connection pooling optimization
+- Memory-only mode loses all data on restart
+
+**3. High Availability Issues**
+- Cannot support multi-replica Keycloak deployments
+- No clustering or replication support
+- Single point of failure for authentication system
+
+**4. Operational Challenges**
+- No monitoring or performance metrics
+- Limited transaction support
+- No point-in-time recovery options
+
+### Production Database Requirements
+
+For production deployments, use enterprise-grade databases:
+
+#### PostgreSQL (Recommended)
+```yaml
+apiVersion: keycloak.mdvr.nl/v1
+kind: Keycloak
+metadata:
+  name: production-keycloak
+  namespace: identity-system
+spec:
+  replicas: 3  # Multi-replica requires external DB
+
+  database:
+    type: postgresql
+    host: postgres-cluster.database.svc.cluster.local
+    port: 5432
+    name: keycloak_production
+    username: keycloak_user
+    password_secret:
+      name: postgres-credentials
+      key: password
+
+    # Production database settings
+    connection_params:
+      sslmode: require
+      pool_size: "20"
+      max_connections: "100"
+
+  # High availability configuration
+  resources:
+    requests:
+      cpu: "1000m"
+      memory: "2Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+
+  # Production security
+  tls:
+    enabled: true
+    secret_name: keycloak-tls-prod
+
+  ingress:
+    enabled: true
+    class_name: nginx
+    host: auth.company.com
+    tls_enabled: true
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+      nginx.ingress.kubernetes.io/ssl-redirect: "true"
+```
+
+#### Other Supported Production Databases
+- **MySQL/MariaDB**: Good performance, wide ecosystem support
+- **Oracle**: Enterprise features, advanced security
+- **Microsoft SQL Server**: Windows environment integration
+
+### Production Deployment Checklist
+
+#### Security Hardening
+- [ ] External database with TLS encryption
+- [ ] Strong admin passwords in Kubernetes secrets
+- [ ] TLS/SSL enabled for all communications
+- [ ] Network policies restricting pod communication
+- [ ] Pod security contexts with non-root users
+- [ ] Regular security updates and patches
+
+#### High Availability
+- [ ] Multiple Keycloak replicas (minimum 3)
+- [ ] Database clustering/replication
+- [ ] Load balancer with health checks
+- [ ] Resource limits and requests configured
+- [ ] Pod disruption budgets set
+- [ ] Multi-zone deployment
+
+#### Monitoring & Backup
+- [ ] Prometheus metrics collection
+- [ ] Centralized logging (Fluentd/Fluent Bit)
+- [ ] Database backup automation
+- [ ] Disaster recovery procedures tested
+- [ ] Alert rules for critical failures
+- [ ] SLA monitoring dashboards
+
+#### Performance Optimization
+- [ ] JVM heap size tuning based on load
+- [ ] Database connection pool sizing
+- [ ] CDN for static assets (themes, scripts)
+- [ ] Session clustering configuration
+- [ ] Cache optimization (Redis/Infinispan)
+
+### Sample Production Values
+
+```yaml
+# Production Keycloak configuration
+spec:
+  replicas: 3
+
+  resources:
+    requests:
+      cpu: "2000m"
+      memory: "4Gi"
+    limits:
+      cpu: "4000m"
+      memory: "8Gi"
+
+  # JVM optimization for production load
+  jvm_options:
+    - "-Xms4g"
+    - "-Xmx6g"
+    - "-XX:+UseG1GC"
+    - "-XX:MaxGCPauseMillis=200"
+
+  # Production environment variables
+  environment_variables:
+    KC_CACHE: ispn
+    KC_CACHE_STACK: kubernetes
+    KC_LOG_LEVEL: WARN
+    KC_METRICS_ENABLED: "true"
+
+  # Clustering configuration
+  keycloak_options:
+    cache-embedded-mtls-enabled: "true"
+    cache-remote-host: redis-cluster
+    cache-remote-port: "6379"
+```
+
+**Remember**: Production environments require careful planning, regular maintenance, and proper operational procedures. The examples in this documentation are primarily for development and testing purposes.
+
 ## 🤝 Contributing
 
 ### Development Workflow

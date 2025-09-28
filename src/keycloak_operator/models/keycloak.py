@@ -277,8 +277,16 @@ class KeycloakSpec(BaseModel):
         if v < 1:
             raise ValueError("Replicas must be at least 1")
         if v > 1:
-            # TODO: Add warning about clustering requirements
-            pass
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                f"Keycloak replica count is {v}. For multi-replica deployments, "
+                "ensure you have configured: (1) external database (not H2), "
+                "(2) shared storage for themes/extensions, "
+                "(3) proper load balancing, and (4) session affinity or "
+                "distributed caching for optimal performance."
+            )
         return v
 
 
