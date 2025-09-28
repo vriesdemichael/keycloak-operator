@@ -81,11 +81,20 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
 ]
+markers = [
+    "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "requires_cluster: marks tests that require a Kubernetes cluster",
+    "unit: marks tests as unit tests",
+]
+# Timeout for integration tests (5 minutes)
+timeout = 300
 
 [dependency-groups]
 dev = [
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
+    "pytest-cov>=6.0.0",
     "ruff>=0.13.1",
     "ty>=0.0.1a21",
     "types-requests>=2.32.4.20250913",
@@ -98,4 +107,12 @@ docs = [
     "mkdocs-section-index>=0.3.8",
     "mkdocs-literate-nav>=0.6.1",
     "markdown-exec>=1.9.0",
+]
+integration = [
+    "pytest>=8.4.2",
+    "pytest-asyncio>=1.2.0",
+    "pytest-timeout>=2.3.1",
+    "pytest-xdist>=3.5.0",
+    "kubernetes>=28.0.0",
+    "pyyaml>=6.0.0",
 ]

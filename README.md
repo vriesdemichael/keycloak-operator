@@ -30,10 +30,15 @@ The operator manages three primary custom resources:
 
 ## 📋 Prerequisites
 
+### For Using the Operator
 - Kubernetes cluster v1.25+
-- Python 3.11+ (for development)
-- [uv](https://github.com/astral-sh/uv) package manager
 - kubectl access with cluster-admin privileges (for installation)
+
+### For Development Only
+- Python 3.11+
+- [uv](https://github.com/astral-sh/uv) package manager
+- **Kind (Kubernetes in Docker)** - For local integration testing
+- **Docker** - For Kind cluster creation and container builds
 
 ## 🚀 Quick Start
 
@@ -152,25 +157,54 @@ spec:
 
 ## 🔧 Development Setup
 
-### Local Development Environment
+> **Note**: This section is only for developers contributing to the operator. End users only need a Kubernetes cluster and kubectl.
+
+### 1. Install Development Prerequisites
+
+**Kind (for integration testing):**
+```bash
+# Linux/WSL
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+
+# macOS
+brew install kind
+
+# Windows
+choco install kind
+```
+
+**Docker (for Kind clusters):**
+- Linux: Follow [Docker Engine installation guide](https://docs.docker.com/engine/install/)
+- macOS/Windows: Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
+
+### 2. Setup Development Environment
 
 ```bash
 # Clone and setup
 git clone <repository-url>
 cd keycloak-operator
 
-# Install dependencies
+# Install Python dependencies
 uv sync
+```
 
-# Run tests
-uv run pytest
+### 3. Development Commands
+
+```bash
+# Run unit tests (fast)
+uv run pytest tests/unit/
+
+# Run integration tests (requires Kind)
+make test-integration-local
 
 # Code formatting and linting
 uv run ruff check --fix
 uv run ruff format
 
 # Type checking
-uv run ty check
+uv run mypy
 ```
 
 ### Testing the Operator

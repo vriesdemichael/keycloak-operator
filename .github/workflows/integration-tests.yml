@@ -1,0 +1,346 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      kubernetes_version:
+        description: 'Kubernetes version to test against'
+        required: false
+        default: 'v1.28.0'
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  integration-tests:
+    name: Integration Tests (K8s ${{ matrix.k8s-version }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        k8s-version:
+          - v1.27.0
+          - v1.28.0
+          - v1.29.0
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+        cache-dependency-glob: "pyproject.toml"
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Set up Kind
+      uses: helm/kind-action@v1.10.0
+      with:
+        version: v0.20.0
+        kubectl_version: ${{ matrix.k8s-version }}
+        cluster_name: keycloak-operator-test
+        config: tests/kind/kind-config.yaml
+        node_image: kindest/node:${{ matrix.k8s-version }}
+        wait: 300s
+
+    - name: Verify Kind cluster
+      run: |
+        kubectl cluster-info
+        kubectl get nodes
+        kubectl get pods -A
+
+    - name: Build operator image
+      run: |
+        docker build -t keycloak-operator:test .
+        kind load docker-image keycloak-operator:test --name keycloak-operator-test
+
+    - name: Install operator CRDs and RBAC
+      run: |
+        kubectl apply -f k8s/crds/
+        kubectl apply -f k8s/rbac/
+
+        # Wait for CRDs to be established
+        kubectl wait --for condition=established --timeout=60s crd/keycloaks.keycloak.mdvr.nl
+        kubectl wait --for condition=established --timeout=60s crd/keycloakrealms.keycloak.mdvr.nl
+        kubectl wait --for condition=established --timeout=60s crd/keycloakclients.keycloak.mdvr.nl
+
+    - name: Deploy test database (PostgreSQL)
+      run: |
+        kubectl create namespace postgres
+        cat <<EOF | kubectl apply -f -
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: postgres
+          namespace: postgres
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              app: postgres
+          template:
+            metadata:
+              labels:
+                app: postgres
+            spec:
+              containers:
+              - name: postgres
+                image: postgres:15-alpine
+                ports:
+                - containerPort: 5432
+                env:
+                - name: POSTGRES_DB
+                  value: keycloak
+                - name: POSTGRES_USER
+                  value: keycloak
+                - name: POSTGRES_PASSWORD
+                  value: keycloak
+                - name: PGDATA
+                  value: /var/lib/postgresql/data/pgdata
+                resources:
+                  requests:
+                    memory: "256Mi"
+                    cpu: "100m"
+                  limits:
+                    memory: "512Mi"
+                    cpu: "500m"
+                volumeMounts:
+                - name: postgres-storage
+                  mountPath: /var/lib/postgresql/data
+              volumes:
+              - name: postgres-storage
+                emptyDir: {}
+        ---
+        apiVersion: v1
+        kind: Service
+        metadata:
+          name: postgres
+          namespace: postgres
+        spec:
+          type: ClusterIP
+          ports:
+          - port: 5432
+            targetPort: 5432
+          selector:
+            app: postgres
+        EOF
+
+        # Wait for PostgreSQL to be ready
+        kubectl wait --for=condition=available deployment/postgres -n postgres --timeout=300s
+        kubectl wait --for=condition=ready pod -l app=postgres -n postgres --timeout=300s
+
+    - name: Deploy operator
+      run: |
+        # Update deployment to use test image
+        sed 's|image: keycloak-operator:latest|image: keycloak-operator:test|g' k8s/operator-deployment.yaml | \
+        sed 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Never|g' | \
+        kubectl apply -f -
+
+        # Wait for operator to be ready
+        kubectl wait --for=condition=available deployment/keycloak-operator -n keycloak-system --timeout=300s
+        kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=keycloak-operator -n keycloak-system --timeout=300s
+
+    - name: Run integration tests
+      env:
+        KUBERNETES_VERSION: ${{ matrix.k8s-version }}
+        KUBECONFIG: ${{ env.KUBECONFIG }}
+      run: |
+        # Run Python integration tests
+        uv run pytest tests/integration/ -v -x --tb=short --durations=10
+
+        # Run shell-based integration tests
+        ./scripts/test-integration-local.sh --no-setup
+
+    - name: Run leader election tests
+      if: success() || failure()  # Run even if previous step failed
+      run: |
+        # Test leader election specifically
+        kubectl scale deployment keycloak-operator -n keycloak-system --replicas=2
+        kubectl wait --for=condition=available deployment/keycloak-operator -n keycloak-system --timeout=300s
+
+        # Wait for leader election to stabilize
+        sleep 30
+
+        # Check lease exists
+        kubectl get lease keycloak-operator -n keycloak-system
+
+        # Get current leader
+        LEADER=$(kubectl get lease keycloak-operator -n keycloak-system -o jsonpath='{.spec.holderIdentity}')
+        echo "Current leader: $LEADER"
+
+        # Test pod failure (chaos engineering)
+        LEADER_POD=$(kubectl get pods -n keycloak-system -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{.items[0].metadata.name}')
+        echo "Deleting leader pod: $LEADER_POD"
+        kubectl delete pod $LEADER_POD -n keycloak-system
+
+        # Wait for new leader election
+        sleep 30
+        kubectl wait --for=condition=available deployment/keycloak-operator -n keycloak-system --timeout=300s
+
+        # Check new leader
+        NEW_LEADER=$(kubectl get lease keycloak-operator -n keycloak-system -o jsonpath='{.spec.holderIdentity}')
+        echo "New leader: $NEW_LEADER"
+
+    - name: Test basic operator functionality
+      if: success() || failure()
+      run: |
+        # Create test namespace and resources
+        kubectl create namespace operator-test
+
+        # Create secrets
+        kubectl create secret generic test-db-secret \
+          --from-literal=password=testpass -n operator-test
+        kubectl create secret generic test-admin-secret \
+          --from-literal=password=admin123 -n operator-test
+
+        # Create Keycloak resource
+        cat <<EOF | kubectl apply -f -
+        apiVersion: keycloak.mdvr.nl/v1
+        kind: Keycloak
+        metadata:
+          name: test-keycloak
+          namespace: operator-test
+        spec:
+          image: "quay.io/keycloak/keycloak:23.0.0"
+          replicas: 1
+          database:
+            type: "postgresql"
+            host: "postgres.postgres.svc.cluster.local"
+            name: "keycloak"
+            username: "keycloak"
+            password_secret:
+              name: "test-db-secret"
+              key: "password"
+          admin_access:
+            username: "admin"
+            password_secret:
+              name: "test-admin-secret"
+              key: "password"
+          service:
+            type: "ClusterIP"
+            port: 8080
+        EOF
+
+        # Wait for resource to be processed
+        sleep 60
+
+        # Check if deployment was created
+        kubectl get deployments -n operator-test
+        kubectl describe keycloak test-keycloak -n operator-test
+
+    - name: Collect logs and diagnostics
+      if: always()
+      run: |
+        echo "=== Cluster Info ==="
+        kubectl cluster-info
+
+        echo "=== Operator Logs ==="
+        kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --all-containers=true --tail=500 || true
+
+        echo "=== Operator Status ==="
+        kubectl get deployments,pods,services -n keycloak-system
+        kubectl describe deployment keycloak-operator -n keycloak-system || true
+
+        echo "=== Test Resources ==="
+        kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces || true
+
+        echo "=== Events ==="
+        kubectl get events --all-namespaces --sort-by='.lastTimestamp' --tail=50 || true
+
+        echo "=== PostgreSQL Status ==="
+        kubectl get pods,services -n postgres || true
+        kubectl logs -n postgres -l app=postgres --tail=100 || true
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-logs-k8s-${{ matrix.k8s-version }}
+        path: |
+          test-logs/
+        retention-days: 7
+
+  # Separate job for running unit tests (faster feedback)
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Run linting
+      run: |
+        uv run ruff check
+        uv run ruff format --check
+
+    - name: Run unit tests
+      run: |
+        uv run pytest tests/unit/ -v --tb=short --durations=10
+
+    - name: Generate coverage report
+      if: success() || failure()
+      run: |
+        uv run pytest tests/unit/ --cov=keycloak_operator --cov-report=xml --cov-report=term
+
+    - name: Upload coverage to Codecov
+      if: success() || failure()
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./coverage.xml
+        fail_ci_if_error: false
+
+  # Summary job that depends on all test jobs
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [integration-tests, unit-tests]
+
+    steps:
+    - name: Check test results
+      run: |
+        echo "Unit tests: ${{ needs.unit-tests.result }}"
+        echo "Integration tests: ${{ needs.integration-tests.result }}"
+
+        if [[ "${{ needs.unit-tests.result }}" == "failure" || "${{ needs.integration-tests.result }}" == "failure" ]]; then
+          echo "❌ Some tests failed!"
+          exit 1
+        else
+          echo "✅ All tests passed!"
+        fi

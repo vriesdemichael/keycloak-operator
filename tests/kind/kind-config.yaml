@@ -1,0 +1,66 @@
+# Kind cluster configuration for Keycloak operator integration testing
+# This creates a multi-node cluster suitable for testing leader election,
+# finalizers, and other operator functionality in a real Kubernetes environment.
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: keycloak-operator-test
+
+# Multi-node configuration for testing leader election and HA scenarios
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  # Operator metrics and health endpoints
+  - containerPort: 8080
+    hostPort: 8080
+    protocol: TCP
+  # Keycloak service port for testing
+  - containerPort: 30080
+    hostPort: 30080
+    protocol: TCP
+  # PostgreSQL service port for database testing
+  - containerPort: 30432
+    hostPort: 30432
+    protocol: TCP
+
+- role: worker
+  labels:
+    operator-test: "true"
+
+- role: worker
+  labels:
+    operator-test: "true"
+
+# Feature gates for testing specific Kubernetes features
+featureGates:
+  # Enable server-side apply for better resource management
+  ServerSideApply: true
+  # Enable endpoint slices for service discovery
+  EndpointSlice: true
+
+# Runtime configuration for better testing experience
+runtimeConfig:
+  # Enable all API versions for comprehensive testing
+  "api/all": "true"
+
+# Networking configuration
+networking:
+  # Use a different CIDR to avoid conflicts with host networking
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"
+  # Disable default CNI to install our own for testing
+  disableDefaultCNI: false
+  # Use containerd for better image management
+  kubeProxyMode: "iptables"
+
+# Additional configuration for testing
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5000"]
+    endpoint = ["http://localhost:5000"]
