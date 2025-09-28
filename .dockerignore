@@ -33,8 +33,14 @@ env/
 Thumbs.db
 
 # Documentation
-*.md
+# Previously ignored all markdown which prevented README.md from being copied into image (needed by pyproject metadata install step).
+# Allow top-level README.md while still excluding other Markdown docs to keep image lean.
 docs/
+CLAUDE.md
+TODO/
+# If you later need other markdown files, add negation patterns like:
+# !README.md
+
 
 # Tests (not needed in container)
 tests/
