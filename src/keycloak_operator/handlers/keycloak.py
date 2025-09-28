@@ -22,14 +22,12 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.models.keycloak import KeycloakSpec
+from keycloak_operator.services import KeycloakInstanceReconciler
 from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 from keycloak_operator.utils.kubernetes import (
     backup_keycloak_data,
     check_http_health,
-    create_admin_secret,
-    create_keycloak_deployment,
     create_keycloak_ingress,
-    create_keycloak_service,
     create_persistent_volume_claim,
     get_admin_credentials,
     get_kubernetes_client,
@@ -58,7 +56,7 @@ logger = logging.getLogger(__name__)
 
 @kopf.on.create("keycloaks", group="keycloak.mdvr.nl", version="v1")
 @kopf.on.resume("keycloaks", group="keycloak.mdvr.nl", version="v1")
-def ensure_keycloak_instance(
+async def ensure_keycloak_instance(
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -84,207 +82,11 @@ def ensure_keycloak_instance(
     """
     logger.info(f"Ensuring Keycloak instance {name} in namespace {namespace}")
 
-    # Parse and validate the specification
-    try:
-        keycloak_spec = KeycloakSpec.model_validate(spec)
-        logger.debug(f"Validated Keycloak spec: {keycloak_spec}")
-    except Exception as e:
-        logger.error(f"Invalid Keycloak specification: {e}")
-        raise kopf.PermanentError(f"Invalid specification: {e}") from e
-
-    # Update status to indicate processing has started
-    status.phase = "Pending"
-    status.message = "Creating Keycloak resources"
-    status.observedGeneration = kwargs.get("meta", {}).get("generation", 0)
-
-    try:
-        # Get Kubernetes API client
-        k8s_client = get_kubernetes_client()
-        apps_api = client.AppsV1Api(k8s_client)
-        core_api = client.CoreV1Api(k8s_client)
-
-        # Create admin secret first (needed by deployment)
-        admin_secret_name = f"{name}-admin-credentials"
-        try:
-            core_api.read_namespaced_secret(name=admin_secret_name, namespace=namespace)
-            logger.info(f"Admin secret {admin_secret_name} already exists")
-        except ApiException as e:
-            if e.status == 404:
-                # Secret doesn't exist, create it
-                admin_secret = create_admin_secret(
-                    name=name,
-                    namespace=namespace,
-                    username=keycloak_spec.admin_access.username
-                    if hasattr(keycloak_spec, "admin_access")
-                    else "admin",
-                )
-                logger.info(f"Created admin secret: {admin_secret.metadata.name}")
-            else:
-                raise
-
-        # Check if deployment already exists
-        deployment_name = f"{name}-keycloak"
-        try:
-            existing_deployment = apps_api.read_namespaced_deployment(
-                name=deployment_name, namespace=namespace
-            )
-            logger.info(f"Keycloak deployment {deployment_name} already exists")
-            deployment = existing_deployment
-        except ApiException as e:
-            if e.status == 404:
-                # Deployment doesn't exist, create it
-                deployment = create_keycloak_deployment(
-                    name=name,
-                    namespace=namespace,
-                    spec=keycloak_spec,
-                    k8s_client=k8s_client,
-                )
-                logger.info(f"Created Keycloak deployment: {deployment.metadata.name}")
-            else:
-                raise
-
-        # Check if service already exists
-        service_name = f"{name}-keycloak"
-        try:
-            existing_service = core_api.read_namespaced_service(
-                name=service_name, namespace=namespace
-            )
-            logger.info(f"Keycloak service {service_name} already exists")
-            service = existing_service
-        except ApiException as e:
-            if e.status == 404:
-                # Service doesn't exist, create it
-                service = create_keycloak_service(
-                    name=name,
-                    namespace=namespace,
-                    spec=keycloak_spec,
-                    k8s_client=k8s_client,
-                )
-                logger.info(f"Created Keycloak service: {service.metadata.name}")
-            else:
-                raise
-
-        # Create persistent volume claims if storage is specified
-        if hasattr(keycloak_spec, "persistence") and keycloak_spec.persistence.enabled:
-            pvc_name = f"{name}-keycloak-data"
-            try:
-                core_api.read_namespaced_persistent_volume_claim(
-                    name=pvc_name, namespace=namespace
-                )
-                logger.info(f"PVC {pvc_name} already exists")
-            except ApiException as e:
-                if e.status == 404:
-                    # PVC doesn't exist, create it
-                    pvc = create_persistent_volume_claim(
-                        name=name,
-                        namespace=namespace,
-                        size=getattr(keycloak_spec.persistence, "size", "10Gi"),
-                        storage_class=getattr(
-                            keycloak_spec.persistence, "storage_class", None
-                        ),
-                    )
-                    logger.info(f"Created PVC: {pvc.metadata.name}")
-                else:
-                    raise
-
-        # Create ingress if specified in spec
-        if hasattr(keycloak_spec, "ingress") and keycloak_spec.ingress.enabled:
-            ingress_name = f"{name}-keycloak"
-            try:
-                networking_api = client.NetworkingV1Api(k8s_client)
-                networking_api.read_namespaced_ingress(
-                    name=ingress_name, namespace=namespace
-                )
-                logger.info(f"Ingress {ingress_name} already exists")
-            except ApiException as e:
-                if e.status == 404:
-                    # Ingress doesn't exist, create it
-                    ingress = create_keycloak_ingress(
-                        name=name,
-                        namespace=namespace,
-                        spec=keycloak_spec,
-                        k8s_client=k8s_client,
-                    )
-                    logger.info(f"Created ingress: {ingress.metadata.name}")
-                else:
-                    raise
-
-        # Wait for deployment to be ready
-        logger.info(f"Waiting for deployment {deployment_name} to be ready...")
-        import time
-
-        max_wait_time = 300  # 5 minutes
-        wait_interval = 10  # 10 seconds
-        elapsed_time = 0
-
-        while elapsed_time < max_wait_time:
-            try:
-                deployment_status: client.V1Deployment = (
-                    apps_api.read_namespaced_deployment_status(
-                        name=deployment_name, namespace=namespace
-                    )
-                )
-
-                ready_replicas = deployment_status.status.ready_replicas or 0
-                desired_replicas = deployment_status.spec.replicas or 1
-
-                if ready_replicas >= desired_replicas:
-                    logger.info(
-                        f"Deployment {deployment_name} is ready ({ready_replicas}/{desired_replicas})"
-                    )
-                    break
-
-                logger.debug(
-                    f"Waiting for deployment readiness: {ready_replicas}/{desired_replicas} replicas ready"
-                )
-
-            except ApiException as e:
-                logger.warning(f"Error checking deployment status: {e}")
-
-            time.sleep(wait_interval)
-            elapsed_time += wait_interval
-
-        if elapsed_time >= max_wait_time:
-            logger.warning(
-                f"Deployment {deployment_name} did not become ready within {max_wait_time} seconds"
-            )
-            # Don't fail completely, but update status to indicate this
-            return {
-                "phase": "Degraded",
-                "message": "Deployment created but not ready within timeout",
-                "deployment": deployment_name,
-                "service": service_name,
-                "endpoints": {
-                    "admin": f"http://{service_name}.{namespace}.svc.cluster.local:8080",
-                    "public": f"http://{service_name}.{namespace}.svc.cluster.local:8080",
-                },
-            }
-
-        # Update status to reflect successful creation
-        return {
-            "phase": "Running",
-            "message": "Keycloak instance is running",
-            "deployment": deployment_name,
-            "service": service_name,
-            "adminSecret": admin_secret_name,
-            "endpoints": {
-                "admin": f"http://{service_name}.{namespace}.svc.cluster.local:8080",
-                "public": f"http://{service_name}.{namespace}.svc.cluster.local:8080",
-                "management": f"http://{service_name}.{namespace}.svc.cluster.local:9000",
-            },
-        }
-
-    except ApiException as e:
-        logger.error(f"Kubernetes API error while creating Keycloak instance: {e}")
-        status.phase = "Failed"
-        status.message = f"Kubernetes API error: {e.reason}"
-        raise kopf.TemporaryError(f"Kubernetes API error: {e}", delay=30) from e
-
-    except Exception as e:
-        logger.error(f"Unexpected error creating Keycloak instance: {e}")
-        status.phase = "Failed"
-        status.message = f"Unexpected error: {str(e)}"
-        raise kopf.PermanentError(f"Failed to create Keycloak instance: {e}") from e
+    # Create reconciler and delegate to service layer
+    reconciler = KeycloakInstanceReconciler()
+    return await reconciler.reconcile(
+        spec=spec, name=name, namespace=namespace, status=status, **kwargs
+    )
 
 
 @kopf.on.update("keycloaks", group="keycloak.mdvr.nl", version="v1")

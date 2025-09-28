@@ -24,7 +24,16 @@ class TestKeycloakModels:
 
     def test_keycloak_spec_defaults(self):
         """Test that KeycloakSpec has sensible defaults."""
-        spec = KeycloakSpec()
+        from keycloak_operator.models.keycloak import KeycloakDatabaseConfig
+
+        spec = KeycloakSpec(
+            database=KeycloakDatabaseConfig(
+                type="postgresql",
+                host="postgres",
+                database="keycloak",
+                username="keycloak",
+            )
+        )
 
         assert spec.image == "quay.io/keycloak/keycloak:latest"
         assert spec.replicas == 1
@@ -35,14 +44,32 @@ class TestKeycloakModels:
 
     def test_keycloak_spec_validation(self):
         """Test KeycloakSpec validation rules."""
+        from keycloak_operator.models.keycloak import KeycloakDatabaseConfig
+
         # Test invalid replicas
         with pytest.raises(ValidationError) as exc_info:
-            KeycloakSpec(replicas=0)
+            KeycloakSpec(
+                replicas=0,
+                database=KeycloakDatabaseConfig(
+                    type="postgresql",
+                    host="postgres",
+                    database="keycloak",
+                    username="keycloak",
+                ),
+            )
         assert "greater than or equal to 1" in str(exc_info.value)
 
         # Test invalid service type
         with pytest.raises(ValidationError) as exc_info:
-            KeycloakSpec(service=KeycloakServiceConfig(type="InvalidType"))
+            KeycloakSpec(
+                service=KeycloakServiceConfig(type="InvalidType"),
+                database=KeycloakDatabaseConfig(
+                    type="postgresql",
+                    host="postgres",
+                    database="keycloak",
+                    username="keycloak",
+                ),
+            )
         assert "Service type must be one of" in str(exc_info.value)
 
     def test_resource_requirements_defaults(self):
@@ -60,7 +87,16 @@ class TestKeycloakModels:
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "Keycloak",
             "metadata": {"name": "test-keycloak", "namespace": "default"},
-            "spec": {"replicas": 2, "image": "quay.io/keycloak/keycloak:22.0.0"},
+            "spec": {
+                "replicas": 2,
+                "image": "quay.io/keycloak/keycloak:22.0.0",
+                "database": {
+                    "type": "postgresql",
+                    "host": "postgres",
+                    "database": "keycloak",
+                    "username": "keycloak",
+                },
+            },
         }
 
         keycloak = Keycloak.model_validate(keycloak_resource)
@@ -69,6 +105,7 @@ class TestKeycloakModels:
         assert keycloak.metadata["name"] == "test-keycloak"
         assert keycloak.spec.replicas == 2
         assert keycloak.spec.image == "quay.io/keycloak/keycloak:22.0.0"
+        assert keycloak.spec.database.type == "postgresql"
 
 
 class TestKeycloakClientModels:
