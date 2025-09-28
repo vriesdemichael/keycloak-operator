@@ -47,7 +47,7 @@ spec:
                 properties:
                   type:
                     type: string
-                    enum: ["postgresql", "mysql", "h2"]
+                    enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]
                     default: "postgresql"
                   host:
                     type: string

@@ -8,6 +8,7 @@ client creation, credential management, and OAuth2 configuration.
 from typing import Any
 
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from ..errors import ValidationError
 from ..models.client import KeycloakClientSpec
@@ -118,6 +119,12 @@ class KeycloakClientReconciler(BaseReconciler):
                     "token": f"{base_url}/realms/{realm_name}/protocol/openid-connect/token",
                     "userinfo": f"{base_url}/realms/{realm_name}/protocol/openid-connect/userinfo",
                 }
+
+        # Extract generation for status tracking
+        generation = kwargs.get("meta", {}).get("generation", 0)
+
+        # Update status to ready
+        self.update_status_ready(status, "Client configured and ready", generation)
 
         return {
             "client_id": client_spec.client_id,
@@ -544,3 +551,120 @@ class KeycloakClientReconciler(BaseReconciler):
             "message": "Client configuration updated successfully",
             "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
         }
+
+    async def cleanup_resources(
+        self,
+        name: str,
+        namespace: str,
+        spec: dict[str, Any],
+        status: StatusProtocol,
+    ) -> None:
+        """
+        Clean up client from Keycloak and associated Kubernetes resources.
+
+        Args:
+            name: Name of the KeycloakClient resource
+            namespace: Namespace containing the resource
+            spec: Client specification
+            status: Resource status for tracking cleanup progress
+
+        Raises:
+            TemporaryError: If cleanup fails but should be retried
+        """
+
+        from ..errors import TemporaryError
+
+        self.logger.info(f"Starting cleanup of KeycloakClient {name} in {namespace}")
+
+        try:
+            client_spec = KeycloakClientSpec.model_validate(spec)
+        except Exception as e:
+            raise TemporaryError(f"Failed to parse KeycloakClient spec: {e}") from e
+
+        # Get admin client for the target Keycloak instance
+        keycloak_ref = client_spec.keycloak_instance_ref
+        target_namespace = keycloak_ref.namespace or namespace
+
+        # Delete client from Keycloak (if instance still exists)
+        try:
+            admin_client = self.keycloak_admin_factory(
+                keycloak_ref.name, target_namespace
+            )
+
+            realm_name = client_spec.realm or "master"
+            admin_client.delete_client(client_spec.client_id, realm_name)
+            self.logger.info(
+                f"Deleted client {client_spec.client_id} from Keycloak realm {realm_name}"
+            )
+
+        except Exception as e:
+            self.logger.warning(
+                f"Could not delete client from Keycloak (instance may be deleted): {e}"
+            )
+
+        # Clean up Kubernetes resources associated with this client
+        try:
+            await self._delete_client_k8s_resources(name, namespace, client_spec)
+        except Exception as e:
+            self.logger.warning(f"Failed to clean up Kubernetes resources: {e}")
+
+        self.logger.info(f"Successfully completed cleanup of KeycloakClient {name}")
+
+    async def _delete_client_k8s_resources(
+        self, name: str, namespace: str, client_spec: KeycloakClientSpec
+    ) -> None:
+        """Delete Kubernetes resources associated with the client."""
+        core_api = client.CoreV1Api(self.kubernetes_client)
+
+        # Delete the credentials secret
+        secret_name = f"{name}-credentials"
+        try:
+            core_api.delete_namespaced_secret(name=secret_name, namespace=namespace)
+            self.logger.info(f"Deleted credentials secret {secret_name}")
+        except ApiException as e:
+            if e.status != 404:  # Ignore "not found" errors
+                self.logger.warning(
+                    f"Failed to delete credentials secret {secret_name}: {e}"
+                )
+
+        # Delete any configmaps associated with this client
+        try:
+            configmaps = core_api.list_namespaced_config_map(
+                namespace=namespace,
+                label_selector=f"keycloak.mdvr.nl/client={name}",
+            )
+            for cm in configmaps.items:
+                try:
+                    core_api.delete_namespaced_config_map(
+                        name=cm.metadata.name, namespace=namespace
+                    )
+                    self.logger.info(f"Deleted client configmap {cm.metadata.name}")
+                except ApiException as e:
+                    if e.status != 404:
+                        self.logger.warning(
+                            f"Failed to delete configmap {cm.metadata.name}: {e}"
+                        )
+
+        except ApiException as e:
+            self.logger.warning(f"Failed to list client configmaps for cleanup: {e}")
+
+        # Delete any secrets with client labels (excluding credentials which we handled above)
+        try:
+            secrets = core_api.list_namespaced_secret(
+                namespace=namespace,
+                label_selector=f"keycloak.mdvr.nl/client={name},keycloak.mdvr.nl/secret-type!=credentials",
+            )
+            for secret in secrets.items:
+                try:
+                    core_api.delete_namespaced_secret(
+                        name=secret.metadata.name, namespace=namespace
+                    )
+                    self.logger.info(f"Deleted client secret {secret.metadata.name}")
+                except ApiException as e:
+                    if e.status != 404:
+                        self.logger.warning(
+                            f"Failed to delete secret {secret.metadata.name}: {e}"
+                        )
+
+        except ApiException as e:
+            self.logger.warning(f"Failed to list client secrets for cleanup: {e}")

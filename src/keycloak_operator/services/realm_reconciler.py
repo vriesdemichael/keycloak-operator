@@ -114,6 +114,12 @@ class KeycloakRealmReconciler(BaseReconciler):
                     "account": f"{base_url}/realms/{realm_spec.realm_name}/account",
                 }
 
+        # Extract generation for status tracking
+        generation = kwargs.get("meta", {}).get("generation", 0)
+
+        # Update status to ready
+        self.update_status_ready(status, "Realm configured and ready", generation)
+
         return {
             "realm_name": realm_spec.realm_name,
             "keycloak_instance": f"{target_namespace}/{keycloak_ref.name}",
@@ -572,3 +578,178 @@ class KeycloakRealmReconciler(BaseReconciler):
             }
 
         return None  # No changes needed
+
+    async def cleanup_resources(
+        self,
+        name: str,
+        namespace: str,
+        spec: dict[str, Any],
+        status: StatusProtocol,
+    ) -> None:
+        """
+        Clean up realm from Keycloak and associated Kubernetes resources.
+
+        Args:
+            name: Name of the KeycloakRealm resource
+            namespace: Namespace containing the resource
+            spec: Realm specification
+            status: Resource status for tracking cleanup progress
+
+        Raises:
+            TemporaryError: If cleanup fails but should be retried
+        """
+        from ..errors import TemporaryError
+
+        self.logger.info(f"Starting cleanup of KeycloakRealm {name} in {namespace}")
+
+        try:
+            realm_spec = KeycloakRealmSpec.model_validate(spec)
+        except Exception as e:
+            raise TemporaryError(f"Failed to parse KeycloakRealm spec: {e}") from e
+
+        # Get admin client for the target Keycloak instance
+        keycloak_ref = realm_spec.keycloak_instance_ref
+        target_namespace = keycloak_ref.namespace or namespace
+
+        # Delete realm from Keycloak (if instance still exists)
+        try:
+            admin_client = self.keycloak_admin_factory(
+                keycloak_ref.name, target_namespace
+            )
+
+            # Backup realm data if requested
+            if getattr(realm_spec, "backup_on_delete", False):
+                self.logger.info(f"Backing up realm {realm_spec.realm_name}")
+                try:
+                    await self._create_realm_backup(
+                        name, namespace, realm_spec, admin_client
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Realm backup failed: {e}")
+
+            # Clean up all clients in this realm first
+            try:
+                realm_clients = admin_client.get_realm_clients(realm_spec.realm_name)
+                for client_config in realm_clients:
+                    client_id = client_config.get("clientId")
+                    if client_id:
+                        self.logger.info(
+                            f"Cleaning up client {client_id} from realm {realm_spec.realm_name}"
+                        )
+                        admin_client.delete_client(client_id, realm_spec.realm_name)
+            except Exception as e:
+                self.logger.warning(f"Failed to clean up realm clients: {e}")
+
+            # Delete the realm itself
+            admin_client.delete_realm(realm_spec.realm_name)
+            self.logger.info(f"Deleted realm {realm_spec.realm_name} from Keycloak")
+
+        except Exception as e:
+            self.logger.warning(
+                f"Could not delete realm from Keycloak (instance may be deleted): {e}"
+            )
+
+        # Clean up Kubernetes resources associated with this realm
+        try:
+            await self._delete_realm_k8s_resources(name, namespace, realm_spec)
+        except Exception as e:
+            self.logger.warning(f"Failed to clean up Kubernetes resources: {e}")
+
+        self.logger.info(f"Successfully completed cleanup of KeycloakRealm {name}")
+
+    async def _create_realm_backup(
+        self,
+        name: str,
+        namespace: str,
+        realm_spec: KeycloakRealmSpec,
+        admin_client,
+    ) -> None:
+        """Create a backup of realm data before deletion."""
+        import json
+        from datetime import UTC, datetime
+
+        try:
+            # Export realm configuration
+            backup_data = admin_client.export_realm(realm_spec.realm_name)
+            if not backup_data:
+                self.logger.warning(
+                    f"No backup data retrieved for realm {realm_spec.realm_name}"
+                )
+                return
+
+            # Create backup configmap
+            core_api = client.CoreV1Api(self.kubernetes_client)
+            backup_name = (
+                f"{name}-realm-backup-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+            )
+
+            backup_cm = client.V1ConfigMap(
+                metadata=client.V1ObjectMeta(
+                    name=backup_name,
+                    namespace=namespace,
+                    labels={
+                        "keycloak.mdvr.nl/realm": realm_spec.realm_name,
+                        "keycloak.mdvr.nl/backup": "true",
+                        "keycloak.mdvr.nl/resource": name,
+                    },
+                ),
+                data={
+                    "realm-backup.json": json.dumps(backup_data, indent=2),
+                    "backup-timestamp": datetime.now(UTC).isoformat(),
+                    "realm-name": realm_spec.realm_name,
+                },
+            )
+
+            core_api.create_namespaced_config_map(namespace=namespace, body=backup_cm)
+            self.logger.info(f"Realm backup stored in configmap {backup_name}")
+
+        except Exception as e:
+            self.logger.warning(f"Failed to create realm backup: {e}")
+            # Continue with deletion even if backup fails
+
+    async def _delete_realm_k8s_resources(
+        self, name: str, namespace: str, realm_spec: KeycloakRealmSpec
+    ) -> None:
+        """Delete Kubernetes resources associated with the realm."""
+
+        core_api = client.CoreV1Api(self.kubernetes_client)
+
+        # Delete configmaps related to this realm (except backups)
+        try:
+            configmaps = core_api.list_namespaced_config_map(
+                namespace=namespace,
+                label_selector=f"keycloak.mdvr.nl/realm={realm_spec.realm_name},keycloak.mdvr.nl/backup!=true",
+            )
+            for cm in configmaps.items:
+                try:
+                    core_api.delete_namespaced_config_map(
+                        name=cm.metadata.name, namespace=namespace
+                    )
+                    self.logger.info(f"Deleted realm configmap {cm.metadata.name}")
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to delete configmap {cm.metadata.name}: {e}"
+                    )
+
+        except Exception as e:
+            self.logger.warning(f"Failed to list realm configmaps for cleanup: {e}")
+
+        # Delete secrets related to this realm (except client credentials managed separately)
+        try:
+            secrets = core_api.list_namespaced_secret(
+                namespace=namespace,
+                label_selector=f"keycloak.mdvr.nl/realm={realm_spec.realm_name},keycloak.mdvr.nl/secret-type!=client-credentials",
+            )
+            for secret in secrets.items:
+                try:
+                    core_api.delete_namespaced_secret(
+                        name=secret.metadata.name, namespace=namespace
+                    )
+                    self.logger.info(f"Deleted realm secret {secret.metadata.name}")
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to delete secret {secret.metadata.name}: {e}"
+                    )
+
+        except Exception as e:
+            self.logger.warning(f"Failed to list realm secrets for cleanup: {e}")

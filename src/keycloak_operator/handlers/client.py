@@ -26,6 +26,7 @@ import kopf
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.constants import CLIENT_FINALIZER
 from keycloak_operator.models.client import KeycloakClientSpec
 from keycloak_operator.services import KeycloakClientReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
@@ -61,6 +62,7 @@ async def ensure_keycloak_client(
     name: str,
     namespace: str,
     status: dict[str, Any],
+    patch: kopf.Patch,
     **kwargs: Any,
 ) -> dict[str, Any]:
     """
@@ -75,12 +77,20 @@ async def ensure_keycloak_client(
         name: Name of the KeycloakClient resource
         namespace: Namespace where the KeycloakClient resource exists
         status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
 
     Returns:
         Dictionary with status information for the resource
 
     """
     logger.info(f"Ensuring KeycloakClient {name} in namespace {namespace}")
+
+    # Add finalizer BEFORE creating any resources to ensure proper cleanup
+    meta = kwargs.get("meta", {})
+    current_finalizers = meta.get("finalizers", [])
+    if CLIENT_FINALIZER not in current_finalizers:
+        logger.info(f"Adding finalizer {CLIENT_FINALIZER} to KeycloakClient {name}")
+        patch.metadata.setdefault("finalizers", []).append(CLIENT_FINALIZER)
 
     try:
         reconciler = KeycloakClientReconciler()
@@ -149,103 +159,71 @@ async def update_keycloak_client(
 
 
 @kopf.on.delete("keycloakclients", group="keycloak.mdvr.nl", version="v1")
-def delete_keycloak_client(
+async def delete_keycloak_client(
     spec: dict[str, Any],
     name: str,
     namespace: str,
+    status: dict[str, Any],
+    patch: kopf.Patch,
     **kwargs: Any,
 ) -> None:
     """
-    Handle KeycloakClient deletion.
+    Handle KeycloakClient deletion with proper finalizer management.
 
-    This handler cleans up the client from Keycloak and removes
-    associated Kubernetes resources.
+    This handler performs comprehensive cleanup of the client from Keycloak
+    and any associated Kubernetes resources, removing the finalizer only
+    after cleanup is complete.
 
     Args:
         spec: KeycloakClient resource specification
         name: Name of the KeycloakClient resource
         namespace: Namespace where the resource exists
-
+        status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
     """
-    logger.info(f"Deleting KeycloakClient {name} in namespace {namespace}")
+    logger.info(f"Starting deletion of KeycloakClient {name} in namespace {namespace}")
+
+    # Check if our finalizer is present
+    meta = kwargs.get("meta", {})
+    current_finalizers = meta.get("finalizers", [])
+    if CLIENT_FINALIZER not in current_finalizers:
+        logger.info(f"Finalizer {CLIENT_FINALIZER} not found, deletion already handled")
+        return
 
     try:
-        client_spec = KeycloakClientSpec.model_validate(spec)
+        # Delegate cleanup to the reconciler service layer
+        reconciler = KeycloakClientReconciler()
+        status_wrapper = StatusWrapper(status)
+        await reconciler.cleanup_resources(
+            name=name, namespace=namespace, spec=spec, status=status_wrapper
+        )
 
-        # Get admin client for the target Keycloak instance
-        keycloak_ref = client_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-
-        # Check if Keycloak instance still exists
-        # If it's being deleted too, we might not be able to clean up
-        try:
-            admin_client = get_keycloak_admin_client(
-                keycloak_ref.name, target_namespace
-            )
-
-            # Remove client from Keycloak
-            realm_name = client_spec.realm or "master"
-            admin_client.delete_client(client_spec.client_id, realm_name)
-            logger.info(f"Deleted client {client_spec.client_id} from Keycloak")
-
-        except Exception as e:
-            logger.warning(
-                f"Could not delete client from Keycloak (instance may be deleted): {e}"
-            )
-
-        # Delete the credentials secret
-        try:
-            core_api = client.CoreV1Api(get_kubernetes_client())
-            secret_name = f"{name}-credentials"
-            core_api.delete_namespaced_secret(name=secret_name, namespace=namespace)
-            logger.info(f"Deleted credentials secret {secret_name}")
-        except ApiException as e:
-            if e.status != 404:  # Ignore "not found" errors
-                logger.warning(f"Failed to delete credentials secret: {e}")
-
-        # Clean up any additional resources
-        # Clean up any custom resources that may have been created
-        try:
-            k8s_client = get_kubernetes_client()
-            core_api = client.CoreV1Api(k8s_client)
-
-            # Look for and clean up any configmaps with our labels
-            try:
-                configmaps = core_api.list_namespaced_config_map(
-                    namespace=namespace,
-                    label_selector=f"keycloak.mdvr.nl/client={name}",
-                )
-                for cm in configmaps.items:
-                    try:
-                        core_api.delete_namespaced_config_map(
-                            name=cm.metadata.name, namespace=namespace
-                        )
-                        logger.info(f"Deleted configmap {cm.metadata.name}")
-                    except ApiException as cm_error:
-                        if cm_error.status != 404:
-                            logger.warning(
-                                f"Failed to delete configmap {cm.metadata.name}: {cm_error}"
-                            )
-
-            except ApiException as e:
-                logger.warning(f"Failed to list configmaps for cleanup: {e}")
-
-            # Clean up any service accounts or RBAC resources if they were created
-            # (In practice, these would typically be managed by external RBAC policies)
-            logger.debug(
-                f"Completed additional resource cleanup for KeycloakClient {name}"
-            )
-
-        except Exception as e:
-            logger.warning(f"Failed to clean up additional resources: {e}")
-            # Don't fail deletion for cleanup issues
+        # If cleanup succeeded, remove our finalizer to complete deletion
+        logger.info(
+            f"Cleanup completed successfully, removing finalizer {CLIENT_FINALIZER}"
+        )
+        current_finalizers = list(current_finalizers)  # Make a copy
+        if CLIENT_FINALIZER in current_finalizers:
+            current_finalizers.remove(CLIENT_FINALIZER)
+            patch.metadata["finalizers"] = current_finalizers
 
         logger.info(f"Successfully deleted KeycloakClient {name}")
 
     except Exception as e:
-        logger.error(f"Error deleting KeycloakClient {name}: {e}")
-        # Don't raise an error - we want deletion to proceed
-        # even if cleanup fails partially
+        logger.error(f"Error during KeycloakClient deletion: {e}")
+        # Update status to indicate deletion failure
+        try:
+            status["phase"] = "Failed"
+            status["message"] = f"Deletion failed: {str(e)}"
+        except Exception:
+            pass  # Status update might fail if resource is being deleted
+
+        # Re-raise the exception to trigger retry
+        # Kopf will retry the deletion with exponential backoff
+        raise kopf.TemporaryError(
+            f"Failed to delete KeycloakClient {name}: {e}",
+            delay=30,  # Wait 30 seconds before retry
+        ) from e
 
 
 @kopf.timer("keycloakclients", interval=300)  # Check every 5 minutes

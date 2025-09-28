@@ -18,6 +18,7 @@ from typing import Any, Protocol
 
 import kopf
 
+from keycloak_operator.constants import REALM_FINALIZER
 from keycloak_operator.models.realm import KeycloakRealmSpec
 from keycloak_operator.services import KeycloakRealmReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
@@ -57,6 +58,7 @@ async def ensure_keycloak_realm(
     name: str,
     namespace: str,
     status: dict[str, Any],
+    patch: kopf.Patch,
     **kwargs: Any,
 ) -> dict[str, Any]:
     """
@@ -71,12 +73,20 @@ async def ensure_keycloak_realm(
         name: Name of the KeycloakRealm resource
         namespace: Namespace where the KeycloakRealm resource exists
         status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
 
     Returns:
         Dictionary with status information for the resource
 
     """
     logger.info(f"Ensuring KeycloakRealm {name} in namespace {namespace}")
+
+    # Add finalizer BEFORE creating any resources to ensure proper cleanup
+    meta = kwargs.get("meta", {})
+    current_finalizers = meta.get("finalizers", [])
+    if REALM_FINALIZER not in current_finalizers:
+        logger.info(f"Adding finalizer {REALM_FINALIZER} to KeycloakRealm {name}")
+        patch.metadata.setdefault("finalizers", []).append(REALM_FINALIZER)
 
     # Create reconciler and delegate to service layer
     reconciler = KeycloakRealmReconciler()
@@ -131,191 +141,71 @@ async def update_keycloak_realm(
 
 
 @kopf.on.delete("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
-def delete_keycloak_realm(
+async def delete_keycloak_realm(
     spec: dict[str, Any],
     name: str,
     namespace: str,
+    status: dict[str, Any],
+    patch: kopf.Patch,
     **kwargs: Any,
 ) -> None:
     """
-    Handle KeycloakRealm deletion.
+    Handle KeycloakRealm deletion with proper finalizer management.
 
-    This handler removes the realm from Keycloak and cleans up
-    associated resources.
+    This handler performs comprehensive cleanup of the realm from Keycloak
+    and any associated Kubernetes resources, removing the finalizer only
+    after cleanup is complete.
 
     Args:
         spec: KeycloakRealm resource specification
         name: Name of the KeycloakRealm resource
         namespace: Namespace where the resource exists
-
+        status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
     """
-    logger.info(f"Deleting KeycloakRealm {name} in namespace {namespace}")
+    logger.info(f"Starting deletion of KeycloakRealm {name} in namespace {namespace}")
+
+    # Check if our finalizer is present
+    meta = kwargs.get("meta", {})
+    current_finalizers = meta.get("finalizers", [])
+    if REALM_FINALIZER not in current_finalizers:
+        logger.info(f"Finalizer {REALM_FINALIZER} not found, deletion already handled")
+        return
 
     try:
-        realm_spec = KeycloakRealmSpec.model_validate(spec)
+        # Delegate cleanup to the reconciler service layer
+        reconciler = KeycloakRealmReconciler()
+        status_wrapper = StatusWrapper(status)
+        await reconciler.cleanup_resources(
+            name=name, namespace=namespace, spec=spec, status=status_wrapper
+        )
 
-        # Check for deletion protection
-        # Some realms might be protected from accidental deletion
-        protection_enabled = realm_spec.deletion_protection
-        if protection_enabled:
-            finalizers = kwargs.get("meta", {}).get("finalizers", [])
-            if "keycloak.mdvr.nl/deletion-confirmed" not in finalizers:
-                logger.warning(
-                    f"Realm {realm_spec.realm_name} is protected from deletion. "
-                    "Add finalizer 'keycloak.mdvr.nl/deletion-confirmed' to proceed."
-                )
-                return
-
-        # Get admin client for the target Keycloak instance
-        keycloak_ref = realm_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-
-        try:
-            admin_client = get_keycloak_admin_client(
-                keycloak_ref.name, target_namespace
-            )
-
-            # Backup realm data if requested
-            if realm_spec.backup_on_delete:
-                logger.info(f"Backing up realm {realm_spec.realm_name}")
-                backup_data = admin_client.backup_realm(realm_spec.realm_name)
-                if backup_data:
-                    # Store backup in configmap for safe keeping
-                    try:
-                        import json
-                        from datetime import datetime
-
-                        from kubernetes import client as k8s_client
-
-                        from keycloak_operator.utils.kubernetes import (
-                            get_kubernetes_client,
-                        )
-
-                        k8s = get_kubernetes_client()
-                        core_api = k8s_client.CoreV1Api(k8s)
-
-                        # Create backup configmap
-                        backup_name = f"{name}-realm-backup-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
-                        backup_cm = k8s_client.V1ConfigMap(
-                            metadata=k8s_client.V1ObjectMeta(
-                                name=backup_name,
-                                namespace=namespace,
-                                labels={
-                                    "keycloak.mdvr.nl/realm": realm_spec.realm_name,
-                                    "keycloak.mdvr.nl/backup": "true",
-                                    "keycloak.mdvr.nl/resource": name,
-                                },
-                            ),
-                            data={
-                                "realm-backup.json": json.dumps(backup_data, indent=2),
-                                "backup-timestamp": datetime.now(UTC).isoformat(),
-                                "realm-name": realm_spec.realm_name,
-                            },
-                        )
-
-                        core_api.create_namespaced_config_map(
-                            namespace=namespace, body=backup_cm
-                        )
-                        logger.info(f"Realm backup stored in configmap {backup_name}")
-
-                    except Exception as backup_error:
-                        logger.warning(
-                            f"Failed to store backup in configmap: {backup_error}"
-                        )
-                        # Continue with deletion even if backup storage fails
-
-                    logger.info("Realm backup created successfully")
-                else:
-                    logger.warning(
-                        f"Failed to create backup for realm {realm_spec.realm_name}"
-                    )
-
-            # Clean up clients in this realm first
-            # This ensures proper cleanup order and prevents orphaned resources
-            realm_clients = admin_client.get_realm_clients(realm_spec.realm_name)
-            for client in realm_clients:
-                client_id = client.get("clientId")
-                if client_id:
-                    logger.info(f"Cleaning up client {client_id}")
-                    admin_client.delete_client(client_id, realm_spec.realm_name)
-
-            # Remove the realm from Keycloak
-            admin_client.delete_realm(realm_spec.realm_name)
-            logger.info(f"Deleted realm {realm_spec.realm_name} from Keycloak")
-
-        except Exception as e:
-            logger.warning(
-                f"Could not delete realm from Keycloak (instance may be deleted): {e}"
-            )
-
-        # Clean up any external resources
-        # Look for and clean up any additional resources that may have been created
-        try:
-            from kubernetes import client as k8s_client
-
-            from keycloak_operator.utils.kubernetes import get_kubernetes_client
-
-            k8s = get_kubernetes_client()
-            core_api = k8s_client.CoreV1Api(k8s)
-
-            # Clean up any configmaps related to this realm (except backups if they should be preserved)
-            try:
-                configmaps = core_api.list_namespaced_config_map(
-                    namespace=namespace,
-                    label_selector=f"keycloak.mdvr.nl/realm={realm_spec.realm_name},keycloak.mdvr.nl/backup!=true",
-                )
-                for cm in configmaps.items:
-                    try:
-                        core_api.delete_namespaced_config_map(
-                            name=cm.metadata.name, namespace=namespace
-                        )
-                        logger.info(
-                            f"Deleted realm-related configmap {cm.metadata.name}"
-                        )
-                    except Exception as cm_error:
-                        logger.warning(
-                            f"Failed to delete configmap {cm.metadata.name}: {cm_error}"
-                        )
-
-            except Exception as e:
-                logger.warning(f"Failed to clean up realm configmaps: {e}")
-
-            # Clean up any secrets related to this realm (except client credentials which are managed separately)
-            try:
-                secrets = core_api.list_namespaced_secret(
-                    namespace=namespace,
-                    label_selector=f"keycloak.mdvr.nl/realm={realm_spec.realm_name},keycloak.mdvr.nl/secret-type!=client-credentials",
-                )
-                for secret in secrets.items:
-                    try:
-                        core_api.delete_namespaced_secret(
-                            name=secret.metadata.name, namespace=namespace
-                        )
-                        logger.info(
-                            f"Deleted realm-related secret {secret.metadata.name}"
-                        )
-                    except Exception as secret_error:
-                        logger.warning(
-                            f"Failed to delete secret {secret.metadata.name}: {secret_error}"
-                        )
-
-            except Exception as e:
-                logger.warning(f"Failed to clean up realm secrets: {e}")
-
-            logger.debug(
-                f"Completed external resource cleanup for realm {realm_spec.realm_name}"
-            )
-
-        except Exception as e:
-            logger.warning(f"Failed to clean up external resources: {e}")
-            # Don't fail deletion for cleanup issues
+        # If cleanup succeeded, remove our finalizer to complete deletion
+        logger.info(
+            f"Cleanup completed successfully, removing finalizer {REALM_FINALIZER}"
+        )
+        current_finalizers = list(current_finalizers)  # Make a copy
+        if REALM_FINALIZER in current_finalizers:
+            current_finalizers.remove(REALM_FINALIZER)
+            patch.metadata["finalizers"] = current_finalizers
 
         logger.info(f"Successfully deleted KeycloakRealm {name}")
 
     except Exception as e:
-        logger.error(f"Error deleting KeycloakRealm {name}: {e}")
-        # Don't raise an error - we want deletion to proceed
-        # even if cleanup fails partially
+        logger.error(f"Error during KeycloakRealm deletion: {e}")
+        # Update status to indicate deletion failure
+        try:
+            status["phase"] = "Failed"
+            status["message"] = f"Deletion failed: {str(e)}"
+        except Exception:
+            pass  # Status update might fail if resource is being deleted
+
+        # Re-raise the exception to trigger retry
+        # Kopf will retry the deletion with exponential backoff
+        raise kopf.TemporaryError(
+            f"Failed to delete KeycloakRealm {name}: {e}",
+            delay=30,  # Wait 30 seconds before retry
+        ) from e
 
 
 @kopf.timer("keycloakrealms", interval=600)  # Check every 10 minutes

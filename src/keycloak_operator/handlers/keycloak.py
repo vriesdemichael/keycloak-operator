@@ -21,13 +21,11 @@ from kopf import Diff, Meta
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.models.keycloak import KeycloakSpec
+from keycloak_operator.constants import KEYCLOAK_FINALIZER
 from keycloak_operator.services import KeycloakInstanceReconciler
 from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 from keycloak_operator.utils.kubernetes import (
-    backup_keycloak_data,
     check_http_health,
-    create_persistent_volume_claim,
     get_admin_credentials,
     get_kubernetes_client,
     get_pod_resource_usage,
@@ -60,6 +58,7 @@ async def ensure_keycloak_instance(
     name: str,
     namespace: str,
     status: StatusProtocol,
+    patch: kopf.Patch,
     **kwargs: KopfHandlerKwargs,
 ) -> dict[str, Any]:
     """
@@ -74,12 +73,23 @@ async def ensure_keycloak_instance(
         name: Name of the Keycloak resource
         namespace: Namespace where the resource exists
         status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
 
     Returns:
         Dictionary with status information for the resource
 
     """
     logger.info(f"Ensuring Keycloak instance {name} in namespace {namespace}")
+
+    # Add finalizer BEFORE creating any resources to ensure proper cleanup
+    # This prevents the resource from being deleted until cleanup is complete
+    meta = kwargs.get("meta", {})
+    current_finalizers = meta.get("finalizers", [])
+    if KEYCLOAK_FINALIZER not in current_finalizers:
+        logger.info(
+            f"Adding finalizer {KEYCLOAK_FINALIZER} to Keycloak instance {name}"
+        )
+        patch.metadata.setdefault("finalizers", []).append(KEYCLOAK_FINALIZER)
 
     # Create reconciler and delegate to service layer
     reconciler = KeycloakInstanceReconciler()
@@ -131,263 +141,72 @@ async def update_keycloak_instance(
 
 
 @kopf.on.delete("keycloaks", group="keycloak.mdvr.nl", version="v1")
-def delete_keycloak_instance(
-    _spec: dict[str, Any],
+async def delete_keycloak_instance(
+    spec: dict[str, Any],
     name: str,
     namespace: str,
-    _status: Any,  # kopf.Status object
+    status: StatusProtocol,
+    patch: kopf.Patch,
     **kwargs: KopfHandlerKwargs,
 ) -> None:
     """
-        Handle Keycloak instance deletion.
+    Handle Keycloak instance deletion with proper finalizer management.
 
-        This handler is called when a Keycloak resource is deleted.
-        It performs cleanup of all associated Kubernetes resources
-        while preserving data if configured to do so.
+    This handler performs comprehensive cleanup of all associated resources
+    and removes the finalizer only after cleanup is complete, preventing
+    data loss and orphaned resources.
 
-        Args:
-            spec: Keycloak resource specification
-            name: Name of the Keycloak resource
-            namespace: Namespace where the resource exists
-            status: Current status of the resource
-
-    Implementation includes:
-        ✅ Check if preservation of data is required (finalizers)
-        ✅ Backup Keycloak data if requested
-        ✅ Delete associated Kubernetes resources in proper order:
-           - Ingress (stop external traffic first)
-           - Service (stop internal traffic)
-           - Deployment (stop pods)
-           - ConfigMaps and Secrets (unless preserved)
-           - PersistentVolumeClaims (based on retention policy)
-        ⚠️  Clean up any external resources (DNS records, certificates) - Future enhancement
-        ⚠️  Remove finalizers to complete deletion - Future enhancement
+    Args:
+        spec: Keycloak resource specification
+        name: Name of the Keycloak resource
+        namespace: Namespace where the resource exists
+        status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
     """
-    logger.info(f"Deleting Keycloak instance {name} in namespace {namespace}")
+    logger.info(
+        f"Starting deletion of Keycloak instance {name} in namespace {namespace}"
+    )
+
+    # Check if our finalizer is present
+    meta = kwargs.get("meta", {})
+    current_finalizers = meta.get("finalizers", [])
+    if KEYCLOAK_FINALIZER not in current_finalizers:
+        logger.info(
+            f"Finalizer {KEYCLOAK_FINALIZER} not found, deletion already handled"
+        )
+        return
 
     try:
-        # Parse the specification to understand deletion policy
-        keycloak_spec = KeycloakSpec.model_validate(_spec)
-        logger.debug(f"Parsed Keycloak spec for deletion: {keycloak_spec}")
+        # Delegate cleanup to the reconciler service layer
+        reconciler = KeycloakInstanceReconciler()
+        await reconciler.cleanup_resources(name=name, namespace=namespace, spec=spec)
 
-        # Check for finalizers and data preservation requirements
-        finalizers = kwargs.get("meta", {}).get("finalizers", [])
-        preserve_data = "keycloak.mdvr.nl/preserve-data" in finalizers
-
-        # Get Kubernetes API clients first
-        k8s_client = get_kubernetes_client()
-        apps_api = client.AppsV1Api(k8s_client)
-        core_api = client.CoreV1Api(k8s_client)
-        networking_api = client.NetworkingV1Api(k8s_client)
-
-        if preserve_data:
-            logger.info("Data preservation requested, backing up Keycloak data")
-            # Implement data backup logic
-            try:
-                # Create backup PVC if it doesn't exist
-                backup_pvc_name = f"{name}-backup-pvc"
-                try:
-                    core_api.read_namespaced_persistent_volume_claim(
-                        name=backup_pvc_name, namespace=namespace
-                    )
-                except ApiException as e:
-                    if e.status == 404:
-                        # Create backup PVC
-                        backup_pvc = create_persistent_volume_claim(
-                            name=f"{name}-backup",
-                            namespace=namespace,
-                            size="5Gi",  # Smaller size for backups
-                        )
-                        logger.info(f"Created backup PVC: {backup_pvc.metadata.name}")
-
-                # Create backup job
-                backup_job = backup_keycloak_data(
-                    name=name,
-                    namespace=namespace,
-                    spec=keycloak_spec,
-                    k8s_client=k8s_client,
-                )
-                logger.info(f"Created backup job: {backup_job.metadata.name}")
-
-                # Wait briefly for backup to start
-                import time
-
-                time.sleep(10)
-                logger.info("Backup job started, proceeding with deletion")
-
-            except Exception as e:
-                logger.error(f"Failed to create backup: {e}")
-                # Don't fail deletion if backup fails
-                logger.warning("Proceeding with deletion despite backup failure")
-
-        # Delete resources in reverse order of creation
-        # This ensures clean shutdown and prevents data loss
-
-        # Delete ingress first to stop external traffic
-        ingress_name = f"{name}-keycloak"
-        try:
-            networking_api.delete_namespaced_ingress(
-                name=ingress_name, namespace=namespace
-            )
-            logger.info(f"Deleted Keycloak ingress {ingress_name}")
-        except ApiException as e:
-            if e.status != 404:  # Ignore "not found" errors
-                logger.warning(f"Failed to delete ingress {ingress_name}: {e}")
-            else:
-                logger.debug(
-                    f"Ingress {ingress_name} not found (may not have been created)"
-                )
-
-        # Delete service to stop internal traffic
-        service_name = f"{name}-keycloak"
-        try:
-            core_api.delete_namespaced_service(name=service_name, namespace=namespace)
-            logger.info(f"Deleted Keycloak service {service_name}")
-        except ApiException as e:
-            if e.status != 404:
-                logger.warning(f"Failed to delete service {service_name}: {e}")
-            else:
-                logger.debug(f"Service {service_name} not found")
-
-        # Delete deployment to stop pods
-        deployment_name = f"{name}-keycloak"
-        try:
-            apps_api.delete_namespaced_deployment(
-                name=deployment_name, namespace=namespace
-            )
-            logger.info(f"Deleted Keycloak deployment {deployment_name}")
-
-            # Wait for deployment to be fully deleted
-            import time
-
-            max_wait = 60  # 1 minute
-            wait_interval = 5
-            elapsed = 0
-
-            while elapsed < max_wait:
-                try:
-                    apps_api.read_namespaced_deployment(
-                        name=deployment_name, namespace=namespace
-                    )
-                    logger.debug(
-                        f"Waiting for deployment {deployment_name} to be deleted..."
-                    )
-                    time.sleep(wait_interval)
-                    elapsed += wait_interval
-                except ApiException as e:
-                    if e.status == 404:
-                        logger.info(
-                            f"Deployment {deployment_name} successfully deleted"
-                        )
-                        break
-                    else:
-                        raise
-
-        except ApiException as e:
-            if e.status != 404:
-                logger.warning(f"Failed to delete deployment {deployment_name}: {e}")
-            else:
-                logger.debug(f"Deployment {deployment_name} not found")
-
-        # Delete secrets and configmaps (unless preservation is requested)
-        if not preserve_data:
-            # Delete admin credentials secret
-            admin_secret_name = f"{name}-admin-credentials"
-            try:
-                core_api.delete_namespaced_secret(
-                    name=admin_secret_name, namespace=namespace
-                )
-                logger.info(f"Deleted admin secret {admin_secret_name}")
-            except ApiException as e:
-                if e.status != 404:
-                    logger.warning(
-                        f"Failed to delete admin secret {admin_secret_name}: {e}"
-                    )
-
-            # Delete other configuration secrets and configmaps
-            # Look for resources with our labels
-            try:
-                secrets = core_api.list_namespaced_secret(
-                    namespace=namespace,
-                    label_selector=f"keycloak.mdvr.nl/instance={name}",
-                )
-                for secret in secrets.items:
-                    if (
-                        secret.metadata.name != admin_secret_name
-                    ):  # Already handled above
-                        try:
-                            core_api.delete_namespaced_secret(
-                                name=secret.metadata.name, namespace=namespace
-                            )
-                            logger.info(f"Deleted secret {secret.metadata.name}")
-                        except ApiException as e:
-                            if e.status != 404:
-                                logger.warning(
-                                    f"Failed to delete secret {secret.metadata.name}: {e}"
-                                )
-
-                configmaps = core_api.list_namespaced_config_map(
-                    namespace=namespace,
-                    label_selector=f"keycloak.mdvr.nl/instance={name}",
-                )
-                for cm in configmaps.items:
-                    try:
-                        core_api.delete_namespaced_config_map(
-                            name=cm.metadata.name, namespace=namespace
-                        )
-                        logger.info(f"Deleted configmap {cm.metadata.name}")
-                    except ApiException as e:
-                        if e.status != 404:
-                            logger.warning(
-                                f"Failed to delete configmap {cm.metadata.name}: {e}"
-                            )
-
-            except ApiException as e:
-                logger.warning(f"Failed to list/delete configuration resources: {e}")
-
-            logger.info("Deleted Keycloak configuration resources")
-        else:
-            logger.info(
-                "Preserving Keycloak secrets and configuration (preserve_data=True)"
-            )
-
-        # Handle persistent volume claims based on retention policy
-        # This should respect the storage class reclaim policy
-        retention_policy = _spec.get("persistence", {}).get("retainPolicy", "Delete")
-        if retention_policy == "Delete" and not preserve_data:
-            # Delete PVCs if they exist
-            try:
-                pvcs = core_api.list_namespaced_persistent_volume_claim(
-                    namespace=namespace,
-                    label_selector=f"keycloak.mdvr.nl/instance={name}",
-                )
-                for pvc in pvcs.items:
-                    try:
-                        core_api.delete_namespaced_persistent_volume_claim(
-                            name=pvc.metadata.name, namespace=namespace
-                        )
-                        logger.info(f"Deleted PVC {pvc.metadata.name}")
-                    except ApiException as e:
-                        if e.status != 404:
-                            logger.warning(
-                                f"Failed to delete PVC {pvc.metadata.name}: {e}"
-                            )
-
-            except ApiException as e:
-                logger.warning(f"Failed to list PVCs for deletion: {e}")
-
-            logger.info("Deleted Keycloak persistent storage")
-        else:
-            logger.info("Preserving Keycloak persistent storage")
+        # If cleanup succeeded, remove our finalizer to complete deletion
+        logger.info(
+            f"Cleanup completed successfully, removing finalizer {KEYCLOAK_FINALIZER}"
+        )
+        current_finalizers = list(current_finalizers)  # Make a copy
+        if KEYCLOAK_FINALIZER in current_finalizers:
+            current_finalizers.remove(KEYCLOAK_FINALIZER)
+            patch.metadata["finalizers"] = current_finalizers
 
         logger.info(f"Successfully deleted Keycloak instance {name}")
 
     except Exception as e:
         logger.error(f"Error during Keycloak deletion: {e}")
-        # Don't raise an error here - we want deletion to proceed
-        # even if cleanup fails partially
-        # However, we should log the specifics for troubleshooting
-        logger.error(f"Keycloak deletion completed with errors: {e}", exc_info=True)
+        # Update status to indicate deletion failure
+        try:
+            status.phase = "Failed"
+            status.message = f"Deletion failed: {str(e)}"
+        except Exception:
+            pass  # Status update might fail if resource is being deleted
+
+        # Re-raise the exception to trigger retry
+        # Kopf will retry the deletion with exponential backoff
+        raise kopf.TemporaryError(
+            f"Failed to delete Keycloak instance {name}: {e}",
+            delay=30,  # Wait 30 seconds before retry
+        ) from e
 
 
 @kopf.timer("keycloaks", interval=60)

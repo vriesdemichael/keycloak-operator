@@ -123,3 +123,8 @@ rules:
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingadmissionwebhooks", "mutatingadmissionwebhooks"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+# Leader election (coordination.k8s.io for high availability)
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
