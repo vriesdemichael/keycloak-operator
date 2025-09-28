@@ -325,7 +325,13 @@ class KeycloakInstanceReconciler(BaseReconciler):
         # Wait for deployment to be ready
         deployment_ready = await self.wait_for_deployment_ready(name, namespace)
 
+        # Extract generation for status tracking
+        generation = kwargs.get("meta", {}).get("generation", 0)
+
         if not deployment_ready:
+            self.update_status_degraded(
+                status, "Deployment created but not ready within timeout", generation
+            )
             return {
                 "phase": "Degraded",
                 "message": "Deployment created but not ready within timeout",
@@ -337,7 +343,8 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 },
             }
 
-        # Return status information
+        # Update status to ready and return status information
+        self.update_status_ready(status, "Keycloak instance is running", generation)
         return {
             "phase": "Running",
             "message": "Keycloak instance is running",
@@ -869,3 +876,257 @@ class KeycloakInstanceReconciler(BaseReconciler):
             f"Deployment {deployment_name} did not become ready within {max_wait_time} seconds"
         )
         return False
+
+    async def cleanup_resources(
+        self, name: str, namespace: str, spec: dict[str, Any]
+    ) -> None:
+        """
+        Clean up all resources associated with a Keycloak instance.
+
+        This method performs comprehensive cleanup in the proper order to prevent
+        data loss and ensure all associated resources are properly removed.
+
+        Args:
+            name: Name of the Keycloak instance
+            namespace: Namespace containing the resources
+            spec: Keycloak specification for understanding deletion requirements
+
+        Raises:
+            TemporaryError: If cleanup fails but should be retried
+        """
+        from ..constants import (
+            BACKUP_ANNOTATION,
+            DEPLOYMENT_SUFFIX,
+            INGRESS_SUFFIX,
+            PRESERVE_DATA_ANNOTATION,
+            SERVICE_SUFFIX,
+        )
+
+        self.logger.info(f"Starting cleanup of Keycloak instance {name} in {namespace}")
+
+        try:
+            keycloak_spec = KeycloakSpec.model_validate(spec)
+        except Exception as e:
+            raise TemporaryError(f"Failed to parse Keycloak spec: {e}") from e
+
+        # Get Kubernetes API clients
+        apps_api = client.AppsV1Api(self.kubernetes_client)
+        core_api = client.CoreV1Api(self.kubernetes_client)
+        networking_api = client.NetworkingV1Api(self.kubernetes_client)
+
+        # Check for data preservation requirements
+        preserve_data = (
+            spec.get("metadata", {})
+            .get("annotations", {})
+            .get(PRESERVE_DATA_ANNOTATION, "false")
+            .lower()
+            == "true"
+        )
+
+        backup_requested = (
+            spec.get("metadata", {})
+            .get("annotations", {})
+            .get(BACKUP_ANNOTATION, "false")
+            .lower()
+            == "true"
+        )
+
+        # Create backup if requested
+        if backup_requested and not preserve_data:
+            try:
+                await self._create_backup(name, namespace, keycloak_spec)
+            except Exception as e:
+                self.logger.warning(f"Backup creation failed: {e}")
+                # Continue with deletion even if backup fails
+
+        # Delete resources in reverse order of creation to ensure clean shutdown
+
+        # 1. Delete ingress first to stop external traffic
+        ingress_name = f"{name}{INGRESS_SUFFIX}"
+        try:
+            await self._delete_ingress(ingress_name, namespace, networking_api)
+        except Exception as e:
+            self.logger.warning(f"Failed to delete ingress: {e}")
+
+        # 2. Delete service to stop internal traffic
+        service_name = f"{name}{SERVICE_SUFFIX}"
+        try:
+            await self._delete_service(service_name, namespace, core_api)
+        except Exception as e:
+            self.logger.warning(f"Failed to delete service: {e}")
+
+        # 3. Delete deployment to stop pods
+        deployment_name = f"{name}{DEPLOYMENT_SUFFIX}"
+        try:
+            await self._delete_deployment(deployment_name, namespace, apps_api)
+        except Exception as e:
+            self.logger.warning(f"Failed to delete deployment: {e}")
+
+        # 4. Delete secrets and configmaps (unless preservation is requested)
+        if not preserve_data:
+            try:
+                await self._delete_configuration_resources(name, namespace, core_api)
+            except Exception as e:
+                self.logger.warning(f"Failed to delete configuration resources: {e}")
+
+        # 5. Handle persistent volume claims based on retention policy
+        retention_policy = spec.get("persistence", {}).get("retainPolicy", "Delete")
+        if retention_policy == "Delete" and not preserve_data:
+            try:
+                await self._delete_persistent_storage(name, namespace, core_api)
+            except Exception as e:
+                self.logger.warning(f"Failed to delete persistent storage: {e}")
+
+        self.logger.info(f"Successfully completed cleanup of Keycloak instance {name}")
+
+    async def _create_backup(
+        self, name: str, namespace: str, keycloak_spec: KeycloakSpec
+    ) -> None:
+        """Create a backup of Keycloak data before deletion."""
+        from datetime import UTC, datetime
+
+        backup_name = f"{name}-backup-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
+
+        # TODO: Implement actual backup logic using keycloak admin API
+        # This would involve exporting realm configurations, users, etc.
+        self.logger.info(f"Backup {backup_name} would be created here")
+
+    async def _delete_ingress(
+        self, ingress_name: str, namespace: str, networking_api
+    ) -> None:
+        """Delete ingress resource."""
+        try:
+            networking_api.delete_namespaced_ingress(
+                name=ingress_name, namespace=namespace
+            )
+            self.logger.info(f"Deleted ingress {ingress_name}")
+        except ApiException as e:
+            if e.status != 404:
+                raise TemporaryError(
+                    f"Failed to delete ingress {ingress_name}: {e}"
+                ) from e
+
+    async def _delete_service(
+        self, service_name: str, namespace: str, core_api
+    ) -> None:
+        """Delete service resource."""
+        try:
+            core_api.delete_namespaced_service(name=service_name, namespace=namespace)
+            self.logger.info(f"Deleted service {service_name}")
+        except ApiException as e:
+            if e.status != 404:
+                raise TemporaryError(
+                    f"Failed to delete service {service_name}: {e}"
+                ) from e
+
+    async def _delete_deployment(
+        self, deployment_name: str, namespace: str, apps_api
+    ) -> None:
+        """Delete deployment and wait for pods to terminate."""
+        try:
+            apps_api.delete_namespaced_deployment(
+                name=deployment_name, namespace=namespace
+            )
+            self.logger.info(f"Deleted deployment {deployment_name}")
+
+            # Wait for deployment to be fully deleted
+            import asyncio
+
+            max_wait = 60  # 1 minute
+            wait_interval = 5
+            elapsed = 0
+
+            while elapsed < max_wait:
+                try:
+                    apps_api.read_namespaced_deployment(
+                        name=deployment_name, namespace=namespace
+                    )
+                    await asyncio.sleep(wait_interval)
+                    elapsed += wait_interval
+                except ApiException as e:
+                    if e.status == 404:
+                        self.logger.info(f"Deployment {deployment_name} fully deleted")
+                        break
+                    else:
+                        raise
+
+        except ApiException as e:
+            if e.status != 404:
+                raise TemporaryError(
+                    f"Failed to delete deployment {deployment_name}: {e}"
+                ) from e
+
+    async def _delete_configuration_resources(
+        self, name: str, namespace: str, core_api
+    ) -> None:
+        """Delete secrets and configmaps associated with the Keycloak instance."""
+        from ..constants import INSTANCE_LABEL_KEY
+
+        label_selector = f"{INSTANCE_LABEL_KEY}={name}"
+
+        # Delete secrets
+        try:
+            secrets = core_api.list_namespaced_secret(
+                namespace=namespace, label_selector=label_selector
+            )
+            for secret in secrets.items:
+                try:
+                    core_api.delete_namespaced_secret(
+                        name=secret.metadata.name, namespace=namespace
+                    )
+                    self.logger.info(f"Deleted secret {secret.metadata.name}")
+                except ApiException as e:
+                    if e.status != 404:
+                        self.logger.warning(
+                            f"Failed to delete secret {secret.metadata.name}: {e}"
+                        )
+
+        except ApiException as e:
+            self.logger.warning(f"Failed to list secrets for cleanup: {e}")
+
+        # Delete configmaps
+        try:
+            configmaps = core_api.list_namespaced_config_map(
+                namespace=namespace, label_selector=label_selector
+            )
+            for cm in configmaps.items:
+                try:
+                    core_api.delete_namespaced_config_map(
+                        name=cm.metadata.name, namespace=namespace
+                    )
+                    self.logger.info(f"Deleted configmap {cm.metadata.name}")
+                except ApiException as e:
+                    if e.status != 404:
+                        self.logger.warning(
+                            f"Failed to delete configmap {cm.metadata.name}: {e}"
+                        )
+
+        except ApiException as e:
+            self.logger.warning(f"Failed to list configmaps for cleanup: {e}")
+
+    async def _delete_persistent_storage(
+        self, name: str, namespace: str, core_api
+    ) -> None:
+        """Delete persistent volume claims associated with the Keycloak instance."""
+        from ..constants import INSTANCE_LABEL_KEY
+
+        label_selector = f"{INSTANCE_LABEL_KEY}={name}"
+
+        try:
+            pvcs = core_api.list_namespaced_persistent_volume_claim(
+                namespace=namespace, label_selector=label_selector
+            )
+            for pvc in pvcs.items:
+                try:
+                    core_api.delete_namespaced_persistent_volume_claim(
+                        name=pvc.metadata.name, namespace=namespace
+                    )
+                    self.logger.info(f"Deleted PVC {pvc.metadata.name}")
+                except ApiException as e:
+                    if e.status != 404:
+                        self.logger.warning(
+                            f"Failed to delete PVC {pvc.metadata.name}: {e}"
+                        )
+
+        except ApiException as e:
+            self.logger.warning(f"Failed to list PVCs for cleanup: {e}")

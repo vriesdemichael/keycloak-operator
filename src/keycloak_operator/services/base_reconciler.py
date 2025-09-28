@@ -92,6 +92,9 @@ class BaseReconciler(ABC):
         )
 
         # Use metrics context manager to track reconciliation
+        # Extract generation from metadata for ObservedGeneration tracking
+        generation = kwargs.get("meta", {}).get("generation", 0)
+
         async with metrics_collector.track_reconciliation(
             resource_type=resource_type,
             namespace=namespace,
@@ -100,7 +103,9 @@ class BaseReconciler(ABC):
         ):
             try:
                 # Update status to indicate reconciliation started
-                self.update_status_reconciling(status, "Starting reconciliation")
+                self.update_status_reconciling(
+                    status, "Starting reconciliation", generation
+                )
 
                 # Perform the actual reconciliation
                 result = await self.do_reconcile(
@@ -109,7 +114,7 @@ class BaseReconciler(ABC):
 
                 # Update status to indicate success
                 self.update_status_ready(
-                    status, "Reconciliation completed successfully"
+                    status, "Reconciliation completed successfully", generation
                 )
 
                 # Update resource status metrics
@@ -137,7 +142,7 @@ class BaseReconciler(ABC):
                     error=e,
                     duration=duration,
                 )
-                self.update_status_failed(status, str(e))
+                self.update_status_failed(status, str(e), generation)
 
                 # Update resource status metrics
                 metrics_collector.update_resource_status(
@@ -230,6 +235,9 @@ class BaseReconciler(ABC):
             namespace=namespace,
         )
 
+        # Extract generation from metadata for ObservedGeneration tracking
+        generation = kwargs.get("meta", {}).get("generation", 0)
+
         async with metrics_collector.track_reconciliation(
             resource_type=resource_type,
             namespace=namespace,
@@ -239,7 +247,7 @@ class BaseReconciler(ABC):
             try:
                 # Update status to indicate update started
                 self.update_status_reconciling(
-                    status, "Processing configuration changes"
+                    status, "Processing configuration changes", generation
                 )
 
                 # Perform the actual update
@@ -248,7 +256,9 @@ class BaseReconciler(ABC):
                 )
 
                 # Update status to indicate success
-                self.update_status_ready(status, "Update completed successfully")
+                self.update_status_ready(
+                    status, "Update completed successfully", generation
+                )
 
                 # Update resource status metrics
                 metrics_collector.update_resource_status(
@@ -275,7 +285,7 @@ class BaseReconciler(ABC):
                     error=e,
                     duration=duration,
                 )
-                self.update_status_failed(status, str(e))
+                self.update_status_failed(status, str(e), generation)
 
                 # Update resource status metrics
                 metrics_collector.update_resource_status(
@@ -417,30 +427,43 @@ class BaseReconciler(ABC):
         if last_exception:
             raise last_exception
 
-    def update_status_reconciling(self, status: StatusProtocol, message: str) -> None:
+    def update_status_reconciling(
+        self, status: StatusProtocol, message: str, generation: int = 0
+    ) -> None:
         """Update status to indicate reconciliation is in progress."""
         status.phase = "Reconciling"
         status.message = message
         status.last_reconcile_time = datetime.now(UTC).isoformat()
+        # Track ObservedGeneration for GitOps compatibility
+        status.observedGeneration = generation
         self._add_condition(
             status, "Reconciling", "True", "ReconciliationInProgress", message
         )
 
     def update_status_ready(
-        self, status: StatusProtocol, message: str = "Resource is ready"
+        self,
+        status: StatusProtocol,
+        message: str = "Resource is ready",
+        generation: int = 0,
     ) -> None:
         """Update status to indicate resource is ready."""
         status.phase = "Ready"
         status.message = message
         status.last_reconcile_time = datetime.now(UTC).isoformat()
+        # Track ObservedGeneration for GitOps compatibility
+        status.observedGeneration = generation
         self._add_condition(status, "Ready", "True", "ReconciliationSucceeded", message)
         self._remove_condition(status, "Reconciling")
 
-    def update_status_failed(self, status: StatusProtocol, message: str) -> None:
+    def update_status_failed(
+        self, status: StatusProtocol, message: str, generation: int = 0
+    ) -> None:
         """Update status to indicate reconciliation failed."""
         status.phase = "Failed"
         status.message = message
         status.last_reconcile_time = datetime.now(UTC).isoformat()
+        # Track ObservedGeneration for GitOps compatibility
+        status.observedGeneration = generation
         self._add_condition(status, "Ready", "False", "ReconciliationFailed", message)
         self._remove_condition(status, "Reconciling")
 

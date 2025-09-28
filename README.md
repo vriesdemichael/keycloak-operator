@@ -1000,3 +1000,92 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ---
 
 **Built with ❤️ using Python, Kopf, and Kubernetes**
+
+---
+
+## 📘 Documentation Site
+
+This repository includes a MkDocs + Material based documentation site under the `docs/` directory.
+
+### Local Preview
+
+```bash
+# Install docs dependencies (if not already installed)
+uv sync --group docs
+
+# Or include dev + docs
+uv sync --group dev --group docs
+
+# Serve with live reload (http://127.0.0.1:8000)
+uv run --group docs mkdocs serve
+```
+
+### Build Static Site
+
+```bash
+uv run --group docs mkdocs build
+```
+Artifacts are written to `site/` (ignored from VCS by default recommendation—add to `.gitignore` if needed).
+
+### Project Docs Structure
+
+```
+docs/
+  index.md            # Landing page
+  architecture.md     # High-level design overview
+  development.md      # Contributor & workflow guide
+  api/
+    keycloak_operator.md  # mkdocstrings API reference directives
+mkdocs.yml            # MkDocs configuration
+```
+
+### Adding API Reference Entries
+
+Add a new section by inserting a directive into any markdown file:
+
+```markdown
+::: keycloak_operator.utils.kubernetes
+```
+
+On the next build/serve, the module members will render automatically.
+
+### Recommended Next Steps
+
+- Add a GitHub Actions workflow to deploy to GitHub Pages
+- Enable search indexing & versioning later (e.g., mike for versioned docs)
+- Add a CHANGELOG and link it in the navigation
+
+### Example GitHub Pages Workflow (Save as `.github/workflows/docs.yml`)
+
+```yaml
+name: docs
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: uv sync --group docs
+      - name: Build docs
+        run: uv run --group docs mkdocs build --strict
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+```
+
+Then enable GitHub Pages to serve from the `gh-pages` branch.
+
+---

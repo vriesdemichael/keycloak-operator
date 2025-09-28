@@ -86,6 +86,12 @@ async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
     settings.posting.enabled = True  # Enable status posting
     settings.watching.reconnect_backoff = 1.0  # Reconnect delay
 
+    # Configure leader election for high availability
+    settings.peering.name = "keycloak-operator"  # Unique name for leader election
+    settings.peering.priority = 100  # Priority for leader selection
+    settings.peering.lifetime = 30  # Lease lifetime in seconds
+    settings.peering.standalone = False  # Enable leader election (not standalone mode)
+
     # Configure error handling - be more forgiving for temporary issues
     settings.execution.max_workers = 20  # Allow concurrent processing
 
@@ -225,7 +231,6 @@ def main() -> None:
             # Watch specific namespaces
             kopf.run(
                 namespaces=watched_namespaces,
-                standalone=True,
                 liveness_endpoint="http://0.0.0.0:8080/healthz",
                 priority=100,
             )
@@ -233,7 +238,6 @@ def main() -> None:
             # Watch all namespaces (cluster-wide)
             kopf.run(
                 clusterwide=True,
-                standalone=True,
                 liveness_endpoint="http://0.0.0.0:8080/healthz",
                 priority=100,
             )
