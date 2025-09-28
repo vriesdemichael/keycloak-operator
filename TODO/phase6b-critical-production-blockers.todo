@@ -53,7 +53,7 @@
 
 - [x] **Add finalizers to realm handler** in `/src/keycloak_operator/handlers/realm.py`
 - [x] **Add finalizers to client handler** in `/src/keycloak_operator/handlers/client.py`
-- [ ] **Write tests** for finalizer behavior in `/tests/unit/test_finalizers.py`
+- [x] **Write tests** for finalizer behavior in `/tests/unit/test_finalizers.py`
 
 ### 2. ✅ WEEK 1: Remove H2 from CRD (IMMEDIATE SECURITY FIX)
 
@@ -71,7 +71,7 @@
   ```
 
 - [ ] **Update CRD examples** in `/examples/` to only show supported databases
-- [ ] **Add CRD validation test** to ensure H2 is rejected at API level
+- [x] **Add CRD validation test** to ensure H2 is rejected at API level
 - [ ] **Update documentation** to reflect H2 removal
 
 ### 3. ✅ WEEK 2: Implement ObservedGeneration Tracking (GITOPS COMPATIBILITY)
@@ -100,7 +100,7 @@
 
 - [x] **Add to all handlers** - pass `meta` parameter to reconcilers
 - [ ] **Update status conditions** to include observedGeneration
-- [ ] **Write GitOps integration tests** to verify generation tracking
+- [x] **Write GitOps integration tests** to verify generation tracking
 
 ### 4. ✅ WEEK 3: Implement Leader Election (HA SAFETY)
 
@@ -176,8 +176,9 @@
 ## 📋 TESTING REQUIREMENTS
 
 ### Unit Tests (Required for each feature)
-- [ ] Finalizer behavior tests
-- [ ] ObservedGeneration tracking tests
+- [x] Finalizer behavior tests
+- [x] ObservedGeneration tracking tests
+- [x] CRD validation tests (H2 rejection)
 - [ ] Leader election failure scenarios
 - [ ] Status condition state transitions
 
