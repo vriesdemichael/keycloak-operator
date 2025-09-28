@@ -32,30 +32,84 @@ This is an early-stage alternative Keycloak operator project built to replace th
 ### Requirements
 - Python environment with Kopf framework setup
 - Kubernetes development environment (local cluster recommended)
+- **Kind (Kubernetes in Docker)** - Required for local integration testing
+- Docker - Required for Kind cluster creation
+- kubectl - Kubernetes command-line tool
 - CRD definitions for Keycloak resources
 - RBAC policies and service account configuration
 - Build and test automation for Python-based operator
+
+### Installing Prerequisites
+
+**Kind Installation:**
+```bash
+# Linux/WSL
+curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
+chmod +x ./kind
+sudo mv ./kind /usr/local/bin/kind
+
+# macOS
+brew install kind
+
+# Windows
+choco install kind
+```
+
+**Docker Installation:**
+- Linux: Follow [Docker Engine installation guide](https://docs.docker.com/engine/install/)
+- macOS/Windows: Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ### Development Habits
 At the end of your task list always do:
 1. `uv run ruff check --fix` - Fix linting issues
 2. `uv run ruff format` - Format code consistently
-3. `uv run pytest` - Run all tests
+3. `uv run pytest tests/unit/` - Run unit tests (fast)
+
+For comprehensive testing after major changes:
+4. `make test-integration-local` - Run full integration test suite
 
 **Important**: Always use `uv run <command>` when running anything from this project or it won't pick up the dependencies.
 
-### Testing Changes
+### Testing Infrastructure
 
-After making significant changes, test the operator functionality:
+This project has comprehensive testing infrastructure:
 
-**Automated Test (Recommended):**
+**Test Types:**
+- **Unit Tests**: Fast tests in `tests/unit/` that mock Kubernetes interactions
+- **Integration Tests**: Real Kubernetes tests in `tests/integration/` using Kind clusters
+
+**Quick Testing Commands:**
 ```bash
-# Run the complete integration test
-./test-operator.sh
+# Development test workflow (fast)
+make dev-test                    # Run linting + unit tests
 
-# Cleanup only after manual testing
-./test-operator.sh --cleanup-only
+# Unit tests only
+make test-unit                   # Fast unit tests
+uv run pytest tests/unit/ -v    # Direct pytest
+
+# Integration tests (requires Kind cluster)
+make test-integration-local      # Full integration test suite
+make kind-setup                  # Set up Kind cluster
+make test-integration            # Python integration tests only
+
+# All tests
+make test-all                    # Both unit and integration tests
 ```
+
+**Kind Cluster Management:**
+```bash
+# Cluster lifecycle
+make kind-setup                  # Create Kind cluster with test dependencies
+make kind-status                 # Check cluster status
+make kind-teardown              # Clean up cluster
+
+# Quick development cycle
+make dev-setup                   # Install deps + setup cluster
+make deploy-local               # Build and deploy operator to Kind
+make operator-logs              # Follow operator logs
+```
+
+**Legacy Manual Testing (for reference):**
 
 **Manual Test Steps:**
 
