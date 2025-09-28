@@ -37,6 +37,7 @@ The operator manages three primary custom resources:
 ### For Development Only
 - Python 3.11+
 - [uv](https://github.com/astral-sh/uv) package manager
+- **make** - Build automation tool
 - **Kind (Kubernetes in Docker)** - For local integration testing
 - **Docker** - For Kind cluster creation and container builds
 
@@ -160,6 +161,25 @@ spec:
 > **Note**: This section is only for developers contributing to the operator. End users only need a Kubernetes cluster and kubectl.
 
 ### 1. Install Development Prerequisites
+
+**make (build automation):**
+```bash
+# Ubuntu/Debian/WSL
+sudo apt update && sudo apt install make
+
+# CentOS/RHEL
+sudo yum install make
+
+# Fedora
+sudo dnf install make
+
+# macOS
+brew install make
+# or: xcode-select --install
+
+# Windows
+choco install make
+```
 
 **Kind (for integration testing):**
 ```bash
