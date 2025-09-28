@@ -90,6 +90,36 @@ CNPG_CLUSTER_STATUS = Gauge(
     registry=None,
 )
 
+# Leader election metrics
+LEADER_ELECTION_STATUS = Gauge(
+    "keycloak_operator_leader_election_status",
+    "Leader election status (1=leader, 0=follower)",
+    ["instance_id", "namespace"],
+    registry=None,
+)
+
+LEADER_ELECTION_CHANGES = Counter(
+    "keycloak_operator_leader_election_changes_total",
+    "Total number of leader election changes",
+    ["previous_leader", "new_leader", "namespace"],
+    registry=None,
+)
+
+LEADER_ELECTION_LEASE_RENEWALS = Counter(
+    "keycloak_operator_leader_election_lease_renewals_total",
+    "Total number of leader election lease renewals",
+    ["instance_id", "namespace", "result"],
+    registry=None,
+)
+
+LEADER_ELECTION_LEASE_DURATION = Histogram(
+    "keycloak_operator_leader_election_lease_duration_seconds",
+    "Duration of leader election lease renewals",
+    ["instance_id", "namespace"],
+    buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
+    registry=None,
+)
+
 
 def get_metrics_registry() -> CollectorRegistry:
     """Get or create the global metrics registry."""
@@ -109,6 +139,10 @@ def get_metrics_registry() -> CollectorRegistry:
             KEYCLOAK_INSTANCE_STATUS,
             RBAC_VALIDATIONS,
             CNPG_CLUSTER_STATUS,
+            LEADER_ELECTION_STATUS,
+            LEADER_ELECTION_CHANGES,
+            LEADER_ELECTION_LEASE_RENEWALS,
+            LEADER_ELECTION_LEASE_DURATION,
         ]:
             # Use try-except to handle registry assignment safely
             try:
@@ -272,6 +306,60 @@ class MetricsCollector:
         CNPG_CLUSTER_STATUS.labels(cluster_name=cluster_name, namespace=namespace).set(
             1 if healthy else 0
         )
+
+    def update_leader_election_status(
+        self, instance_id: str, namespace: str, is_leader: bool
+    ):
+        """
+        Update leader election status.
+
+        Args:
+            instance_id: Unique identifier for this operator instance
+            namespace: Namespace where the operator is running
+            is_leader: Whether this instance is currently the leader
+        """
+        LEADER_ELECTION_STATUS.labels(instance_id=instance_id, namespace=namespace).set(
+            1 if is_leader else 0
+        )
+
+    def record_leader_election_change(
+        self, previous_leader: str, new_leader: str, namespace: str
+    ):
+        """
+        Record a leader election change event.
+
+        Args:
+            previous_leader: ID of the previous leader
+            new_leader: ID of the new leader
+            namespace: Namespace where the election occurred
+        """
+        LEADER_ELECTION_CHANGES.labels(
+            previous_leader=previous_leader,
+            new_leader=new_leader,
+            namespace=namespace,
+        ).inc()
+
+    def record_lease_renewal(
+        self, instance_id: str, namespace: str, success: bool, duration: float
+    ):
+        """
+        Record a leader election lease renewal attempt.
+
+        Args:
+            instance_id: Unique identifier for this operator instance
+            namespace: Namespace where the operator is running
+            success: Whether the lease renewal succeeded
+            duration: Time taken for the renewal operation
+        """
+        result = "success" if success else "failure"
+
+        LEADER_ELECTION_LEASE_RENEWALS.labels(
+            instance_id=instance_id, namespace=namespace, result=result
+        ).inc()
+
+        LEADER_ELECTION_LEASE_DURATION.labels(
+            instance_id=instance_id, namespace=namespace
+        ).observe(duration)
 
 
 class MetricsServer:

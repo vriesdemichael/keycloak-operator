@@ -29,6 +29,9 @@ import kopf
 # This is the standard pattern - importing modules registers their decorators
 from keycloak_operator.handlers import client, keycloak, realm  # noqa: F401
 from keycloak_operator.observability.health import HealthChecker
+from keycloak_operator.observability.leader_election import (
+    get_leader_election_monitor,  # noqa: F401
+)
 from keycloak_operator.observability.logging import setup_structured_logging
 from keycloak_operator.observability.metrics import MetricsServer
 
@@ -126,6 +129,12 @@ async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
         logging.error(f"Failed to start metrics server: {e}")
         # Don't fail operator startup if metrics server fails
         logging.warning("Continuing without metrics server")
+
+    # Initialize leader election monitoring
+    monitor = get_leader_election_monitor()
+    logging.info(
+        f"Leader election monitoring initialized for instance: {monitor.instance_id}"
+    )
 
 
 @kopf.on.cleanup()
