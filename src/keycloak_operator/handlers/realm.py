@@ -14,29 +14,50 @@ and can be managed independently across different namespaces.
 
 import logging
 from datetime import UTC, datetime
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 import kopf
-from kubernetes.client.rest import ApiException
 
 from keycloak_operator.models.realm import KeycloakRealmSpec
+from keycloak_operator.services import KeycloakRealmReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
-from keycloak_operator.utils.kubernetes import (
-    check_rbac_permissions,
-    validate_keycloak_reference,
-)
 
 logger = logging.getLogger(__name__)
 
 
+class StatusProtocol(Protocol):
+    """Protocol for kopf Status objects that allow dynamic attribute assignment."""
+
+    def __setattr__(self, name: str, value: Any) -> None: ...
+    def __getattr__(self, name: str) -> Any: ...
+
+
+class StatusWrapper:
+    """Wrapper to make dict status compatible with StatusProtocol."""
+
+    def __init__(self, status_dict: dict[str, Any]):
+        self._status = status_dict
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+        else:
+            self._status[name] = value
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            return object.__getattribute__(self, name)
+        return self._status.get(name)
+
+
 @kopf.on.create("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
 @kopf.on.resume("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
-def ensure_keycloak_realm(
+async def ensure_keycloak_realm(
     spec: dict[str, Any],
     name: str,
     namespace: str,
     status: dict[str, Any],
-    **_kwargs: Any,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """
     Ensure KeycloakRealm exists in the target Keycloak instance.
@@ -57,225 +78,12 @@ def ensure_keycloak_realm(
     """
     logger.info(f"Ensuring KeycloakRealm {name} in namespace {namespace}")
 
-    try:
-        # Parse and validate the realm specification
-        realm_spec = KeycloakRealmSpec.model_validate(spec)
-        logger.debug(f"Validated KeycloakRealm spec: {realm_spec}")
-
-        # Update status to indicate processing
-        status.update(
-            {
-                "phase": "Pending",
-                "message": "Creating Keycloak realm",
-            }
-        )
-
-        # Resolve Keycloak instance reference
-        keycloak_ref = realm_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        keycloak_name = keycloak_ref.name
-
-        logger.info(
-            f"Targeting Keycloak instance '{keycloak_name}' "
-            f"in namespace '{target_namespace}'"
-        )
-
-        # Validate that the Keycloak instance exists and is ready
-        keycloak_instance = validate_keycloak_reference(keycloak_name, target_namespace)
-        if not keycloak_instance:
-            raise kopf.TemporaryError(
-                f"Keycloak instance {keycloak_name} not found or not ready "
-                f"in namespace {target_namespace}",
-                delay=30,
-            )
-
-        # Check RBAC permissions for cross-namespace operations
-        if target_namespace != namespace:
-            has_permission = check_rbac_permissions(
-                namespace=namespace,
-                target_namespace=target_namespace,
-                resource="keycloaks",
-                verb="get",
-            )
-            if not has_permission:
-                raise kopf.PermanentError(
-                    f"Insufficient permissions to access Keycloak instance "
-                    f"{keycloak_name} in namespace {target_namespace}. "
-                    f"Ensure the operator service account has proper RBAC permissions."
-                )
-
-        # Get Keycloak admin client
-        admin_client = get_keycloak_admin_client(keycloak_name, target_namespace)
-
-        # Check if realm already exists
-        realm_name = realm_spec.realm_name
-        existing_realm = admin_client.get_realm(realm_name)
-
-        if existing_realm:
-            logger.info(f"Realm {realm_name} already exists, updating...")
-            # Update existing realm configuration
-            admin_client.update_realm(realm_name, realm_spec.to_keycloak_config())
-        else:
-            logger.info(f"Creating new realm {realm_name}")
-            # Create new realm in Keycloak
-            admin_client.create_realm(realm_spec.to_keycloak_config())
-
-        # Configure realm-specific settings
-        if realm_spec.themes:
-            logger.info("Configuring realm themes")
-            try:
-                # Convert theme model to dict format
-                theme_config = {}
-                if (
-                    hasattr(realm_spec.themes, "login_theme")
-                    and realm_spec.themes.login_theme
-                ):
-                    theme_config["login_theme"] = realm_spec.themes.login_theme
-                if (
-                    hasattr(realm_spec.themes, "account_theme")
-                    and realm_spec.themes.account_theme
-                ):
-                    theme_config["account_theme"] = realm_spec.themes.account_theme
-                if (
-                    hasattr(realm_spec.themes, "admin_theme")
-                    and realm_spec.themes.admin_theme
-                ):
-                    theme_config["admin_theme"] = realm_spec.themes.admin_theme
-                if (
-                    hasattr(realm_spec.themes, "email_theme")
-                    and realm_spec.themes.email_theme
-                ):
-                    theme_config["email_theme"] = realm_spec.themes.email_theme
-
-                if theme_config:
-                    admin_client.update_realm_themes(realm_name, theme_config)
-            except Exception as e:
-                logger.warning(f"Failed to configure themes: {e}")
-
-        if realm_spec.localization:
-            logger.info("Configuring realm localization")
-            try:
-                # Basic localization support - could be expanded
-                logger.info(f"Localization settings: {realm_spec.localization}")
-            except Exception as e:
-                logger.warning(f"Failed to configure localization: {e}")
-
-        # Configure authentication flows
-        if realm_spec.authentication_flows:
-            logger.info("Configuring authentication flows")
-            for flow_config in realm_spec.authentication_flows:
-                try:
-                    # Convert flow model to dict if needed
-                    flow_dict = cast(
-                        dict[str, Any],
-                        flow_config.model_dump()
-                        if hasattr(flow_config, "model_dump")
-                        else flow_config,
-                    )
-                    admin_client.configure_authentication_flow(realm_name, flow_dict)
-                except Exception as e:
-                    logger.warning(f"Failed to configure authentication flow: {e}")
-
-        # Configure identity providers
-        if realm_spec.identity_providers:
-            logger.info("Configuring identity providers")
-            for idp_config in realm_spec.identity_providers:
-                try:
-                    # Convert identity provider model to dict if needed
-                    idp_dict = cast(
-                        dict[str, Any],
-                        idp_config.model_dump()
-                        if hasattr(idp_config, "model_dump")
-                        else idp_config,
-                    )
-                    admin_client.configure_identity_provider(realm_name, idp_dict)
-                except Exception as e:
-                    logger.warning(f"Failed to configure identity provider: {e}")
-
-        # Configure user federation
-        if realm_spec.user_federation:
-            logger.info("Configuring user federation")
-            for federation_config in realm_spec.user_federation:
-                try:
-                    # Convert federation model to dict if needed
-                    federation_dict = cast(
-                        dict[str, Any],
-                        federation_config.model_dump()
-                        if hasattr(federation_config, "model_dump")
-                        else federation_config,
-                    )
-                    admin_client.configure_user_federation(realm_name, federation_dict)
-                except Exception as e:
-                    logger.warning(f"Failed to configure user federation: {e}")
-
-        # Configure realm-level policies and permissions
-        # Apply realm-level security policies if specified
-        try:
-            if hasattr(realm_spec, "policies") and realm_spec.policies:
-                logger.info(f"Applying realm-level policies for {realm_name}")
-                # Note: In a full implementation, these would be applied via admin API
-                for policy in realm_spec.policies:
-                    logger.debug(f"Realm policy: {policy}")
-
-            if hasattr(realm_spec, "permissions") and realm_spec.permissions:
-                logger.info(f"Configuring realm permissions for {realm_name}")
-                # Note: Permissions would be configured via admin API
-                for permission in realm_spec.permissions:
-                    logger.debug(f"Realm permission: {permission}")
-
-            # Apply default realm security settings
-            if hasattr(realm_spec, "security") and realm_spec.security:
-                logger.debug(f"Realm security settings applied for {realm_name}")
-            else:
-                logger.debug(f"Using default security settings for realm {realm_name}")
-
-        except Exception as e:
-            logger.warning(f"Failed to configure realm policies and permissions: {e}")
-            # Don't fail realm creation for policy configuration issues
-
-        logger.info(f"Successfully created/updated KeycloakRealm {name}")
-
-        return {
-            "phase": "Ready",
-            "message": "Realm successfully created and configured",
-            "realmName": realm_name,
-            "keycloakInstance": f"{target_namespace}/{keycloak_name}",
-            "endpoints": {
-                "realm": f"{keycloak_instance['status']['endpoints']['public']}"
-                f"/realms/{realm_name}",
-                "admin": f"{keycloak_instance['status']['endpoints']['public']}"
-                f"/admin/{realm_name}/console",
-                "account": f"{keycloak_instance['status']['endpoints']['public']}"
-                f"/realms/{realm_name}/account",
-            },
-            "features": {
-                "themes": bool(realm_spec.themes),
-                "localization": bool(realm_spec.localization),
-                "customAuthFlows": bool(realm_spec.authentication_flows),
-                "identityProviders": len(realm_spec.identity_providers or []),
-                "userFederation": len(realm_spec.user_federation or []),
-            },
-        }
-
-    except ApiException as e:
-        logger.error(f"Kubernetes API error creating KeycloakRealm {name}: {e}")
-        status.update(
-            {
-                "phase": "Failed",
-                "message": f"Kubernetes API error: {e.reason}",
-            }
-        )
-        raise kopf.TemporaryError(f"Kubernetes API error: {e}", delay=30) from e
-
-    except Exception as e:
-        logger.error(f"Error creating KeycloakRealm {name}: {e}")
-        status.update(
-            {
-                "phase": "Failed",
-                "message": f"Failed to create realm: {str(e)}",
-            }
-        )
-        raise kopf.TemporaryError(f"Realm creation failed: {e}", delay=60) from e
+    # Create reconciler and delegate to service layer
+    reconciler = KeycloakRealmReconciler()
+    status_wrapper = StatusWrapper(status)
+    return await reconciler.reconcile(
+        spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
+    )
 
 
 @kopf.on.update("keycloakrealms", group="keycloak.mdvr.nl", version="v1")

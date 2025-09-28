@@ -28,19 +28,29 @@ import kopf
 # Import all handler modules to register them with kopf
 # This is the standard pattern - importing modules registers their decorators
 from keycloak_operator.handlers import client, keycloak, realm  # noqa: F401
+from keycloak_operator.observability.health import HealthChecker
+from keycloak_operator.observability.logging import setup_structured_logging
+from keycloak_operator.observability.metrics import MetricsServer
+
+# Global reference to metrics server for cleanup
+_global_metrics_server: MetricsServer | None = None
 
 
 def configure_logging() -> None:
-    """Configure logging for the operator based on environment variables."""
+    """Configure structured logging for the operator based on environment variables."""
     log_level = os.getenv("KEYCLOAK_OPERATOR_LOG_LEVEL", "INFO").upper()
-    logging.basicConfig(
-        level=getattr(logging, log_level, logging.INFO),
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    enable_json_logging = (
+        os.getenv("KEYCLOAK_OPERATOR_JSON_LOGS", "true").lower() == "true"
+    )
+    enable_correlation_ids = (
+        os.getenv("KEYCLOAK_OPERATOR_CORRELATION_IDS", "true").lower() == "true"
     )
 
-    # Set kopf logging level to be less verbose by default
-    kopf_level = "WARNING" if log_level == "INFO" else log_level
-    logging.getLogger("kopf").setLevel(getattr(logging, kopf_level, logging.WARNING))
+    setup_structured_logging(
+        log_level=log_level,
+        enable_json_formatting=enable_json_logging,
+        correlation_id_enabled=enable_correlation_ids,
+    )
 
 
 def get_watched_namespaces() -> list[str] | None:
@@ -57,7 +67,7 @@ def get_watched_namespaces() -> list[str] | None:
 
 
 @kopf.on.startup()
-def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
+async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
     """
     Operator startup configuration.
 
@@ -67,6 +77,7 @@ def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
     - Error handling policies
     - Networking settings
     - Performance tuning
+    - Metrics and health check endpoints
     """
     logging.info("Starting Keycloak Operator...")
 
@@ -89,9 +100,30 @@ def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
     if dry_run:
         logging.info("Running in DRY-RUN mode - no changes will be applied")
 
+    # Start metrics server for Prometheus scraping and health checks
+    metrics_port = int(os.getenv("METRICS_PORT", "8080"))
+    metrics_host = os.getenv("METRICS_HOST", "0.0.0.0")
+
+    try:
+        metrics_server = MetricsServer(port=metrics_port, host=metrics_host)
+        await metrics_server.start()
+        logging.info(
+            f"Metrics and health endpoints available on {metrics_host}:{metrics_port}"
+        )
+
+        # Store server reference for cleanup in a global variable
+        # since OperatorSettings doesn't support custom attributes
+        global _global_metrics_server
+        _global_metrics_server = metrics_server
+
+    except Exception as e:
+        logging.error(f"Failed to start metrics server: {e}")
+        # Don't fail operator startup if metrics server fails
+        logging.warning("Continuing without metrics server")
+
 
 @kopf.on.cleanup()
-def cleanup_handler(**_) -> None:
+async def cleanup_handler(settings: kopf.OperatorSettings, **_) -> None:
     """
     Operator cleanup handler.
 
@@ -99,31 +131,77 @@ def cleanup_handler(**_) -> None:
     to perform cleanup tasks like:
     - Closing database connections
     - Cleaning up temporary resources
+    - Stopping metrics server
     - Logging shutdown information
     """
     logging.info("Shutting down Keycloak Operator...")
 
+    # Stop metrics server if it was started
+    global _global_metrics_server
+    if _global_metrics_server:
+        try:
+            await _global_metrics_server.stop()
+            logging.info("Metrics server stopped")
+        except Exception as e:
+            logging.error(f"Error stopping metrics server: {e}")
+
 
 @kopf.on.probe(id="healthz")
-def health_check(**_) -> dict[str, str]:
+async def health_check(**_) -> dict[str, str]:
     """
     Health check probe for Kubernetes liveness/readiness checks.
 
     Returns:
         Dictionary indicating operator health status
     """
-    return {"status": "healthy", "operator": "keycloak-operator"}
+    try:
+        health_checker = HealthChecker()
+        health_results = await health_checker.check_all()
+        overall_health = health_checker.get_overall_health(health_results)
+
+        timestamp = "unknown"
+        if health_results and "kubernetes_api" in health_results:
+            k8s_result = health_results["kubernetes_api"]
+            if hasattr(k8s_result, "timestamp") and k8s_result.timestamp is not None:
+                timestamp = str(k8s_result.timestamp)
+
+        return {
+            "status": overall_health,
+            "operator": "keycloak-operator",
+            "timestamp": timestamp,
+        }
+    except Exception as e:
+        logging.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "operator": "keycloak-operator", "error": str(e)}
 
 
 @kopf.on.probe(id="ready")
-def readiness_check(**_) -> dict[str, str]:
+async def readiness_check(**_) -> dict[str, str]:
     """
     Readiness check probe - indicates if operator is ready to handle requests.
 
     Returns:
         Dictionary indicating operator readiness
     """
-    return {"status": "ready", "operator": "keycloak-operator"}
+    try:
+        health_checker = HealthChecker()
+        # For readiness, we only check essential components
+        results = {}
+        results["kubernetes_api"] = await health_checker._check_kubernetes_api()
+        results["crds_installed"] = await health_checker._check_crds_installed()
+
+        # Consider ready if K8s API and CRDs are healthy
+        api_healthy = results["kubernetes_api"].status == "healthy"
+        crds_healthy = results["crds_installed"].status == "healthy"
+
+        if api_healthy and crds_healthy:
+            return {"status": "ready", "operator": "keycloak-operator"}
+        else:
+            return {"status": "not_ready", "operator": "keycloak-operator"}
+
+    except Exception as e:
+        logging.error(f"Readiness check failed: {e}")
+        return {"status": "not_ready", "operator": "keycloak-operator", "error": str(e)}
 
 
 def main() -> None:

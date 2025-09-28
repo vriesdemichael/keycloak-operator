@@ -27,9 +27,9 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.models.client import KeycloakClientSpec
+from keycloak_operator.services import KeycloakClientReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 from keycloak_operator.utils.kubernetes import (
-    check_rbac_permissions,
     create_client_secret,
     get_kubernetes_client,
     validate_keycloak_reference,
@@ -38,9 +38,27 @@ from keycloak_operator.utils.kubernetes import (
 logger = logging.getLogger(__name__)
 
 
+class StatusWrapper:
+    """Wrapper to make dict status compatible with StatusProtocol."""
+
+    def __init__(self, status_dict: dict[str, Any]):
+        self._status = status_dict
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        if name.startswith("_"):
+            object.__setattr__(self, name, value)
+        else:
+            self._status[name] = value
+
+    def __getattr__(self, name: str) -> Any:
+        if name.startswith("_"):
+            return object.__getattribute__(self, name)
+        return self._status.get(name)
+
+
 @kopf.on.create("keycloakclients", group="keycloak.mdvr.nl", version="v1")
 @kopf.on.resume("keycloakclients", group="keycloak.mdvr.nl", version="v1")
-def ensure_keycloak_client(
+async def ensure_keycloak_client(
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -67,222 +85,25 @@ def ensure_keycloak_client(
     logger.info(f"Ensuring KeycloakClient {name} in namespace {namespace}")
 
     try:
-        # Parse and validate the client specification
-        client_spec = KeycloakClientSpec.model_validate(spec)
-        logger.debug(f"Validated KeycloakClient spec: {client_spec}")
-
-        # Update status to indicate processing
-        status.update(
-            {
-                "phase": "Pending",
-                "message": "Creating Keycloak client",
-            }
+        reconciler = KeycloakClientReconciler()
+        status_wrapper = StatusWrapper(status)
+        return await reconciler.reconcile(
+            spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
         )
-
-        # Resolve Keycloak instance reference
-        # This supports cross-namespace references like:
-        # keycloakInstanceRef:
-        #   name: main-keycloak
-        #   namespace: keycloak-system  # Optional, defaults to current namespace
-        keycloak_ref = client_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        keycloak_name = keycloak_ref.name
-
-        logger.info(
-            f"Targeting Keycloak instance '{keycloak_name}' "
-            f"in namespace '{target_namespace}'"
-        )
-
-        # Validate that the Keycloak instance exists and is ready
-        keycloak_instance = validate_keycloak_reference(keycloak_name, target_namespace)
-        if not keycloak_instance:
-            raise kopf.TemporaryError(
-                f"Keycloak instance {keycloak_name} not found or not ready "
-                f"in namespace {target_namespace}",
-                delay=30,
-            )
-
-        # Check RBAC permissions for cross-namespace operations
-        # If client is in different namespace than Keycloak, verify permissions
-        if target_namespace != namespace:
-            # Verify that the service account has permission to access
-            # the Keycloak instance in the target namespace
-            has_permission = check_rbac_permissions(
-                namespace=namespace,
-                target_namespace=target_namespace,
-                resource="keycloaks",
-                verb="get",
-            )
-            if not has_permission:
-                raise kopf.PermanentError(
-                    f"Insufficient permissions to access Keycloak instance "
-                    f"{keycloak_name} in namespace {target_namespace}. "
-                    f"Ensure the operator service account has proper RBAC permissions."
-                )
-
-        # Get Keycloak admin client
-        admin_client = get_keycloak_admin_client(keycloak_name, target_namespace)
-
-        # Check if client already exists in the specified realm
-        realm_name = client_spec.realm or "master"
-        existing_client = admin_client.get_client_by_name(
-            client_spec.client_id, realm_name
-        )
-
-        if existing_client:
-            logger.info(f"Client {client_spec.client_id} already exists, updating...")
-            # Update existing client configuration
-            admin_client.update_client(
-                existing_client["id"], client_spec.to_keycloak_config(), realm_name
-            )
-        else:
-            logger.info(f"Creating new client {client_spec.client_id}")
-            # Create new client in Keycloak
-            admin_client.create_client(client_spec.to_keycloak_config(), realm_name)
-
-        # Generate and retrieve client credentials for confidential clients
-        client_secret = None
-        if not client_spec.public_client:
-            # Get or regenerate client secret
-            client_secret = admin_client.get_client_secret(
-                client_spec.client_id, realm_name
-            )
-            logger.info("Retrieved client secret for confidential client")
-
-        # Create Kubernetes secret with client credentials
-        # Store in the same namespace as the KeycloakClient resource
-        secret_name = f"{name}-credentials"
-        create_client_secret(
-            secret_name=secret_name,
-            namespace=namespace,
-            client_id=client_spec.client_id,
-            client_secret=client_secret,
-            keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
-            realm=realm_name,
-        )
-
-        # Set up RBAC for secret access
-        # Create service-specific labels to allow targeted RBAC policies
-        try:
-            k8s_client = get_kubernetes_client()
-            core_api = client.CoreV1Api(k8s_client)
-
-            # Add labels to the secret for RBAC targeting
-            secret_name = f"{name}-credentials"
-            try:
-                secret = core_api.read_namespaced_secret(
-                    name=secret_name, namespace=namespace
-                )
-                if not secret.metadata.labels:
-                    secret.metadata.labels = {}
-
-                # Add labels for RBAC policies
-                secret.metadata.labels.update(
-                    {
-                        "keycloak.mdvr.nl/client": name,
-                        "keycloak.mdvr.nl/realm": realm_name,
-                        "keycloak.mdvr.nl/secret-type": "client-credentials",
-                    }
-                )
-
-                # Update the secret with labels
-                core_api.patch_namespaced_secret(
-                    name=secret_name, namespace=namespace, body=secret
-                )
-                logger.debug(f"Added RBAC labels to secret {secret_name}")
-
-            except ApiException as e:
-                if e.status != 404:
-                    logger.warning(f"Failed to add RBAC labels to secret: {e}")
-
-        except Exception as e:
-            logger.warning(f"Failed to set up RBAC for secret {secret_name}: {e}")
-            # Don't fail client creation for RBAC setup issues
-
-        # Configure client-specific settings
-        # Apply advanced client configurations if specified
-        try:
-            if (
-                hasattr(client_spec, "protocol_mappers")
-                and client_spec.protocol_mappers
-            ):
-                logger.info(
-                    f"Applying protocol mappers for client {client_spec.client_id}"
-                )
-                # Note: Protocol mappers would be applied via admin API
-                # For now, log the configuration that would be applied
-                for mapper in client_spec.protocol_mappers:
-                    logger.debug(f"Protocol mapper: {mapper}")
-
-            if (
-                hasattr(client_spec, "default_client_scopes")
-                and client_spec.default_client_scopes
-            ):
-                logger.info(
-                    f"Configuring default client scopes for {client_spec.client_id}"
-                )
-                # Note: Client scopes would be configured via admin API
-                for scope in client_spec.default_client_scopes:
-                    logger.debug(f"Default scope: {scope}")
-
-            if (
-                hasattr(client_spec, "optional_client_scopes")
-                and client_spec.optional_client_scopes
-            ):
-                logger.info(
-                    f"Configuring optional client scopes for {client_spec.client_id}"
-                )
-                for scope in client_spec.optional_client_scopes:
-                    logger.debug(f"Optional scope: {scope}")
-
-            # Additional client settings are already handled in to_keycloak_config()
-            logger.debug(
-                f"Client-specific configuration applied for {client_spec.client_id}"
-            )
-
-        except Exception as e:
-            logger.warning(f"Failed to apply client-specific settings: {e}")
-            # Don't fail client creation for advanced settings issues
-
-        logger.info(f"Successfully created KeycloakClient {name}")
-
-        return {
-            "phase": "Ready",
-            "message": "Client successfully created and configured",
-            "clientId": client_spec.client_id,
-            "realm": realm_name,
-            "keycloakInstance": f"{target_namespace}/{keycloak_name}",
-            "credentialsSecret": secret_name,
-            "publicClient": client_spec.public_client,
-            "endpoints": {
-                "auth": f"{keycloak_instance['status']['endpoints']['public']}"
-                f"/realms/{realm_name}",
-                "token": f"{keycloak_instance['status']['endpoints']['public']}"
-                f"/realms/{realm_name}/protocol/openid-connect/token",
-                "userinfo": f"{keycloak_instance['status']['endpoints']['public']}"
-                f"/realms/{realm_name}/protocol/openid-connect/userinfo",
-            },
-        }
-
-    except ApiException as e:
-        logger.error(f"Kubernetes API error creating KeycloakClient {name}: {e}")
-        status.update(
-            {
-                "phase": "Failed",
-                "message": f"Kubernetes API error: {e.reason}",
-            }
-        )
-        raise kopf.TemporaryError(f"Kubernetes API error: {e}", delay=30) from e
-
     except Exception as e:
-        logger.error(f"Error creating KeycloakClient {name}: {e}")
+        logger.error(f"Error in KeycloakClient reconciliation: {e}")
         status.update(
             {
                 "phase": "Failed",
-                "message": f"Failed to create client: {str(e)}",
+                "message": f"Reconciliation failed: {str(e)}",
             }
         )
-        raise kopf.TemporaryError(f"Client creation failed: {e}", delay=60) from e
+        if "TemporaryError" in str(type(e)):
+            raise kopf.TemporaryError(str(e), delay=30) from e
+        elif "PermanentError" in str(type(e)):
+            raise kopf.PermanentError(str(e)) from e
+        else:
+            raise kopf.TemporaryError(f"Client creation failed: {e}", delay=60) from e
 
 
 @kopf.on.update("keycloakclients", group="keycloak.mdvr.nl", version="v1")

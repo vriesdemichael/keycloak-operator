@@ -8,7 +8,7 @@ for the operator development.
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SecretReference(BaseModel):
@@ -112,27 +112,117 @@ class KeycloakResourceRequirements(BaseModel):
     )
 
 
-class KeycloakDatabaseConfig(BaseModel):
-    """Database configuration for Keycloak instance."""
+class CloudNativePGReference(BaseModel):
+    """Reference to a CloudNativePG Cluster resource."""
 
-    type: str = Field("h2", description="Database type")
-    host: str | None = Field(None, description="Database host")
-    port: int | None = Field(None, description="Database port")
-    database: str | None = Field(None, description="Database name")
-    username: str | None = Field(None, description="Database username")
-    password_secret: SecretReference | None = Field(
-        None, description="Secret reference for database password"
+    name: str = Field(..., description="Name of the CloudNativePG Cluster")
+    namespace: str | None = Field(
+        None, description="Namespace of the CNPG Cluster (defaults to same namespace)"
     )
+    database: str = Field(
+        "keycloak", description="Database name to use within the cluster"
+    )
+    application_name: str = Field(
+        "keycloak", description="Application name for connection tracking"
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_cluster_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError("CloudNativePG cluster name cannot be empty")
+        return v.strip()
+
+
+class ExternalSecretReference(BaseModel):
+    """Reference to an ExternalSecrets resource."""
+
+    name: str = Field(..., description="Name of the ExternalSecret")
+    namespace: str | None = Field(
+        None, description="Namespace of the ExternalSecret (defaults to same namespace)"
+    )
+    refresh_interval: str = Field(
+        "15m", description="Refresh interval for secret rotation"
+    )
+
+    @field_validator("refresh_interval")
+    @classmethod
+    def validate_refresh_interval(cls, v):
+        # Basic validation for Kubernetes duration format
+        import re
+
+        if not re.match(r"^\d+[smh]$", v):
+            raise ValueError(
+                "Refresh interval must be in format like '15m', '1h', '30s'"
+            )
+        return v
+
+
+class KeycloakDatabaseConfig(BaseModel):
+    """
+    Database configuration for Keycloak instance.
+
+    Production-ready configuration that enforces external database usage
+    with support for CloudNativePG integration and ExternalSecrets.
+    """
+
+    type: str = Field(
+        ..., description="Database type (no default - must be explicitly specified)"
+    )
+
+    # CloudNativePG Integration (recommended)
+    cnpg_cluster: CloudNativePGReference | None = Field(
+        None, description="CloudNativePG cluster reference (recommended for PostgreSQL)"
+    )
+
+    # Traditional database configuration
+    host: str | None = Field(
+        None, description="Database host (required if not using CNPG)"
+    )
+    port: int | None = Field(
+        None, description="Database port (auto-detected if not specified)"
+    )
+    database: str | None = Field(
+        None, description="Database name (required if not using CNPG)"
+    )
+    username: str | None = Field(None, description="Database username")
+
+    # Secret management options
+    credentials_secret: str | None = Field(
+        None, description="Kubernetes secret name with database credentials"
+    )
+    external_secret: ExternalSecretReference | None = Field(
+        None, description="ExternalSecrets reference for credential management"
+    )
+
+    # Advanced configuration
     connection_params: dict[str, str] = Field(
         default_factory=dict, description="Additional database connection parameters"
+    )
+    connection_pool: dict[str, Any] = Field(
+        default_factory=lambda: {
+            "max_connections": 20,
+            "min_connections": 5,
+            "connection_timeout": "30s",
+        },
+        description="Database connection pool configuration",
+    )
+    ssl_mode: str = Field("require", description="SSL mode for database connections")
+    migration_strategy: str = Field(
+        "auto", description="Database migration strategy (auto, manual, skip)"
     )
 
     @field_validator("type")
     @classmethod
     def validate_database_type(cls, v):
-        valid_types = ["h2", "postgresql", "mysql", "mariadb", "oracle", "mssql"]
+        # Removed H2 from valid types - enforce external database usage
+        valid_types = ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]
         if v not in valid_types:
-            raise ValueError(f"Database type must be one of {valid_types}")
+            raise ValueError(
+                f"Database type must be one of {valid_types}. "
+                f"H2 is not supported for production deployments. "
+                f"Use 'cnpg' type with cnpg_cluster for CloudNativePG integration."
+            )
         return v
 
     @field_validator("port")
@@ -141,6 +231,96 @@ class KeycloakDatabaseConfig(BaseModel):
         if v is not None and (v < 1 or v > 65535):
             raise ValueError("Port must be between 1 and 65535")
         return v
+
+    @field_validator("ssl_mode")
+    @classmethod
+    def validate_ssl_mode(cls, v):
+        valid_modes = [
+            "disable",
+            "allow",
+            "prefer",
+            "require",
+            "verify-ca",
+            "verify-full",
+        ]
+        if v not in valid_modes:
+            raise ValueError(f"SSL mode must be one of {valid_modes}")
+        return v
+
+    @field_validator("migration_strategy")
+    @classmethod
+    def validate_migration_strategy(cls, v):
+        valid_strategies = ["auto", "manual", "skip"]
+        if v not in valid_strategies:
+            raise ValueError(f"Migration strategy must be one of {valid_strategies}")
+        return v
+
+    @model_validator(mode="after")
+    def validate_database_configuration(self) -> "KeycloakDatabaseConfig":
+        """Validate complete database configuration with production-ready requirements."""
+
+        # CloudNativePG configuration
+        if self.type == "cnpg":
+            if not self.cnpg_cluster:
+                raise ValueError(
+                    "When using 'cnpg' type, cnpg_cluster reference must be specified"
+                )
+            # CNPG handles connection details automatically
+            return self
+
+        # Traditional external database configuration
+        missing_fields = []
+
+        if not self.host:
+            missing_fields.append("host")
+
+        if not self.database:
+            missing_fields.append("database")
+
+        # Set default ports based on database type
+        default_ports = {
+            "postgresql": 5432,
+            "mysql": 3306,
+            "mariadb": 3306,
+            "oracle": 1521,
+            "mssql": 1433,
+        }
+
+        if not self.port and self.type in default_ports:
+            object.__setattr__(self, "port", default_ports[self.type])
+
+        if missing_fields:
+            raise ValueError(
+                f"Database type '{self.type}' requires the following fields: {', '.join(missing_fields)}. "
+                f"Alternatively, use type 'cnpg' with cnpg_cluster for CloudNativePG integration."
+            )
+
+        # Validate credential configuration
+        credential_sources = [
+            self.username,
+            self.credentials_secret,
+            self.external_secret,
+        ]
+
+        if not any(credential_sources):
+            raise ValueError(
+                "Database credentials must be specified via username/password, "
+                "credentials_secret, or external_secret. "
+                "For CloudNativePG, use type 'cnpg' with cnpg_cluster."
+            )
+
+        # Warn about security best practices
+        if self.ssl_mode in ["disable", "allow"]:
+            import warnings
+
+            warnings.warn(
+                f"SSL mode '{self.ssl_mode}' is not recommended for production. "
+                f"Consider using 'require' or higher for better security.",
+                UserWarning,
+                stacklevel=2,
+            )
+
+        return self
 
 
 class KeycloakAdminConfig(BaseModel):
