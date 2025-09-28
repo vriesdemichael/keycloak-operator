@@ -170,7 +170,7 @@ uv run ruff check --fix
 uv run ruff format
 
 # Type checking
-uv run mypy src/
+uv run ty check
 ```
 
 ### Testing the Operator

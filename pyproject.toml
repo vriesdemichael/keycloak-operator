@@ -3,10 +3,10 @@ name = "keycloak-operator"
 version = "0.1.0"
 description = "A GitOps-compatible Keycloak operator built with Kopf"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"}
+    {name = "Michaël de Vries", email = "vriesdemichael@gmail.com"}
 ]
 readme = "README.md"
-license = {text = "Apache-2.0"}
+license = {file = "LICENSE"}
 requires-python = ">=3.11"
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -31,7 +31,7 @@ dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "ruff>=0.1.0",
-    "mypy>=1.0.0",
+    "ty>=0.0.1a21",
     "types-requests>=2.31.0",
 ]
 
@@ -67,24 +67,6 @@ indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
 
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
-
-[[tool.mypy.overrides]]
-module = "kopf.*"
-ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -100,7 +82,6 @@ filterwarnings = [
 
 [dependency-groups]
 dev = [
-    "mypy>=1.18.2",
     "pytest>=8.4.2",
     "pytest-asyncio>=1.2.0",
     "ruff>=0.13.1",
