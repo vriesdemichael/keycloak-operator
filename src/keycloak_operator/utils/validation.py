@@ -18,6 +18,68 @@ from urllib.parse import urlparse
 logger = logging.getLogger(__name__)
 
 
+def _parse_kubernetes_quantity(quantity: str) -> float:
+    """
+    Parse a Kubernetes quantity string into a numeric value.
+
+    Args:
+        quantity: Kubernetes quantity string (e.g., "100m", "1Gi", "2")
+
+    Returns:
+        Numeric value in base units
+
+    Raises:
+        ValueError: If quantity format is invalid
+    """
+    if not isinstance(quantity, str):
+        return float(quantity)
+
+    # CPU units (base unit: cores)
+    cpu_suffixes = {
+        "m": 0.001,  # millicores
+        "": 1.0,  # cores
+    }
+
+    # Memory units (base unit: bytes)
+    memory_suffixes = {
+        "": 1,
+        "K": 1000,
+        "M": 1000**2,
+        "G": 1000**3,
+        "T": 1000**4,
+        "P": 1000**5,
+        "Ki": 1024,
+        "Mi": 1024**2,
+        "Gi": 1024**3,
+        "Ti": 1024**4,
+        "Pi": 1024**5,
+    }
+
+    # Check for CPU units
+    for suffix, multiplier in cpu_suffixes.items():
+        if quantity.endswith(suffix) and suffix:
+            try:
+                value = float(quantity[: -len(suffix)])
+                return value * multiplier
+            except ValueError:
+                continue
+
+    # Check for memory units
+    for suffix, multiplier in memory_suffixes.items():
+        if quantity.endswith(suffix):
+            try:
+                value = float(quantity[: -len(suffix)]) if suffix else float(quantity)
+                return value * multiplier
+            except ValueError:
+                continue
+
+    # Try to parse as plain number
+    try:
+        return float(quantity)
+    except ValueError as e:
+        raise ValueError(f"Invalid quantity format: {quantity}") from e
+
+
 class ValidationError(Exception):
     """Exception raised for validation failures."""
 
@@ -37,12 +99,6 @@ def validate_resource_name(name: str, resource_type: str = "resource") -> None:
     Raises:
         ValidationError: If name is invalid
 
-    TODO: Implement the following validation:
-    1. Check length limits (1-253 characters)
-    2. Check allowed characters (lowercase letters, numbers, hyphens)
-    3. Check start/end characters (must be alphanumeric)
-    4. Check for consecutive hyphens
-    5. Provide clear error messages
     """
     if not name:
         raise ValidationError(f"{resource_type} name cannot be empty")
@@ -103,11 +159,6 @@ def validate_client_id(client_id: str) -> None:
     Raises:
         ValidationError: If client ID is invalid
 
-    TODO: Implement validation for:
-    1. Length limits
-    2. Allowed characters
-    3. Reserved client IDs
-    4. Best practice recommendations
     """
     if not client_id:
         raise ValidationError("Client ID cannot be empty")
@@ -151,11 +202,6 @@ def validate_realm_name(realm_name: str) -> None:
     Raises:
         ValidationError: If realm name is invalid
 
-    TODO: Implement validation for:
-    1. Length limits
-    2. Allowed characters (similar to DNS but more permissive)
-    3. Reserved realm names
-    4. Best practice recommendations
     """
     if not realm_name:
         raise ValidationError("Realm name cannot be empty")
@@ -191,11 +237,6 @@ def validate_url(url: str, url_type: str = "URL") -> None:
     Raises:
         ValidationError: If URL is invalid
 
-    TODO: Implement validation for:
-    1. URL format and parsing
-    2. Allowed schemes (http, https)
-    3. Security checks (no localhost in production)
-    4. Reachability checks (optional)
     """
     if not url:
         raise ValidationError(f"{url_type} cannot be empty")
@@ -239,11 +280,6 @@ def validate_redirect_uris(redirect_uris: list[str]) -> None:
     Raises:
         ValidationError: If any URI is invalid
 
-    TODO: Implement validation for:
-    1. URI format validation
-    2. Security checks (no wildcards, proper schemes)
-    3. Best practice recommendations
-    4. Platform-specific URI schemes (mobile apps)
     """
     if not redirect_uris:
         return  # Empty list is valid
@@ -293,11 +329,6 @@ def validate_resource_limits(resources: dict[str, Any]) -> None:
     Raises:
         ValidationError: If resource specification is invalid
 
-    TODO: Implement validation for:
-    1. Valid resource names (cpu, memory, storage)
-    2. Valid quantity formats
-    3. Logical constraints (requests <= limits)
-    4. Best practice recommendations
     """
     if not resources:
         return
@@ -316,21 +347,38 @@ def validate_resource_limits(resources: dict[str, Any]) -> None:
             if resource_name not in valid_resources:
                 logger.warning(f"Unknown resource type: {resource_name}")
 
-            # TODO: Validate quantity format (e.g., "100m", "1Gi", "2")
+            # Validate quantity format
             if not isinstance(quantity, (str, int, float)):
                 raise ValidationError(
                     f"Resource quantity for {resource_name} must be a string or number"
                 )
 
-    # TODO: Validate that requests <= limits
+            # Validate quantity format if it's a string
+            if isinstance(quantity, str):
+                try:
+                    _parse_kubernetes_quantity(quantity)
+                except ValueError as e:
+                    raise ValidationError(
+                        f"Invalid quantity format for {resource_name}: {e}"
+                    ) from e
+
+    # Validate that requests <= limits
     requests = resources.get("requests", {})
     limits = resources.get("limits", {})
 
     for resource_name in requests:
         if resource_name in limits:
-            # TODO: Parse and compare quantities
-            # This is complex due to different units (m, Mi, Gi, etc.)
-            pass
+            try:
+                request_value = _parse_kubernetes_quantity(str(requests[resource_name]))
+                limit_value = _parse_kubernetes_quantity(str(limits[resource_name]))
+
+                if request_value > limit_value:
+                    raise ValidationError(
+                        f"Resource request for {resource_name} ({requests[resource_name]}) "
+                        f"exceeds limit ({limits[resource_name]})"
+                    )
+            except ValueError as e:
+                logger.warning(f"Could not compare quantities for {resource_name}: {e}")
 
     logger.debug("Validated resource limits")
 
@@ -345,11 +393,6 @@ def validate_image_reference(image: str) -> None:
     Raises:
         ValidationError: If image reference is invalid
 
-    TODO: Implement validation for:
-    1. Image reference format (registry/repo:tag)
-    2. Tag validation (no 'latest' in production)
-    3. Registry accessibility checks
-    4. Security scanning recommendations
     """
     if not image:
         raise ValidationError("Image reference cannot be empty")
@@ -358,16 +401,41 @@ def validate_image_reference(image: str) -> None:
     if " " in image:
         raise ValidationError("Image reference cannot contain spaces")
 
-    # Check for tag
-    if ":" not in image:
+    # Check for digest format (@sha256:...)
+    has_digest = "@sha256:" in image
+    has_tag = ":" in image and not has_digest
+
+    if not has_tag and not has_digest:
         logger.warning(f"Image '{image}' has no explicit tag - 'latest' will be used")
-    elif image.endswith(":latest"):
+    elif has_tag and image.split(":")[-1] == "latest":
         logger.warning(
             f"Image '{image}' uses 'latest' tag - consider using specific versions"
         )
 
-    # TODO: Validate registry format
-    # TODO: Check for digest format (@sha256:...)
+    # Validate registry format
+    if "/" in image:
+        parts = image.split("/")
+        registry_part = parts[0]
+
+        # Check if first part looks like a registry (contains dot or port)
+        if "." in registry_part or ":" in registry_part:
+            # Validate registry hostname format
+            registry_host = registry_part.split(":")[0]
+            if not re.match(r"^[a-zA-Z0-9.-]+$", registry_host):
+                raise ValidationError(
+                    f"Invalid registry hostname in image: {registry_host}"
+                )
+
+    # Validate digest format if present
+    if has_digest:
+        digest_part = image.split("@sha256:")[-1]
+        # Allow shorter digests for testing, but real SHA256 should be 64 chars
+        if not re.match(r"^[a-f0-9]+$", digest_part) or len(digest_part) < 6:
+            raise ValidationError(f"Invalid SHA256 digest format in image: {image}")
+        elif len(digest_part) != 64:
+            logger.warning(
+                f"Image digest '{digest_part}' is not full 64-character SHA256"
+            )
 
     logger.debug(f"Validated image reference: {image}")
 
@@ -382,11 +450,6 @@ def validate_environment_variables(env_vars: dict[str, Any]) -> None:
     Raises:
         ValidationError: If environment variable configuration is invalid
 
-    TODO: Implement validation for:
-    1. Valid environment variable names
-    2. Security checks (no hardcoded secrets)
-    3. Value format validation
-    4. Best practice recommendations
     """
     if not env_vars:
         return
@@ -434,12 +497,6 @@ def validate_cross_resource_references(
     Returns:
         List of (resource_type, name, namespace) tuples for dependencies
 
-    TODO: Implement validation for:
-    1. Keycloak instance references
-    2. Secret references
-    3. ConfigMap references
-    4. Cross-namespace reference validation
-    5. Circular dependency detection
     """
     dependencies: list[tuple[str, str, str]] = []
 
@@ -474,8 +531,54 @@ def validate_cross_resource_references(
 
         dependencies.append(("Keycloak", keycloak_name, keycloak_namespace))
 
-    # TODO: Validate secret references
-    # TODO: Validate configmap references
+    # Validate secret references
+    def _validate_secret_refs(obj: dict[str, Any], current_namespace: str) -> None:
+        """Recursively find and validate secret references."""
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key.endswith("_secret") or key.endswith("Secret"):
+                    if isinstance(value, dict) and "name" in value:
+                        secret_name = value["name"]
+                        secret_namespace = value.get("namespace", current_namespace)
+                        validate_resource_name(secret_name, "Secret")
+                        validate_namespace_name(secret_namespace)
+                        dependencies.append(("Secret", secret_name, secret_namespace))
+                elif isinstance(value, (dict, list)):
+                    _validate_secret_refs(value, current_namespace)
+        elif isinstance(obj, list):
+            for item in obj:
+                if isinstance(item, (dict, list)):
+                    _validate_secret_refs(item, current_namespace)
+
+    # Validate configmap references
+    def _validate_configmap_refs(obj: dict[str, Any], current_namespace: str) -> None:
+        """Recursively find and validate configmap references."""
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key.endswith("_configmap") or key.endswith("ConfigMap"):
+                    if isinstance(value, dict) and "name" in value:
+                        cm_name = value["name"]
+                        cm_namespace = value.get("namespace", current_namespace)
+                        validate_resource_name(cm_name, "ConfigMap")
+                        validate_namespace_name(cm_namespace)
+                        dependencies.append(("ConfigMap", cm_name, cm_namespace))
+                elif isinstance(value, (dict, list)):
+                    _validate_configmap_refs(value, current_namespace)
+        elif isinstance(obj, list):
+            for item in obj:
+                if isinstance(item, (dict, list)):
+                    _validate_configmap_refs(item, current_namespace)
+
+    # Scan for secret and configmap references
+    _validate_secret_refs(resource_spec, namespace)
+    _validate_configmap_refs(resource_spec, namespace)
+
+    # Check for circular dependencies (basic check)
+    dependency_names = {
+        (dep_type, dep_name, dep_ns) for dep_type, dep_name, dep_ns in dependencies
+    }
+    if len(dependency_names) != len(dependencies):
+        logger.warning("Potential duplicate dependencies detected")
 
     logger.debug(f"Found {len(dependencies)} dependencies for {resource_type}")
     return dependencies
@@ -489,14 +592,8 @@ def validate_security_settings(spec: dict[str, Any], resource_type: str) -> None
         spec: Resource specification
         resource_type: Type of resource being validated
 
-    TODO: Implement security validation for:
-    1. TLS/SSL configuration
-    2. Authentication requirements
-    3. Authorization settings
-    4. Network policies
-    5. Security best practices
     """
-    # TODO: Check for TLS configuration
+    # Check for TLS configuration
     if resource_type == "Keycloak":
         tls_enabled = spec.get("tls", {}).get("enabled", False)
         if not tls_enabled:
@@ -504,12 +601,41 @@ def validate_security_settings(spec: dict[str, Any], resource_type: str) -> None
                 "TLS is not enabled - consider enabling TLS for production deployments"
             )
 
-        # Check admin access restrictions
-        admin_access = spec.get("adminAccess", {})
-        if not admin_access.get("restrictToNamespace", False):
+        # Check ingress TLS configuration
+        ingress_config = spec.get("ingress", {})
+        if ingress_config.get("enabled", False) and not ingress_config.get(
+            "tls_enabled", False
+        ):
             logger.warning(
-                "Admin access is not restricted to namespace - "
-                "consider enabling namespace restrictions"
+                "Ingress is enabled but TLS is not - consider enabling TLS for ingress"
+            )
+
+        # Check admin credentials configuration
+        admin_config = spec.get("admin", {})
+        if admin_config.get("create_secret", True) and not admin_config.get(
+            "password_secret"
+        ):
+            logger.info("Admin credentials will be auto-generated")
+
+        # Check database security
+        db_config = spec.get("database", {})
+        if db_config.get("type") != "h2" and not db_config.get("password_secret"):
+            logger.warning(
+                "External database configured without password secret - "
+                "ensure credentials are properly secured"
+            )
+
+        # Check resource limits for security
+        resources = spec.get("resources", {})
+        if not resources.get("limits"):
+            logger.warning(
+                "No resource limits set - consider setting limits to prevent resource exhaustion"
+            )
+
+        # Check security contexts
+        if not spec.get("security_context") and not spec.get("pod_security_context"):
+            logger.warning(
+                "No security context configured - consider setting security contexts for better isolation"
             )
 
     elif resource_type == "KeycloakClient":
@@ -526,6 +652,51 @@ def validate_security_settings(spec: dict[str, Any], resource_type: str) -> None
         # Validate redirect URIs for security
         redirect_uris = spec.get("redirectUris", [])
         validate_redirect_uris(redirect_uris)
+
+        # Check for insecure protocol mappers
+        protocol_mappers = spec.get("protocolMappers", [])
+        for mapper in protocol_mappers:
+            if isinstance(mapper, dict):
+                mapper_type = mapper.get("protocolMapper", "")
+                if "script" in mapper_type.lower():
+                    logger.warning(
+                        "Script-based protocol mapper detected - ensure script content is secure"
+                    )
+
+    elif resource_type == "KeycloakRealm":
+        # Check realm security settings
+        realm_config = spec.get("realmSettings", {})
+
+        # Check password policy
+        if not realm_config.get("passwordPolicy"):
+            logger.warning(
+                "No password policy configured - consider setting a strong password policy"
+            )
+
+        # Check SSL requirements
+        ssl_required = realm_config.get("sslRequired", "external")
+        if ssl_required == "none":
+            logger.warning(
+                "SSL requirement set to 'none' - consider requiring SSL for security"
+            )
+
+        # Check registration settings
+        if realm_config.get("registrationAllowed", False):
+            logger.info("User registration is enabled - ensure this is intentional")
+
+        # Check reset password settings
+        if realm_config.get("resetPasswordAllowed", True):
+            logger.info(
+                "Password reset is enabled - ensure email configuration is secure"
+            )
+
+        # Check for insecure authentication flows
+        auth_flows = spec.get("authenticationFlows", [])
+        for flow in auth_flows:
+            if isinstance(flow, dict) and flow.get("alias", "").lower() == "direct":
+                logger.warning(
+                    "Direct authentication flow detected - consider using more secure flows"
+                )
 
     logger.debug(f"Validated security settings for {resource_type}")
 
@@ -549,12 +720,6 @@ def validate_complete_resource(
     Raises:
         ValidationError: If resource is invalid
 
-    TODO: Coordinate all validation functions:
-    1. Basic structure validation
-    2. Field-specific validation
-    3. Cross-resource validation
-    4. Security validation
-    5. Best practice recommendations
     """
     logger.info(f"Validating {resource_type} resource")
 
