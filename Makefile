@@ -146,12 +146,12 @@ dev-test: quality test-unit ## Run development tests (quality + unit tests)
 dev-full-test: test ## Run full development test suite
 
 .PHONY: clean
-clean: ## Clean up development artifacts (TODO: fix a better place for test-keycloak.yaml, it shouldnt be removed here)
+clean: ## Clean up development artifacts
 	rm -rf .pytest_cache/
 	rm -rf htmlcov/
 	rm -rf .coverage
 	rm -rf test-logs/
-	rm -f test-keycloak.yaml 
+	rm -rf .tmp/
 	docker image prune -f
 
 .PHONY: clean-all
