@@ -317,8 +317,8 @@ make clean-all
      image: "quay.io/keycloak/keycloak:23.0.0"
      replicas: 1
      database:
-       type: "h2"
-       host: "localhost"
+       type: "postgresql"
+       host: "postgres.keycloak-test.svc.cluster.local"
        name: "keycloak"
        username: "keycloak"
        password_secret:
