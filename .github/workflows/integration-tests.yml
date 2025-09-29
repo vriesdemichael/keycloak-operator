@@ -1,5 +1,11 @@
 name: Integration Tests
 
+# This workflow follows 2025 Kubernetes operator testing best practices:
+# - Uses unified Makefile commands for consistency with local development
+# - Leverages cluster reuse optimization where possible
+# - Follows Kubebuilder/Operator SDK conventions
+# - Separates unit tests (fast feedback) from integration tests (comprehensive validation)
+
 on:
   push:
     branches: [ main, develop ]
@@ -49,7 +55,10 @@ jobs:
         cache-dependency-glob: "pyproject.toml"
 
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: uv sync
+
+    - name: Show available Makefile targets
+      run: make help
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -70,20 +79,11 @@ jobs:
         kubectl get nodes
         kubectl get pods -A
 
-    - name: Build operator image
+    - name: Deploy operator using 2025 best practices
       run: |
-        docker build -t keycloak-operator:test .
-        kind load docker-image keycloak-operator:test --name keycloak-operator-test
-
-    - name: Install operator CRDs and RBAC
-      run: |
-        kubectl apply -f k8s/crds/
-        kubectl apply -f k8s/rbac/
-
-        # Wait for CRDs to be established
-        kubectl wait --for condition=established --timeout=60s crd/keycloaks.keycloak.mdvr.nl
-        kubectl wait --for condition=established --timeout=60s crd/keycloakrealms.keycloak.mdvr.nl
-        kubectl wait --for condition=established --timeout=60s crd/keycloakclients.keycloak.mdvr.nl
+        # Use Makefile for deployment following 2025 operator best practices
+        # Note: Kind cluster already exists, so setup-cluster will detect and reuse it
+        make deploy
 
     - name: Deploy test database (PostgreSQL)
       run: |
@@ -150,27 +150,19 @@ jobs:
         kubectl wait --for=condition=available deployment/postgres -n postgres --timeout=300s
         kubectl wait --for=condition=ready pod -l app=postgres -n postgres --timeout=300s
 
-    - name: Deploy operator
+    - name: Wait for operator deployment
       run: |
-        # Update deployment to use test image
-        sed 's|image: keycloak-operator:latest|image: keycloak-operator:test|g' k8s/operator-deployment.yaml | \
-        sed 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Never|g' | \
-        kubectl apply -f -
-
-        # Wait for operator to be ready
+        # Wait for operator to be ready (deployed by make deploy)
         kubectl wait --for=condition=available deployment/keycloak-operator -n keycloak-system --timeout=300s
         kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=keycloak-operator -n keycloak-system --timeout=300s
 
-    - name: Run integration tests
+    - name: Run integration tests using 2025 best practices
       env:
         KUBERNETES_VERSION: ${{ matrix.k8s-version }}
         KUBECONFIG: ${{ env.KUBECONFIG }}
       run: |
-        # Run Python integration tests
-        uv run pytest tests/integration/ -v -x --tb=short --durations=10
-
-        # Run shell-based integration tests
-        ./scripts/test-integration-local.sh --no-setup
+        # Use Makefile for integration tests following 2025 best practices
+        make test-integration
 
     - name: Run leader election tests
       if: success() || failure()  # Run even if previous step failed
@@ -256,11 +248,10 @@ jobs:
         kubectl cluster-info
 
         echo "=== Operator Logs ==="
-        kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --all-containers=true --tail=500 || true
+        make operator-logs || kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --all-containers=true --tail=500 || true
 
         echo "=== Operator Status ==="
-        kubectl get deployments,pods,services -n keycloak-system
-        kubectl describe deployment keycloak-operator -n keycloak-system || true
+        make operator-status || true
 
         echo "=== Test Resources ==="
         kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces || true
@@ -302,21 +293,18 @@ jobs:
         enable-cache: true
 
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: uv sync
 
-    - name: Run linting
+    - name: Run quality checks and unit tests using 2025 best practices
       run: |
-        uv run ruff check
-        uv run ruff format --check
-
-    - name: Run unit tests
-      run: |
-        uv run pytest tests/unit/ -v --tb=short --durations=10
+        # Use Makefile for quality checks and unit tests
+        make dev-test
 
     - name: Generate coverage report
       if: success() || failure()
       run: |
-        uv run pytest tests/unit/ --cov=keycloak_operator --cov-report=xml --cov-report=term
+        # Use Makefile for coverage testing
+        make test-cov
 
     - name: Upload coverage to Codecov
       if: success() || failure()

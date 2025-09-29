@@ -3,3 +3,7 @@
 - future: integration test with github actions if at all possible
 - Create a documentation using material-mkdocs (like pydantic has)
 - github actions setup (both here and in github)
+
+
+- cleanup of old info in claude and readme
+- cleanup of old unused files
