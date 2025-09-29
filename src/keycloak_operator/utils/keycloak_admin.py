@@ -870,6 +870,268 @@ class KeycloakAdminClient:
             logger.error(f"Failed to backup realm '{realm_name}': {e}")
             return None
 
+    # Protocol Mappers API methods
+    def get_client_protocol_mappers(
+        self, client_uuid: str, realm_name: str = "master"
+    ) -> list[dict[str, Any]] | None:
+        """
+        Get all protocol mappers for a client.
+
+        Args:
+            client_uuid: UUID of the client in Keycloak
+            realm_name: Name of the realm
+
+        Returns:
+            List of protocol mapper configurations or None on error
+        """
+        self._ensure_authenticated()
+        url = urljoin(
+            self.server_url,
+            f"/admin/realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models"
+        )
+
+        try:
+            response = self._make_request("GET", url)
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 404:
+                logger.warning(f"Client {client_uuid} not found in realm {realm_name}")
+                return []
+            else:
+                logger.error(f"Failed to get protocol mappers: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get client protocol mappers: {e}")
+            return None
+
+    def create_client_protocol_mapper(
+        self, client_uuid: str, mapper_config: dict[str, Any], realm_name: str = "master"
+    ) -> dict[str, Any] | None:
+        """
+        Create a protocol mapper for a client.
+
+        Args:
+            client_uuid: UUID of the client in Keycloak
+            mapper_config: Protocol mapper configuration
+            realm_name: Name of the realm
+
+        Returns:
+            Created mapper configuration or None on error
+        """
+        self._ensure_authenticated()
+        url = urljoin(
+            self.server_url,
+            f"/admin/realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models"
+        )
+
+        try:
+            response = self._make_request("POST", url, json=mapper_config)
+            if response.status_code == 201:
+                logger.info(f"Successfully created protocol mapper '{mapper_config.get('name')}'")
+                return mapper_config
+            else:
+                logger.error(f"Failed to create protocol mapper: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to create protocol mapper: {e}")
+            return None
+
+    def update_client_protocol_mapper(
+        self, client_uuid: str, mapper_id: str, mapper_config: dict[str, Any], realm_name: str = "master"
+    ) -> bool:
+        """
+        Update a protocol mapper for a client.
+
+        Args:
+            client_uuid: UUID of the client in Keycloak
+            mapper_id: ID of the protocol mapper
+            mapper_config: Updated protocol mapper configuration
+            realm_name: Name of the realm
+
+        Returns:
+            True if successful, False otherwise
+        """
+        self._ensure_authenticated()
+        url = urljoin(
+            self.server_url,
+            f"/admin/realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}"
+        )
+
+        try:
+            response = self._make_request("PUT", url, json=mapper_config)
+            if response.status_code == 204:
+                logger.info(f"Successfully updated protocol mapper '{mapper_config.get('name')}'")
+                return True
+            else:
+                logger.error(f"Failed to update protocol mapper: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update protocol mapper: {e}")
+            return False
+
+    def delete_client_protocol_mapper(
+        self, client_uuid: str, mapper_id: str, realm_name: str = "master"
+    ) -> bool:
+        """
+        Delete a protocol mapper from a client.
+
+        Args:
+            client_uuid: UUID of the client in Keycloak
+            mapper_id: ID of the protocol mapper
+            realm_name: Name of the realm
+
+        Returns:
+            True if successful, False otherwise
+        """
+        self._ensure_authenticated()
+        url = urljoin(
+            self.server_url,
+            f"/admin/realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}"
+        )
+
+        try:
+            response = self._make_request("DELETE", url)
+            if response.status_code == 204:
+                logger.info(f"Successfully deleted protocol mapper {mapper_id}")
+                return True
+            else:
+                logger.error(f"Failed to delete protocol mapper: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to delete protocol mapper: {e}")
+            return False
+
+    # Client Roles API methods
+    def get_client_roles(
+        self, client_uuid: str, realm_name: str = "master"
+    ) -> list[dict[str, Any]] | None:
+        """
+        Get all roles for a client.
+
+        Args:
+            client_uuid: UUID of the client in Keycloak
+            realm_name: Name of the realm
+
+        Returns:
+            List of client role configurations or None on error
+        """
+        self._ensure_authenticated()
+        url = urljoin(
+            self.server_url,
+            f"/admin/realms/{realm_name}/clients/{client_uuid}/roles"
+        )
+
+        try:
+            response = self._make_request("GET", url)
+            if response.status_code == 200:
+                return response.json()
+            elif response.status_code == 404:
+                logger.warning(f"Client {client_uuid} not found in realm {realm_name}")
+                return []
+            else:
+                logger.error(f"Failed to get client roles: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get client roles: {e}")
+            return None
+
+    def create_client_role(
+        self, client_uuid: str, role_config: dict[str, Any], realm_name: str = "master"
+    ) -> bool:
+        """
+        Create a role for a client.
+
+        Args:
+            client_uuid: UUID of the client in Keycloak
+            role_config: Role configuration
+            realm_name: Name of the realm
+
+        Returns:
+            True if successful, False otherwise
+        """
+        self._ensure_authenticated()
+        url = urljoin(
+            self.server_url,
+            f"/admin/realms/{realm_name}/clients/{client_uuid}/roles"
+        )
+
+        try:
+            response = self._make_request("POST", url, json=role_config)
+            if response.status_code == 201:
+                logger.info(f"Successfully created client role '{role_config.get('name')}'")
+                return True
+            else:
+                logger.error(f"Failed to create client role: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to create client role: {e}")
+            return False
+
+    def update_client_role(
+        self, client_uuid: str, role_name: str, role_config: dict[str, Any], realm_name: str = "master"
+    ) -> bool:
+        """
+        Update a role for a client.
+
+        Args:
+            client_uuid: UUID of the client in Keycloak
+            role_name: Name of the role to update
+            role_config: Updated role configuration
+            realm_name: Name of the realm
+
+        Returns:
+            True if successful, False otherwise
+        """
+        self._ensure_authenticated()
+        url = urljoin(
+            self.server_url,
+            f"/admin/realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
+        )
+
+        try:
+            response = self._make_request("PUT", url, json=role_config)
+            if response.status_code == 204:
+                logger.info(f"Successfully updated client role '{role_name}'")
+                return True
+            else:
+                logger.error(f"Failed to update client role: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update client role: {e}")
+            return False
+
+    def delete_client_role(
+        self, client_uuid: str, role_name: str, realm_name: str = "master"
+    ) -> bool:
+        """
+        Delete a role from a client.
+
+        Args:
+            client_uuid: UUID of the client in Keycloak
+            role_name: Name of the role to delete
+            realm_name: Name of the realm
+
+        Returns:
+            True if successful, False otherwise
+        """
+        self._ensure_authenticated()
+        url = urljoin(
+            self.server_url,
+            f"/admin/realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
+        )
+
+        try:
+            response = self._make_request("DELETE", url)
+            if response.status_code == 204:
+                logger.info(f"Successfully deleted client role '{role_name}'")
+                return True
+            else:
+                logger.error(f"Failed to delete client role: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to delete client role: {e}")
+            return False
+
 
 def get_keycloak_admin_client(
     keycloak_name: str, namespace: str, verify_ssl: bool = False
