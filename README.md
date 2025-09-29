@@ -210,33 +210,76 @@ cd keycloak-operator
 uv sync
 ```
 
-### 3. Development Commands
+### 3. Development Commands (2025 Best Practices)
 
+**One-Command Development Setup:**
 ```bash
-# Run unit tests (fast)
-uv run pytest tests/unit/
-
-# Run integration tests (requires Kind)
-make test-integration-local
-
-# Code formatting and linting
-uv run ruff check --fix
-uv run ruff format
-
-# Type checking
-uv run mypy
+# Complete development environment setup (dependencies + Kind cluster)
+make dev-setup
 ```
 
-### Testing the Operator
-
-**Automated Test Script:**
-
+**Testing Commands:**
 ```bash
-# Run the full integration test
-./test-operator.sh
+# Run complete test suite (quality checks + unit + integration tests)
+# This follows 2025 operator best practices with unified testing
+make test
 
-# Cleanup only (useful after manual testing)
-./test-operator.sh --cleanup-only
+# Run only unit tests (fast development feedback)
+make test-unit
+
+# Run only integration tests (deploys operator to Kind cluster automatically)
+make test-integration
+
+# Run tests with coverage reporting
+make test-cov
+
+# Development testing (quality + unit tests only)
+make dev-test
+```
+
+**Deployment Commands:**
+```bash
+# Deploy operator to Kind cluster (creates cluster if needed, reuses existing)
+make deploy
+
+# Check operator status and health
+make operator-status
+
+# View real-time operator logs
+make operator-logs
+
+# Check Kind cluster status
+make kind-status
+```
+
+**Development Workflow:**
+```bash
+# Code quality checks (linting + formatting)
+make quality
+
+# Fix linting issues automatically
+make lint-fix
+
+# Format code consistently
+make format
+
+# Watch mode for continuous testing during development
+make test-watch
+```
+
+**Cluster Management (Optimized for Development):**
+```bash
+# The operator automatically reuses existing Kind clusters across test runs
+# No need to recreate clusters for successive test executions
+
+# Check cluster status
+make kind-status
+
+# Force cluster recreation (only if needed)
+make kind-teardown && make kind-setup
+
+# Clean up everything
+make clean-all
 ```
 
 **Manual Integration Test:**
@@ -994,40 +1037,28 @@ uv sync --dev
 
 3. **Make Changes**
 ```bash
-# Run tests frequently
-uv run pytest
+# Run tests frequently during development
+make dev-test
 
-# Code formatting and linting
-uv run ruff check --fix
-uv run ruff format
+# Or run the complete test suite
+make test
+
+# Code formatting and linting (following 2025 best practices)
+make quality
 ```
 
 4. **Test Changes Thoroughly**
 ```bash
-# Unit tests
-uv run pytest
+# Automated integration testing (recommended)
+make test-integration
 
-# Integration test with real operator
-kubectl apply -f k8s/crds/
-uv run python -m keycloak_operator.operator &
+# Manual testing (if needed)
+make deploy  # Deploys to Kind cluster
+make operator-status  # Check deployment
+make operator-logs   # View logs
 
-# Create test environment
-kubectl create namespace keycloak-test
-kubectl create secret generic keycloak-db-secret --from-literal=password=test -n keycloak-test
-kubectl create secret generic keycloak-admin-secret --from-literal=password=admin -n keycloak-test
-
-# Deploy test Keycloak (use example from Testing section above)
-kubectl apply -f test-keycloak.yaml
-
-# Verify functionality
-kubectl get keycloaks.keycloak.mdvr.nl -n keycloak-test
-kubectl port-forward -n keycloak-test service/test-keycloak-keycloak 8080:8080 &
-curl http://localhost:8080/health
-
-# Cleanup
-kubectl delete -f test-keycloak.yaml
-kubectl delete namespace keycloak-test
-pkill -f "keycloak_operator|port-forward"
+# The operator automatically handles cluster creation and reuse
+# No manual kubectl commands needed for standard testing
 ```
 
 5. **Alternative: Docker Development**

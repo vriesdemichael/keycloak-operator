@@ -61,14 +61,13 @@ choco install kind
 
 ### Development Habits
 At the end of your task list always do:
-1. `uv run ruff check --fix` - Fix linting issues
-2. `uv run ruff format` - Format code consistently
-3. `uv run pytest tests/unit/` - Run unit tests (fast)
+1. `make test` - Run complete test suite (quality + unit + integration)
 
-For comprehensive testing after major changes:
-4. `make test-integration-local` - Run full integration test suite
+For quick iteration during development:
+1. `make test-unit` - Run only unit tests (fast)
+2. `make quality` - Fix linting and formatting issues
 
-**Important**: Always use `uv run <command>` when running anything from this project or it won't pick up the dependencies.
+**Important**: Always use `uv run <command>` when running Python commands directly, or use the Makefile targets which handle dependencies automatically.
 
 ### Testing Infrastructure
 
@@ -78,34 +77,34 @@ This project has comprehensive testing infrastructure:
 - **Unit Tests**: Fast tests in `tests/unit/` that mock Kubernetes interactions
 - **Integration Tests**: Real Kubernetes tests in `tests/integration/` using Kind clusters
 
-**Quick Testing Commands:**
+**Testing Commands (following 2025 best practices):**
 ```bash
-# Development test workflow (fast)
-make dev-test                    # Run linting + unit tests
+# Complete test suite (recommended)
+make test                        # Quality + unit + integration tests with cluster reuse
 
-# Unit tests only
-make test-unit                   # Fast unit tests
-uv run pytest tests/unit/ -v    # Direct pytest
+# Individual test types
+make test-unit                   # Fast unit tests only
+make test-integration            # Integration tests (auto-deploys operator)
+make quality                     # Linting and formatting
 
-# Integration tests (requires Kind cluster)
-make test-integration-local      # Full integration test suite
-make kind-setup                  # Set up Kind cluster
-make test-integration            # Python integration tests only
-
-# All tests
-make test-all                    # Both unit and integration tests
+# Development workflow
+make dev-test                    # Quality + unit tests (fast development cycle)
+make test-watch                  # Continuous testing mode
 ```
 
-**Kind Cluster Management:**
+**Cluster and Deployment Management:**
 ```bash
-# Cluster lifecycle
-make kind-setup                  # Create Kind cluster with test dependencies
+# One-command setup and deployment
+make dev-setup                   # Install deps + setup cluster
+make deploy                      # Deploy operator (auto-creates cluster if needed)
+
+# Cluster management
+make kind-setup                  # Create Kind cluster manually
 make kind-status                 # Check cluster status
 make kind-teardown              # Clean up cluster
 
-# Quick development cycle
-make dev-setup                   # Install deps + setup cluster
-make deploy-local               # Build and deploy operator to Kind
+# Operator monitoring
+make operator-status             # Check operator deployment status
 make operator-logs              # Follow operator logs
 ```
 
