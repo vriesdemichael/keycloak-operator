@@ -271,8 +271,64 @@ class KeycloakClientReconciler(BaseReconciler):
             namespace: Resource namespace
         """
         self.logger.info(f"Configuring OAuth settings for client {spec.client_id}")
-        # TODO: Implement OAuth2 configuration logic
-        pass
+
+        # Get Keycloak admin client
+        keycloak_ref = spec.keycloak_instance_ref
+        target_namespace = keycloak_ref.namespace or namespace
+        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+        realm_name = spec.realm or "master"
+
+        try:
+            # Build OAuth2/OIDC client configuration
+            client_config = {
+                "id": client_uuid,
+                "clientId": spec.client_id,
+                "name": spec.client_name or spec.client_id,
+                "description": spec.description or "",
+                "enabled": spec.enabled,
+                "publicClient": spec.public_client,
+                "bearerOnly": spec.bearer_only or False,
+                "protocol": spec.protocol or "openid-connect",
+
+                # OAuth2/OIDC flow settings
+                "standardFlowEnabled": getattr(spec, "standard_flow_enabled", True),
+                "implicitFlowEnabled": getattr(spec, "implicit_flow_enabled", False),
+                "directAccessGrantsEnabled": getattr(spec, "direct_access_grants_enabled", True),
+                "serviceAccountsEnabled": getattr(spec, "service_accounts_enabled", not spec.public_client),
+
+                # URI configurations
+                "redirectUris": spec.redirect_uris or [],
+                "webOrigins": getattr(spec, "web_origins", []),
+                "adminUrl": getattr(spec, "admin_url", ""),
+                "baseUrl": getattr(spec, "base_url", ""),
+                "rootUrl": getattr(spec, "root_url", ""),
+
+                # Additional OAuth2 settings
+                "consentRequired": getattr(spec, "consent_required", False),
+                "displayOnConsentScreen": getattr(spec, "display_on_consent_screen", True),
+                "frontchannelLogout": getattr(spec, "frontchannel_logout", False),
+                "fullScopeAllowed": getattr(spec, "full_scope_allowed", True),
+                "nodeReRegistrationTimeout": getattr(spec, "node_re_registration_timeout", -1),
+                "notBefore": getattr(spec, "not_before", 0),
+                "surrogateAuthRequired": getattr(spec, "surrogate_auth_required", False),
+
+                # Client authentication method for confidential clients
+                "clientAuthenticatorType": getattr(spec, "client_authenticator_type", "client-secret") if not spec.public_client else None,
+            }
+
+            # Remove None values to avoid sending unnecessary data
+            client_config = {k: v for k, v in client_config.items() if v is not None}
+
+            # Update the client with OAuth2 settings
+            success = admin_client.update_client(spec.client_id, client_config, realm_name)
+            if success:
+                self.logger.info(f"Successfully configured OAuth settings for client {spec.client_id}")
+            else:
+                self.logger.error(f"Failed to configure OAuth settings for client {spec.client_id}")
+
+        except Exception as e:
+            self.logger.error(f"Error configuring OAuth settings: {e}")
+            raise
 
     async def manage_client_credentials(
         self, spec: KeycloakClientSpec, client_uuid: str, name: str, namespace: str
@@ -377,25 +433,91 @@ class KeycloakClientReconciler(BaseReconciler):
         self.logger.info(f"Configuring protocol mappers for client {spec.client_id}")
 
         if not spec.protocol_mappers:
+            self.logger.debug("No protocol mappers specified, skipping configuration")
             return
 
-        # For now, log the configuration that would be applied
-        # In a full implementation, this would configure via admin API
-        for mapper in spec.protocol_mappers:
-            self.logger.debug(f"Protocol mapper: {mapper}")
+        # Get Keycloak admin client
+        keycloak_ref = spec.keycloak_instance_ref
+        target_namespace = keycloak_ref.namespace or namespace
+        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+        realm_name = spec.realm or "master"
 
-        # Configure default and optional client scopes
-        if hasattr(spec, "default_client_scopes") and spec.default_client_scopes:
-            self.logger.info(f"Configuring default client scopes for {spec.client_id}")
-            for scope in spec.default_client_scopes:
-                self.logger.debug(f"Default scope: {scope}")
+        try:
+            # Get existing protocol mappers from Keycloak
+            existing_mappers = admin_client.get_client_protocol_mappers(client_uuid, realm_name)
+            if existing_mappers is None:
+                self.logger.error(f"Failed to retrieve existing protocol mappers for client {spec.client_id}")
+                return
 
-        if hasattr(spec, "optional_client_scopes") and spec.optional_client_scopes:
-            self.logger.info(f"Configuring optional client scopes for {spec.client_id}")
-            for scope in spec.optional_client_scopes:
-                self.logger.debug(f"Optional scope: {scope}")
+            # Create a map of existing mappers by name for easy lookup
+            existing_mappers_by_name = {mapper["name"]: mapper for mapper in existing_mappers}
 
-        self.logger.debug(f"Client-specific configuration applied for {spec.client_id}")
+            # Process each protocol mapper from the spec
+            for mapper_spec in spec.protocol_mappers:
+                mapper_name = mapper_spec.get("name")
+                if not mapper_name:
+                    self.logger.warning("Protocol mapper missing name, skipping")
+                    continue
+
+                existing_mapper = existing_mappers_by_name.get(mapper_name)
+
+                if existing_mapper:
+                    # Check if update is needed (compare configs excluding ID)
+                    needs_update = self._protocol_mapper_needs_update(existing_mapper, mapper_spec)
+                    if needs_update:
+                        self.logger.info(f"Updating protocol mapper '{mapper_name}'")
+                        success = admin_client.update_client_protocol_mapper(
+                            client_uuid, existing_mapper["id"], mapper_spec, realm_name
+                        )
+                        if not success:
+                            self.logger.error(f"Failed to update protocol mapper '{mapper_name}'")
+                    else:
+                        self.logger.debug(f"Protocol mapper '{mapper_name}' is up to date")
+                else:
+                    # Create new protocol mapper
+                    self.logger.info(f"Creating protocol mapper '{mapper_name}'")
+                    created_mapper = admin_client.create_client_protocol_mapper(
+                        client_uuid, mapper_spec, realm_name
+                    )
+                    if not created_mapper:
+                        self.logger.error(f"Failed to create protocol mapper '{mapper_name}'")
+
+            # Remove protocol mappers that are no longer specified
+            desired_mapper_names = {mapper.get("name") for mapper in spec.protocol_mappers if mapper.get("name")}
+            for existing_mapper in existing_mappers:
+                if existing_mapper["name"] not in desired_mapper_names:
+                    self.logger.info(f"Removing obsolete protocol mapper '{existing_mapper['name']}'")
+                    success = admin_client.delete_client_protocol_mapper(
+                        client_uuid, existing_mapper["id"], realm_name
+                    )
+                    if not success:
+                        self.logger.error(f"Failed to delete protocol mapper '{existing_mapper['name']}'")
+
+        except Exception as e:
+            self.logger.error(f"Error configuring protocol mappers: {e}")
+            raise
+
+        self.logger.info(f"Protocol mappers configuration completed for {spec.client_id}")
+
+    def _protocol_mapper_needs_update(self, existing: dict[str, Any], desired: dict[str, Any]) -> bool:
+        """
+        Check if a protocol mapper needs to be updated.
+
+        Args:
+            existing: Existing protocol mapper from Keycloak
+            desired: Desired protocol mapper configuration
+
+        Returns:
+            True if update is needed, False otherwise
+        """
+        # Compare key fields (excluding ID and other Keycloak-generated fields)
+        compare_fields = ["name", "protocol", "protocolMapper", "config"]
+
+        for field in compare_fields:
+            if existing.get(field) != desired.get(field):
+                return True
+
+        return False
 
     async def manage_client_roles(
         self, spec: KeycloakClientSpec, client_uuid: str, name: str, namespace: str
@@ -412,14 +534,91 @@ class KeycloakClientReconciler(BaseReconciler):
         self.logger.info(f"Managing roles for client {spec.client_id}")
 
         if not spec.client_roles:
+            self.logger.debug("No client roles specified, skipping role management")
             return
 
-        # For now, log the roles that would be configured
-        # In a full implementation, this would create/update roles via admin API
-        for role in spec.client_roles:
-            self.logger.debug(f"Client role: {role}")
+        # Get Keycloak admin client
+        keycloak_ref = spec.keycloak_instance_ref
+        target_namespace = keycloak_ref.namespace or namespace
+        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+        realm_name = spec.realm or "master"
 
-        self.logger.debug(f"Client roles management completed for {spec.client_id}")
+        try:
+            # Get existing client roles from Keycloak
+            existing_roles = admin_client.get_client_roles(client_uuid, realm_name)
+            if existing_roles is None:
+                self.logger.error(f"Failed to retrieve existing client roles for client {spec.client_id}")
+                return
+
+            # Create a map of existing roles by name for easy lookup
+            existing_roles_by_name = {role["name"]: role for role in existing_roles}
+
+            # Process each client role from the spec
+            for role_spec in spec.client_roles:
+                role_name = role_spec.get("name")
+                if not role_name:
+                    self.logger.warning("Client role missing name, skipping")
+                    continue
+
+                existing_role = existing_roles_by_name.get(role_name)
+
+                if existing_role:
+                    # Check if update is needed (compare configs excluding ID)
+                    needs_update = self._client_role_needs_update(existing_role, role_spec)
+                    if needs_update:
+                        self.logger.info(f"Updating client role '{role_name}'")
+                        success = admin_client.update_client_role(
+                            client_uuid, role_name, role_spec, realm_name
+                        )
+                        if not success:
+                            self.logger.error(f"Failed to update client role '{role_name}'")
+                    else:
+                        self.logger.debug(f"Client role '{role_name}' is up to date")
+                else:
+                    # Create new client role
+                    self.logger.info(f"Creating client role '{role_name}'")
+                    success = admin_client.create_client_role(
+                        client_uuid, role_spec, realm_name
+                    )
+                    if not success:
+                        self.logger.error(f"Failed to create client role '{role_name}'")
+
+            # Remove client roles that are no longer specified
+            desired_role_names = {role.get("name") for role in spec.client_roles if role.get("name")}
+            for existing_role in existing_roles:
+                if existing_role["name"] not in desired_role_names:
+                    self.logger.info(f"Removing obsolete client role '{existing_role['name']}'")
+                    success = admin_client.delete_client_role(
+                        client_uuid, existing_role["name"], realm_name
+                    )
+                    if not success:
+                        self.logger.error(f"Failed to delete client role '{existing_role['name']}'")
+
+        except Exception as e:
+            self.logger.error(f"Error managing client roles: {e}")
+            raise
+
+        self.logger.info(f"Client roles management completed for {spec.client_id}")
+
+    def _client_role_needs_update(self, existing: dict[str, Any], desired: dict[str, Any]) -> bool:
+        """
+        Check if a client role needs to be updated.
+
+        Args:
+            existing: Existing client role from Keycloak
+            desired: Desired client role configuration
+
+        Returns:
+            True if update is needed, False otherwise
+        """
+        # Compare key fields (excluding ID and other Keycloak-generated fields)
+        compare_fields = ["name", "description", "composite", "clientRole", "containerId"]
+
+        for field in compare_fields:
+            if existing.get(field) != desired.get(field):
+                return True
+
+        return False
 
     async def do_update(
         self,
@@ -498,30 +697,47 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_name = new_client_spec.realm or "master"
 
         # Apply configuration updates based on the diff
-        configuration_changed = False
-        for _operation, field_path, _old_value, _new_value in diff:
+        client_update_needed = False
+
+        for operation, field_path, old_value, new_value in diff:
             if field_path[:2] == ("spec", "redirectUris"):
-                self.logger.info("Updating client redirect URIs")
-                # Update redirect URIs in Keycloak
-                configuration_changed = True
+                self.logger.info(f"Updating client redirect URIs: {old_value} -> {new_value}")
+                client_update_needed = True
 
             elif field_path[:2] == ("spec", "scopes"):
-                self.logger.info("Updating client scopes")
-                # Update client scopes
-                configuration_changed = True
+                self.logger.info(f"Updating client scopes: {old_value} -> {new_value}")
+                client_update_needed = True
 
             elif field_path[:2] == ("spec", "settings"):
-                self.logger.info("Updating client settings")
-                # Update client configuration
-                configuration_changed = True
+                self.logger.info(f"Updating client settings: {field_path[2:]} = {new_value}")
+                client_update_needed = True
 
-        if configuration_changed:
-            # Apply all changes to Keycloak
-            admin_client.update_client(
-                new_client_spec.client_id,
-                new_client_spec.to_keycloak_config(),
-                realm_name,
-            )
+            elif field_path[:2] == ("spec", "protocol_mappers"):
+                self.logger.info(f"Protocol mappers changed: {operation} at {field_path}")
+                # Protocol mappers are handled separately via configure_protocol_mappers
+                await self.configure_protocol_mappers(new_client_spec, name, namespace)
+
+            elif field_path[:2] == ("spec", "client_roles"):
+                self.logger.info(f"Client roles changed: {operation} at {field_path}")
+                # Get client UUID for role management
+                client_uuid = admin_client.get_client_uuid(new_client_spec.client_id, realm_name)
+                if client_uuid:
+                    await self.manage_client_roles(new_client_spec, client_uuid, name, namespace)
+                else:
+                    self.logger.warning(f"Could not find client UUID for {new_client_spec.client_id}")
+
+        # Apply core client configuration changes if needed
+        if client_update_needed:
+            self.logger.info(f"Applying client configuration update for {new_client_spec.client_id}")
+            try:
+                admin_client.update_client(
+                    new_client_spec.client_id,
+                    new_client_spec.to_keycloak_config(),
+                    realm_name,
+                )
+                self.logger.info("Client configuration updated successfully")
+            except Exception as e:
+                raise TemporaryError(f"Failed to update client configuration: {e}", delay=30) from e
 
         # Handle client secret regeneration
         regenerate_secret = new_client_spec.regenerate_secret

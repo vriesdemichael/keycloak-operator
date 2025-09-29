@@ -339,7 +339,7 @@ class BaseReconciler(ABC):
         Returns:
             Status dictionary for the resource
         """
-        pass
+        raise NotImplementedError("Subclasses must implement do_reconcile method")
 
     async def do_update(
         self,

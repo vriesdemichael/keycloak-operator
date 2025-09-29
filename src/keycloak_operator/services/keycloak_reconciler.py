@@ -987,9 +987,96 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         backup_name = f"{name}-backup-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
 
-        # TODO: Implement actual backup logic using keycloak admin API
-        # This would involve exporting realm configurations, users, etc.
-        self.logger.info(f"Backup {backup_name} would be created here")
+        self.logger.info(f"Creating full Keycloak instance backup: {backup_name}")
+
+        try:
+            # Get admin client for this Keycloak instance
+            admin_client = self.keycloak_admin_factory(name, namespace)
+
+            # Get list of all realms
+            realms = admin_client.get_realms()
+            if not realms:
+                self.logger.warning("No realms found for backup")
+                return
+
+            # Create backup data structure
+            backup_data = {
+                "keycloak_instance": {
+                    "name": name,
+                    "namespace": namespace,
+                    "spec": keycloak_spec.to_dict() if hasattr(keycloak_spec, 'to_dict') else str(keycloak_spec)
+                },
+                "realms": {},
+                "backup_timestamp": datetime.now(UTC).isoformat(),
+                "backup_version": "1.0",
+                "backup_type": "full_instance"
+            }
+
+            # Backup each realm
+            for realm_info in realms:
+                realm_name = realm_info.get("realm")
+                if not realm_name:
+                    continue
+
+                self.logger.info(f"Backing up realm: {realm_name}")
+                realm_backup = admin_client.backup_realm(realm_name)
+                if realm_backup:
+                    backup_data["realms"][realm_name] = realm_backup
+                else:
+                    self.logger.warning(f"Failed to backup realm {realm_name}")
+
+            # Store backup in Kubernetes secret for persistence
+            await self._store_keycloak_backup_in_secret(backup_data, backup_name, namespace)
+
+            self.logger.info(f"Successfully created Keycloak instance backup: {backup_name}")
+
+        except Exception as e:
+            # Don't block deletion if backup fails, but log the error
+            self.logger.error(f"Failed to create backup for Keycloak instance {name}: {e}")
+
+    async def _store_keycloak_backup_in_secret(
+        self, backup_data: dict[str, Any], backup_name: str, namespace: str
+    ) -> None:
+        """
+        Store full Keycloak instance backup data in a Kubernetes secret.
+
+        Args:
+            backup_data: Complete Keycloak instance backup data
+            backup_name: Name for the backup
+            namespace: Namespace to store the secret
+        """
+        import json
+
+        from kubernetes import client
+
+        try:
+            k8s_client = client.CoreV1Api()
+
+            # Create secret with backup data
+            secret_data = {
+                "backup.json": json.dumps(backup_data, indent=2)
+            }
+
+            secret = client.V1Secret(
+                metadata=client.V1ObjectMeta(
+                    name=backup_name,
+                    namespace=namespace,
+                    labels={
+                        "keycloak.mdvr.nl/backup": "true",
+                        "keycloak.mdvr.nl/backup-type": "full_instance",
+                        "keycloak.mdvr.nl/keycloak-instance": backup_data["keycloak_instance"]["name"]
+                    }
+                ),
+                string_data=secret_data,
+                type="Opaque"
+            )
+
+            k8s_client.create_namespaced_secret(namespace=namespace, body=secret)
+            self.logger.info(f"Keycloak backup {backup_name} stored as secret in namespace {namespace}")
+
+        except Exception as e:
+            self.logger.error(f"Failed to store Keycloak backup {backup_name} in secret: {e}")
+            raise
 
     async def _delete_ingress(
         self, ingress_name: str, namespace: str, networking_api
