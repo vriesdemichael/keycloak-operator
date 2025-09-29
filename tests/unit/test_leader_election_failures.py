@@ -147,7 +147,7 @@ class TestLeaderElectionFailureScenarios:
     async def test_get_current_leader_no_lease(self, monitor):
         """Test getting current leader when no lease exists."""
         mock_api = MagicMock()
-        mock_api.read_namespaced_lease.side_effect = ApiException("Not Found", status=404)
+        mock_api.read_namespaced_lease.side_effect = ApiException(status=404, reason="Not Found")
 
         with patch("keycloak_operator.observability.leader_election.client") as mock_client:
             with patch("keycloak_operator.observability.leader_election.config"):
@@ -160,7 +160,7 @@ class TestLeaderElectionFailureScenarios:
     async def test_get_current_leader_api_error(self, monitor):
         """Test getting current leader when API returns error."""
         mock_api = MagicMock()
-        mock_api.read_namespaced_lease.side_effect = ApiException("Server Error", status=500)
+        mock_api.read_namespaced_lease.side_effect = ApiException(status=500, reason="Server Error")
 
         with patch("keycloak_operator.observability.leader_election.client") as mock_client:
             with patch("keycloak_operator.observability.leader_election.config"):
@@ -254,7 +254,7 @@ class TestLeaderElectionFailureScenarios:
         leaders = [monitor.instance_id, "other-leader", monitor.instance_id, "third-leader"]
 
         with patch("keycloak_operator.observability.leader_election.metrics_collector") as mock_metrics:
-            for i, leader in enumerate(leaders):
+            for _, leader in enumerate(leaders):
                 with patch.object(monitor, "_get_current_leader", return_value=leader):
                     await monitor.check_leadership_status()
 

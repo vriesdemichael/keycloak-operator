@@ -87,7 +87,6 @@ class TestStatusConditionTransitions:
 
         # Start with reconciling state
         reconciler.update_status_reconciling(status, "Reconciling...", generation)
-        initial_condition_count = len(status.conditions)
 
         # Transition to ready
         reconciler.update_status_ready(status, "Resource is ready", generation)

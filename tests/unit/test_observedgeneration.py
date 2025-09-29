@@ -11,6 +11,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from keycloak_operator.services.base_reconciler import BaseReconciler
+from keycloak_operator.services.client_reconciler import KeycloakClientReconciler
+from keycloak_operator.services.keycloak_reconciler import KeycloakInstanceReconciler
+from keycloak_operator.services.realm_reconciler import KeycloakRealmReconciler
 
 
 class ConcreteReconciler(BaseReconciler):
@@ -19,9 +22,6 @@ class ConcreteReconciler(BaseReconciler):
     async def do_reconcile(self, spec, name, namespace, status, **kwargs):
         """Simple test reconciliation that always succeeds."""
         return {"test": "success"}
-from keycloak_operator.services.client_reconciler import KeycloakClientReconciler
-from keycloak_operator.services.keycloak_reconciler import KeycloakInstanceReconciler
-from keycloak_operator.services.realm_reconciler import KeycloakRealmReconciler
 
 
 class MockStatus:

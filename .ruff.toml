@@ -16,7 +16,8 @@ select = [
     "I",   # isort
 ]
 ignore = [
-    "E501",  # line too long, handled by formatter
+    "E501",   # line too long, handled by formatter
+    "SIM117", # nested with statements (prefer explicit nesting in tests)
 ]
 
 [format]
