@@ -437,8 +437,15 @@ class BaseReconciler(ABC):
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
         self._add_condition(
-            status, "Reconciling", "True", "ReconciliationInProgress", message
+            status, "Reconciling", "True", "ReconciliationInProgress", message, generation
         )
+        # Add standard Kubernetes condition for progressing state
+        self._add_condition(
+            status, "Progressing", "True", "ReconciliationInProgress", f"Resource is progressing: {message}", generation
+        )
+        # Clear previous states during reconciliation
+        self._remove_condition(status, "Available")
+        self._remove_condition(status, "Degraded")
 
     def update_status_ready(
         self,
@@ -452,8 +459,12 @@ class BaseReconciler(ABC):
         status.last_reconcile_time = datetime.now(UTC).isoformat()
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
-        self._add_condition(status, "Ready", "True", "ReconciliationSucceeded", message)
+        self._add_condition(status, "Ready", "True", "ReconciliationSucceeded", message, generation)
         self._remove_condition(status, "Reconciling")
+        # Add standard Kubernetes condition for availability
+        self._add_condition(status, "Available", "True", "ReconciliationSucceeded", f"Resource is available: {message}", generation)
+        self._remove_condition(status, "Progressing")
+        self._remove_condition(status, "Degraded")
 
     def update_status_failed(
         self, status: StatusProtocol, message: str, generation: int = 0
@@ -464,8 +475,28 @@ class BaseReconciler(ABC):
         status.last_reconcile_time = datetime.now(UTC).isoformat()
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
-        self._add_condition(status, "Ready", "False", "ReconciliationFailed", message)
+        self._add_condition(status, "Ready", "False", "ReconciliationFailed", message, generation)
         self._remove_condition(status, "Reconciling")
+        # Add standard Kubernetes conditions for failed state
+        self._add_condition(status, "Available", "False", "ReconciliationFailed", f"Resource unavailable: {message}", generation)
+        self._add_condition(status, "Degraded", "True", "ReconciliationFailed", f"Resource degraded: {message}", generation)
+        self._remove_condition(status, "Progressing")
+
+    def update_status_degraded(
+        self, status: StatusProtocol, message: str, generation: int = 0
+    ) -> None:
+        """Update status to indicate resource is degraded but partially functional."""
+        status.phase = "Degraded"
+        status.message = message
+        status.last_reconcile_time = datetime.now(UTC).isoformat()
+        # Track ObservedGeneration for GitOps compatibility
+        status.observedGeneration = generation
+        # Resource is not ready but still partially available
+        self._add_condition(status, "Ready", "False", "PartialFunctionality", message, generation)
+        self._add_condition(status, "Available", "True", "PartialFunctionality", f"Resource partially available: {message}", generation)
+        self._add_condition(status, "Degraded", "True", "PartialFunctionality", f"Resource degraded: {message}", generation)
+        self._remove_condition(status, "Reconciling")
+        self._remove_condition(status, "Progressing")
 
     def _add_condition(
         self,
@@ -474,8 +505,9 @@ class BaseReconciler(ABC):
         condition_status: str,
         reason: str,
         message: str,
+        generation: int = 0,
     ) -> None:
-        """Add or update a status condition."""
+        """Add or update a status condition with observedGeneration tracking."""
         if not hasattr(status, "conditions"):
             status.conditions = []
 
@@ -484,13 +516,14 @@ class BaseReconciler(ABC):
             c for c in status.conditions if c.get("type") != condition_type
         ]
 
-        # Add new condition
+        # Add new condition following Kubernetes 2025 best practices
         condition = {
             "type": condition_type,
             "status": condition_status,
             "reason": reason,
             "message": message,
             "lastTransitionTime": datetime.now(UTC).isoformat(),
+            "observedGeneration": generation,  # 2025 best practice: per-condition observedGeneration
         }
         status.conditions.append(condition)
 
@@ -517,6 +550,21 @@ class BaseReconciler(ABC):
         """Check if resource is in ready state."""
         ready_condition = self.get_condition(status, "Ready")
         return ready_condition is not None and ready_condition.get("status") == "True"
+
+    def is_available(self, status: StatusProtocol) -> bool:
+        """Check if resource is available (following Kubernetes conventions)."""
+        available_condition = self.get_condition(status, "Available")
+        return available_condition is not None and available_condition.get("status") == "True"
+
+    def is_progressing(self, status: StatusProtocol) -> bool:
+        """Check if resource is in progressing state."""
+        progressing_condition = self.get_condition(status, "Progressing")
+        return progressing_condition is not None and progressing_condition.get("status") == "True"
+
+    def is_degraded(self, status: StatusProtocol) -> bool:
+        """Check if resource is in degraded state."""
+        degraded_condition = self.get_condition(status, "Degraded")
+        return degraded_condition is not None and degraded_condition.get("status") == "True"
 
     async def validate_rbac_permissions(
         self,

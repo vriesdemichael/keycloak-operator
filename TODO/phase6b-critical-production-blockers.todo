@@ -70,9 +70,9 @@
       enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]  # ❌ Remove "h2"
   ```
 
-- [ ] **Update CRD examples** in `/examples/` to only show supported databases
+- [x] **Update CRD examples** in `/examples/` to only show supported databases
 - [x] **Add CRD validation test** to ensure H2 is rejected at API level
-- [ ] **Update documentation** to reflect H2 removal
+- [x] **Update documentation** to reflect H2 removal
 
 ### 3. ✅ WEEK 2: Implement ObservedGeneration Tracking (GITOPS COMPATIBILITY)
 
@@ -99,7 +99,7 @@
   ```
 
 - [x] **Add to all handlers** - pass `meta` parameter to reconcilers
-- [ ] **Update status conditions** to include observedGeneration
+- [x] **Update status conditions** to include observedGeneration
 - [x] **Write GitOps integration tests** to verify generation tracking
 
 ### 4. ✅ WEEK 3: Implement Leader Election (HA SAFETY)
@@ -150,7 +150,7 @@
 ## 🔧 HIGH PRIORITY IMPROVEMENTS (Week 4+)
 
 ### 5. Enhance Status Conditions Structure
-- [ ] **Implement proper status conditions** following K8s conventions:
+- [x] **Implement proper status conditions** following K8s conventions:
   ```python
   conditions = [
       {
@@ -179,8 +179,8 @@
 - [x] Finalizer behavior tests
 - [x] ObservedGeneration tracking tests
 - [x] CRD validation tests (H2 rejection)
-- [ ] Leader election failure scenarios
-- [ ] Status condition state transitions
+- [x] Leader election failure scenarios
+- [x] Status condition state transitions
 
 ### Integration Tests (Week 4)
 - [ ] End-to-end finalizer cleanup validation
