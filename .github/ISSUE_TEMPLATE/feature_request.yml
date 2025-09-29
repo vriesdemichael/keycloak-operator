@@ -1,0 +1,157 @@
+name: Feature request
+description: Propose a new capability or enhancement
+title: "[feature]: <short summary>"
+labels:
+  - enhancement
+  - needs-triage
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: summary
+      description: One sentence describing the desired capability.
+      placeholder: Support automatic rotation of Keycloak admin credentials
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: problem-or-opportunity
+      description: What real workflow gap or risk does this solve? Avoid solutions here.
+      placeholder: Manual admin credential rotation causes drift and breaks downstream automation.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed
+    attributes:
+      label: proposed-solution
+      description: Describe intended behavior. Use structured sections. Include CRD changes if any.
+      placeholder: |
+        user-story:
+          As a cluster operator I want admin credentials rotated automatically
+          so that long-lived static secrets are eliminated.
+
+        api-changes:
+          Keycloak (CRD) spec additions:
+            spec:
+              adminCredentialRotation:
+                enabled: true
+                schedule: "0 */6 * * *"
+                gracePeriod: 10m
+          No breaking removals.
+
+        controller-behavior:
+          - On schedule tick, generate new credential via Keycloak admin API
+          - Update Kubernetes Secret <name>-admin
+          - Invalidate old credential after gracePeriod
+          - Emit Event: Type=Normal Reason=AdminCredentialsRotated
+
+        observability:
+          metrics:
+            - keycloak_operator_admin_secret_rotations_total (counter)
+            - keycloak_operator_admin_secret_rotation_failures_total (counter)
+          log-context:
+            component=admin-rotation client=<id>
+
+        failure-modes:
+          - Keycloak unreachable → retry with exponential backoff
+          - Secret update conflict → patch retry
+
+        security:
+          - Zero plaintext logging
+          - Secret recreated with 'immutable' false to allow patch
+
+        out-of-scope:
+          - Custom rotation webhooks
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: alternatives-considered
+      description: Other approaches and why rejected.
+      placeholder: |
+        - External cron job rotating admin secret: increases complexity.
+        - Using operator restart to trigger rotation: brittle / not explicit.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: scope-impact
+      description: Breadth of impact.
+      options:
+        - narrow - single reconciler
+        - moderate - multiple reconcilers
+        - broad - cross-cutting
+        - api-surface - CRD / user-facing schema
+    validations:
+      required: true
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: breaking-change
+      description: Does this require a major version bump?
+      options:
+        - no
+        - additive-non-breaking
+        - potential-breaking
+        - definite-breaking
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: acceptance-criteria
+      description: Enumerated criteria to consider the feature done.
+      placeholder: |
+        - New spec.adminCredentialRotation fields accepted & validated
+        - Rotation occurs at schedule
+        - New secret version available before old revoked
+        - Metrics exposed & documented
+        - Integration test passes with simulated rotation
+    validations:
+      required: true
+  - type: textarea
+    id: observability
+    attributes:
+      label: observability-impact
+      description: Metrics / logs / events / tracing additions.
+      placeholder: |
+        metrics:
+          - keycloak_operator_admin_secret_rotations_total
+        events:
+          - AdminCredentialsRotated
+  - type: textarea
+    id: risks
+    attributes:
+      label: risks-and-guardrails
+      description: Failure scenarios + mitigations.
+      placeholder: |
+        - Risk: rotation during Keycloak maintenance window
+          Mitigation: skip if server health endpoint failing
+        - Risk: rapid rotation loops
+          Mitigation: enforce minimum interval
+  - type: checkboxes
+    id: alignment
+    attributes:
+      label: alignment-confirmations
+      options:
+        - label: This aligns with operator scope (Keycloak lifecycle / security posture)
+          required: true
+        - label: I checked existing operator & Keycloak features; not already solved
+          required: true
+  - type: textarea
+    id: ai_context
+    attributes:
+      label: ai-ingestion-context
+      description: Optional structured tags (key:value per line).
+      placeholder: |
+        area: credentials
+        implementation-phase: design-needed
+        priority: medium
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        automation-ingestion-block:
+          type: feature
+          parse-version: v1

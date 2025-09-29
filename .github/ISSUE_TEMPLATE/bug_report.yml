@@ -1,0 +1,158 @@
+name: Bug report
+description: Report a defect in the Keycloak Operator
+title: "[bug]: <short summary>"
+labels:
+  - bug
+  - needs-triage
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: summary
+      description: One concise sentence describing the problem.
+      placeholder: KeycloakClient redirect URIs not updated after spec patch
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: severity
+      description: Impact on functionality
+      options:
+        - low - nuisance or cosmetic
+        - medium - degraded behavior or workaround exists
+        - high - core functionality broken
+        - critical - blocks production usage
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: impact
+      description: What breaks or is blocked? Who is affected? Be concrete.
+      placeholder: Automation pipeline cannot proceed because clients keep stale redirect URIs
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: reproduction-steps
+      description: Deterministic steps. Number each step. Include minimal CRDs or patches (sanitized).
+      placeholder: |
+        1. helm upgrade --install kc keycloak-operator/... --values values.yaml
+        2. Apply KeycloakClient (see below)
+        3. Patch redirectUris field to add https://example.com/callback2
+        4. Wait for reconcile (observe operator logs)
+        5. Check Keycloak admin console → redirectUris unchanged
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: expected-behavior
+      description: What should happen after the reproduction steps?
+      placeholder: Redirect URIs in Keycloak UI should reflect patched list
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: actual-behavior
+      description: What actually happens? Include error messages or absence of events.
+      placeholder: Keycloak still shows only original URI; no warning events emitted
+    validations:
+      required: true
+  - type: textarea
+    id: helm_context
+    attributes:
+      label: deployment-environment
+      description: Provide relevant Helm context. Sanitize secrets. Prefer exact tags or digests.
+      placeholder: |
+        helm:
+          release-name: keycloak-operator
+          chart-version: 0.3.1
+          operator-image: ghcr.io/org/keycloak-operator:v0.3.1
+          keycloak-chart: bitnami/keycloak 24.0.5
+          keycloak-image:
+            repository: quay.io/keycloak/keycloak
+            tag: 24.0.5
+            digest: sha256:...
+          namespace: keycloak-system
+          customization:
+            - enabledServiceMonitor: true
+            - postgres.managed: false
+        values-diff-from-default:
+          keycloak.startupScripts: disabled
+          keycloak.proxy: edge
+        (If large) attach sanitized excerpt of values.yaml below
+    validations:
+      required: true
+  - type: textarea
+    id: values_excerpt
+    attributes:
+      label: sanitized-helm-values-excerpt
+      description: Only include sections relevant to the issue. Remove passwords, tokens, certs.
+      placeholder: |
+        keycloak:
+          extraEnv:
+            - name: KC_LOG_LEVEL
+              value: INFO
+          replicaCount: 1
+  - type: textarea
+    id: crd_snippets
+    attributes:
+      label: relevant-crd-snippets
+      description: Minimal KeycloakClient / Realm / related YAML required to reproduce (sanitized).
+      placeholder: |
+        apiVersion: keycloak.mdvr.nl/v1
+        kind: KeycloakClient
+        metadata:
+          name: sample-client
+        spec:
+          clientId: sample-client
+          realm: master
+          redirectUris:
+            - https://example.com/callback
+        # patch applied:
+        # redirectUris:
+        #   - https://example.com/callback
+        #   - https://example.com/callback2
+  - type: textarea
+    id: logs
+    attributes:
+      label: operator-log-excerpt
+      description: 30–80 lines around the event. Remove identifying secrets, bearer tokens.
+      placeholder: |
+        2025-09-29T11:22:06Z INFO  Reconciling KeycloakClient sample-client
+        ...
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: confirmations
+      options:
+        - label: I am not using a floating 'latest' tag for operator or Keycloak images (OR I provided the digest)
+          required: true
+        - label: I verified this is not already reported
+          required: true
+        - label: This concerns operator or managed Keycloak resource behavior (in scope)
+          required: true
+        - label: Reproduction is deterministic OR I clearly stated intermittent behavior
+          required: true
+        - label: All secrets or sensitive values are redacted
+          required: true
+  - type: textarea
+    id: ai_context
+    attributes:
+      label: ai-ingestion-context
+      description: Optional structured hints (key:value per line).
+      placeholder: |
+        suspected-module: client_reconciler
+        regression-since: v0.3.0
+        failure-scope: redirect-uri-sync
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        automation-ingestion-block:
+          type: bug
+          parse-version: v1
