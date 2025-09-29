@@ -39,22 +39,21 @@ format-check: ## Check code formatting
 .PHONY: quality
 quality: lint format-check ## Run all code quality checks
 
-# Testing
+# Testing (following 2025 operator best practices)
 .PHONY: test
-test: ## Run unit tests
-	uv run pytest tests/unit/ -v
+test: quality test-unit test-integration ## Run complete test suite (unit + integration)
 
 .PHONY: test-unit
 test-unit: ## Run unit tests only
 	uv run pytest tests/unit/ -v -m "not integration"
 
 .PHONY: test-integration
-test-integration: ## Run integration tests (requires Kind cluster)
+test-integration: deploy ## Run integration tests (auto-deploys operator)
+	@echo "Running integration tests against existing cluster..."
 	uv run pytest tests/integration/ -v -m integration
 
 .PHONY: test-all
-test-all: ## Run all tests
-	uv run pytest tests/ -v
+test-all: test ## Alias for complete test suite
 
 .PHONY: test-cov
 test-cov: ## Run tests with coverage
@@ -84,18 +83,6 @@ kind-status: ## Check Kind cluster status
 	@echo "Cluster info:"
 	@kubectl cluster-info || echo "Cannot connect to cluster"
 
-# Integration testing workflows
-.PHONY: test-integration-local
-test-integration-local: ## Run full local integration test suite
-	./scripts/test-integration-local.sh
-
-.PHONY: test-integration-quick
-test-integration-quick: ## Run integration tests without cluster setup
-	./scripts/test-integration-local.sh --no-setup
-
-.PHONY: test-integration-cleanup
-test-integration-cleanup: ## Run integration tests and cleanup cluster after
-	./scripts/test-integration-local.sh --cleanup-after
 
 # Operator operations
 .PHONY: build
@@ -106,18 +93,29 @@ build: ## Build operator Docker image
 build-test: ## Build operator Docker image for testing
 	docker build -t keycloak-operator:test .
 
+# Deployment (following 2025 operator best practices)
+.PHONY: deploy
+deploy: deploy-local ## Deploy operator (standard target name)
+
 .PHONY: deploy-local
-deploy-local: build-test ## Deploy operator to local Kind cluster
-	@if ! kind get clusters | grep -q keycloak-operator-test; then \
-		echo "Setting up Kind cluster..."; \
-		make kind-setup; \
-	fi
+deploy-local: build-test setup-cluster ## Deploy operator to local Kind cluster
 	kind load docker-image keycloak-operator:test --name keycloak-operator-test
-	kubectl apply -f k8s/crds/
+	kubectl apply -f k8s/crds/keycloak-crd.yaml
+	kubectl apply -f k8s/crds/keycloakclient-crd.yaml
+	kubectl apply -f k8s/crds/keycloakrealm-crd.yaml
 	kubectl apply -f k8s/rbac/
 	sed 's|image: keycloak-operator:latest|image: keycloak-operator:test|g' k8s/operator-deployment.yaml | \
 	sed 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Never|g' | \
 	kubectl apply -f -
+
+.PHONY: setup-cluster
+setup-cluster: ## Ensure Kind cluster is running
+	@if ! kind get clusters | grep -q keycloak-operator-test; then \
+		echo "Setting up Kind cluster..."; \
+		make kind-setup; \
+	else \
+		echo "Kind cluster 'keycloak-operator-test' already exists - reusing"; \
+	fi
 
 .PHONY: operator-logs
 operator-logs: ## Show operator logs
@@ -134,40 +132,46 @@ operator-status: ## Show operator status
 	@echo "CRDs:"
 	@kubectl get crd | grep keycloak || echo "No Keycloak CRDs found"
 
-# Development workflows
+# Development workflows (following 2025 operator best practices)
 .PHONY: dev-setup
-dev-setup: install kind-setup ## Full development environment setup
+dev-setup: install setup-cluster ## Full development environment setup
 	@echo "Development environment ready!"
-	@echo "Run 'make deploy-local' to deploy the operator"
-	@echo "Run 'make test-integration-local' to run integration tests"
+	@echo "Run 'make deploy' to deploy the operator"
+	@echo "Run 'make test' to run complete test suite"
 
 .PHONY: dev-test
 dev-test: quality test-unit ## Run development tests (quality + unit tests)
 
 .PHONY: dev-full-test
-dev-full-test: quality test-integration-local ## Run full development test suite
+dev-full-test: test ## Run full development test suite
 
 .PHONY: clean
-clean: ## Clean up development artifacts
+clean: ## Clean up development artifacts (TODO: fix a better place for test-keycloak.yaml, it shouldnt be removed here)
 	rm -rf .pytest_cache/
 	rm -rf htmlcov/
 	rm -rf .coverage
 	rm -rf test-logs/
-	rm -f test-keycloak.yaml
+	rm -f test-keycloak.yaml 
 	docker image prune -f
 
 .PHONY: clean-all
 clean-all: clean kind-teardown ## Clean up everything including Kind cluster
 	docker system prune -f
 
-# CI simulation
+# CI simulation (following 2025 operator best practices)
 .PHONY: ci-test
 ci-test: ## Simulate CI testing locally
 	@echo "Running CI simulation..."
-	make quality
-	make test-unit
-	make build-test
-	make test-integration-local
+	make test
+
+.PHONY: test-watch
+test-watch: ## Run tests in watch mode for development
+	@echo "Running tests in watch mode (press Ctrl+C to stop)..."
+	while true; do \
+		make test-unit; \
+		echo "Waiting for changes... (press Ctrl+C to stop)"; \
+		sleep 2; \
+	done
 
 # Documentation
 .PHONY: docs-serve
