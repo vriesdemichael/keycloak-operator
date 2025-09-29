@@ -362,7 +362,7 @@ class KeycloakAdminClient:
             if brief_representation:
                 params["briefRepresentation"] = "true"
 
-            url = f"realms"
+            url = "realms"
             response = self._make_request("GET", url, params=params)
 
             if response.status_code == 200:

@@ -1004,7 +1004,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 "keycloak_instance": {
                     "name": name,
                     "namespace": namespace,
-                    "spec": keycloak_spec.to_dict() if hasattr(keycloak_spec, 'to_dict') else str(keycloak_spec)
+                    "spec": keycloak_spec.model_dump() if hasattr(keycloak_spec, 'model_dump') else str(keycloak_spec)
                 },
                 "realms": {},
                 "backup_timestamp": datetime.now(UTC).isoformat(),

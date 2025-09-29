@@ -128,7 +128,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
         return {
             "client_id": client_spec.client_id,
-            "client_uuid": client_id,
+            "client_uuid": client_uuid,
             "realm": realm_name,
             "keycloak_instance": f"{target_namespace}/{keycloak_ref.name}",
             "credentials_secret": secret_name,
@@ -285,7 +285,7 @@ class KeycloakClientReconciler(BaseReconciler):
                 "clientId": spec.client_id,
                 "name": spec.client_name or spec.client_id,
                 "description": spec.description or "",
-                "enabled": spec.enabled,
+                "enabled": spec.settings.enabled,
                 "publicClient": spec.public_client,
                 "bearerOnly": spec.bearer_only or False,
                 "protocol": spec.protocol or "openid-connect",
@@ -454,20 +454,21 @@ class KeycloakClientReconciler(BaseReconciler):
 
             # Process each protocol mapper from the spec
             for mapper_spec in spec.protocol_mappers:
-                mapper_name = mapper_spec.get("name")
+                mapper_name = mapper_spec.name
                 if not mapper_name:
                     self.logger.warning("Protocol mapper missing name, skipping")
                     continue
 
                 existing_mapper = existing_mappers_by_name.get(mapper_name)
+                mapper_dict = mapper_spec.model_dump()
 
                 if existing_mapper:
                     # Check if update is needed (compare configs excluding ID)
-                    needs_update = self._protocol_mapper_needs_update(existing_mapper, mapper_spec)
+                    needs_update = self._protocol_mapper_needs_update(existing_mapper, mapper_dict)
                     if needs_update:
                         self.logger.info(f"Updating protocol mapper '{mapper_name}'")
                         success = admin_client.update_client_protocol_mapper(
-                            client_uuid, existing_mapper["id"], mapper_spec, realm_name
+                            client_uuid, existing_mapper["id"], mapper_dict, realm_name
                         )
                         if not success:
                             self.logger.error(f"Failed to update protocol mapper '{mapper_name}'")
@@ -477,13 +478,13 @@ class KeycloakClientReconciler(BaseReconciler):
                     # Create new protocol mapper
                     self.logger.info(f"Creating protocol mapper '{mapper_name}'")
                     created_mapper = admin_client.create_client_protocol_mapper(
-                        client_uuid, mapper_spec, realm_name
+                        client_uuid, mapper_dict, realm_name
                     )
                     if not created_mapper:
                         self.logger.error(f"Failed to create protocol mapper '{mapper_name}'")
 
             # Remove protocol mappers that are no longer specified
-            desired_mapper_names = {mapper.get("name") for mapper in spec.protocol_mappers if mapper.get("name")}
+            desired_mapper_names = {mapper.name for mapper in spec.protocol_mappers if mapper.name}
             for existing_mapper in existing_mappers:
                 if existing_mapper["name"] not in desired_mapper_names:
                     self.logger.info(f"Removing obsolete protocol mapper '{existing_mapper['name']}'")
@@ -554,37 +555,27 @@ class KeycloakClientReconciler(BaseReconciler):
             existing_roles_by_name = {role["name"]: role for role in existing_roles}
 
             # Process each client role from the spec
-            for role_spec in spec.client_roles:
-                role_name = role_spec.get("name")
+            for role_name in spec.client_roles:
                 if not role_name:
                     self.logger.warning("Client role missing name, skipping")
                     continue
 
                 existing_role = existing_roles_by_name.get(role_name)
 
-                if existing_role:
-                    # Check if update is needed (compare configs excluding ID)
-                    needs_update = self._client_role_needs_update(existing_role, role_spec)
-                    if needs_update:
-                        self.logger.info(f"Updating client role '{role_name}'")
-                        success = admin_client.update_client_role(
-                            client_uuid, role_name, role_spec, realm_name
-                        )
-                        if not success:
-                            self.logger.error(f"Failed to update client role '{role_name}'")
-                    else:
-                        self.logger.debug(f"Client role '{role_name}' is up to date")
-                else:
+                if not existing_role:
                     # Create new client role
                     self.logger.info(f"Creating client role '{role_name}'")
+                    role_config = {"name": role_name}
                     success = admin_client.create_client_role(
-                        client_uuid, role_spec, realm_name
+                        client_uuid, role_config, realm_name
                     )
                     if not success:
                         self.logger.error(f"Failed to create client role '{role_name}'")
+                else:
+                    self.logger.debug(f"Client role '{role_name}' already exists")
 
             # Remove client roles that are no longer specified
-            desired_role_names = {role.get("name") for role in spec.client_roles if role.get("name")}
+            desired_role_names = set(spec.client_roles)
             for existing_role in existing_roles:
                 if existing_role["name"] not in desired_role_names:
                     self.logger.info(f"Removing obsolete client role '{existing_role['name']}'")

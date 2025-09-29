@@ -220,9 +220,3 @@ def temp_manifest_file():
         # Cleanup
         if temp_path.exists():
             temp_path.unlink()
-
-
-# Markers for different test categories
-pytest.mark.integration = pytest.mark.integration
-pytest.mark.slow = pytest.mark.slow
-pytest.mark.requires_cluster = pytest.mark.requires_cluster
