@@ -76,7 +76,7 @@ python_files = ["test_*.py", "*_test.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
-addopts = "-v --tb=short"
+addopts = "-v --tb=short --timeout=300"
 filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
@@ -87,8 +87,8 @@ markers = [
     "requires_cluster: marks tests that require a Kubernetes cluster",
     "unit: marks tests as unit tests",
 ]
-# Timeout for integration tests (5 minutes)
-timeout = 300
+# Timeout for integration tests (15 minutes for slow Kind operations)
+timeout = 900
 
 [dependency-groups]
 dev = [

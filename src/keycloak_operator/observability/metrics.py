@@ -365,7 +365,7 @@ class MetricsCollector:
 class MetricsServer:
     """HTTP server for exposing Prometheus metrics."""
 
-    def __init__(self, port: int = 8080, host: str = "0.0.0.0"):
+    def __init__(self, port: int = 8081, host: str = "0.0.0.0"):
         """
         Initialize metrics server.
 
