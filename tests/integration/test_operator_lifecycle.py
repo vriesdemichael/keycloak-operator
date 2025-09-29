@@ -282,7 +282,7 @@ class TestBasicKeycloakDeployment:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_deployment_created, timeout=480), (
+            assert await wait_for_condition(check_deployment_created, timeout=180), (
                 "Keycloak deployment was not created"
             )
 

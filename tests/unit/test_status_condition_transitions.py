@@ -5,9 +5,8 @@ Tests the proper state transitions between different status conditions
 following Kubernetes best practices and ensuring observedGeneration tracking.
 """
 
-import asyncio
-from datetime import UTC, datetime
-from unittest.mock import MagicMock, patch
+from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 
@@ -216,7 +215,7 @@ class TestStatusConditionTransitions:
         generations = [1, 5, 10, 15]
         messages = ["Initial", "Update 1", "Update 2", "Final"]
 
-        for gen, msg in zip(generations, messages):
+        for gen, msg in zip(generations, messages, strict=False):
             reconciler.update_status_reconciling(status, f"Reconciling {msg}", gen)
             assert status.observedGeneration == gen
 
