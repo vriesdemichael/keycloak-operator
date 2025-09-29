@@ -23,8 +23,11 @@ spec:
       serviceAccountName: keycloak-operator
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
+        runAsUser: 1001
+        runAsGroup: 1001
         fsGroup: 2000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: operator
         image: keycloak-operator:latest
@@ -33,8 +36,8 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
-        - containerPort: 8443
-          name: https
+        - containerPort: 8081
+          name: metrics
           protocol: TCP
         env:
         - name: KOPF_PEERING_NAME
@@ -68,7 +71,7 @@ spec:
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /readyz
+            path: /healthz
             port: http
           initialDelaySeconds: 5
           periodSeconds: 10
@@ -77,6 +80,10 @@ spec:
         securityContext:
           allowPrivilegeEscalation: false
           readOnlyRootFilesystem: true
+          runAsNonRoot: true
+          runAsUser: 1001
+          seccompProfile:
+            type: RuntimeDefault
           capabilities:
             drop:
             - ALL

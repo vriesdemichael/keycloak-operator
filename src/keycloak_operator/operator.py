@@ -110,7 +110,7 @@ async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
         logging.info("Running in DRY-RUN mode - no changes will be applied")
 
     # Start metrics server for Prometheus scraping and health checks
-    metrics_port = int(os.getenv("METRICS_PORT", "8080"))
+    metrics_port = int(os.getenv("METRICS_PORT", "8081"))
     metrics_host = os.getenv("METRICS_HOST", "0.0.0.0")
 
     try:

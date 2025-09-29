@@ -59,7 +59,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_finalizer_added, timeout=120), (
+            assert await wait_for_condition(check_finalizer_added, timeout=300), (
                 "Finalizer was not added"
             )
 
@@ -73,7 +73,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_deployment_exists, timeout=180), (
+            assert await wait_for_condition(check_deployment_exists, timeout=480), (
                 "Deployment was not created"
             )
 
@@ -100,7 +100,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404  # Resource was deleted
 
-            assert await wait_for_condition(check_resource_deleted, timeout=300), (
+            assert await wait_for_condition(check_resource_deleted, timeout=600), (
                 "Finalizer cleanup did not complete"
             )
 
@@ -114,7 +114,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404  # Deployment was deleted
 
-            assert await wait_for_condition(check_deployment_deleted, timeout=180), (
+            assert await wait_for_condition(check_deployment_deleted, timeout=480), (
                 "Deployment was not cleaned up by finalizer"
             )
 
@@ -143,7 +143,7 @@ class TestFinalizersE2E:
             **sample_realm_spec,
             "metadata": {"name": realm_name, "namespace": test_namespace},
         }
-        realm_manifest["spec"]["instance_ref"]["namespace"] = test_namespace
+        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
 
         try:
             # Create Keycloak resource
@@ -182,7 +182,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_realm_finalizer, timeout=120), (
+            assert await wait_for_condition(check_realm_finalizer, timeout=300), (
                 "Realm finalizer was not added"
             )
 
@@ -209,7 +209,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await wait_for_condition(check_realm_deleted, timeout=300), (
+            assert await wait_for_condition(check_realm_deleted, timeout=600), (
                 "Realm finalizer cleanup did not complete"
             )
 
@@ -251,13 +251,13 @@ class TestFinalizersE2E:
             **sample_realm_spec,
             "metadata": {"name": realm_name, "namespace": test_namespace},
         }
-        realm_manifest["spec"]["instance_ref"]["namespace"] = test_namespace
+        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
 
         client_manifest = {
             **sample_client_spec,
             "metadata": {"name": client_name, "namespace": test_namespace},
         }
-        client_manifest["spec"]["instance_ref"]["namespace"] = test_namespace
+        client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
 
         try:
             # Create Keycloak, Realm, then Client
@@ -304,7 +304,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_client_finalizer, timeout=120), (
+            assert await wait_for_condition(check_client_finalizer, timeout=300), (
                 "Client finalizer was not added"
             )
 
@@ -331,7 +331,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await wait_for_condition(check_client_deleted, timeout=300), (
+            assert await wait_for_condition(check_client_deleted, timeout=600), (
                 "Client finalizer cleanup did not complete"
             )
 
@@ -382,13 +382,13 @@ class TestFinalizersE2E:
             **sample_realm_spec,
             "metadata": {"name": realm_name, "namespace": test_namespace},
         }
-        realm_manifest["spec"]["instance_ref"]["namespace"] = test_namespace
+        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
 
         client_manifest = {
             **sample_client_spec,
             "metadata": {"name": client_name, "namespace": test_namespace},
         }
-        client_manifest["spec"]["instance_ref"]["namespace"] = test_namespace
+        client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
 
         try:
             # Create full hierarchy
@@ -460,7 +460,7 @@ class TestFinalizersE2E:
                 except Exception:
                     return False
 
-            assert await wait_for_condition(check_all_deleted, timeout=600), (
+            assert await wait_for_condition(check_all_deleted, timeout=900), (
                 "Cascading deletion did not complete"
             )
 

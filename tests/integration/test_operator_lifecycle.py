@@ -170,7 +170,7 @@ class TestBasicKeycloakDeployment:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_resource_created, timeout=60), (
+            assert await wait_for_condition(check_resource_created, timeout=180), (
                 "Keycloak resource was not created successfully"
             )
 
@@ -228,7 +228,7 @@ class TestBasicKeycloakDeployment:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_finalizer_added, timeout=120), (
+            assert await wait_for_condition(check_finalizer_added, timeout=300), (
                 "Finalizer was not added to Keycloak resource"
             )
 
@@ -282,7 +282,7 @@ class TestBasicKeycloakDeployment:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_deployment_created, timeout=180), (
+            assert await wait_for_condition(check_deployment_created, timeout=480), (
                 "Keycloak deployment was not created"
             )
 

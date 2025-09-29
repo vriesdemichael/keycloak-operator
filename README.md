@@ -62,8 +62,8 @@ kubectl create deployment keycloak-operator \
   --image=keycloak-operator:latest \
   --namespace=keycloak-system
 
-# Or use the provided deployment manifest (TODO: create deployment.yaml)
-kubectl apply -f k8s/deploy/deployment.yaml
+# Or use the provided deployment manifest
+kubectl apply -f k8s/operator-deployment.yaml
 ```
 
 ### 3. Create Your First Keycloak Instance

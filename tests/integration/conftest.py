@@ -156,16 +156,13 @@ def sample_realm_spec() -> dict[str, Any]:
         "apiVersion": "keycloak.mdvr.nl/v1",
         "kind": "KeycloakRealm",
         "spec": {
-            "instance_ref": {
+            "keycloak_instance_ref": {
                 "name": "test-keycloak",
                 "namespace": None,  # Will be set by test
             },
-            "realm": {
-                "realm": "test-realm",
-                "enabled": True,
-                "display_name": "Test Realm",
-                "login_theme": "keycloak",
-            },
+            "realm_name": "test-realm",
+            "enabled": True,
+            "display_name": "Test Realm",
         },
     }
 
@@ -177,21 +174,15 @@ def sample_client_spec() -> dict[str, Any]:
         "apiVersion": "keycloak.mdvr.nl/v1",
         "kind": "KeycloakClient",
         "spec": {
-            "instance_ref": {
+            "keycloak_instance_ref": {
                 "name": "test-keycloak",
                 "namespace": None,  # Will be set by test
             },
             "realm": "test-realm",
-            "client": {
-                "client_id": "test-client",
-                "name": "Test Client",
-                "enabled": True,
-                "public_client": False,
-                "standard_flow_enabled": True,
-                "implicit_flow_enabled": False,
-                "direct_access_grants_enabled": True,
-                "service_accounts_enabled": True,
-            },
+            "client_id": "test-client",
+            "client_name": "Test Client",
+            "enabled": True,
+            "public_client": False,
         },
     }
 
@@ -200,7 +191,7 @@ def sample_client_spec() -> dict[str, Any]:
 async def wait_for_condition():
     """Utility fixture for waiting for conditions with timeout."""
 
-    async def _wait(condition_func, timeout: int = 300, interval: int = 5):
+    async def _wait(condition_func, timeout: int = 300, interval: int = 3):
         """Wait for a condition to be true."""
         import time
 

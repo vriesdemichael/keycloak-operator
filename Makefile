@@ -50,7 +50,7 @@ test-unit: ## Run unit tests only
 .PHONY: test-integration
 test-integration: deploy ## Run integration tests (auto-deploys operator)
 	@echo "Running integration tests against existing cluster..."
-	uv run pytest tests/integration/ -v -m integration
+	uv run --group integration pytest tests/integration/ -v -m integration
 
 .PHONY: test-all
 test-all: test ## Alias for complete test suite

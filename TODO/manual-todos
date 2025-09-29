@@ -4,6 +4,20 @@
 - Create a documentation using material-mkdocs (like pydantic has)
 - github actions setup (both here and in github)
 
-
 - cleanup of old info in claude and readme
 - cleanup of old unused files
+
+
+
+
+- Add issue templates (bug report, feature request) to .github/ISSUE_TEMPLATE/
+- Add PR template to .github/pull_request_template.md with basic checklist
+- Set up ghcr.io image publishing in GitHub Actions(push latest on main, semver tags on releases)
+- Create minimal Helm chart for operator deployment
+- Add CI status badges to README
+- Integrate release-please for automated semantic releases
+- Add "Status/Maturity" section to README explaining production-readiness
+- Add "Roadmap" section to README
+- Document compatibility matrix (Keycloak versions, K8s/OpenShift versions) in docs
+- Add CONTRIBUTING.md with uv setup instructions
+- Consider ADRs for future architectural decisions (skip for now if docs cover it)
