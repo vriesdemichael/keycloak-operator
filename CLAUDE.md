@@ -178,6 +178,55 @@ make operator-logs              # Follow operator logs
    kubectl delete namespace keycloak-test
    ```
 
+## Keycloak API Reference
+
+This project includes the **official Keycloak Admin REST API specification** at `keycloak-api-spec.yaml` (downloaded from https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml).
+
+### Using the API Specification
+
+**For API Implementation:**
+- **ALWAYS** reference `keycloak-api-spec.yaml` when implementing new Keycloak admin client methods
+- **VERIFY** endpoint URLs, HTTP methods, and request/response schemas against the spec
+- **ENSURE** API calls use current endpoints - never rely on outdated documentation
+
+**For Future Development:**
+- When adding new Keycloak functionality, search the OpenAPI spec for relevant endpoints
+- Pay attention to required parameters, authentication requirements, and response codes
+- Test API implementations against a real Keycloak instance to verify spec compliance
+
+**Updating the Spec:**
+- Periodically update `keycloak-api-spec.yaml` from the official source
+- After updating, verify existing API implementations for any breaking changes
+- Document any API version requirements in deployment instructions
+
+### Implementation Guidelines
+
+1. **Method Naming**: Use descriptive method names that match OpenAPI operationId when available
+2. **Error Handling**: Implement proper error handling based on documented response codes
+3. **Parameter Validation**: Validate inputs according to OpenAPI schema requirements
+4. **Documentation**: Include API endpoint references in method docstrings
+
+**Example Implementation Pattern:**
+```python
+def create_client_role(self, client_uuid: str, role_config: dict[str, Any], realm_name: str = "master") -> dict[str, Any]:
+    """
+    Create a client role.
+
+    Based on OpenAPI spec: POST /admin/realms/{realm}/clients/{id}/roles
+
+    Args:
+        client_uuid: Client UUID in Keycloak
+        role_config: Role configuration dictionary
+        realm_name: Target realm name
+
+    Returns:
+        Created role configuration
+
+    Raises:
+        KeycloakAdminError: If role creation fails
+    """
+```
+
 ## Documentation
 Whenever a change in api is made or a significant change for the end user the readme.md is to be updated.
 The readme should reflect how the end user will interact with the software.
