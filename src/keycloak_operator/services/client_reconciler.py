@@ -72,26 +72,26 @@ class KeycloakClientReconciler(BaseReconciler):
         await self.validate_cross_namespace_access(client_spec, namespace)
 
         # Ensure client exists with basic configuration
-        client_id = await self.ensure_client_exists(client_spec, name, namespace)
+        client_uuid = await self.ensure_client_exists(client_spec, name, namespace)
 
         # Configure OAuth2/OIDC settings
-        await self.configure_oauth_settings(client_spec, client_id, name, namespace)
+        await self.configure_oauth_settings(client_spec, client_uuid, name, namespace)
 
         # Manage client credentials
         if not client_spec.public_client:
             await self.manage_client_credentials(
-                client_spec, client_id, name, namespace
+                client_spec, client_uuid, name, namespace
             )
 
         # Configure protocol mappers
         if client_spec.protocol_mappers:
             await self.configure_protocol_mappers(
-                client_spec, client_id, name, namespace
+                client_spec, client_uuid, name, namespace
             )
 
         # Manage client roles
         if client_spec.client_roles:
-            await self.manage_client_roles(client_spec, client_id, name, namespace)
+            await self.manage_client_roles(client_spec, client_uuid, name, namespace)
 
         # Return status information
         keycloak_ref = client_spec.keycloak_instance_ref
@@ -714,8 +714,12 @@ class KeycloakClientReconciler(BaseReconciler):
 
             elif field_path[:2] == ("spec", "protocol_mappers"):
                 self.logger.info(f"Protocol mappers changed: {operation} at {field_path}")
-                # Protocol mappers are handled separately via configure_protocol_mappers
-                await self.configure_protocol_mappers(new_client_spec, name, namespace)
+                # Get client UUID for protocol mapper configuration
+                client_uuid = admin_client.get_client_uuid(new_client_spec.client_id, realm_name)
+                if client_uuid:
+                    await self.configure_protocol_mappers(new_client_spec, client_uuid, name, namespace)
+                else:
+                    self.logger.warning(f"Could not find client UUID for {new_client_spec.client_id} - skipping protocol mappers")
 
             elif field_path[:2] == ("spec", "client_roles"):
                 self.logger.info(f"Client roles changed: {operation} at {field_path}")

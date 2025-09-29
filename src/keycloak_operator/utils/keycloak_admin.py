@@ -310,6 +310,71 @@ class KeycloakAdminClient:
                 return None
             raise
 
+    def export_realm(self, realm_name: str) -> dict[str, Any] | None:
+        """
+        Export realm configuration from Keycloak.
+
+        Based on OpenAPI spec: GET /admin/realms/{realm}
+        Returns the complete realm representation.
+
+        Args:
+            realm_name: Name of the realm to export
+
+        Returns:
+            Complete realm configuration or None if not found
+        """
+        self._ensure_authenticated()
+
+        try:
+            response = self._make_request("GET", f"admin/realms/{realm_name}")
+
+            if response.status_code == 200:
+                logger.info(f"Successfully exported realm '{realm_name}'")
+                return response.json()
+            elif response.status_code == 404:
+                logger.warning(f"Realm '{realm_name}' not found for export")
+                return None
+            else:
+                logger.error(f"Failed to export realm '{realm_name}': HTTP {response.status_code}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to export realm '{realm_name}': {e}")
+            return None
+
+    def get_realms(self, brief_representation: bool = False) -> list[dict[str, Any]] | None:
+        """
+        Get all accessible realms from Keycloak.
+
+        Based on OpenAPI spec: GET /admin/realms
+        Returns a list of accessible realms filtered by what the caller is allowed to view.
+
+        Args:
+            brief_representation: If True, return brief representation of realms
+
+        Returns:
+            List of realm configurations or None on error
+        """
+        self._ensure_authenticated()
+
+        try:
+            params = {}
+            if brief_representation:
+                params["briefRepresentation"] = "true"
+
+            url = f"realms"
+            response = self._make_request("GET", url, params=params)
+
+            if response.status_code == 200:
+                return response.json()
+            else:
+                logger.error(f"Failed to get realms: HTTP {response.status_code}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to get realms: {e}")
+            return None
+
     def update_realm(
         self, realm_name: str, realm_config: dict[str, Any]
     ) -> dict[str, Any]:
@@ -374,6 +439,22 @@ class KeycloakAdminClient:
         except Exception as e:
             logger.error(f"Failed to get client '{client_id}': {e}")
             return None
+
+    def get_client_uuid(self, client_id: str, realm_name: str = "master") -> str | None:
+        """
+        Get client UUID by client ID in the specified realm.
+
+        Args:
+            client_id: The client ID to search for
+            realm_name: Name of the realm (defaults to "master")
+
+        Returns:
+            Client UUID if found, None otherwise
+        """
+        client = self.get_client_by_name(client_id, realm_name)
+        if client:
+            return client.get("id")
+        return None
 
     def create_client(
         self, client_config: dict[str, Any], realm_name: str = "master"
@@ -447,14 +528,16 @@ class KeycloakAdminClient:
                 logger.info(f"Successfully updated client '{client_id}'")
                 return True
             else:
-                logger.error(
-                    f"Failed to update client '{client_id}': {response.status_code}"
-                )
-                return False
+                error_msg = f"Failed to update client '{client_id}': HTTP {response.status_code}"
+                logger.error(error_msg)
+                raise KeycloakAdminError(error_msg, response.status_code)
 
+        except KeycloakAdminError:
+            raise
         except Exception as e:
-            logger.error(f"Failed to update client '{client_id}': {e}")
-            return False
+            error_msg = f"Failed to update client '{client_id}': {e}"
+            logger.error(error_msg)
+            raise KeycloakAdminError(error_msg) from e
 
     def get_client_secret(
         self, client_id: str, realm_name: str = "master"
