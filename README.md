@@ -156,6 +156,28 @@ spec:
     service_accounts_enabled: true
 ```
 
+## ⚡ Quick Development Workflow
+
+For developers working on the operator:
+
+```bash
+# Complete setup (one time)
+make dev-setup
+
+# Standard development cycle
+make dev-test          # Quick: linting + unit tests
+make test             # Full: linting + unit + integration tests
+make deploy           # Deploy to local cluster
+```
+
+**Key Commands:**
+- `make dev-setup` - Install dependencies + setup Kind cluster
+- `make dev-test` - Fast development testing (no integration tests)
+- `make test` - Complete test suite with integration tests
+- `make deploy` - Build and deploy operator to local cluster
+- `make operator-logs` - View operator logs
+- `make clean` - Clean up development artifacts
+
 ## 🔧 Development Setup
 
 > **Note**: This section is only for developers contributing to the operator. End users only need a Kubernetes cluster and kubectl.
@@ -364,19 +386,6 @@ make clean-all
    pkill -f "keycloak_operator"
    ```
 
-### Development with Docker Compose
-
-```bash
-# Start local Keycloak + PostgreSQL for testing
-docker-compose up -d postgres keycloak
-
-# Run operator in development mode
-docker-compose --profile dev up keycloak-operator
-
-# Access local Keycloak
-open http://localhost:8080
-# Admin credentials: admin/admin
-```
 
 ### Project Structure
 
@@ -400,8 +409,7 @@ keycloak-operator/
 ├── k8s/
 │   ├── crds/                   # Custom Resource Definitions
 │   └── rbac/                   # RBAC configuration
-├── Dockerfile                  # Multi-stage container build
-└── docker-compose.yaml         # Local development stack
+└── Dockerfile                  # Multi-stage container build
 ```
 
 ## 📚 Custom Resources
@@ -1061,14 +1069,6 @@ make operator-logs   # View logs
 # No manual kubectl commands needed for standard testing
 ```
 
-5. **Alternative: Docker Development**
-```bash
-# Start development stack
-docker-compose up -d
-
-# Run operator locally
-uv run python -m keycloak_operator.operator
-```
 
 ### Code Guidelines
 

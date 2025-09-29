@@ -108,75 +108,31 @@ make operator-status             # Check operator deployment status
 make operator-logs              # Follow operator logs
 ```
 
-**Legacy Manual Testing (for reference):**
+## Development File Management
 
-**Manual Test Steps:**
+### Temporary Files
+When creating temporary test files, scripts, or scratch work during development:
 
-1. **Install/Update CRDs** (if changed):
-   ```bash
-   kubectl apply -f k8s/crds/
-   ```
+```bash
+# Create temporary directory
+mkdir -p .tmp
 
-2. **Start the operator** (in background):
-   ```bash
-   uv run python -m keycloak_operator.operator &
-   ```
+# Use for temporary test resources
+echo "apiVersion: ..." > .tmp/my-test-resource.yaml
 
-3. **Create test namespace and secrets**:
-   ```bash
-   kubectl create namespace keycloak-test
-   kubectl create secret generic keycloak-db-secret --from-literal=password=testpass -n keycloak-test
-   kubectl create secret generic keycloak-admin-secret --from-literal=password=admin123 -n keycloak-test
-   ```
+# Use for development scripts
+echo "#!/bin/bash" > .tmp/debug-script.sh
 
-4. **Deploy test Keycloak instance**:
-   ```yaml
-   # test-keycloak.yaml
-   apiVersion: keycloak.mdvr.nl/v1
-   kind: Keycloak
-   metadata:
-     name: test-keycloak
-     namespace: keycloak-test
-   spec:
-     image: "quay.io/keycloak/keycloak:23.0.0"
-     replicas: 1
-     database:
-       type: "postgresql"
-       host: "postgres.keycloak-test.svc.cluster.local"
-       name: "keycloak"
-       username: "keycloak"
-       password_secret:
-         name: "keycloak-db-secret"
-         key: "password"
-     admin_access:
-       username: "admin"
-       password_secret:
-         name: "keycloak-admin-secret"
-         key: "password"
-     service:
-       type: "ClusterIP"
-       port: 8080
-   ```
+# Cleanup when done
+rm -rf .tmp/
+# Or use: make clean
+```
 
-5. **Apply and verify**:
-   ```bash
-   kubectl apply -f test-keycloak.yaml
-   kubectl get keycloaks.keycloak.mdvr.nl -n keycloak-test
-   kubectl get pods,services -n keycloak-test
-   ```
-
-6. **Test health endpoint**:
-   ```bash
-   kubectl port-forward -n keycloak-test service/test-keycloak-keycloak 8080:8080 &
-   curl http://localhost:8080/health
-   # Should return: {"status": "UP", ...}
-   ```
-
-7. **Cleanup**:
-   ```bash
-   kubectl delete -f test-keycloak.yaml
-   kubectl delete namespace keycloak-test
-   ```
+### Guidelines
+- Never commit temporary files to the root directory
+- Use `.tmp/` for all development scratch work
+- Clean up after development sessions
+- The `.tmp/` directory is git-ignored automatically which means you cannot read it anymore after you have created it, reference your own memory for the contents.
 
 ## Keycloak API Reference
 

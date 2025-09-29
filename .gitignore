@@ -208,3 +208,6 @@ __marimo__/
 
 
 # TODO/*
+
+# Temporary development files
+.tmp/
