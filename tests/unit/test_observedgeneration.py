@@ -11,6 +11,14 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from keycloak_operator.services.base_reconciler import BaseReconciler
+
+
+class ConcreteReconciler(BaseReconciler):
+    """Concrete implementation of BaseReconciler for testing."""
+
+    async def do_reconcile(self, spec, name, namespace, status, **kwargs):
+        """Simple test reconciliation that always succeeds."""
+        return {"test": "success"}
 from keycloak_operator.services.client_reconciler import KeycloakClientReconciler
 from keycloak_operator.services.keycloak_reconciler import KeycloakInstanceReconciler
 from keycloak_operator.services.realm_reconciler import KeycloakRealmReconciler
@@ -38,7 +46,7 @@ class TestBaseReconcilerGenerationTracking:
     @pytest.fixture
     def base_reconciler(self):
         """Create a base reconciler for testing."""
-        return BaseReconciler()
+        return ConcreteReconciler()
 
     def test_update_status_ready_with_generation(self, base_reconciler):
         """Test that update_status_ready sets observedGeneration."""
@@ -410,7 +418,7 @@ class TestGitOpsCompatibility:
     @pytest.fixture
     def base_reconciler(self):
         """Create a base reconciler for testing."""
-        return BaseReconciler()
+        return ConcreteReconciler()
 
     def test_generation_increment_detection(self, base_reconciler):
         """Test that generation increments are properly detected."""
@@ -492,7 +500,7 @@ class TestGenerationTrackingEdgeCases:
     @pytest.fixture
     def base_reconciler(self):
         """Create a base reconciler for testing."""
-        return BaseReconciler()
+        return ConcreteReconciler()
 
     def test_generation_zero_is_valid(self, base_reconciler):
         """Test that generation 0 is handled correctly."""
