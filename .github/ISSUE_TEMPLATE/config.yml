@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Keycloak Upstream Project
+    url: https://www.keycloak.org/
+    about: General Keycloak server issues should be reported upstream unless clearly operator related.
