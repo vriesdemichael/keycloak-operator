@@ -73,7 +73,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_deployment_exists, timeout=480), (
+            assert await wait_for_condition(check_deployment_exists, timeout=120), (
                 "Deployment was not created"
             )
 
@@ -100,7 +100,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404  # Resource was deleted
 
-            assert await wait_for_condition(check_resource_deleted, timeout=600), (
+            assert await wait_for_condition(check_resource_deleted, timeout=180), (
                 "Finalizer cleanup did not complete"
             )
 
@@ -209,7 +209,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await wait_for_condition(check_realm_deleted, timeout=600), (
+            assert await wait_for_condition(check_realm_deleted, timeout=180), (
                 "Realm finalizer cleanup did not complete"
             )
 
@@ -331,7 +331,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await wait_for_condition(check_client_deleted, timeout=600), (
+            assert await wait_for_condition(check_client_deleted, timeout=180), (
                 "Client finalizer cleanup did not complete"
             )
 
@@ -460,7 +460,7 @@ class TestFinalizersE2E:
                 except Exception:
                     return False
 
-            assert await wait_for_condition(check_all_deleted, timeout=900), (
+            assert await wait_for_condition(check_all_deleted, timeout=300), (
                 "Cascading deletion did not complete"
             )
 

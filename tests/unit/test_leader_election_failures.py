@@ -7,7 +7,6 @@ to ensure robustness and proper error handling.
 
 import asyncio
 import os
-from datetime import datetime, UTC
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -242,7 +241,7 @@ class TestLeaderElectionFailureScenarios:
         """Test behavior during network partition scenario."""
         # Simulate network partition where API calls timeout
         async def timeout_side_effect(*args, **kwargs):
-            raise asyncio.TimeoutError("Network timeout")
+            raise TimeoutError("Network timeout")
 
         with patch.object(monitor, "_get_current_leader", side_effect=timeout_side_effect):
             result = await monitor.check_leadership_status()
@@ -329,7 +328,9 @@ class TestLeaderElectionEventHandlers:
     @pytest.mark.asyncio
     async def test_periodic_leadership_check_own_pod(self):
         """Test periodic leadership check for own pod."""
-        from keycloak_operator.observability.leader_election import periodic_leadership_check
+        from keycloak_operator.observability.leader_election import (
+            periodic_leadership_check,
+        )
 
         mock_monitor = MagicMock()
         mock_monitor.check_leadership_status = AsyncMock()
@@ -343,7 +344,9 @@ class TestLeaderElectionEventHandlers:
     @pytest.mark.asyncio
     async def test_periodic_leadership_check_other_pod(self):
         """Test periodic leadership check ignores other pods."""
-        from keycloak_operator.observability.leader_election import periodic_leadership_check
+        from keycloak_operator.observability.leader_election import (
+            periodic_leadership_check,
+        )
 
         mock_monitor = MagicMock()
         mock_monitor.check_leadership_status = AsyncMock()
