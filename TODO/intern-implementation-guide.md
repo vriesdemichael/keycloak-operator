@@ -594,6 +594,8 @@ class ReconciliationError(Exception):
 
 ### Step 5: Write Unit Tests
 
+> Completed on 2025-10-01 by adding coverage in `tests/unit/services/test_client_reconciler.py` for service account role management, including happy paths, skipped execution, and error handling.
+
 **File:** `tests/unit/services/test_client_reconciler.py` (create if doesn't exist)
 
 **Example test structure:**
@@ -743,6 +745,8 @@ uv run pytest tests/unit/services/test_client_reconciler.py -v
 ---
 
 ### Step 6: Write Integration Tests
+
+> Completed on 2025-10-01 by introducing `tests/integration/test_service_account_roles.py`, which provisions Keycloak resources, assigns a custom realm role, and validates the service account mapping end-to-end.
 
 **File:** `tests/integration/test_service_account_roles.py` (create new file)
 
@@ -915,6 +919,8 @@ make test-integration
 ---
 
 ### Step 7: Update Documentation
+
+> Completed on 2025-10-01 by updating `README.md` with a service account role mapping example and highlighting the feature in the overview list.
 
 **File:** `README.md`
 

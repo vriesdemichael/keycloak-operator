@@ -10,6 +10,7 @@ This operator provides declarative management of Keycloak identity and access ma
 - **GitOps compatibility** - Fully declarative with no manual intervention required
 - **Kubernetes-native RBAC** - Leverages K8s security instead of Keycloak's built-in permissions
 - **Dynamic client provisioning** - Create OAuth2/OIDC clients on-demand
+- **Service account automation** - Declarative role assignment for machine-to-machine credentials
 - **Comprehensive realm management** - Full control over authentication, themes, and federation
 
 ## 🏗️ Architecture
@@ -692,6 +693,45 @@ spec:
   secret_name: webapp-credentials  # Custom secret name
   regenerate_secret: false         # Don't rotate on update
 ```
+
+#### Service Account with Role Mappings
+
+Represent machine-to-machine integrations declaratively, including the roles a client service account needs in order to call downstream APIs:
+
+```yaml
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakClient
+metadata:
+  name: api-gateway-service
+  namespace: production
+spec:
+  client_id: api-gateway
+  realm: production
+  keycloak_instance_ref:
+    name: prod-keycloak
+    namespace: identity-system
+
+  settings:
+    service_accounts_enabled: true
+    standard_flow_enabled: false    # Pure client-credentials usage
+
+  service_account_roles:
+    realm_roles:
+      - offline_access
+      - uma_authorization
+    client_roles:
+      user-api:
+        - read:users
+        - write:users
+      audit-service:
+        - view:audit-log
+```
+
+When this resource is reconciled the operator will:
+
+- Create/update the Keycloak client and enable its service account.
+- Ensure the generated Kubernetes secret (`api-gateway-service-credentials`) is kept up to date.
+- Assign the listed realm and client roles to the service account user, removing the need for manual UI changes after deployment.
 
 **Generated Secret:**
 ```yaml
