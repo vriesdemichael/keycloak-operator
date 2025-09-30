@@ -204,8 +204,16 @@ class HealthChecker:
             # Define required permissions to test (focus on core create/update + read; include CNPG read-only)
             permission_tests = [
                 {"resource": "keycloaks", "verb": "get", "group": "keycloak.mdvr.nl"},
-                {"resource": "keycloaks", "verb": "create", "group": "keycloak.mdvr.nl"},
-                {"resource": "keycloaks", "verb": "update", "group": "keycloak.mdvr.nl"},
+                {
+                    "resource": "keycloaks",
+                    "verb": "create",
+                    "group": "keycloak.mdvr.nl",
+                },
+                {
+                    "resource": "keycloaks",
+                    "verb": "update",
+                    "group": "keycloak.mdvr.nl",
+                },
                 {"resource": "secrets", "verb": "get", "group": ""},
                 {"resource": "secrets", "verb": "create", "group": ""},
                 {"resource": "deployments", "verb": "get", "group": "apps"},

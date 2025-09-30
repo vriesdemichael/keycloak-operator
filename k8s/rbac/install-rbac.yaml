@@ -100,6 +100,11 @@ rules:
   resources: ["subjectaccessreviews"]
   verbs: ["create"]
 
+# CloudNativePG read-only access (database cluster resolution)
+- apiGroups: ["postgresql.cnpg.io"]
+  resources: ["clusters", "poolers", "backups"]
+  verbs: ["get", "list", "watch"]
+
 # Webhook configuration
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingadmissionwebhooks", "mutatingadmissionwebhooks"]

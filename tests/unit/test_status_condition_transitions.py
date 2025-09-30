@@ -55,7 +55,9 @@ class TestStatusConditionTransitions:
         """Test initial transition to reconciling state."""
         generation = 42
 
-        reconciler.update_status_reconciling(status, "Starting reconciliation", generation)
+        reconciler.update_status_reconciling(
+            status, "Starting reconciliation", generation
+        )
 
         # Check basic status fields
         assert status.phase == "Reconciling"
@@ -67,7 +69,9 @@ class TestStatusConditionTransitions:
         assert len(status.conditions) == 2
 
         # Check Reconciling condition
-        reconciling_condition = next(c for c in status.conditions if c["type"] == "Reconciling")
+        reconciling_condition = next(
+            c for c in status.conditions if c["type"] == "Reconciling"
+        )
         assert reconciling_condition["status"] == "True"
         assert reconciling_condition["reason"] == "ReconciliationInProgress"
         assert reconciling_condition["message"] == "Starting reconciliation"
@@ -75,10 +79,15 @@ class TestStatusConditionTransitions:
         assert "lastTransitionTime" in reconciling_condition
 
         # Check Progressing condition
-        progressing_condition = next(c for c in status.conditions if c["type"] == "Progressing")
+        progressing_condition = next(
+            c for c in status.conditions if c["type"] == "Progressing"
+        )
         assert progressing_condition["status"] == "True"
         assert progressing_condition["reason"] == "ReconciliationInProgress"
-        assert progressing_condition["message"] == "Resource is progressing: Starting reconciliation"
+        assert (
+            progressing_condition["message"]
+            == "Resource is progressing: Starting reconciliation"
+        )
         assert progressing_condition["observedGeneration"] == generation
 
     def test_transition_to_ready_state(self, reconciler, status):
@@ -114,10 +123,14 @@ class TestStatusConditionTransitions:
         assert ready_condition["observedGeneration"] == generation
 
         # Check Available condition
-        available_condition = next(c for c in status.conditions if c["type"] == "Available")
+        available_condition = next(
+            c for c in status.conditions if c["type"] == "Available"
+        )
         assert available_condition["status"] == "True"
         assert available_condition["reason"] == "ReconciliationSucceeded"
-        assert available_condition["message"] == "Resource is available: Resource is ready"
+        assert (
+            available_condition["message"] == "Resource is available: Resource is ready"
+        )
         assert available_condition["observedGeneration"] == generation
 
     def test_transition_to_failed_state(self, reconciler, status):
@@ -153,17 +166,26 @@ class TestStatusConditionTransitions:
         assert ready_condition["observedGeneration"] == generation
 
         # Check Available condition (should be False)
-        available_condition = next(c for c in status.conditions if c["type"] == "Available")
+        available_condition = next(
+            c for c in status.conditions if c["type"] == "Available"
+        )
         assert available_condition["status"] == "False"
         assert available_condition["reason"] == "ReconciliationFailed"
-        assert available_condition["message"] == "Resource unavailable: Reconciliation failed"
+        assert (
+            available_condition["message"]
+            == "Resource unavailable: Reconciliation failed"
+        )
         assert available_condition["observedGeneration"] == generation
 
         # Check Degraded condition (should be True)
-        degraded_condition = next(c for c in status.conditions if c["type"] == "Degraded")
+        degraded_condition = next(
+            c for c in status.conditions if c["type"] == "Degraded"
+        )
         assert degraded_condition["status"] == "True"
         assert degraded_condition["reason"] == "ReconciliationFailed"
-        assert degraded_condition["message"] == "Resource degraded: Reconciliation failed"
+        assert (
+            degraded_condition["message"] == "Resource degraded: Reconciliation failed"
+        )
         assert degraded_condition["observedGeneration"] == generation
 
     def test_transition_to_degraded_state(self, reconciler, status):
@@ -198,13 +220,17 @@ class TestStatusConditionTransitions:
         assert ready_condition["observedGeneration"] == generation
 
         # Check Available condition (should be True - still partially available)
-        available_condition = next(c for c in status.conditions if c["type"] == "Available")
+        available_condition = next(
+            c for c in status.conditions if c["type"] == "Available"
+        )
         assert available_condition["status"] == "True"
         assert available_condition["reason"] == "PartialFunctionality"
         assert available_condition["observedGeneration"] == generation
 
         # Check Degraded condition (should be True)
-        degraded_condition = next(c for c in status.conditions if c["type"] == "Degraded")
+        degraded_condition = next(
+            c for c in status.conditions if c["type"] == "Degraded"
+        )
         assert degraded_condition["status"] == "True"
         assert degraded_condition["reason"] == "PartialFunctionality"
         assert degraded_condition["observedGeneration"] == generation
@@ -243,8 +269,10 @@ class TestStatusConditionTransitions:
 
         # Each state should have a reasonable number of conditions, not accumulating
         assert initial_count <= 4  # Reconciling, Progressing, and potentially others
-        assert ready_count <= 4   # Ready, Available, and potentially others
-        assert failed_count <= 4  # Ready (False), Available (False), Degraded, and potentially others
+        assert ready_count <= 4  # Ready, Available, and potentially others
+        assert (
+            failed_count <= 4
+        )  # Ready (False), Available (False), Degraded, and potentially others
 
         # Should not have contradictory conditions
         condition_types = [c["type"] for c in status.conditions]
@@ -256,14 +284,19 @@ class TestStatusConditionTransitions:
         generation = 7
 
         reconciler.update_status_reconciling(status, "Start", generation)
-        first_timestamps = {c["type"]: c["lastTransitionTime"] for c in status.conditions}
+        first_timestamps = {
+            c["type"]: c["lastTransitionTime"] for c in status.conditions
+        }
 
         # Small delay to ensure timestamp difference
         import time
+
         time.sleep(0.01)
 
         reconciler.update_status_ready(status, "Ready", generation)
-        second_timestamps = {c["type"]: c["lastTransitionTime"] for c in status.conditions}
+        second_timestamps = {
+            c["type"]: c["lastTransitionTime"] for c in status.conditions
+        }
 
         # New conditions should have different timestamps
         for condition_type, timestamp in second_timestamps.items():
@@ -368,11 +401,17 @@ class TestStatusConditionTransitions:
         def update_status(state_type, delay):
             time.sleep(delay)
             if state_type == "ready":
-                reconciler.update_status_ready(status, f"Ready {state_type}", generation)
+                reconciler.update_status_ready(
+                    status, f"Ready {state_type}", generation
+                )
             elif state_type == "failed":
-                reconciler.update_status_failed(status, f"Failed {state_type}", generation)
+                reconciler.update_status_failed(
+                    status, f"Failed {state_type}", generation
+                )
             elif state_type == "degraded":
-                reconciler.update_status_degraded(status, f"Degraded {state_type}", generation)
+                reconciler.update_status_degraded(
+                    status, f"Degraded {state_type}", generation
+                )
             results.append(state_type)
 
         # Start multiple threads trying to update status
@@ -423,12 +462,18 @@ class TestStatusConditionTransitions:
 
                 # Valid values
                 assert condition["status"] in ["True", "False", "Unknown"]
-                assert condition["type"] in ["Ready", "Available", "Progressing", "Degraded", "Reconciling"]
+                assert condition["type"] in [
+                    "Ready",
+                    "Available",
+                    "Progressing",
+                    "Degraded",
+                    "Reconciling",
+                ]
 
                 # Timestamp should be valid ISO format
                 timestamp = condition["lastTransitionTime"]
                 # Should not raise exception when parsing
-                datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+                datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
 
     def test_default_generation_handling(self, reconciler, status):
         """Test handling when generation is not provided (defaults to 0)."""
@@ -459,17 +504,25 @@ class TestStatusConditionTransitions:
         assert reconciler.get_condition(status, "NonExistent") is None
 
         # Verify all helper methods work consistently
-        assert reconciler.is_available(status) == (reconciler.get_condition(status, "Available") is not None and
-                                                 reconciler.get_condition(status, "Available")["status"] == "True")
+        assert reconciler.is_available(status) == (
+            reconciler.get_condition(status, "Available") is not None
+            and reconciler.get_condition(status, "Available")["status"] == "True"
+        )
 
-        assert reconciler.is_progressing(status) == (reconciler.get_condition(status, "Progressing") is not None and
-                                                    reconciler.get_condition(status, "Progressing")["status"] == "True")
+        assert reconciler.is_progressing(status) == (
+            reconciler.get_condition(status, "Progressing") is not None
+            and reconciler.get_condition(status, "Progressing")["status"] == "True"
+        )
 
-        assert reconciler.is_degraded(status) == (reconciler.get_condition(status, "Degraded") is not None and
-                                                 reconciler.get_condition(status, "Degraded")["status"] == "True")
+        assert reconciler.is_degraded(status) == (
+            reconciler.get_condition(status, "Degraded") is not None
+            and reconciler.get_condition(status, "Degraded")["status"] == "True"
+        )
 
     @pytest.mark.asyncio
-    async def test_full_reconciliation_lifecycle_with_conditions(self, reconciler, status):
+    async def test_full_reconciliation_lifecycle_with_conditions(
+        self, reconciler, status
+    ):
         """Test full reconciliation lifecycle with proper condition transitions."""
         # Mock the reconciliation process
         spec = {"test": "config"}
@@ -477,14 +530,16 @@ class TestStatusConditionTransitions:
         namespace = "test-namespace"
         generation = 123
 
-        with patch.object(reconciler, 'do_reconcile', return_value={"result": "success"}):
+        with patch.object(
+            reconciler, "do_reconcile", return_value={"result": "success"}
+        ):
             # Run full reconciliation
             result = await reconciler.reconcile(
                 spec=spec,
                 name=name,
                 namespace=namespace,
                 status=status,
-                meta={"generation": generation}
+                meta={"generation": generation},
             )
 
         # Should have successful result

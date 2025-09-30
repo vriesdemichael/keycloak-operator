@@ -51,7 +51,9 @@ class TestLeaderElectionFailureScenarios:
     def test_leadership_acquired_metrics(self, monitor):
         """Test metrics collection when leadership is acquired."""
         with patch.object(monitor, "previous_leader", "old-leader"):
-            with patch("keycloak_operator.observability.leader_election.metrics_collector") as mock_metrics:
+            with patch(
+                "keycloak_operator.observability.leader_election.metrics_collector"
+            ) as mock_metrics:
                 monitor.on_leadership_acquired()
 
                 # Verify leadership change was recorded
@@ -76,7 +78,9 @@ class TestLeaderElectionFailureScenarios:
         """Test metrics collection when leadership is lost."""
         monitor.is_leader = True
 
-        with patch("keycloak_operator.observability.leader_election.metrics_collector") as mock_metrics:
+        with patch(
+            "keycloak_operator.observability.leader_election.metrics_collector"
+        ) as mock_metrics:
             monitor.on_leadership_lost()
 
             # Verify status was updated
@@ -92,14 +96,18 @@ class TestLeaderElectionFailureScenarios:
     @pytest.mark.asyncio
     async def test_leadership_check_api_exception(self, monitor):
         """Test leadership check when Kubernetes API fails."""
-        with patch.object(monitor, "_get_current_leader", side_effect=ApiException("API Error")):
+        with patch.object(
+            monitor, "_get_current_leader", side_effect=ApiException("API Error")
+        ):
             result = await monitor.check_leadership_status()
             assert result is False
 
     @pytest.mark.asyncio
     async def test_leadership_check_general_exception(self, monitor):
         """Test leadership check when unexpected exception occurs."""
-        with patch.object(monitor, "_get_current_leader", side_effect=Exception("Unexpected error")):
+        with patch.object(
+            monitor, "_get_current_leader", side_effect=Exception("Unexpected error")
+        ):
             result = await monitor.check_leadership_status()
             assert result is False
 
@@ -111,7 +119,9 @@ class TestLeaderElectionFailureScenarios:
 
         with patch.object(monitor, "_get_current_leader", return_value="other-leader"):
             with patch.object(monitor, "on_leadership_lost") as mock_lost:
-                with patch("keycloak_operator.observability.leader_election.metrics_collector") as mock_metrics:
+                with patch(
+                    "keycloak_operator.observability.leader_election.metrics_collector"
+                ) as mock_metrics:
                     result = await monitor.check_leadership_status()
 
                     assert result is False
@@ -129,9 +139,13 @@ class TestLeaderElectionFailureScenarios:
         monitor.is_leader = False
         monitor.previous_leader = "other-leader"
 
-        with patch.object(monitor, "_get_current_leader", return_value=monitor.instance_id):
+        with patch.object(
+            monitor, "_get_current_leader", return_value=monitor.instance_id
+        ):
             with patch.object(monitor, "on_leadership_acquired") as mock_acquired:
-                with patch("keycloak_operator.observability.leader_election.metrics_collector") as mock_metrics:
+                with patch(
+                    "keycloak_operator.observability.leader_election.metrics_collector"
+                ) as mock_metrics:
                     result = await monitor.check_leadership_status()
 
                     assert result is True
@@ -147,9 +161,13 @@ class TestLeaderElectionFailureScenarios:
     async def test_get_current_leader_no_lease(self, monitor):
         """Test getting current leader when no lease exists."""
         mock_api = MagicMock()
-        mock_api.read_namespaced_lease.side_effect = ApiException(status=404, reason="Not Found")
+        mock_api.read_namespaced_lease.side_effect = ApiException(
+            status=404, reason="Not Found"
+        )
 
-        with patch("keycloak_operator.observability.leader_election.client") as mock_client:
+        with patch(
+            "keycloak_operator.observability.leader_election.client"
+        ) as mock_client:
             with patch("keycloak_operator.observability.leader_election.config"):
                 mock_client.CoordinationV1Api.return_value = mock_api
 
@@ -160,9 +178,13 @@ class TestLeaderElectionFailureScenarios:
     async def test_get_current_leader_api_error(self, monitor):
         """Test getting current leader when API returns error."""
         mock_api = MagicMock()
-        mock_api.read_namespaced_lease.side_effect = ApiException(status=500, reason="Server Error")
+        mock_api.read_namespaced_lease.side_effect = ApiException(
+            status=500, reason="Server Error"
+        )
 
-        with patch("keycloak_operator.observability.leader_election.client") as mock_client:
+        with patch(
+            "keycloak_operator.observability.leader_election.client"
+        ) as mock_client:
             with patch("keycloak_operator.observability.leader_election.config"):
                 mock_client.CoordinationV1Api.return_value = mock_api
 
@@ -178,7 +200,9 @@ class TestLeaderElectionFailureScenarios:
         mock_api = MagicMock()
         mock_api.read_namespaced_lease.return_value = mock_lease
 
-        with patch("keycloak_operator.observability.leader_election.client") as mock_client:
+        with patch(
+            "keycloak_operator.observability.leader_election.client"
+        ) as mock_client:
             with patch("keycloak_operator.observability.leader_election.config"):
                 mock_client.CoordinationV1Api.return_value = mock_api
 
@@ -194,7 +218,9 @@ class TestLeaderElectionFailureScenarios:
         mock_api = MagicMock()
         mock_api.read_namespaced_lease.return_value = mock_lease
 
-        with patch("keycloak_operator.observability.leader_election.client") as mock_client:
+        with patch(
+            "keycloak_operator.observability.leader_election.client"
+        ) as mock_client:
             with patch("keycloak_operator.observability.leader_election.config"):
                 mock_client.CoordinationV1Api.return_value = mock_api
 
@@ -203,7 +229,9 @@ class TestLeaderElectionFailureScenarios:
 
     def test_lease_renewal_success_metrics(self, monitor):
         """Test lease renewal success metrics."""
-        with patch("keycloak_operator.observability.leader_election.metrics_collector") as mock_metrics:
+        with patch(
+            "keycloak_operator.observability.leader_election.metrics_collector"
+        ) as mock_metrics:
             monitor.record_lease_renewal(success=True, duration=0.123)
 
             mock_metrics.record_lease_renewal.assert_called_once_with(
@@ -215,7 +243,9 @@ class TestLeaderElectionFailureScenarios:
 
     def test_lease_renewal_failure_metrics(self, monitor):
         """Test lease renewal failure metrics."""
-        with patch("keycloak_operator.observability.leader_election.metrics_collector") as mock_metrics:
+        with patch(
+            "keycloak_operator.observability.leader_election.metrics_collector"
+        ) as mock_metrics:
             monitor.record_lease_renewal(success=False, duration=5.0)
 
             mock_metrics.record_lease_renewal.assert_called_once_with(
@@ -229,6 +259,7 @@ class TestLeaderElectionFailureScenarios:
         """Test that get_leader_election_monitor returns singleton."""
         # Clear any existing global instance
         import keycloak_operator.observability.leader_election as le_module
+
         le_module._leader_election_monitor = None
 
         monitor1 = get_leader_election_monitor()
@@ -239,11 +270,14 @@ class TestLeaderElectionFailureScenarios:
     @pytest.mark.asyncio
     async def test_network_partition_scenario(self, monitor):
         """Test behavior during network partition scenario."""
+
         # Simulate network partition where API calls timeout
         async def timeout_side_effect(*args, **kwargs):
             raise TimeoutError("Network timeout")
 
-        with patch.object(monitor, "_get_current_leader", side_effect=timeout_side_effect):
+        with patch.object(
+            monitor, "_get_current_leader", side_effect=timeout_side_effect
+        ):
             result = await monitor.check_leadership_status()
             assert result is False
 
@@ -251,9 +285,16 @@ class TestLeaderElectionFailureScenarios:
     async def test_rapid_leadership_changes(self, monitor):
         """Test rapid leadership changes (flapping scenario)."""
         # Simulate rapid changes between leaders
-        leaders = [monitor.instance_id, "other-leader", monitor.instance_id, "third-leader"]
+        leaders = [
+            monitor.instance_id,
+            "other-leader",
+            monitor.instance_id,
+            "third-leader",
+        ]
 
-        with patch("keycloak_operator.observability.leader_election.metrics_collector") as mock_metrics:
+        with patch(
+            "keycloak_operator.observability.leader_election.metrics_collector"
+        ) as mock_metrics:
             for _, leader in enumerate(leaders):
                 with patch.object(monitor, "_get_current_leader", return_value=leader):
                     await monitor.check_leadership_status()
@@ -264,8 +305,12 @@ class TestLeaderElectionFailureScenarios:
     @pytest.mark.asyncio
     async def test_kubernetes_config_loading_failure(self, monitor):
         """Test behavior when Kubernetes config loading fails."""
-        with patch("keycloak_operator.observability.leader_election.config") as mock_config:
-            mock_config.load_incluster_config.side_effect = Exception("Config load failed")
+        with patch(
+            "keycloak_operator.observability.leader_election.config"
+        ) as mock_config:
+            mock_config.load_incluster_config.side_effect = Exception(
+                "Config load failed"
+            )
             mock_config.load_kube_config.side_effect = Exception("Config load failed")
 
             result = await monitor._get_current_leader()
@@ -274,11 +319,14 @@ class TestLeaderElectionFailureScenarios:
     @pytest.mark.asyncio
     async def test_concurrent_leadership_checks(self, monitor):
         """Test concurrent leadership status checks don't interfere."""
+
         async def check_with_delay():
             await asyncio.sleep(0.1)
             return await monitor.check_leadership_status()
 
-        with patch.object(monitor, "_get_current_leader", return_value=monitor.instance_id):
+        with patch.object(
+            monitor, "_get_current_leader", return_value=monitor.instance_id
+        ):
             tasks = [check_with_delay() for _ in range(5)]
             results = await asyncio.gather(*tasks)
 
@@ -302,7 +350,10 @@ class TestLeaderElectionEventHandlers:
         mock_monitor.namespace = namespace
         mock_monitor.check_leadership_status = AsyncMock()
 
-        with patch("keycloak_operator.observability.leader_election.get_leader_election_monitor", return_value=mock_monitor):
+        with patch(
+            "keycloak_operator.observability.leader_election.get_leader_election_monitor",
+            return_value=mock_monitor,
+        ):
             await on_lease_event(event=event, name=name, namespace=namespace)
 
         mock_monitor.check_leadership_status.assert_called_once()
@@ -320,7 +371,10 @@ class TestLeaderElectionEventHandlers:
         mock_monitor.namespace = namespace
         mock_monitor.check_leadership_status = AsyncMock()
 
-        with patch("keycloak_operator.observability.leader_election.get_leader_election_monitor", return_value=mock_monitor):
+        with patch(
+            "keycloak_operator.observability.leader_election.get_leader_election_monitor",
+            return_value=mock_monitor,
+        ):
             await on_lease_event(event=event, name=name, namespace=namespace)
 
         mock_monitor.check_leadership_status.assert_not_called()
@@ -335,7 +389,10 @@ class TestLeaderElectionEventHandlers:
         mock_monitor = MagicMock()
         mock_monitor.check_leadership_status = AsyncMock()
 
-        with patch("keycloak_operator.observability.leader_election.get_leader_election_monitor", return_value=mock_monitor):
+        with patch(
+            "keycloak_operator.observability.leader_election.get_leader_election_monitor",
+            return_value=mock_monitor,
+        ):
             with patch.dict(os.environ, {"POD_NAME": "test-pod"}):
                 await periodic_leadership_check(name="test-pod")
 
@@ -351,7 +408,10 @@ class TestLeaderElectionEventHandlers:
         mock_monitor = MagicMock()
         mock_monitor.check_leadership_status = AsyncMock()
 
-        with patch("keycloak_operator.observability.leader_election.get_leader_election_monitor", return_value=mock_monitor):
+        with patch(
+            "keycloak_operator.observability.leader_election.get_leader_election_monitor",
+            return_value=mock_monitor,
+        ):
             with patch.dict(os.environ, {"POD_NAME": "our-pod"}):
                 await periodic_leadership_check(name="other-pod")
 

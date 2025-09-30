@@ -301,6 +301,24 @@ class KeycloakInstanceReconciler(BaseReconciler):
         Returns:
             Status dictionary for the resource
         """
+        # Backward compatibility / migration mapping:
+        # Older manifests (or tests) may still use 'admin_access' block instead of 'admin'.
+        # Provide a non-destructive alias if 'admin' not explicitly set.
+        if "admin_access" in spec and "admin" not in spec:
+            # Shallow copy to avoid mutating original reference captured by kopf
+            spec = {**spec, "admin": spec["admin_access"]}
+
+        # Backward compatibility: legacy service.port -> service.http_port
+        try:
+            svc = spec.get("service") if isinstance(spec, dict) else None
+            if isinstance(svc, dict) and "port" in svc and "http_port" not in svc:
+                # Copy to new key without removing old one (non-destructive)
+                migrated = {**svc, "http_port": svc["port"]}
+                # Rebuild spec dict shallowly
+                spec = {**spec, "service": migrated}
+        except Exception:  # pragma: no cover - defensive
+            pass
+
         # Parse and validate the specification
         keycloak_spec = self._validate_spec(spec)
 
@@ -1004,12 +1022,14 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 "keycloak_instance": {
                     "name": name,
                     "namespace": namespace,
-                    "spec": keycloak_spec.model_dump() if hasattr(keycloak_spec, 'model_dump') else str(keycloak_spec)
+                    "spec": keycloak_spec.model_dump()
+                    if hasattr(keycloak_spec, "model_dump")
+                    else str(keycloak_spec),
                 },
                 "realms": {},
                 "backup_timestamp": datetime.now(UTC).isoformat(),
                 "backup_version": "1.0",
-                "backup_type": "full_instance"
+                "backup_type": "full_instance",
             }
 
             # Backup each realm
@@ -1026,13 +1046,19 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     self.logger.warning(f"Failed to backup realm {realm_name}")
 
             # Store backup in Kubernetes secret for persistence
-            await self._store_keycloak_backup_in_secret(backup_data, backup_name, namespace)
+            await self._store_keycloak_backup_in_secret(
+                backup_data, backup_name, namespace
+            )
 
-            self.logger.info(f"Successfully created Keycloak instance backup: {backup_name}")
+            self.logger.info(
+                f"Successfully created Keycloak instance backup: {backup_name}"
+            )
 
         except Exception as e:
             # Don't block deletion if backup fails, but log the error
-            self.logger.error(f"Failed to create backup for Keycloak instance {name}: {e}")
+            self.logger.error(
+                f"Failed to create backup for Keycloak instance {name}: {e}"
+            )
 
     async def _store_keycloak_backup_in_secret(
         self, backup_data: dict[str, Any], backup_name: str, namespace: str
@@ -1053,9 +1079,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
             k8s_client = client.CoreV1Api()
 
             # Create secret with backup data
-            secret_data = {
-                "backup.json": json.dumps(backup_data, indent=2)
-            }
+            secret_data = {"backup.json": json.dumps(backup_data, indent=2)}
 
             secret = client.V1Secret(
                 metadata=client.V1ObjectMeta(
@@ -1064,18 +1088,24 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     labels={
                         "keycloak.mdvr.nl/backup": "true",
                         "keycloak.mdvr.nl/backup-type": "full_instance",
-                        "keycloak.mdvr.nl/keycloak-instance": backup_data["keycloak_instance"]["name"]
-                    }
+                        "keycloak.mdvr.nl/keycloak-instance": backup_data[
+                            "keycloak_instance"
+                        ]["name"],
+                    },
                 ),
                 string_data=secret_data,
-                type="Opaque"
+                type="Opaque",
             )
 
             k8s_client.create_namespaced_secret(namespace=namespace, body=secret)
-            self.logger.info(f"Keycloak backup {backup_name} stored as secret in namespace {namespace}")
+            self.logger.info(
+                f"Keycloak backup {backup_name} stored as secret in namespace {namespace}"
+            )
 
         except Exception as e:
-            self.logger.error(f"Failed to store Keycloak backup {backup_name} in secret: {e}")
+            self.logger.error(
+                f"Failed to store Keycloak backup {backup_name} in secret: {e}"
+            )
             raise
 
     async def _delete_ingress(
