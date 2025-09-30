@@ -197,6 +197,27 @@ spec:
                 items:
                   type: string
 
+              service_account_roles:
+                type: object
+                description: "Role mappings for the client's service account user"
+                properties:
+                  realm_roles:
+                    type: array
+                    description: "Realm-level roles to assign to the service account"
+                    items:
+                      type: string
+                    example: ["offline_access", "uma_authorization"]
+                  client_roles:
+                    type: object
+                    description: "Client-level roles to assign to the service account"
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                    example:
+                      api-server: ["read:data", "write:data"]
+                      admin-console: ["view-users"]
+
               # Advanced configuration
               attributes:
                 type: object

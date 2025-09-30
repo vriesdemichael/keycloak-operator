@@ -6,7 +6,7 @@ field to enable GitOps tools like ArgoCD and Flux to detect drift and
 determine sync status.
 """
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -393,6 +393,21 @@ class TestClientReconcilerGenerationTracking:
             ),
             patch.object(
                 client_reconciler, "configure_oauth_settings", new_callable=AsyncMock
+            ),
+            patch.object(
+                client_reconciler,
+                "manage_client_credentials",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
+                client_reconciler,
+                "manage_service_account_roles",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
+                client_reconciler,
+                "keycloak_admin_factory",
+                MagicMock(return_value=MagicMock()),
             ),
             patch(
                 "keycloak_operator.utils.kubernetes.validate_keycloak_reference",

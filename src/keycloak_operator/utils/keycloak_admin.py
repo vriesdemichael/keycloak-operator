@@ -599,6 +599,232 @@ class KeycloakAdminClient:
             logger.error(f"Failed to get client secret for '{client_id}': {e}")
             return None
 
+    def get_service_account_user(
+        self, client_uuid: str, realm_name: str = "master"
+    ) -> dict[str, Any]:
+        """Get the service account user for a client.
+
+        Based on OpenAPI spec: GET /admin/realms/{realm}/clients/{id}/service-account-user
+
+        Args:
+            client_uuid: Client UUID in Keycloak
+            realm_name: Target realm name
+
+        Returns:
+            Service account user representation
+
+        Raises:
+            KeycloakAdminError: If retrieval fails or service account is disabled
+        """
+
+        self._ensure_authenticated()
+
+        url = (
+            f"{self.server_url}/admin/realms/{realm_name}/clients/{client_uuid}/service-account-user"
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+        except requests.RequestException as exc:
+            logger.error(
+                "Failed to fetch service account user for client %s: %s",
+                client_uuid,
+                exc,
+            )
+            raise KeycloakAdminError(
+                f"Failed to fetch service account user: {exc}"
+            ) from exc
+
+        if response.status_code == 200:
+            return response.json()
+        if response.status_code == 404:
+            raise KeycloakAdminError(
+                (
+                    f"Service account user not found for client {client_uuid}. "
+                    "Ensure service_accounts_enabled is true."
+                ),
+                status_code=404,
+            )
+
+        raise KeycloakAdminError(
+            f"Failed to get service account user: {response.text}",
+            status_code=response.status_code,
+        )
+
+    def get_realm_role(
+        self, role_name: str, realm_name: str = "master"
+    ) -> dict[str, Any] | None:
+        """Get a realm role by name."""
+
+        self._ensure_authenticated()
+
+        url = f"{self.server_url}/admin/realms/{realm_name}/roles/{role_name}"
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+        except requests.RequestException as exc:
+            logger.error(
+                "Failed to fetch realm role %s in realm %s: %s",
+                role_name,
+                realm_name,
+                exc,
+            )
+            raise KeycloakAdminError(
+                f"Failed to fetch realm role '{role_name}': {exc}"
+            ) from exc
+
+        if response.status_code == 200:
+            return response.json()
+        if response.status_code == 404:
+            logger.warning(
+                "Realm role '%s' not found in realm '%s'", role_name, realm_name
+            )
+            return None
+
+        raise KeycloakAdminError(
+            f"Failed to get realm role: {response.text}",
+            status_code=response.status_code,
+        )
+
+    def get_client_role(
+        self, client_uuid: str, role_name: str, realm_name: str = "master"
+    ) -> dict[str, Any] | None:
+        """Get a client role by name."""
+
+        self._ensure_authenticated()
+
+        url = (
+            f"{self.server_url}/admin/realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
+        )
+
+        try:
+            response = self.session.get(url, timeout=self.timeout)
+        except requests.RequestException as exc:
+            logger.error(
+                "Failed to fetch client role %s for client %s: %s",
+                role_name,
+                client_uuid,
+                exc,
+            )
+            raise KeycloakAdminError(
+                f"Failed to fetch client role '{role_name}': {exc}"
+            ) from exc
+
+        if response.status_code == 200:
+            return response.json()
+        if response.status_code == 404:
+            logger.warning(
+                "Client role '%s' not found for client '%s'", role_name, client_uuid
+            )
+            return None
+
+        raise KeycloakAdminError(
+            f"Failed to get client role: {response.text}",
+            status_code=response.status_code,
+        )
+
+    def assign_realm_roles_to_user(
+        self, user_id: str, role_names: list[str], realm_name: str = "master"
+    ) -> None:
+        """Assign realm-level roles to a user."""
+
+        self._ensure_authenticated()
+
+        roles: list[dict[str, Any]] = []
+        for role_name in role_names:
+            role = self.get_realm_role(role_name, realm_name)
+            if not role:
+                logger.warning(
+                    "Realm role '%s' not found in realm '%s', skipping",
+                    role_name,
+                    realm_name,
+                )
+                continue
+            roles.append(role)
+
+        if not roles:
+            logger.info("No valid realm roles to assign to user %s", user_id)
+            return
+
+        url = (
+            f"{self.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
+        )
+
+        try:
+            response = self.session.post(url, json=roles, timeout=self.timeout)
+        except requests.RequestException as exc:
+            logger.error(
+                "Failed to assign realm roles to user %s: %s", user_id, exc
+            )
+            raise KeycloakAdminError(
+                f"Failed to assign realm roles: {exc}"
+            ) from exc
+
+        if response.status_code not in (200, 204):
+            raise KeycloakAdminError(
+                f"Failed to assign realm roles to user: {response.text}",
+                status_code=response.status_code,
+            )
+
+        logger.info(
+            "Successfully assigned %d realm roles to user %s",
+            len(roles),
+            user_id,
+        )
+
+    def assign_client_roles_to_user(
+        self,
+        user_id: str,
+        client_uuid: str,
+        role_names: list[str],
+        realm_name: str = "master",
+    ) -> None:
+        """Assign client-level roles to a user."""
+
+        self._ensure_authenticated()
+
+        roles: list[dict[str, Any]] = []
+        for role_name in role_names:
+            role = self.get_client_role(client_uuid, role_name, realm_name)
+            if not role:
+                logger.warning(
+                    "Client role '%s' not found for client '%s', skipping",
+                    role_name,
+                    client_uuid,
+                )
+                continue
+            roles.append(role)
+
+        if not roles:
+            logger.info("No valid client roles to assign to user %s", user_id)
+            return
+
+        url = (
+            f"{self.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/clients/{client_uuid}"
+        )
+
+        try:
+            response = self.session.post(url, json=roles, timeout=self.timeout)
+        except requests.RequestException as exc:
+            logger.error(
+                "Failed to assign client roles to user %s: %s", user_id, exc
+            )
+            raise KeycloakAdminError(
+                f"Failed to assign client roles: {exc}"
+            ) from exc
+
+        if response.status_code not in (200, 204):
+            raise KeycloakAdminError(
+                f"Failed to assign client roles to user: {response.text}",
+                status_code=response.status_code,
+            )
+
+        logger.info(
+            "Successfully assigned %d client roles to user %s",
+            len(roles),
+            user_id,
+        )
+
     def delete_client(self, client_id: str, realm_name: str = "master") -> bool:
         """
         Delete a client from the specified realm.
