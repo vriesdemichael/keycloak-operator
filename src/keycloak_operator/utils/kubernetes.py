@@ -83,7 +83,7 @@ def validate_keycloak_reference(
         status = keycloak_instance.get("status", {})
         phase = status.get("phase")
 
-        if phase != "Running":
+        if phase != "Ready":
             logger.warning(
                 f"Keycloak instance {keycloak_name} is not ready (phase: {phase})"
             )
@@ -113,6 +113,7 @@ def create_keycloak_deployment(
     namespace: str,
     spec: Any,  # KeycloakSpec type
     k8s_client: client.ApiClient,
+    db_connection_info: dict[str, Any] | None = None,
 ) -> client.V1Deployment:
     """
         Create Kubernetes Deployment for a Keycloak instance.
@@ -122,6 +123,7 @@ def create_keycloak_deployment(
             namespace: Target namespace
             spec: Keycloak specification
             k8s_client: Kubernetes API client
+            db_connection_info: Optional resolved database connection details (for CNPG)
 
         Returns:
             Created Deployment object
@@ -134,24 +136,30 @@ def create_keycloak_deployment(
     deployment_name = f"{name}-keycloak"
 
     # Build environment variables list
+    # Admin credentials come from operator-generated secret
+    admin_secret_name = f"{name}-admin-credentials"
+
     env_vars = [
         # Modern Keycloak admin bootstrap variables
-        client.V1EnvVar(name="KC_BOOTSTRAP_ADMIN_USERNAME", value=spec.admin.username),
+        client.V1EnvVar(
+            name="KC_BOOTSTRAP_ADMIN_USERNAME",
+            value_from=client.V1EnvVarSource(
+                secret_key_ref=client.V1SecretKeySelector(
+                    name=admin_secret_name,
+                    key="username",
+                )
+            ),
+        ),
+        client.V1EnvVar(
+            name="KC_BOOTSTRAP_ADMIN_PASSWORD",
+            value_from=client.V1EnvVarSource(
+                secret_key_ref=client.V1SecretKeySelector(
+                    name=admin_secret_name,
+                    key="password",
+                )
+            ),
+        ),
     ]
-
-    # Admin password from secret
-    if spec.admin.password_secret:
-        env_vars.append(
-            client.V1EnvVar(
-                name="KC_BOOTSTRAP_ADMIN_PASSWORD",
-                value_from=client.V1EnvVarSource(
-                    secret_key_ref=client.V1SecretKeySelector(
-                        name=spec.admin.password_secret.name,
-                        key=spec.admin.password_secret.key,
-                    )
-                ),
-            )
-        )
 
     # Add other environment variables
     env_vars.extend(
@@ -159,6 +167,8 @@ def create_keycloak_deployment(
             # Keycloak feature configuration
             client.V1EnvVar(name="KC_HEALTH_ENABLED", value="true"),
             client.V1EnvVar(name="KC_METRICS_ENABLED", value="true"),
+            # Management port for health and metrics endpoints
+            client.V1EnvVar(name="KC_HTTP_MANAGEMENT_PORT", value="9000"),
             # Hostname configuration for flexibility
             client.V1EnvVar(name="KC_HOSTNAME_STRICT", value="false"),
         ]
@@ -166,76 +176,112 @@ def create_keycloak_deployment(
 
     # Add database configuration environment variables if configured
     if spec.database and spec.database.type != "h2":
-        # Database type
-        env_vars.append(client.V1EnvVar(name="KC_DB", value=spec.database.type))
+        # For CNPG databases, use resolved connection info (which translates to postgres)
+        if spec.database.type == "cnpg" and db_connection_info:
+            # CNPG: Use resolved connection details that translate to standard PostgreSQL
+            logger.info("Configuring CNPG database using resolved connection info")
 
-        # Database connection details
-        if spec.database.host:
+            # Database type: CNPG is PostgreSQL, so use "postgres" for Keycloak
+            env_vars.append(client.V1EnvVar(name="KC_DB", value="postgres"))
+
+            # Connection details from resolved CNPG cluster
             env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_HOST", value=spec.database.host)
+                client.V1EnvVar(name="KC_DB_URL_HOST", value=db_connection_info["host"])
+            )
+            env_vars.append(
+                client.V1EnvVar(name="KC_DB_URL_PORT", value=str(db_connection_info["port"]))
+            )
+            env_vars.append(
+                client.V1EnvVar(name="KC_DB_URL_DATABASE", value=db_connection_info["database"])
+            )
+            env_vars.append(
+                client.V1EnvVar(name="KC_DB_USERNAME", value=db_connection_info["username"])
             )
 
-        if spec.database.port:
-            env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_PORT", value=str(spec.database.port))
-            )
-
-        if spec.database.database:
-            env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_DATABASE", value=spec.database.database)
-            )
-
-        if spec.database.username:
-            env_vars.append(
-                client.V1EnvVar(name="KC_DB_USERNAME", value=spec.database.username)
-            )
-
-        # Database password from secret if specified (tolerate absence of attribute)
-        # Derive password source precedence: explicit password_secret (legacy) -> credentials_secret -> CNPG app secret -> none
-        password_secret = getattr(spec.database, "password_secret", None)
-        if password_secret:
-            try:
-                secret_name = password_secret.name
-                secret_key = getattr(password_secret, "key", "password")
+            # Password from CNPG app secret
+            if "password_secret" in db_connection_info:
                 env_vars.append(
                     client.V1EnvVar(
                         name="KC_DB_PASSWORD",
                         value_from=client.V1EnvVarSource(
                             secret_key_ref=client.V1SecretKeySelector(
-                                name=secret_name, key=secret_key
+                                name=db_connection_info["password_secret"]["name"],
+                                key=db_connection_info["password_secret"]["key"]
                             )
                         ),
                     )
                 )
-            except Exception as exc:  # pragma: no cover
-                logger.warning(
-                    f"Legacy password_secret reference could not be applied: {exc}"
-                )
+
+            logger.info(f"CNPG database configured as postgres: {db_connection_info['host']}:{db_connection_info['port']}/{db_connection_info['database']}")
+
         else:
-            # credentials_secret is just a secret name storing username/password (username already handled separately if provided)
-            credentials_secret_name = getattr(spec.database, "credentials_secret", None)
-            if credentials_secret_name:
+            # Traditional database configuration (non-CNPG)
+            # Database type
+            env_vars.append(client.V1EnvVar(name="KC_DB", value=spec.database.type))
+
+            # Database connection details
+            if spec.database.host:
                 env_vars.append(
-                    client.V1EnvVar(
-                        name="KC_DB_PASSWORD",
-                        value_from=client.V1EnvVarSource(
-                            secret_key_ref=client.V1SecretKeySelector(
-                                name=credentials_secret_name, key="password"
-                            )
-                        ),
-                    )
+                    client.V1EnvVar(name="KC_DB_URL_HOST", value=spec.database.host)
                 )
-            elif spec.database.type == "cnpg":
-                # CNPG path: app secret <cluster>-app already contains credentials; we'll rely on the secret mounted through future enhancements.
-                # For now we inject password via env using secret reference if user created one manually; if none, leave KC_DB_PASSWORD absent.
-                pass
+
+            if spec.database.port:
+                env_vars.append(
+                    client.V1EnvVar(name="KC_DB_URL_PORT", value=str(spec.database.port))
+                )
+
+            if spec.database.database:
+                env_vars.append(
+                    client.V1EnvVar(name="KC_DB_URL_DATABASE", value=spec.database.database)
+                )
+
+            if spec.database.username:
+                env_vars.append(
+                    client.V1EnvVar(name="KC_DB_USERNAME", value=spec.database.username)
+                )
+
+            # Database password from secret if specified (tolerate absence of attribute)
+            # Derive password source precedence: explicit password_secret (legacy) -> credentials_secret -> none
+            password_secret = getattr(spec.database, "password_secret", None)
+            if password_secret:
+                try:
+                    secret_name = password_secret.name
+                    secret_key = getattr(password_secret, "key", "password")
+                    env_vars.append(
+                        client.V1EnvVar(
+                            name="KC_DB_PASSWORD",
+                            value_from=client.V1EnvVarSource(
+                                secret_key_ref=client.V1SecretKeySelector(
+                                    name=secret_name, key=secret_key
+                                )
+                            ),
+                        )
+                    )
+                except Exception as exc:  # pragma: no cover
+                    logger.warning(
+                        f"Legacy password_secret reference could not be applied: {exc}"
+                    )
+            else:
+                # credentials_secret is just a secret name storing username/password (username already handled separately if provided)
+                credentials_secret_name = getattr(spec.database, "credentials_secret", None)
+                if credentials_secret_name:
+                    env_vars.append(
+                        client.V1EnvVar(
+                            name="KC_DB_PASSWORD",
+                            value_from=client.V1EnvVarSource(
+                                secret_key_ref=client.V1SecretKeySelector(
+                                    name=credentials_secret_name, key="password"
+                                )
+                            ),
+                        )
+                    )
 
     # Container configuration
     container = client.V1Container(
         name="keycloak",
         image=spec.image or "quay.io/keycloak/keycloak:latest",
         command=["/opt/keycloak/bin/kc.sh"],
-        args=["start-dev"],
+        args=["start", "--optimized"],
         ports=[
             client.V1ContainerPort(container_port=8080, name="http"),
             client.V1ContainerPort(container_port=9000, name="management"),
@@ -254,7 +300,7 @@ def create_keycloak_deployment(
         liveness_probe=client.V1Probe(
             http_get=client.V1HTTPGetAction(
                 path="/health/live",
-                port=9000,
+                port=8080,  # Use main HTTP port in dev mode
             ),
             initial_delay_seconds=60,
             period_seconds=30,
@@ -262,7 +308,7 @@ def create_keycloak_deployment(
         readiness_probe=client.V1Probe(
             http_get=client.V1HTTPGetAction(
                 path="/health/ready",
-                port=9000,
+                port=8080,  # Use main HTTP port in dev mode
             ),
             initial_delay_seconds=30,
             period_seconds=10,
