@@ -396,12 +396,18 @@ class KeycloakRealmReconciler(BaseReconciler):
         if periodic_backup:
             self.logger.info(f"Periodic backup is enabled for realm {spec.realm_name}")
             # Implement periodic backup logic
-            await self._create_realm_backup(spec, name, namespace, backup_type="periodic")
+            await self._create_realm_backup(
+                spec, name, namespace, backup_type="periodic"
+            )
 
         self.logger.debug(f"Backup management configured for realm {spec.realm_name}")
 
     async def _create_realm_backup(
-        self, spec: KeycloakRealmSpec, name: str, namespace: str, backup_type: str = "manual"
+        self,
+        spec: KeycloakRealmSpec,
+        name: str,
+        namespace: str,
+        backup_type: str = "manual",
     ) -> dict[str, Any] | None:
         """
         Create a backup of the realm configuration.
@@ -425,23 +431,33 @@ class KeycloakRealmReconciler(BaseReconciler):
             # Get admin client for the target Keycloak instance
             keycloak_ref = spec.keycloak_instance_ref
             target_namespace = keycloak_ref.namespace or namespace
-            admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+            admin_client = self.keycloak_admin_factory(
+                keycloak_ref.name, target_namespace
+            )
 
             # Create realm backup
             backup_data = admin_client.backup_realm(spec.realm_name)
             if not backup_data:
-                self.logger.error(f"Failed to create backup data for realm {spec.realm_name}")
+                self.logger.error(
+                    f"Failed to create backup data for realm {spec.realm_name}"
+                )
                 return None
 
             # Store backup in Kubernetes secret for persistence
             backup_name = f"{name}-backup-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
-            await self._store_backup_in_secret(backup_data, backup_name, namespace, backup_type)
+            await self._store_backup_in_secret(
+                backup_data, backup_name, namespace, backup_type
+            )
 
-            self.logger.info(f"Successfully created backup {backup_name} for realm {spec.realm_name}")
+            self.logger.info(
+                f"Successfully created backup {backup_name} for realm {spec.realm_name}"
+            )
             return backup_data
 
         except Exception as e:
-            self.logger.error(f"Failed to create backup for realm {spec.realm_name}: {e}")
+            self.logger.error(
+                f"Failed to create backup for realm {spec.realm_name}: {e}"
+            )
             if backup_type == "deletion":
                 # Don't block deletion if backup fails, but log the error
                 return None
@@ -449,7 +465,11 @@ class KeycloakRealmReconciler(BaseReconciler):
                 raise TemporaryError(f"Backup creation failed: {e}", delay=60) from e
 
     async def _store_backup_in_secret(
-        self, backup_data: dict[str, Any], backup_name: str, namespace: str, backup_type: str
+        self,
+        backup_data: dict[str, Any],
+        backup_name: str,
+        namespace: str,
+        backup_type: str,
     ) -> None:
         """
         Store backup data in a Kubernetes secret.
@@ -468,9 +488,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             k8s_client = client.CoreV1Api()
 
             # Create secret with backup data
-            secret_data = {
-                "backup.json": json.dumps(backup_data, indent=2)
-            }
+            secret_data = {"backup.json": json.dumps(backup_data, indent=2)}
 
             secret = client.V1Secret(
                 metadata=client.V1ObjectMeta(
@@ -479,15 +497,19 @@ class KeycloakRealmReconciler(BaseReconciler):
                     labels={
                         "keycloak.mdvr.nl/backup": "true",
                         "keycloak.mdvr.nl/backup-type": backup_type,
-                        "keycloak.mdvr.nl/realm": backup_data.get("realm", {}).get("realm", "unknown")
-                    }
+                        "keycloak.mdvr.nl/realm": backup_data.get("realm", {}).get(
+                            "realm", "unknown"
+                        ),
+                    },
                 ),
                 string_data=secret_data,
-                type="Opaque"
+                type="Opaque",
             )
 
             k8s_client.create_namespaced_secret(namespace=namespace, body=secret)
-            self.logger.info(f"Backup {backup_name} stored as secret in namespace {namespace}")
+            self.logger.info(
+                f"Backup {backup_name} stored as secret in namespace {namespace}"
+            )
 
         except Exception as e:
             self.logger.error(f"Failed to store backup {backup_name} in secret: {e}")
@@ -717,7 +739,9 @@ class KeycloakRealmReconciler(BaseReconciler):
 
             # Backup realm data if requested
             if getattr(realm_spec, "backup_on_delete", False):
-                self.logger.info(f"Backing up realm {realm_spec.realm_name} before deletion")
+                self.logger.info(
+                    f"Backing up realm {realm_spec.realm_name} before deletion"
+                )
                 try:
                     await self._create_realm_backup(
                         realm_spec, name, namespace, backup_type="deletion"

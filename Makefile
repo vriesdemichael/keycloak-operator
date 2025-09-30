@@ -108,6 +108,8 @@ deploy-local: build-test setup-cluster install-cnpg ## Deploy operator to local 
 	sed 's|image: keycloak-operator:latest|image: keycloak-operator:test|g' k8s/operator-deployment.yaml | \
 	sed 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Never|g' | \
 	kubectl apply -f -
+	# Force a rollout to ensure latest local image is used even if spec unchanged
+	kubectl patch deployment keycloak-operator -n keycloak-system -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"restarted-at\":\"$$(date -u +%Y%m%d%H%M%S)\"}}}}}" >/dev/null 2>&1 || true
 
 .PHONY: install-cnpg
 install-cnpg: ## Install CloudNativePG operator (idempotent)

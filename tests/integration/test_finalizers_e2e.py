@@ -5,7 +5,6 @@ These tests validate that finalizers work correctly in a real Kubernetes
 environment, ensuring proper cleanup and preventing resource leaks.
 """
 
-import asyncio
 import contextlib
 
 import pytest
@@ -128,6 +127,7 @@ class TestFinalizersE2E:
         sample_keycloak_spec,
         sample_realm_spec,
         wait_for_condition,
+        wait_for_keycloak_ready,
     ):
         """Test finalizer behavior for Keycloak realm resources."""
         keycloak_name = "test-realm-finalizer-kc"
@@ -146,7 +146,7 @@ class TestFinalizersE2E:
         realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
 
         try:
-            # Create Keycloak resource
+            # Create Keycloak resource and wait for readiness (deployment + status)
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -155,8 +155,9 @@ class TestFinalizersE2E:
                 body=keycloak_manifest,
             )
 
-            # Wait for Keycloak to be processed
-            await asyncio.sleep(30)
+            assert await wait_for_keycloak_ready(keycloak_name, test_namespace), (
+                "Keycloak instance not ready in time for realm test"
+            )
 
             # Create realm resource
             k8s_custom_objects.create_namespaced_custom_object(
@@ -235,6 +236,7 @@ class TestFinalizersE2E:
         sample_realm_spec,
         sample_client_spec,
         wait_for_condition,
+        wait_for_keycloak_ready,
     ):
         """Test finalizer behavior for Keycloak client resources."""
         keycloak_name = "test-client-finalizer-kc"
@@ -260,7 +262,7 @@ class TestFinalizersE2E:
         client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
 
         try:
-            # Create Keycloak, Realm, then Client
+            # Create Keycloak
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -269,8 +271,10 @@ class TestFinalizersE2E:
                 body=keycloak_manifest,
             )
 
-            await asyncio.sleep(30)
-
+            assert await wait_for_keycloak_ready(keycloak_name, test_namespace), (
+                "Keycloak instance not ready in time for client test"
+            )
+            # Create realm once KC ready
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -278,8 +282,6 @@ class TestFinalizersE2E:
                 plural="keycloakrealms",
                 body=realm_manifest,
             )
-
-            await asyncio.sleep(15)
 
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
@@ -366,6 +368,7 @@ class TestFinalizersE2E:
         sample_realm_spec,
         sample_client_spec,
         wait_for_condition,
+        wait_for_keycloak_ready,
     ):
         """Test that cascading deletion happens in the correct order."""
         keycloak_name = "test-cascade-kc"
@@ -391,7 +394,7 @@ class TestFinalizersE2E:
         client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
 
         try:
-            # Create full hierarchy
+            # Create Keycloak and wait for readiness
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -400,8 +403,11 @@ class TestFinalizersE2E:
                 body=keycloak_manifest,
             )
 
-            await asyncio.sleep(30)
+            assert await wait_for_keycloak_ready(keycloak_name, test_namespace), (
+                "Keycloak instance not ready in time for cascading deletion test"
+            )
 
+            # Create realm and client sequentially (no arbitrary sleeps)
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -409,9 +415,6 @@ class TestFinalizersE2E:
                 plural="keycloakrealms",
                 body=realm_manifest,
             )
-
-            await asyncio.sleep(15)
-
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -419,8 +422,6 @@ class TestFinalizersE2E:
                 plural="keycloakclients",
                 body=client_manifest,
             )
-
-            await asyncio.sleep(15)
 
             # Delete the Keycloak instance (should trigger cascading deletion)
             k8s_custom_objects.delete_namespaced_custom_object(

@@ -190,19 +190,45 @@ def create_keycloak_deployment(
                 client.V1EnvVar(name="KC_DB_USERNAME", value=spec.database.username)
             )
 
-        # Database password from secret if specified
-        if spec.database.password_secret:
-            env_vars.append(
-                client.V1EnvVar(
-                    name="KC_DB_PASSWORD",
-                    value_from=client.V1EnvVarSource(
-                        secret_key_ref=client.V1SecretKeySelector(
-                            name=spec.database.password_secret.name,
-                            key=spec.database.password_secret.key,
-                        )
-                    ),
+        # Database password from secret if specified (tolerate absence of attribute)
+        # Derive password source precedence: explicit password_secret (legacy) -> credentials_secret -> CNPG app secret -> none
+        password_secret = getattr(spec.database, "password_secret", None)
+        if password_secret:
+            try:
+                secret_name = password_secret.name
+                secret_key = getattr(password_secret, "key", "password")
+                env_vars.append(
+                    client.V1EnvVar(
+                        name="KC_DB_PASSWORD",
+                        value_from=client.V1EnvVarSource(
+                            secret_key_ref=client.V1SecretKeySelector(
+                                name=secret_name, key=secret_key
+                            )
+                        ),
+                    )
                 )
-            )
+            except Exception as exc:  # pragma: no cover
+                logger.warning(
+                    f"Legacy password_secret reference could not be applied: {exc}"
+                )
+        else:
+            # credentials_secret is just a secret name storing username/password (username already handled separately if provided)
+            credentials_secret_name = getattr(spec.database, "credentials_secret", None)
+            if credentials_secret_name:
+                env_vars.append(
+                    client.V1EnvVar(
+                        name="KC_DB_PASSWORD",
+                        value_from=client.V1EnvVarSource(
+                            secret_key_ref=client.V1SecretKeySelector(
+                                name=credentials_secret_name, key="password"
+                            )
+                        ),
+                    )
+                )
+            elif spec.database.type == "cnpg":
+                # CNPG path: app secret <cluster>-app already contains credentials; we'll rely on the secret mounted through future enhancements.
+                # For now we inject password via env using secret reference if user created one manually; if none, leave KC_DB_PASSWORD absent.
+                pass
 
     # Container configuration
     container = client.V1Container(
@@ -1011,15 +1037,65 @@ def create_admin_secret(
     try:
         k8s = get_kubernetes_client()
         core_api = client.CoreV1Api(k8s)
-        created_secret = core_api.create_namespaced_secret(
-            namespace=namespace, body=secret
+
+        # Attempt create with small bounded retries for transient conflicts
+        max_attempts = 3
+        for attempt in range(1, max_attempts + 1):
+            try:
+                created_secret = core_api.create_namespaced_secret(
+                    namespace=namespace, body=secret
+                )
+                logger.info(
+                    f"Created admin secret {secret_name} (attempt {attempt})"
+                )
+                return created_secret
+            except ApiException as e:
+                if e.status == 409:  # AlreadyExists race condition
+                    # Another replica created it; treat as success
+                    try:
+                        existing = core_api.read_namespaced_secret(
+                            name=secret_name, namespace=namespace
+                        )
+                        logger.info(
+                            f"Admin secret {secret_name} already exists (attempt {attempt}) - using existing"
+                        )
+                        return existing
+                    except ApiException as read_err:  # pragma: no cover
+                        if attempt == max_attempts:
+                            logger.error(
+                                f"Failed to read existing admin secret {secret_name} after conflict: {read_err}"
+                            )
+                            raise
+                        # brief backoff then retry
+                        import time
+                        time.sleep(0.2 * attempt)
+                        continue
+                # For other errors, only retry if it's a retryable 5xx
+                status_code = getattr(e, "status", None)
+                if (
+                    status_code is not None
+                    and isinstance(status_code, int)
+                    and 500 <= status_code < 600
+                    and attempt < max_attempts
+                ):
+                    import time
+                    logger.warning(
+                        f"Transient error creating admin secret {secret_name} (status {e.status}) attempt {attempt}/{max_attempts}: {e}. Retrying..."
+                    )
+                    time.sleep(0.2 * attempt)
+                    continue
+                logger.error(
+                    f"Failed to create admin secret {secret_name} (attempt {attempt}): {e}"
+                )
+                raise
+        # Should not reach here
+        raise RuntimeError(
+            f"Exhausted attempts creating admin secret {secret_name}"
+        )  # pragma: no cover
+    except ApiException as e:  # pragma: no cover - defensive outer layer
+        logger.error(
+            f"Failed accessing Kubernetes API for admin secret {secret_name}: {e}"
         )
-
-        logger.info(f"Created admin secret {secret_name}")
-        return created_secret
-
-    except ApiException as e:
-        logger.error(f"Failed to create admin secret: {e}")
         raise
 
 

@@ -140,7 +140,9 @@ def cnpg_installed(k8s_client) -> bool:
 
 
 @pytest.fixture
-async def cnpg_cluster(k8s_client, test_namespace, cnpg_installed, wait_for_condition) -> dict[str, str] | None:
+async def cnpg_cluster(
+    k8s_client, test_namespace, cnpg_installed, wait_for_condition
+) -> dict[str, str] | None:
     """Create a minimal CloudNativePG Cluster in the test namespace.
 
     Returns a dict with cluster connection info (cluster name, db name)
@@ -307,6 +309,76 @@ async def wait_for_condition():
             await asyncio.sleep(interval)
 
         return False
+
+    return _wait
+
+
+@pytest.fixture
+def wait_for_keycloak_ready(
+    k8s_custom_objects,
+    k8s_apps_v1,
+    k8s_core_v1,  # kept for potential future pod-level checks
+    wait_for_condition,
+):
+    """Wait until a Keycloak instance is actually runnable.
+
+    Success criteria (any of these):
+      1. Keycloak CR status.phase in ("Running", "Ready") AND its deployment has desired ready replicas.
+      2. Deployment has desired ready replicas even if CR status not yet updated (race condition tolerance).
+
+    This fixture returns an async function: await wait_for_keycloak_ready(name, namespace, timeout=420)
+    """
+
+    async def _wait(
+        name: str, namespace: str, timeout: int = 420, interval: int = 5
+    ) -> bool:
+        async def _condition():
+            from kubernetes.client.rest import ApiException
+
+            deployment_name = f"{name}-keycloak"
+            deployment_ready = False
+
+            # Check deployment readiness first (acts as fallback if CR status lags)
+            try:
+                deployment = k8s_apps_v1.read_namespaced_deployment(
+                    name=deployment_name, namespace=namespace
+                )
+                desired = deployment.spec.replicas or 1
+                ready = deployment.status.ready_replicas or 0
+                if ready >= desired:
+                    deployment_ready = True
+            except ApiException:
+                deployment_ready = False
+
+            # Try to read CR status for phase/conditions
+            try:
+                kc = k8s_custom_objects.get_namespaced_custom_object(
+                    group="keycloak.mdvr.nl",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloaks",
+                    name=name,
+                )
+                status = kc.get("status", {}) or {}
+                phase = status.get("phase")
+                # Look for condition-based readiness too
+                conditions = status.get("conditions", []) or []
+                ready_condition_true = any(
+                    c.get("type") == "Ready" and c.get("status") == "True"
+                    for c in conditions
+                )
+                if (
+                    phase in ("Running", "Ready") or ready_condition_true
+                ) and deployment_ready:
+                    return True
+            except ApiException:
+                # CR not yet readable or transient error
+                pass
+
+            # Fallback: deployment ready even if CR not updated yet
+            return deployment_ready
+
+        return await wait_for_condition(_condition, timeout=timeout, interval=interval)
 
     return _wait
 
