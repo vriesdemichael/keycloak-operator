@@ -201,25 +201,19 @@ class HealthChecker:
             # Test basic permissions
             auth_api = client.AuthorizationV1Api(self.k8s_client)
 
-            # Define required permissions to test
+            # Define required permissions to test (focus on core create/update + read; include CNPG read-only)
             permission_tests = [
                 {"resource": "keycloaks", "verb": "get", "group": "keycloak.mdvr.nl"},
-                {
-                    "resource": "keycloaks",
-                    "verb": "create",
-                    "group": "keycloak.mdvr.nl",
-                },
-                {
-                    "resource": "keycloaks",
-                    "verb": "update",
-                    "group": "keycloak.mdvr.nl",
-                },
+                {"resource": "keycloaks", "verb": "create", "group": "keycloak.mdvr.nl"},
+                {"resource": "keycloaks", "verb": "update", "group": "keycloak.mdvr.nl"},
                 {"resource": "secrets", "verb": "get", "group": ""},
                 {"resource": "secrets", "verb": "create", "group": ""},
                 {"resource": "deployments", "verb": "get", "group": "apps"},
                 {"resource": "deployments", "verb": "create", "group": "apps"},
                 {"resource": "services", "verb": "get", "group": ""},
                 {"resource": "services", "verb": "create", "group": ""},
+                # CNPG read-only expectations
+                {"resource": "clusters", "verb": "get", "group": "postgresql.cnpg.io"},
             ]
 
             allowed_permissions = []
@@ -228,8 +222,9 @@ class HealthChecker:
             for perm in permission_tests:
                 try:
                     # Create SubjectAccessReview to test permission
-                    access_review = client.V1SubjectAccessReview(
-                        spec=client.V1SubjectAccessReviewSpec(
+                    # Use SelfSubjectAccessReview so the API server infers user/group from the current auth context.
+                    ssar = client.V1SelfSubjectAccessReview(
+                        spec=client.V1SelfSubjectAccessReviewSpec(
                             resource_attributes=client.V1ResourceAttributes(
                                 group=perm["group"],
                                 resource=perm["resource"],
@@ -238,7 +233,7 @@ class HealthChecker:
                         )
                     )
 
-                    result = auth_api.create_subject_access_review(body=access_review)
+                    result = auth_api.create_self_subject_access_review(body=ssar)
 
                     if result.status.allowed:
                         allowed_permissions.append(
