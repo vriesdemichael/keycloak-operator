@@ -35,6 +35,11 @@ rules:
   resources: ["deployments", "statefulsets", "replicasets"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
+# Status subresources for workload introspection
+- apiGroups: ["apps"]
+  resources: ["deployments/status", "statefulsets/status", "replicasets/status"]
+  verbs: ["get"]
+
 - apiGroups: ["apps"]
   resources: ["deployments/status", "statefulsets/status", "replicasets/status"]
   verbs: ["get"]
@@ -103,6 +108,11 @@ rules:
   resources: ["customresourcedefinitions"]
   verbs: ["get", "list", "watch"]
 
+# Authorization API for self-permission checks (health/diagnostics)
+- apiGroups: ["authorization.k8s.io"]
+  resources: ["subjectaccessreviews"]
+  verbs: ["create"]
+
 # Certificate management for TLS
 - apiGroups: ["cert-manager.io"]
   resources: ["certificates", "certificaterequests", "issuers", "clusterissuers"]
@@ -118,6 +128,11 @@ rules:
   resources: ["securitycontextconstraints"]
   verbs: ["use"]
   resourceNames: ["anyuid", "restricted"]
+
+# Leader election (leases) included here for completeness (also in role for namespace)
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 # Admission webhook configuration (for validation)
 - apiGroups: ["admissionregistration.k8s.io"]

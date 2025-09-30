@@ -49,6 +49,26 @@ spec:
                     type: string
                     enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]
                     default: "postgresql"
+                  cnpg_cluster:
+                    type: object
+                    description: "CloudNativePG cluster reference (when type=cnpg)"
+                    properties:
+                      name:
+                        type: string
+                        description: "Name of the CNPG Cluster"
+                      namespace:
+                        type: string
+                        description: "Namespace of the CNPG Cluster (defaults to current)"
+                      database:
+                        type: string
+                        description: "Database name inside the cluster"
+                        default: "keycloak"
+                      application_name:
+                        type: string
+                        description: "Application name for connection tracking"
+                        default: "keycloak"
+                    required:
+                    - name
                   host:
                     type: string
                     description: "Database host"
@@ -57,7 +77,7 @@ spec:
                     description: "Database port"
                     minimum: 1
                     maximum: 65535
-                  name:
+                  database:
                     type: string
                     description: "Database name"
                   username:
@@ -78,11 +98,9 @@ spec:
                     type: string
                     enum: ["disable", "require", "verify-ca", "verify-full"]
                     default: "require"
+                # Only 'type' is strictly required now; other fields depend on the chosen type.
                 required:
-                - host
-                - name
-                - username
-                - password_secret
+                - type
 
               # TLS configuration
               tls:
