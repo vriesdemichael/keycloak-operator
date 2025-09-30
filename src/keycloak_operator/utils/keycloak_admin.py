@@ -213,6 +213,7 @@ class KeycloakAdminClient:
         method: str,
         endpoint: str,
         data: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
     ) -> requests.Response:
         """
@@ -221,7 +222,8 @@ class KeycloakAdminClient:
                 Args:
                     method: HTTP method (GET, POST, PUT, DELETE)
                     endpoint: API endpoint (relative to admin base)
-                    data: Request body data
+                    data: Request body data (deprecated, use json parameter)
+                    json: JSON request body data
                     params: Query parameters
 
                 Returns:
@@ -237,7 +239,7 @@ class KeycloakAdminClient:
             response = self.session.request(
                 method=method,
                 url=url,
-                json=data if data else None,
+                json=json if json else data if data else None,
                 params=params,
             )
 
@@ -257,6 +259,10 @@ class KeycloakAdminClient:
             response.raise_for_status()
             return response
 
+        except requests.HTTPError as e:
+            logger.error(f"Request failed: {method} {url} - {e}")
+            status_code = e.response.status_code if e.response else None
+            raise KeycloakAdminError(f"API request failed: {e}", status_code) from e
         except requests.RequestException as e:
             logger.error(f"Request failed: {method} {url} - {e}")
             raise KeycloakAdminError(f"API request failed: {e}") from e
@@ -326,7 +332,7 @@ class KeycloakAdminClient:
         self._ensure_authenticated()
 
         try:
-            response = self._make_request("GET", f"admin/realms/{realm_name}")
+            response = self._make_request("GET", f"realms/{realm_name}")
 
             if response.status_code == 200:
                 logger.info(f"Successfully exported realm '{realm_name}'")
@@ -428,7 +434,7 @@ class KeycloakAdminClient:
         try:
             # Get all clients in the realm
             clients = self._make_request(
-                "GET", f"/admin/realms/{realm_name}/clients"
+                "GET", f"realms/{realm_name}/clients"
             ).json()
 
             # Find client by clientId
@@ -478,7 +484,7 @@ class KeycloakAdminClient:
 
         try:
             response = self._make_request(
-                "POST", f"/admin/realms/{realm_name}/clients", json=client_config
+                "POST", f"realms/{realm_name}/clients", json=client_config
             )
 
             if response.status_code == 201:
@@ -524,7 +530,7 @@ class KeycloakAdminClient:
         try:
             response = self._make_request(
                 "PUT",
-                f"/admin/realms/{realm_name}/clients/{client_uuid}",
+                f"realms/{realm_name}/clients/{client_uuid}",
                 json=client_config,
             )
 
@@ -569,7 +575,7 @@ class KeycloakAdminClient:
 
             # Get the client secret
             response = self._make_request(
-                "GET", f"/admin/realms/{realm_name}/clients/{client_uuid}/client-secret"
+                "GET", f"realms/{realm_name}/clients/{client_uuid}/client-secret"
             )
 
             if response.status_code == 200:
@@ -616,7 +622,7 @@ class KeycloakAdminClient:
             client_uuid = client["id"]
 
             response = self._make_request(
-                "DELETE", f"/admin/realms/{realm_name}/clients/{client_uuid}"
+                "DELETE", f"realms/{realm_name}/clients/{client_uuid}"
             )
 
             if response.status_code == 204:
@@ -661,7 +667,7 @@ class KeycloakAdminClient:
             # Regenerate the client secret
             response = self._make_request(
                 "POST",
-                f"/admin/realms/{realm_name}/clients/{client_uuid}/client-secret",
+                f"realms/{realm_name}/clients/{client_uuid}/client-secret",
             )
 
             if response.status_code == 200:
@@ -704,7 +710,7 @@ class KeycloakAdminClient:
         logger.info(f"Deleting realm '{realm_name}'")
 
         try:
-            response = self._make_request("DELETE", f"/admin/realms/{realm_name}")
+            response = self._make_request("DELETE", f"realms/{realm_name}")
 
             if response.status_code == 204:
                 logger.info(f"Successfully deleted realm '{realm_name}'")
@@ -732,7 +738,7 @@ class KeycloakAdminClient:
         logger.info(f"Getting all clients in realm '{realm_name}'")
 
         try:
-            response = self._make_request("GET", f"/admin/realms/{realm_name}/clients")
+            response = self._make_request("GET", f"realms/{realm_name}/clients")
 
             if response.status_code == 200:
                 clients = response.json()
@@ -773,7 +779,7 @@ class KeycloakAdminClient:
             realm_config = {k: v for k, v in realm_config.items() if v is not None}
 
             response = self._make_request(
-                "PUT", f"/admin/realms/{realm_name}", json=realm_config
+                "PUT", f"realms/{realm_name}", json=realm_config
             )
 
             if response.status_code == 204:
@@ -805,7 +811,7 @@ class KeycloakAdminClient:
         try:
             response = self._make_request(
                 "POST",
-                f"/admin/realms/{realm_name}/authentication/flows",
+                f"realms/{realm_name}/authentication/flows",
                 json=flow_config,
             )
 
@@ -841,7 +847,7 @@ class KeycloakAdminClient:
             provider_alias = provider_config.get("alias")
             response = self._make_request(
                 "POST",
-                f"/admin/realms/{realm_name}/identity-provider/instances",
+                f"realms/{realm_name}/identity-provider/instances",
                 json=provider_config,
             )
 
@@ -877,7 +883,7 @@ class KeycloakAdminClient:
 
         try:
             response = self._make_request(
-                "POST", f"/admin/realms/{realm_name}/components", json=federation_config
+                "POST", f"realms/{realm_name}/components", json=federation_config
             )
 
             if response.status_code in [201, 204]:
@@ -917,13 +923,13 @@ class KeycloakAdminClient:
 
             # Get authentication flows
             flows_response = self._make_request(
-                "GET", f"/admin/realms/{realm_name}/authentication/flows"
+                "GET", f"realms/{realm_name}/authentication/flows"
             )
             flows = flows_response.json() if flows_response.status_code == 200 else []
 
             # Get identity providers
             idp_response = self._make_request(
-                "GET", f"/admin/realms/{realm_name}/identity-provider/instances"
+                "GET", f"realms/{realm_name}/identity-provider/instances"
             )
             identity_providers = (
                 idp_response.json() if idp_response.status_code == 200 else []
@@ -932,7 +938,7 @@ class KeycloakAdminClient:
             # Get user federation
             federation_response = self._make_request(
                 "GET",
-                f"/admin/realms/{realm_name}/components?type=org.keycloak.storage.UserStorageProvider",
+                f"realms/{realm_name}/components?type=org.keycloak.storage.UserStorageProvider",
             )
             user_federation = (
                 federation_response.json()
@@ -972,13 +978,10 @@ class KeycloakAdminClient:
             List of protocol mapper configurations or None on error
         """
         self._ensure_authenticated()
-        url = urljoin(
-            self.server_url,
-            f"/admin/realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models",
-        )
+        endpoint = f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models"
 
         try:
-            response = self._make_request("GET", url)
+            response = self._make_request("GET", endpoint)
             if response.status_code == 200:
                 return response.json()
             elif response.status_code == 404:
@@ -1009,13 +1012,10 @@ class KeycloakAdminClient:
             Created mapper configuration or None on error
         """
         self._ensure_authenticated()
-        url = urljoin(
-            self.server_url,
-            f"/admin/realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models",
-        )
+        endpoint = f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models"
 
         try:
-            response = self._make_request("POST", url, json=mapper_config)
+            response = self._make_request("POST", endpoint, json=mapper_config)
             if response.status_code == 201:
                 logger.info(
                     f"Successfully created protocol mapper '{mapper_config.get('name')}'"
@@ -1050,13 +1050,10 @@ class KeycloakAdminClient:
             True if successful, False otherwise
         """
         self._ensure_authenticated()
-        url = urljoin(
-            self.server_url,
-            f"/admin/realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}",
-        )
+        endpoint = f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}"
 
         try:
-            response = self._make_request("PUT", url, json=mapper_config)
+            response = self._make_request("PUT", endpoint, json=mapper_config)
             if response.status_code == 204:
                 logger.info(
                     f"Successfully updated protocol mapper '{mapper_config.get('name')}'"
@@ -1086,13 +1083,10 @@ class KeycloakAdminClient:
             True if successful, False otherwise
         """
         self._ensure_authenticated()
-        url = urljoin(
-            self.server_url,
-            f"/admin/realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}",
-        )
+        endpoint = f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}"
 
         try:
-            response = self._make_request("DELETE", url)
+            response = self._make_request("DELETE", endpoint)
             if response.status_code == 204:
                 logger.info(f"Successfully deleted protocol mapper {mapper_id}")
                 return True
@@ -1120,12 +1114,10 @@ class KeycloakAdminClient:
             List of client role configurations or None on error
         """
         self._ensure_authenticated()
-        url = urljoin(
-            self.server_url, f"/admin/realms/{realm_name}/clients/{client_uuid}/roles"
-        )
+        endpoint = f"realms/{realm_name}/clients/{client_uuid}/roles"
 
         try:
-            response = self._make_request("GET", url)
+            response = self._make_request("GET", endpoint)
             if response.status_code == 200:
                 return response.json()
             elif response.status_code == 404:
@@ -1153,12 +1145,10 @@ class KeycloakAdminClient:
             True if successful, False otherwise
         """
         self._ensure_authenticated()
-        url = urljoin(
-            self.server_url, f"/admin/realms/{realm_name}/clients/{client_uuid}/roles"
-        )
+        endpoint = f"realms/{realm_name}/clients/{client_uuid}/roles"
 
         try:
-            response = self._make_request("POST", url, json=role_config)
+            response = self._make_request("POST", endpoint, json=role_config)
             if response.status_code == 201:
                 logger.info(
                     f"Successfully created client role '{role_config.get('name')}'"
@@ -1191,13 +1181,10 @@ class KeycloakAdminClient:
             True if successful, False otherwise
         """
         self._ensure_authenticated()
-        url = urljoin(
-            self.server_url,
-            f"/admin/realms/{realm_name}/clients/{client_uuid}/roles/{role_name}",
-        )
+        endpoint = f"realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
 
         try:
-            response = self._make_request("PUT", url, json=role_config)
+            response = self._make_request("PUT", endpoint, json=role_config)
             if response.status_code == 204:
                 logger.info(f"Successfully updated client role '{role_name}'")
                 return True
@@ -1223,13 +1210,10 @@ class KeycloakAdminClient:
             True if successful, False otherwise
         """
         self._ensure_authenticated()
-        url = urljoin(
-            self.server_url,
-            f"/admin/realms/{realm_name}/clients/{client_uuid}/roles/{role_name}",
-        )
+        endpoint = f"realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
 
         try:
-            response = self._make_request("DELETE", url)
+            response = self._make_request("DELETE", endpoint)
             if response.status_code == 204:
                 logger.info(f"Successfully deleted client role '{role_name}'")
                 return True

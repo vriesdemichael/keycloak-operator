@@ -127,7 +127,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
             )
 
         # Always reconcile to ensure everything is in sync
-        return await self.do_reconcile(new_spec, name, namespace, status, **kwargs)
+        # Remove 'spec' from kwargs to avoid duplicate argument error
+        reconcile_kwargs = {k: v for k, v in kwargs.items() if k != 'spec'}
+        return await self.do_reconcile(new_spec, name, namespace, status, **reconcile_kwargs)
 
     async def _update_ingress(
         self,

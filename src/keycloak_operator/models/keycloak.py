@@ -345,7 +345,7 @@ class KeycloakSpec(BaseModel):
 
     # Core configuration
     image: str = Field(
-        "quay.io/keycloak/keycloak:latest", description="Keycloak container image"
+        "quay.io/keycloak/keycloak:26.4.0", description="Keycloak container image"
     )
     replicas: int = Field(1, description="Number of Keycloak replicas", ge=1)
     version: str | None = Field(
