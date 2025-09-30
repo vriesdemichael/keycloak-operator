@@ -121,25 +121,125 @@ async def test_secrets(k8s_core_v1, test_namespace) -> dict[str, str]:
     return secrets
 
 
+@pytest.fixture(scope="session")
+def cnpg_installed(k8s_client) -> bool:
+    """Detect if CloudNativePG CRDs are installed in the cluster.
+
+    We only attempt CNPG cluster creation if the CRD exists. This allows
+    the test suite to skip CNPG-dependent tests gracefully when the
+    operator is not present.
+    """
+    from kubernetes import client as k8s
+
+    api = k8s.ApiextensionsV1Api(k8s_client)
+    try:
+        api.read_custom_resource_definition("clusters.postgresql.cnpg.io")
+        return True
+    except ApiException:
+        return False
+
+
 @pytest.fixture
-def sample_keycloak_spec(test_secrets) -> dict[str, Any]:
-    """Return a sample Keycloak resource specification."""
+async def cnpg_cluster(k8s_client, test_namespace, cnpg_installed, wait_for_condition) -> dict[str, str] | None:
+    """Create a minimal CloudNativePG Cluster in the test namespace.
+
+    Returns a dict with cluster connection info (cluster name, db name)
+    or None if CNPG is not installed.
+    """
+    if not cnpg_installed:
+        # CNPG not available; returning None will let sample_keycloak_spec
+        # fall back to traditional database configuration (which may fail
+        # if connectivity is required). Tests depending on DB will be skipped.
+        return None
+
+    from kubernetes import dynamic
+
+    dyn = dynamic.DynamicClient(k8s_client)
+    cluster_api = dyn.resources.get(api_version="postgresql.cnpg.io/v1", kind="Cluster")
+
+    cluster_name = "kc-test-cnpg"
+    db_name = "keycloak"
+
+    cluster_manifest = {
+        "apiVersion": "postgresql.cnpg.io/v1",
+        "kind": "Cluster",
+        "metadata": {"name": cluster_name, "namespace": test_namespace},
+        "spec": {
+            "instances": 1,
+            "primaryUpdateStrategy": "unsupervised",
+            "storage": {"size": "1Gi"},
+            # Minimal bootstrap with application database/user creation handled by defaults
+            "bootstrap": {"initdb": {"database": db_name, "owner": "app"}},
+            # Disable superuser secret creation to keep things simple
+            "enableSuperuserAccess": False,
+            # Resources kept tiny for CI
+            "resources": {
+                "requests": {"cpu": "100m", "memory": "128Mi"},
+                "limits": {"cpu": "200m", "memory": "256Mi"},
+            },
+        },
+    }
+
+    # Create cluster (ignore AlreadyExists to allow reuse within namespace lifetime)
+    try:
+        cluster_api.create(body=cluster_manifest, namespace=test_namespace)
+    except ApiException as e:
+        if e.status != 409:  # 409 AlreadyExists
+            raise
+
+    # Wait for cluster to report healthy phase & application secret present
+    async def cluster_ready():
+        try:
+            obj = cluster_api.get(name=cluster_name, namespace=test_namespace)
+            phase = obj.to_dict().get("status", {}).get("phase")
+            if phase != "Cluster in healthy state":
+                return False
+            # Confirm app secret existence
+            core = client.CoreV1Api(k8s_client)
+            try:
+                core.read_namespaced_secret(f"{cluster_name}-app", test_namespace)
+                return True
+            except ApiException:
+                return False
+        except ApiException:
+            return False
+
+    ready = await wait_for_condition(cluster_ready, timeout=420, interval=5)
+    if not ready:
+        pytest.skip("CNPG cluster was not ready in time")
+
+    return {"name": cluster_name, "database": db_name}
+
+
+@pytest.fixture
+def sample_keycloak_spec(test_secrets, cnpg_cluster) -> dict[str, Any]:
+    """Return a sample Keycloak resource specification using CNPG when available."""
+    if cnpg_cluster:
+        database_block: dict[str, Any] = {
+            "type": "cnpg",
+            "cnpg_cluster": {
+                "name": cnpg_cluster["name"],
+                # namespace omitted to default to same test namespace
+                "database": cnpg_cluster["database"],
+            },
+        }
+    else:
+        # Fallback minimal traditional config (may fail if real DB not present)
+        database_block = {
+            "type": "postgresql",
+            "host": "postgres-test",
+            "database": "keycloak",
+            "username": "keycloak",
+            "password_secret": {"name": test_secrets["database"], "key": "password"},
+        }
+
     return {
         "apiVersion": "keycloak.mdvr.nl/v1",
         "kind": "Keycloak",
         "spec": {
             "image": "quay.io/keycloak/keycloak:23.0.0",
             "replicas": 1,
-            "database": {
-                "type": "postgresql",
-                "host": "postgres.postgres.svc.cluster.local",
-                "name": "keycloak",
-                "username": "keycloak",
-                "password_secret": {
-                    "name": test_secrets["database"],
-                    "key": "password",
-                },
-            },
+            "database": database_block,
             "admin_access": {
                 "username": "admin",
                 "password_secret": {"name": test_secrets["admin"], "key": "password"},

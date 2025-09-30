@@ -98,8 +98,9 @@ build-test: ## Build operator Docker image for testing
 deploy: deploy-local ## Deploy operator (standard target name)
 
 .PHONY: deploy-local
-deploy-local: build-test setup-cluster ## Deploy operator to local Kind cluster
+deploy-local: build-test setup-cluster install-cnpg ## Deploy operator to local Kind cluster (with CNPG if not already present)
 	kind load docker-image keycloak-operator:test --name keycloak-operator-test
+	# Re-apply CRDs to ensure the latest (idempotent)
 	kubectl apply -f k8s/crds/keycloak-crd.yaml
 	kubectl apply -f k8s/crds/keycloakclient-crd.yaml
 	kubectl apply -f k8s/crds/keycloakrealm-crd.yaml
@@ -107,6 +108,10 @@ deploy-local: build-test setup-cluster ## Deploy operator to local Kind cluster
 	sed 's|image: keycloak-operator:latest|image: keycloak-operator:test|g' k8s/operator-deployment.yaml | \
 	sed 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Never|g' | \
 	kubectl apply -f -
+
+.PHONY: install-cnpg
+install-cnpg: ## Install CloudNativePG operator (idempotent)
+	@./scripts/install-cnpg.sh || echo "CNPG install script exited with code $$? (already installed?)"
 
 .PHONY: setup-cluster
 setup-cluster: ## Ensure Kind cluster is running

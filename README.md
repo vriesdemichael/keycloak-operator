@@ -40,6 +40,26 @@ The operator manages three primary custom resources:
 - **make** - Build automation tool
 - **Kind (Kubernetes in Docker)** - For local integration testing
 - **Docker** - For Kind cluster creation and container builds
+ - **Helm** - Required for installing CloudNativePG (CNPG) for integration tests
+
+#### Helm Installation
+The integration test environment provisions a CloudNativePG Postgres cluster using the upstream Helm chart (`cloudnative-pg`). Install Helm manually (we do not auto-download to keep the toolchain explicit):
+
+```bash
+# Linux/macOS quick script (official)
+curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+# macOS via Homebrew
+brew install helm
+
+# Windows (Chocolatey)
+choco install kubernetes-helm
+
+# Verify
+helm version
+```
+
+Recommended chart version used here: `cloudnative-pg` chart `0.26.0` (AppVersion 1.27.0). If issues occur you can fallback to a prior minor (e.g. `0.25.x`).
 
 ## 🚀 Quick Start
 
@@ -238,6 +258,33 @@ uv sync
 ```bash
 # Complete development environment setup (dependencies + Kind cluster)
 make dev-setup
+```
+
+### (Optional) Recreate Cluster + Reinstall CloudNativePG
+If CNPG install became inconsistent or you want a clean slate:
+```bash
+make kind-teardown
+make kind-setup
+
+helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts
+helm repo update
+
+helm upgrade --install cnpg cloudnative-pg/cloudnative-pg \
+  --namespace cnpg-system \
+  --create-namespace \
+  --version 0.26.0 \
+  --set metrics.enablePodMonitor=true \
+  --set webhook.create=true \
+  --set resources.requests.cpu=100m \
+  --set resources.requests.memory=128Mi \
+  --set resources.limits.cpu=500m \
+  --set resources.limits.memory=512Mi
+
+kubectl rollout status deployment/cnpg-controller-manager -n cnpg-system --timeout=300s
+
+# Deploy operator & run integration tests
+make deploy
+make test-integration
 ```
 
 **Testing Commands:**

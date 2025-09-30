@@ -18,6 +18,7 @@ The handlers support various client types including:
 - Service accounts for machine-to-machine communication
 """
 
+import contextlib
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -38,21 +39,53 @@ logger = logging.getLogger(__name__)
 
 
 class StatusWrapper:
-    """Wrapper to make dict status compatible with StatusProtocol."""
+    """Wrapper to make kopf dict-like status compatible with StatusProtocol.
 
-    def __init__(self, status_dict: dict[str, Any]):
-        self._status = status_dict
+    Some kopf versions provide a special Status object that may not support
+    direct item assignment or .update(). This wrapper normalizes access so
+    that status.phase = X works and we fall back gracefully if the underlying
+    object is not a plain dict.
+    """
+
+    def __init__(self, status_obj: Any):
+        object.__setattr__(self, "_raw_status", status_obj)
+
+    def _as_mutable_dict(self) -> dict[str, Any]:
+        rs = object.__getattribute__(self, "_raw_status")
+        # If it's already a dict, use it directly
+        if isinstance(rs, dict):
+            return rs
+        # Some kopf objects expose .__dict__ or behave like Mapping
+        # We'll maintain a shadow dict for updates and mirror basic fields.
+        shadow = getattr(self, "_shadow", None)
+        if shadow is None:
+            shadow = {}
+            object.__setattr__(self, "_shadow", shadow)
+        return shadow
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name.startswith("_"):
             object.__setattr__(self, name, value)
-        else:
-            self._status[name] = value
+            return
+        target = self._as_mutable_dict()
+        target[name] = value
+        # Try to reflect into raw status if it supports item assignment
+        rs = object.__getattribute__(self, "_raw_status")
+        with contextlib.suppress(Exception):
+            rs[name] = value  # type: ignore[index]
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             return object.__getattribute__(self, name)
-        return self._status.get(name)
+        rs = object.__getattribute__(self, "_raw_status")
+        if isinstance(rs, dict) and name in rs:
+            return rs.get(name)
+        shadow = getattr(self, "_shadow", {})
+        return shadow.get(name)
+
+    def update(self, data: dict[str, Any]) -> None:
+        for k, v in data.items():
+            setattr(self, k, v)
 
 
 @kopf.on.create("keycloakclients", group="keycloak.mdvr.nl", version="v1")

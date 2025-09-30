@@ -12,9 +12,12 @@ The handlers in this module are designed to be idempotent and GitOps-friendly,
 ensuring that the desired state is maintained regardless of restart or failure.
 """
 
+from __future__ import annotations
+
 import logging
+from collections.abc import MutableMapping
 from datetime import UTC
-from typing import Any, Protocol, TypedDict
+from typing import Any, Protocol, TypedDict, cast
 
 import kopf
 from kopf import Diff, Meta
@@ -33,10 +36,67 @@ from keycloak_operator.utils.kubernetes import (
 
 
 class StatusProtocol(Protocol):
-    """Protocol for kopf Status objects that allow dynamic attribute assignment."""
+    """Protocol for kopf Status objects that allow dynamic attribute assignment.
 
-    def __setattr__(self, name: str, value: Any) -> None: ...
-    def __getattr__(self, name: str) -> Any: ...
+    Wrapped by StatusWrapper to allow safe mutation irrespective of kopf internal
+    status object semantics.
+    """
+
+    def __setattr__(self, name: str, value: Any) -> None: ...  # pragma: no cover
+    def __getattr__(self, name: str) -> Any: ...  # pragma: no cover
+    def get(self, key: str, default: Any = None) -> Any: ...  # pragma: no cover
+
+
+class StatusWrapper(MutableMapping[str, Any]):
+    """Safe mutable wrapper around kopf status for both item & attribute access."""
+
+    def __init__(self, original: Any):
+        self._data: dict[str, Any] = {}
+        if isinstance(original, dict):
+            self._data.update(original)
+        else:
+            # Attempt to copy if mapping-like
+            try:
+                for k, v in original.items():  # type: ignore[attr-defined]
+                    self._data[k] = v
+            except Exception:
+                pass
+
+    # MutableMapping implementation
+    def __getitem__(self, key: str) -> Any:
+        return self._data[key]
+
+    def __setitem__(self, key: str, value: Any) -> None:
+        self._data[key] = value
+
+    def __delitem__(self, key: str) -> None:
+        if key in self._data:
+            del self._data[key]
+
+    def __iter__(self):  # pragma: no cover - trivial
+        return iter(self._data)
+
+    def __len__(self) -> int:  # pragma: no cover - trivial
+        return len(self._data)
+
+    # Attribute bridging
+    def __getattr__(self, item: str) -> Any:  # pragma: no cover - trivial
+        try:
+            return self._data[item]
+        except KeyError as e:
+            raise AttributeError(item) from e
+
+    def __setattr__(self, key: str, value: Any) -> None:  # pragma: no cover - trivial
+        if key.startswith("_"):
+            super().__setattr__(key, value)
+        else:
+            self._data[key] = value
+
+    def get(self, key: str, default: Any = None) -> Any:  # explicit for protocol
+        return self._data.get(key, default)
+
+    def to_dict(self) -> dict[str, Any]:
+        return dict(self._data)
 
 
 class KopfHandlerKwargs(TypedDict, total=False):
@@ -91,11 +151,26 @@ async def ensure_keycloak_instance(
         )
         patch.metadata.setdefault("finalizers", []).append(KEYCLOAK_FINALIZER)
 
-    # Create reconciler and delegate to service layer
     reconciler = KeycloakInstanceReconciler()
-    return await reconciler.reconcile(
-        spec=spec, name=name, namespace=namespace, status=status, **kwargs
+    status_wrapper = StatusWrapper(status)
+    result = await reconciler.reconcile(
+        spec=spec,
+        name=name,
+        namespace=namespace,
+        status=cast(StatusProtocol, status_wrapper),
+        **kwargs,
     )
+    if isinstance(result, dict):
+        # Merge wrapper state into patch.status for persistence
+        merged = status_wrapper.to_dict()
+        merged.update(result)
+        for k, v in merged.items():
+            patch.status[k] = v
+        return merged
+    # If service returned something else, still propagate accumulated state
+    for k, v in status_wrapper.to_dict().items():
+        patch.status[k] = v
+    return result
 
 
 @kopf.on.update("keycloaks", group="keycloak.mdvr.nl", version="v1")
@@ -127,17 +202,22 @@ async def update_keycloak_instance(
     """
     logger.info(f"Updating Keycloak instance {name} in namespace {namespace}")
 
-    # Create reconciler and delegate to service layer
     reconciler = KeycloakInstanceReconciler()
-    return await reconciler.update(
+    status_wrapper = StatusWrapper(status)
+    result = await reconciler.update(
         old_spec=old.get("spec", {}),
         new_spec=new.get("spec", {}),
         diff=diff,
         name=name,
         namespace=namespace,
-        status=status,
+        status=cast(StatusProtocol, status_wrapper),
         **kwargs,
     )
+    if isinstance(result, dict):
+        merged = status_wrapper.to_dict()
+        merged.update(result)
+        return merged
+    return result
 
 
 @kopf.on.delete("keycloaks", group="keycloak.mdvr.nl", version="v1")
@@ -196,10 +276,13 @@ async def delete_keycloak_instance(
         logger.error(f"Error during Keycloak deletion: {e}")
         # Update status to indicate deletion failure
         try:
-            status.phase = "Failed"
-            status.message = f"Deletion failed: {str(e)}"
+            status_wrapper = StatusWrapper(status)
+            status_wrapper.phase = "Failed"
+            status_wrapper.message = f"Deletion failed: {str(e)}"
+            for k, v in status_wrapper.to_dict().items():
+                patch.status[k] = v
         except Exception:
-            pass  # Status update might fail if resource is being deleted
+            pass
 
         # Re-raise the exception to trigger retry
         # Kopf will retry the deletion with exponential backoff
@@ -211,11 +294,11 @@ async def delete_keycloak_instance(
 
 @kopf.timer("keycloaks", interval=60)
 def monitor_keycloak_health(
-    _spec: dict[str, Any],
+    spec: dict[str, Any],
     name: str,
     namespace: str,
     status: StatusProtocol,
-    **_kwargs: Any,
+    **kwargs: Any,
 ) -> dict[str, Any] | None:
     """
         Periodic health check for Keycloak instances.

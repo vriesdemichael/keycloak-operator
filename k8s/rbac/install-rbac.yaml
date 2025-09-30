@@ -62,6 +62,11 @@ rules:
   resources: ["deployments", "statefulsets", "replicasets"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
+# Status subresources for workload introspection
+- apiGroups: ["apps"]
+  resources: ["deployments/status", "statefulsets/status", "replicasets/status"]
+  verbs: ["get"]
+
 - apiGroups: [""]
   resources: ["services", "configmaps", "secrets", "persistentvolumeclaims"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
@@ -90,6 +95,11 @@ rules:
   resources: ["customresourcedefinitions"]
   verbs: ["get", "list", "watch"]
 
+# Authorization API for self-permission checks (health/diagnostics)
+- apiGroups: ["authorization.k8s.io"]
+  resources: ["subjectaccessreviews"]
+  verbs: ["create"]
+
 # Webhook configuration
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingadmissionwebhooks", "mutatingadmissionwebhooks"]
@@ -104,6 +114,11 @@ rules:
   resources: ["securitycontextconstraints"]
   verbs: ["use"]
   resourceNames: ["anyuid", "restricted"]
+
+# Leader election (leases) required by tests & multi-replica operation
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
 # ClusterRoleBinding to grant permissions to the service account
