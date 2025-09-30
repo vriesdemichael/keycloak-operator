@@ -140,7 +140,27 @@ def create_keycloak_deployment(
     admin_secret_name = f"{name}-admin-credentials"
 
     env_vars = [
-        # Modern Keycloak admin bootstrap variables
+        # Keycloak admin bootstrap variables (support both old and new versions)
+        # KEYCLOAK_ADMIN* for Keycloak <= 23
+        client.V1EnvVar(
+            name="KEYCLOAK_ADMIN",
+            value_from=client.V1EnvVarSource(
+                secret_key_ref=client.V1SecretKeySelector(
+                    name=admin_secret_name,
+                    key="username",
+                )
+            ),
+        ),
+        client.V1EnvVar(
+            name="KEYCLOAK_ADMIN_PASSWORD",
+            value_from=client.V1EnvVarSource(
+                secret_key_ref=client.V1SecretKeySelector(
+                    name=admin_secret_name,
+                    key="password",
+                )
+            ),
+        ),
+        # KC_BOOTSTRAP_ADMIN* for Keycloak >= 24
         client.V1EnvVar(
             name="KC_BOOTSTRAP_ADMIN_USERNAME",
             value_from=client.V1EnvVarSource(
@@ -277,11 +297,13 @@ def create_keycloak_deployment(
                     )
 
     # Container configuration
+    # Use start-dev for runtime database configuration
+    # TODO: Use start --optimized with pre-built image once we have custom Keycloak images
     container = client.V1Container(
         name="keycloak",
-        image=spec.image or "quay.io/keycloak/keycloak:latest",
+        image=spec.image or "quay.io/keycloak/keycloak:26.4.0",
         command=["/opt/keycloak/bin/kc.sh"],
-        args=["start", "--optimized"],
+        args=["start-dev"],
         ports=[
             client.V1ContainerPort(container_port=8080, name="http"),
             client.V1ContainerPort(container_port=9000, name="management"),
