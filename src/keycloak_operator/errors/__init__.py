@@ -14,6 +14,7 @@ from .operator_errors import (
     OperatorError,
     PermanentError,
     RBACError,
+    ReconciliationError,
     TemporaryError,
     ValidationError,
 )
@@ -29,4 +30,5 @@ __all__ = [
     "KubernetesAPIError",
     "ConfigurationError",
     "RBACError",
+    "ReconciliationError",
 ]

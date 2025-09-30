@@ -103,6 +103,21 @@ class KeycloakClientSettings(BaseModel):
         return v
 
 
+class ServiceAccountRoles(BaseModel):
+    """Role mappings for service account users."""
+
+    realm_roles: list[str] = Field(
+        default_factory=list,
+        description="Realm-level roles to assign to the service account",
+    )
+    client_roles: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description=(
+            "Client-level roles to assign to the service account (client_id -> role names)"
+        ),
+    )
+
+
 class KeycloakClientSpec(BaseModel):
     """
     Specification for a KeycloakClient resource.
@@ -141,6 +156,12 @@ class KeycloakClientSpec(BaseModel):
     # Client settings
     settings: KeycloakClientSettings = Field(
         default_factory=KeycloakClientSettings, description="Advanced client settings"
+    )
+
+    # Service account configuration
+    service_account_roles: ServiceAccountRoles = Field(
+        default_factory=ServiceAccountRoles,
+        description="Role mappings for the client's service account user",
     )
 
     # Authentication flows

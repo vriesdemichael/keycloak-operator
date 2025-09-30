@@ -118,6 +118,26 @@ class ExternalServiceError(OperatorError):
         )
 
 
+class ReconciliationError(OperatorError):
+    """Error raised when reconciliation cannot be completed."""
+
+    def __init__(
+        self,
+        message: str,
+        retryable: bool = True,
+        delay: int = 60,
+        user_action: str | None = None,
+    ):
+        super().__init__(
+            message=message,
+            category="reconciliation",
+            retryable=retryable,
+            delay=delay,
+            user_action=user_action
+            or "Inspect operator logs and resource specification for issues",
+        )
+
+
 class DatabaseValidationError(ValidationError):
     """Specific error for database configuration validation."""
 

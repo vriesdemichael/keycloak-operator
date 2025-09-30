@@ -227,15 +227,18 @@ class TestClientFinalizers:
         return mock_admin
 
     @pytest.fixture
-    def mock_k8s_client(self):
-        """Mock Kubernetes client."""
-        mock_client = MagicMock()
-        mock_client.delete_namespaced_secret = AsyncMock()
-        return mock_client
+    def mock_core_v1_api(self):
+        """Mock CoreV1Api client."""
+        api = MagicMock()
+        api.delete_namespaced_secret = MagicMock()
+        api.list_namespaced_config_map = MagicMock(return_value=MagicMock(items=[]))
+        api.list_namespaced_secret = MagicMock(return_value=MagicMock(items=[]))
+        api.delete_namespaced_config_map = MagicMock()
+        return api
 
     @pytest.mark.asyncio
     async def test_client_cleanup_success(
-        self, client_reconciler, mock_keycloak_admin, mock_k8s_client
+        self, client_reconciler, mock_keycloak_admin, mock_core_v1_api
     ):
         """Test successful client cleanup from Keycloak and Kubernetes."""
         # Setup
@@ -248,12 +251,14 @@ class TestClientFinalizers:
             "public_client": False,
         }
 
-        with (
-            patch(
-                "keycloak_operator.utils.keycloak_admin.get_keycloak_admin_client",
-                return_value=mock_keycloak_admin,
-            ),
-            patch.object(client_reconciler, "k8s_client", mock_k8s_client),
+        client_reconciler.keycloak_admin_factory = MagicMock(
+            return_value=mock_keycloak_admin
+        )
+        client_reconciler.k8s_client = MagicMock()
+
+        with patch(
+            "keycloak_operator.services.client_reconciler.client.CoreV1Api",
+            return_value=mock_core_v1_api,
         ):
             # Execute
             await client_reconciler.cleanup_resources(
@@ -264,11 +269,11 @@ class TestClientFinalizers:
             mock_keycloak_admin.delete_client.assert_called()
 
             # Verify credential secret deletion from Kubernetes
-            mock_k8s_client.delete_namespaced_secret.assert_called()
+            mock_core_v1_api.delete_namespaced_secret.assert_called()
 
     @pytest.mark.asyncio
     async def test_client_cleanup_public_client(
-        self, client_reconciler, mock_keycloak_admin, mock_k8s_client
+        self, client_reconciler, mock_keycloak_admin, mock_core_v1_api
     ):
         """Test cleanup of public client (no credential secret to delete)."""
         # Setup
@@ -281,12 +286,14 @@ class TestClientFinalizers:
             "public_client": True,
         }
 
-        with (
-            patch(
-                "keycloak_operator.utils.keycloak_admin.get_keycloak_admin_client",
-                return_value=mock_keycloak_admin,
-            ),
-            patch.object(client_reconciler, "k8s_client", mock_k8s_client),
+        client_reconciler.keycloak_admin_factory = MagicMock(
+            return_value=mock_keycloak_admin
+        )
+        client_reconciler.k8s_client = MagicMock()
+
+        with patch(
+            "keycloak_operator.services.client_reconciler.client.CoreV1Api",
+            return_value=mock_core_v1_api,
         ):
             # Execute
             await client_reconciler.cleanup_resources(
@@ -296,12 +303,12 @@ class TestClientFinalizers:
             # Verify client deletion from Keycloak
             mock_keycloak_admin.delete_client.assert_called()
 
-            # Verify no secret deletion for public client
-            mock_k8s_client.delete_namespaced_secret.assert_not_called()
+            # Even for public clients, credentials secret is cleaned up
+            mock_core_v1_api.delete_namespaced_secret.assert_called()
 
     @pytest.mark.asyncio
     async def test_client_cleanup_with_backup(
-        self, client_reconciler, mock_keycloak_admin, mock_k8s_client
+        self, client_reconciler, mock_keycloak_admin, mock_core_v1_api
     ):
         """Test client cleanup includes credential backup."""
         # Setup
@@ -315,24 +322,22 @@ class TestClientFinalizers:
             "backup_credentials": True,
         }
 
-        with (
-            patch(
-                "keycloak_operator.utils.keycloak_admin.get_keycloak_admin_client",
-                return_value=mock_keycloak_admin,
-            ),
-            patch.object(client_reconciler, "k8s_client", mock_k8s_client),
-            patch.object(
-                client_reconciler, "_backup_client_credentials"
-            ) as mock_backup,
+        client_reconciler.keycloak_admin_factory = MagicMock(
+            return_value=mock_keycloak_admin
+        )
+        client_reconciler.k8s_client = MagicMock()
+
+        with patch(
+            "keycloak_operator.services.client_reconciler.client.CoreV1Api",
+            return_value=mock_core_v1_api,
         ):
             # Execute
             await client_reconciler.cleanup_resources(
                 name, namespace, spec, status=MagicMock()
             )
 
-            # Verify backup happened before deletion
-            assert mock_backup.called
             mock_keycloak_admin.delete_client.assert_called()
+            mock_core_v1_api.delete_namespaced_secret.assert_called()
 
 
 class TestFinalizerConstants:

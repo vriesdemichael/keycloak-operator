@@ -133,7 +133,9 @@ When `service_accounts_enabled: true` is set on a KeycloakClient, Keycloak creat
 
 ---
 
-### Step 1: Update the CRD Schema
+### Step 1: Update the CRD Schema ✅
+
+> Completed on 2025-10-01 by adding `service_account_roles` to `k8s/crds/keycloakclient-crd.yaml`.
 
 **File:** `k8s/crds/keycloakclient-crd.yaml`
 
@@ -174,7 +176,9 @@ kubectl apply -f k8s/crds/keycloakclient-crd.yaml
 
 ---
 
-### Step 2: Update the Pydantic Model
+### Step 2: Update the Pydantic Model ✅
+
+> Completed on 2025-10-01 by adding `ServiceAccountRoles` and `service_account_roles` default to the client models.
 
 **File:** `src/keycloak_operator/models/client.py`
 
@@ -222,7 +226,9 @@ uv run pytest tests/unit/models/test_client.py -v
 
 ---
 
-### Step 3: Implement Keycloak Admin API Methods
+### Step 3: Implement Keycloak Admin API Methods ✅
+
+> Completed on 2025-10-01 by adding service account user retrieval and role assignment helpers to `keycloak_admin.py`.
 
 **File:** `src/keycloak_operator/utils/keycloak_admin.py`
 
@@ -442,7 +448,9 @@ def get_client_role(
 
 ---
 
-### Step 4: Implement Reconciler Logic
+### Step 4: Implement Reconciler Logic ✅
+
+> Completed on 2025-10-01 by introducing service account role management in `client_reconciler.py` with error handling and admin client integration.
 
 **File:** `src/keycloak_operator/services/client_reconciler.py`
 

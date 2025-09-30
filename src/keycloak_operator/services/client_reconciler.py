@@ -10,7 +10,7 @@ from typing import Any
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from ..errors import ValidationError
+from ..errors import KeycloakAdminError, ReconciliationError, ValidationError
 from ..models.client import KeycloakClientSpec
 from ..utils.keycloak_admin import get_keycloak_admin_client
 from .base_reconciler import BaseReconciler, StatusProtocol
@@ -92,6 +92,12 @@ class KeycloakClientReconciler(BaseReconciler):
         # Manage client roles
         if client_spec.client_roles:
             await self.manage_client_roles(client_spec, client_uuid, name, namespace)
+
+        # Manage service account roles
+        if client_spec.settings.service_accounts_enabled:
+            await self.manage_service_account_roles(
+                client_spec, client_uuid, name, namespace
+            )
 
         # Return status information
         keycloak_ref = client_spec.keycloak_instance_ref
@@ -664,6 +670,150 @@ class KeycloakClientReconciler(BaseReconciler):
                 return True
 
         return False
+
+    async def manage_service_account_roles(
+        self,
+        spec: KeycloakClientSpec,
+        client_uuid: str,
+        name: str,
+        namespace: str,
+    ) -> None:
+        """Manage role mappings for the client's service account user."""
+
+        roles_config = spec.service_account_roles
+
+        if not spec.settings.service_accounts_enabled:
+            self.logger.debug(
+                "Service accounts disabled for client %s; skipping role assignment",
+                spec.client_id,
+            )
+            return
+
+        if not roles_config.realm_roles and not roles_config.client_roles:
+            self.logger.debug(
+                "No service account roles defined for client %s", spec.client_id
+            )
+            return
+
+        self.logger.info(
+            "Configuring service account roles for client %s (resource %s/%s)",
+            spec.client_id,
+            namespace,
+            name,
+        )
+
+        keycloak_ref = spec.keycloak_instance_ref
+        target_namespace = keycloak_ref.namespace or namespace
+        realm_name = spec.realm or "master"
+
+        try:
+            admin_client = self.keycloak_admin_factory(
+                keycloak_ref.name, target_namespace
+            )
+
+            self.logger.debug(
+                "Fetching service account user for client %s", spec.client_id
+            )
+            service_account_user = admin_client.get_service_account_user(
+                client_uuid, realm_name
+            )
+            user_id = service_account_user.get("id") if service_account_user else None
+
+            if not user_id:
+                raise ReconciliationError(
+                    f"Service account user missing identifier for client {spec.client_id}",
+                    retryable=False,
+                )
+
+            if roles_config.realm_roles:
+                self.logger.info(
+                    "Assigning %d realm roles to service account for client %s",
+                    len(roles_config.realm_roles),
+                    spec.client_id,
+                )
+                admin_client.assign_realm_roles_to_user(
+                    user_id=user_id,
+                    role_names=roles_config.realm_roles,
+                    realm_name=realm_name,
+                )
+
+            if roles_config.client_roles:
+                for target_client_id, role_names in roles_config.client_roles.items():
+                    if not role_names:
+                        self.logger.debug(
+                            "No roles listed for target client %s when assigning to %s",
+                            target_client_id,
+                            spec.client_id,
+                        )
+                        continue
+
+                    self.logger.info(
+                        "Assigning %d client roles from '%s' to service account for client %s",
+                        len(role_names),
+                        target_client_id,
+                        spec.client_id,
+                    )
+
+                    target_client = admin_client.get_client_by_name(
+                        target_client_id, realm_name
+                    )
+                    if not target_client:
+                        self.logger.warning(
+                            "Target client '%s' not found in realm '%s'; skipping role assignment",
+                            target_client_id,
+                            realm_name,
+                        )
+                        continue
+
+                    target_client_uuid = target_client.get("id")
+                    if not target_client_uuid:
+                        self.logger.warning(
+                            "Target client '%s' missing UUID; skipping role assignment",
+                            target_client_id,
+                        )
+                        continue
+
+                    admin_client.assign_client_roles_to_user(
+                        user_id=user_id,
+                        client_uuid=target_client_uuid,
+                        role_names=role_names,
+                        realm_name=realm_name,
+                    )
+
+            self.logger.info(
+                "Service account roles successfully configured for client %s (resource %s/%s)",
+                spec.client_id,
+                namespace,
+                name,
+            )
+
+        except KeycloakAdminError as exc:
+            self.logger.error(
+                "Failed Keycloak admin operation while managing service account roles for %s: %s",
+                spec.client_id,
+                exc,
+            )
+            raise ReconciliationError(
+                f"Service account role management failed: {exc}", retryable=False
+            ) from exc
+        except ApiException as exc:
+            self.logger.error(
+                "Kubernetes API error while managing service account roles for %s: %s",
+                spec.client_id,
+                exc,
+            )
+            raise ReconciliationError(
+                f"Kubernetes API error during service account role management: {exc}"
+            ) from exc
+        except Exception as exc:
+            self.logger.error(
+                "Unexpected error managing service account roles for %s: %s",
+                spec.client_id,
+                exc,
+            )
+            raise ReconciliationError(
+                f"Unexpected error managing service account roles: {exc}"
+            ) from exc
 
     async def do_update(
         self,
