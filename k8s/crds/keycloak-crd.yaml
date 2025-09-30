@@ -49,9 +49,10 @@ spec:
                     type: string
                     enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]
                     default: "postgresql"
+                    description: "Database type. Use 'cnpg' for CloudNativePG-managed PostgreSQL (operator will configure as 'postgres' for Keycloak)"
                   cnpg_cluster:
                     type: object
-                    description: "CloudNativePG cluster reference (when type=cnpg)"
+                    description: "CloudNativePG cluster reference (required when type=cnpg)"
                     properties:
                       name:
                         type: string
@@ -170,14 +171,15 @@ spec:
               # Admin access configuration
               admin_access:
                 type: object
-                description: "Admin access configuration"
+                description: "Admin access configuration. Password is auto-generated and stored in {name}-admin-credentials secret."
                 properties:
                   username:
                     type: string
                     default: "admin"
+                    description: "Admin username (default: admin)"
                   password_secret:
                     type: object
-                    description: "Secret reference for admin password"
+                    description: "DEPRECATED: Password is now auto-generated. This field is ignored."
                     properties:
                       name:
                         type: string
@@ -190,8 +192,6 @@ spec:
                     type: boolean
                     default: true
                     description: "Restrict admin access to resources in same namespace"
-                required:
-                - password_secret
 
               # Resource requirements
               resources:
@@ -271,6 +271,29 @@ spec:
                 type: string
               external_url:
                 type: string
+              # Service endpoints
+              endpoints:
+                type: object
+                description: "Keycloak service endpoints"
+                properties:
+                  admin:
+                    type: string
+                    description: "Admin endpoint URL"
+                  public:
+                    type: string
+                    description: "Public endpoint URL"
+                  management:
+                    type: string
+                    description: "Management endpoint URL"
+              deployment:
+                type: string
+                description: "Name of the Keycloak deployment"
+              service:
+                type: string
+                description: "Name of the Keycloak service"
+              adminSecret:
+                type: string
+                description: "Name of the admin credentials secret"
               # Health status
               ready_replicas:
                 type: integer

@@ -377,7 +377,7 @@ def monitor_keycloak_health(
         # Perform HTTP health check against Keycloak
         service_name = f"{name}-keycloak"
         health_url = (
-            f"http://{service_name}.{namespace}.svc.cluster.local:9000/health/ready"
+            f"http://{service_name}.{namespace}.svc.cluster.local:8080/health/ready"
         )
 
         # Perform actual HTTP health check against Keycloak
@@ -492,10 +492,10 @@ def monitor_keycloak_health(
             # Don't fail health check for validation errors, just log them
 
         # If we get here, everything is healthy
-        if current_phase != "Running":
+        if current_phase != "Ready":
             logger.info(f"Keycloak instance {name} health check passed")
             return {
-                "phase": "Running",
+                "phase": "Ready",
                 "message": "Keycloak instance is healthy",
                 "lastHealthCheck": current_time,
             }

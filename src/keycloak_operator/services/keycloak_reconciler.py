@@ -322,14 +322,14 @@ class KeycloakInstanceReconciler(BaseReconciler):
         # Parse and validate the specification
         keycloak_spec = self._validate_spec(spec)
 
-        # Perform production environment validation
-        await self.validate_production_settings(keycloak_spec, name, namespace)
+        # Perform production environment validation and get resolved database connection info
+        db_connection_info = await self.validate_production_settings(keycloak_spec, name, namespace)
 
         # Ensure admin access first (required by deployment)
         await self.ensure_admin_access(keycloak_spec, name, namespace)
 
         # Ensure core Kubernetes resources exist
-        await self.ensure_deployment(keycloak_spec, name, namespace)
+        await self.ensure_deployment(keycloak_spec, name, namespace, db_connection_info)
         await self.ensure_service(keycloak_spec, name, namespace)
 
         # Setup persistent storage if configured
@@ -362,10 +362,10 @@ class KeycloakInstanceReconciler(BaseReconciler):
             }
 
         # Update status to ready and return status information
-        self.update_status_ready(status, "Keycloak instance is running", generation)
+        self.update_status_ready(status, "Keycloak instance is ready", generation)
         return {
-            "phase": "Running",
-            "message": "Keycloak instance is running",
+            "phase": "Ready",
+            "message": "Keycloak instance is ready",
             "deployment": f"{name}-keycloak",
             "service": f"{name}-keycloak",
             "adminSecret": f"{name}-admin-credentials",
@@ -396,7 +396,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
     async def validate_production_settings(
         self, spec: KeycloakSpec, name: str, namespace: str
-    ) -> None:
+    ) -> dict[str, Any] | None:
         """
         Validate configuration for production readiness.
 
@@ -404,6 +404,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
             spec: Keycloak specification
             name: Resource name
             namespace: Resource namespace
+
+        Returns:
+            Dictionary with resolved database connection details, or None if database not configured
 
         Raises:
             DatabaseValidationError: If using H2 database inappropriately
@@ -413,12 +416,14 @@ class KeycloakInstanceReconciler(BaseReconciler):
         await self._validate_database_production_readiness(spec, namespace)
 
         # Validate database connectivity for all external databases
-        await self._validate_database_connectivity(spec, name, namespace)
+        connection_info = await self._validate_database_connectivity(spec, name, namespace)
 
         # Additional production validation checks
         await self._validate_security_requirements(spec, namespace)
 
         self.logger.info(f"Production validation passed for {name}")
+
+        return connection_info
 
     async def _validate_database_production_readiness(
         self, spec: KeycloakSpec, namespace: str
@@ -478,7 +483,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
     async def _validate_database_connectivity(
         self, spec: KeycloakSpec, name: str, namespace: str
-    ) -> None:
+    ) -> dict[str, Any]:
         """
         Validate database connectivity using the new database connection manager.
 
@@ -486,6 +491,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
             spec: Keycloak specification
             name: Resource name
             namespace: Resource namespace
+
+        Returns:
+            Dictionary with resolved database connection details
 
         Raises:
             ExternalServiceError: If database connectivity validation fails
@@ -524,6 +532,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
             self.logger.info(
                 f"Database connectivity test passed for {spec.database.type}"
             )
+
+            # Return resolved connection info for use in deployment creation
+            return connection_info
 
         except (ExternalServiceError, TemporaryError):
             # Re-raise operator errors as-is
@@ -654,7 +665,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 )
 
     async def ensure_deployment(
-        self, spec: KeycloakSpec, name: str, namespace: str
+        self, spec: KeycloakSpec, name: str, namespace: str, db_connection_info: dict[str, Any] | None = None
     ) -> None:
         """
         Ensure Keycloak deployment exists and is up to date.
@@ -663,6 +674,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
             spec: Keycloak specification
             name: Resource name
             namespace: Resource namespace
+            db_connection_info: Optional resolved database connection details
         """
         self.logger.info(f"Ensuring deployment for {name}")
         from kubernetes import client
@@ -685,6 +697,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     namespace=namespace,
                     spec=spec,
                     k8s_client=self.kubernetes_client,
+                    db_connection_info=db_connection_info,
                 )
                 self.logger.info(
                     f"Created Keycloak deployment: {deployment.metadata.name}"
@@ -823,19 +836,21 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         try:
             core_api.read_namespaced_secret(name=admin_secret_name, namespace=namespace)
-            self.logger.info(f"Admin secret {admin_secret_name} already exists")
+            self.logger.info(f"Admin secret {admin_secret_name} already exists - reusing credentials")
         except ApiException as e:
             if e.status == 404:
+                # Get username from spec, default to 'admin'
+                username = "admin"
+                if hasattr(spec, "admin") and hasattr(spec.admin, "username"):
+                    username = spec.admin.username
+
+                self.logger.info(f"Generating new admin secret {admin_secret_name} for user {username}")
                 admin_secret = create_admin_secret(
                     name=name,
                     namespace=namespace,
-                    username=(
-                        getattr(spec, "admin_access", {}).get("username", "admin")
-                        if hasattr(spec, "admin_access")
-                        else "admin"
-                    ),
+                    username=username,
                 )
-                self.logger.info(f"Created admin secret: {admin_secret.metadata.name}")
+                self.logger.info(f"Created admin secret with auto-generated password: {admin_secret.metadata.name}")
             else:
                 raise
 

@@ -144,6 +144,12 @@ class DatabaseConnectionManager:
             )
             connection_info.update(credentials)
 
+            # Also include secret reference for deployment environment variables
+            connection_info["password_secret"] = {
+                "name": secret_name,
+                "key": "password"
+            }
+
             logger.info(
                 f"Successfully resolved CNPG connection for cluster '{cluster_name}'"
             )
