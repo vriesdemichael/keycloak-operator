@@ -52,7 +52,10 @@ async def test_manage_service_account_roles_assigns_realm_roles(
 
     spec_dict = {
         **spec_base,
-        "service_account_roles": {"realm_roles": ["offline_access"], "client_roles": {}},
+        "service_account_roles": {
+            "realm_roles": ["offline_access"],
+            "client_roles": {},
+        },
     }
     spec = KeycloakClientSpec.model_validate(spec_dict)
 
@@ -127,7 +130,10 @@ async def test_manage_service_account_roles_missing_service_account_id_raises(
 
     spec_dict = {
         **spec_base,
-        "service_account_roles": {"realm_roles": ["offline_access"], "client_roles": {}},
+        "service_account_roles": {
+            "realm_roles": ["offline_access"],
+            "client_roles": {},
+        },
     }
     spec = KeycloakClientSpec.model_validate(spec_dict)
 

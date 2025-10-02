@@ -26,9 +26,26 @@ logger = logging.getLogger(__name__)
 class KeycloakAdminError(Exception):
     """Base exception for Keycloak Admin API errors."""
 
-    def __init__(self, message: str, status_code: int | None = None) -> None:
+    def __init__(
+        self,
+        message: str,
+        status_code: int | None = None,
+        response_body: str | None = None,
+    ) -> None:
         super().__init__(message)
         self.status_code = status_code
+        self.response_body = response_body
+
+    def body_preview(self, limit: int = 2048) -> str | None:
+        """Return a truncated preview of the response body for logging."""
+
+        if self.response_body is None:
+            return None
+
+        if len(self.response_body) <= limit:
+            return self.response_body
+
+        return f"{self.response_body[:limit]}...<truncated>"
 
 
 class KeycloakAdminClient:
@@ -260,12 +277,42 @@ class KeycloakAdminClient:
             return response
 
         except requests.HTTPError as e:
-            logger.error(f"Request failed: {method} {url} - {e}")
-            status_code = e.response.status_code if e.response else None
-            raise KeycloakAdminError(f"API request failed: {e}", status_code) from e
+            status_code = getattr(e.response, "status_code", None)
+            response_body: str | None = None
+
+            if e.response is not None:
+                try:
+                    response_body = e.response.text
+                except Exception:  # pragma: no cover - defensive fallback
+                    response_body = "<unavailable>"
+
+            body_preview = None
+            if response_body is not None:
+                max_len = 1024
+                body_preview = (
+                    response_body
+                    if len(response_body) <= max_len
+                    else f"{response_body[:max_len]}...<truncated>"
+                )
+
+            logger.error(
+                f"Request failed: {method} {url} - {e}",
+                extra={
+                    "http_status": status_code,
+                    "response_body": body_preview,
+                },
+            )
+            raise KeycloakAdminError(
+                f"API request failed: {e}",
+                status_code=status_code,
+                response_body=response_body,
+            ) from e
         except requests.RequestException as e:
             logger.error(f"Request failed: {method} {url} - {e}")
-            raise KeycloakAdminError(f"API request failed: {e}") from e
+            raise KeycloakAdminError(
+                f"API request failed: {e}",
+                status_code=getattr(getattr(e, "response", None), "status_code", None),
+            ) from e
 
     # Realm Management Methods
 
@@ -433,9 +480,7 @@ class KeycloakAdminClient:
 
         try:
             # Get all clients in the realm
-            clients = self._make_request(
-                "GET", f"realms/{realm_name}/clients"
-            ).json()
+            clients = self._make_request("GET", f"realms/{realm_name}/clients").json()
 
             # Find client by clientId
             for client in clients:
@@ -619,9 +664,7 @@ class KeycloakAdminClient:
 
         self._ensure_authenticated()
 
-        url = (
-            f"{self.server_url}/admin/realms/{realm_name}/clients/{client_uuid}/service-account-user"
-        )
+        url = f"{self.server_url}/admin/realms/{realm_name}/clients/{client_uuid}/service-account-user"
 
         try:
             response = self.session.get(url, timeout=self.timeout)
@@ -693,9 +736,7 @@ class KeycloakAdminClient:
 
         self._ensure_authenticated()
 
-        url = (
-            f"{self.server_url}/admin/realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
-        )
+        url = f"{self.server_url}/admin/realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
 
         try:
             response = self.session.get(url, timeout=self.timeout)
@@ -746,19 +787,13 @@ class KeycloakAdminClient:
             logger.info("No valid realm roles to assign to user %s", user_id)
             return
 
-        url = (
-            f"{self.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
-        )
+        url = f"{self.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
 
         try:
             response = self.session.post(url, json=roles, timeout=self.timeout)
         except requests.RequestException as exc:
-            logger.error(
-                "Failed to assign realm roles to user %s: %s", user_id, exc
-            )
-            raise KeycloakAdminError(
-                f"Failed to assign realm roles: {exc}"
-            ) from exc
+            logger.error("Failed to assign realm roles to user %s: %s", user_id, exc)
+            raise KeycloakAdminError(f"Failed to assign realm roles: {exc}") from exc
 
         if response.status_code not in (200, 204):
             raise KeycloakAdminError(
@@ -799,19 +834,13 @@ class KeycloakAdminClient:
             logger.info("No valid client roles to assign to user %s", user_id)
             return
 
-        url = (
-            f"{self.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/clients/{client_uuid}"
-        )
+        url = f"{self.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/clients/{client_uuid}"
 
         try:
             response = self.session.post(url, json=roles, timeout=self.timeout)
         except requests.RequestException as exc:
-            logger.error(
-                "Failed to assign client roles to user %s: %s", user_id, exc
-            )
-            raise KeycloakAdminError(
-                f"Failed to assign client roles: {exc}"
-            ) from exc
+            logger.error("Failed to assign client roles to user %s: %s", user_id, exc)
+            raise KeycloakAdminError(f"Failed to assign client roles: {exc}") from exc
 
         if response.status_code not in (200, 204):
             raise KeycloakAdminError(

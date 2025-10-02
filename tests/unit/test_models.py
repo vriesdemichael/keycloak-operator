@@ -32,10 +32,11 @@ class TestKeycloakModels:
                 host="postgres",
                 database="keycloak",
                 username="keycloak",
+                credentials_secret="db-secret",
             )
         )
 
-        assert spec.image == "quay.io/keycloak/keycloak:latest"
+        assert spec.image == "quay.io/keycloak/keycloak:26.4.0"
         assert spec.replicas == 1
         assert spec.service.type == "ClusterIP"
         assert spec.service.http_port == 8080
@@ -55,6 +56,7 @@ class TestKeycloakModels:
                     host="postgres",
                     database="keycloak",
                     username="keycloak",
+                    credentials_secret="db-secret",
                 ),
             )
         assert "greater than or equal to 1" in str(exc_info.value)
@@ -68,6 +70,7 @@ class TestKeycloakModels:
                     host="postgres",
                     database="keycloak",
                     username="keycloak",
+                    credentials_secret="db-secret",
                 ),
             )
         assert "Service type must be one of" in str(exc_info.value)
@@ -95,6 +98,7 @@ class TestKeycloakModels:
                     "host": "postgres",
                     "database": "keycloak",
                     "username": "keycloak",
+                    "credentials_secret": "db-secret",
                 },
             },
         }

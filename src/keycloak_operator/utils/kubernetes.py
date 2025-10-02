@@ -209,13 +209,19 @@ def create_keycloak_deployment(
                 client.V1EnvVar(name="KC_DB_URL_HOST", value=db_connection_info["host"])
             )
             env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_PORT", value=str(db_connection_info["port"]))
+                client.V1EnvVar(
+                    name="KC_DB_URL_PORT", value=str(db_connection_info["port"])
+                )
             )
             env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_DATABASE", value=db_connection_info["database"])
+                client.V1EnvVar(
+                    name="KC_DB_URL_DATABASE", value=db_connection_info["database"]
+                )
             )
             env_vars.append(
-                client.V1EnvVar(name="KC_DB_USERNAME", value=db_connection_info["username"])
+                client.V1EnvVar(
+                    name="KC_DB_USERNAME", value=db_connection_info["username"]
+                )
             )
 
             # Password from CNPG app secret
@@ -226,13 +232,15 @@ def create_keycloak_deployment(
                         value_from=client.V1EnvVarSource(
                             secret_key_ref=client.V1SecretKeySelector(
                                 name=db_connection_info["password_secret"]["name"],
-                                key=db_connection_info["password_secret"]["key"]
+                                key=db_connection_info["password_secret"]["key"],
                             )
                         ),
                     )
                 )
 
-            logger.info(f"CNPG database configured as postgres: {db_connection_info['host']}:{db_connection_info['port']}/{db_connection_info['database']}")
+            logger.info(
+                f"CNPG database configured as postgres: {db_connection_info['host']}:{db_connection_info['port']}/{db_connection_info['database']}"
+            )
 
         else:
             # Traditional database configuration (non-CNPG)
@@ -247,12 +255,16 @@ def create_keycloak_deployment(
 
             if spec.database.port:
                 env_vars.append(
-                    client.V1EnvVar(name="KC_DB_URL_PORT", value=str(spec.database.port))
+                    client.V1EnvVar(
+                        name="KC_DB_URL_PORT", value=str(spec.database.port)
+                    )
                 )
 
             if spec.database.database:
                 env_vars.append(
-                    client.V1EnvVar(name="KC_DB_URL_DATABASE", value=spec.database.database)
+                    client.V1EnvVar(
+                        name="KC_DB_URL_DATABASE", value=spec.database.database
+                    )
                 )
 
             if spec.database.username:
@@ -283,7 +295,9 @@ def create_keycloak_deployment(
                     )
             else:
                 # credentials_secret is just a secret name storing username/password (username already handled separately if provided)
-                credentials_secret_name = getattr(spec.database, "credentials_secret", None)
+                credentials_secret_name = getattr(
+                    spec.database, "credentials_secret", None
+                )
                 if credentials_secret_name:
                     env_vars.append(
                         client.V1EnvVar(
@@ -1113,9 +1127,7 @@ def create_admin_secret(
                 created_secret = core_api.create_namespaced_secret(
                     namespace=namespace, body=secret
                 )
-                logger.info(
-                    f"Created admin secret {secret_name} (attempt {attempt})"
-                )
+                logger.info(f"Created admin secret {secret_name} (attempt {attempt})")
                 return created_secret
             except ApiException as e:
                 if e.status == 409:  # AlreadyExists race condition
@@ -1136,6 +1148,7 @@ def create_admin_secret(
                             raise
                         # brief backoff then retry
                         import time
+
                         time.sleep(0.2 * attempt)
                         continue
                 # For other errors, only retry if it's a retryable 5xx
@@ -1147,6 +1160,7 @@ def create_admin_secret(
                     and attempt < max_attempts
                 ):
                     import time
+
                     logger.warning(
                         f"Transient error creating admin secret {secret_name} (status {e.status}) attempt {attempt}/{max_attempts}: {e}. Retrying..."
                     )

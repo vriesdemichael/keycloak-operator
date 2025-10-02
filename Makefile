@@ -126,7 +126,7 @@ setup-cluster: ## Ensure Kind cluster is running
 
 .PHONY: operator-logs
 operator-logs: ## Show operator logs
-	kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=100 -f
+	kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=100 -f1
 
 .PHONY: operator-status
 operator-status: ## Show operator status

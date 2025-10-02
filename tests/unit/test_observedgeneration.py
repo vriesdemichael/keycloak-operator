@@ -37,7 +37,9 @@ class MockStatus:
             self.attributes[name] = value
 
     def __getattr__(self, name):
-        return self.attributes.get(name)
+        if name in self.attributes:
+            return self.attributes[name]
+        raise AttributeError(name)
 
 
 class TestBaseReconcilerGenerationTracking:
@@ -146,11 +148,11 @@ class TestKeycloakReconcilerGenerationTracking:
             "database": {
                 "type": "postgresql",
                 "host": "localhost",
-                "name": "keycloak",
+                "database": "keycloak",
                 "username": "keycloak",
-                "password_secret": {"name": "db-secret", "key": "password"},
+                "credentials_secret": "db-secret",
             },
-            "admin_access": {
+            "admin": {
                 "username": "admin",
                 "password_secret": {"name": "admin-secret", "key": "password"},
             },
@@ -173,6 +175,9 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
+            patch.object(
+                keycloak_reconciler, "ensure_persistence", new_callable=AsyncMock
+            ),
             patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
@@ -201,11 +206,11 @@ class TestKeycloakReconcilerGenerationTracking:
             "database": {
                 "type": "postgresql",
                 "host": "localhost",
-                "name": "keycloak",
+                "database": "keycloak",
                 "username": "keycloak",
-                "password_secret": {"name": "db-secret", "key": "password"},
+                "credentials_secret": "db-secret",
             },
-            "admin_access": {
+            "admin": {
                 "username": "admin",
                 "password_secret": {"name": "admin-secret", "key": "password"},
             },
@@ -227,6 +232,9 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
+            patch.object(
+                keycloak_reconciler, "ensure_persistence", new_callable=AsyncMock
+            ),
             patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
@@ -257,11 +265,11 @@ class TestKeycloakReconcilerGenerationTracking:
             "database": {
                 "type": "postgresql",
                 "host": "localhost",
-                "name": "keycloak",
+                "database": "keycloak",
                 "username": "keycloak",
-                "password_secret": {"name": "db-secret", "key": "password"},
+                "credentials_secret": "db-secret",
             },
-            "admin_access": {
+            "admin": {
                 "username": "admin",
                 "password_secret": {"name": "admin-secret", "key": "password"},
             },
@@ -282,6 +290,9 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
+            patch.object(
+                keycloak_reconciler, "ensure_persistence", new_callable=AsyncMock
+            ),
             patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",

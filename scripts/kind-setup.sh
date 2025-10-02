@@ -98,7 +98,9 @@ setup_cluster() {
 
     # Install operator CRDs
     log "Installing Keycloak operator CRDs..."
-    kubectl apply -f k8s/crds/
+  kubectl apply -f k8s/crds/keycloak-crd.yaml
+  kubectl apply -f k8s/crds/keycloakclient-crd.yaml
+  kubectl apply -f k8s/crds/keycloakrealm-crd.yaml
 
     # Wait for CRDs to be established
     log "Waiting for CRDs to be established..."

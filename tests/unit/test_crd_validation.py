@@ -9,7 +9,16 @@ database types.
 import pytest
 from pydantic import ValidationError
 
-from keycloak_operator.models.keycloak import KeycloakDatabaseConfig
+from keycloak_operator.models.keycloak import (
+    CloudNativePGReference,
+    KeycloakDatabaseConfig,
+)
+
+BASE_DB_FIELDS = {
+    "host": "postgres.example.svc",
+    "database": "keycloak",
+    "credentials_secret": "postgres-credentials",
+}
 
 
 class TestDatabaseTypeValidation:
@@ -28,7 +37,13 @@ class TestDatabaseTypeValidation:
 
         for db_type in production_databases:
             # Should not raise ValidationError (minimal config for type validation)
-            database_config = KeycloakDatabaseConfig(type=db_type)
+            extra = {}
+            if db_type == "cnpg":
+                extra["cnpg_cluster"] = CloudNativePGReference(name="cnpg-cluster")
+            else:
+                extra.update(BASE_DB_FIELDS)
+
+            database_config = KeycloakDatabaseConfig(type=db_type, **extra)
             assert database_config.type == db_type
 
     def test_h2_database_rejected(self):
@@ -57,7 +72,7 @@ class TestDatabaseTypeValidation:
             KeycloakDatabaseConfig(type="POSTGRESQL")
 
         # Correct lowercase should pass
-        database_config = KeycloakDatabaseConfig(type="postgresql")
+        database_config = KeycloakDatabaseConfig(type="postgresql", **BASE_DB_FIELDS)
         assert database_config.type == "postgresql"
 
     def test_valid_production_types_comprehensive(self):
@@ -67,7 +82,13 @@ class TestDatabaseTypeValidation:
 
         for db_type in valid_types:
             # Should create successfully
-            config = KeycloakDatabaseConfig(type=db_type)
+            extra = {}
+            if db_type == "cnpg":
+                extra["cnpg_cluster"] = CloudNativePGReference(name="cnpg-cluster")
+            else:
+                extra.update(BASE_DB_FIELDS)
+
+            config = KeycloakDatabaseConfig(type=db_type, **extra)
             assert config.type == db_type
 
         # Test that H2 and other common types are NOT in the valid list
@@ -85,7 +106,9 @@ class TestPortValidation:
         valid_ports = [1, 5432, 3306, 1521, 1433, 65535]
 
         for port in valid_ports:
-            database_config = KeycloakDatabaseConfig(type="postgresql", port=port)
+            database_config = KeycloakDatabaseConfig(
+                type="postgresql", port=port, **BASE_DB_FIELDS
+            )
             assert database_config.port == port
 
     def test_invalid_ports_rejected(self):
@@ -98,9 +121,9 @@ class TestPortValidation:
 
     def test_default_port_behavior(self):
         """Test that port defaults work correctly."""
-        # Port should be None by default
-        database_config = KeycloakDatabaseConfig(type="postgresql")
-        assert database_config.port is None
+        # Port should default based on database type
+        database_config = KeycloakDatabaseConfig(type="postgresql", **BASE_DB_FIELDS)
+        assert database_config.port == 5432
 
 
 class TestSecurityRequirements:
@@ -108,7 +131,7 @@ class TestSecurityRequirements:
 
     def test_no_hardcoded_password_field(self):
         """Test that there is no direct password field in the model."""
-        database_config = KeycloakDatabaseConfig(type="postgresql")
+        database_config = KeycloakDatabaseConfig(type="postgresql", **BASE_DB_FIELDS)
 
         # Should not have a password field
         assert not hasattr(database_config, "password")
@@ -121,14 +144,19 @@ class TestSecurityRequirements:
         """Test that proper credential management options are available."""
         # Test with credentials_secret
         database_config = KeycloakDatabaseConfig(
-            type="postgresql", credentials_secret="my-db-secret"
+            type="postgresql",
+            credentials_secret="my-db-secret",
+            host=BASE_DB_FIELDS["host"],
+            database=BASE_DB_FIELDS["database"],
         )
         assert database_config.credentials_secret == "my-db-secret"
 
-        # Test without explicit credentials (should use defaults)
-        database_config = KeycloakDatabaseConfig(type="postgresql")
-        assert database_config.credentials_secret is None
-        assert database_config.external_secret is None
+        # Missing credential sources should raise a helpful validation error
+        with pytest.raises(ValidationError) as exc_info:
+            KeycloakDatabaseConfig(type="postgresql", host="db", database="kc")
+
+        error_message = str(exc_info.value)
+        assert "credentials" in error_message.lower()
 
 
 class TestBackwardCompatibilityValidation:
@@ -157,13 +185,22 @@ class TestBackwardCompatibilityValidation:
 
         for db_type in production_databases:
             # Should create successfully with minimal configuration
-            config = KeycloakDatabaseConfig(type=db_type)
+            extra = {}
+            if db_type == "cnpg":
+                extra["cnpg_cluster"] = CloudNativePGReference(name="cnpg-cluster")
+            else:
+                extra.update(BASE_DB_FIELDS)
+
+            config = KeycloakDatabaseConfig(type=db_type, **extra)
             assert config.type == db_type
 
     def test_cnpg_support_available(self):
         """Test that CloudNativePG support is available."""
         # CNPG should be a valid database type
-        config = KeycloakDatabaseConfig(type="cnpg")
+        config = KeycloakDatabaseConfig(
+            type="cnpg",
+            cnpg_cluster=CloudNativePGReference(name="cnpg-cluster"),
+        )
         assert config.type == "cnpg"
 
         # Should have CNPG-specific configuration options

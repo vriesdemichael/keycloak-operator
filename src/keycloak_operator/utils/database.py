@@ -147,7 +147,7 @@ class DatabaseConnectionManager:
             # Also include secret reference for deployment environment variables
             connection_info["password_secret"] = {
                 "name": secret_name,
-                "key": "password"
+                "key": "password",
             }
 
             logger.info(

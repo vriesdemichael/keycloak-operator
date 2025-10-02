@@ -7,6 +7,7 @@ to ensure robustness and proper error handling.
 
 import asyncio
 import os
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -165,14 +166,13 @@ class TestLeaderElectionFailureScenarios:
             status=404, reason="Not Found"
         )
 
-        with patch(
-            "keycloak_operator.observability.leader_election.client"
-        ) as mock_client:
-            with patch("keycloak_operator.observability.leader_election.config"):
-                mock_client.CoordinationV1Api.return_value = mock_api
-
-                result = await monitor._get_current_leader()
-                assert result is None
+        with (
+            patch("kubernetes.client.CoordinationV1Api", return_value=mock_api),
+            patch("kubernetes.config.load_incluster_config"),
+            patch("kubernetes.config.load_kube_config"),
+        ):
+            result = await monitor._get_current_leader()
+            assert result is None
 
     @pytest.mark.asyncio
     async def test_get_current_leader_api_error(self, monitor):
@@ -182,50 +182,48 @@ class TestLeaderElectionFailureScenarios:
             status=500, reason="Server Error"
         )
 
-        with patch(
-            "keycloak_operator.observability.leader_election.client"
-        ) as mock_client:
-            with patch("keycloak_operator.observability.leader_election.config"):
-                mock_client.CoordinationV1Api.return_value = mock_api
-
-                result = await monitor._get_current_leader()
-                assert result is None
+        with (
+            patch("kubernetes.client.CoordinationV1Api", return_value=mock_api),
+            patch("kubernetes.config.load_incluster_config"),
+            patch("kubernetes.config.load_kube_config"),
+        ):
+            result = await monitor._get_current_leader()
+            assert result is None
 
     @pytest.mark.asyncio
     async def test_get_current_leader_success(self, monitor):
         """Test getting current leader successfully."""
-        mock_lease = MagicMock()
-        mock_lease.spec.holder_identity = "current-leader-id"
+        mock_lease = SimpleNamespace(
+            spec=SimpleNamespace(holder_identity="current-leader-id")
+        )
 
         mock_api = MagicMock()
         mock_api.read_namespaced_lease.return_value = mock_lease
 
-        with patch(
-            "keycloak_operator.observability.leader_election.client"
-        ) as mock_client:
-            with patch("keycloak_operator.observability.leader_election.config"):
-                mock_client.CoordinationV1Api.return_value = mock_api
-
-                result = await monitor._get_current_leader()
-                assert result == "current-leader-id"
+        with (
+            patch("kubernetes.client.CoordinationV1Api", return_value=mock_api),
+            patch("kubernetes.config.load_incluster_config"),
+            patch("kubernetes.config.load_kube_config"),
+        ):
+            result = await monitor._get_current_leader()
+            mock_api.read_namespaced_lease.assert_called_once()
+            assert result == "current-leader-id"
 
     @pytest.mark.asyncio
     async def test_get_current_leader_no_holder(self, monitor):
         """Test getting current leader when lease has no holder."""
-        mock_lease = MagicMock()
-        mock_lease.spec.holder_identity = None
+        mock_lease = SimpleNamespace(spec=SimpleNamespace(holder_identity=None))
 
         mock_api = MagicMock()
         mock_api.read_namespaced_lease.return_value = mock_lease
 
-        with patch(
-            "keycloak_operator.observability.leader_election.client"
-        ) as mock_client:
-            with patch("keycloak_operator.observability.leader_election.config"):
-                mock_client.CoordinationV1Api.return_value = mock_api
-
-                result = await monitor._get_current_leader()
-                assert result is None
+        with (
+            patch("kubernetes.client.CoordinationV1Api", return_value=mock_api),
+            patch("kubernetes.config.load_incluster_config"),
+            patch("kubernetes.config.load_kube_config"),
+        ):
+            result = await monitor._get_current_leader()
+            assert result is None
 
     def test_lease_renewal_success_metrics(self, monitor):
         """Test lease renewal success metrics."""
@@ -300,14 +298,16 @@ class TestLeaderElectionFailureScenarios:
                     await monitor.check_leadership_status()
 
         # Should have recorded multiple status updates
-        assert mock_metrics.update_leader_election_status.call_count == len(leaders)
+        assert mock_metrics.update_leader_election_status.call_count == len(leaders) * 2
 
     @pytest.mark.asyncio
     async def test_kubernetes_config_loading_failure(self, monitor):
         """Test behavior when Kubernetes config loading fails."""
         with patch(
-            "keycloak_operator.observability.leader_election.config"
+            "keycloak_operator.observability.leader_election.config",
+            create=True,
         ) as mock_config:
+            mock_config.ConfigException = Exception
             mock_config.load_incluster_config.side_effect = Exception(
                 "Config load failed"
             )

@@ -433,7 +433,9 @@ class BaseReconciler(ABC):
         """Update status to indicate reconciliation is in progress."""
         status.phase = "Reconciling"
         status.message = message
-        status.last_reconcile_time = datetime.now(UTC).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
+        status.last_reconcile_time = timestamp
+        status.lastUpdated = timestamp
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
         self._add_condition(
@@ -453,6 +455,8 @@ class BaseReconciler(ABC):
             f"Resource is progressing: {message}",
             generation,
         )
+        # Clear any completed state markers while reconciliation is active
+        self._remove_condition(status, "Ready")
         # Clear previous states during reconciliation
         self._remove_condition(status, "Available")
         self._remove_condition(status, "Degraded")
@@ -466,7 +470,9 @@ class BaseReconciler(ABC):
         """Update status to indicate resource is ready."""
         status.phase = "Ready"
         status.message = message
-        status.last_reconcile_time = datetime.now(UTC).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
+        status.last_reconcile_time = timestamp
+        status.lastUpdated = timestamp
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
         self._add_condition(
@@ -491,7 +497,9 @@ class BaseReconciler(ABC):
         """Update status to indicate reconciliation failed."""
         status.phase = "Failed"
         status.message = message
-        status.last_reconcile_time = datetime.now(UTC).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
+        status.last_reconcile_time = timestamp
+        status.lastUpdated = timestamp
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
         self._add_condition(
@@ -523,7 +531,9 @@ class BaseReconciler(ABC):
         """Update status to indicate resource is degraded but partially functional."""
         status.phase = "Degraded"
         status.message = message
-        status.last_reconcile_time = datetime.now(UTC).isoformat()
+        timestamp = datetime.now(UTC).isoformat()
+        status.last_reconcile_time = timestamp
+        status.lastUpdated = timestamp
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
         # Resource is not ready but still partially available

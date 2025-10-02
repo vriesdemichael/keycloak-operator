@@ -155,9 +155,7 @@ async def test_service_account_realm_roles_assigned(
         user_id = service_account_user.get("id")
         assert user_id, "Service account user missing identifier"
 
-        role_mapping_endpoint = (
-            f"{admin_client.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
-        )
+        role_mapping_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
         mapping_response = admin_client.session.get(
             role_mapping_endpoint,
             timeout=admin_client.timeout,
