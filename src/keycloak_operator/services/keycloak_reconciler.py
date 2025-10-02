@@ -128,8 +128,10 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         # Always reconcile to ensure everything is in sync
         # Remove 'spec' from kwargs to avoid duplicate argument error
-        reconcile_kwargs = {k: v for k, v in kwargs.items() if k != 'spec'}
-        return await self.do_reconcile(new_spec, name, namespace, status, **reconcile_kwargs)
+        reconcile_kwargs = {k: v for k, v in kwargs.items() if k != "spec"}
+        return await self.do_reconcile(
+            new_spec, name, namespace, status, **reconcile_kwargs
+        )
 
     async def _update_ingress(
         self,
@@ -325,7 +327,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
         keycloak_spec = self._validate_spec(spec)
 
         # Perform production environment validation and get resolved database connection info
-        db_connection_info = await self.validate_production_settings(keycloak_spec, name, namespace)
+        db_connection_info = await self.validate_production_settings(
+            keycloak_spec, name, namespace
+        )
 
         # Ensure admin access first (required by deployment)
         await self.ensure_admin_access(keycloak_spec, name, namespace)
@@ -418,7 +422,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
         await self._validate_database_production_readiness(spec, namespace)
 
         # Validate database connectivity for all external databases
-        connection_info = await self._validate_database_connectivity(spec, name, namespace)
+        connection_info = await self._validate_database_connectivity(
+            spec, name, namespace
+        )
 
         # Additional production validation checks
         await self._validate_security_requirements(spec, namespace)
@@ -667,7 +673,11 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 )
 
     async def ensure_deployment(
-        self, spec: KeycloakSpec, name: str, namespace: str, db_connection_info: dict[str, Any] | None = None
+        self,
+        spec: KeycloakSpec,
+        name: str,
+        namespace: str,
+        db_connection_info: dict[str, Any] | None = None,
     ) -> None:
         """
         Ensure Keycloak deployment exists and is up to date.
@@ -838,7 +848,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         try:
             core_api.read_namespaced_secret(name=admin_secret_name, namespace=namespace)
-            self.logger.info(f"Admin secret {admin_secret_name} already exists - reusing credentials")
+            self.logger.info(
+                f"Admin secret {admin_secret_name} already exists - reusing credentials"
+            )
         except ApiException as e:
             if e.status == 404:
                 # Get username from spec, default to 'admin'
@@ -846,13 +858,17 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 if hasattr(spec, "admin") and hasattr(spec.admin, "username"):
                     username = spec.admin.username
 
-                self.logger.info(f"Generating new admin secret {admin_secret_name} for user {username}")
+                self.logger.info(
+                    f"Generating new admin secret {admin_secret_name} for user {username}"
+                )
                 admin_secret = create_admin_secret(
                     name=name,
                     namespace=namespace,
                     username=username,
                 )
-                self.logger.info(f"Created admin secret with auto-generated password: {admin_secret.metadata.name}")
+                self.logger.info(
+                    f"Created admin secret with auto-generated password: {admin_secret.metadata.name}"
+                )
             else:
                 raise
 

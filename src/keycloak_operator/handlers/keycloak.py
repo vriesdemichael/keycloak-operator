@@ -441,8 +441,7 @@ def monitor_keycloak_health(
         # Check that the Keycloak instance is properly configured
         try:
             # Get admin credentials and create Keycloak admin client
-            admin_secret_name = f"{name}-admin-credentials"
-            admin_credentials = get_admin_credentials(admin_secret_name, namespace)
+            admin_credentials = get_admin_credentials(name, namespace)
 
             if admin_credentials:
                 service_name = f"{name}-keycloak"

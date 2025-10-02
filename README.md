@@ -733,6 +733,22 @@ When this resource is reconciled the operator will:
 - Ensure the generated Kubernetes secret (`api-gateway-service-credentials`) is kept up to date.
 - Assign the listed realm and client roles to the service account user, removing the need for manual UI changes after deployment.
 
+##### Hands-on walkthrough
+
+Follow this quick path to exercise the feature end-to-end with the manifests in `examples/service-account/`:
+
+1. Prepare the local environment and Kind cluster: `make dev-setup`
+2. Build and deploy the operator into the cluster: `make deploy`
+3. Apply the sample realm and client definitions:
+  - `kubectl apply -f examples/service-account/realm.yaml`
+  - `kubectl apply -f examples/service-account/client.yaml`
+4. Inspect the rendered KeycloakClient status and confirm the generated secret:
+  - `kubectl get keycloakclients service-account-client -n default -o yaml`
+  - `kubectl get secret service-account-client-secret -n default -o yaml`
+5. (Optional) Sign in to the Keycloak admin console and verify the service account roles are present under **Clients → service-account-app → Service Account Roles**.
+
+These manifests mirror the automated tests and provide a repeatable manual validation of the service account workflow without touching the Keycloak UI for configuration changes.
+
 **Generated Secret:**
 ```yaml
 apiVersion: v1

@@ -360,6 +360,11 @@ def wait_for_keycloak_ready(
                     name=name,
                 )
                 status = kc.get("status", {}) or {}
+                if not status:
+                    # Status has not been populated yet; keep waiting even if the
+                    # deployment looks healthy so tests can validate status fields.
+                    return False
+
                 phase = status.get("phase")
                 # Look for condition-based readiness too
                 conditions = status.get("conditions", []) or []
@@ -375,8 +380,7 @@ def wait_for_keycloak_ready(
                 # CR not yet readable or transient error
                 pass
 
-            # Fallback: deployment ready even if CR not updated yet
-            return deployment_ready
+            return False
 
         return await wait_for_condition(_condition, timeout=timeout, interval=interval)
 

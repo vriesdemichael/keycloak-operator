@@ -610,6 +610,7 @@ class TestRealmBasicOperations:
             "metadata": {"name": realm_name, "namespace": test_namespace},
         }
         realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
+        realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
             # Create Keycloak instance first
@@ -707,12 +708,14 @@ class TestClientBasicOperations:
             "metadata": {"name": realm_name, "namespace": test_namespace},
         }
         realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
+        realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         client_manifest = {
             **sample_client_spec,
             "metadata": {"name": client_name, "namespace": test_namespace},
         }
         client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
+        client_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
             # Create Keycloak instance

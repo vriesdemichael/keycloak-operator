@@ -8,6 +8,16 @@
 - cleanup of old unused files
 
 
+---
+
+CRD fixes 
+keycloak.spec.admin_access -> least privilige dus geen custom admin access
+keycloak.spec.version -> version wordt bepaald door image
+keycloak.tls -> optional when using cert-manager, dan from ingress
+
+realm.enabled -> the resource being there manages enabled/disabled, dont allow this setting.
+---
+
 
 
 - Add issue templates (bug report, feature request) to .github/ISSUE_TEMPLATE/

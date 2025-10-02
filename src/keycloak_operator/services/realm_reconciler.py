@@ -5,13 +5,14 @@ This module handles the lifecycle of Keycloak realms including
 themes, authentication flows, identity providers, and user federation.
 """
 
+import json
 from typing import Any
 
 from kubernetes import client
 
 from ..errors import ValidationError
 from ..models.realm import KeycloakRealmSpec
-from ..utils.keycloak_admin import get_keycloak_admin_client
+from ..utils.keycloak_admin import KeycloakAdminError, get_keycloak_admin_client
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 
@@ -227,14 +228,75 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Check if realm already exists
         realm_name = spec.realm_name
-        existing_realm = admin_client.get_realm(realm_name)
+        realm_payload = spec.to_keycloak_config()
+        payload_json = json.dumps(realm_payload, default=str)
+        payload_preview = (
+            payload_json
+            if len(payload_json) <= 2048
+            else f"{payload_json[:2048]}...<truncated>"
+        )
+
+        self.logger.debug(
+            "Prepared realm configuration for apply",
+            keycloak_instance=keycloak_name,
+            realm_name=realm_name,
+            payload_preview=payload_preview,
+        )
+
+        try:
+            existing_realm = admin_client.get_realm(realm_name)
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                self.logger.info(
+                    "Realm %s not found, creating new realm", realm_name
+                )
+                existing_realm = None
+            else:
+                self.logger.error(
+                    "Failed to look up realm before apply",
+                    keycloak_instance=keycloak_name,
+                    realm_name=realm_name,
+                    status_code=exc.status_code,
+                    response_body=exc.body_preview(),
+                )
+                raise
 
         if existing_realm:
-            self.logger.info(f"Realm {realm_name} already exists, updating...")
-            admin_client.update_realm(realm_name, spec.to_keycloak_config())
+            self.logger.info(
+                f"Realm {realm_name} already exists, updating...",
+                keycloak_instance=keycloak_name,
+                realm_name=realm_name,
+            )
+            try:
+                admin_client.update_realm(realm_name, realm_payload)
+            except KeycloakAdminError as exc:
+                self.logger.error(
+                    "Realm update failed",
+                    keycloak_instance=keycloak_name,
+                    realm_name=realm_name,
+                    status_code=exc.status_code,
+                    response_body=exc.body_preview(),
+                    payload_preview=payload_preview,
+                )
+                raise
         else:
-            self.logger.info(f"Creating new realm {realm_name}")
-            admin_client.create_realm(spec.to_keycloak_config())
+            self.logger.info(
+                f"Creating new realm {realm_name}",
+                keycloak_instance=keycloak_name,
+                realm_name=realm_name,
+            )
+            try:
+                admin_client.create_realm(realm_payload)
+            except KeycloakAdminError as exc:
+                self.logger.error(
+                    "Realm creation failed",
+                    keycloak_instance=keycloak_name,
+                    realm_name=realm_name,
+                    status_code=exc.status_code,
+                    response_body=exc.body_preview(),
+                    payload_preview=payload_preview,
+                )
+                raise
 
     async def configure_themes(
         self, spec: KeycloakRealmSpec, name: str, namespace: str

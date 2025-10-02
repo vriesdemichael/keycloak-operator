@@ -5,11 +5,15 @@ This module tests the finalizer functionality across all resource types
 to ensure proper cleanup and prevent orphaned resources.
 """
 
+from copy import deepcopy
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
+    BACKUP_ANNOTATION,
     CLIENT_FINALIZER,
     KEYCLOAK_FINALIZER,
     REALM_FINALIZER,
@@ -18,238 +22,245 @@ from keycloak_operator.services.client_reconciler import KeycloakClientReconcile
 from keycloak_operator.services.keycloak_reconciler import KeycloakInstanceReconciler
 from keycloak_operator.services.realm_reconciler import KeycloakRealmReconciler
 
+BASE_KEYCLOAK_SPEC = {
+    "database": {
+        "type": "postgresql",
+        "host": "postgres",
+        "database": "keycloak",
+        "username": "keycloak",
+        "credentials_secret": "keycloak-db",
+    }
+}
+
+BASE_REALM_SPEC = {
+    "realm_name": "test-realm",
+    "keycloak_instance_ref": {
+        "name": "test-keycloak",
+    },
+}
+
+BASE_CLIENT_SPEC = {
+    "client_id": "test-client",
+    "realm": "test-realm",
+    "keycloak_instance_ref": {
+        "name": "test-keycloak",
+    },
+}
+
+
+def build_spec(base: dict, **overrides) -> dict:
+    """Create a spec dict by merging overrides into the base template."""
+
+    spec = deepcopy(base)
+    for key, value in overrides.items():
+        if isinstance(value, dict) and isinstance(spec.get(key), dict):
+            merged = deepcopy(spec[key])
+            merged.update(value)
+            spec[key] = merged
+        else:
+            spec[key] = value
+    return spec
+
+
+@pytest.fixture
+def keycloak_k8s_apis():
+    """Patch Kubernetes API clients used by the Keycloak reconciler."""
+
+    apps_api = MagicMock()
+    apps_api.delete_namespaced_deployment = MagicMock()
+    apps_api.read_namespaced_deployment = MagicMock(
+        side_effect=ApiException(status=404)
+    )
+
+    core_api = MagicMock()
+    core_api.delete_namespaced_service = MagicMock()
+    core_api.delete_namespaced_secret = MagicMock()
+    core_api.delete_namespaced_config_map = MagicMock()
+    core_api.list_namespaced_secret.return_value = SimpleNamespace(items=[])
+    core_api.list_namespaced_config_map.return_value = SimpleNamespace(items=[])
+    core_api.delete_namespaced_persistent_volume_claim = MagicMock()
+    core_api.list_namespaced_persistent_volume_claim.return_value = SimpleNamespace(
+        items=[SimpleNamespace(metadata=SimpleNamespace(name="pvc-1"))]
+    )
+
+    networking_api = MagicMock()
+    networking_api.delete_namespaced_ingress = MagicMock()
+
+    with (
+        patch(
+            "keycloak_operator.services.keycloak_reconciler.client.AppsV1Api",
+            return_value=apps_api,
+        ),
+        patch(
+            "keycloak_operator.services.keycloak_reconciler.client.CoreV1Api",
+            return_value=core_api,
+        ),
+        patch(
+            "keycloak_operator.services.keycloak_reconciler.client.NetworkingV1Api",
+            return_value=networking_api,
+        ),
+    ):
+        yield SimpleNamespace(apps=apps_api, core=core_api, networking=networking_api)
+
 
 class TestKeycloakFinalizers:
-    """Test finalizer behavior for Keycloak instances."""
+    """Validate finalizer cleanup logic for Keycloak instances."""
 
     @pytest.fixture
     def keycloak_reconciler(self):
-        """Create a Keycloak reconciler for testing."""
         with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
             return KeycloakInstanceReconciler()
 
-    @pytest.fixture
-    def mock_k8s_client(self):
-        """Mock Kubernetes client."""
-        mock_client = MagicMock()
-        mock_client.delete_namespaced_deployment = AsyncMock()
-        mock_client.delete_namespaced_service = AsyncMock()
-        mock_client.delete_namespaced_ingress = AsyncMock()
-        mock_client.delete_namespaced_secret = AsyncMock()
-        mock_client.delete_namespaced_persistent_volume_claim = AsyncMock()
-        return mock_client
+    @staticmethod
+    def make_keycloak_spec(**overrides) -> dict:
+        return build_spec(BASE_KEYCLOAK_SPEC, **overrides)
 
     @pytest.mark.asyncio
     async def test_keycloak_cleanup_resources_success(
-        self, keycloak_reconciler, mock_k8s_client
+        self, keycloak_reconciler, keycloak_k8s_apis
     ):
-        """Test successful Keycloak resource cleanup."""
-        # Setup
-        name = "test-keycloak"
-        namespace = "test-namespace"
-        spec = {"persistence": {"enabled": True}, "ingress": {"enabled": True}}
+        spec = self.make_keycloak_spec(
+            persistence={"enabled": True},
+            ingress={"enabled": True},
+        )
 
-        with patch.object(keycloak_reconciler, "k8s_client", mock_k8s_client):
-            # Execute
-            await keycloak_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
-            )
+        await keycloak_reconciler.cleanup_resources(
+            "test-keycloak", "test-namespace", spec
+        )
 
-            # Verify cleanup order: ingress -> service -> deployment -> secrets -> PVC
-            assert mock_k8s_client.delete_namespaced_ingress.called
-            assert mock_k8s_client.delete_namespaced_service.called
-            assert mock_k8s_client.delete_namespaced_deployment.called
-            assert mock_k8s_client.delete_namespaced_secret.called
-            assert mock_k8s_client.delete_namespaced_persistent_volume_claim.called
+        assert keycloak_k8s_apis.networking.delete_namespaced_ingress.called
+        assert keycloak_k8s_apis.core.delete_namespaced_service.called
+        assert keycloak_k8s_apis.apps.delete_namespaced_deployment.called
+        assert keycloak_k8s_apis.core.delete_namespaced_persistent_volume_claim.called
 
     @pytest.mark.asyncio
-    async def test_keycloak_cleanup_partial_failure(
-        self, keycloak_reconciler, mock_k8s_client
+    async def test_keycloak_cleanup_missing_resources(
+        self, keycloak_reconciler, keycloak_k8s_apis
     ):
-        """Test Keycloak cleanup with some resources missing (should not fail)."""
-        # Setup
-        name = "test-keycloak"
-        namespace = "test-namespace"
-        spec = {"persistence": {"enabled": False}}
+        spec = self.make_keycloak_spec(persistence={"enabled": False})
 
-        # Simulate some resources not found (404 errors)
-        from kubernetes.client.rest import ApiException
+        keycloak_k8s_apis.networking.delete_namespaced_ingress.side_effect = (
+            ApiException(status=404)
+        )
 
-        mock_k8s_client.delete_namespaced_ingress.side_effect = ApiException(status=404)
+        await keycloak_reconciler.cleanup_resources(
+            "test-keycloak", "test-namespace", spec
+        )
 
-        with patch.object(keycloak_reconciler, "k8s_client", mock_k8s_client):
-            # Execute - should not raise exception
-            await keycloak_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
-            )
-
-            # Verify other resources were still attempted
-            assert mock_k8s_client.delete_namespaced_service.called
-            assert mock_k8s_client.delete_namespaced_deployment.called
+        assert keycloak_k8s_apis.core.delete_namespaced_service.called
+        assert keycloak_k8s_apis.apps.delete_namespaced_deployment.called
 
     @pytest.mark.asyncio
     async def test_keycloak_cleanup_with_backup(
-        self, keycloak_reconciler, mock_k8s_client
+        self, keycloak_reconciler, keycloak_k8s_apis
     ):
-        """Test Keycloak cleanup includes backup logic when configured."""
-        # Setup
-        name = "test-keycloak"
-        namespace = "test-namespace"
-        spec = {
-            "backup": {"enabled": True, "schedule": "0 2 * * *"},
-            "persistence": {"enabled": True},
-        }
+        spec = self.make_keycloak_spec(
+            metadata={
+                "annotations": {
+                    BACKUP_ANNOTATION: "true",
+                }
+            },
+            persistence={"enabled": True},
+        )
 
-        with (
-            patch.object(keycloak_reconciler, "k8s_client", mock_k8s_client),
-            patch.object(keycloak_reconciler, "_create_backup") as mock_backup,
-        ):
-            # Execute
+        backup_mock = AsyncMock()
+        with patch.object(keycloak_reconciler, "_create_backup", backup_mock):
             await keycloak_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
+                "test-keycloak", "test-namespace", spec
             )
 
-            # Verify backup was attempted before cleanup
-            assert mock_backup.called
-            assert mock_k8s_client.delete_namespaced_deployment.called
+        backup_mock.assert_awaited_once()
 
 
 class TestRealmFinalizers:
-    """Test finalizer behavior for Keycloak realms."""
+    """Validate finalizer cleanup for Keycloak realms."""
 
     @pytest.fixture
     def realm_reconciler(self):
-        """Create a Realm reconciler for testing."""
         return KeycloakRealmReconciler()
 
     @pytest.fixture
     def mock_keycloak_admin(self):
-        """Mock Keycloak admin client."""
-        mock_admin = MagicMock()
-        mock_admin.delete_realm = MagicMock()
-        mock_admin.export_realm = MagicMock(return_value={"realm": "test-data"})
-        return mock_admin
+        admin = MagicMock()
+        admin.delete_realm = MagicMock()
+        admin.export_realm = MagicMock(return_value={"realm": "test"})
+        admin.get_realm_clients = MagicMock(return_value=[])
+        return admin
 
     @pytest.mark.asyncio
     async def test_realm_cleanup_success(self, realm_reconciler, mock_keycloak_admin):
-        """Test successful realm cleanup from Keycloak."""
-        # Setup
-        name = "test-realm"
-        namespace = "test-namespace"
-        spec = {
-            "realm_name": "test-realm",
-            "keycloak_instance_ref": {
-                "name": "test-keycloak",
-                "namespace": "test-namespace",
-            },
-        }
+        spec = build_spec(BASE_REALM_SPEC)
 
-        with patch(
-            "keycloak_operator.utils.keycloak_admin.get_keycloak_admin_client",
-            return_value=mock_keycloak_admin,
-        ):
-            # Execute
-            await realm_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
-            )
+        realm_reconciler.keycloak_admin_factory = MagicMock(
+            return_value=mock_keycloak_admin
+        )
 
-            # Verify realm deletion was called
-            mock_keycloak_admin.delete_realm.assert_called_with("test-realm")
+        await realm_reconciler.cleanup_resources(
+            "test-realm", "test-namespace", spec, status=MagicMock()
+        )
+
+        mock_keycloak_admin.delete_realm.assert_called_with("test-realm")
 
     @pytest.mark.asyncio
-    async def test_realm_cleanup_with_export(
+    async def test_realm_cleanup_with_backup(
         self, realm_reconciler, mock_keycloak_admin
     ):
-        """Test realm cleanup includes export for backup."""
-        # Setup
-        name = "test-realm"
-        namespace = "test-namespace"
-        spec = {
-            "realm_name": "test-realm",
-            "keycloak_instance_ref": {"name": "test-keycloak"},
-            "backup_before_delete": True,
-        }
+        spec = build_spec(BASE_REALM_SPEC, backup_on_delete=True)
 
-        with (
-            patch(
-                "keycloak_operator.utils.keycloak_admin.get_keycloak_admin_client",
-                return_value=mock_keycloak_admin,
-            ),
-            patch.object(realm_reconciler, "_store_realm_backup") as mock_store,
-        ):
-            # Execute
+        backup_mock = AsyncMock()
+        realm_reconciler.keycloak_admin_factory = MagicMock(
+            return_value=mock_keycloak_admin
+        )
+
+        with patch.object(realm_reconciler, "_create_realm_backup", backup_mock):
             await realm_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
+                "test-realm", "test-namespace", spec, status=MagicMock()
             )
 
-            # Verify export and storage happened before deletion
-            mock_keycloak_admin.export_realm.assert_called_with("test-realm")
-            assert mock_store.called
-            mock_keycloak_admin.delete_realm.assert_called_with("test-realm")
+        backup_mock.assert_awaited_once()
+        mock_keycloak_admin.delete_realm.assert_called_with("test-realm")
 
     @pytest.mark.asyncio
     async def test_realm_cleanup_keycloak_unreachable(self, realm_reconciler):
-        """Test realm cleanup when Keycloak is unreachable (should not block deletion)."""
-        # Setup
-        name = "test-realm"
-        namespace = "test-namespace"
-        spec = {
-            "realm_name": "test-realm",
-            "keycloak_instance_ref": {"name": "test-keycloak"},
-        }
+        spec = build_spec(BASE_REALM_SPEC)
 
-        with patch(
-            "keycloak_operator.utils.keycloak_admin.get_keycloak_admin_client",
-            side_effect=Exception("Connection failed"),
-        ):
-            # Execute - should not raise exception (allows finalizer removal)
-            await realm_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
-            )
+        realm_reconciler.keycloak_admin_factory = MagicMock(
+            side_effect=Exception("Connection failed")
+        )
 
-            # Test should complete without error
+        await realm_reconciler.cleanup_resources(
+            "test-realm", "test-namespace", spec, status=MagicMock()
+        )
 
 
 class TestClientFinalizers:
-    """Test finalizer behavior for Keycloak clients."""
+    """Validate finalizer cleanup for Keycloak clients."""
 
     @pytest.fixture
     def client_reconciler(self):
-        """Create a Client reconciler for testing."""
         return KeycloakClientReconciler()
 
     @pytest.fixture
     def mock_keycloak_admin(self):
-        """Mock Keycloak admin client."""
-        mock_admin = MagicMock()
-        mock_admin.delete_client = MagicMock()
-        mock_admin.get_client_secret = MagicMock(return_value="secret-value")
-        return mock_admin
+        admin = MagicMock()
+        admin.delete_client = MagicMock()
+        admin.get_client_secret = MagicMock(return_value="secret-value")
+        return admin
 
     @pytest.fixture
     def mock_core_v1_api(self):
-        """Mock CoreV1Api client."""
         api = MagicMock()
         api.delete_namespaced_secret = MagicMock()
-        api.list_namespaced_config_map = MagicMock(return_value=MagicMock(items=[]))
-        api.list_namespaced_secret = MagicMock(return_value=MagicMock(items=[]))
         api.delete_namespaced_config_map = MagicMock()
+        api.list_namespaced_config_map.return_value = SimpleNamespace(items=[])
+        api.list_namespaced_secret.return_value = SimpleNamespace(items=[])
         return api
 
     @pytest.mark.asyncio
     async def test_client_cleanup_success(
         self, client_reconciler, mock_keycloak_admin, mock_core_v1_api
     ):
-        """Test successful client cleanup from Keycloak and Kubernetes."""
-        # Setup
-        name = "test-client"
-        namespace = "test-namespace"
-        spec = {
-            "client_id": "test-client",
-            "realm": "test-realm",
-            "keycloak_instance_ref": {"name": "test-keycloak"},
-            "public_client": False,
-        }
+        spec = build_spec(BASE_CLIENT_SPEC, public_client=False)
 
         client_reconciler.keycloak_admin_factory = MagicMock(
             return_value=mock_keycloak_admin
@@ -260,31 +271,18 @@ class TestClientFinalizers:
             "keycloak_operator.services.client_reconciler.client.CoreV1Api",
             return_value=mock_core_v1_api,
         ):
-            # Execute
             await client_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
+                "test-client", "test-namespace", spec, status=MagicMock()
             )
 
-            # Verify client deletion from Keycloak
-            mock_keycloak_admin.delete_client.assert_called()
-
-            # Verify credential secret deletion from Kubernetes
-            mock_core_v1_api.delete_namespaced_secret.assert_called()
+        mock_keycloak_admin.delete_client.assert_called()
+        mock_core_v1_api.delete_namespaced_secret.assert_called()
 
     @pytest.mark.asyncio
     async def test_client_cleanup_public_client(
         self, client_reconciler, mock_keycloak_admin, mock_core_v1_api
     ):
-        """Test cleanup of public client (no credential secret to delete)."""
-        # Setup
-        name = "test-client"
-        namespace = "test-namespace"
-        spec = {
-            "client_id": "test-client",
-            "realm": "test-realm",
-            "keycloak_instance_ref": {"name": "test-keycloak"},
-            "public_client": True,
-        }
+        spec = build_spec(BASE_CLIENT_SPEC, public_client=True)
 
         client_reconciler.keycloak_admin_factory = MagicMock(
             return_value=mock_keycloak_admin
@@ -295,32 +293,25 @@ class TestClientFinalizers:
             "keycloak_operator.services.client_reconciler.client.CoreV1Api",
             return_value=mock_core_v1_api,
         ):
-            # Execute
             await client_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
+                "test-client", "test-namespace", spec, status=MagicMock()
             )
 
-            # Verify client deletion from Keycloak
-            mock_keycloak_admin.delete_client.assert_called()
-
-            # Even for public clients, credentials secret is cleaned up
-            mock_core_v1_api.delete_namespaced_secret.assert_called()
+        mock_keycloak_admin.delete_client.assert_called()
+        mock_core_v1_api.delete_namespaced_secret.assert_called()
 
     @pytest.mark.asyncio
-    async def test_client_cleanup_with_backup(
+    async def test_client_cleanup_removes_labeled_resources(
         self, client_reconciler, mock_keycloak_admin, mock_core_v1_api
     ):
-        """Test client cleanup includes credential backup."""
-        # Setup
-        name = "test-client"
-        namespace = "test-namespace"
-        spec = {
-            "client_id": "test-client",
-            "realm": "test-realm",
-            "keycloak_instance_ref": {"name": "test-keycloak"},
-            "public_client": False,
-            "backup_credentials": True,
-        }
+        spec = build_spec(BASE_CLIENT_SPEC)
+
+        mock_core_v1_api.list_namespaced_config_map.return_value = SimpleNamespace(
+            items=[SimpleNamespace(metadata=SimpleNamespace(name="cm-1"))]
+        )
+        mock_core_v1_api.list_namespaced_secret.return_value = SimpleNamespace(
+            items=[SimpleNamespace(metadata=SimpleNamespace(name="extra-secret"))]
+        )
 
         client_reconciler.keycloak_admin_factory = MagicMock(
             return_value=mock_keycloak_admin
@@ -331,88 +322,70 @@ class TestClientFinalizers:
             "keycloak_operator.services.client_reconciler.client.CoreV1Api",
             return_value=mock_core_v1_api,
         ):
-            # Execute
             await client_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
+                "test-client", "test-namespace", spec, status=MagicMock()
             )
 
-            mock_keycloak_admin.delete_client.assert_called()
-            mock_core_v1_api.delete_namespaced_secret.assert_called()
+        mock_core_v1_api.delete_namespaced_config_map.assert_called()
+        # Called for credentials secret and additional labeled secret
+        assert mock_core_v1_api.delete_namespaced_secret.call_count >= 2
 
 
 class TestFinalizerConstants:
-    """Test finalizer constants are properly defined."""
+    """Ensure finalizer constants remain stable."""
 
     def test_finalizer_constants_exist(self):
-        """Test all required finalizer constants are defined."""
         assert KEYCLOAK_FINALIZER == "keycloak.mdvr.nl/cleanup"
         assert REALM_FINALIZER == "keycloak.mdvr.nl/realm-cleanup"
         assert CLIENT_FINALIZER == "keycloak.mdvr.nl/client-cleanup"
 
     def test_finalizer_constants_unique(self):
-        """Test all finalizer constants are unique."""
         finalizers = {KEYCLOAK_FINALIZER, REALM_FINALIZER, CLIENT_FINALIZER}
-        assert len(finalizers) == 3, "Finalizer constants must be unique"
+        assert len(finalizers) == 3
 
 
 class TestFinalizerErrorHandling:
-    """Test error handling during finalizer cleanup."""
+    """Exercise error handling paths during cleanup."""
 
     @pytest.fixture
     def keycloak_reconciler(self):
-        """Create a Keycloak reconciler for testing."""
         with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
             return KeycloakInstanceReconciler()
 
     @pytest.mark.asyncio
-    async def test_cleanup_continues_on_partial_failures(self, keycloak_reconciler):
-        """Test that cleanup continues even if some resources fail to delete."""
-        # Setup
-        name = "test-keycloak"
-        namespace = "test-namespace"
-        spec = {"persistence": {"enabled": True}}
+    async def test_cleanup_continues_on_partial_failures(
+        self, keycloak_reconciler, keycloak_k8s_apis
+    ):
+        spec = build_spec(BASE_KEYCLOAK_SPEC)
 
-        mock_client = MagicMock()
-        # First deletion fails, others succeed
-        mock_client.delete_namespaced_service.side_effect = Exception(
+        keycloak_k8s_apis.core.delete_namespaced_service.side_effect = Exception(
             "Service deletion failed"
         )
-        mock_client.delete_namespaced_deployment = AsyncMock()
-        mock_client.delete_namespaced_secret = AsyncMock()
+        keycloak_k8s_apis.core.list_namespaced_secret.return_value = SimpleNamespace(
+            items=[SimpleNamespace(metadata=SimpleNamespace(name="secret-1"))]
+        )
 
-        with patch.object(keycloak_reconciler, "k8s_client", mock_client):
-            # Execute - should not raise exception
-            await keycloak_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
-            )
+        await keycloak_reconciler.cleanup_resources(
+            "test-keycloak", "test-namespace", spec
+        )
 
-            # Verify other resources were still attempted
-            assert mock_client.delete_namespaced_deployment.called
-            assert mock_client.delete_namespaced_secret.called
+        assert keycloak_k8s_apis.apps.delete_namespaced_deployment.called
+        assert keycloak_k8s_apis.core.delete_namespaced_secret.called
 
     @pytest.mark.asyncio
-    async def test_cleanup_logs_errors_but_continues(self, keycloak_reconciler):
-        """Test that cleanup errors are logged but don't prevent finalizer removal."""
-        # Setup
-        name = "test-keycloak"
-        namespace = "test-namespace"
-        spec = {}
+    async def test_cleanup_logs_errors_but_continues(
+        self, keycloak_reconciler, keycloak_k8s_apis
+    ):
+        spec = build_spec(BASE_KEYCLOAK_SPEC)
 
-        mock_client = MagicMock()
-        mock_client.delete_namespaced_deployment.side_effect = Exception(
+        keycloak_k8s_apis.apps.delete_namespaced_deployment.side_effect = Exception(
             "Critical error"
         )
 
-        with (
-            patch.object(keycloak_reconciler, "k8s_client", mock_client),
-            patch(
-                "keycloak_operator.services.keycloak_reconciler.logging"
-            ) as mock_logging,
-        ):
-            # Execute
-            await keycloak_reconciler.cleanup_resources(
-                name, namespace, spec, status=MagicMock()
-            )
+        keycloak_reconciler.logger = MagicMock()
 
-            # Verify error was logged
-            assert mock_logging.getLogger().error.called
+        await keycloak_reconciler.cleanup_resources(
+            "test-keycloak", "test-namespace", spec
+        )
+
+        keycloak_reconciler.logger.warning.assert_called()

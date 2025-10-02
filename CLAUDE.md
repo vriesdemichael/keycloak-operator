@@ -48,16 +48,10 @@ curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.20.0/kind-linux-amd64
 chmod +x ./kind
 sudo mv ./kind /usr/local/bin/kind
 
-# macOS
-brew install kind
-
-# Windows
-choco install kind
 ```
 
 **Docker Installation:**
 - Linux: Follow [Docker Engine installation guide](https://docs.docker.com/engine/install/)
-- macOS/Windows: Install [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 
 ### Development Habits
 At the end of your task list always do:
