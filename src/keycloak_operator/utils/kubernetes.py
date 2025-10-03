@@ -244,8 +244,16 @@ def create_keycloak_deployment(
 
         else:
             # Traditional database configuration (non-CNPG)
-            # Database type
-            env_vars.append(client.V1EnvVar(name="KC_DB", value=spec.database.type))
+            # Database type - map CRD values to Keycloak values
+            db_type_mapping = {
+                "postgresql": "postgres",
+                "mariadb": "mariadb",
+                "mysql": "mysql",
+                "oracle": "oracle",
+                "mssql": "mssql",
+            }
+            kc_db_type = db_type_mapping.get(spec.database.type, spec.database.type)
+            env_vars.append(client.V1EnvVar(name="KC_DB", value=kc_db_type))
 
             # Database connection details
             if spec.database.host:
@@ -336,7 +344,7 @@ def create_keycloak_deployment(
         liveness_probe=client.V1Probe(
             http_get=client.V1HTTPGetAction(
                 path="/health/live",
-                port=8080,  # Use main HTTP port in dev mode
+                port=9000,  # Use management port for health endpoints
             ),
             initial_delay_seconds=60,
             period_seconds=30,
@@ -344,7 +352,7 @@ def create_keycloak_deployment(
         readiness_probe=client.V1Probe(
             http_get=client.V1HTTPGetAction(
                 path="/health/ready",
-                port=8080,  # Use main HTTP port in dev mode
+                port=9000,  # Use management port for health endpoints
             ),
             initial_delay_seconds=30,
             period_seconds=10,

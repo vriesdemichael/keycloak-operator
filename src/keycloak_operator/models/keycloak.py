@@ -188,6 +188,9 @@ class KeycloakDatabaseConfig(BaseModel):
     username: str | None = Field(None, description="Database username")
 
     # Secret management options
+    password_secret: SecretReference | None = Field(
+        None, description="Secret reference for database password (recommended)"
+    )
     credentials_secret: str | None = Field(
         None, description="Kubernetes secret name with database credentials"
     )

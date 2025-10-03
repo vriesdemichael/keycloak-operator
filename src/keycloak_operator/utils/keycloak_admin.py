@@ -17,8 +17,14 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
+from pydantic import BaseModel
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+from keycloak_operator.models.keycloak_api import (
+    ClientRepresentation,
+    RealmRepresentation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -314,28 +320,83 @@ class KeycloakAdminClient:
                 status_code=getattr(getattr(e, "response", None), "status_code", None),
             ) from e
 
+    def _make_validated_request(
+        self,
+        method: str,
+        endpoint: str,
+        request_model: BaseModel | None = None,
+        response_model: type[BaseModel] | None = None,
+        **kwargs,
+    ) -> Any:
+        """
+        Make an authenticated request with automatic Pydantic validation.
+
+        This method wraps _make_request to provide automatic validation of
+        request and response data using Pydantic models.
+
+        Args:
+            method: HTTP method (GET, POST, PUT, DELETE)
+            endpoint: API endpoint (relative to admin base)
+            request_model: Pydantic model instance to serialize as request body
+            response_model: Pydantic model class to validate response data
+            **kwargs: Additional arguments passed to _make_request
+
+        Returns:
+            Validated response model instance if response_model is provided,
+            otherwise the raw Response object
+
+        Raises:
+            KeycloakAdminError: If the API request fails
+            ValidationError: If response data doesn't match the expected model
+        """
+        # Validate and serialize request payload
+        if request_model is not None:
+            # Convert Pydantic model to JSON-compatible dict
+            # exclude_none: Don't send null values to API
+            # by_alias: Use camelCase field names for API
+            kwargs["json"] = request_model.model_dump(exclude_none=True, by_alias=True)
+
+        # Make the HTTP request
+        response = self._make_request(method, endpoint, **kwargs)
+
+        # Validate and parse response
+        if response_model is not None and response.status_code < 300:
+            # Parse response JSON and validate against model
+            return response_model.model_validate(response.json())
+
+        return response
+
     # Realm Management Methods
 
-    def create_realm(self, realm_config: dict[str, Any]) -> dict[str, Any]:
+    def create_realm(
+        self, realm_config: RealmRepresentation | dict[str, Any]
+    ) -> RealmRepresentation:
         """
-                Create a new realm in Keycloak.
-
-                Args:
-                    realm_config: Realm configuration dictionary
-
-                Returns:
-                    Created realm information
-
         Create a new realm in Keycloak.
-        """
-        logger.info(f"Creating realm: {realm_config.get('realm', 'unknown')}")
 
-        # Implement realm creation
-        response = self._make_request("POST", "realms", data=realm_config)
+        Args:
+            realm_config: Realm configuration as RealmRepresentation or dict
+
+        Returns:
+            Created realm information as RealmRepresentation
+
+        Raises:
+            KeycloakAdminError: If realm creation fails
+        """
+        # Convert dict to model if needed
+        if isinstance(realm_config, dict):
+            realm_config = RealmRepresentation.model_validate(realm_config)
+
+        logger.info(f"Creating realm: {realm_config.realm or 'unknown'}")
+
+        # Use validated request
+        response = self._make_validated_request(
+            "POST", "realms", request_model=realm_config
+        )
 
         if response.status_code == 201:
             logger.info("Realm created successfully")
-            # Return realm details
+            # Return the realm config as validated model
             return realm_config
         else:
             raise KeycloakAdminError(
@@ -343,21 +404,23 @@ class KeycloakAdminClient:
                 response.status_code,
             )
 
-    def get_realm(self, realm_name: str) -> dict[str, Any] | None:
+    def get_realm(self, realm_name: str) -> RealmRepresentation | None:
         """
-                Get realm configuration from Keycloak.
-
-                Args:
-                    realm_name: Name of the realm to retrieve
-
-                Returns:
-                    Realm configuration or None if not found
-
         Get realm configuration from Keycloak.
+
+        Args:
+            realm_name: Name of the realm to retrieve
+
+        Returns:
+            Realm configuration as RealmRepresentation or None if not found
+
+        Raises:
+            KeycloakAdminError: If the request fails (except 404)
         """
         try:
-            response = self._make_request("GET", f"realms/{realm_name}")
-            return response.json()
+            return self._make_validated_request(
+                "GET", f"realms/{realm_name}", response_model=RealmRepresentation
+            )
         except KeycloakAdminError as e:
             if e.status_code == 404:
                 return None
@@ -433,27 +496,34 @@ class KeycloakAdminClient:
             return None
 
     def update_realm(
-        self, realm_name: str, realm_config: dict[str, Any]
-    ) -> dict[str, Any]:
+        self, realm_name: str, realm_config: RealmRepresentation | dict[str, Any]
+    ) -> RealmRepresentation:
         """
-                Update realm configuration.
-
-                Args:
-                    realm_name: Name of the realm to update
-                    realm_config: Updated realm configuration
-
-                Returns:
-                    Updated realm configuration
-
         Update realm configuration.
+
+        Args:
+            realm_name: Name of the realm to update
+            realm_config: Updated realm configuration as RealmRepresentation or dict
+
+        Returns:
+            Updated realm configuration as RealmRepresentation
+
+        Raises:
+            KeycloakAdminError: If realm update fails
         """
+        # Convert dict to model if needed
+        if isinstance(realm_config, dict):
+            realm_config = RealmRepresentation.model_validate(realm_config)
+
         logger.info(f"Updating realm: {realm_name}")
 
-        # Implement realm update
-        response = self._make_request("PUT", f"realms/{realm_name}", data=realm_config)
+        # Use validated request
+        response = self._make_validated_request(
+            "PUT", f"realms/{realm_name}", request_model=realm_config
+        )
 
         if response.status_code == 204:  # No content on successful update
-            # Return the updated config (may need separate GET)
+            # Return the updated config
             return realm_config
         else:
             raise KeycloakAdminError(
@@ -512,34 +582,43 @@ class KeycloakAdminClient:
         return None
 
     def create_client(
-        self, client_config: dict[str, Any], realm_name: str = "master"
+        self,
+        client_config: ClientRepresentation | dict[str, Any],
+        realm_name: str = "master",
     ) -> str | None:
         """
         Create a new client in the specified realm.
 
         Args:
-            client_config: Client configuration dictionary
+            client_config: Client configuration as ClientRepresentation or dict
             realm_name: Name of the realm (defaults to "master")
 
         Returns:
-            Client ID if successful, None otherwise
+            Client UUID if successful, None otherwise
+
+        Raises:
+            KeycloakAdminError: If client creation fails
         """
-        client_id = client_config.get("clientId", "unknown")
+        # Convert dict to model if needed
+        if isinstance(client_config, dict):
+            client_config = ClientRepresentation.model_validate(client_config)
+
+        client_id = client_config.client_id or "unknown"
         logger.info(f"Creating client '{client_id}' in realm '{realm_name}'")
 
         try:
-            response = self._make_request(
-                "POST", f"realms/{realm_name}/clients", json=client_config
+            response = self._make_validated_request(
+                "POST", f"realms/{realm_name}/clients", request_model=client_config
             )
 
             if response.status_code == 201:
-                # Get the created client ID from Location header
+                # Get the created client UUID from Location header
                 location = response.headers.get("Location", "")
-                created_client_id = location.split("/")[-1] if location else None
+                created_client_uuid = location.split("/")[-1] if location else None
                 logger.info(
-                    f"Successfully created client '{client_id}' with ID: {created_client_id}"
+                    f"Successfully created client '{client_id}' with UUID: {created_client_uuid}"
                 )
-                return created_client_id
+                return created_client_uuid
             else:
                 logger.error(
                     f"Failed to create client '{client_id}': {response.status_code}"
@@ -553,7 +632,7 @@ class KeycloakAdminClient:
     def update_client(
         self,
         client_uuid: str,
-        client_config: dict[str, Any],
+        client_config: ClientRepresentation | dict[str, Any],
         realm_name: str = "master",
     ) -> bool:
         """
@@ -561,22 +640,29 @@ class KeycloakAdminClient:
 
         Args:
             client_uuid: The UUID of the client to update
-            client_config: Updated client configuration
+            client_config: Updated client configuration as ClientRepresentation or dict
             realm_name: Name of the realm (defaults to "master")
 
         Returns:
-            True if successful, False otherwise
+            True if successful
+
+        Raises:
+            KeycloakAdminError: If client update fails
         """
-        client_id = client_config.get("clientId", "unknown")
+        # Convert dict to model if needed
+        if isinstance(client_config, dict):
+            client_config = ClientRepresentation.model_validate(client_config)
+
+        client_id = client_config.client_id or "unknown"
         logger.info(
             f"Updating client '{client_id}' (UUID: {client_uuid}) in realm '{realm_name}'"
         )
 
         try:
-            response = self._make_request(
+            response = self._make_validated_request(
                 "PUT",
                 f"realms/{realm_name}/clients/{client_uuid}",
-                json=client_config,
+                request_model=client_config,
             )
 
             if response.status_code == 204:
