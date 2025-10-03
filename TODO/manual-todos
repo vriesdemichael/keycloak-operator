@@ -47,3 +47,6 @@
 - [ ] `realm.enabled` → the resource being there manages enabled/disabled, don't allow this setting
 
 ---
+
+
+Operator env vars, how do you pass them? If it is in an ENV field, then lets formalize them in a CRD field.

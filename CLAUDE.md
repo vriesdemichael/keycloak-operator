@@ -27,6 +27,7 @@ This is an early-stage alternative Keycloak operator project built to replace th
 - RBAC-based authorization instead of Keycloak's built-in security
 - Cross-namespace resource watching and management
 - GitOps-first design for declarative configuration
+- First class support for CNPG as gitops database
 
 ## Development Setup
 During development the environment is setup using uv and make.
@@ -327,4 +328,8 @@ Do not user `EOF` constructions for applying, this requires manual approval ever
 
 ## Planning
 When creating a plan be detailed. Expect the developer that will follow your plan to be a complete idiot (but do not mention it in the plan). You will have to be explicit in the steps to be taken. Treat the implementer of the plan as an intern, which needs the work to be validated.
+
+## Git
+When commiting changes to git you are to use conventional commit messages.
+Be strict with breaking changes, versioning is managed by semantic versioning, so commit messages matter!
 
