@@ -33,9 +33,9 @@ jobs:
       fail-fast: false
       matrix:
         k8s-version:
-          - v1.27.0
           - v1.28.0
           - v1.29.0
+          - v1.34.0
 
     steps:
     - name: Checkout code
@@ -79,7 +79,7 @@ jobs:
         kubectl get nodes
         kubectl get pods -A
 
-    - name: Deploy operator using 2025 best practices
+    - name: Deploy operator
       run: |
         # Use Makefile for deployment following 2025 operator best practices
         # Note: Kind cluster already exists, so setup-cluster will detect and reuse it
