@@ -16,6 +16,8 @@ import pytest
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
+
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -239,7 +241,7 @@ def sample_keycloak_spec(test_secrets, cnpg_cluster) -> dict[str, Any]:
         "apiVersion": "keycloak.mdvr.nl/v1",
         "kind": "Keycloak",
         "spec": {
-            "image": "quay.io/keycloak/keycloak:23.0.0",
+            "image": DEFAULT_KEYCLOAK_IMAGE,
             "replicas": 1,
             "database": database_block,
             "admin_access": {
