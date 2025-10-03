@@ -704,16 +704,25 @@ class KeycloakInstanceReconciler(BaseReconciler):
             self.logger.info(f"Keycloak deployment {deployment_name} already exists")
         except ApiException as e:
             if e.status == 404:
-                deployment = create_keycloak_deployment(
-                    name=name,
-                    namespace=namespace,
-                    spec=spec,
-                    k8s_client=self.kubernetes_client,
-                    db_connection_info=db_connection_info,
-                )
-                self.logger.info(
-                    f"Created Keycloak deployment: {deployment.metadata.name}"
-                )
+                try:
+                    deployment = create_keycloak_deployment(
+                        name=name,
+                        namespace=namespace,
+                        spec=spec,
+                        k8s_client=self.kubernetes_client,
+                        db_connection_info=db_connection_info,
+                    )
+                    self.logger.info(
+                        f"Created Keycloak deployment: {deployment.metadata.name}"
+                    )
+                except ApiException as create_error:
+                    if create_error.status == 409:
+                        # Resource created by another reconciliation - this is fine
+                        self.logger.info(
+                            f"Deployment {deployment_name} already exists (created concurrently)"
+                        )
+                    else:
+                        raise
             else:
                 raise
 
@@ -742,13 +751,24 @@ class KeycloakInstanceReconciler(BaseReconciler):
             self.logger.info(f"Keycloak service {service_name} already exists")
         except ApiException as e:
             if e.status == 404:
-                service = create_keycloak_service(
-                    name=name,
-                    namespace=namespace,
-                    spec=spec,
-                    k8s_client=self.kubernetes_client,
-                )
-                self.logger.info(f"Created Keycloak service: {service.metadata.name}")
+                try:
+                    service = create_keycloak_service(
+                        name=name,
+                        namespace=namespace,
+                        spec=spec,
+                        k8s_client=self.kubernetes_client,
+                    )
+                    self.logger.info(
+                        f"Created Keycloak service: {service.metadata.name}"
+                    )
+                except ApiException as create_error:
+                    if create_error.status == 409:
+                        # Resource created by another reconciliation - this is fine
+                        self.logger.info(
+                            f"Service {service_name} already exists (created concurrently)"
+                        )
+                    else:
+                        raise
             else:
                 raise
 
@@ -779,13 +799,22 @@ class KeycloakInstanceReconciler(BaseReconciler):
             self.logger.info(f"PVC {pvc_name} already exists")
         except ApiException as e:
             if e.status == 404:
-                pvc = create_persistent_volume_claim(
-                    name=name,
-                    namespace=namespace,
-                    size=getattr(spec.persistence, "size", "10Gi"),
-                    storage_class=getattr(spec.persistence, "storage_class", None),
-                )
-                self.logger.info(f"Created PVC: {pvc.metadata.name}")
+                try:
+                    pvc = create_persistent_volume_claim(
+                        name=name,
+                        namespace=namespace,
+                        size=getattr(spec.persistence, "size", "10Gi"),
+                        storage_class=getattr(spec.persistence, "storage_class", None),
+                    )
+                    self.logger.info(f"Created PVC: {pvc.metadata.name}")
+                except ApiException as create_error:
+                    if create_error.status == 409:
+                        # Resource created by another reconciliation - this is fine
+                        self.logger.info(
+                            f"PVC {pvc_name} already exists (created concurrently)"
+                        )
+                    else:
+                        raise
             else:
                 raise
 
@@ -816,13 +845,22 @@ class KeycloakInstanceReconciler(BaseReconciler):
             self.logger.info(f"Ingress {ingress_name} already exists")
         except ApiException as e:
             if e.status == 404:
-                ingress = create_keycloak_ingress(
-                    name=name,
-                    namespace=namespace,
-                    spec=spec,
-                    k8s_client=self.kubernetes_client,
-                )
-                self.logger.info(f"Created ingress: {ingress.metadata.name}")
+                try:
+                    ingress = create_keycloak_ingress(
+                        name=name,
+                        namespace=namespace,
+                        spec=spec,
+                        k8s_client=self.kubernetes_client,
+                    )
+                    self.logger.info(f"Created ingress: {ingress.metadata.name}")
+                except ApiException as create_error:
+                    if create_error.status == 409:
+                        # Resource created by another reconciliation - this is fine
+                        self.logger.info(
+                            f"Ingress {ingress_name} already exists (created concurrently)"
+                        )
+                    else:
+                        raise
             else:
                 raise
 
