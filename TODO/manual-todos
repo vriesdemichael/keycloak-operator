@@ -1,33 +1,49 @@
-- Consistent event emission
-- Integration test on local cluster (not ready for collaboration on github yet)
-- future: integration test with github actions if at all possible
-- Create a documentation using material-mkdocs (like pydantic has)
-- github actions setup (both here and in github)
+# Manual TODOs - Organized by Priority
 
-- cleanup of old info in claude and readme
-- cleanup of old unused files
+**Last Updated:** 2025-10-03
 
+## Testing (P0 - Critical)
+- [x] Integration test on local cluster (✅ partial - cluster works, operator functional, some tests timeout)
+- [ ] Consistent event emission
+- [ ] Integration test with GitHub Actions (future)
+
+## Documentation (P1 - High)
+- [ ] Create documentation using material-mkdocs (like pydantic has)
+- [ ] Add "Status/Maturity" section to README explaining production-readiness
+- [ ] Add "Roadmap" section to README
+- [ ] Document compatibility matrix (Keycloak versions, K8s/OpenShift versions) in docs
+- [ ] Add CONTRIBUTING.md with uv setup instructions
+- [ ] Cleanup of old info in CLAUDE.md and README.md
+- [ ] Cleanup of old unused files
+
+## CI/CD Setup (P1 - High)
+- [ ] GitHub Actions setup (both here and in GitHub)
+- [ ] Set up ghcr.io image publishing in GitHub Actions (push latest on main, semver tags on releases)
+- [ ] Integrate release-please for automated semantic releases
+- [ ] Add CI status badges to README
+
+## GitHub Templates (P2 - Medium)
+- [ ] Add issue templates (bug report, feature request) to .github/ISSUE_TEMPLATE/
+- [ ] Add PR template to .github/pull_request_template.md with basic checklist
+
+## Deployment (P2 - Medium)
+- [ ] Create minimal Helm chart for operator deployment
+
+## Future Considerations (P3 - Low)
+- [ ] Consider ADRs for future architectural decisions (skip for now if docs cover it)
 
 ---
 
-CRD fixes 
-keycloak.spec.admin_access -> least privilige dus geen custom admin access
-keycloak.spec.version -> version wordt bepaald door image
-keycloak.tls -> optional when using cert-manager, dan from ingress
+## CRD Design Improvements
 
-realm.enabled -> the resource being there manages enabled/disabled, dont allow this setting.
+**Priority:** P1 (these affect API stability)
+
+### Keycloak CRD
+- [ ] `keycloak.spec.admin_access` → least privilege, no custom admin access
+- [ ] `keycloak.spec.version` → version determined by image
+- [ ] `keycloak.tls` → optional when using cert-manager, from ingress
+
+### Realm CRD
+- [ ] `realm.enabled` → the resource being there manages enabled/disabled, don't allow this setting
+
 ---
-
-
-
-- Add issue templates (bug report, feature request) to .github/ISSUE_TEMPLATE/
-- Add PR template to .github/pull_request_template.md with basic checklist
-- Set up ghcr.io image publishing in GitHub Actions(push latest on main, semver tags on releases)
-- Create minimal Helm chart for operator deployment
-- Add CI status badges to README
-- Integrate release-please for automated semantic releases
-- Add "Status/Maturity" section to README explaining production-readiness
-- Add "Roadmap" section to README
-- Document compatibility matrix (Keycloak versions, K8s/OpenShift versions) in docs
-- Add CONTRIBUTING.md with uv setup instructions
-- Consider ADRs for future architectural decisions (skip for now if docs cover it)

@@ -22,22 +22,22 @@ install-integration: ## Install integration test dependencies
 # Code quality
 .PHONY: lint
 lint: ## Run linting checks
-	uv run ruff check
-
-.PHONY: lint-fix
-lint-fix: ## Run linting with auto-fix
 	uv run ruff check --fix
 
 .PHONY: format
 format: ## Format code
 	uv run ruff format
 
-.PHONY: format-check
+.PHONY: format
 format-check: ## Check code formatting
-	uv run ruff format --check
+	uv run ruff format
+
+.PHONY: type-check
+type-check: ## Run type checking
+	uv run ty check
 
 .PHONY: quality
-quality: lint format-check ## Run all code quality checks
+quality: lint format type-check
 
 # Testing (following 2025 operator best practices)
 .PHONY: test
@@ -48,12 +48,10 @@ test-unit: ## Run unit tests only
 	uv run pytest tests/unit/ -v -m "not integration"
 
 .PHONY: test-integration
-test-integration: deploy ## Run integration tests (auto-deploys operator)
-	@echo "Running integration tests against existing cluster..."
+test-integration: kind-teardown kind-setup deploy ## Run integration tests (always on fresh cluster)
+	@echo "Running integration tests on fresh cluster..."
 	uv run --group integration pytest tests/integration/ -v -m integration
 
-.PHONY: test-all
-test-all: test ## Alias for complete test suite
 
 .PHONY: test-cov
 test-cov: ## Run tests with coverage
@@ -93,7 +91,7 @@ build: ## Build operator Docker image
 build-test: ## Build operator Docker image for testing
 	docker build -t keycloak-operator:test .
 
-# Deployment (following 2025 operator best practices)
+# Deployment
 .PHONY: deploy
 deploy: deploy-local ## Deploy operator (standard target name)
 
