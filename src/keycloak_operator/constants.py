@@ -55,6 +55,7 @@ CONDITION_UNKNOWN = "Unknown"
 
 # Default configuration values
 DEFAULT_KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.4.0"
+MINIMUM_KEYCLOAK_VERSION = "25.0.0"  # Minimum version for management port support
 DEFAULT_KEYCLOAK_PORT = 8080
 DEFAULT_KEYCLOAK_HTTPS_PORT = 8443
 DEFAULT_HEALTH_PORT = 9000

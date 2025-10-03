@@ -10,6 +10,7 @@ from typing import Any
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
+from ..constants import DEFAULT_KEYCLOAK_IMAGE
 from ..errors import (
     DatabaseValidationError,
     ExternalServiceError,
@@ -18,6 +19,7 @@ from ..errors import (
 )
 from ..models.keycloak import KeycloakSpec
 from ..utils.keycloak_admin import get_keycloak_admin_client
+from ..utils.validation import validate_keycloak_version
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 
@@ -325,6 +327,10 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         # Parse and validate the specification
         keycloak_spec = self._validate_spec(spec)
+
+        # Validate Keycloak version supports management port (required for health checks)
+        image = keycloak_spec.image or DEFAULT_KEYCLOAK_IMAGE
+        validate_keycloak_version(image)
 
         # Perform production environment validation and get resolved database connection info
         db_connection_info = await self.validate_production_settings(

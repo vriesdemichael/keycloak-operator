@@ -29,6 +29,15 @@ This is an early-stage alternative Keycloak operator project built to replace th
 - GitOps-first design for declarative configuration
 - First class support for CNPG as gitops database
 
+### Keycloak Version Requirements
+- **Minimum Version**: Keycloak 25.0.0 or later
+- **Reason**: The separate management interface (port 9000) was introduced in Keycloak 25.0.0
+- **Impact**: Earlier versions do not support `KC_HTTP_MANAGEMENT_PORT` and will fail health checks
+- **Default Version**: Keycloak 26.4.0 (defined in `src/keycloak_operator/constants.py`)
+- **Validation**: The operator automatically validates Keycloak versions and rejects unsupported versions during reconciliation
+
+When using custom Keycloak images, ensure they are version 25.0.0 or later. The operator will log a warning if it cannot determine the version from the image tag (e.g., digest-based images).
+
 ## Development Setup
 During development the environment is setup using uv and make.
 Always prefer the make command for actions over manually doing them unless the configured actions are not sufficient.
@@ -324,7 +333,7 @@ For `kubectl` use `kubectl create` instead of `kubectl apply` whenever possible,
 
 Prefer not to change the directory. Keep in the same directory as this file. The construction (cd somedir && cmd) is known to change your working dir, which confuses you.
 
-Do not user `EOF` constructions for applying, this requires manual approval every time because it cannot be targeted by auto approval rules properly. Prefer a tmp file, which you then ofcourse will delete afterwards.
+Do not use ` cat << 'EOF' | kubectl create -f -` constructions for applying, this requires manual approval every time because it cannot be targeted by auto approval rules properly. Prefer a tmp file, which you then ofcourse will delete afterwards.
 
 ## Planning
 When creating a plan be detailed. Expect the developer that will follow your plan to be a complete idiot (but do not mention it in the plan). You will have to be explicit in the steps to be taken. Treat the implementer of the plan as an intern, which needs the work to be validated.
