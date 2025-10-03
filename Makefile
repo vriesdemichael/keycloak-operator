@@ -129,7 +129,6 @@ operator-status: ## Show operator status
 	@echo "CRDs:"
 	@kubectl get crd | grep keycloak || echo "No Keycloak CRDs found"
 
-# Development workflows (following 2025 operator best practices)
 .PHONY: dev-setup
 dev-setup: install setup-cluster ## Full development environment setup
 	@echo "Development environment ready!"
