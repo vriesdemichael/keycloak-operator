@@ -2,10 +2,27 @@
 
 **Welcome!** This guide will help you implement missing functionality in the Keycloak operator. It's designed for developers who are eager to learn but may not be familiar with the codebase yet.
 
+## Recent Updates - 2025-10-03
+
+### ✅ Completed Features
+- **Service Account Role Mappings** ✅ IMPLEMENTED
+  - See `tests/unit/services/test_client_reconciler.py` for implementation examples
+  - Realm roles and client roles both supported
+- **API Model Validation Layer** ✅ ADDED
+  - Pydantic models available: `src/keycloak_operator/models/keycloak_api.py`
+  - Test examples: `tests/unit/test_keycloak_api_models.py`
+  - Use these models for new features to ensure type safety!
+
+### 🔧 New Tools Available
+- `tests/unit/test_keycloak_admin_api_models.py` - Shows how to test admin client methods
+- Validation wrapper: `_make_validated_request()` in `keycloak_admin.py:318-364`
+
+---
+
 ## Table of Contents
 - [Getting Started](#getting-started)
 - [Understanding the Codebase](#understanding-the-codebase)
-- [Priority 1: Service Account Role Mappings](#priority-1-service-account-role-mappings)
+- [Priority 1: Service Account Role Mappings](#priority-1-service-account-role-mappings) ✅ DONE
 - [Priority 2: Password Policy Configuration](#priority-2-password-policy-configuration)
 - [Priority 3: SMTP Configuration](#priority-3-smtp-configuration)
 - [Priority 4: Authorization Services](#priority-4-authorization-services)
