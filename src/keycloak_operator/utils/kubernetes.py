@@ -19,6 +19,8 @@ from typing import Any
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
+
 logger = logging.getLogger(__name__)
 
 
@@ -323,7 +325,7 @@ def create_keycloak_deployment(
     # TODO: Use start --optimized with pre-built image once we have custom Keycloak images
     container = client.V1Container(
         name="keycloak",
-        image=spec.image or "quay.io/keycloak/keycloak:26.4.0",
+        image=spec.image or DEFAULT_KEYCLOAK_IMAGE,
         command=["/opt/keycloak/bin/kc.sh"],
         args=["start-dev"],
         ports=[
