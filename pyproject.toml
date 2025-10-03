@@ -98,6 +98,8 @@ dev = [
     "ruff>=0.13.1",
     "ty>=0.0.1a21",
     "types-requests>=2.32.4.20250913",
+    "datamodel-code-generator[http]>=0.25.0",
+    "pyyaml>=6.0.0",
 ]
 docs = [
     "mkdocs>=1.6.0",
