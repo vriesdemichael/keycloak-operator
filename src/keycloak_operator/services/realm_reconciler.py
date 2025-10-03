@@ -247,9 +247,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             existing_realm = admin_client.get_realm(realm_name)
         except KeycloakAdminError as exc:
             if getattr(exc, "status_code", None) == 404:
-                self.logger.info(
-                    "Realm %s not found, creating new realm", realm_name
-                )
+                self.logger.info("Realm %s not found, creating new realm", realm_name)
                 existing_realm = None
             else:
                 self.logger.error(

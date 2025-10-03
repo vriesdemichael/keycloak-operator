@@ -86,6 +86,11 @@ class StructuredFormatter(logging.Formatter):
             "audit",
             "database_type",
             "cluster_name",
+            "payload_preview",
+            "keycloak_instance",
+            "realm_name",
+            "http_status",
+            "response_body",
         ]
 
         for field in structured_fields:
