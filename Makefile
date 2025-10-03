@@ -11,14 +11,6 @@ help: ## Show this help message
 install: ## Install development dependencies
 	uv sync --all-extras
 
-.PHONY: install-dev
-install-dev: ## Install development dependencies only
-	uv sync --group dev
-
-.PHONY: install-integration
-install-integration: ## Install integration test dependencies
-	uv sync --group integration
-
 # Code quality
 .PHONY: lint
 lint: ## Run linting checks
@@ -28,10 +20,6 @@ lint: ## Run linting checks
 format: ## Format code
 	uv run ruff format
 
-.PHONY: format
-format-check: ## Check code formatting
-	uv run ruff format
-
 .PHONY: type-check
 type-check: ## Run type checking
 	uv run ty check
@@ -39,27 +27,23 @@ type-check: ## Run type checking
 .PHONY: quality
 quality: lint format type-check
 
-# Testing (following 2025 operator best practices)
+# Testing
 .PHONY: test
-test: quality test-unit test-integration ## Run complete test suite (unit + integration)
+test: quality test-unit test-integration
 
 .PHONY: test-unit
 test-unit: ## Run unit tests only
 	uv run pytest tests/unit/ -v -m "not integration"
 
 .PHONY: test-integration
-test-integration: kind-teardown kind-setup deploy ## Run integration tests (always on fresh cluster)
+test-integration: kind-teardown kind-setup deploy
 	@echo "Running integration tests on fresh cluster..."
 	uv run --group integration pytest tests/integration/ -v -m integration
 
 
 .PHONY: test-cov
-test-cov: ## Run tests with coverage
-	uv run pytest tests/unit/ --cov=keycloak_operator --cov-report=term --cov-report=html
-
-.PHONY: test-fast
-test-fast: ## Run fast tests only (exclude slow tests)
-	uv run pytest tests/ -v -m "not slow"
+test-cov: kind-teardown kind-setup deploy  ## Same as test, but with coverage
+	uv run pytest tests --cov=keycloak_operator --cov-report=term --cov-report=html
 
 # Kind cluster management
 .PHONY: kind-setup
@@ -93,7 +77,7 @@ build-test: ## Build operator Docker image for testing
 
 # Deployment
 .PHONY: deploy
-deploy: deploy-local ## Deploy operator (standard target name)
+deploy: deploy-local ## Deploy operator (standard target name) TODO: fix up with actual production deploy when images and manifest are stored externally.
 
 .PHONY: deploy-local
 deploy-local: build-test setup-cluster install-cnpg ## Deploy operator to local Kind cluster (with CNPG if not already present)
@@ -108,6 +92,10 @@ deploy-local: build-test setup-cluster install-cnpg ## Deploy operator to local 
 	kubectl apply -f -
 	# Force a rollout to ensure latest local image is used even if spec unchanged
 	kubectl patch deployment keycloak-operator -n keycloak-system -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"restarted-at\":\"$$(date -u +%Y%m%d%H%M%S)\"}}}}}" >/dev/null 2>&1 || true
+	@echo "Waiting for operator to be ready..."
+	kubectl rollout status deployment keycloak-operator -n keycloak-system --timeout=60s
+	@echo "✓ Operator deployed successfully!"
+
 
 .PHONY: install-cnpg
 install-cnpg: ## Install CloudNativePG operator (idempotent)
@@ -123,8 +111,12 @@ setup-cluster: ## Ensure Kind cluster is running
 	fi
 
 .PHONY: operator-logs
-operator-logs: ## Show operator logs
-	kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=100 -f1
+operator-logs: ## Show recent operator logs (last 200 lines)
+	kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=200
+
+.PHONY: operator-logs-tail
+operator-logs-tail: ## Tail operator logs (follow mode)
+	kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=100 -f
 
 .PHONY: operator-status
 operator-status: ## Show operator status
@@ -144,11 +136,7 @@ dev-setup: install setup-cluster ## Full development environment setup
 	@echo "Run 'make deploy' to deploy the operator"
 	@echo "Run 'make test' to run complete test suite"
 
-.PHONY: dev-test
-dev-test: quality test-unit ## Run development tests (quality + unit tests)
 
-.PHONY: dev-full-test
-dev-full-test: test ## Run full development test suite
 
 .PHONY: clean
 clean: ## Clean up development artifacts
@@ -163,20 +151,7 @@ clean: ## Clean up development artifacts
 clean-all: clean kind-teardown ## Clean up everything including Kind cluster
 	docker system prune -f
 
-# CI simulation (following 2025 operator best practices)
-.PHONY: ci-test
-ci-test: ## Simulate CI testing locally
-	@echo "Running CI simulation..."
-	make test
 
-.PHONY: test-watch
-test-watch: ## Run tests in watch mode for development
-	@echo "Running tests in watch mode (press Ctrl+C to stop)..."
-	while true; do \
-		make test-unit; \
-		echo "Waiting for changes... (press Ctrl+C to stop)"; \
-		sleep 2; \
-	done
 
 # Documentation
 .PHONY: docs-serve
