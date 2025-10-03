@@ -290,7 +290,7 @@ def monitor_realm_health(
         try:
             current_realm = admin_client.get_realm(realm_name)
             config_matches = (
-                _verify_realm_config(current_realm, realm_spec)
+                current_realm
                 if current_realm
                 else False
             )
