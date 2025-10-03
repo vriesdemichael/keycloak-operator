@@ -325,3 +325,6 @@ Prefer not to change the directory. Keep in the same directory as this file. The
 
 Do not user `EOF` constructions for applying, this requires manual approval every time because it cannot be targeted by auto approval rules properly. Prefer a tmp file, which you then ofcourse will delete afterwards.
 
+## Planning
+When creating a plan be detailed. Expect the developer that will follow your plan to be a complete idiot (but do not mention it in the plan). You will have to be explicit in the steps to be taken. Treat the implementer of the plan as an intern, which needs the work to be validated.
+
