@@ -87,7 +87,7 @@ def load_crd_schema(crd_filename: str) -> dict[str, Any]:
         spec_schema = schema["properties"]["spec"]
         return spec_schema.get("properties", {})
     except (KeyError, IndexError, TypeError) as e:
-        raise KeyError(f"Unexpected CRD structure in {crd_filename}: {e}")
+        raise KeyError(f"Unexpected CRD structure in {crd_filename}: {e}") from e
 
 
 def get_pydantic_schema(model_class: type[BaseModel]) -> dict[str, Any]:
@@ -180,17 +180,12 @@ def types_match(crd_type: str, pydantic_type_schema: dict[str, Any]) -> bool:
         return True
 
     # Handle type aliases
-    if crd_type in TYPE_MAPPING:
-        if pydantic_type in TYPE_MAPPING[crd_type]:
-            return True
+    if crd_type in TYPE_MAPPING and pydantic_type in TYPE_MAPPING[crd_type]:
+        return True
 
     # Handle union types (Pydantic might have Optional[Type] = Type | None)
-    if pydantic_type.startswith("union["):
-        # If CRD type appears in union, consider it a match
-        if crd_type in pydantic_type:
-            return True
-
-    return False
+    # If CRD type appears in union, consider it a match
+    return pydantic_type.startswith("union[") and crd_type in pydantic_type
 
 
 def compare_field(
@@ -275,15 +270,14 @@ def compare_field(
         if pydantic_items:
             # Check if array item types match
             crd_item_type = crd_field["items"].get("type")
-            if crd_item_type:
-                if not types_match(crd_item_type, pydantic_items):
-                    pydantic_item_type = normalize_pydantic_type(pydantic_items)
-                    mismatches.append(
-                        f"Field '{full_path}' array items have type mismatch\n"
-                        f"  CRD item type: {crd_item_type}\n"
-                        f"  Pydantic item type: {pydantic_item_type}\n"
-                        f"  Fix: Ensure array item types match"
-                    )
+            if crd_item_type and not types_match(crd_item_type, pydantic_items):
+                pydantic_item_type = normalize_pydantic_type(pydantic_items)
+                mismatches.append(
+                    f"Field '{full_path}' array items have type mismatch\n"
+                    f"  CRD item type: {crd_item_type}\n"
+                    f"  Pydantic item type: {pydantic_item_type}\n"
+                    f"  Fix: Ensure array item types match"
+                )
 
     return mismatches
 

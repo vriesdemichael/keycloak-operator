@@ -289,11 +289,7 @@ def monitor_realm_health(
         # Verify realm configuration matches spec
         try:
             current_realm = admin_client.get_realm(realm_name)
-            config_matches = (
-                current_realm
-                if current_realm
-                else False
-            )
+            config_matches = current_realm if current_realm else False
         except Exception as e:
             logger.warning(f"Failed to verify realm configuration: {e}")
             config_matches = False
