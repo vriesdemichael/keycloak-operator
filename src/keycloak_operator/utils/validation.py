@@ -15,6 +15,8 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
+from keycloak_operator.constants import MINIMUM_KEYCLOAK_VERSION
+
 logger = logging.getLogger(__name__)
 
 
@@ -78,6 +80,53 @@ def _parse_kubernetes_quantity(quantity: str) -> float:
         return float(quantity)
     except ValueError as e:
         raise ValueError(f"Invalid quantity format: {quantity}") from e
+
+
+def _parse_version(version_string: str) -> tuple[int, int, int]:
+    """
+    Parse a semantic version string into major, minor, patch tuple.
+
+    Args:
+        version_string: Version string like "25.0.1" or "26.4.0"
+
+    Returns:
+        Tuple of (major, minor, patch) as integers
+
+    Raises:
+        ValueError: If version format is invalid
+    """
+    match = re.match(r"^(\d+)\.(\d+)\.(\d+)", version_string)
+    if not match:
+        raise ValueError(f"Invalid version format: {version_string}")
+
+    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+
+
+def _extract_version_from_image(image: str) -> str | None:
+    """
+    Extract version tag from container image reference.
+
+    Args:
+        image: Container image reference like "quay.io/keycloak/keycloak:26.4.0"
+
+    Returns:
+        Version string or None if no version tag found
+    """
+    # Skip digest-based images
+    if "@sha256:" in image:
+        return None
+
+    # Extract tag after last colon
+    if ":" not in image:
+        return None
+
+    tag = image.split(":")[-1]
+
+    # Check if tag looks like a version (starts with digit)
+    if tag and tag[0].isdigit():
+        return tag
+
+    return None
 
 
 class ValidationError(Exception):
@@ -440,6 +489,53 @@ def validate_image_reference(image: str) -> None:
     logger.debug(f"Validated image reference: {image}")
 
 
+def validate_keycloak_version(image: str) -> None:
+    """
+    Validate Keycloak version supports required features (management port).
+
+    The management interface with separate port 9000 was introduced in Keycloak 25.0.0.
+    Earlier versions do not support KC_HTTP_MANAGEMENT_PORT and will fail health checks.
+
+    Args:
+        image: Container image reference
+
+    Raises:
+        ValidationError: If Keycloak version is too old and doesn't support management port
+
+    """
+    version_str = _extract_version_from_image(image)
+
+    if not version_str:
+        logger.warning(
+            f"Could not extract version from image '{image}' - skipping version validation. "
+            f"Ensure the image uses Keycloak {MINIMUM_KEYCLOAK_VERSION} or later for management port support."
+        )
+        return
+
+    try:
+        version = _parse_version(version_str)
+        minimum_version = _parse_version(MINIMUM_KEYCLOAK_VERSION)
+
+        if version < minimum_version:
+            raise ValidationError(
+                f"Keycloak version {version_str} is not supported. "
+                f"Minimum required version is {MINIMUM_KEYCLOAK_VERSION}. "
+                f"Earlier versions do not support the management interface (port 9000) "
+                f"required for health checks and metrics. "
+                f"Please upgrade to Keycloak {MINIMUM_KEYCLOAK_VERSION} or later."
+            )
+
+        logger.debug(
+            f"Keycloak version {version_str} meets minimum requirement ({MINIMUM_KEYCLOAK_VERSION})"
+        )
+
+    except ValueError as e:
+        logger.warning(
+            f"Could not parse version from image tag '{version_str}': {e}. "
+            f"Ensure the image uses Keycloak {MINIMUM_KEYCLOAK_VERSION} or later for management port support."
+        )
+
+
 def validate_environment_variables(env_vars: dict[str, Any]) -> None:
     """
     Validate environment variable configuration.
@@ -765,6 +861,7 @@ def validate_complete_resource(
         image = spec.get("image")
         if image:
             validate_image_reference(image)
+            validate_keycloak_version(image)
 
         resources = spec.get("resources")
         if resources:
