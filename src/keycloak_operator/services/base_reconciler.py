@@ -592,14 +592,13 @@ class BaseReconciler(ABC):
                 filtered.append(c)
         status.conditions = filtered
 
-        # Add new condition following Kubernetes 2025 best practices
         condition = {
             "type": condition_type,
             "status": condition_status,
             "reason": reason,
             "message": message,
             "lastTransitionTime": datetime.now(UTC).isoformat(),
-            "observedGeneration": generation,  # 2025 best practice: per-condition observedGeneration
+            "observedGeneration": generation,
         }
         status.conditions.append(condition)
 
