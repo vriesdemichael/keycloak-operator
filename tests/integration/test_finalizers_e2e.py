@@ -120,9 +120,6 @@ class TestFinalizersE2E:
         except ApiException as e:
             pytest.fail(f"Failed to test finalizer cleanup: {e}")
 
-    @pytest.mark.skip(
-        reason="Temporarily disabled - shared Keycloak instance scope issue in parallel execution"
-    )
     async def test_realm_finalizer_behavior(
         self,
         k8s_custom_objects,
