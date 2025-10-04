@@ -400,8 +400,6 @@ def class_scoped_namespace(k8s_core_v1, request) -> str:
 
     This allows tests within a class to share resources like Keycloak instances,
     significantly reducing test execution time.
-
-    Note: Synchronous fixture for pytest-xdist compatibility.
     """
     namespace_name = f"test-{os.urandom(4).hex()}"
 
@@ -462,11 +460,13 @@ def class_scoped_test_secrets(k8s_core_v1, class_scoped_namespace) -> dict[str, 
 
 @pytest.fixture(scope="class")
 def class_scoped_cnpg_cluster(
-    k8s_client, class_scoped_namespace, cnpg_installed, wait_for_condition
+    k8s_client, class_scoped_namespace, cnpg_installed
 ) -> dict[str, str] | None:
     """Create a CNPG cluster that lives for entire test class."""
     if not cnpg_installed:
         return None
+
+    import time
 
     from kubernetes import dynamic
 
@@ -500,51 +500,50 @@ def class_scoped_cnpg_cluster(
         if e.status != 409:  # 409 AlreadyExists
             raise
 
-    # Wait for cluster to be ready
-    async def cluster_ready():
+    # Wait for cluster to be ready (synchronous polling)
+    timeout = 420
+    interval = 5
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
         try:
             obj = cluster_api.get(name=cluster_name, namespace=class_scoped_namespace)
             phase = obj.to_dict().get("status", {}).get("phase")
-            if phase != "Cluster in healthy state":
-                return False
-            # Confirm app secret existence
-            core = client.CoreV1Api(k8s_client)
-            try:
-                core.read_namespaced_secret(
-                    f"{cluster_name}-app", class_scoped_namespace
-                )
-                return True
-            except ApiException:
-                return False
+            if phase == "Cluster in healthy state":
+                # Confirm app secret existence
+                core = client.CoreV1Api(k8s_client)
+                try:
+                    core.read_namespaced_secret(
+                        f"{cluster_name}-app", class_scoped_namespace
+                    )
+                    return {"name": cluster_name, "database": db_name}
+                except ApiException:
+                    pass
         except ApiException:
-            return False
+            pass
+        time.sleep(interval)
 
-    # Run async wait synchronously for pytest-xdist compatibility
-    ready = asyncio.run(wait_for_condition(cluster_ready, timeout=420, interval=5))
-    if not ready:
-        pytest.skip("CNPG cluster was not ready in time")
-
-    return {"name": cluster_name, "database": db_name}
+    pytest.skip("CNPG cluster was not ready in time")
 
 
 @pytest.fixture(scope="class")
 def shared_keycloak_instance(
     k8s_custom_objects,
+    k8s_apps_v1,
     class_scoped_namespace,
     class_scoped_test_secrets,
     class_scoped_cnpg_cluster,
-    wait_for_keycloak_ready,
 ) -> dict[str, str]:
     """Create a shared Keycloak instance for all tests in a class.
 
     This significantly reduces test execution time by reusing one Keycloak instance
     across multiple tests instead of creating a new one for each test.
 
-    Note: Synchronous fixture for pytest-xdist compatibility.
-
     Returns:
         dict with 'name' and 'namespace' of the shared Keycloak instance
     """
+    import time
+
     keycloak_name = "shared-keycloak"
 
     # Build Keycloak spec
@@ -600,14 +599,51 @@ def shared_keycloak_instance(
         if e.status != 409:  # Allow already exists for class reuse
             raise
 
-    # Wait for Keycloak to be ready (run async wait synchronously for pytest-xdist)
-    ready = asyncio.run(
-        wait_for_keycloak_ready(keycloak_name, class_scoped_namespace, timeout=420)
-    )
-    if not ready:
-        pytest.fail(f"Shared Keycloak instance {keycloak_name} did not become ready")
+    # Wait for Keycloak to be ready (synchronous polling for pytest-xdist compatibility)
+    timeout = 420
+    interval = 5
+    start_time = time.time()
+    deployment_name = f"{keycloak_name}-keycloak"
 
-    return {"name": keycloak_name, "namespace": class_scoped_namespace}
+    while time.time() - start_time < timeout:
+        try:
+            # Check deployment readiness
+            deployment = k8s_apps_v1.read_namespaced_deployment(
+                name=deployment_name, namespace=class_scoped_namespace
+            )
+            desired = deployment.spec.replicas or 1
+            ready = deployment.status.ready_replicas or 0
+
+            # Check CR status
+            kc = k8s_custom_objects.get_namespaced_custom_object(
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=class_scoped_namespace,
+                plural="keycloaks",
+                name=keycloak_name,
+            )
+            status = kc.get("status", {}) or {}
+            phase = status.get("phase")
+            conditions = status.get("conditions", []) or []
+            ready_condition_true = any(
+                c.get("type") == "Ready" and c.get("status") == "True"
+                for c in conditions
+            )
+
+            if (
+                ready >= desired
+                and status
+                and (phase in ("Running", "Ready") or ready_condition_true)
+            ):
+                return {"name": keycloak_name, "namespace": class_scoped_namespace}
+
+        except ApiException:
+            pass
+
+        time.sleep(interval)
+
+    pytest.fail(f"Shared Keycloak instance {keycloak_name} did not become ready")
+    return {"name": "", "namespace": ""}  # Never reached, but satisfies type checker
 
 
 @pytest.fixture
