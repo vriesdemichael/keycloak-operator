@@ -8,8 +8,6 @@ import uuid
 import pytest
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
-
 
 @pytest.mark.integration
 @pytest.mark.requires_cluster
@@ -27,6 +25,7 @@ class TestServiceAccountRoles:
         sample_client_spec,
         wait_for_condition,
         wait_for_keycloak_ready,
+        keycloak_port_forward,
     ) -> None:
         """End-to-end verification that realm roles are assigned to service accounts.
 
@@ -139,8 +138,20 @@ class TestServiceAccountRoles:
 
             await _wait_resource_ready("keycloakrealms", realm_name)
 
-            # Create admin client and ensure custom realm role exists
-            admin_client = get_keycloak_admin_client(keycloak_name, namespace)
+            # Set up port-forward to access Keycloak from host
+            local_port = await keycloak_port_forward(keycloak_name, namespace)
+
+            # Create admin client using localhost (via port-forward)
+            from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+            from keycloak_operator.utils.kubernetes import get_admin_credentials
+
+            username, password = get_admin_credentials(keycloak_name, namespace)
+            admin_client = KeycloakAdminClient(
+                server_url=f"http://localhost:{local_port}",
+                username=username,
+                password=password,
+            )
+            admin_client.authenticate()
 
             role_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/roles"
             response = admin_client.session.post(
