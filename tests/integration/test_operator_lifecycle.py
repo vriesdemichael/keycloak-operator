@@ -128,169 +128,73 @@ class TestOperatorLifecycle:
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestBasicKeycloakDeployment:
-    """Test basic Keycloak resource deployment."""
+    """Test basic Keycloak resource deployment using a shared instance."""
 
     async def test_create_keycloak_resource(
         self,
         k8s_custom_objects,
-        test_namespace,
-        sample_keycloak_spec,
-        wait_for_condition,
+        shared_keycloak_instance,
     ):
-        """Test creating a basic Keycloak resource."""
-        keycloak_name = "test-keycloak"
-
-        # Create Keycloak resource
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
+        """Test that the shared Keycloak resource was created successfully."""
+        keycloak_name = shared_keycloak_instance["name"]
+        namespace = shared_keycloak_instance["namespace"]
 
         try:
-            # Create the resource
-            k8s_custom_objects.create_namespaced_custom_object(
+            # Verify the shared resource exists
+            resource = k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloaks",
-                body=keycloak_manifest,
+                name=keycloak_name,
             )
-
-            # Wait for resource to be processed
-            async def check_resource_created():
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=test_namespace,
-                        plural="keycloaks",
-                        name=keycloak_name,
-                    )
-                    return resource is not None
-                except ApiException:
-                    return False
-
-            assert await wait_for_condition(check_resource_created, timeout=180), (
-                "Keycloak resource was not created successfully"
-            )
+            assert resource is not None, "Keycloak resource was not created"
 
         except ApiException as e:
-            pytest.fail(f"Failed to create Keycloak resource: {e}")
-
-        finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
-                )
+            pytest.fail(f"Failed to verify Keycloak resource: {e}")
 
     async def test_keycloak_finalizer_added(
         self,
         k8s_custom_objects,
-        test_namespace,
-        sample_keycloak_spec,
-        wait_for_condition,
+        shared_keycloak_instance,
     ):
-        """Test that finalizers are properly added to Keycloak resources."""
-        keycloak_name = "test-keycloak-finalizer"
-
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
+        """Test that finalizers are properly added to the shared Keycloak resource."""
+        keycloak_name = shared_keycloak_instance["name"]
+        namespace = shared_keycloak_instance["namespace"]
 
         try:
-            # Create the resource
-            k8s_custom_objects.create_namespaced_custom_object(
+            # Verify finalizer exists on shared resource
+            resource = k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloaks",
-                body=keycloak_manifest,
+                name=keycloak_name,
             )
-
-            # Wait for finalizer to be added
-            async def check_finalizer_added():
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=test_namespace,
-                        plural="keycloaks",
-                        name=keycloak_name,
-                    )
-                    finalizers = resource.get("metadata", {}).get("finalizers", [])
-                    return "keycloak.mdvr.nl/cleanup" in finalizers
-                except ApiException:
-                    return False
-
-            assert await wait_for_condition(check_finalizer_added, timeout=300), (
+            finalizers = resource.get("metadata", {}).get("finalizers", [])
+            assert "keycloak.mdvr.nl/cleanup" in finalizers, (
                 "Finalizer was not added to Keycloak resource"
             )
 
         except ApiException as e:
-            pytest.fail(f"Failed to test finalizer behavior: {e}")
-
-        finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
-                )
+            pytest.fail(f"Failed to verify finalizer: {e}")
 
     async def test_keycloak_deployment_created(
         self,
-        k8s_custom_objects,
         k8s_apps_v1,
-        test_namespace,
-        sample_keycloak_spec,
-        wait_for_condition,
+        shared_keycloak_instance,
     ):
-        """Test that Keycloak deployment is created for Keycloak resource."""
-        keycloak_name = "test-keycloak-deployment"
-
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
+        """Test that Keycloak deployment is created for the shared resource."""
+        keycloak_name = shared_keycloak_instance["name"]
+        namespace = shared_keycloak_instance["namespace"]
 
         try:
-            # Create the resource
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            # Wait for deployment to be created
-            async def check_deployment_created():
-                try:
-                    deployment = k8s_apps_v1.read_namespaced_deployment(
-                        name=f"{keycloak_name}-keycloak", namespace=test_namespace
-                    )
-                    return deployment is not None
-                except ApiException:
-                    return False
-
-            assert await wait_for_condition(check_deployment_created, timeout=180), (
-                "Keycloak deployment was not created"
+            # Verify deployment exists
+            deployment = k8s_apps_v1.read_namespaced_deployment(
+                name=f"{keycloak_name}-keycloak", namespace=namespace
             )
 
             # Verify deployment has correct configuration
-            deployment = k8s_apps_v1.read_namespaced_deployment(
-                name=f"{keycloak_name}-keycloak", namespace=test_namespace
-            )
-
             assert deployment.spec.replicas == 1, (
                 "Deployment has incorrect replica count"
             )
@@ -304,117 +208,46 @@ class TestBasicKeycloakDeployment:
             )
 
         except ApiException as e:
-            pytest.fail(f"Failed to test deployment creation: {e}")
-
-        finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
-                )
+            pytest.fail(f"Failed to verify deployment: {e}")
 
     async def test_keycloak_service_created(
         self,
-        k8s_custom_objects,
         k8s_core_v1,
-        test_namespace,
-        sample_keycloak_spec,
-        wait_for_condition,
+        shared_keycloak_instance,
     ):
-        """Test that Keycloak service is created."""
-        keycloak_name = "test-keycloak-service"
-
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
+        """Test that Keycloak service is created for the shared resource."""
+        keycloak_name = shared_keycloak_instance["name"]
+        namespace = shared_keycloak_instance["namespace"]
 
         try:
-            # Create the resource
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            # Wait for service to be created
-            async def check_service_created():
-                try:
-                    service = k8s_core_v1.read_namespaced_service(
-                        name=f"{keycloak_name}-keycloak", namespace=test_namespace
-                    )
-                    return service is not None
-                except ApiException:
-                    return False
-
-            assert await wait_for_condition(check_service_created, timeout=180), (
-                "Keycloak service was not created"
+            # Verify service exists
+            service = k8s_core_v1.read_namespaced_service(
+                name=f"{keycloak_name}-keycloak", namespace=namespace
             )
 
             # Verify service configuration
-            service = k8s_core_v1.read_namespaced_service(
-                name=f"{keycloak_name}-keycloak", namespace=test_namespace
-            )
-
             assert service.spec.type == "ClusterIP", "Service has incorrect type"
             assert len(service.spec.ports) > 0, "Service has no ports"
             assert service.spec.ports[0].port == 8080, "Service has incorrect port"
 
         except ApiException as e:
-            pytest.fail(f"Failed to test service creation: {e}")
-
-        finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
-                )
+            pytest.fail(f"Failed to verify service: {e}")
 
     async def test_keycloak_becomes_ready(
         self,
         k8s_custom_objects,
-        test_namespace,
-        sample_keycloak_spec,
-        wait_for_keycloak_ready,
+        shared_keycloak_instance,
     ):
-        """Test that Keycloak instance becomes fully ready and operational."""
-        keycloak_name = "test-keycloak-ready"
-
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
+        """Test that the shared Keycloak instance is ready and operational."""
+        keycloak_name = shared_keycloak_instance["name"]
+        namespace = shared_keycloak_instance["namespace"]
 
         try:
-            # Create the resource
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            # Wait for Keycloak to become ready
-            assert await wait_for_keycloak_ready(
-                keycloak_name, test_namespace, timeout=420
-            ), "Keycloak instance did not become ready in time"
-
-            # Verify status is set correctly
+            # Verify status is set correctly (instance is already ready from fixture)
             resource = k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloaks",
                 name=keycloak_name,
             )
@@ -423,88 +256,40 @@ class TestBasicKeycloakDeployment:
             assert status, "Keycloak resource has no status"
 
         except ApiException as e:
-            pytest.fail(f"Failed to test Keycloak readiness: {e}")
-
-        finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
-                )
+            pytest.fail(f"Failed to verify Keycloak readiness: {e}")
 
     async def test_keycloak_pods_running(
         self,
-        k8s_custom_objects,
         k8s_core_v1,
-        test_namespace,
-        sample_keycloak_spec,
-        wait_for_condition,
+        shared_keycloak_instance,
     ):
-        """Test that Keycloak pods are running and healthy."""
-        keycloak_name = "test-keycloak-pods"
-
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
+        """Test that Keycloak pods are running and healthy for the shared instance."""
+        keycloak_name = shared_keycloak_instance["name"]
+        namespace = shared_keycloak_instance["namespace"]
 
         try:
-            # Create the resource
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
+            # Verify pods are running (instance is already ready from fixture)
+            pods = k8s_core_v1.list_namespaced_pod(
+                namespace=namespace,
+                label_selector=f"keycloak.mdvr.nl/instance={keycloak_name}",
             )
 
-            # Wait for pods to be running
-            async def check_pods_running():
-                try:
-                    pods = k8s_core_v1.list_namespaced_pod(
-                        namespace=test_namespace,
-                        label_selector=f"app.kubernetes.io/instance={keycloak_name}",
-                    )
+            assert pods.items, "No Keycloak pods found"
 
-                    if not pods.items:
-                        return False
+            for pod in pods.items:
+                assert pod.status.phase == "Running", (
+                    f"Pod {pod.metadata.name} is not running"
+                )
 
-                    for pod in pods.items:
-                        if pod.status.phase != "Running":
-                            return False
-
-                        # Check container readiness
-                        if pod.status.container_statuses:
-                            for container in pod.status.container_statuses:
-                                if not container.ready:
-                                    return False
-
-                    return True
-
-                except ApiException:
-                    return False
-
-            assert await wait_for_condition(check_pods_running, timeout=420), (
-                "Keycloak pods did not become running in time"
-            )
+                # Check container readiness
+                if pod.status.container_statuses:
+                    for container in pod.status.container_statuses:
+                        assert container.ready, (
+                            f"Container {container.name} is not ready"
+                        )
 
         except ApiException as e:
-            pytest.fail(f"Failed to test Keycloak pods: {e}")
-
-        finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
-                )
+            pytest.fail(f"Failed to verify Keycloak pods: {e}")
 
 
 @pytest.mark.integration
@@ -585,53 +370,33 @@ class TestKeycloakAdminAPI:
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestRealmBasicOperations:
-    """Test basic realm operations."""
+    """Test basic realm operations using a shared Keycloak instance."""
 
     async def test_create_realm_resource(
         self,
         k8s_custom_objects,
-        test_namespace,
-        sample_keycloak_spec,
+        shared_keycloak_instance,
         sample_realm_spec,
-        wait_for_keycloak_ready,
         wait_for_condition,
     ):
-        """Test creating a basic realm resource."""
-        keycloak_name = "test-realm-kc"
+        """Test creating a basic realm resource on the shared Keycloak instance."""
+        keycloak_name = shared_keycloak_instance["name"]
+        namespace = shared_keycloak_instance["namespace"]
         realm_name = "test-realm-basic"
-
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
 
         realm_manifest = {
             **sample_realm_spec,
-            "metadata": {"name": realm_name, "namespace": test_namespace},
+            "metadata": {"name": realm_name, "namespace": namespace},
         }
-        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
+        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
         realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
-            # Create Keycloak instance first
+            # Create realm on the shared Keycloak instance
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            # Wait for Keycloak to be ready
-            assert await wait_for_keycloak_ready(keycloak_name, test_namespace), (
-                "Keycloak instance not ready for realm creation"
-            )
-
-            # Create realm
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloakrealms",
                 body=realm_manifest,
             )
@@ -642,7 +407,7 @@ class TestRealmBasicOperations:
                     resource = k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
-                        namespace=test_namespace,
+                        namespace=namespace,
                         plural="keycloakrealms",
                         name=realm_name,
                     )
@@ -658,85 +423,56 @@ class TestRealmBasicOperations:
             pytest.fail(f"Failed to create realm resource: {e}")
 
         finally:
-            # Cleanup in reverse order
+            # Cleanup realm only (shared Keycloak is managed by fixture)
             with contextlib.suppress(ApiException):
                 k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
-                    namespace=test_namespace,
+                    namespace=namespace,
                     plural="keycloakrealms",
                     name=realm_name,
-                )
-
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
                 )
 
 
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestClientBasicOperations:
-    """Test basic client operations."""
+    """Test basic client operations using a shared Keycloak instance."""
 
     async def test_create_client_resource(
         self,
         k8s_custom_objects,
-        test_namespace,
-        sample_keycloak_spec,
+        shared_keycloak_instance,
         sample_realm_spec,
         sample_client_spec,
-        wait_for_keycloak_ready,
         wait_for_condition,
     ):
-        """Test creating a basic client resource."""
-        keycloak_name = "test-client-kc"
+        """Test creating a basic client resource on the shared Keycloak instance."""
+        keycloak_name = shared_keycloak_instance["name"]
+        namespace = shared_keycloak_instance["namespace"]
         realm_name = "test-client-realm"
         client_name = "test-client-basic"
 
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
-
         realm_manifest = {
             **sample_realm_spec,
-            "metadata": {"name": realm_name, "namespace": test_namespace},
+            "metadata": {"name": realm_name, "namespace": namespace},
         }
-        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
+        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
         realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         client_manifest = {
             **sample_client_spec,
-            "metadata": {"name": client_name, "namespace": test_namespace},
+            "metadata": {"name": client_name, "namespace": namespace},
         }
-        client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
+        client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
         client_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
-            # Create Keycloak instance
+            # Create realm on shared Keycloak instance
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            # Wait for Keycloak to be ready
-            assert await wait_for_keycloak_ready(keycloak_name, test_namespace), (
-                "Keycloak instance not ready for client creation"
-            )
-
-            # Create realm
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloakrealms",
                 body=realm_manifest,
             )
@@ -745,7 +481,7 @@ class TestClientBasicOperations:
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloakclients",
                 body=client_manifest,
             )
@@ -756,7 +492,7 @@ class TestClientBasicOperations:
                     resource = k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
-                        namespace=test_namespace,
+                        namespace=namespace,
                         plural="keycloakclients",
                         name=client_name,
                     )
@@ -772,12 +508,12 @@ class TestClientBasicOperations:
             pytest.fail(f"Failed to create client resource: {e}")
 
         finally:
-            # Cleanup in reverse order
+            # Cleanup client and realm (shared Keycloak is managed by fixture)
             with contextlib.suppress(ApiException):
                 k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
-                    namespace=test_namespace,
+                    namespace=namespace,
                     plural="keycloakclients",
                     name=client_name,
                 )
@@ -786,16 +522,7 @@ class TestClientBasicOperations:
                 k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
-                    namespace=test_namespace,
+                    namespace=namespace,
                     plural="keycloakrealms",
                     name=realm_name,
-                )
-
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
                 )

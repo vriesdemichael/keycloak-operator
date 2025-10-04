@@ -37,8 +37,8 @@ test-unit: ## Run unit tests only
 
 .PHONY: test-integration
 test-integration: kind-teardown kind-setup deploy
-	@echo "Running integration tests on fresh cluster..."
-	uv run --group integration pytest tests/integration/ -v -m integration
+	@echo "Running integration tests on fresh cluster (with parallel execution)..."
+	uv run --group integration pytest tests/integration/ -v -m integration -n auto --dist=loadscope
 
 
 .PHONY: test-cov
