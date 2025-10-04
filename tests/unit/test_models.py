@@ -40,8 +40,6 @@ class TestKeycloakModels:
         assert spec.replicas == 1
         assert spec.service.type == "ClusterIP"
         assert spec.service.http_port == 8080
-        assert spec.persistence.enabled is True
-        assert spec.admin.username == "admin"
 
     def test_keycloak_spec_validation(self):
         """Test KeycloakSpec validation rules."""

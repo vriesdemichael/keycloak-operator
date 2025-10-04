@@ -344,10 +344,6 @@ class KeycloakInstanceReconciler(BaseReconciler):
         await self.ensure_deployment(keycloak_spec, name, namespace, db_connection_info)
         await self.ensure_service(keycloak_spec, name, namespace)
 
-        # Setup persistent storage if configured
-        if keycloak_spec.persistence.enabled:
-            await self.ensure_persistence(keycloak_spec, name, namespace)
-
         # Setup ingress if configured
         if keycloak_spec.ingress.enabled:
             await self.ensure_ingress(keycloak_spec, name, namespace)
@@ -775,52 +771,6 @@ class KeycloakInstanceReconciler(BaseReconciler):
             else:
                 raise
 
-    async def ensure_persistence(
-        self, spec: KeycloakSpec, name: str, namespace: str
-    ) -> None:
-        """
-        Ensure persistent storage is configured for Keycloak data.
-
-        Args:
-            spec: Keycloak specification
-            name: Resource name
-            namespace: Resource namespace
-        """
-        self.logger.info(f"Ensuring persistence for {name}")
-        from kubernetes import client
-        from kubernetes.client.rest import ApiException
-
-        from ..utils.kubernetes import create_persistent_volume_claim
-
-        pvc_name = f"{name}-keycloak-data"
-        core_api = client.CoreV1Api(self.kubernetes_client)
-
-        try:
-            core_api.read_namespaced_persistent_volume_claim(
-                name=pvc_name, namespace=namespace
-            )
-            self.logger.info(f"PVC {pvc_name} already exists")
-        except ApiException as e:
-            if e.status == 404:
-                try:
-                    pvc = create_persistent_volume_claim(
-                        name=name,
-                        namespace=namespace,
-                        size=getattr(spec.persistence, "size", "10Gi"),
-                        storage_class=getattr(spec.persistence, "storage_class", None),
-                    )
-                    self.logger.info(f"Created PVC: {pvc.metadata.name}")
-                except ApiException as create_error:
-                    if create_error.status == 409:
-                        # Resource created by another reconciliation - this is fine
-                        self.logger.info(
-                            f"PVC {pvc_name} already exists (created concurrently)"
-                        )
-                    else:
-                        raise
-            else:
-                raise
-
     async def ensure_ingress(
         self, spec: KeycloakSpec, name: str, namespace: str
     ) -> None:
@@ -894,10 +844,8 @@ class KeycloakInstanceReconciler(BaseReconciler):
             )
         except ApiException as e:
             if e.status == 404:
-                # Get username from spec, default to 'admin'
+                # Admin username is always 'admin' (auto-generated credentials)
                 username = "admin"
-                if hasattr(spec, "admin") and hasattr(spec.admin, "username"):
-                    username = spec.admin.username
 
                 self.logger.info(
                     f"Generating new admin secret {admin_secret_name} for user {username}"

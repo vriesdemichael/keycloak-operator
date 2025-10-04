@@ -34,9 +34,7 @@ class KeycloakTLSConfig(BaseModel):
     secret_name: str | None = Field(
         None, description="Name of secret containing TLS certificate and key"
     )
-    certificate_authority: str | None = Field(
-        None, description="Custom CA certificate for client verification"
-    )
+    hostname: str | None = Field(None, description="Hostname for TLS certificate (SNI)")
 
 
 class KeycloakServiceConfig(BaseModel):
@@ -68,35 +66,10 @@ class KeycloakIngressConfig(BaseModel):
     annotations: dict[str, str] = Field(
         default_factory=dict, description="Ingress annotations"
     )
-    tls_enabled: bool = Field(False, description="Enable TLS for ingress")
+    tls_enabled: bool = Field(True, description="Enable TLS for ingress")
     tls_secret_name: str | None = Field(
         None, description="Secret containing TLS certificate"
     )
-
-
-class KeycloakPersistenceConfig(BaseModel):
-    """Persistence configuration for Keycloak instance."""
-
-    enabled: bool = Field(True, description="Enable persistent storage")
-    storage_class: str | None = Field(
-        None, description="Storage class for persistent volume"
-    )
-    size: str = Field("10Gi", description="Storage size")
-    access_modes: list[str] = Field(
-        default_factory=lambda: ["ReadWriteOnce"],
-        description="Access modes for persistent volume",
-    )
-    retain_policy: str = Field(
-        "Retain", description="Retention policy for data on deletion"
-    )
-
-    @field_validator("retain_policy")
-    @classmethod
-    def validate_retain_policy(cls, v):
-        valid_policies = ["Retain", "Delete"]
-        if v not in valid_policies:
-            raise ValueError(f"Retain policy must be one of {valid_policies}")
-        return v
 
 
 class KeycloakResourceRequirements(BaseModel):
@@ -326,18 +299,6 @@ class KeycloakDatabaseConfig(BaseModel):
         return self
 
 
-class KeycloakAdminConfig(BaseModel):
-    """Admin user configuration for Keycloak instance."""
-
-    username: str = Field("admin", description="Admin username")
-    password_secret: SecretReference | None = Field(
-        None, description="Secret reference for admin password"
-    )
-    create_secret: bool = Field(
-        True, description="Create admin credentials secret automatically"
-    )
-
-
 class KeycloakSpec(BaseModel):
     """
     Specification for a Keycloak instance.
@@ -372,31 +333,17 @@ class KeycloakSpec(BaseModel):
         default_factory=KeycloakTLSConfig, description="TLS configuration"
     )
 
-    # Storage
-    persistence: KeycloakPersistenceConfig = Field(
-        default_factory=KeycloakPersistenceConfig,
-        description="Persistence configuration",
-    )
-
     # Database
     database: KeycloakDatabaseConfig = Field(
         default_factory=KeycloakDatabaseConfig, description="Database configuration"
     )
 
-    # Administration
-    admin: KeycloakAdminConfig = Field(
-        default_factory=KeycloakAdminConfig, description="Admin user configuration"
-    )
-
     # Environment and configuration
-    environment_variables: dict[str, str] = Field(
+    env: dict[str, str] = Field(
         default_factory=dict, description="Additional environment variables"
     )
     jvm_options: list[str] = Field(
         default_factory=list, description="JVM options for Keycloak"
-    )
-    keycloak_options: dict[str, str] = Field(
-        default_factory=dict, description="Keycloak configuration options"
     )
 
     # Operational settings
@@ -441,11 +388,6 @@ class KeycloakSpec(BaseModel):
     service_account: str | None = Field(
         None, description="Service account to use for Keycloak pods"
     )
-
-    # Operational features
-    monitoring_enabled: bool = Field(True, description="Enable monitoring endpoints")
-    backup_enabled: bool = Field(False, description="Enable automatic backups")
-    backup_schedule: str | None = Field(None, description="Cron schedule for backups")
 
     @field_validator("image")
     @classmethod

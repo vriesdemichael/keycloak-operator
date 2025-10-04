@@ -144,17 +144,13 @@ class TestKeycloakReconcilerGenerationTracking:
         """Test that do_reconcile extracts generation from kwargs metadata."""
         status = MockStatus()
         spec = {
-            "image": "quay.io/keycloak/keycloak:23.0.0",
+            "image": "quay.io/keycloak/keycloak:26.4.0",
             "database": {
                 "type": "postgresql",
                 "host": "localhost",
                 "database": "keycloak",
                 "username": "keycloak",
                 "credentials_secret": "db-secret",
-            },
-            "admin": {
-                "username": "admin",
-                "password_secret": {"name": "admin-secret", "key": "password"},
             },
         }
 
@@ -175,9 +171,6 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
-            patch.object(
-                keycloak_reconciler, "ensure_persistence", new_callable=AsyncMock
-            ),
             patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
@@ -202,17 +195,13 @@ class TestKeycloakReconcilerGenerationTracking:
         """Test that do_reconcile handles missing generation gracefully."""
         status = MockStatus()
         spec = {
-            "image": "quay.io/keycloak/keycloak:23.0.0",
+            "image": "quay.io/keycloak/keycloak:26.4.0",
             "database": {
                 "type": "postgresql",
                 "host": "localhost",
                 "database": "keycloak",
                 "username": "keycloak",
                 "credentials_secret": "db-secret",
-            },
-            "admin": {
-                "username": "admin",
-                "password_secret": {"name": "admin-secret", "key": "password"},
             },
         }
 
@@ -232,9 +221,6 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
-            patch.object(
-                keycloak_reconciler, "ensure_persistence", new_callable=AsyncMock
-            ),
             patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
@@ -261,17 +247,13 @@ class TestKeycloakReconcilerGenerationTracking:
         """Test that degraded state also includes generation tracking."""
         status = MockStatus()
         spec = {
-            "image": "quay.io/keycloak/keycloak:23.0.0",
+            "image": "quay.io/keycloak/keycloak:26.4.0",
             "database": {
                 "type": "postgresql",
                 "host": "localhost",
                 "database": "keycloak",
                 "username": "keycloak",
                 "credentials_secret": "db-secret",
-            },
-            "admin": {
-                "username": "admin",
-                "password_secret": {"name": "admin-secret", "key": "password"},
             },
         }
 
@@ -290,9 +272,6 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
-            patch.object(
-                keycloak_reconciler, "ensure_persistence", new_callable=AsyncMock
-            ),
             patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",

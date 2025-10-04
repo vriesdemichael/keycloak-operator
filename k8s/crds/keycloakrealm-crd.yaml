@@ -38,6 +38,9 @@ spec:
               description:
                 type: string
                 description: "Realm description"
+              login_page_title:
+                type: string
+                description: "HTML title for login pages"
 
               # Target configuration
               keycloak_instance_ref:
@@ -128,7 +131,7 @@ spec:
                     minimum: 1
 
               # Token settings
-              tokens:
+              token_settings:
                 type: object
                 description: "Token and session configuration"
                 properties:
@@ -185,8 +188,54 @@ spec:
                     type: string
                     description: "Email theme"
 
-              # Internationalization
-              internationalization:
+              # SMTP configuration
+              smtp_server:
+                type: object
+                description: "SMTP server configuration for email"
+                properties:
+                  host:
+                    type: string
+                    description: "SMTP server host"
+                  port:
+                    type: integer
+                    minimum: 1
+                    maximum: 65535
+                    description: "SMTP server port"
+                  from:
+                    type: string
+                    description: "From email address"
+                  from_display_name:
+                    type: string
+                    description: "From display name"
+                  reply_to:
+                    type: string
+                    description: "Reply-to email address"
+                  envelope_from:
+                    type: string
+                    description: "Envelope from address"
+                  ssl:
+                    type: boolean
+                    default: false
+                    description: "Use SSL"
+                  starttls:
+                    type: boolean
+                    default: false
+                    description: "Use STARTTLS"
+                  auth:
+                    type: boolean
+                    default: false
+                    description: "Require authentication"
+                  user:
+                    type: string
+                    description: "SMTP username"
+                  password:
+                    type: string
+                    description: "SMTP password"
+                additionalProperties:
+                  type: string
+
+              # Localization
+              localization:
                 type: object
                 description: "Internationalization settings"
                 properties:
@@ -265,7 +314,7 @@ spec:
                   - provider_id
 
               # User federation
-              user_federation_providers:
+              user_federation:
                 type: array
                 description: "User federation provider configurations"
                 items:

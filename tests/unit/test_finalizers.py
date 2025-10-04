@@ -202,25 +202,6 @@ class TestRealmFinalizers:
         mock_keycloak_admin.delete_realm.assert_called_with("test-realm")
 
     @pytest.mark.asyncio
-    async def test_realm_cleanup_with_backup(
-        self, realm_reconciler, mock_keycloak_admin
-    ):
-        spec = build_spec(BASE_REALM_SPEC, backup_on_delete=True)
-
-        backup_mock = AsyncMock()
-        realm_reconciler.keycloak_admin_factory = MagicMock(
-            return_value=mock_keycloak_admin
-        )
-
-        with patch.object(realm_reconciler, "_create_realm_backup", backup_mock):
-            await realm_reconciler.cleanup_resources(
-                "test-realm", "test-namespace", spec, status=MagicMock()
-            )
-
-        backup_mock.assert_awaited_once()
-        mock_keycloak_admin.delete_realm.assert_called_with("test-realm")
-
-    @pytest.mark.asyncio
     async def test_realm_cleanup_keycloak_unreachable(self, realm_reconciler):
         spec = build_spec(BASE_REALM_SPEC)
 
