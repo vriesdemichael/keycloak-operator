@@ -395,11 +395,13 @@ def wait_for_keycloak_ready(
 
 
 @pytest.fixture(scope="class")
-async def class_scoped_namespace(k8s_core_v1) -> AsyncGenerator[str]:
+def class_scoped_namespace(k8s_core_v1, request) -> str:
     """Create a test namespace that lives for entire test class.
 
     This allows tests within a class to share resources like Keycloak instances,
     significantly reducing test execution time.
+
+    Note: Synchronous fixture for pytest-xdist compatibility.
     """
     namespace_name = f"test-{os.urandom(4).hex()}"
 
@@ -410,11 +412,10 @@ async def class_scoped_namespace(k8s_core_v1) -> AsyncGenerator[str]:
         )
     )
 
-    try:
-        k8s_core_v1.create_namespace(namespace)
-        yield namespace_name
-    finally:
-        # Cleanup namespace
+    k8s_core_v1.create_namespace(namespace)
+
+    # Register cleanup finalizer
+    def cleanup():
         try:
             k8s_core_v1.delete_namespace(
                 name=namespace_name,
@@ -424,12 +425,16 @@ async def class_scoped_namespace(k8s_core_v1) -> AsyncGenerator[str]:
             if e.status != 404:  # Ignore not found errors
                 print(f"Warning: Failed to cleanup namespace {namespace_name}: {e}")
 
+    request.addfinalizer(cleanup)
+    return namespace_name
+
 
 @pytest.fixture(scope="class")
-async def class_scoped_test_secrets(
-    k8s_core_v1, class_scoped_namespace
-) -> dict[str, str]:
-    """Create test secrets for class-scoped Keycloak instances."""
+def class_scoped_test_secrets(k8s_core_v1, class_scoped_namespace) -> dict[str, str]:
+    """Create test secrets for class-scoped Keycloak instances.
+
+    Note: Synchronous fixture for pytest-xdist compatibility.
+    """
     secrets = {}
 
     # Database secret
@@ -456,7 +461,7 @@ async def class_scoped_test_secrets(
 
 
 @pytest.fixture(scope="class")
-async def class_scoped_cnpg_cluster(
+def class_scoped_cnpg_cluster(
     k8s_client, class_scoped_namespace, cnpg_installed, wait_for_condition
 ) -> dict[str, str] | None:
     """Create a CNPG cluster that lives for entire test class."""
@@ -514,7 +519,8 @@ async def class_scoped_cnpg_cluster(
         except ApiException:
             return False
 
-    ready = await wait_for_condition(cluster_ready, timeout=420, interval=5)
+    # Run async wait synchronously for pytest-xdist compatibility
+    ready = asyncio.run(wait_for_condition(cluster_ready, timeout=420, interval=5))
     if not ready:
         pytest.skip("CNPG cluster was not ready in time")
 
@@ -522,7 +528,7 @@ async def class_scoped_cnpg_cluster(
 
 
 @pytest.fixture(scope="class")
-async def shared_keycloak_instance(
+def shared_keycloak_instance(
     k8s_custom_objects,
     class_scoped_namespace,
     class_scoped_test_secrets,
@@ -533,6 +539,8 @@ async def shared_keycloak_instance(
 
     This significantly reduces test execution time by reusing one Keycloak instance
     across multiple tests instead of creating a new one for each test.
+
+    Note: Synchronous fixture for pytest-xdist compatibility.
 
     Returns:
         dict with 'name' and 'namespace' of the shared Keycloak instance
@@ -592,9 +600,9 @@ async def shared_keycloak_instance(
         if e.status != 409:  # Allow already exists for class reuse
             raise
 
-    # Wait for Keycloak to be ready
-    ready = await wait_for_keycloak_ready(
-        keycloak_name, class_scoped_namespace, timeout=420
+    # Wait for Keycloak to be ready (run async wait synchronously for pytest-xdist)
+    ready = asyncio.run(
+        wait_for_keycloak_ready(keycloak_name, class_scoped_namespace, timeout=420)
     )
     if not ready:
         pytest.fail(f"Shared Keycloak instance {keycloak_name} did not become ready")
