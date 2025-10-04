@@ -309,7 +309,7 @@ class TestFinalizersE2E:
                 )
 
     @pytest.mark.skip(
-        reason="Temporarily disabled - test takes >10 minutes causing timeout in CI"
+        reason="Must create/delete dedicated Keycloak instance - incompatible with parallel test suite"
     )
     async def test_cascading_deletion_order(
         self,
