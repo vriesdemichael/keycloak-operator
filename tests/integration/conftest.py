@@ -3,6 +3,16 @@ Pytest configuration and fixtures for integration tests.
 
 This module provides shared fixtures and configuration for integration tests
 that run against a real Kubernetes cluster.
+
+IMPORTANT: Before writing new integration tests, read tests/integration/TESTING.md
+This document contains critical rules about:
+- Port-forwarding for Keycloak access (REQUIRED for host-to-cluster communication)
+- Shared vs dedicated Keycloak instances (affects performance and isolation)
+- Parallel test execution (requires unique resource names)
+- Status phase expectations (Unknown/Pending/Ready/Degraded/Failed)
+- Timeouts and cleanup patterns
+
+Violating these rules will cause test failures, especially in parallel execution.
 """
 
 import asyncio

@@ -134,6 +134,47 @@ make operator-logs              # Show the most recent 200 log lines of the oper
 make operator-logs-tail         # Follow the operator logs (DO NOT USE THIS AS LLM, YOU WILL GET STUCK! ONLY FOR HUMANS)
 ```
 
+### Critical Integration Testing Rules
+
+**IMPORTANT**: Before writing or modifying integration tests, you MUST read `tests/integration/TESTING.md`.
+
+The integration test suite has specific infrastructure requirements that, if violated, will cause test failures:
+
+#### 1. Port-Forward Requirement (CRITICAL)
+All tests that access Keycloak from the host MUST use the `keycloak_port_forward` fixture. Tests run on the host (WSL/macOS/Linux) cannot resolve cluster-internal DNS names.
+
+**❌ WRONG - Will fail with DNS errors:**
+```python
+admin_client = get_keycloak_admin_client("my-keycloak", namespace)
+```
+
+**✅ CORRECT - Use port-forward:**
+```python
+local_port = await keycloak_port_forward("my-keycloak", namespace)
+admin_client = KeycloakAdminClient(
+    server_url=f"http://localhost:{local_port}",
+    username=username,
+    password=password,
+)
+```
+
+#### 2. Shared vs Dedicated Instances
+- **Shared instance** (`shared_keycloak_instance` fixture): For simple CRUD tests, ~60s startup amortized
+- **Dedicated instance**: For complex tests, destructive operations, or guaranteed isolation
+
+#### 3. Parallel Execution Safety
+- Tests run with 8 parallel workers by default
+- Always use `uuid.uuid4().hex[:8]` for unique resource names
+- Use `test_namespace` fixture (unique per test)
+- Never hardcode resource names
+
+#### 4. Status Phase Expectations
+Resources use these phases: `Unknown`, `Pending`, `Provisioning`, `Ready`, `Degraded`, `Failed`, `Updating`
+
+Timer handlers skip `Unknown`, `Pending`, `Failed` phases. Wait for `Ready` or `Degraded` (both mean operational).
+
+See `tests/integration/TESTING.md` for complete patterns, examples, and common pitfalls.
+
 ## Development File Management
 
 ### Temporary Files
