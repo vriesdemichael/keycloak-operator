@@ -48,55 +48,47 @@ class StatusProtocol(Protocol):
 
 
 class StatusWrapper(MutableMapping[str, Any]):
-    """Safe mutable wrapper around kopf status for both item & attribute access."""
+    """Safe mutable wrapper around kopf patch.status for both item & attribute access."""
 
-    def __init__(self, original: Any):
-        self._data: dict[str, Any] = {}
-        if isinstance(original, dict):
-            self._data.update(original)
-        else:
-            # Attempt to copy if mapping-like
-            try:
-                for k, v in original.items():  # type: ignore[attr-defined]
-                    self._data[k] = v
-            except Exception:
-                pass
+    def __init__(self, patch_status: Any):
+        # Store reference to patch.status, not a copy
+        object.__setattr__(self, "_patch_status", patch_status)
 
-    # MutableMapping implementation
+    # MutableMapping implementation - directly update patch.status
     def __getitem__(self, key: str) -> Any:
-        return self._data[key]
+        return self._patch_status[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
-        self._data[key] = value
+        self._patch_status[key] = value
 
     def __delitem__(self, key: str) -> None:
-        if key in self._data:
-            del self._data[key]
+        if key in self._patch_status:
+            del self._patch_status[key]
 
     def __iter__(self):  # pragma: no cover - trivial
-        return iter(self._data)
+        return iter(self._patch_status)
 
     def __len__(self) -> int:  # pragma: no cover - trivial
-        return len(self._data)
+        return len(self._patch_status)
 
-    # Attribute bridging
+    # Attribute bridging - directly update patch.status
     def __getattr__(self, item: str) -> Any:  # pragma: no cover - trivial
         try:
-            return self._data[item]
+            return self._patch_status[item]
         except KeyError as e:
             raise AttributeError(item) from e
 
     def __setattr__(self, key: str, value: Any) -> None:  # pragma: no cover - trivial
         if key.startswith("_"):
-            super().__setattr__(key, value)
+            object.__setattr__(self, key, value)
         else:
-            self._data[key] = value
+            self._patch_status[key] = value
 
     def get(self, key: str, default: Any = None) -> Any:  # explicit for protocol
-        return self._data.get(key, default)
+        return self._patch_status.get(key, default)
 
     def to_dict(self) -> dict[str, Any]:
-        return dict(self._data)
+        return dict(self._patch_status)
 
 
 class KopfHandlerKwargs(TypedDict, total=False):
@@ -120,7 +112,7 @@ async def ensure_keycloak_instance(
     status: StatusProtocol,
     patch: kopf.Patch,
     **kwargs: KopfHandlerKwargs,
-) -> dict[str, Any]:
+) -> None:
     """
     Ensure Keycloak instance exists and is properly configured.
 
@@ -151,26 +143,18 @@ async def ensure_keycloak_instance(
         )
         patch.metadata.setdefault("finalizers", []).append(KEYCLOAK_FINALIZER)
 
+    # Use patch.status for updates instead of wrapping the read-only status dict
     reconciler = KeycloakInstanceReconciler()
-    status_wrapper = StatusWrapper(status)
-    result = await reconciler.reconcile(
+    status_wrapper = StatusWrapper(patch.status)
+    await reconciler.reconcile(
         spec=spec,
         name=name,
         namespace=namespace,
         status=cast(StatusProtocol, status_wrapper),
         **kwargs,
     )
-    if isinstance(result, dict):
-        # Merge wrapper state into patch.status for persistence
-        merged = status_wrapper.to_dict()
-        merged.update(result)
-        for k, v in merged.items():
-            patch.status[k] = v
-        return merged
-    # If service returned something else, still propagate accumulated state
-    for k, v in status_wrapper.to_dict().items():
-        patch.status[k] = v
-    return result
+    # Return None to avoid Kopf creating status subpaths
+    return None
 
 
 @kopf.on.update("keycloaks", group="keycloak.mdvr.nl", version="v1")
@@ -181,6 +165,7 @@ async def update_keycloak_instance(
     name: str,
     namespace: str,
     status: StatusProtocol,
+    patch: kopf.Patch,
     **kwargs: KopfHandlerKwargs,
 ) -> dict[str, Any] | None:
     """
@@ -196,15 +181,17 @@ async def update_keycloak_instance(
         name: Name of the Keycloak resource
         namespace: Namespace where the resource exists
         status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
 
     Returns:
-        Dictionary with updated status information, or None if no changes needed
+        None to avoid Kopf creating status subpaths
     """
     logger.info(f"Updating Keycloak instance {name} in namespace {namespace}")
 
+    # Use patch.status for updates instead of wrapping the read-only status dict
     reconciler = KeycloakInstanceReconciler()
-    status_wrapper = StatusWrapper(status)
-    result = await reconciler.update(
+    status_wrapper = StatusWrapper(patch.status)
+    await reconciler.update(
         old_spec=old.get("spec", {}),
         new_spec=new.get("spec", {}),
         diff=diff,
@@ -213,11 +200,7 @@ async def update_keycloak_instance(
         status=cast(StatusProtocol, status_wrapper),
         **kwargs,
     )
-    if isinstance(result, dict):
-        merged = status_wrapper.to_dict()
-        merged.update(result)
-        return merged
-    return result
+    return None
 
 
 @kopf.on.delete("keycloaks", group="keycloak.mdvr.nl", version="v1")
@@ -298,8 +281,9 @@ def monitor_keycloak_health(
     name: str,
     namespace: str,
     status: StatusProtocol,
+    patch: kopf.Patch,
     **kwargs: Any,
-) -> dict[str, Any] | None:
+) -> None:
     """
         Periodic health check for Keycloak instances.
 
@@ -326,9 +310,10 @@ def monitor_keycloak_health(
     """
     current_phase = status.get("phase", "Unknown")
 
-    # Skip health checks for failed or pending instances
-    if current_phase in ["Failed", "Pending"]:
-        return None
+    # Skip health checks for failed, pending, or unknown instances
+    # Unknown = resource just created, reconciliation hasn't started yet
+    if current_phase in ["Failed", "Pending", "Unknown"]:
+        return
 
     logger.debug(f"Checking health of Keycloak instance {name} in {namespace}")
 
@@ -349,18 +334,16 @@ def monitor_keycloak_health(
             )
         except ApiException as e:
             if e.status == 404:
-                return {
-                    "phase": "Failed",
-                    "message": "Keycloak deployment not found",
-                    "lastHealthCheck": current_time,
-                }
+                patch.status["phase"] = "Failed"
+                patch.status["message"] = "Keycloak deployment not found"
+                patch.status["lastHealthCheck"] = current_time
+                return
             else:
                 logger.error(f"Failed to get deployment status: {e}")
-                return {
-                    "phase": "Unknown",
-                    "message": f"Failed to check deployment status: {e}",
-                    "lastHealthCheck": current_time,
-                }
+                patch.status["phase"] = "Unknown"
+                patch.status["message"] = f"Failed to check deployment status: {e}"
+                patch.status["lastHealthCheck"] = current_time
+                return
 
         # Check deployment readiness
         ready_replicas = deployment.status.ready_replicas or 0
@@ -368,11 +351,12 @@ def monitor_keycloak_health(
         deployment_ready = ready_replicas >= desired_replicas
 
         if not deployment_ready:
-            return {
-                "phase": "Degraded",
-                "message": f"Keycloak deployment not ready: {ready_replicas}/{desired_replicas} replicas ready",
-                "lastHealthCheck": current_time,
-            }
+            patch.status["phase"] = "Degraded"
+            patch.status["message"] = (
+                f"Keycloak deployment not ready: {ready_replicas}/{desired_replicas} replicas ready"
+            )
+            patch.status["lastHealthCheck"] = current_time
+            return
 
         # Perform HTTP health check against Keycloak
         service_name = f"{name}-keycloak"
@@ -387,27 +371,30 @@ def monitor_keycloak_health(
             logger.warning(f"Keycloak health check failed: {health_error}")
 
         if not keycloak_responding:
-            return {
-                "phase": "Degraded",
-                "message": f"Keycloak not responding to health checks: {health_error or 'Unknown error'}",
-                "lastHealthCheck": current_time,
-            }
+            patch.status["phase"] = "Degraded"
+            patch.status["message"] = (
+                f"Keycloak not responding to health checks: {health_error or 'Unknown error'}"
+            )
+            patch.status["lastHealthCheck"] = current_time
+            return
 
         # Check for any unhealthy conditions in the deployment
         conditions = deployment.status.conditions or []
         for condition in conditions:
             if condition.type == "Progressing" and condition.status != "True":
-                return {
-                    "phase": "Degraded",
-                    "message": f"Deployment not progressing: {condition.reason}",
-                    "lastHealthCheck": current_time,
-                }
+                patch.status["phase"] = "Degraded"
+                patch.status["message"] = (
+                    f"Deployment not progressing: {condition.reason}"
+                )
+                patch.status["lastHealthCheck"] = current_time
+                return
             elif condition.type == "Available" and condition.status != "True":
-                return {
-                    "phase": "Degraded",
-                    "message": f"Deployment not available: {condition.reason}",
-                    "lastHealthCheck": current_time,
-                }
+                patch.status["phase"] = "Degraded"
+                patch.status["message"] = (
+                    f"Deployment not available: {condition.reason}"
+                )
+                patch.status["lastHealthCheck"] = current_time
+                return
 
         # Check resource utilization and warn if high
         try:
@@ -422,11 +409,12 @@ def monitor_keycloak_health(
                     )
 
                 if resource_usage["failed_pods"] > 0:
-                    return {
-                        "phase": "Degraded",
-                        "message": f"Found {resource_usage['failed_pods']} failed pods",
-                        "lastHealthCheck": current_time,
-                    }
+                    patch.status["phase"] = "Degraded"
+                    patch.status["message"] = (
+                        f"Found {resource_usage['failed_pods']} failed pods"
+                    )
+                    patch.status["lastHealthCheck"] = current_time
+                    return
 
                 if resource_usage["pending_pods"] > 0:
                     logger.warning(
@@ -465,22 +453,24 @@ def monitor_keycloak_health(
                         logger.warning(
                             f"Master realm not accessible for Keycloak {name}"
                         )
-                        return {
-                            "phase": "Degraded",
-                            "message": "Master realm not accessible via Admin API",
-                            "lastHealthCheck": current_time,
-                        }
+                        patch.status["phase"] = "Degraded"
+                        patch.status["message"] = (
+                            "Master realm not accessible via Admin API"
+                        )
+                        patch.status["lastHealthCheck"] = current_time
+                        return
                     logger.debug(f"Admin API connectivity verified for Keycloak {name}")
 
                 except Exception as api_error:
                     logger.warning(
                         f"Keycloak Admin API check failed for {name}: {api_error}"
                     )
-                    return {
-                        "phase": "Degraded",
-                        "message": f"Admin API not accessible: {str(api_error)}",
-                        "lastHealthCheck": current_time,
-                    }
+                    patch.status["phase"] = "Degraded"
+                    patch.status["message"] = (
+                        f"Admin API not accessible: {str(api_error)}"
+                    )
+                    patch.status["lastHealthCheck"] = current_time
+                    return
             else:
                 logger.debug(
                     f"Admin credentials not available for Keycloak {name}, skipping API validation"
@@ -493,21 +483,15 @@ def monitor_keycloak_health(
         # If we get here, everything is healthy
         if current_phase != "Ready":
             logger.info(f"Keycloak instance {name} health check passed")
-            return {
-                "phase": "Ready",
-                "message": "Keycloak instance is healthy",
-                "lastHealthCheck": current_time,
-            }
+            patch.status["phase"] = "Ready"
+            patch.status["message"] = "Keycloak instance is healthy"
+            patch.status["lastHealthCheck"] = current_time
 
     except Exception as e:
         logger.error(f"Health check failed for Keycloak instance {name}: {e}")
         from datetime import datetime
 
         current_time = datetime.now(UTC).isoformat()
-        return {
-            "phase": "Degraded",
-            "message": f"Health check failed: {str(e)}",
-            "lastHealthCheck": current_time,
-        }
-
-    return None  # No status update needed
+        patch.status["phase"] = "Degraded"
+        patch.status["message"] = f"Health check failed: {str(e)}"
+        patch.status["lastHealthCheck"] = current_time

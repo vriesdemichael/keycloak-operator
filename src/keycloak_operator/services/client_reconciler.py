@@ -132,16 +132,17 @@ class KeycloakClientReconciler(BaseReconciler):
         # Update status to ready
         self.update_status_ready(status, "Client configured and ready", generation)
 
-        return {
-            "client_id": client_spec.client_id,
-            "client_uuid": client_uuid,
-            "realm": realm_name,
-            "keycloak_instance": f"{target_namespace}/{keycloak_ref.name}",
-            "credentials_secret": secret_name,
-            "public_client": client_spec.public_client,
-            "endpoints": endpoints,
-            "phase": "Ready",
-        }
+        # Set additional status fields via StatusWrapper to avoid conflicts with Kopf
+        status.client_id = client_spec.client_id
+        status.client_uuid = client_uuid
+        status.realm = realm_name
+        status.keycloak_instance = f"{target_namespace}/{keycloak_ref.name}"
+        status.credentials_secret = secret_name
+        status.public_client = client_spec.public_client
+        status.endpoints = endpoints
+
+        # Return empty dict - status updates are done via StatusWrapper
+        return {}
 
     def _validate_spec(self, spec: dict[str, Any]) -> KeycloakClientSpec:
         """
@@ -983,11 +984,14 @@ class KeycloakClientReconciler(BaseReconciler):
 
         self.logger.info(f"Successfully updated KeycloakClient {name}")
 
-        return {
-            "phase": "Ready",
-            "message": "Client configuration updated successfully",
-            "lastUpdated": kwargs.get("meta", {}).get("generation", 0),
-        }
+        # Update status to ready with generation tracking
+        generation = kwargs.get("meta", {}).get("generation", 0)
+        self.update_status_ready(
+            status, "Client configuration updated successfully", generation
+        )
+
+        # Return empty dict - status updates are done via StatusWrapper
+        return {}
 
     async def cleanup_resources(
         self,

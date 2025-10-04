@@ -232,7 +232,7 @@ spec:
               phase:
                 type: string
                 description: "Current phase"
-                enum: ["Pending", "Provisioning", "Ready", "Failed", "Updating"]
+                enum: ["Pending", "Provisioning", "Ready", "Failed", "Updating", "Degraded"]
               message:
                 type: string
                 description: "Human-readable status message"

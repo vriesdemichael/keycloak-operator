@@ -308,9 +308,6 @@ class TestFinalizersE2E:
                     name=realm_name,
                 )
 
-    @pytest.mark.skip(
-        reason="Must create/delete dedicated Keycloak instance - incompatible with parallel test suite"
-    )
     async def test_cascading_deletion_order(
         self,
         k8s_custom_objects,

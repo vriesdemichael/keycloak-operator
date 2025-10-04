@@ -18,7 +18,6 @@ The handlers support various client types including:
 - Service accounts for machine-to-machine communication
 """
 
-import contextlib
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -39,53 +38,34 @@ logger = logging.getLogger(__name__)
 
 
 class StatusWrapper:
-    """Wrapper to make kopf dict-like status compatible with StatusProtocol.
+    """Wrapper to make kopf patch.status compatible with StatusProtocol.
 
-    Some kopf versions provide a special Status object that may not support
-    direct item assignment or .update(). This wrapper normalizes access so
-    that status.phase = X works and we fall back gracefully if the underlying
-    object is not a plain dict.
+    This wrapper provides both attribute and dict-like access to patch.status,
+    ensuring all updates are written directly to the underlying patch object.
     """
 
-    def __init__(self, status_obj: Any):
-        object.__setattr__(self, "_raw_status", status_obj)
-
-    def _as_mutable_dict(self) -> dict[str, Any]:
-        rs = object.__getattribute__(self, "_raw_status")
-        # If it's already a dict, use it directly
-        if isinstance(rs, dict):
-            return rs
-        # Some kopf objects expose .__dict__ or behave like Mapping
-        # We'll maintain a shadow dict for updates and mirror basic fields.
-        shadow = getattr(self, "_shadow", None)
-        if shadow is None:
-            shadow = {}
-            object.__setattr__(self, "_shadow", shadow)
-        return shadow
+    def __init__(self, patch_status: Any):
+        object.__setattr__(self, "_patch_status", patch_status)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
-        target = self._as_mutable_dict()
-        target[name] = value
-        # Try to reflect into raw status if it supports item assignment
-        rs = object.__getattribute__(self, "_raw_status")
-        with contextlib.suppress(Exception):
-            rs[name] = value  # type: ignore[index]
+        # Directly update patch.status
+        self._patch_status[name] = value
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             return object.__getattribute__(self, name)
-        rs = object.__getattribute__(self, "_raw_status")
-        if isinstance(rs, dict) and name in rs:
-            return rs.get(name)
-        shadow = getattr(self, "_shadow", {})
-        return shadow.get(name)
+        # Directly read from patch.status
+        try:
+            return self._patch_status[name]
+        except (KeyError, TypeError):
+            return None
 
     def update(self, data: dict[str, Any]) -> None:
         for k, v in data.items():
-            setattr(self, k, v)
+            self._patch_status[k] = v
 
 
 @kopf.on.create("keycloakclients", group="keycloak.mdvr.nl", version="v1")
@@ -97,7 +77,7 @@ async def ensure_keycloak_client(
     status: dict[str, Any],
     patch: kopf.Patch,
     **kwargs: Any,
-) -> dict[str, Any]:
+) -> None:
     """
     Ensure KeycloakClient exists in the target Keycloak instance.
 
@@ -125,26 +105,14 @@ async def ensure_keycloak_client(
         logger.info(f"Adding finalizer {CLIENT_FINALIZER} to KeycloakClient {name}")
         patch.metadata.setdefault("finalizers", []).append(CLIENT_FINALIZER)
 
-    try:
-        reconciler = KeycloakClientReconciler()
-        status_wrapper = StatusWrapper(status)
-        return await reconciler.reconcile(
-            spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
-        )
-    except Exception as e:
-        logger.error(f"Error in KeycloakClient reconciliation: {e}")
-        status.update(
-            {
-                "phase": "Failed",
-                "message": f"Reconciliation failed: {str(e)}",
-            }
-        )
-        if "TemporaryError" in str(type(e)):
-            raise kopf.TemporaryError(str(e), delay=30) from e
-        elif "PermanentError" in str(type(e)):
-            raise kopf.PermanentError(str(e)) from e
-        else:
-            raise kopf.TemporaryError(f"Client creation failed: {e}", delay=60) from e
+    # Use patch.status for updates instead of wrapping the read-only status dict
+    reconciler = KeycloakClientReconciler()
+    status_wrapper = StatusWrapper(patch.status)
+    await reconciler.reconcile(
+        spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
+    )
+    # Return None to avoid Kopf creating status subpaths
+    return
 
 
 @kopf.on.update("keycloakclients", group="keycloak.mdvr.nl", version="v1")
@@ -155,6 +123,7 @@ async def update_keycloak_client(
     name: str,
     namespace: str,
     status: dict[str, Any],
+    patch: kopf.Patch,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
     """
@@ -170,17 +139,18 @@ async def update_keycloak_client(
         name: Name of the KeycloakClient resource
         namespace: Namespace where the resource exists
         status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
 
     Returns:
-        Dictionary with updated status, or None if no changes needed
+        None to avoid Kopf creating status subpaths
 
     """
     logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
 
-    # Create reconciler and delegate to service layer
+    # Use patch.status for updates instead of wrapping the read-only status dict
     reconciler = KeycloakClientReconciler()
-    status_wrapper = StatusWrapper(status)
-    return await reconciler.update(
+    status_wrapper = StatusWrapper(patch.status)
+    await reconciler.update(
         old_spec=old.get("spec", {}),
         new_spec=new.get("spec", {}),
         diff=diff,
@@ -189,6 +159,7 @@ async def update_keycloak_client(
         status=status_wrapper,
         **kwargs,
     )
+    return
 
 
 @kopf.on.delete("keycloakclients", group="keycloak.mdvr.nl", version="v1")
@@ -265,8 +236,9 @@ def monitor_client_health(
     name: str,
     namespace: str,
     status: dict[str, Any],
+    patch: kopf.Patch,
     **kwargs: Any,
-) -> dict[str, Any] | None:
+) -> None:
     """
     Periodic health check for KeycloakClients.
 
@@ -285,9 +257,10 @@ def monitor_client_health(
     """
     current_phase = status.get("phase", "Unknown")
 
-    # Skip health checks for failed clients
-    if current_phase in ["Failed", "Pending"]:
-        return None
+    # Skip health checks for failed, pending, or unknown clients
+    # Unknown = resource just created, reconciliation hasn't started yet
+    if current_phase in ["Failed", "Pending", "Unknown"]:
+        return
 
     logger.debug(f"Checking health of KeycloakClient {name} in {namespace}")
 
@@ -307,11 +280,14 @@ def monitor_client_health(
 
         if not existing_client:
             logger.warning(f"Client {client_spec.client_id} missing from Keycloak")
-            return {
-                "phase": "Degraded",
-                "message": "Client missing from Keycloak, will recreate",
-                "lastHealthCheck": datetime.now(UTC).isoformat(),
-            }
+            patch.status.update(
+                {
+                    "phase": "Degraded",
+                    "message": "Client missing from Keycloak, will recreate",
+                    "lastHealthCheck": datetime.now(UTC).isoformat(),
+                }
+            )
+            return
 
         # Verify client configuration matches spec
         # Compare current Keycloak client config with desired spec
@@ -356,11 +332,14 @@ def monitor_client_health(
                 logger.info(
                     f"Client {client_spec.client_id} configuration drift detected"
                 )
-                return {
-                    "phase": "Degraded",
-                    "message": "Configuration drift detected",
-                    "lastHealthCheck": datetime.now(UTC).isoformat(),
-                }
+                patch.status.update(
+                    {
+                        "phase": "Degraded",
+                        "message": "Configuration drift detected",
+                        "lastHealthCheck": datetime.now(UTC).isoformat(),
+                    }
+                )
+                return
 
         except Exception as e:
             logger.warning(f"Failed to verify client configuration: {e}")
@@ -384,32 +363,41 @@ def monitor_client_health(
                     missing_keys = []
 
                     if not secret.data:
-                        return {
-                            "phase": "Degraded",
-                            "message": "Client credentials secret exists but has no data",
-                            "lastHealthCheck": datetime.now(UTC).isoformat(),
-                        }
+                        patch.status.update(
+                            {
+                                "phase": "Degraded",
+                                "message": "Client credentials secret exists but has no data",
+                                "lastHealthCheck": datetime.now(UTC).isoformat(),
+                            }
+                        )
+                        return
 
                     for key in required_keys:
                         if key not in secret.data:
                             missing_keys.append(key)
 
                     if missing_keys:
-                        return {
-                            "phase": "Degraded",
-                            "message": f"Client credentials secret missing keys: {', '.join(missing_keys)}",
-                            "lastHealthCheck": datetime.now(UTC).isoformat(),
-                        }
+                        patch.status.update(
+                            {
+                                "phase": "Degraded",
+                                "message": f"Client credentials secret missing keys: {', '.join(missing_keys)}",
+                                "lastHealthCheck": datetime.now(UTC).isoformat(),
+                            }
+                        )
+                        return
 
                     logger.debug(f"Client credentials secret {secret_name} is valid")
 
                 except ApiException as e:
                     if e.status == 404:
-                        return {
-                            "phase": "Degraded",
-                            "message": "Client credentials secret missing",
-                            "lastHealthCheck": datetime.now(UTC).isoformat(),
-                        }
+                        patch.status.update(
+                            {
+                                "phase": "Degraded",
+                                "message": "Client credentials secret missing",
+                                "lastHealthCheck": datetime.now(UTC).isoformat(),
+                            }
+                        )
+                        return
                     else:
                         logger.warning(f"Failed to check credentials secret: {e}")
 
@@ -420,18 +408,20 @@ def monitor_client_health(
         # Everything looks good
         if current_phase != "Ready":
             logger.info(f"KeycloakClient {name} health check passed")
-            return {
-                "phase": "Ready",
-                "message": "Client is healthy and properly configured",
-                "lastHealthCheck": datetime.now(UTC).isoformat(),
-            }
+            patch.status.update(
+                {
+                    "phase": "Ready",
+                    "message": "Client is healthy and properly configured",
+                    "lastHealthCheck": datetime.now(UTC).isoformat(),
+                }
+            )
 
     except Exception as e:
         logger.error(f"Health check failed for KeycloakClient {name}: {e}")
-        return {
-            "phase": "Degraded",
-            "message": f"Health check failed: {str(e)}",
-            "lastHealthCheck": datetime.now(UTC).isoformat(),
-        }
-
-    return None  # No status update needed
+        patch.status.update(
+            {
+                "phase": "Degraded",
+                "message": f"Health check failed: {str(e)}",
+                "lastHealthCheck": datetime.now(UTC).isoformat(),
+            }
+        )
