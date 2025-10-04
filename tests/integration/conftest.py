@@ -291,9 +291,9 @@ def sample_client_spec() -> dict[str, Any]:
     }
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 async def wait_for_condition():
-    """Utility fixture for waiting for conditions with timeout."""
+    """Utility fixture for waiting for conditions with timeout (session-scoped for reuse)."""
 
     async def _wait(condition_func, timeout: int = 300, interval: int = 3):
         """Wait for a condition to be true."""
@@ -315,7 +315,7 @@ async def wait_for_condition():
     return _wait
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def wait_for_keycloak_ready(
     k8s_custom_objects,
     k8s_apps_v1,
@@ -387,6 +387,219 @@ def wait_for_keycloak_ready(
         return await wait_for_condition(_condition, timeout=timeout, interval=interval)
 
     return _wait
+
+
+# ============================================================================
+# Class-scoped fixtures for shared Keycloak instances (performance optimization)
+# ============================================================================
+
+
+@pytest.fixture(scope="class")
+async def class_scoped_namespace(k8s_core_v1) -> AsyncGenerator[str]:
+    """Create a test namespace that lives for entire test class.
+
+    This allows tests within a class to share resources like Keycloak instances,
+    significantly reducing test execution time.
+    """
+    namespace_name = f"test-{os.urandom(4).hex()}"
+
+    # Create namespace
+    namespace = client.V1Namespace(
+        metadata=client.V1ObjectMeta(
+            name=namespace_name, labels={"test": "integration", "operator": "keycloak"}
+        )
+    )
+
+    try:
+        k8s_core_v1.create_namespace(namespace)
+        yield namespace_name
+    finally:
+        # Cleanup namespace
+        try:
+            k8s_core_v1.delete_namespace(
+                name=namespace_name,
+                body=client.V1DeleteOptions(propagation_policy="Foreground"),
+            )
+        except ApiException as e:
+            if e.status != 404:  # Ignore not found errors
+                print(f"Warning: Failed to cleanup namespace {namespace_name}: {e}")
+
+
+@pytest.fixture(scope="class")
+async def class_scoped_test_secrets(
+    k8s_core_v1, class_scoped_namespace
+) -> dict[str, str]:
+    """Create test secrets for class-scoped Keycloak instances."""
+    secrets = {}
+
+    # Database secret
+    db_secret = client.V1Secret(
+        metadata=client.V1ObjectMeta(
+            name="shared-db-secret", namespace=class_scoped_namespace
+        ),
+        string_data={"password": "test-db-password", "username": "keycloak"},
+    )
+    k8s_core_v1.create_namespaced_secret(class_scoped_namespace, db_secret)
+    secrets["database"] = "shared-db-secret"
+
+    # Admin secret
+    admin_secret = client.V1Secret(
+        metadata=client.V1ObjectMeta(
+            name="shared-admin-secret", namespace=class_scoped_namespace
+        ),
+        string_data={"password": "admin-password", "username": "admin"},
+    )
+    k8s_core_v1.create_namespaced_secret(class_scoped_namespace, admin_secret)
+    secrets["admin"] = "shared-admin-secret"
+
+    return secrets
+
+
+@pytest.fixture(scope="class")
+async def class_scoped_cnpg_cluster(
+    k8s_client, class_scoped_namespace, cnpg_installed, wait_for_condition
+) -> dict[str, str] | None:
+    """Create a CNPG cluster that lives for entire test class."""
+    if not cnpg_installed:
+        return None
+
+    from kubernetes import dynamic
+
+    dyn = dynamic.DynamicClient(k8s_client)
+    cluster_api = dyn.resources.get(api_version="postgresql.cnpg.io/v1", kind="Cluster")
+
+    cluster_name = "kc-shared-cnpg"
+    db_name = "keycloak"
+
+    cluster_manifest = {
+        "apiVersion": "postgresql.cnpg.io/v1",
+        "kind": "Cluster",
+        "metadata": {"name": cluster_name, "namespace": class_scoped_namespace},
+        "spec": {
+            "instances": 1,
+            "primaryUpdateStrategy": "unsupervised",
+            "storage": {"size": "1Gi"},
+            "bootstrap": {"initdb": {"database": db_name, "owner": "app"}},
+            "enableSuperuserAccess": False,
+            "resources": {
+                "requests": {"cpu": "100m", "memory": "128Mi"},
+                "limits": {"cpu": "200m", "memory": "256Mi"},
+            },
+        },
+    }
+
+    # Create cluster
+    try:
+        cluster_api.create(body=cluster_manifest, namespace=class_scoped_namespace)
+    except ApiException as e:
+        if e.status != 409:  # 409 AlreadyExists
+            raise
+
+    # Wait for cluster to be ready
+    async def cluster_ready():
+        try:
+            obj = cluster_api.get(name=cluster_name, namespace=class_scoped_namespace)
+            phase = obj.to_dict().get("status", {}).get("phase")
+            if phase != "Cluster in healthy state":
+                return False
+            # Confirm app secret existence
+            core = client.CoreV1Api(k8s_client)
+            try:
+                core.read_namespaced_secret(
+                    f"{cluster_name}-app", class_scoped_namespace
+                )
+                return True
+            except ApiException:
+                return False
+        except ApiException:
+            return False
+
+    ready = await wait_for_condition(cluster_ready, timeout=420, interval=5)
+    if not ready:
+        pytest.skip("CNPG cluster was not ready in time")
+
+    return {"name": cluster_name, "database": db_name}
+
+
+@pytest.fixture(scope="class")
+async def shared_keycloak_instance(
+    k8s_custom_objects,
+    class_scoped_namespace,
+    class_scoped_test_secrets,
+    class_scoped_cnpg_cluster,
+    wait_for_keycloak_ready,
+) -> dict[str, str]:
+    """Create a shared Keycloak instance for all tests in a class.
+
+    This significantly reduces test execution time by reusing one Keycloak instance
+    across multiple tests instead of creating a new one for each test.
+
+    Returns:
+        dict with 'name' and 'namespace' of the shared Keycloak instance
+    """
+    keycloak_name = "shared-keycloak"
+
+    # Build Keycloak spec
+    if class_scoped_cnpg_cluster:
+        database_block: dict[str, Any] = {
+            "type": "cnpg",
+            "cnpg_cluster": {
+                "name": class_scoped_cnpg_cluster["name"],
+                "database": class_scoped_cnpg_cluster["database"],
+            },
+        }
+    else:
+        database_block = {
+            "type": "postgresql",
+            "host": "postgres-test",
+            "database": "keycloak",
+            "username": "keycloak",
+            "password_secret": {
+                "name": class_scoped_test_secrets["database"],
+                "key": "password",
+            },
+        }
+
+    keycloak_manifest = {
+        "apiVersion": "keycloak.mdvr.nl/v1",
+        "kind": "Keycloak",
+        "metadata": {"name": keycloak_name, "namespace": class_scoped_namespace},
+        "spec": {
+            "image": DEFAULT_KEYCLOAK_IMAGE,
+            "replicas": 1,
+            "database": database_block,
+            "admin_access": {
+                "username": "admin",
+                "password_secret": {
+                    "name": class_scoped_test_secrets["admin"],
+                    "key": "password",
+                },
+            },
+            "service": {"type": "ClusterIP", "port": 8080},
+        },
+    }
+
+    # Create Keycloak instance
+    try:
+        k8s_custom_objects.create_namespaced_custom_object(
+            group="keycloak.mdvr.nl",
+            version="v1",
+            namespace=class_scoped_namespace,
+            plural="keycloaks",
+            body=keycloak_manifest,
+        )
+    except ApiException as e:
+        if e.status != 409:  # Allow already exists for class reuse
+            raise
+
+    # Wait for Keycloak to be ready
+    ready = await wait_for_keycloak_ready(
+        keycloak_name, class_scoped_namespace, timeout=420
+    )
+    if not ready:
+        pytest.fail(f"Shared Keycloak instance {keycloak_name} did not become ready")
+
+    return {"name": keycloak_name, "namespace": class_scoped_namespace}
 
 
 @pytest.fixture
