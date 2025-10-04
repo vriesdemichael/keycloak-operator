@@ -134,14 +134,14 @@ class TestKeycloakClientModels:
             )
         assert "non-empty string" in str(exc_info.value)
 
-        # Test invalid redirect URI with wildcard
+        # Test invalid redirect URI with wildcard in domain
         with pytest.raises(ValidationError) as exc_info:
             KeycloakClientSpec(
                 client_id="test-client",
                 keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
                 redirect_uris=["https://*.example.com/callback"],
             )
-        assert "Wildcard characters not allowed" in str(exc_info.value)
+        assert "Wildcard not allowed in domain" in str(exc_info.value)
 
     def test_keycloak_client_to_keycloak_config(self):
         """Test conversion to Keycloak API format."""
@@ -186,6 +186,106 @@ class TestKeycloakClientModels:
         assert client.spec.keycloak_instance_ref.name == "keycloak"
         assert client.spec.keycloak_instance_ref.namespace == "keycloak-system"
         assert client.spec.realm == "demo"
+
+    def test_redirect_uri_wildcard_validation(self):
+        """Test comprehensive redirect URI wildcard validation following Keycloak rules."""
+
+        # ✓ VALID: Wildcard in path (most common use case)
+        spec = KeycloakClientSpec(
+            client_id="test-client",
+            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            redirect_uris=["http://localhost:3000/*"],
+        )
+        assert spec.redirect_uris == ["http://localhost:3000/*"]
+
+        # ✓ VALID: Wildcard in nested path
+        spec = KeycloakClientSpec(
+            client_id="test-client",
+            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            redirect_uris=["https://example.com/app/callback/*"],
+        )
+        assert spec.redirect_uris == ["https://example.com/app/callback/*"]
+
+        # ✓ VALID: Custom scheme with wildcard
+        spec = KeycloakClientSpec(
+            client_id="test-client",
+            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            redirect_uris=["myapp:/callback/*"],
+        )
+        assert spec.redirect_uris == ["myapp:/callback/*"]
+
+        # ✓ VALID: Multiple URIs with and without wildcards
+        spec = KeycloakClientSpec(
+            client_id="test-client",
+            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            redirect_uris=[
+                "https://example.com/exact",
+                "https://example.com/wildcard/*",
+                "http://localhost:3000/*",
+            ],
+        )
+        assert len(spec.redirect_uris) == 3
+
+        # ✓ VALID: No wildcards at all
+        spec = KeycloakClientSpec(
+            client_id="test-client",
+            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            redirect_uris=["https://example.com/callback"],
+        )
+        assert spec.redirect_uris == ["https://example.com/callback"]
+
+        # ❌ INVALID: Bare wildcard (blocked since Keycloak 22.x)
+        with pytest.raises(ValidationError) as exc_info:
+            KeycloakClientSpec(
+                client_id="test-client",
+                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                redirect_uris=["*"],
+            )
+        error_msg = str(exc_info.value)
+        assert "Bare wildcard" in error_msg or "not allowed" in error_msg
+        assert "http://localhost:3000/*" in error_msg  # Suggests valid alternative
+
+        # ❌ INVALID: Wildcard in domain
+        with pytest.raises(ValidationError) as exc_info:
+            KeycloakClientSpec(
+                client_id="test-client",
+                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                redirect_uris=["https://*.example.com"],
+            )
+        error_msg = str(exc_info.value)
+        assert "Wildcard not allowed in domain" in error_msg
+        assert "✓" in error_msg  # Has helpful examples
+
+        # ❌ INVALID: Wildcard in subdomain
+        with pytest.raises(ValidationError) as exc_info:
+            KeycloakClientSpec(
+                client_id="test-client",
+                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                redirect_uris=["https://sub*.example.com/callback"],
+            )
+        error_msg = str(exc_info.value)
+        assert "Wildcard not allowed in domain" in error_msg
+
+        # ❌ INVALID: Wildcard in middle of URI
+        with pytest.raises(ValidationError) as exc_info:
+            KeycloakClientSpec(
+                client_id="test-client",
+                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                redirect_uris=["https://example.com/pa*th/callback"],
+            )
+        error_msg = str(exc_info.value)
+        assert "Wildcard must be at the end" in error_msg
+
+        # ❌ INVALID: Domain-only URI with wildcard
+        with pytest.raises(ValidationError) as exc_info:
+            KeycloakClientSpec(
+                client_id="test-client",
+                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                redirect_uris=["http://example.com*"],
+            )
+        error_msg = str(exc_info.value)
+        assert "Wildcard not allowed in domain-only" in error_msg
+        assert "add trailing slash" in error_msg  # Helpful suggestion
 
 
 class TestKeycloakRealmModels:
