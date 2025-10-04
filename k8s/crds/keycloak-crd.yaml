@@ -110,17 +110,13 @@ spec:
                 properties:
                   enabled:
                     type: boolean
-                    default: true
+                    default: false
                   secret_name:
                     type: string
                     description: "Secret containing TLS certificate"
                   hostname:
                     type: string
-                    description: "Hostname for TLS certificate"
-                  generate_certificate:
-                    type: boolean
-                    default: false
-                    description: "Generate self-signed certificate if secret not provided"
+                    description: "Hostname for TLS certificate (SNI)"
 
               # Service configuration
               service:
@@ -131,7 +127,7 @@ spec:
                     type: string
                     enum: ["ClusterIP", "NodePort", "LoadBalancer"]
                     default: "ClusterIP"
-                  port:
+                  http_port:
                     type: integer
                     minimum: 1
                     maximum: 65535
@@ -154,12 +150,19 @@ spec:
                   enabled:
                     type: boolean
                     default: false
-                  hostname:
+                  host:
                     type: string
                     description: "Ingress hostname"
+                  path:
+                    type: string
+                    description: "Ingress path"
+                    default: "/"
                   tls_enabled:
                     type: boolean
                     default: true
+                  tls_secret_name:
+                    type: string
+                    description: "Secret name for ingress TLS certificate"
                   annotations:
                     type: object
                     additionalProperties:
@@ -168,30 +171,6 @@ spec:
                     type: string
                     description: "Ingress class name"
 
-              # Admin access configuration
-              admin_access:
-                type: object
-                description: "Admin access configuration. Password is auto-generated and stored in {name}-admin-credentials secret."
-                properties:
-                  username:
-                    type: string
-                    default: "admin"
-                    description: "Admin username (default: admin)"
-                  password_secret:
-                    type: object
-                    description: "DEPRECATED: Password is now auto-generated. This field is ignored."
-                    properties:
-                      name:
-                        type: string
-                      key:
-                        type: string
-                        default: "password"
-                    required:
-                    - name
-                  restrict_to_namespace:
-                    type: boolean
-                    default: true
-                    description: "Restrict admin access to resources in same namespace"
 
               # Resource requirements
               resources:
@@ -214,16 +193,48 @@ spec:
                 additionalProperties:
                   type: string
 
-              # Additional configuration
-              config:
-                type: object
-                description: "Additional Keycloak configuration"
-                additionalProperties:
+              # JVM configuration
+              jvm_options:
+                type: array
+                description: "JVM options for Keycloak (e.g., heap size, GC settings)"
+                items:
                   type: string
+                example: ["-Xms512m", "-Xmx2048m", "-XX:+UseG1GC"]
+
+              # Service account
+              service_account:
+                type: string
+                description: "Service account name for Keycloak pods (for workload identity)"
+
+              # Health probes
+              startup_probe:
+                type: object
+                description: "Startup probe configuration (overrides defaults)"
+                x-kubernetes-preserve-unknown-fields: true
+
+              liveness_probe:
+                type: object
+                description: "Liveness probe configuration (overrides defaults)"
+                x-kubernetes-preserve-unknown-fields: true
+
+              readiness_probe:
+                type: object
+                description: "Readiness probe configuration (overrides defaults)"
+                x-kubernetes-preserve-unknown-fields: true
+
+              # Security
+              pod_security_context:
+                type: object
+                description: "Pod-level security context (fsGroup, runAsUser, etc.)"
+                x-kubernetes-preserve-unknown-fields: true
+
+              security_context:
+                type: object
+                description: "Container-level security context (capabilities, privileged, etc.)"
+                x-kubernetes-preserve-unknown-fields: true
 
             required:
             - database
-            - admin_access
 
           status:
             type: object

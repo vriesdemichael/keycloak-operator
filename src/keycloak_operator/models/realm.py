@@ -225,6 +225,84 @@ class KeycloakRealmSecurity(BaseModel):
         return v
 
 
+class KeycloakProtocolMapper(BaseModel):
+    """Protocol mapper for client scopes."""
+
+    name: str = Field(..., description="Mapper name")
+    protocol: str = Field(..., description="Protocol (openid-connect, saml)")
+    protocol_mapper: str = Field(..., description="Mapper type")
+    config: dict[str, str] = Field(
+        default_factory=dict, description="Mapper configuration"
+    )
+
+
+class KeycloakClientScope(BaseModel):
+    """Client scope definition."""
+
+    name: str = Field(..., description="Scope name")
+    description: str | None = Field(None, description="Scope description")
+    protocol: str = Field("openid-connect", description="Protocol")
+    attributes: dict[str, str] = Field(
+        default_factory=dict, description="Scope attributes"
+    )
+    protocol_mappers: list[KeycloakProtocolMapper] = Field(
+        default_factory=list, description="Protocol mappers"
+    )
+
+
+class KeycloakRealmRole(BaseModel):
+    """Realm role definition."""
+
+    name: str = Field(..., description="Role name")
+    description: str | None = Field(None, description="Role description")
+    composite: bool = Field(False, description="Is composite role")
+    client_role: bool = Field(False, description="Is client role")
+    container_id: str | None = Field(None, description="Container ID")
+
+
+class KeycloakRoles(BaseModel):
+    """Realm and client role definitions."""
+
+    realm_roles: list[KeycloakRealmRole] = Field(
+        default_factory=list, description="Realm roles"
+    )
+
+
+class KeycloakGroup(BaseModel):
+    """Group definition."""
+
+    name: str = Field(..., description="Group name")
+    path: str | None = Field(None, description="Group path")
+    attributes: dict[str, list[str]] = Field(
+        default_factory=dict, description="Group attributes"
+    )
+    realm_roles: list[str] = Field(
+        default_factory=list, description="Assigned realm roles"
+    )
+    client_roles: dict[str, list[str]] = Field(
+        default_factory=dict, description="Assigned client roles by client ID"
+    )
+
+
+class KeycloakEventsConfig(BaseModel):
+    """Event logging configuration."""
+
+    events_enabled: bool = Field(False, description="Enable event logging")
+    events_listeners: list[str] = Field(
+        default_factory=list, description="Event listeners"
+    )
+    enabled_event_types: list[str] = Field(
+        default_factory=list, description="Enabled event types"
+    )
+    events_expiration: int | None = Field(
+        None, description="Event expiration in seconds", ge=1
+    )
+    admin_events_enabled: bool = Field(False, description="Enable admin event logging")
+    admin_events_details_enabled: bool = Field(
+        False, description="Include details in admin events"
+    )
+
+
 class KeycloakRealmSpec(BaseModel):
     """
     Specification for a KeycloakRealm resource.
@@ -236,9 +314,8 @@ class KeycloakRealmSpec(BaseModel):
     # Core realm configuration
     realm_name: str = Field(..., description="Name of the realm")
     display_name: str | None = Field(None, description="Human-readable display name")
-    display_name_html: str | None = Field(
-        None, description="HTML display name for login pages"
-    )
+    description: str | None = Field(None, description="Realm description")
+    login_page_title: str | None = Field(None, description="HTML title for login pages")
 
     # Target configuration
     keycloak_instance_ref: KeycloakInstanceRef = Field(
@@ -280,8 +357,20 @@ class KeycloakRealmSpec(BaseModel):
         default_factory=list, description="User federation configurations"
     )
 
-    # Email settings
-    email_theme: str | None = Field(None, description="Email theme")
+    # Client scopes
+    client_scopes: list[KeycloakClientScope] = Field(
+        default_factory=list, description="Client scope definitions"
+    )
+
+    # Roles
+    roles: KeycloakRoles | None = Field(None, description="Role definitions")
+
+    # Groups
+    groups: list[KeycloakGroup] = Field(
+        default_factory=list, description="Group definitions"
+    )
+
+    # SMTP configuration
     smtp_server: dict[str, Any] | None = Field(
         None, description="SMTP server configuration"
     )
@@ -292,20 +381,9 @@ class KeycloakRealmSpec(BaseModel):
     )
 
     # Events and logging
-    events_enabled: bool = Field(False, description="Enable event logging")
-    events_listeners: list[str] = Field(
-        default_factory=list, description="Event listeners"
+    events_config: KeycloakEventsConfig = Field(
+        default_factory=KeycloakEventsConfig, description="Event logging configuration"
     )
-    admin_events_enabled: bool = Field(False, description="Enable admin event logging")
-    admin_events_details_enabled: bool = Field(
-        False, description="Include details in admin events"
-    )
-
-    # Operational settings
-    deletion_protection: bool = Field(
-        True, description="Protect realm from accidental deletion"
-    )
-    backup_on_delete: bool = Field(False, description="Create backup before deletion")
 
     @field_validator("realm_name")
     @classmethod
@@ -331,7 +409,8 @@ class KeycloakRealmSpec(BaseModel):
         config = {
             "realm": self.realm_name,
             "displayName": self.display_name,
-            "displayNameHtml": self.display_name_html,
+            "description": self.description,
+            "displayNameHtml": self.login_page_title,
             "enabled": self.enabled,
             "attributes": self.attributes.copy(),
         }
@@ -401,12 +480,15 @@ class KeycloakRealmSpec(BaseModel):
             config["smtpServer"] = self.smtp_server
 
         # Add events configuration
+        events = self.events_config
         config.update(
             {
-                "eventsEnabled": self.events_enabled,
-                "eventsListeners": self.events_listeners,
-                "adminEventsEnabled": self.admin_events_enabled,
-                "adminEventsDetailsEnabled": self.admin_events_details_enabled,
+                "eventsEnabled": events.events_enabled,
+                "eventsListeners": events.events_listeners,
+                "enabledEventTypes": events.enabled_event_types,
+                "eventsExpiration": events.events_expiration,
+                "adminEventsEnabled": events.admin_events_enabled,
+                "adminEventsDetailsEnabled": events.admin_events_details_enabled,
             }
         )
 
