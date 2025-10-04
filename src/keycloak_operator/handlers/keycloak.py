@@ -358,10 +358,11 @@ def monitor_keycloak_health(
             patch.status["lastHealthCheck"] = current_time
             return
 
-        # Perform HTTP health check against Keycloak
+        # Perform HTTP health check against Keycloak management interface
+        # Keycloak 25.0+ uses port 9000 for health endpoints
         service_name = f"{name}-keycloak"
         health_url = (
-            f"http://{service_name}.{namespace}.svc.cluster.local:8080/health/ready"
+            f"http://{service_name}.{namespace}.svc.cluster.local:9000/health/ready"
         )
 
         # Perform actual HTTP health check against Keycloak

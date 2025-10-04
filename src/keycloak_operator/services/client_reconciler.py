@@ -337,9 +337,7 @@ class KeycloakClientReconciler(BaseReconciler):
             client_config = {k: v for k, v in client_config.items() if v is not None}
 
             # Update the client with OAuth2 settings
-            success = admin_client.update_client(
-                spec.client_id, client_config, realm_name
-            )
+            success = admin_client.update_client(client_uuid, client_config, realm_name)
             if success:
                 self.logger.info(
                     f"Successfully configured OAuth settings for client {spec.client_id}"
@@ -401,6 +399,7 @@ class KeycloakClientReconciler(BaseReconciler):
             client_secret=client_secret,
             keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
             realm=spec.realm or "master",
+            update_existing=True,  # Update if exists (idempotent)
         )
 
         # Set up RBAC labels for secret access
@@ -692,15 +691,12 @@ class KeycloakClientReconciler(BaseReconciler):
 
         if not roles_config.realm_roles and not roles_config.client_roles:
             self.logger.debug(
-                "No service account roles defined for client %s", spec.client_id
+                f"No service account roles defined for client {spec.client_id}"
             )
             return
 
         self.logger.info(
-            "Configuring service account roles for client %s (resource %s/%s)",
-            spec.client_id,
-            namespace,
-            name,
+            f"Configuring service account roles for client {spec.client_id} (resource {namespace}/{name})"
         )
 
         keycloak_ref = spec.keycloak_instance_ref
@@ -713,7 +709,7 @@ class KeycloakClientReconciler(BaseReconciler):
             )
 
             self.logger.debug(
-                "Fetching service account user for client %s", spec.client_id
+                f"Fetching service account user for client {spec.client_id}"
             )
             service_account_user = admin_client.get_service_account_user(
                 client_uuid, realm_name
@@ -728,9 +724,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
             if roles_config.realm_roles:
                 self.logger.info(
-                    "Assigning %d realm roles to service account for client %s",
-                    len(roles_config.realm_roles),
-                    spec.client_id,
+                    f"Assigning {len(roles_config.realm_roles)} realm roles to service account for client {spec.client_id}"
                 )
                 admin_client.assign_realm_roles_to_user(
                     user_id=user_id,
@@ -742,17 +736,12 @@ class KeycloakClientReconciler(BaseReconciler):
                 for target_client_id, role_names in roles_config.client_roles.items():
                     if not role_names:
                         self.logger.debug(
-                            "No roles listed for target client %s when assigning to %s",
-                            target_client_id,
-                            spec.client_id,
+                            f"No roles listed for target client {target_client_id} when assigning to {spec.client_id}"
                         )
                         continue
 
                     self.logger.info(
-                        "Assigning %d client roles from '%s' to service account for client %s",
-                        len(role_names),
-                        target_client_id,
-                        spec.client_id,
+                        f"Assigning {len(role_names)} client roles from '{target_client_id}' to service account for client {spec.client_id}"
                     )
 
                     target_client = admin_client.get_client_by_name(
@@ -760,17 +749,14 @@ class KeycloakClientReconciler(BaseReconciler):
                     )
                     if not target_client:
                         self.logger.warning(
-                            "Target client '%s' not found in realm '%s'; skipping role assignment",
-                            target_client_id,
-                            realm_name,
+                            f"Target client '{target_client_id}' not found in realm '{realm_name}'; skipping role assignment"
                         )
                         continue
 
                     target_client_uuid = target_client.get("id")
                     if not target_client_uuid:
                         self.logger.warning(
-                            "Target client '%s' missing UUID; skipping role assignment",
-                            target_client_id,
+                            f"Target client '{target_client_id}' missing UUID; skipping role assignment"
                         )
                         continue
 
@@ -782,35 +768,26 @@ class KeycloakClientReconciler(BaseReconciler):
                     )
 
             self.logger.info(
-                "Service account roles successfully configured for client %s (resource %s/%s)",
-                spec.client_id,
-                namespace,
-                name,
+                f"Service account roles successfully configured for client {spec.client_id} (resource {namespace}/{name})"
             )
 
         except KeycloakAdminError as exc:
             self.logger.error(
-                "Failed Keycloak admin operation while managing service account roles for %s: %s",
-                spec.client_id,
-                exc,
+                f"Failed Keycloak admin operation while managing service account roles for {spec.client_id}: {exc}"
             )
             raise ReconciliationError(
                 f"Service account role management failed: {exc}", retryable=False
             ) from exc
         except ApiException as exc:
             self.logger.error(
-                "Kubernetes API error while managing service account roles for %s: %s",
-                spec.client_id,
-                exc,
+                f"Kubernetes API error while managing service account roles for {spec.client_id}: {exc}"
             )
             raise ReconciliationError(
                 f"Kubernetes API error during service account role management: {exc}"
             ) from exc
         except Exception as exc:
             self.logger.error(
-                "Unexpected error managing service account roles for %s: %s",
-                spec.client_id,
-                exc,
+                f"Unexpected error managing service account roles for {spec.client_id}: {exc}"
             )
             raise ReconciliationError(
                 f"Unexpected error managing service account roles: {exc}"
