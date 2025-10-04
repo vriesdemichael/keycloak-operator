@@ -92,10 +92,41 @@ async def ensure_keycloak_realm(
         Dictionary with status information for the resource
 
     """
+    # Check if resource is being deleted (deletionTimestamp is set)
+    meta = kwargs.get("meta", {})
+    deletion_timestamp = meta.get("deletionTimestamp")
+
+    if deletion_timestamp:
+        logger.info(f"KeycloakRealm {name} has deletionTimestamp, triggering cleanup")
+        # Resource is being deleted, trigger cleanup logic
+        current_finalizers = meta.get("finalizers", [])
+        if REALM_FINALIZER in current_finalizers:
+            try:
+                reconciler = KeycloakRealmReconciler()
+                status_wrapper = StatusWrapper(status)
+                await reconciler.cleanup_resources(
+                    name=name, namespace=namespace, spec=spec, status=status_wrapper
+                )
+
+                # Remove finalizer to complete deletion
+                logger.info(
+                    f"Cleanup completed successfully, removing finalizer {REALM_FINALIZER}"
+                )
+                current_finalizers = list(current_finalizers)
+                current_finalizers.remove(REALM_FINALIZER)
+                patch.metadata["finalizers"] = current_finalizers
+                logger.info(f"Successfully deleted KeycloakRealm {name}")
+            except Exception as e:
+                logger.error(f"Error during KeycloakRealm deletion: {e}")
+                raise kopf.TemporaryError(
+                    f"Failed to delete KeycloakRealm {name}: {e}",
+                    delay=30,
+                ) from e
+        return None
+
     logger.info(f"Ensuring KeycloakRealm {name} in namespace {namespace}")
 
     # Add finalizer BEFORE creating any resources to ensure proper cleanup
-    meta = kwargs.get("meta", {})
     current_finalizers = meta.get("finalizers", [])
     if REALM_FINALIZER not in current_finalizers:
         logger.info(f"Adding finalizer {REALM_FINALIZER} to KeycloakRealm {name}")
