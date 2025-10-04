@@ -17,7 +17,7 @@ class TestServiceAccountRoles:
     """Test service account role assignment using shared Keycloak instance."""
 
     @pytest.mark.skip(
-        reason="Test complexity causes >300s timeout - needs custom realm roles and service accounts"
+        reason="Complex test requiring custom realm roles - times out in parallel suite (300s+ runtime)"
     )
     async def test_service_account_realm_roles_assigned(
         self,
