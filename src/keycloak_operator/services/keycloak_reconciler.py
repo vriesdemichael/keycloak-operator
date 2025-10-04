@@ -969,6 +969,113 @@ class KeycloakInstanceReconciler(BaseReconciler):
         )
         return False
 
+    async def _delete_dependent_resources(
+        self, keycloak_name: str, keycloak_namespace: str
+    ) -> None:
+        """
+        Delete all CRD resources that depend on this Keycloak instance.
+
+        This implements cascading deletion by finding and deleting:
+        1. KeycloakClients that reference this Keycloak instance
+        2. KeycloakRealms that reference this Keycloak instance
+
+        Args:
+            keycloak_name: Name of the Keycloak instance being deleted
+            keycloak_namespace: Namespace of the Keycloak instance
+        """
+        from kubernetes import client
+        from kubernetes.client.rest import ApiException
+
+        self.logger.info(
+            f"Cascading deletion: Finding dependent resources for Keycloak {keycloak_name}"
+        )
+
+        custom_api = client.CustomObjectsApi(self.kubernetes_client)
+
+        # Delete dependent KeycloakClients first (they depend on realms)
+        try:
+            clients = custom_api.list_cluster_custom_object(
+                group="keycloak.mdvr.nl",
+                version="v1",
+                plural="keycloakclients",
+            )
+
+            for client_obj in clients.get("items", []):
+                client_spec = client_obj.get("spec", {})
+                keycloak_ref = client_spec.get("keycloak_instance_ref", {})
+                ref_name = keycloak_ref.get("name")
+                ref_namespace = (
+                    keycloak_ref.get("namespace") or client_obj["metadata"]["namespace"]
+                )
+
+                # Check if this client references the Keycloak being deleted
+                if ref_name == keycloak_name and ref_namespace == keycloak_namespace:
+                    client_name = client_obj["metadata"]["name"]
+                    client_ns = client_obj["metadata"]["namespace"]
+                    self.logger.info(
+                        f"Cascading deletion: Deleting dependent KeycloakClient {client_name} in {client_ns}"
+                    )
+                    try:
+                        custom_api.delete_namespaced_custom_object(
+                            group="keycloak.mdvr.nl",
+                            version="v1",
+                            namespace=client_ns,
+                            plural="keycloakclients",
+                            name=client_name,
+                        )
+                    except ApiException as e:
+                        if e.status != 404:  # Ignore if already deleted
+                            self.logger.warning(
+                                f"Failed to delete KeycloakClient {client_name}: {e}"
+                            )
+        except Exception as e:
+            self.logger.warning(
+                f"Error listing KeycloakClients for cascading deletion: {e}"
+            )
+
+        # Delete dependent KeycloakRealms
+        try:
+            realms = custom_api.list_cluster_custom_object(
+                group="keycloak.mdvr.nl",
+                version="v1",
+                plural="keycloakrealms",
+            )
+
+            for realm_obj in realms.get("items", []):
+                realm_spec = realm_obj.get("spec", {})
+                keycloak_ref = realm_spec.get("keycloak_instance_ref", {})
+                ref_name = keycloak_ref.get("name")
+                ref_namespace = (
+                    keycloak_ref.get("namespace") or realm_obj["metadata"]["namespace"]
+                )
+
+                # Check if this realm references the Keycloak being deleted
+                if ref_name == keycloak_name and ref_namespace == keycloak_namespace:
+                    realm_name = realm_obj["metadata"]["name"]
+                    realm_ns = realm_obj["metadata"]["namespace"]
+                    self.logger.info(
+                        f"Cascading deletion: Deleting dependent KeycloakRealm {realm_name} in {realm_ns}"
+                    )
+                    try:
+                        custom_api.delete_namespaced_custom_object(
+                            group="keycloak.mdvr.nl",
+                            version="v1",
+                            namespace=realm_ns,
+                            plural="keycloakrealms",
+                            name=realm_name,
+                        )
+                    except ApiException as e:
+                        if e.status != 404:  # Ignore if already deleted
+                            self.logger.warning(
+                                f"Failed to delete KeycloakRealm {realm_name}: {e}"
+                            )
+        except Exception as e:
+            self.logger.warning(
+                f"Error listing KeycloakRealms for cascading deletion: {e}"
+            )
+
+        self.logger.info("Cascading deletion: Completed deleting dependent resources")
+
     async def cleanup_resources(
         self, name: str, namespace: str, spec: dict[str, Any]
     ) -> None:
@@ -977,6 +1084,11 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         This method performs comprehensive cleanup in the proper order to prevent
         data loss and ensure all associated resources are properly removed.
+
+        Implements cascading deletion:
+        1. Delete dependent KeycloakClients
+        2. Delete dependent KeycloakRealms
+        3. Delete Kubernetes resources (deployments, services, etc.)
 
         Args:
             name: Name of the Keycloak instance
@@ -995,6 +1107,13 @@ class KeycloakInstanceReconciler(BaseReconciler):
         )
 
         self.logger.info(f"Starting cleanup of Keycloak instance {name} in {namespace}")
+
+        # CASCADING DELETION: Delete dependent CRD resources first
+        try:
+            await self._delete_dependent_resources(name, namespace)
+        except Exception as e:
+            self.logger.warning(f"Failed to delete some dependent resources: {e}")
+            # Continue with cleanup even if some dependents fail to delete
 
         try:
             keycloak_spec = KeycloakSpec.model_validate(spec)
