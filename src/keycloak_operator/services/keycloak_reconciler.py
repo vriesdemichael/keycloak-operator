@@ -362,31 +362,28 @@ class KeycloakInstanceReconciler(BaseReconciler):
             self.update_status_degraded(
                 status, "Deployment created but not ready within timeout", generation
             )
-            return {
-                "phase": "Degraded",
-                "message": "Deployment created but not ready within timeout",
-                "deployment": f"{name}-keycloak",
-                "service": f"{name}-keycloak",
-                "endpoints": {
-                    "admin": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
-                    "public": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
-                },
-            }
-
-        # Update status to ready and return status information
-        self.update_status_ready(status, "Keycloak instance is ready", generation)
-        return {
-            "phase": "Ready",
-            "message": "Keycloak instance is ready",
-            "deployment": f"{name}-keycloak",
-            "service": f"{name}-keycloak",
-            "adminSecret": f"{name}-admin-credentials",
-            "endpoints": {
+            # Set additional status fields via StatusWrapper
+            status.deployment = f"{name}-keycloak"
+            status.service = f"{name}-keycloak"
+            status.endpoints = {
                 "admin": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
                 "public": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
-                "management": f"http://{name}-keycloak.{namespace}.svc.cluster.local:9000",
-            },
+            }
+            return {}
+
+        # Update status to ready and set additional status information
+        self.update_status_ready(status, "Keycloak instance is ready", generation)
+        # Set additional status fields via StatusWrapper to avoid conflicts with Kopf
+        status.deployment = f"{name}-keycloak"
+        status.service = f"{name}-keycloak"
+        status.adminSecret = f"{name}-admin-credentials"
+        status.endpoints = {
+            "admin": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
+            "public": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
+            "management": f"http://{name}-keycloak.{namespace}.svc.cluster.local:9000",
         }
+        # Return empty dict - status updates are done via StatusWrapper
+        return {}
 
     def _validate_spec(self, spec: dict[str, Any]) -> KeycloakSpec:
         """

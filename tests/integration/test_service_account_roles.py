@@ -14,30 +14,44 @@ from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestServiceAccountRoles:
-    """Test service account role assignment using shared Keycloak instance."""
+    """Test service account role assignment with dedicated Keycloak instance."""
 
-    @pytest.mark.skip(
-        reason="Complex test requiring custom realm roles - times out in parallel suite (300s+ runtime)"
-    )
+    @pytest.mark.timeout(600)  # Complex test with dedicated resources (10 minutes)
     async def test_service_account_realm_roles_assigned(
         self,
         k8s_custom_objects,
         k8s_core_v1,
-        shared_keycloak_instance,
+        test_namespace,
+        sample_keycloak_spec,
         sample_realm_spec,
         sample_client_spec,
         wait_for_condition,
+        wait_for_keycloak_ready,
     ) -> None:
-        """End-to-end verification that realm roles are assigned to service accounts."""
+        """End-to-end verification that realm roles are assigned to service accounts.
 
-        # Use shared Keycloak instance
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        This is a complex integration test requiring:
+        - Dedicated Keycloak instance creation (~60s)
+        - Custom realm with specific configuration
+        - Realm role creation via API
+        - Service account client with role mappings
+        - Verification of role assignments
+        """
+
+        # Use dedicated Keycloak instance for this complex test
+        keycloak_name = f"svc-roles-kc-{uuid.uuid4().hex[:8]}"
+        namespace = test_namespace
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"svc-roles-realm-{suffix}"
         client_name = f"svc-roles-client-{suffix}"
         service_account_role = f"svc-role-{suffix}"
+
+        # Create dedicated Keycloak instance for this test
+        keycloak_manifest = {
+            **sample_keycloak_spec,
+            "metadata": {"name": keycloak_name, "namespace": namespace},
+        }
 
         realm_manifest = {
             **sample_realm_spec,
@@ -102,7 +116,17 @@ class TestServiceAccountRoles:
         admin_client = None
 
         try:
-            # Shared Keycloak instance is already ready from fixture
+            # Create dedicated Keycloak instance
+            k8s_custom_objects.create_namespaced_custom_object(
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                body=keycloak_manifest,
+            )
+
+            # Wait for Keycloak to be ready
+            await wait_for_keycloak_ready(keycloak_name, namespace, timeout=600)
 
             # Create realm and wait until Ready
             k8s_custom_objects.create_namespaced_custom_object(
@@ -165,7 +189,7 @@ class TestServiceAccountRoles:
             if admin_client is not None:
                 admin_client.session.close()
 
-            # Cleanup client and realm only (shared Keycloak managed by fixture)
+            # Cleanup all resources (in reverse order)
             with contextlib.suppress(ApiException):
                 k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
@@ -181,4 +205,12 @@ class TestServiceAccountRoles:
                     namespace=namespace,
                     plural="keycloakrealms",
                     name=realm_name,
+                )
+            with contextlib.suppress(ApiException):
+                k8s_custom_objects.delete_namespaced_custom_object(
+                    group="keycloak.mdvr.nl",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloaks",
+                    name=keycloak_name,
                 )

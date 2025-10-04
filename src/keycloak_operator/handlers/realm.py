@@ -12,7 +12,6 @@ Realms provide isolation between different applications or tenants
 and can be managed independently across different namespaces.
 """
 
-import contextlib
 import logging
 from datetime import UTC, datetime
 from typing import Any, Protocol
@@ -35,46 +34,34 @@ class StatusProtocol(Protocol):
 
 
 class StatusWrapper:
-    """Wrapper to make kopf dict-like status compatible with StatusProtocol.
+    """Wrapper to make kopf patch.status compatible with StatusProtocol.
 
-    Mirrors logic in client.StatusWrapper to ensure consistency.
+    This wrapper provides both attribute and dict-like access to patch.status,
+    ensuring all updates are written directly to the underlying patch object.
     """
 
-    def __init__(self, status_obj: Any):
-        object.__setattr__(self, "_raw_status", status_obj)
-
-    def _as_mutable_dict(self) -> dict[str, Any]:
-        rs = object.__getattribute__(self, "_raw_status")
-        if isinstance(rs, dict):
-            return rs
-        shadow = getattr(self, "_shadow", None)
-        if shadow is None:
-            shadow = {}
-            object.__setattr__(self, "_shadow", shadow)
-        return shadow
+    def __init__(self, patch_status: Any):
+        object.__setattr__(self, "_patch_status", patch_status)
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
-        target = self._as_mutable_dict()
-        target[name] = value
-        rs = object.__getattribute__(self, "_raw_status")
-        with contextlib.suppress(Exception):
-            rs[name] = value  # type: ignore[index]
+        # Directly update patch.status
+        self._patch_status[name] = value
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             return object.__getattribute__(self, name)
-        rs = object.__getattribute__(self, "_raw_status")
-        if isinstance(rs, dict) and name in rs:
-            return rs.get(name)
-        shadow = getattr(self, "_shadow", {})
-        return shadow.get(name)
+        # Directly read from patch.status
+        try:
+            return self._patch_status[name]
+        except (KeyError, TypeError):
+            return None
 
     def update(self, data: dict[str, Any]) -> None:
         for k, v in data.items():
-            setattr(self, k, v)
+            self._patch_status[k] = v
 
 
 @kopf.on.create("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
@@ -86,7 +73,7 @@ async def ensure_keycloak_realm(
     status: dict[str, Any],
     patch: kopf.Patch,
     **kwargs: Any,
-) -> dict[str, Any]:
+) -> None:
     """
     Ensure KeycloakRealm exists in the target Keycloak instance.
 
@@ -115,11 +102,14 @@ async def ensure_keycloak_realm(
         patch.metadata.setdefault("finalizers", []).append(REALM_FINALIZER)
 
     # Create reconciler and delegate to service layer
+    # Use patch.status instead of the read-only status dict for updates
     reconciler = KeycloakRealmReconciler()
-    status_wrapper = StatusWrapper(status)
-    return await reconciler.reconcile(
+    status_wrapper = StatusWrapper(patch.status)
+    await reconciler.reconcile(
         spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
     )
+    # Return None to avoid Kopf creating status subpaths
+    return None
 
 
 @kopf.on.update("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
@@ -130,6 +120,7 @@ async def update_keycloak_realm(
     name: str,
     namespace: str,
     status: dict[str, Any],
+    patch: kopf.Patch,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
     """
@@ -145,17 +136,19 @@ async def update_keycloak_realm(
         name: Name of the KeycloakRealm resource
         namespace: Namespace where the resource exists
         status: Current status of the resource
+        patch: Kopf patch object for modifying the resource
 
     Returns:
-        Dictionary with updated status, or None if no changes needed
+        None to avoid Kopf creating status subpaths
 
     """
     logger.info(f"Updating KeycloakRealm {name} in namespace {namespace}")
 
     # Create reconciler and delegate to service layer
+    # Use patch.status instead of the read-only status dict for updates
     reconciler = KeycloakRealmReconciler()
-    status_wrapper = StatusWrapper(status)
-    return await reconciler.update(
+    status_wrapper = StatusWrapper(patch.status)
+    await reconciler.update(
         old_spec=old.get("spec", {}),
         new_spec=new.get("spec", {}),
         diff=diff,
@@ -164,6 +157,7 @@ async def update_keycloak_realm(
         status=status_wrapper,
         **kwargs,
     )
+    return None
 
 
 @kopf.on.delete("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
@@ -240,8 +234,9 @@ def monitor_realm_health(
     name: str,
     namespace: str,
     status: dict[str, Any],
+    patch: kopf.Patch,
     **_kwargs: Any,
-) -> dict[str, Any] | None:
+) -> None:
     """
     Periodic health check for KeycloakRealms.
 
@@ -253,16 +248,15 @@ def monitor_realm_health(
         name: Name of the KeycloakRealm resource
         namespace: Namespace where the resource exists
         status: Current status of the resource
-
-    Returns:
-        Dictionary with updated status, or None if no changes needed
+        patch: Kopf patch object for modifying the resource
 
     """
     current_phase = status.get("phase", "Unknown")
 
-    # Skip health checks for failed realms
-    if current_phase in ["Failed", "Pending"]:
-        return None
+    # Skip health checks for failed, pending, or unknown realms
+    # Unknown = resource just created, reconciliation hasn't started yet
+    if current_phase in ["Failed", "Pending", "Unknown"]:
+        return
 
     logger.debug(f"Checking health of KeycloakRealm {name} in {namespace}")
 
@@ -280,11 +274,10 @@ def monitor_realm_health(
 
         if not existing_realm:
             logger.warning(f"Realm {realm_name} missing from Keycloak")
-            return {
-                "phase": "Degraded",
-                "message": "Realm missing from Keycloak, will recreate",
-                "lastHealthCheck": datetime.now(UTC).isoformat(),
-            }
+            patch.status["phase"] = "Degraded"
+            patch.status["message"] = "Realm missing from Keycloak, will recreate"
+            patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
+            return
 
         # Verify realm configuration matches spec
         try:
@@ -295,11 +288,10 @@ def monitor_realm_health(
             config_matches = False
         if not config_matches:
             logger.info(f"Realm {realm_name} configuration drift detected")
-            return {
-                "phase": "Degraded",
-                "message": "Configuration drift detected",
-                "lastHealthCheck": datetime.now(UTC).isoformat(),
-            }
+            patch.status["phase"] = "Degraded"
+            patch.status["message"] = "Configuration drift detected"
+            patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
+            return
 
         # Check authentication flows
         if realm_spec.authentication_flows:
@@ -307,11 +299,10 @@ def monitor_realm_health(
                 admin_client, realm_name, realm_spec.authentication_flows
             )
             if not flows_valid:
-                return {
-                    "phase": "Degraded",
-                    "message": "Authentication flows configuration mismatch",
-                    "lastHealthCheck": datetime.now(UTC).isoformat(),
-                }
+                patch.status["phase"] = "Degraded"
+                patch.status["message"] = "Authentication flows configuration mismatch"
+                patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
+                return
 
         # Check identity providers
         if realm_spec.identity_providers:
@@ -319,11 +310,10 @@ def monitor_realm_health(
                 admin_client, realm_name, realm_spec.identity_providers
             )
             if not idps_valid:
-                return {
-                    "phase": "Degraded",
-                    "message": "Identity provider configuration mismatch",
-                    "lastHealthCheck": datetime.now(UTC).isoformat(),
-                }
+                patch.status["phase"] = "Degraded"
+                patch.status["message"] = "Identity provider configuration mismatch"
+                patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
+                return
 
         # Check user federation connections
         if realm_spec.user_federation:
@@ -331,30 +321,23 @@ def monitor_realm_health(
                 admin_client, realm_name, realm_spec.user_federation
             )
             if not federation_healthy:
-                return {
-                    "phase": "Degraded",
-                    "message": "User federation connection issues detected",
-                    "lastHealthCheck": datetime.now(UTC).isoformat(),
-                }
+                patch.status["phase"] = "Degraded"
+                patch.status["message"] = "User federation connection issues detected"
+                patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
+                return
 
         # Everything looks good
         if current_phase != "Ready":
             logger.info(f"KeycloakRealm {name} health check passed")
-            return {
-                "phase": "Ready",
-                "message": "Realm is healthy and properly configured",
-                "lastHealthCheck": datetime.now(UTC).isoformat(),
-            }
+            patch.status["phase"] = "Ready"
+            patch.status["message"] = "Realm is healthy and properly configured"
+            patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
 
     except Exception as e:
         logger.error(f"Health check failed for KeycloakRealm {name}: {e}")
-        return {
-            "phase": "Degraded",
-            "message": f"Health check failed: {str(e)}",
-            "lastHealthCheck": datetime.now(UTC).isoformat(),
-        }
-
-    return None  # No status update needed
+        patch.status["phase"] = "Degraded"
+        patch.status["message"] = f"Health check failed: {str(e)}"
+        patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
 
 
 # Helper functions for health monitoring

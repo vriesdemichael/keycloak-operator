@@ -121,19 +121,20 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Update status to ready
         self.update_status_ready(status, "Realm configured and ready", generation)
 
-        return {
-            "realm_name": realm_spec.realm_name,
-            "keycloak_instance": f"{target_namespace}/{keycloak_ref.name}",
-            "phase": "Ready",
-            "endpoints": endpoints,
-            "features": {
-                "themes": bool(realm_spec.themes),
-                "localization": bool(realm_spec.localization),
-                "customAuthFlows": bool(realm_spec.authentication_flows),
-                "identityProviders": len(realm_spec.identity_providers or []),
-                "userFederation": len(realm_spec.user_federation or []),
-            },
+        # Set additional status fields via StatusWrapper to avoid conflicts with Kopf
+        status.realm_name = realm_spec.realm_name
+        status.keycloak_instance = f"{target_namespace}/{keycloak_ref.name}"
+        status.endpoints = endpoints
+        status.features = {
+            "themes": bool(realm_spec.themes),
+            "localization": bool(realm_spec.localization),
+            "customAuthFlows": bool(realm_spec.authentication_flows),
+            "identityProviders": len(realm_spec.identity_providers or []),
+            "userFederation": len(realm_spec.user_federation or []),
         }
+
+        # Return empty dict - status updates are done via StatusWrapper
+        return {}
 
     def _validate_spec(self, spec: dict[str, Any]) -> KeycloakRealmSpec:
         """
