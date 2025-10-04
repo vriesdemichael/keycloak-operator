@@ -655,3 +655,66 @@ def temp_manifest_file():
         # Cleanup
         if temp_path.exists():
             temp_path.unlink()
+
+
+@pytest.fixture
+async def keycloak_port_forward():
+    """Port-forward Keycloak services to localhost for test access.
+
+    This fixture enables tests running on the host (WSL/Linux/macOS) to access
+    Keycloak instances running inside the Kind cluster by creating a kubectl
+    port-forward tunnel.
+
+    Returns:
+        Async function that sets up port-forwarding:
+        local_port = await keycloak_port_forward(name, namespace)
+
+    Cleanup is automatic - all port-forwards are terminated when the test completes.
+    """
+    import socket
+    import subprocess
+
+    active_forwards: list[subprocess.Popen] = []
+
+    async def _forward(name: str, namespace: str, remote_port: int = 8080) -> int:
+        """Set up port-forward and return the local port."""
+        # Find available local port
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("", 0))
+            local_port = s.getsockname()[1]
+
+        service_name = f"{name}-keycloak"
+
+        # Start port-forward in background
+        cmd = [
+            "kubectl",
+            "port-forward",
+            f"svc/{service_name}",
+            f"{local_port}:{remote_port}",
+            "-n",
+            namespace,
+        ]
+
+        proc = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+        )
+
+        # Wait for port-forward to be ready
+        await asyncio.sleep(2)
+
+        if proc.poll() is not None:
+            stderr = proc.stderr.read() if proc.stderr else ""
+            raise RuntimeError(f"Port-forward failed: {stderr}")
+
+        active_forwards.append(proc)
+        return local_port
+
+    yield _forward
+
+    # Cleanup: kill all port-forwards
+    for proc in active_forwards:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
