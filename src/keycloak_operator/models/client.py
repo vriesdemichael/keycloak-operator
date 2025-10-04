@@ -223,10 +223,88 @@ class KeycloakClientSpec(BaseModel):
 
     @field_validator("redirect_uris")
     @classmethod
-    def validate_redirect_uris(cls, v):
+    def validate_redirect_uris(cls, v: list[str]) -> list[str]:
+        """Validate redirect URIs follow Keycloak wildcard rules.
+
+        Keycloak allows wildcards (*) in specific locations:
+        - ✓ In path: http://localhost:3000/* or https://example.com/app/*
+        - ✓ Custom schemes: custom:* or mycustomscheme:*
+        - ✗ In domain: https://*.example.com or http://example*.com
+        - ✗ Bare wildcard: * (too permissive, blocked since Keycloak 22.x)
+
+        Wildcards can only appear at the END of the URI.
+        """
         for uri in v:
-            if "*" in uri:
-                raise ValueError("Wildcard characters not allowed in redirect URIs")
+            if not uri:
+                continue
+
+            # Check for bare wildcard (no longer valid in Keycloak 22+)
+            if uri.strip() == "*":
+                raise ValueError(
+                    "Bare wildcard '*' is not allowed as redirect URI. "
+                    "Use a specific pattern like 'http://localhost:3000/*' or 'https://example.com/app/*'"
+                )
+
+            # Check if wildcard exists
+            if "*" not in uri:
+                continue  # No wildcard, no further validation needed
+
+            # Parse scheme - custom schemes may use : or ://
+            if ":" not in uri:
+                raise ValueError(
+                    f"Invalid redirect URI format: '{uri}'. "
+                    f"Must include scheme (e.g., 'http://', 'https://', or 'custom:')"
+                )
+
+            # Determine if using :// (http/https) or : (custom schemes)
+            if "://" in uri:
+                scheme, rest = uri.split("://", 1)
+            else:
+                scheme, rest = uri.split(":", 1)
+
+            # For custom schemes (not http/https), wildcard is allowed
+            # Examples: custom:*, myapp:callback/*, electron://app/*
+            if scheme.lower() not in ["http", "https"]:
+                # Custom schemes can use wildcard after colon
+                # Pattern: custom:* or custom:path/* or custom://something/*
+                # Still validate wildcard is at the end
+                if not uri.endswith("*"):
+                    raise ValueError(
+                        f"Wildcard must be at the end of redirect URI: '{uri}'. "
+                        f"Example: 'myapp:callback/*' not 'myapp:call*back'"
+                    )
+                continue
+
+            # For http(s) schemes, wildcard must be in PATH, not DOMAIN
+            # At this point, rest is everything after ://
+            if "/" in rest:
+                # Split into domain and path portions
+                domain_part, path_part = rest.split("/", 1)
+
+                # Check if wildcard appears in domain portion
+                if "*" in domain_part:
+                    raise ValueError(
+                        f"Wildcard not allowed in domain portion of redirect URI: '{uri}'. "
+                        f"❌ Invalid: 'https://*.example.com' or 'http://example*.com'. "
+                        f"✓ Valid: 'https://example.com/*' or 'https://example.com/app/*'"
+                    )
+
+                # Wildcard in path is valid, but must be at the end
+                if not uri.endswith("*"):
+                    raise ValueError(
+                        f"Wildcard must be at the end of redirect URI: '{uri}'. "
+                        f"Example: 'http://example.com/path/*' not 'http://example.com/pa*th/more'"
+                    )
+            else:
+                # No path separator, so everything after :// is domain
+                # Example: http://example.com*
+                if "*" in rest:
+                    raise ValueError(
+                        f"Wildcard not allowed in domain-only redirect URI: '{uri}'. "
+                        f"❌ Invalid: 'http://example.com*' or 'https://*.example.com'. "
+                        f"✓ Valid: 'http://example.com/*' (add trailing slash and wildcard)"
+                    )
+
         return v
 
     def to_keycloak_config(self) -> dict[str, Any]:

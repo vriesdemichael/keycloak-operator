@@ -6,10 +6,15 @@
 
 ### ✅ BUG #1: FIXED - Admin Authentication Failure
 **Completion Date:** 2025-10-03
-**Solution:** Fixed via finalizer implementation
+**Enhanced:** 2025-10-04
+**Solution:** Fixed via finalizer implementation + cascading deletion
 - PVC cleanup now automatic in deletion handler
+- **NEW**: Deletion handlers now work on operator restart (deletionTimestamp check)
+- **NEW**: Cascading deletion implemented - dependent realms/clients auto-deleted
 - No more stale credentials persisting between deployments
 - See `src/keycloak_operator/handlers/keycloak.py` - deletion handler with PVC cleanup
+- See `src/keycloak_operator/services/keycloak_reconciler.py:972-1069` - cascading deletion implementation
+- **VERIFIED**: All integration tests passing (18/18)
 
 ### ❌ BUG #2: NOT FIXED - Redirect URI Validation Too Strict
 **Status:** STILL BLOCKING PRODUCTION USE
