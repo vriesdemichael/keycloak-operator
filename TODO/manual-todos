@@ -1,6 +1,6 @@
 # Manual TODOs - Organized by Priority
 
-**Last Updated:** 2025-10-03
+**Last Updated:** 2025-10-05
 
 ## Testing (P0 - Critical)
 - [x] Integration test on local cluster (✅ **COMPLETE 2025-10-04** - 18/18 tests passing, all finalizer/deletion tests working)
@@ -39,12 +39,12 @@
 **Priority:** P1 (these affect API stability)
 
 ### Keycloak CRD
-- [ ] `keycloak.spec.admin_access` → least privilege, no custom admin access
-- [ ] `keycloak.spec.version` → version determined by image
-- [ ] `keycloak.tls` → optional when using cert-manager, from ingress
+- [ ] `keycloak.spec.admin_access` → least privilege, no custom admin access (already removed)
+- [x] `keycloak.spec.version` → version determined by image (✅ **COMPLETE 2025-10-05**)
+- [ ] `keycloak.tls` → optional when using cert-manager, from ingress (already fine as-is)
 
 ### Realm CRD
-- [ ] `realm.enabled` → the resource being there manages enabled/disabled, don't allow this setting
+- [x] `realm.enabled` → the resource being there manages enabled/disabled, don't allow this setting (✅ **COMPLETE 2025-10-05**)
 
 ---
 
