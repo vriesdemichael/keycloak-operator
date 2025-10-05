@@ -191,7 +191,7 @@ spec:
               # SMTP configuration
               smtp_server:
                 type: object
-                description: "SMTP server configuration for email"
+                description: "SMTP server configuration for email. Use password_secret for secure credential storage."
                 properties:
                   host:
                     type: string
@@ -201,7 +201,7 @@ spec:
                     minimum: 1
                     maximum: 65535
                     description: "SMTP server port"
-                  from:
+                  from_address:
                     type: string
                     description: "From email address"
                   from_display_name:
@@ -230,9 +230,20 @@ spec:
                     description: "SMTP username"
                   password:
                     type: string
-                    description: "SMTP password"
-                additionalProperties:
-                  type: string
+                    description: "SMTP password (use password_secret instead for better security)"
+                  password_secret:
+                    type: object
+                    description: "Reference to Kubernetes secret containing SMTP password (recommended over password)"
+                    properties:
+                      name:
+                        type: string
+                        description: "Secret name"
+                      key:
+                        type: string
+                        description: "Key in secret data"
+                        default: "password"
+                    required:
+                    - name
 
               # Localization
               localization:

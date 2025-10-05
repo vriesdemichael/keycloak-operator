@@ -188,6 +188,120 @@ spec:
 - **Microsoft SQL Server**: Windows environment integration
 
 
+## 📧 Realm Configuration
+
+### SMTP Configuration
+
+Configure email delivery for password resets, email verification, and notifications.
+
+#### Secure Configuration (Recommended)
+
+Use Kubernetes secrets for SMTP passwords:
+
+```yaml
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: smtp-credentials
+  namespace: identity-system
+type: Opaque
+stringData:
+  password: "your-smtp-password-here"
+---
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakRealm
+metadata:
+  name: my-realm
+  namespace: identity-system
+spec:
+  realm_name: my-realm
+  keycloak_instance_ref:
+    name: my-keycloak
+
+  smtp_server:
+    host: smtp.gmail.com
+    port: 587
+    from_address: noreply@example.com
+    from_display_name: "My Application"
+    reply_to: support@example.com
+    starttls: true
+    auth: true
+    user: noreply@example.com
+    password_secret:
+      name: smtp-credentials
+      key: password
+```
+
+#### GitOps-Compatible Secret Management
+
+For production GitOps workflows, use sealed secrets or external secret operators:
+
+**With Sealed Secrets:**
+```bash
+# Create sealed secret
+kubectl create secret generic smtp-credentials \
+  --from-literal=password='your-password' \
+  --dry-run=client -o yaml | \
+  kubeseal -o yaml > smtp-credentials-sealed.yaml
+
+# Commit sealed secret to git
+git add smtp-credentials-sealed.yaml
+git commit -m "Add SMTP credentials"
+```
+
+**With External Secrets Operator:**
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: smtp-credentials
+  namespace: identity-system
+spec:
+  refreshInterval: 1h
+  secretStoreRef:
+    name: vault-backend
+    kind: SecretStore
+  target:
+    name: smtp-credentials
+  data:
+  - secretKey: password
+    remoteRef:
+      key: smtp/password
+```
+
+#### SMTP Configuration Options
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `host` | string | ✅ | SMTP server hostname |
+| `port` | integer | ✅ | SMTP server port (1-65535) |
+| `from_address` | string | ✅ | From email address |
+| `from_display_name` | string | ❌ | Display name for from address |
+| `reply_to` | string | ❌ | Reply-to email address |
+| `envelope_from` | string | ❌ | Envelope from address |
+| `ssl` | boolean | ❌ | Use SSL (default: false) |
+| `starttls` | boolean | ❌ | Use STARTTLS (default: false) |
+| `auth` | boolean | ❌ | Require authentication (default: false) |
+| `user` | string | ❌ | SMTP username (required if auth=true) |
+| `password` | string | ❌ | Direct password (not recommended) |
+| `password_secret` | object | ❌ | Secret reference (recommended) |
+
+#### Security Best Practices
+
+**✅ DO:**
+- Use `password_secret` for credential storage
+- Use sealed secrets or external secret operators for GitOps
+- Restrict secret access with Kubernetes RBAC
+- Rotate SMTP credentials regularly
+- Use TLS/STARTTLS for secure connections
+
+**❌ DON'T:**
+- Store passwords directly in `password` field
+- Commit unencrypted secrets to Git
+- Share SMTP credentials across multiple realms
+- Use unencrypted SMTP connections in production
+
 
 ## 🤝 Contributing
 
