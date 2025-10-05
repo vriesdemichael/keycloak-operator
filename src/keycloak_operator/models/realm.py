@@ -536,7 +536,11 @@ class KeycloakRealmSpec(BaseModel):
                 exclude_none=True,
                 exclude={"password_secret", "password"},
             )
-            config["smtpServer"] = smtp_config
+            # Convert all values to strings (Keycloak API requirement)
+            config["smtpServer"] = {
+                k: str(v).lower() if isinstance(v, bool) else str(v)
+                for k, v in smtp_config.items()
+            }
 
         # Add events configuration
         events = self.events_config
