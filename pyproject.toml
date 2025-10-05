@@ -19,6 +19,13 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
 
+[project.urls]
+Homepage = "https://github.com/vriesdemichael/keycloak-operator"
+Repository = "https://github.com/vriesdemichael/keycloak-operator"
+Documentation = "https://github.com/vriesdemichael/keycloak-operator#readme"
+"Issue Tracker" = "https://github.com/vriesdemichael/keycloak-operator/issues"
+Changelog = "https://github.com/vriesdemichael/keycloak-operator/blob/main/CHANGELOG.md"
+
 dependencies = [
     "kopf>=1.37.0",
     "pydantic>=2.0.0",

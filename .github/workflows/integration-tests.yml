@@ -203,8 +203,6 @@ jobs:
         # Create secrets
         kubectl create -n operator-test secret generic test-db-secret \
           --from-literal=password=testpass
-        kubectl create -n operator-test secret generic test-admin-secret \
-          --from-literal=password=admin123
 
         # Create Keycloak resource
         cat <<EOF | kubectl apply -f -
@@ -214,24 +212,19 @@ jobs:
           name: test-keycloak
           namespace: operator-test
         spec:
-          image: "quay.io/keycloak/keycloak:23.0.0"
+          image: "quay.io/keycloak/keycloak:26.4.0"
           replicas: 1
           database:
             type: "postgresql"
             host: "postgres.postgres.svc.cluster.local"
-            name: "keycloak"
+            database: "keycloak"
             username: "keycloak"
             password_secret:
               name: "test-db-secret"
               key: "password"
-          admin_access:
-            username: "admin"
-            password_secret:
-              name: "test-admin-secret"
-              key: "password"
           service:
             type: "ClusterIP"
-            port: 8080
+            http_port: 8080
         EOF
 
         # Wait for resource to be processed
