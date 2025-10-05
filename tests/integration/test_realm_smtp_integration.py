@@ -12,19 +12,20 @@ from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_smtp_secret_reference(
-    shared_keycloak_instance, test_namespace, keycloak_port_forward
+    shared_keycloak_instance, keycloak_port_forward
 ):
     """Test creating realm with SMTP config using secret reference."""
     realm_name = f"test-smtp-{uuid.uuid4().hex[:8]}"
     secret_name = f"smtp-secret-{uuid.uuid4().hex[:8]}"
+    namespace = shared_keycloak_instance["namespace"]
 
     # Create SMTP password secret
     core_api = client.CoreV1Api()
     secret = client.V1Secret(
-        metadata=client.V1ObjectMeta(name=secret_name, namespace=test_namespace),
+        metadata=client.V1ObjectMeta(name=secret_name, namespace=namespace),
         string_data={"password": "test-smtp-password"},
     )
-    core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
+    core_api.create_namespaced_secret(namespace=namespace, body=secret)
 
     try:
         # Create KeycloakRealm with SMTP configuration
@@ -32,10 +33,13 @@ async def test_realm_with_smtp_secret_reference(
         realm_resource = {
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "KeycloakRealm",
-            "metadata": {"name": realm_name, "namespace": test_namespace},
+            "metadata": {"name": realm_name, "namespace": namespace},
             "spec": {
                 "realm_name": realm_name,
-                "keycloak_instance_ref": {"name": shared_keycloak_instance},
+                "keycloak_instance_ref": {
+                    "name": shared_keycloak_instance["name"],
+                    "namespace": shared_keycloak_instance["namespace"],
+                },
                 "smtp_server": {
                     "host": "smtp.example.com",
                     "port": 587,
@@ -52,22 +56,22 @@ async def test_realm_with_smtp_secret_reference(
         custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
-            namespace=test_namespace,
+            namespace=namespace,
             plural="keycloakrealms",
             body=realm_resource,
         )
 
         # Wait for realm to be ready
-        await wait_for_realm_ready(custom_api, realm_name, test_namespace, timeout=120)
+        await wait_for_realm_ready(custom_api, realm_name, namespace, timeout=120)
 
         # Verify SMTP configuration in Keycloak
         local_port = await keycloak_port_forward(
-            shared_keycloak_instance, test_namespace
+            shared_keycloak_instance["name"], namespace
         )
 
         # Get admin credentials
         admin_secret = core_api.read_namespaced_secret(
-            name=f"{shared_keycloak_instance}-admin", namespace=test_namespace
+            name=f"{shared_keycloak_instance['name']}-admin", namespace=namespace
         )
         import base64
 
@@ -105,24 +109,25 @@ async def test_realm_with_smtp_secret_reference(
             custom_api.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
             )
 
         with contextlib.suppress(Exception):
             core_api.delete_namespaced_secret(
-                name=secret_name, namespace=test_namespace
+                name=secret_name, namespace=namespace
             )
 
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_smtp_direct_password(
-    shared_keycloak_instance, test_namespace, keycloak_port_forward
+    shared_keycloak_instance, keycloak_port_forward
 ):
     """Test creating realm with SMTP config using direct password (deprecated)."""
     realm_name = f"test-smtp-direct-{uuid.uuid4().hex[:8]}"
+    namespace = shared_keycloak_instance["namespace"]
 
     custom_api = client.CustomObjectsApi()
 
@@ -131,10 +136,13 @@ async def test_realm_with_smtp_direct_password(
         realm_resource = {
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "KeycloakRealm",
-            "metadata": {"name": realm_name, "namespace": test_namespace},
+            "metadata": {"name": realm_name, "namespace": namespace},
             "spec": {
                 "realm_name": realm_name,
-                "keycloak_instance_ref": {"name": shared_keycloak_instance},
+                "keycloak_instance_ref": {
+                    "name": shared_keycloak_instance["name"],
+                    "namespace": shared_keycloak_instance["namespace"],
+                },
                 "smtp_server": {
                     "host": "smtp.example.com",
                     "port": 25,
@@ -149,22 +157,22 @@ async def test_realm_with_smtp_direct_password(
         custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
-            namespace=test_namespace,
+            namespace=namespace,
             plural="keycloakrealms",
             body=realm_resource,
         )
 
         # Wait for realm to be ready
-        await wait_for_realm_ready(custom_api, realm_name, test_namespace, timeout=120)
+        await wait_for_realm_ready(custom_api, realm_name, namespace, timeout=120)
 
         # Verify realm was created
         local_port = await keycloak_port_forward(
-            shared_keycloak_instance, test_namespace
+            shared_keycloak_instance["name"], namespace
         )
 
         core_api = client.CoreV1Api()
         admin_secret = core_api.read_namespaced_secret(
-            name=f"{shared_keycloak_instance}-admin", namespace=test_namespace
+            name=f"{shared_keycloak_instance['name']}-admin", namespace=namespace
         )
         import base64
 
@@ -191,7 +199,7 @@ async def test_realm_with_smtp_direct_password(
             custom_api.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
             )
@@ -199,10 +207,11 @@ async def test_realm_with_smtp_direct_password(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_realm_with_missing_smtp_secret(shared_keycloak_instance, test_namespace):
+async def test_realm_with_missing_smtp_secret(shared_keycloak_instance):
     """Test realm creation fails gracefully with missing SMTP secret."""
     realm_name = f"test-smtp-missing-{uuid.uuid4().hex[:8]}"
     secret_name = f"nonexistent-secret-{uuid.uuid4().hex[:8]}"
+    namespace = shared_keycloak_instance["namespace"]
 
     custom_api = client.CustomObjectsApi()
 
@@ -211,10 +220,13 @@ async def test_realm_with_missing_smtp_secret(shared_keycloak_instance, test_nam
         realm_resource = {
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "KeycloakRealm",
-            "metadata": {"name": realm_name, "namespace": test_namespace},
+            "metadata": {"name": realm_name, "namespace": namespace},
             "spec": {
                 "realm_name": realm_name,
-                "keycloak_instance_ref": {"name": shared_keycloak_instance},
+                "keycloak_instance_ref": {
+                    "name": shared_keycloak_instance["name"],
+                    "namespace": shared_keycloak_instance["namespace"],
+                },
                 "smtp_server": {
                     "host": "smtp.example.com",
                     "port": 587,
@@ -229,7 +241,7 @@ async def test_realm_with_missing_smtp_secret(shared_keycloak_instance, test_nam
         custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
-            namespace=test_namespace,
+            namespace=namespace,
             plural="keycloakrealms",
             body=realm_resource,
         )
@@ -243,7 +255,7 @@ async def test_realm_with_missing_smtp_secret(shared_keycloak_instance, test_nam
         realm = custom_api.get_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
-            namespace=test_namespace,
+            namespace=namespace,
             plural="keycloakrealms",
             name=realm_name,
         )
@@ -262,7 +274,7 @@ async def test_realm_with_missing_smtp_secret(shared_keycloak_instance, test_nam
             custom_api.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
             )
@@ -270,19 +282,20 @@ async def test_realm_with_missing_smtp_secret(shared_keycloak_instance, test_nam
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_realm_with_missing_secret_key(shared_keycloak_instance, test_namespace):
+async def test_realm_with_missing_secret_key(shared_keycloak_instance):
     """Test realm creation fails gracefully with missing key in secret."""
     realm_name = f"test-smtp-badkey-{uuid.uuid4().hex[:8]}"
     secret_name = f"smtp-secret-badkey-{uuid.uuid4().hex[:8]}"
+    namespace = shared_keycloak_instance["namespace"]
 
     core_api = client.CoreV1Api()
 
     # Create secret without the expected key
     secret = client.V1Secret(
-        metadata=client.V1ObjectMeta(name=secret_name, namespace=test_namespace),
+        metadata=client.V1ObjectMeta(name=secret_name, namespace=namespace),
         string_data={"wrong-key": "some-password"},
     )
-    core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
+    core_api.create_namespaced_secret(namespace=namespace, body=secret)
 
     custom_api = client.CustomObjectsApi()
 
@@ -291,10 +304,13 @@ async def test_realm_with_missing_secret_key(shared_keycloak_instance, test_name
         realm_resource = {
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "KeycloakRealm",
-            "metadata": {"name": realm_name, "namespace": test_namespace},
+            "metadata": {"name": realm_name, "namespace": namespace},
             "spec": {
                 "realm_name": realm_name,
-                "keycloak_instance_ref": {"name": shared_keycloak_instance},
+                "keycloak_instance_ref": {
+                    "name": shared_keycloak_instance["name"],
+                    "namespace": shared_keycloak_instance["namespace"],
+                },
                 "smtp_server": {
                     "host": "smtp.example.com",
                     "port": 587,
@@ -312,7 +328,7 @@ async def test_realm_with_missing_secret_key(shared_keycloak_instance, test_name
         custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
-            namespace=test_namespace,
+            namespace=namespace,
             plural="keycloakrealms",
             body=realm_resource,
         )
@@ -326,7 +342,7 @@ async def test_realm_with_missing_secret_key(shared_keycloak_instance, test_name
         realm = custom_api.get_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
-            namespace=test_namespace,
+            namespace=namespace,
             plural="keycloakrealms",
             name=realm_name,
         )
@@ -342,14 +358,14 @@ async def test_realm_with_missing_secret_key(shared_keycloak_instance, test_name
             custom_api.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
             )
 
         with contextlib.suppress(Exception):
             core_api.delete_namespaced_secret(
-                name=secret_name, namespace=test_namespace
+                name=secret_name, namespace=namespace
             )
 
 
