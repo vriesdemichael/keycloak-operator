@@ -47,20 +47,27 @@ docs(chart): update README with examples
    git push origin main
    ```
 
-2. **Release-Please Creates PRs**
+2. **Integration Tests Run**
+   - All tests must pass before image publishing
+   - Unit tests + integration tests on multiple K8s versions
+   - **Safety:** Build workflow only runs if tests succeed
+
+3. **Release-Please Creates PRs**
    - Scans commits since last release
    - Creates **separate PRs** for each component (if both have changes)
    - Updates version in files (operator: `pyproject.toml`, chart: `Chart.yaml`)
    - Generates CHANGELOG
 
-3. **Merge Release PR**
+4. **Docker Images Published** (only if tests passed)
+   - Build workflow waits for integration tests to succeed
+   - On main push: publishes `latest` and `sha-<commit>` tags
+   - Publishes versioned images to ghcr.io
+
+5. **Merge Release PR**
    - Review the generated changelog
    - Merge the PR
    - Release-please creates GitHub release automatically
-
-4. **Docker Images Published**
-   - Build workflow detects release tag
-   - Publishes versioned images to ghcr.io
+   - Triggers build workflow to publish versioned images (v1.2.3)
 
 ### Example: Operator Release
 
@@ -159,3 +166,9 @@ gh release create v0.2.0 --title "v0.2.0" --notes "Emergency release"
 **Q: Multiple PRs for single component?**
 - This is normal if separate-pull-requests is enabled
 - Merge the PR for the component you want to release
+
+**Q: Image published despite test failures?**
+- This should NEVER happen - build workflow requires tests to pass
+- Check workflow dependencies in `.github/workflows/build-and-publish.yml`
+- Workflow uses `workflow_run` trigger to wait for integration tests
+- Only runs if `conclusion == 'success'` or manual trigger/release
