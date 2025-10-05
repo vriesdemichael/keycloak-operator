@@ -1,28 +1,41 @@
 {
-  "release-type": "python",
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
     ".": {
-      "component": "keycloak-operator",
-      "package-name": "keycloak-operator"
+      "release-type": "simple",
+      "component": "operator",
+      "package-name": "keycloak-operator",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "changelog-sections": [
+        {"type": "feat", "section": "Features", "hidden": false},
+        {"type": "fix", "section": "Bug Fixes", "hidden": false},
+        {"type": "perf", "section": "Performance Improvements", "hidden": false},
+        {"type": "refactor", "section": "Code Refactoring", "hidden": false},
+        {"type": "docs", "section": "Documentation", "hidden": false},
+        {"type": "test", "section": "Tests", "hidden": true},
+        {"type": "ci", "section": "CI/CD", "hidden": true},
+        {"type": "chore", "section": "Miscellaneous", "hidden": true}
+      ],
+      "extra-files": [
+        "pyproject.toml"
+      ]
+    },
+    "charts/keycloak-operator": {
+      "release-type": "helm",
+      "component": "chart",
+      "package-name": "keycloak-operator-chart",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "changelog-sections": [
+        {"type": "feat", "section": "Features", "hidden": false},
+        {"type": "fix", "section": "Bug Fixes", "hidden": false},
+        {"type": "docs", "section": "Documentation", "hidden": false},
+        {"type": "chore", "section": "Miscellaneous", "hidden": true}
+      ],
+      "include-component-in-tag": true
     }
   },
-  "bump-minor-pre-major": true,
-  "bump-patch-for-minor-pre-major": true,
-  "changelog-sections": [
-    {"type": "feat", "section": "Features"},
-    {"type": "fix", "section": "Bug Fixes"},
-    {"type": "perf", "section": "Performance Improvements"},
-    {"type": "refactor", "section": "Code Refactoring"},
-    {"type": "docs", "section": "Documentation", "hidden": false},
-    {"type": "test", "section": "Tests", "hidden": true},
-    {"type": "ci", "section": "CI/CD", "hidden": true},
-    {"type": "chore", "section": "Miscellaneous", "hidden": true}
-  ],
-  "extra-files": [
-    {
-      "type": "json",
-      "path": ".github/.release-please-manifest.json",
-      "jsonpath": "$."
-    }
-  ]
+  "group-pull-request-title-pattern": "chore: release ${component} ${version}",
+  "separate-pull-requests": true
 }
