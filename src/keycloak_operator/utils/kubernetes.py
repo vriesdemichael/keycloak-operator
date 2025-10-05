@@ -321,13 +321,13 @@ def create_keycloak_deployment(
                     )
 
     # Container configuration
-    # Use start-dev for runtime database configuration
-    # TODO: Use start --optimized with pre-built image once we have custom Keycloak images
+    # Use production mode with HTTP enabled for ingress TLS termination
+    # Note: --optimized flag omitted to allow runtime database configuration
     container = client.V1Container(
         name="keycloak",
         image=spec.image or DEFAULT_KEYCLOAK_IMAGE,
         command=["/opt/keycloak/bin/kc.sh"],
-        args=["start-dev"],
+        args=["start", "--http-enabled=true", "--proxy-headers=xforwarded"],
         ports=[
             client.V1ContainerPort(container_port=8080, name="http"),
             client.V1ContainerPort(container_port=9000, name="management"),
