@@ -1,0 +1,28 @@
+{
+  "release-type": "python",
+  "packages": {
+    ".": {
+      "component": "keycloak-operator",
+      "package-name": "keycloak-operator"
+    }
+  },
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "changelog-sections": [
+    {"type": "feat", "section": "Features"},
+    {"type": "fix", "section": "Bug Fixes"},
+    {"type": "perf", "section": "Performance Improvements"},
+    {"type": "refactor", "section": "Code Refactoring"},
+    {"type": "docs", "section": "Documentation", "hidden": false},
+    {"type": "test", "section": "Tests", "hidden": true},
+    {"type": "ci", "section": "CI/CD", "hidden": true},
+    {"type": "chore", "section": "Miscellaneous", "hidden": true}
+  ],
+  "extra-files": [
+    {
+      "type": "json",
+      "path": ".github/.release-please-manifest.json",
+      "jsonpath": "$."
+    }
+  ]
+}

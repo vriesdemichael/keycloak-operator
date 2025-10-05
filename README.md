@@ -1,5 +1,10 @@
 # Keycloak Operator
 
+[![Tests](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/integration-tests.yml)
+[![Release](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
 A comprehensive Kubernetes operator for managing Keycloak instances, realms, and clients with full GitOps compatibility and cross-namespace support.
 
 ## 🎯 Overview

@@ -1,0 +1,51 @@
+name: Release Please
+
+# Automated release management using conventional commits
+# - Creates/updates release PR with changelog and version bump
+# - When PR is merged, creates GitHub release
+# - Triggers build-and-publish workflow to tag Docker images
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    name: Release Please
+    runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+
+    steps:
+      - name: Run Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
+
+      - name: Release summary
+        if: steps.release.outputs.release_created == 'true'
+        run: |
+          echo "### :rocket: Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** \`${{ steps.release.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Release URL:** ${{ steps.release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Docker images will be published by the build-and-publish workflow." >> $GITHUB_STEP_SUMMARY
+
+      - name: PR summary
+        if: steps.release.outputs.pr != ''
+        run: |
+          echo "### :memo: Release PR Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** ${{ steps.release.outputs.pr }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Merge this PR to create a release." >> $GITHUB_STEP_SUMMARY

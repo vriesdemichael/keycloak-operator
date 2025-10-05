@@ -1,5 +1,12 @@
 # Makefile for Keycloak Operator development and testing
 
+# Docker registry configuration
+VERSION ?= $(shell grep '^version = ' pyproject.toml | cut -d'"' -f2)
+REGISTRY ?= ghcr.io
+IMAGE_NAME ?= vriesdemichael/keycloak-operator
+IMAGE_TAG ?= $(VERSION)
+FULL_IMAGE ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
+
 .PHONY: help
 help: ## Show this help message
 	@echo "Keycloak Operator Development Commands"
@@ -74,6 +81,15 @@ build: ## Build operator Docker image
 .PHONY: build-test
 build-test: ## Build operator Docker image for testing
 	docker build -t keycloak-operator:test .
+
+.PHONY: push
+push: build ## Build and push Docker image to registry
+	docker tag keycloak-operator:latest $(FULL_IMAGE)
+	docker tag keycloak-operator:latest $(REGISTRY)/$(IMAGE_NAME):latest
+	docker push $(FULL_IMAGE)
+	docker push $(REGISTRY)/$(IMAGE_NAME):latest
+	@echo "Pushed $(FULL_IMAGE)"
+	@echo "Pushed $(REGISTRY)/$(IMAGE_NAME):latest"
 
 # Deployment
 .PHONY: deploy
