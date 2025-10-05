@@ -259,14 +259,14 @@ class TestKeycloakRealmSpecSMTP:
         assert "smtpServer" in config
         smtp_config = config["smtpServer"]
 
-        # Check fields are present with correct casing
+        # Check fields are present with correct casing and as strings (Keycloak API requirement)
         assert smtp_config["host"] == "smtp.example.com"
-        assert smtp_config["port"] == 587
+        assert smtp_config["port"] == "587"  # Converted to string
         assert smtp_config["from"] == "noreply@example.com"
         assert smtp_config["fromDisplayName"] == "Test App"
         assert smtp_config["user"] == "noreply@example.com"
-        assert smtp_config["starttls"] is True
-        assert smtp_config["auth"] is True
+        assert smtp_config["starttls"] == "true"  # Boolean as lowercase string
+        assert smtp_config["auth"] == "true"  # Boolean as lowercase string
 
         # Password should NOT be present
         assert "password" not in smtp_config

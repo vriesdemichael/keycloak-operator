@@ -69,14 +69,12 @@ async def test_realm_with_smtp_secret_reference(
             shared_keycloak_instance["name"], namespace
         )
 
-        # Get admin credentials
-        admin_secret = core_api.read_namespaced_secret(
-            name=f"{shared_keycloak_instance['name']}-admin", namespace=namespace
-        )
-        import base64
+        # Get admin credentials from operator-generated secret
+        from keycloak_operator.utils.kubernetes import get_admin_credentials
 
-        username = base64.b64decode(admin_secret.data["username"]).decode()
-        password = base64.b64decode(admin_secret.data["password"]).decode()
+        username, password = get_admin_credentials(
+            shared_keycloak_instance["name"], namespace
+        )
 
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
@@ -104,7 +102,7 @@ async def test_realm_with_smtp_secret_reference(
         assert "password" in smtp_config
 
     finally:
-        # Cleanup
+        # Cleanup - wait for realm to be fully deleted
         with contextlib.suppress(Exception):
             custom_api.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
@@ -113,11 +111,11 @@ async def test_realm_with_smtp_secret_reference(
                 plural="keycloakrealms",
                 name=realm_name,
             )
+            # Wait for realm to be fully deleted
+            await wait_for_realm_deleted(custom_api, realm_name, namespace)
 
         with contextlib.suppress(Exception):
-            core_api.delete_namespaced_secret(
-                name=secret_name, namespace=namespace
-            )
+            core_api.delete_namespaced_secret(name=secret_name, namespace=namespace)
 
 
 @pytest.mark.integration
@@ -170,14 +168,12 @@ async def test_realm_with_smtp_direct_password(
             shared_keycloak_instance["name"], namespace
         )
 
-        core_api = client.CoreV1Api()
-        admin_secret = core_api.read_namespaced_secret(
-            name=f"{shared_keycloak_instance['name']}-admin", namespace=namespace
-        )
-        import base64
+        # Get admin credentials from operator-generated secret
+        from keycloak_operator.utils.kubernetes import get_admin_credentials
 
-        username = base64.b64decode(admin_secret.data["username"]).decode()
-        password = base64.b64decode(admin_secret.data["password"]).decode()
+        username, password = get_admin_credentials(
+            shared_keycloak_instance["name"], namespace
+        )
 
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
@@ -194,7 +190,7 @@ async def test_realm_with_smtp_direct_password(
         assert realm_config["smtpServer"]["host"] == "smtp.example.com"
 
     finally:
-        # Cleanup
+        # Cleanup - wait for realm to be fully deleted
         with contextlib.suppress(Exception):
             custom_api.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
@@ -203,6 +199,8 @@ async def test_realm_with_smtp_direct_password(
                 plural="keycloakrealms",
                 name=realm_name,
             )
+            # Wait for realm to be fully deleted
+            await wait_for_realm_deleted(custom_api, realm_name, namespace)
 
 
 @pytest.mark.integration
@@ -269,7 +267,7 @@ async def test_realm_with_missing_smtp_secret(shared_keycloak_instance):
         assert phase != "Ready"
 
     finally:
-        # Cleanup
+        # Cleanup - wait for realm to be fully deleted
         with contextlib.suppress(Exception):
             custom_api.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
@@ -278,6 +276,8 @@ async def test_realm_with_missing_smtp_secret(shared_keycloak_instance):
                 plural="keycloakrealms",
                 name=realm_name,
             )
+            # Wait for realm to be fully deleted
+            await wait_for_realm_deleted(custom_api, realm_name, namespace)
 
 
 @pytest.mark.integration
@@ -353,7 +353,7 @@ async def test_realm_with_missing_secret_key(shared_keycloak_instance):
         assert phase != "Ready"
 
     finally:
-        # Cleanup
+        # Cleanup - wait for realm to be fully deleted
         with contextlib.suppress(Exception):
             custom_api.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
@@ -362,11 +362,11 @@ async def test_realm_with_missing_secret_key(shared_keycloak_instance):
                 plural="keycloakrealms",
                 name=realm_name,
             )
+            # Wait for realm to be fully deleted
+            await wait_for_realm_deleted(custom_api, realm_name, namespace)
 
         with contextlib.suppress(Exception):
-            core_api.delete_namespaced_secret(
-                name=secret_name, namespace=namespace
-            )
+            core_api.delete_namespaced_secret(name=secret_name, namespace=namespace)
 
 
 async def wait_for_realm_ready(
@@ -409,3 +409,38 @@ async def wait_for_realm_ready(
             pass  # Resource might not exist yet
 
         await asyncio.sleep(2)
+
+
+async def wait_for_realm_deleted(
+    custom_api: client.CustomObjectsApi,
+    realm_name: str,
+    namespace: str,
+    timeout: int = 60,
+):
+    """Wait for realm to be fully deleted."""
+    import asyncio
+
+    start_time = asyncio.get_event_loop().time()
+
+    while True:
+        elapsed = asyncio.get_event_loop().time() - start_time
+        if elapsed > timeout:
+            # Timeout is not an error - just move on
+            return
+
+        try:
+            custom_api.get_namespaced_custom_object(
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            # Realm still exists, wait
+            await asyncio.sleep(1)
+        except client.ApiException as e:
+            if e.status == 404:
+                # Realm is deleted
+                return
+            # Other errors, just return
+            return
