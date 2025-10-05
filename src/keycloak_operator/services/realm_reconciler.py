@@ -195,6 +195,56 @@ class KeycloakRealmReconciler(BaseReconciler):
             f"Cross-namespace access validation passed for realm {spec.realm_name}"
         )
 
+    async def _fetch_smtp_password(
+        self, namespace: str, secret_name: str, secret_key: str = "password"
+    ) -> str:
+        """
+        Fetch SMTP password from Kubernetes secret.
+
+        Args:
+            namespace: Namespace containing the secret
+            secret_name: Name of the secret
+            secret_key: Key in secret data (default: password)
+
+        Returns:
+            Decoded password string
+
+        Raises:
+            ValidationError: If secret not found or key missing
+        """
+        import base64
+
+        try:
+            core_api = client.CoreV1Api(self.k8s_client)
+            secret = core_api.read_namespaced_secret(
+                name=secret_name, namespace=namespace
+            )
+
+            if secret_key not in secret.data:
+                raise ValidationError(
+                    f"Key '{secret_key}' not found in secret '{secret_name}'"
+                )
+
+            password = base64.b64decode(secret.data[secret_key]).decode("utf-8")
+            self.logger.debug(
+                f"Successfully fetched SMTP password from secret {secret_name}"
+            )
+            return password
+
+        except client.ApiException as e:
+            if e.status == 404:
+                raise ValidationError(
+                    f"SMTP password secret '{secret_name}' not found in namespace '{namespace}'"
+                ) from e
+            else:
+                raise ValidationError(
+                    f"Failed to fetch SMTP password from secret '{secret_name}': {e}"
+                ) from e
+        except Exception as e:
+            raise ValidationError(
+                f"Failed to decode SMTP password from secret '{secret_name}': {e}"
+            ) from e
+
     async def ensure_realm_exists(
         self, spec: KeycloakRealmSpec, name: str, namespace: str
     ) -> None:
@@ -230,6 +280,32 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Check if realm already exists
         realm_name = spec.realm_name
         realm_payload = spec.to_keycloak_config()
+
+        # Inject SMTP password from secret if configured
+        if spec.smtp_server:
+            if spec.smtp_server.password_secret:
+                # Fetch password from Kubernetes secret
+                password = await self._fetch_smtp_password(
+                    namespace=namespace,
+                    secret_name=spec.smtp_server.password_secret.name,
+                    secret_key=spec.smtp_server.password_secret.key,
+                )
+                if "smtpServer" not in realm_payload:
+                    realm_payload["smtpServer"] = {}
+                realm_payload["smtpServer"]["password"] = password
+                self.logger.debug(
+                    "Injected SMTP password from secret into realm config"
+                )
+            elif spec.smtp_server.password:
+                # Direct password (discouraged but supported)
+                if "smtpServer" not in realm_payload:
+                    realm_payload["smtpServer"] = {}
+                realm_payload["smtpServer"]["password"] = spec.smtp_server.password
+                self.logger.warning(
+                    "Using direct SMTP password from spec. "
+                    "Consider using password_secret for better security."
+                )
+
         payload_json = json.dumps(realm_payload, default=str)
         payload_preview = (
             payload_json

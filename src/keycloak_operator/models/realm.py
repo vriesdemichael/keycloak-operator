@@ -303,6 +303,59 @@ class KeycloakEventsConfig(BaseModel):
     )
 
 
+class KeycloakSMTPPasswordSecret(BaseModel):
+    """Reference to Kubernetes secret containing SMTP password."""
+
+    name: str = Field(..., description="Secret name")
+    key: str = Field(default="password", description="Key in secret data")
+
+
+class KeycloakSMTPConfig(BaseModel):
+    """SMTP server configuration with validation."""
+
+    host: str = Field(..., description="SMTP server host")
+    port: int = Field(..., description="SMTP server port", ge=1, le=65535)
+    from_address: str = Field(
+        ..., serialization_alias="from", description="From email address"
+    )
+    from_display_name: str | None = Field(
+        None, serialization_alias="fromDisplayName", description="From display name"
+    )
+    reply_to: str | None = Field(
+        None, serialization_alias="replyTo", description="Reply-to address"
+    )
+    envelope_from: str | None = Field(
+        None, serialization_alias="envelopeFrom", description="Envelope from address"
+    )
+    ssl: bool = Field(False, description="Use SSL")
+    starttls: bool = Field(False, description="Use STARTTLS")
+    auth: bool = Field(False, description="Require authentication")
+    user: str | None = Field(None, description="SMTP username")
+    password: str | None = Field(
+        None, description="SMTP password (use password_secret instead)"
+    )
+    password_secret: KeycloakSMTPPasswordSecret | None = Field(
+        None, description="Secret reference for password"
+    )
+
+    @field_validator("auth")
+    @classmethod
+    def validate_auth_requirements(cls, v, info):
+        """Ensure auth settings are consistent."""
+        # Note: This validator runs before model is fully constructed,
+        # so we validate in model_validator instead
+        return v
+
+    def model_post_init(self, __context):
+        """Validate auth requirements after model construction."""
+        if self.auth and not self.user:
+            raise ValueError("SMTP user required when auth=true")
+        if self.auth and not self.password and not self.password_secret:
+            raise ValueError("SMTP password or password_secret required when auth=true")
+        if self.password and self.password_secret:
+            raise ValueError("Cannot specify both password and password_secret")
+
+
 class KeycloakRealmSpec(BaseModel):
     """
     Specification for a KeycloakRealm resource.
@@ -371,7 +424,7 @@ class KeycloakRealmSpec(BaseModel):
     )
 
     # SMTP configuration
-    smtp_server: dict[str, Any] | None = Field(
+    smtp_server: KeycloakSMTPConfig | None = Field(
         None, description="SMTP server configuration"
     )
 
@@ -477,7 +530,13 @@ class KeycloakRealmSpec(BaseModel):
 
         # Add SMTP configuration
         if self.smtp_server:
-            config["smtpServer"] = self.smtp_server
+            # Exclude password fields - they will be injected by reconciler
+            smtp_config = self.smtp_server.model_dump(
+                by_alias=True,
+                exclude_none=True,
+                exclude={"password_secret", "password"},
+            )
+            config["smtpServer"] = smtp_config
 
         # Add events configuration
         events = self.events_config
