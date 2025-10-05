@@ -375,9 +375,6 @@ class KeycloakRealmSpec(BaseModel):
         ..., description="Reference to the target Keycloak instance"
     )
 
-    # Basic realm settings
-    enabled: bool = Field(True, description="Whether the realm is enabled")
-
     # Themes and localization
     themes: KeycloakRealmTheme | None = Field(None, description="Theme configuration")
     localization: KeycloakRealmLocalization | None = Field(
@@ -464,7 +461,7 @@ class KeycloakRealmSpec(BaseModel):
             "displayName": self.display_name,
             "description": self.description,
             "displayNameHtml": self.login_page_title,
-            "enabled": self.enabled,
+            "enabled": True,  # Realms are always enabled (K8s-native: resource exists = enabled)
             "attributes": self.attributes.copy(),
         }
 

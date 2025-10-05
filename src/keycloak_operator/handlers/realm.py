@@ -392,9 +392,6 @@ def _verify_realm_config(
         if current_realm.get("realm") != realm_spec.realm_name:
             return False
 
-        if current_realm.get("enabled") != realm_spec.enabled:
-            return False
-
         if current_realm.get("displayName") != realm_spec.display_name:
             return False
 

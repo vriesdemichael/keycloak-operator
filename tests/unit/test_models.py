@@ -298,7 +298,6 @@ class TestKeycloakRealmModels:
         )
 
         assert spec.realm_name == "test-realm"
-        assert spec.enabled is True
 
         # Test invalid realm name with special characters
         with pytest.raises(ValidationError) as exc_info:

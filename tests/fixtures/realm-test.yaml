@@ -9,7 +9,6 @@ spec:
     namespace: test-namespace
   realm:
     realm: "test-realm"
-    enabled: true
     display_name: "Test Realm"
     display_name_html: "<b>Test</b> Realm"
     login_theme: "keycloak"

@@ -56,12 +56,6 @@ spec:
                 required:
                 - name
 
-              # Basic realm settings
-              enabled:
-                type: boolean
-                description: "Whether the realm is enabled"
-                default: true
-
               # Security settings
               security:
                 type: object
