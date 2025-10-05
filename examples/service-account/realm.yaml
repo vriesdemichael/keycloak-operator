@@ -10,7 +10,6 @@ spec:
     namespace: default
 
   display_name: "Service Account Test Realm"
-  enabled: true
 
   roles:
     - name: api-user

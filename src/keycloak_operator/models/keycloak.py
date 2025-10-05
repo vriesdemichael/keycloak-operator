@@ -312,9 +312,6 @@ class KeycloakSpec(BaseModel):
         "quay.io/keycloak/keycloak:26.4.0", description="Keycloak container image"
     )
     replicas: int = Field(1, description="Number of Keycloak replicas", ge=1)
-    version: str | None = Field(
-        None, description="Keycloak version (for compatibility checks)"
-    )
 
     # Resource management
     resources: KeycloakResourceRequirements = Field(

@@ -27,10 +27,6 @@ spec:
             description: "Specification for a Keycloak instance"
             properties:
               # Core configuration
-              version:
-                type: string
-                description: "Keycloak version to deploy"
-                pattern: "^[0-9]+\\.[0-9]+\\.[0-9]+$"
               image:
                 type: string
                 description: "Container image for Keycloak"
@@ -318,9 +314,6 @@ spec:
     - name: Phase
       type: string
       jsonPath: .status.phase
-    - name: Version
-      type: string
-      jsonPath: .spec.version
     - name: Replicas
       type: integer
       jsonPath: .spec.replicas
