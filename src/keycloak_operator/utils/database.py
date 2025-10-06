@@ -78,7 +78,8 @@ class DatabaseConnectionManager:
         Returns:
             Dictionary with connection details
         """
-        target_namespace = cnpg_ref.namespace or namespace
+        # CNPG cluster must be in the same namespace as the Keycloak resource
+        target_namespace = namespace
         cluster_name = cnpg_ref.name
 
         logger.info(
@@ -292,7 +293,8 @@ class DatabaseConnectionManager:
         Returns:
             Dictionary with credentials
         """
-        target_namespace = external_ref.namespace or namespace
+        # ExternalSecret must be in the same namespace as the Keycloak resource
+        target_namespace = namespace
         secret_name = external_ref.name
 
         # ExternalSecrets creates a regular Kubernetes secret

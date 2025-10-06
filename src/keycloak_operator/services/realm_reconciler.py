@@ -890,7 +890,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             try:
                 realm_clients = admin_client.get_realm_clients(realm_spec.realm_name)
                 for client_config in realm_clients:
-                    client_id = client_config.get("clientId")
+                    client_id = client_config.client_id
                     if client_id:
                         self.logger.info(
                             f"Cleaning up client {client_id} from realm {realm_spec.realm_name}"

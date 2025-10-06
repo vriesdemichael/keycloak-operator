@@ -721,7 +721,7 @@ class KeycloakAdminClient:
                 logger.error(f"Client '{client_id}' not found")
                 return None
 
-            client_uuid = client["id"]
+            client_uuid = client.id
 
             # Get the client secret
             response = self._make_request(
@@ -1014,7 +1014,7 @@ class KeycloakAdminClient:
                 logger.warning(f"Client '{client_id}' not found, nothing to delete")
                 return True  # Consider this successful
 
-            client_uuid = client["id"]
+            client_uuid = client.id
 
             response = self._make_request(
                 "DELETE", f"realms/{realm_name}/clients/{client_uuid}"
