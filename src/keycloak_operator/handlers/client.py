@@ -327,11 +327,11 @@ def monitor_client_health(
             config_matches = True
 
             # Check critical configuration fields
-            if existing_client.get("enabled") != desired_config.get("enabled", True):
+            if existing_client.enabled != desired_config.get("enabled", True):
                 config_matches = False
                 logger.warning(f"Client {client_spec.client_id} enabled state mismatch")
 
-            if existing_client.get("publicClient") != desired_config.get(
+            if existing_client.public_client != desired_config.get(
                 "publicClient", False
             ):
                 config_matches = False
@@ -341,7 +341,7 @@ def monitor_client_health(
 
             # Check redirect URIs if specified
             if desired_config.get("redirectUris"):
-                existing_uris = set(existing_client.get("redirectUris", []))
+                existing_uris = set(existing_client.redirect_uris or [])
                 desired_uris = set(desired_config.get("redirectUris", []))
                 if existing_uris != desired_uris:
                     config_matches = False
@@ -351,7 +351,7 @@ def monitor_client_health(
 
             # Check web origins if specified
             if desired_config.get("webOrigins"):
-                existing_origins = set(existing_client.get("webOrigins", []))
+                existing_origins = set(existing_client.web_origins or [])
                 desired_origins = set(desired_config.get("webOrigins", []))
                 if existing_origins != desired_origins:
                     config_matches = False

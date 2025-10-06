@@ -180,11 +180,12 @@ class TestServiceAccountRoles:
 
             client_repr = admin_client.get_client_by_name(client_name, realm_name)
             assert client_repr, "Client not found in Keycloak"
+            assert client_repr.id, "Client missing ID"
 
             service_account_user = admin_client.get_service_account_user(
-                client_repr["id"], realm_name
+                client_repr.id, realm_name
             )
-            user_id = service_account_user.get("id")
+            user_id = service_account_user.id
             assert user_id, "Service account user missing identifier"
 
             role_mapping_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"

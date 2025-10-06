@@ -270,6 +270,66 @@ git commit -m "fix: update Keycloak API models to version X.Y.Z"
 4. **Field Naming**: Python uses `snake_case`, API uses `camelCase` (models handle conversion automatically)
 5. **Exclude None**: Use `model_dump(exclude_none=True, by_alias=True)` when sending to API
 
+### Admin Client Usage Examples
+
+The `KeycloakAdminClient` now returns typed Pydantic models for better IDE support and type safety:
+
+```python
+from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+from keycloak_operator.models.keycloak_api import (
+    RealmRepresentation,
+    ClientRepresentation,
+    RoleRepresentation,
+    ProtocolMapperRepresentation,
+)
+
+# Initialize admin client
+admin_client = KeycloakAdminClient(
+    server_url="http://localhost:8080",
+    username="admin",
+    password="admin"
+)
+
+# Example 1: Working with Realms (typed returns)
+realm = admin_client.get_realm("my-realm")  # Returns RealmRepresentation
+if realm:
+    print(f"Realm: {realm.realm}, Enabled: {realm.enabled}")
+    realm.display_name = "Updated Name"
+    admin_client.update_realm("my-realm", realm)
+
+# Example 2: Working with Clients (typed returns)
+client = admin_client.get_client_by_name("my-client", "my-realm")  # Returns ClientRepresentation
+if client:
+    print(f"Client UUID: {client.id}, Enabled: {client.enabled}")
+    print(f"Redirect URIs: {client.redirect_uris}")
+
+# Example 3: Creating Resources with Pydantic Models
+new_client = ClientRepresentation(
+    client_id="new-client",
+    enabled=True,
+    public_client=False,
+    redirect_uris=["http://localhost:3000/*"]
+)
+client_uuid = admin_client.create_client(new_client, "my-realm")
+
+# Example 4: Working with Roles (typed returns)
+roles = admin_client.get_client_roles(client_uuid, "my-realm")  # Returns list[RoleRepresentation]
+for role in roles:
+    print(f"Role: {role.name}, Description: {role.description}")
+
+# Example 5: Creating Roles with validation
+new_role = RoleRepresentation(
+    name="admin",
+    description="Administrator role"
+)
+success = admin_client.create_client_role(client_uuid, new_role, "my-realm")
+
+# Example 6: Protocol Mappers (typed returns)
+mappers = admin_client.get_client_protocol_mappers(client_uuid, "my-realm")
+for mapper in mappers:
+    print(f"Mapper: {mapper.name}, Protocol: {mapper.protocol}")
+```
+
 ### Testing API Models
 
 See `tests/unit/test_keycloak_api_models.py` and `tests/unit/test_keycloak_admin_api_models.py` for examples.
