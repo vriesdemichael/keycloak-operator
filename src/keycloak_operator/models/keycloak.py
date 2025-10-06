@@ -12,7 +12,12 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class SecretReference(BaseModel):
-    """Reference to a secret key for sensitive data."""
+    """
+    Reference to a secret key for sensitive data.
+
+    The secret must be in the same namespace as the resource referencing it.
+    Cross-namespace secret references are not supported for security reasons.
+    """
 
     name: str = Field(..., description="Name of the secret")
     key: str = Field("password", description="Key within the secret")
@@ -86,12 +91,14 @@ class KeycloakResourceRequirements(BaseModel):
 
 
 class CloudNativePGReference(BaseModel):
-    """Reference to a CloudNativePG Cluster resource."""
+    """
+    Reference to a CloudNativePG Cluster resource.
+
+    The CNPG Cluster must be in the same namespace as the Keycloak resource.
+    Cross-namespace database references are not supported.
+    """
 
     name: str = Field(..., description="Name of the CloudNativePG Cluster")
-    namespace: str | None = Field(
-        None, description="Namespace of the CNPG Cluster (defaults to same namespace)"
-    )
     database: str = Field(
         "keycloak", description="Database name to use within the cluster"
     )
@@ -108,12 +115,14 @@ class CloudNativePGReference(BaseModel):
 
 
 class ExternalSecretReference(BaseModel):
-    """Reference to an ExternalSecrets resource."""
+    """
+    Reference to an ExternalSecrets resource.
+
+    The ExternalSecret must be in the same namespace as the Keycloak resource.
+    Cross-namespace secret references are not supported for security reasons.
+    """
 
     name: str = Field(..., description="Name of the ExternalSecret")
-    namespace: str | None = Field(
-        None, description="Namespace of the ExternalSecret (defaults to same namespace)"
-    )
     refresh_interval: str = Field(
         "15m", description="Refresh interval for secret rotation"
     )

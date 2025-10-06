@@ -304,7 +304,12 @@ class KeycloakEventsConfig(BaseModel):
 
 
 class KeycloakSMTPPasswordSecret(BaseModel):
-    """Reference to Kubernetes secret containing SMTP password."""
+    """
+    Reference to Kubernetes secret containing SMTP password.
+
+    The secret must be in the same namespace as the KeycloakRealm.
+    Cross-namespace secret references are not supported for security reasons.
+    """
 
     name: str = Field(..., description="Secret name")
     key: str = Field(default="password", description="Key in secret data")

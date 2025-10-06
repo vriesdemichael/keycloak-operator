@@ -247,23 +247,24 @@ class KeycloakClientReconciler(BaseReconciler):
         if existing_client:
             self.logger.info(f"Client {spec.client_id} already exists, updating...")
             admin_client.update_client(
-                existing_client["id"], spec.to_keycloak_config(), realm_name
+                existing_client.id, spec.to_keycloak_config(), realm_name
             )
-            return existing_client["id"]
+            return existing_client.id
         else:
             self.logger.info(f"Creating new client {spec.client_id}")
             client_response = admin_client.create_client(
                 spec.to_keycloak_config(), realm_name
             )
-            # Extract client ID from response or get it by name again
-            if isinstance(client_response, dict) and "id" in client_response:
-                return client_response["id"]
+            # Extract client UUID from response or get it by name again
+            if client_response:
+                # create_client returns UUID string directly
+                return client_response
             else:
-                # Fallback: get client by name to retrieve ID
+                # Fallback: get client by name to retrieve UUID
                 created_client = admin_client.get_client_by_name(
                     spec.client_id, realm_name
                 )
-                return created_client["id"] if created_client else "unknown"
+                return created_client.id if created_client else "unknown"
 
     async def configure_oauth_settings(
         self, spec: KeycloakClientSpec, client_uuid: str, name: str, namespace: str
@@ -714,7 +715,7 @@ class KeycloakClientReconciler(BaseReconciler):
             service_account_user = admin_client.get_service_account_user(
                 client_uuid, realm_name
             )
-            user_id = service_account_user.get("id") if service_account_user else None
+            user_id = service_account_user.id if service_account_user else None
 
             if not user_id:
                 raise ReconciliationError(
@@ -753,7 +754,7 @@ class KeycloakClientReconciler(BaseReconciler):
                         )
                         continue
 
-                    target_client_uuid = target_client.get("id")
+                    target_client_uuid = target_client.id
                     if not target_client_uuid:
                         self.logger.warning(
                             f"Target client '{target_client_id}' missing UUID; skipping role assignment"
