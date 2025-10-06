@@ -19,13 +19,6 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Application Frameworks",
 ]
 
-[project.urls]
-Homepage = "https://github.com/vriesdemichael/keycloak-operator"
-Repository = "https://github.com/vriesdemichael/keycloak-operator"
-Documentation = "https://github.com/vriesdemichael/keycloak-operator#readme"
-"Issue Tracker" = "https://github.com/vriesdemichael/keycloak-operator/issues"
-Changelog = "https://github.com/vriesdemichael/keycloak-operator/blob/main/CHANGELOG.md"
-
 dependencies = [
     "kopf>=1.37.0",
     "pydantic>=2.0.0",
@@ -34,6 +27,13 @@ dependencies = [
     "aiohttp>=3.9.0",
     "prometheus-client>=0.20.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/vriesdemichael/keycloak-operator"
+Repository = "https://github.com/vriesdemichael/keycloak-operator"
+Documentation = "https://github.com/vriesdemichael/keycloak-operator#readme"
+"Issue Tracker" = "https://github.com/vriesdemichael/keycloak-operator/issues"
+Changelog = "https://github.com/vriesdemichael/keycloak-operator/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 dev = [
