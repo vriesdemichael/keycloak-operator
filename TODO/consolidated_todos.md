@@ -7,9 +7,67 @@
 
 ## 🔥 P0 - Critical (Must Complete Before v1.0)
 
-### Automatic Secret Rotation Handling
+### 1. RBAC Redesign - Two-Mode Architecture ⭐ FINAL DESIGN
+**Estimated Effort:** 3-4 days
+**Source:** Security review and production readiness requirements
+**Status:** Design complete, ready for implementation
+
+**Current State:**
+- ❌ ClusterRole with 200+ verbs across 30+ resource types (excessive!)
+- ❌ Can read/write ANY secret in the cluster (security risk)
+- ❌ Can modify ANY deployment, service, ingress cluster-wide
+- ❌ Single compromise = cluster-wide impact
+- ❌ No namespace isolation
+- ❌ Blocks production deployments in security-conscious environments
+
+**Final Solution: Two RBAC Modes**
+
+**Mode 1: Manual RBAC** (User-Provided) 🔒 Default, Most Secure
+- Operator watches CRDs cluster-wide (read-only)
+- Operator has ZERO access to user namespaces by default
+- Users explicitly grant access via RoleBinding in their namespace
+- Security level: ⭐⭐⭐⭐⭐ (Zero Trust)
+- **Best for:** Production, security-conscious environments, compliance
+
+**Mode 2: Automatic RBAC** (Operator-Provisioned) ⚡ Convenience
+- Operator watches CRDs cluster-wide
+- Operator automatically creates RoleBindings when CRDs appear
+- Operator has permission to manage RoleBindings in any namespace
+- Security level: ⭐⭐⭐⭐ (Requires trust in operator)
+- **Best for:** Development, single-tenant, quick setup
+
+**Key Features:**
+- [ ] Centralized operator + Keycloak in `keycloak-system`
+- [ ] Users define CRDs in their own namespaces
+- [ ] Secrets stay in user namespaces (GitOps friendly)
+- [ ] RoleBinding is the security boundary (no secret labels required)
+- [ ] Operator labels its own managed secrets for cleanup tracking
+- [ ] Mode selection via environment variable
+- [ ] Auto-cleanup of operator-created RoleBindings
+- [ ] Clear status messages guide users
+- [ ] Security hardening via admission controllers (documented)
+- [ ] Migration between modes without downtime
+
+**Implementation:**
+📖 See complete 7-phase plan: `TODO/rbac-security-implementation.md`
+
+**Impact:** 
+- ✅ Flexibility: Users choose security vs convenience
+- ✅ Zero Trust: Manual mode has no access by default
+- ✅ User Control: Explicit opt-in per namespace via RoleBinding
+- ✅ Simple: No secret labeling required (labels only for operator-managed secrets)
+- ✅ Revocable: Delete RoleBinding anytime
+- ✅ Auditable: Query RoleBindings, operator-managed secrets
+- ✅ Extensible: Additional protections via admission controllers
+- ✅ 75% permission reduction from current state
+- ✅ Meets enterprise security requirements
+
+---
+
+### 2. Automatic Secret Rotation Handling
 **Estimated Effort:** 1-2 days
 **Source:** Operator enhancement for production secret management
+**Depends On:** RBAC redesign (secret labeling architecture)
 
 **Current State:**
 - ✅ ExternalSecrets already supported (operator uses secret references everywhere)
@@ -17,20 +75,27 @@
 - ❌ Rotated secrets require manual reconciliation or CRD change to apply
 
 **Required Implementation:**
-- [ ] Add Kopf watch on Secret resources
+- [ ] Add Kopf watch on Secret resources with label filter
 - [ ] When a secret changes, find all Keycloak/Realm/Client resources that reference it
 - [ ] Trigger reconciliation for those resources
 - [ ] Add integration test for secret rotation (create resource with secret ref, update secret, verify reconciliation)
+- [ ] Document secret labeling requirements for users
 
 **Implementation Notes:**
 ```python
-@kopf.on.update('', 'v1', 'secrets')
+@kopf.on.update('', 'v1', 'secrets',
+                labels={'keycloak.mdvr.nl/watch': 'true'})
 async def on_secret_change(name, namespace, **kwargs):
-    # Find all resources referencing this secret
+    # Only labeled secrets are processed (security guarantee)
+    # Find all resources referencing this secret (same namespace only)
     # Trigger reconciliation for each
 ```
 
+**Security Guarantee:** Only secrets with label `keycloak.mdvr.nl/watch: "true"` are monitored
+
 **Impact:** Automatic secret rotation without manual intervention, critical for ExternalSecrets/Vault workflows
+
+See detailed plan in `TODO/secret-rotation-implementation.md`
 
 ---
 
@@ -290,15 +355,21 @@ async def on_secret_change(name, namespace, **kwargs):
   - Comprehensive documentation with usage examples
 
 ### Current Focus Areas
-1. **Secret Rotation Handling** (P0) - 1-2 days for automatic secret watches
-2. **Documentation Improvements** (P1) - 1 week effort (MkDocs site, status section, etc.)
-3. **Password Policy Feature** (P1) - 6-8 hours effort
+1. **RBAC Redesign** (P0) ⭐ NEW - 2-3 days for least privilege architecture
+2. **Secret Rotation Handling** (P0) - 1-2 days for automatic secret watches (depends on RBAC)
+3. **Documentation Improvements** (P1) - 1 week effort (MkDocs site, status section, etc.)
 4. **Consistent Event Emission** (P1) - 1 day for better observability
 
 ### Estimated Time to v1.0
-- **Critical items (P0):** 1-2 days (just secret rotation!)
+- **Critical items (P0):** 3-5 days (RBAC redesign + secret rotation)
 - **High priority items (P1):** ~1.5 weeks (API model integration done!)
-- **Total to production readiness:** ~2 weeks 🎉
+- **Total to production readiness:** ~3 weeks
+
+**Note:** RBAC redesign is now blocking P0 item because:
+- Current broad permissions are production deployment blocker
+- Secret rotation depends on label-based secret access architecture
+- Enterprise/security-conscious environments require least privilege
+- 75% permission reduction is critical security improvement
 
 ---
 
