@@ -1,0 +1,65 @@
+{{- if .Values.keycloak.enabled }}
+apiVersion: keycloak.mdvr.nl/v1
+kind: Keycloak
+metadata:
+  name: {{ .Values.keycloak.name }}
+  namespace: {{ include "keycloak-operator.namespace" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+  {{- with include "keycloak-operator.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.keycloak.replicas }}
+  version: {{ .Values.keycloak.version | quote }}
+  image: {{ .Values.keycloak.image }}
+  
+  {{- if .Values.keycloak.database.cnpg.enabled }}
+  database:
+    type: {{ .Values.keycloak.database.type }}
+    cnpg:
+      clusterName: {{ .Values.keycloak.database.cnpg.clusterName }}
+  {{- else }}
+  database:
+    type: {{ .Values.keycloak.database.type }}
+    host: {{ .Values.keycloak.database.host }}
+    port: {{ .Values.keycloak.database.port }}
+    database: {{ .Values.keycloak.database.database }}
+    username: {{ .Values.keycloak.database.username }}
+    passwordSecret:
+      name: {{ .Values.keycloak.database.passwordSecret.name }}
+      key: {{ .Values.keycloak.database.passwordSecret.key }}
+  {{- end }}
+  
+  admin:
+    username: {{ .Values.keycloak.admin.username }}
+    passwordSecret:
+      name: {{ .Values.keycloak.admin.passwordSecret.name }}
+      key: {{ .Values.keycloak.admin.passwordSecret.key }}
+  
+  {{- if .Values.keycloak.ingress.enabled }}
+  ingress:
+    enabled: true
+    {{- with .Values.keycloak.ingress.className }}
+    className: {{ . }}
+    {{- end }}
+    {{- with .Values.keycloak.ingress.annotations }}
+    annotations:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.keycloak.ingress.hosts }}
+    hosts:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+    {{- with .Values.keycloak.ingress.tls }}
+    tls:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  
+  {{- with .Values.keycloak.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

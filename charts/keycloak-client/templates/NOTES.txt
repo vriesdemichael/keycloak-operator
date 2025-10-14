@@ -1,0 +1,87 @@
+🎉 Keycloak Client has been created!
+
+📦 Release Name: {{ .Release.Name }}
+🔑 Client ID: {{ include "keycloak-client.clientId" . }}
+🔧 Namespace: {{ .Release.Namespace }}
+🏛️  Realm: {{ .Values.realmRef.name }} ({{ .Values.realmRef.namespace }})
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 MONITORING YOUR CLIENT
+
+Check the client status:
+
+    kubectl get keycloakclient {{ include "keycloak-client.fullname" . }} -n {{ .Release.Namespace }}
+
+Watch the client reconciliation:
+
+    kubectl get keycloakclient {{ include "keycloak-client.fullname" . }} -n {{ .Release.Namespace }} -w
+
+View client details:
+
+    kubectl describe keycloakclient {{ include "keycloak-client.fullname" . }} -n {{ .Release.Namespace }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{- if and (not .Values.publicClient) .Values.secret.generate }}
+
+🔐 CLIENT SECRET
+
+Your client secret will be stored in a Kubernetes secret.
+
+1️⃣  Wait for the client to be ready:
+
+    kubectl wait --for=jsonpath='{.status.phase}'=Ready \
+      keycloakclient/{{ include "keycloak-client.fullname" . }} \
+      -n {{ .Release.Namespace }} --timeout=300s
+
+2️⃣  Retrieve the client secret:
+
+    kubectl get secret {{ include "keycloak-client.secretName" . }} \
+      -n {{ .Release.Namespace }} \
+      -o jsonpath='{.data.{{ .Values.secret.secretKey }}}' | base64 -d
+
+    ⚠️  Keep this secret safe! It's used to authenticate your application.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{- else if .Values.publicClient }}
+
+ℹ️  PUBLIC CLIENT
+
+This is a public client (e.g., for SPAs or mobile apps).
+No client secret is required for authentication.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+{{- end }}
+
+📚 CLIENT CONFIGURATION
+
+{{- if .Values.redirectUris }}
+Redirect URIs:
+{{- range .Values.redirectUris }}
+  • {{ . }}
+{{- end }}
+{{- else }}
+⚠️  No redirect URIs configured. Add them with --set redirectUris={url1,url2}
+{{- end }}
+
+{{- if .Values.webOrigins }}
+
+Web Origins:
+{{- range .Values.webOrigins }}
+  • {{ . }}
+{{- end }}
+{{- end }}
+
+Client Type:
+  • Public: {{ .Values.publicClient }}
+  • Bearer Only: {{ .Values.bearerOnly }}
+  • Service Account: {{ .Values.serviceAccountsEnabled }}
+
+For more information:
+• Documentation: https://github.com/vriesdemichael/keycloak-operator
+• Issues: https://github.com/vriesdemichael/keycloak-operator/issues
+
+Happy authenticating! 🔐

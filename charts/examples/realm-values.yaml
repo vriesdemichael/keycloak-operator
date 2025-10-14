@@ -1,0 +1,108 @@
+# Example values for keycloak-realm chart
+# This demonstrates a typical realm configuration for a development team
+
+realmName: myteam
+displayName: "My Team Realm"
+
+# Reference to the operator (required)
+operatorRef:
+  namespace: keycloak-system
+  authorizationSecretRef:
+    name: keycloak-operator-auth-token
+    key: token
+
+# Security settings
+security:
+  # Registration
+  registrationAllowed: false
+  registrationEmailAsUsername: false
+  
+  # Login
+  editUsernameAllowed: false
+  resetPasswordAllowed: true
+  rememberMe: true
+  verifyEmail: true
+  loginWithEmailAllowed: true
+  duplicateEmailsAllowed: false
+  
+  # Brute force protection
+  bruteForceProtected: true
+  permanentLockout: false
+  maxFailureWaitSeconds: 900
+  minimumQuickLoginWaitSeconds: 60
+  waitIncrementSeconds: 60
+  quickLoginCheckMilliSeconds: 1000
+  maxDeltaTimeSeconds: 43200
+  failureFactor: 30
+
+# Theme configuration
+theme:
+  login: ""
+  admin: ""
+  account: ""
+  email: ""
+
+# Localization
+localization:
+  defaultLocale: en
+  supportedLocales:
+    - en
+    - nl
+    - de
+  internationalizationEnabled: true
+
+# Token settings
+tokens:
+  accessTokenLifespan: 300  # 5 minutes
+  accessTokenLifespanForImplicitFlow: 900  # 15 minutes
+  ssoSessionIdleTimeout: 1800  # 30 minutes
+  ssoSessionMaxLifespan: 36000  # 10 hours
+  offlineSessionIdleTimeout: 2592000  # 30 days
+  offlineSessionMaxLifespanEnabled: false
+  offlineSessionMaxLifespan: 5184000  # 60 days
+  clientSessionIdleTimeout: 0
+  clientSessionMaxLifespan: 0
+  refreshTokenMaxReuse: 0
+
+# SMTP configuration
+smtp:
+  enabled: true
+  host: smtp.example.com
+  port: 587
+  from: noreply@myteam.example.com
+  fromDisplayName: "My Team"
+  replyTo: support@myteam.example.com
+  replyToDisplayName: "My Team Support"
+  ssl: false
+  starttls: true
+  auth: true
+  user: smtp-user
+  passwordSecret:
+    name: smtp-credentials
+    key: password
+
+# Password policy
+passwordPolicy: "length(8) and digits(1) and lowerCase(1) and upperCase(1) and specialChars(1) and notUsername(undefined)"
+
+# OTP policy
+otpPolicy:
+  type: totp
+  algorithm: HmacSHA1
+  digits: 6
+  period: 30
+  lookAheadWindow: 1
+
+# Events configuration
+events:
+  enabled: true
+  eventsEnabled: true
+  eventsExpiration: 2592000  # 30 days
+  eventsListeners:
+    - jboss-logging
+  adminEventsEnabled: true
+  adminEventsDetailsEnabled: true
+
+# Custom attributes
+attributes:
+  customAttribute1: "value1"
+  customAttribute2: "value2"

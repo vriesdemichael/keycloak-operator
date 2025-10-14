@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}
+  namespace: {{ include "keycloak-operator.namespace" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+  {{- with include "keycloak-operator.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.operator.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "keycloak-operator.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "keycloak-operator.selectorLabels" . | nindent 8 }}
+        {{- with .Values.commonLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with include "keycloak-operator.annotations" . }}
+      annotations:
+        {{- . | nindent 8 }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ include "keycloak-operator.serviceAccountName" . }}
+      {{- with .Values.operator.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.operator.securityContext | nindent 8 }}
+      containers:
+      - name: operator
+        image: {{ include "keycloak-operator.image" . }}
+        imagePullPolicy: {{ .Values.operator.image.pullPolicy }}
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        - containerPort: 8081
+          name: metrics
+          protocol: TCP
+        env:
+        - name: KOPF_PEERING_NAME
+          value: {{ include "keycloak-operator.fullname" . }}
+        - name: KOPF_PRIORITY
+          value: "100"
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: OPERATOR_NAME
+          value: {{ include "keycloak-operator.fullname" . }}
+        - name: OPERATOR_NAMESPACE
+          value: {{ include "keycloak-operator.namespace" . }}
+        {{- with .Values.operator.env }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        resources:
+          {{- toYaml .Values.operator.resources | nindent 10 }}
+        livenessProbe:
+          {{- toYaml .Values.operator.livenessProbe | nindent 10 }}
+        readinessProbe:
+          {{- toYaml .Values.operator.readinessProbe | nindent 10 }}
+        securityContext:
+          {{- toYaml .Values.operator.containerSecurityContext | nindent 10 }}
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      terminationGracePeriodSeconds: 30
+      {{- with .Values.operator.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.operator.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

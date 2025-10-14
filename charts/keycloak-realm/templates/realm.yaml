@@ -1,0 +1,111 @@
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakRealm
+metadata:
+  name: {{ include "keycloak-realm.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-realm.labels" . | nindent 4 }}
+  {{- with include "keycloak-realm.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  realmName: {{ include "keycloak-realm.realmName" . }}
+  
+  {{- with .Values.displayName }}
+  displayName: {{ . }}
+  {{- end }}
+  
+  # Operator reference for authorization
+  operatorRef:
+    namespace: {{ required "operatorRef.namespace is required" .Values.operatorRef.namespace }}
+    authorizationSecretRef:
+      name: {{ required "operatorRef.authorizationSecretRef.name is required" .Values.operatorRef.authorizationSecretRef.name }}
+      key: {{ .Values.operatorRef.authorizationSecretRef.key | default "token" }}
+  
+  {{- with .Values.security }}
+  security:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  
+  {{- if or .Values.theme.login .Values.theme.admin .Values.theme.account .Values.theme.email }}
+  theme:
+    {{- with .Values.theme.login }}
+    login: {{ . }}
+    {{- end }}
+    {{- with .Values.theme.admin }}
+    admin: {{ . }}
+    {{- end }}
+    {{- with .Values.theme.account }}
+    account: {{ . }}
+    {{- end }}
+    {{- with .Values.theme.email }}
+    email: {{ . }}
+    {{- end }}
+  {{- end }}
+  
+  {{- with .Values.localization }}
+  localization:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  
+  {{- with .Values.tokens }}
+  tokens:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  
+  {{- if .Values.smtp.enabled }}
+  smtp:
+    host: {{ required "smtp.host is required when smtp.enabled=true" .Values.smtp.host }}
+    port: {{ .Values.smtp.port }}
+    {{- with .Values.smtp.from }}
+    from: {{ . }}
+    {{- end }}
+    {{- with .Values.smtp.fromDisplayName }}
+    fromDisplayName: {{ . }}
+    {{- end }}
+    {{- with .Values.smtp.replyTo }}
+    replyTo: {{ . }}
+    {{- end }}
+    {{- with .Values.smtp.replyToDisplayName }}
+    replyToDisplayName: {{ . }}
+    {{- end }}
+    {{- with .Values.smtp.envelopeFrom }}
+    envelopeFrom: {{ . }}
+    {{- end }}
+    ssl: {{ .Values.smtp.ssl }}
+    starttls: {{ .Values.smtp.starttls }}
+    auth: {{ .Values.smtp.auth }}
+    {{- with .Values.smtp.user }}
+    user: {{ . }}
+    {{- end }}
+    {{- if .Values.smtp.passwordSecret.name }}
+    passwordSecret:
+      name: {{ .Values.smtp.passwordSecret.name }}
+      key: {{ .Values.smtp.passwordSecret.key | default "password" }}
+    {{- end }}
+  {{- end }}
+  
+  {{- with .Values.passwordPolicy }}
+  passwordPolicy: {{ . }}
+  {{- end }}
+  
+  {{- with .Values.otpPolicy }}
+  otpPolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  
+  {{- if .Values.webauthnPolicy.enabled }}
+  webauthnPolicy:
+    {{- toYaml .Values.webauthnPolicy | nindent 4 }}
+  {{- end }}
+  
+  {{- if .Values.events.enabled }}
+  events:
+    {{- toYaml .Values.events | nindent 4 }}
+  {{- end }}
+  
+  {{- with .Values.attributes }}
+  attributes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}

@@ -1,0 +1,11 @@
+{{- if .Values.crds.install }}
+---
+# Keycloak CRD
+{{ .Files.Get "crds/keycloak-crd.yaml" }}
+---
+# KeycloakRealm CRD
+{{ .Files.Get "crds/keycloakrealm-crd.yaml" }}
+---
+# KeycloakClient CRD
+{{ .Files.Get "crds/keycloakclient-crd.yaml" }}
+{{- end }}

@@ -1,0 +1,236 @@
+# Default values for keycloak-operator.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Operator configuration
+operator:
+  # Number of operator replicas (for HA)
+  replicaCount: 2
+  
+  image:
+    repository: keycloak-operator
+    pullPolicy: IfNotPresent
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: ""
+  
+  imagePullSecrets: []
+  
+  # Resource limits and requests
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  # Node selector for operator pods
+  nodeSelector:
+    kubernetes.io/os: linux
+  
+  # Tolerations for operator pods
+  tolerations:
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/control-plane
+      operator: Exists
+    - effect: NoSchedule
+      key: node-role.kubernetes.io/master
+      operator: Exists
+  
+  # Pod anti-affinity for HA
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+        - weight: 100
+          podAffinityTerm:
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/name: keycloak-operator
+                app.kubernetes.io/component: operator
+            topologyKey: kubernetes.io/hostname
+  
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 2000
+    seccompProfile:
+      type: RuntimeDefault
+  
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    runAsNonRoot: true
+    runAsUser: 1001
+    seccompProfile:
+      type: RuntimeDefault
+    capabilities:
+      drop:
+        - ALL
+  
+  # Liveness probe configuration
+  livenessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+  
+  # Readiness probe configuration
+  readinessProbe:
+    httpGet:
+      path: /healthz
+      port: http
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+  
+  # Environment variables
+  env: []
+    # - name: KEYCLOAK_OPERATOR_LOG_LEVEL
+    #   value: "INFO"
+    # - name: KEYCLOAK_OPERATOR_JSON_LOGS
+    #   value: "true"
+
+# Namespace configuration
+namespace:
+  # Name of the namespace to create
+  name: keycloak-system
+  
+  # Create the namespace (disable if it already exists)
+  create: true
+  
+  # Pod Security Standards labels
+  podSecurityStandards:
+    enforce: restricted
+    audit: restricted
+    warn: restricted
+
+# Service Account configuration
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  
+  # The name of the service account to use
+  name: keycloak-operator
+  
+  # Annotations to add to the service account
+  annotations: {}
+
+# RBAC configuration
+rbac:
+  # Create ClusterRole and ClusterRoleBinding
+  create: true
+  
+  # Create namespace-scoped Role and RoleBinding for leader election
+  createLeaderElectionRole: true
+
+# CRDs installation
+crds:
+  # Install CRDs as part of this chart
+  install: true
+  
+  # Keep CRDs on chart uninstall (recommended to prevent data loss)
+  keep: true
+
+# Monitoring configuration
+monitoring:
+  # Enable Prometheus ServiceMonitor
+  enabled: false
+  
+  # Namespace for ServiceMonitor (if different from operator namespace)
+  namespace: ""
+  
+  # Additional labels for ServiceMonitor
+  labels: {}
+  
+  # Scrape interval
+  interval: 30s
+  
+  # Scrape timeout
+  scrapeTimeout: 10s
+
+# Keycloak instance configuration (optional)
+# Set enabled: true to deploy a Keycloak instance managed by the operator
+keycloak:
+  enabled: false
+  
+  # Name of the Keycloak instance
+  name: keycloak
+  
+  # Number of Keycloak replicas
+  replicas: 1
+  
+  # Keycloak version (image tag)
+  version: "26.0.0"
+  
+  # Keycloak image
+  image: quay.io/keycloak/keycloak
+  
+  # Database configuration
+  database:
+    # Database type: postgresql, mysql, mariadb, oracle, mssql
+    type: postgresql
+    
+    # Database host
+    host: ""
+    
+    # Database port
+    port: 5432
+    
+    # Database name
+    database: keycloak
+    
+    # Database username
+    username: keycloak
+    
+    # Secret containing database password
+    passwordSecret:
+      name: keycloak-db-password
+      key: password
+    
+    # Use CloudNativePG cluster (alternative to external database)
+    cnpg:
+      enabled: false
+      clusterName: keycloak-postgres
+  
+  # Admin user configuration
+  admin:
+    # Admin username
+    username: admin
+    
+    # Secret containing admin password
+    passwordSecret:
+      name: keycloak-admin-password
+      key: password
+  
+  # Ingress configuration
+  ingress:
+    enabled: false
+    className: ""
+    annotations: {}
+    hosts:
+      - host: keycloak.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+  
+  # Resource limits
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi
+
+# Common labels applied to all resources
+commonLabels: {}
+
+# Common annotations applied to all resources
+commonAnnotations: {}
