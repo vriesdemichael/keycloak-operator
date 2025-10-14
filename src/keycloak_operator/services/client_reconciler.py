@@ -44,6 +44,56 @@ class KeycloakClientReconciler(BaseReconciler):
             keycloak_admin_factory or get_keycloak_admin_client
         )
 
+    def _get_keycloak_instance_from_realm(
+        self, realm_name: str, realm_namespace: str
+    ) -> tuple[str, str]:
+        """
+        Get Keycloak instance name and namespace from a realm's status.
+
+        Args:
+            realm_name: Name of the realm resource
+            realm_namespace: Namespace of the realm resource
+
+        Returns:
+            Tuple of (keycloak_namespace, keycloak_name)
+        """
+        from kubernetes.client.rest import ApiException
+
+        try:
+            custom_api = client.CustomObjectsApi()
+            realm_resource = custom_api.get_namespaced_custom_object(
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=realm_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
+            realm_status = realm_resource.get("status", {})
+            keycloak_instance = realm_status.get("keycloakInstance", "")
+
+            # Parse "namespace/name" format
+            if "/" in keycloak_instance and keycloak_instance.count("/") == 1:
+                keycloak_namespace, keycloak_name = keycloak_instance.split("/", 1)
+                return keycloak_namespace, keycloak_name
+            else:
+                # Fallback to defaults if format is unexpected
+                self.logger.warning(
+                    f"Realm {realm_name} has unexpected keycloakInstance format: '{keycloak_instance}'. "
+                    f"Using default: {realm_namespace}/keycloak"
+                )
+                return realm_namespace, "keycloak"
+
+        except ApiException as e:
+            if e.status == 404:
+                self.logger.warning(
+                    f"Realm {realm_name} not found in namespace {realm_namespace}"
+                )
+            else:
+                self.logger.error(f"Failed to get realm {realm_name}: {e}")
+            # Return defaults
+            return realm_namespace, "keycloak"
+
     async def do_reconcile(
         self,
         spec: dict[str, Any],
@@ -105,11 +155,15 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_name = realm_ref.name
         secret_name = f"{name}-credentials"
 
-        # Get keycloak instance for endpoint construction
+        # Get keycloak instance from realm's status
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
         from ..utils.kubernetes import validate_keycloak_reference
 
-        keycloak_name = "keycloak"  # Default Keycloak instance name
-        keycloak_instance = validate_keycloak_reference(keycloak_name, target_namespace)
+        keycloak_instance = validate_keycloak_reference(
+            keycloak_name, keycloak_namespace
+        )
 
         endpoints = {}
         if (
@@ -135,7 +189,7 @@ class KeycloakClientReconciler(BaseReconciler):
         status.client_id = client_spec.client_id
         status.client_uuid = client_uuid
         status.realm = realm_name
-        status.keycloak_instance = f"{target_namespace}/{keycloak_name}"
+        status.keycloak_instance = f"{keycloak_namespace}/{keycloak_name}"
         status.credentials_secret = secret_name
         status.public_client = client_spec.public_client
         status.endpoints = endpoints
@@ -226,7 +280,11 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
+
+        # Get Keycloak instance info from realm
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
 
         # Validate authorization: Check realm token
         # First, we need to get the realm resource to find its authorization secret
@@ -243,9 +301,8 @@ class KeycloakClientReconciler(BaseReconciler):
             )
 
             # Get the realm's authorization secret name from its status
-            realm_auth_secret_name = realm_resource.get("status", {}).get(
-                "authorizationSecretName"
-            )
+            realm_status = realm_resource.get("status", {})
+            realm_auth_secret_name = realm_status.get("authorizationSecretName")
             if not realm_auth_secret_name:
                 from ..errors import TemporaryError
 
@@ -303,17 +360,19 @@ class KeycloakClientReconciler(BaseReconciler):
             raise
 
         # Validate that the Keycloak instance exists and is ready
-        keycloak_instance = validate_keycloak_reference(keycloak_name, target_namespace)
-        if not keycloak_instance:
+        keycloak_instance_obj = validate_keycloak_reference(
+            keycloak_name, keycloak_namespace
+        )
+        if not keycloak_instance_obj:
             from ..errors import TemporaryError
 
             raise TemporaryError(
                 f"Keycloak instance {keycloak_name} not found or not ready "
-                f"in namespace {target_namespace}"
+                f"in namespace {keycloak_namespace}"
             )
 
         # Get Keycloak admin client
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
 
         # Check if client already exists in the specified realm
         existing_client = admin_client.get_client_by_name(spec.client_id, realm_name)
@@ -358,8 +417,10 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
+        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
 
         try:
             # Build OAuth2/OIDC client configuration
@@ -447,17 +508,23 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
 
         # Get client secret if this is a confidential client
         client_secret = None
         if not spec.public_client:
-            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+            admin_client = self.keycloak_admin_factory(
+                keycloak_name, keycloak_namespace
+            )
             client_secret = admin_client.get_client_secret(spec.client_id, realm_name)
             self.logger.info("Retrieved client secret for confidential client")
 
         # Get Keycloak instance for endpoint construction
-        keycloak_instance = validate_keycloak_reference(keycloak_name, target_namespace)
+        keycloak_instance = validate_keycloak_reference(
+            keycloak_name, keycloak_namespace
+        )
         if not keycloak_instance:
             from ..errors import TemporaryError
 
@@ -538,8 +605,10 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
+        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
 
         try:
             # Get existing protocol mappers from Keycloak
@@ -665,8 +734,10 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
+        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
 
         try:
             # Get existing client roles from Keycloak
@@ -780,10 +851,14 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
 
         try:
-            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+            admin_client = self.keycloak_admin_factory(
+                keycloak_name, keycloak_namespace
+            )
 
             self.logger.debug(
                 f"Fetching service account user for client {spec.client_id}"
@@ -926,10 +1001,14 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = new_client_spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
 
         # Get Keycloak instance for URL
-        keycloak_instance = validate_keycloak_reference(keycloak_name, target_namespace)
+        keycloak_instance = validate_keycloak_reference(
+            keycloak_name, keycloak_namespace
+        )
         if not keycloak_instance:
             raise TemporaryError(
                 f"Keycloak instance {keycloak_name} not found or not ready "
@@ -937,7 +1016,7 @@ class KeycloakClientReconciler(BaseReconciler):
                 delay=30,
             )
 
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
 
         # Apply configuration updates based on the diff
         client_update_needed = False
@@ -1069,10 +1148,14 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = client_spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
 
         try:
-            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+            admin_client = self.keycloak_admin_factory(
+                keycloak_name, keycloak_namespace
+            )
 
             # Try to get client by client_id
             existing_client = admin_client.get_client_by_id(
@@ -1132,11 +1215,15 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = client_spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_name = realm_ref.name
-        keycloak_name = "keycloak"  # Default Keycloak instance name
+        keycloak_namespace, keycloak_name = self._get_keycloak_instance_from_realm(
+            realm_name, target_namespace
+        )
 
         # Delete client from Keycloak (if instance still exists)
         try:
-            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+            admin_client = self.keycloak_admin_factory(
+                keycloak_name, keycloak_namespace
+            )
 
             admin_client.delete_client(client_spec.client_id, realm_name)
             self.logger.info(
