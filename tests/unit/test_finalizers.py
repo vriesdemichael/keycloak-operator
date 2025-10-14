@@ -34,16 +34,18 @@ BASE_KEYCLOAK_SPEC = {
 
 BASE_REALM_SPEC = {
     "realm_name": "test-realm",
-    "keycloak_instance_ref": {
-        "name": "test-keycloak",
+    "operator_ref": {
+        "namespace": "keycloak-system",
+        "authorization_secret_ref": {"name": "operator-token"},
     },
 }
 
 BASE_CLIENT_SPEC = {
     "client_id": "test-client",
-    "realm": "test-realm",
-    "keycloak_instance_ref": {
-        "name": "test-keycloak",
+    "realm_ref": {
+        "name": "test-realm",
+        "namespace": "default",
+        "authorization_secret_ref": {"name": "realm-token"},
     },
 }
 

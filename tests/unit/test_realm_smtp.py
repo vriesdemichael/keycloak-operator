@@ -3,12 +3,22 @@
 import pytest
 from pydantic import ValidationError
 
-from keycloak_operator.models.keycloak import KeycloakInstanceRef
+from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import (
     KeycloakRealmSpec,
     KeycloakSMTPConfig,
     KeycloakSMTPPasswordSecret,
+    OperatorRef,
 )
+
+
+# Helper function for test data
+def _make_operator_ref(namespace="keycloak-system", secret_name="operator-token"):
+    """Create a test OperatorRef."""
+    return OperatorRef(
+        namespace=namespace,
+        authorization_secret_ref=AuthorizationSecretRef(name=secret_name),
+    )
 
 
 class TestKeycloakSMTPPasswordSecret:
@@ -158,7 +168,7 @@ class TestKeycloakSMTPConfigSerialization:
     """Test SMTP config serialization for Keycloak API."""
 
     def test_field_alias_conversion(self):
-        """Test that fields are converted to camelCase."""
+        """Test that fields are converted to camelCase for Kubernetes API."""
         config = KeycloakSMTPConfig(
             host="smtp.example.com",
             port=587,
@@ -168,11 +178,13 @@ class TestKeycloakSMTPConfigSerialization:
             envelope_from="envelope@example.com",
         )
 
-        # Dump with aliases for API
+        # Dump with aliases (matches Kubernetes API format)
         dumped = config.model_dump(by_alias=True, exclude_none=True)
 
-        # Check camelCase conversion
-        assert dumped["from"] == "noreply@example.com"
+        # Check camelCase conversion for Kubernetes
+        assert (
+            dumped["from"] == "noreply@example.com"
+        )  # 'from' is keyword-safe in YAML/JSON
         assert dumped["fromDisplayName"] == "My App"
         assert dumped["replyTo"] == "support@example.com"
         assert dumped["envelopeFrom"] == "envelope@example.com"
@@ -198,7 +210,7 @@ class TestKeycloakSMTPConfigSerialization:
         assert "password_secret" not in dumped
         assert "passwordSecret" not in dumped
 
-        # Other fields should be present
+        # Other fields should be present (Kubernetes format)
         assert dumped["host"] == "smtp.example.com"
         assert dumped["from"] == "noreply@example.com"
         assert dumped["auth"] is True
@@ -211,7 +223,7 @@ class TestKeycloakRealmSpecSMTP:
         """Test creating realm spec with SMTP configuration."""
         realm_spec = KeycloakRealmSpec(
             realm_name="test-realm",
-            keycloak_instance_ref=KeycloakInstanceRef(name="my-keycloak"),
+            operator_ref=_make_operator_ref(),
             smtp_server=KeycloakSMTPConfig(
                 host="smtp.example.com",
                 port=587,
@@ -231,7 +243,7 @@ class TestKeycloakRealmSpecSMTP:
         """Test creating realm spec without SMTP configuration."""
         realm_spec = KeycloakRealmSpec(
             realm_name="test-realm",
-            keycloak_instance_ref=KeycloakInstanceRef(name="my-keycloak"),
+            operator_ref=_make_operator_ref(),
         )
 
         assert realm_spec.smtp_server is None
@@ -240,7 +252,7 @@ class TestKeycloakRealmSpecSMTP:
         """Test that to_keycloak_config() excludes password fields."""
         realm_spec = KeycloakRealmSpec(
             realm_name="test-realm",
-            keycloak_instance_ref=KeycloakInstanceRef(name="my-keycloak"),
+            operator_ref=_make_operator_ref(),
             smtp_server=KeycloakSMTPConfig(
                 host="smtp.example.com",
                 port=587,
@@ -277,7 +289,7 @@ class TestKeycloakRealmSpecSMTP:
         """Test that to_keycloak_config() handles missing SMTP config."""
         realm_spec = KeycloakRealmSpec(
             realm_name="test-realm",
-            keycloak_instance_ref=KeycloakInstanceRef(name="my-keycloak"),
+            operator_ref=_make_operator_ref(),
         )
 
         config = realm_spec.to_keycloak_config()

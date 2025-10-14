@@ -306,9 +306,9 @@ class TestRealmReconcilerGenerationTracking:
         status = MockStatus()
         spec = {
             "realm_name": "test-realm",
-            "keycloak_instance_ref": {
-                "name": "test-keycloak",
+            "operator_ref": {
                 "namespace": "test-namespace",
+                "authorization_secret_ref": {"name": "operator-token"},
             },
         }
 
@@ -323,6 +323,12 @@ class TestRealmReconcilerGenerationTracking:
             ),
             patch.object(
                 realm_reconciler, "ensure_realm_exists", new_callable=AsyncMock
+            ),
+            patch.object(
+                realm_reconciler,
+                "ensure_realm_authorization_secret",
+                new_callable=AsyncMock,
+                return_value="test-realm-realm-auth",
             ),
             patch.object(
                 realm_reconciler, "manage_realm_backup", new_callable=AsyncMock
@@ -359,10 +365,10 @@ class TestClientReconcilerGenerationTracking:
         status = MockStatus()
         spec = {
             "client_id": "test-client",
-            "realm": "test-realm",
-            "keycloak_instance_ref": {
-                "name": "test-keycloak",
+            "realm_ref": {
+                "name": "test-realm",
                 "namespace": "test-namespace",
+                "authorization_secret_ref": {"name": "realm-token"},
             },
         }
 

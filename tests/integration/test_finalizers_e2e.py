@@ -14,130 +14,45 @@ from kubernetes.client.rest import ApiException
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestFinalizersE2E:
-    """End-to-end tests for finalizer behavior."""
+    """End-to-end tests for finalizer behavior.
 
-    async def test_keycloak_finalizer_cleanup_success(
-        self,
-        k8s_custom_objects,
-        k8s_apps_v1,
-        k8s_core_v1,
-        test_namespace,
-        sample_keycloak_spec,
-        wait_for_condition,
-    ):
-        """Test successful finalizer cleanup when deleting Keycloak resource."""
-        keycloak_name = "test-finalizer-cleanup"
-
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
-
-        try:
-            # Create Keycloak resource
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            # Wait for finalizer to be added
-            async def check_finalizer_added():
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=test_namespace,
-                        plural="keycloaks",
-                        name=keycloak_name,
-                    )
-                    finalizers = resource.get("metadata", {}).get("finalizers", [])
-                    return "keycloak.mdvr.nl/cleanup" in finalizers
-                except ApiException:
-                    return False
-
-            assert await wait_for_condition(check_finalizer_added, timeout=300), (
-                "Finalizer was not added"
-            )
-
-            # Wait for deployment to be created
-            async def check_deployment_exists():
-                try:
-                    k8s_apps_v1.read_namespaced_deployment(
-                        name=f"{keycloak_name}-keycloak", namespace=test_namespace
-                    )
-                    return True
-                except ApiException:
-                    return False
-
-            assert await wait_for_condition(check_deployment_exists, timeout=120), (
-                "Deployment was not created"
-            )
-
-            # Delete the Keycloak resource
-            k8s_custom_objects.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                name=keycloak_name,
-            )
-
-            # Wait for finalizer cleanup to complete (resource should be deleted)
-            async def check_resource_deleted():
-                try:
-                    k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=test_namespace,
-                        plural="keycloaks",
-                        name=keycloak_name,
-                    )
-                    return False  # Resource still exists
-                except ApiException as e:
-                    return e.status == 404  # Resource was deleted
-
-            assert await wait_for_condition(check_resource_deleted, timeout=180), (
-                "Finalizer cleanup did not complete"
-            )
-
-            # Verify that deployment was also cleaned up
-            async def check_deployment_deleted():
-                try:
-                    k8s_apps_v1.read_namespaced_deployment(
-                        name=f"{keycloak_name}-keycloak", namespace=test_namespace
-                    )
-                    return False  # Deployment still exists
-                except ApiException as e:
-                    return e.status == 404  # Deployment was deleted
-
-            assert await wait_for_condition(check_deployment_deleted, timeout=480), (
-                "Deployment was not cleaned up by finalizer"
-            )
-
-        except ApiException as e:
-            pytest.fail(f"Failed to test finalizer cleanup: {e}")
+    Note: Tests use shared Keycloak instance (1-1 operator-Keycloak coupling).
+    Keycloak finalizer cleanup is not tested as the instance is never deleted.
+    Focus is on dynamic resources: Realms and Clients.
+    """
 
     async def test_realm_finalizer_behavior(
         self,
         k8s_custom_objects,
-        shared_keycloak_instance,
+        shared_operator,
+        operator_namespace,
         sample_realm_spec,
         wait_for_condition,
     ):
         """Test finalizer behavior for Keycloak realm resources using shared instance."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        from keycloak_operator.models.common import AuthorizationSecretRef
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        namespace = shared_operator["namespace"]
         realm_name = "test-realm-finalizer"
 
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+        )
+
         realm_manifest = {
-            **sample_realm_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
-        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
-        realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
             # Shared Keycloak instance is already ready from fixture
@@ -203,31 +118,58 @@ class TestFinalizersE2E:
     async def test_client_finalizer_behavior(
         self,
         k8s_custom_objects,
-        shared_keycloak_instance,
+        shared_operator,
+        operator_namespace,
         sample_realm_spec,
         sample_client_spec,
         wait_for_condition,
     ):
         """Test finalizer behavior for Keycloak client resources using shared instance."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
+        from keycloak_operator.models.common import AuthorizationSecretRef
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        namespace = shared_operator["namespace"]
         realm_name = "test-client-finalizer-realm"
         client_name = "test-client-finalizer"
 
         # Prepare manifests
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+        )
+
         realm_manifest = {
-            **sample_realm_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
-        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
-        realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
+
+        client_spec = KeycloakClientSpec(
+            realm_ref=RealmRef(
+                name=realm_name,
+                namespace=namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name=f"{realm_name}-auth-token",
+                    key="token",
+                ),
+            ),
+            client_id=client_name,
+        )
 
         client_manifest = {
-            **sample_client_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": namespace},
+            "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
         }
-        client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
-        client_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
             # Shared Keycloak instance is already ready from fixture
@@ -312,50 +254,61 @@ class TestFinalizersE2E:
         self,
         k8s_custom_objects,
         test_namespace,
-        sample_keycloak_spec,
-        sample_realm_spec,
-        sample_client_spec,
+        operator_namespace,
+        shared_operator,
         wait_for_condition,
-        wait_for_keycloak_ready,
     ):
-        """Test that cascading deletion happens in the correct order."""
-        keycloak_name = "test-cascade-kc"
+        """Test that cascading deletion happens when realm is deleted (realm→client).
+
+        Note: We use shared Keycloak which is not deleted during tests.
+        """
+        from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
+        from keycloak_operator.models.common import AuthorizationSecretRef
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        # Use shared Keycloak and test realm→client cascading deletion
         realm_name = "test-cascade-realm"
         client_name = "test-cascade-client"
 
-        # Prepare manifests
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+        )
 
         realm_manifest = {
-            **sample_realm_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": test_namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
-        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
-        realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
+
+        client_spec = KeycloakClientSpec(
+            realm_ref=RealmRef(
+                name=realm_name,
+                namespace=test_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name=f"{realm_name}-realm-auth",  # Fixed: correct secret name pattern
+                    key="token",
+                ),
+            ),
+            client_id=client_name,
+        )
 
         client_manifest = {
-            **sample_client_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": test_namespace},
+            "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
         }
-        client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = test_namespace
-        client_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
-            # Create Keycloak and wait for readiness
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            assert await wait_for_keycloak_ready(keycloak_name, test_namespace), (
-                "Keycloak instance not ready in time for cascading deletion test"
-            )
+            # Shared Keycloak instance is already ready from fixture
 
             # Create realm and client sequentially (no arbitrary sleeps)
             k8s_custom_objects.create_namespaced_custom_object(
@@ -373,25 +326,24 @@ class TestFinalizersE2E:
                 body=client_manifest,
             )
 
-            # Delete the Keycloak instance (should trigger cascading deletion)
+            # Delete the realm (should trigger cascading deletion to client)
             k8s_custom_objects.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=test_namespace,
-                plural="keycloaks",
-                name=keycloak_name,
+                plural="keycloakrealms",
+                name=realm_name,
             )
 
-            # All resources should eventually be deleted
+            # Realm and client should eventually be deleted (shared Keycloak persists)
             async def check_all_deleted():
                 try:
-                    # Check if any resources still exist
+                    # Check if realm or client still exist
                     resources_exist = False
 
                     for plural, name in [
                         ("keycloakclients", client_name),
                         ("keycloakrealms", realm_name),
-                        ("keycloaks", keycloak_name),
                     ]:
                         try:
                             k8s_custom_objects.get_namespaced_custom_object(

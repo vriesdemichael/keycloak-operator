@@ -10,7 +10,19 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from .keycloak import KeycloakInstanceRef
+from .common import AuthorizationSecretRef
+
+
+class RealmRef(BaseModel):
+    """Reference to a parent KeycloakRealm."""
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Name of the KeycloakRealm CR")
+    namespace: str = Field(..., description="Namespace of the KeycloakRealm CR")
+    authorization_secret_ref: AuthorizationSecretRef = Field(
+        ..., alias="authorizationSecretRef"
+    )
 
 
 class KeycloakClientScope(BaseModel):
@@ -126,16 +138,17 @@ class KeycloakClientSpec(BaseModel):
     including authentication, authorization, and protocol settings.
     """
 
+    model_config = {"populate_by_name": True}
+
     # Core client configuration
     client_id: str = Field(..., description="Unique client identifier")
     client_name: str | None = Field(None, description="Human-readable client name")
     description: str | None = Field(None, description="Client description")
 
-    # Target configuration
-    keycloak_instance_ref: KeycloakInstanceRef = Field(
-        ..., description="Reference to the target Keycloak instance"
+    # Realm reference and authorization
+    realm_ref: RealmRef = Field(
+        ..., alias="realmRef", description="Reference to the parent KeycloakRealm"
     )
-    realm: str = Field("master", description="Target realm name")
 
     # Client type configuration
     public_client: bool = Field(False, description="Whether this is a public client")

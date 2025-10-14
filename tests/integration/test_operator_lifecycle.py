@@ -133,11 +133,11 @@ class TestBasicKeycloakDeployment:
     async def test_create_keycloak_resource(
         self,
         k8s_custom_objects,
-        shared_keycloak_instance,
+        shared_operator,
     ):
         """Test that the shared Keycloak resource was created successfully."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        keycloak_name = shared_operator["name"]
+        namespace = shared_operator["namespace"]
 
         try:
             # Verify the shared resource exists
@@ -156,11 +156,11 @@ class TestBasicKeycloakDeployment:
     async def test_keycloak_finalizer_added(
         self,
         k8s_custom_objects,
-        shared_keycloak_instance,
+        shared_operator,
     ):
         """Test that finalizers are properly added to the shared Keycloak resource."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        keycloak_name = shared_operator["name"]
+        namespace = shared_operator["namespace"]
 
         try:
             # Verify finalizer exists on shared resource
@@ -182,11 +182,11 @@ class TestBasicKeycloakDeployment:
     async def test_keycloak_deployment_created(
         self,
         k8s_apps_v1,
-        shared_keycloak_instance,
+        shared_operator,
     ):
         """Test that Keycloak deployment is created for the shared resource."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        keycloak_name = shared_operator["name"]
+        namespace = shared_operator["namespace"]
 
         try:
             # Verify deployment exists
@@ -213,11 +213,11 @@ class TestBasicKeycloakDeployment:
     async def test_keycloak_service_created(
         self,
         k8s_core_v1,
-        shared_keycloak_instance,
+        shared_operator,
     ):
         """Test that Keycloak service is created for the shared resource."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        keycloak_name = shared_operator["name"]
+        namespace = shared_operator["namespace"]
 
         try:
             # Verify service exists
@@ -236,11 +236,11 @@ class TestBasicKeycloakDeployment:
     async def test_keycloak_becomes_ready(
         self,
         k8s_custom_objects,
-        shared_keycloak_instance,
+        shared_operator,
     ):
         """Test that the shared Keycloak instance is ready and operational."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        keycloak_name = shared_operator["name"]
+        namespace = shared_operator["namespace"]
 
         try:
             # Verify status is set correctly (instance is already ready from fixture)
@@ -261,11 +261,11 @@ class TestBasicKeycloakDeployment:
     async def test_keycloak_pods_running(
         self,
         k8s_core_v1,
-        shared_keycloak_instance,
+        shared_operator,
     ):
         """Test that Keycloak pods are running and healthy for the shared instance."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        keycloak_name = shared_operator["name"]
+        namespace = shared_operator["namespace"]
 
         try:
             # Verify pods are running (instance is already ready from fixture)
@@ -295,76 +295,64 @@ class TestBasicKeycloakDeployment:
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestKeycloakAdminAPI:
-    """Test Keycloak admin API accessibility and basic operations."""
+    """Test Keycloak admin API accessibility using shared instance (1-1 coupling)."""
 
     async def test_keycloak_admin_api_accessible(
         self,
-        k8s_custom_objects,
         k8s_core_v1,
-        test_namespace,
-        sample_keycloak_spec,
-        wait_for_keycloak_ready,
-        wait_for_condition,
+        k8s_apps_v1,
+        shared_operator,
     ):
-        """Test that Keycloak instance is ready to take admin API requests."""
-        keycloak_name = "test-keycloak-api"
+        """Test that shared Keycloak instance is ready and admin API is accessible.
 
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": test_namespace},
-        }
+        Uses the pre-installed shared Keycloak instance (1-1 operator-Keycloak coupling).
+        Verifies deployment, service, and admin credentials are properly configured.
+        """
+        keycloak_name = shared_operator["name"]
+        namespace = shared_operator["namespace"]
 
         try:
-            # Create the resource
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=test_namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
+            # Verify deployment exists and is ready
+            deployment = k8s_apps_v1.read_namespaced_deployment(
+                name=f"{keycloak_name}-keycloak", namespace=namespace
             )
 
-            # Wait for Keycloak to become ready
-            assert await wait_for_keycloak_ready(
-                keycloak_name, test_namespace, timeout=420
-            ), "Keycloak instance did not become ready for API testing"
+            assert deployment.status.ready_replicas, (
+                "Keycloak deployment has no ready replicas"
+            )
+            assert deployment.status.ready_replicas >= deployment.spec.replicas, (
+                f"Keycloak deployment not fully ready: "
+                f"{deployment.status.ready_replicas}/{deployment.spec.replicas}"
+            )
 
-            # Verify admin credentials are accessible
-            async def check_admin_secret():
-                try:
-                    secret_name = sample_keycloak_spec["spec"]["admin_access"][
-                        "password_secret"
-                    ]["name"]
-                    secret = k8s_core_v1.read_namespaced_secret(
-                        name=secret_name, namespace=test_namespace
-                    )
-                    return secret is not None and "password" in (secret.data or {})
-                except ApiException:
-                    return False
-
-            assert await wait_for_condition(check_admin_secret, timeout=60), (
-                "Admin credentials not available"
+            # Verify admin credentials secret exists
+            admin_secret_name = f"{keycloak_name}-admin-credentials"
+            secret = k8s_core_v1.read_namespaced_secret(
+                name=admin_secret_name, namespace=namespace
+            )
+            assert secret.data, "Admin credentials secret has no data"
+            assert "password" in secret.data, (
+                "Admin credentials secret missing 'password' key"
+            )
+            assert "username" in secret.data, (
+                "Admin credentials secret missing 'username' key"
             )
 
             # Verify service endpoint is available
             service = k8s_core_v1.read_namespaced_service(
-                name=f"{keycloak_name}-keycloak", namespace=test_namespace
+                name=f"{keycloak_name}-keycloak", namespace=namespace
             )
             assert service.spec.cluster_ip, "Service has no cluster IP"
 
-        except ApiException as e:
-            pytest.fail(f"Failed to test admin API accessibility: {e}")
+            # Verify service has correct ports
+            ports = {port.name: port.port for port in service.spec.ports}
+            assert "http" in ports, "Service missing 'http' port"
+            assert "management" in ports, "Service missing 'management' port"
 
-        finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=test_namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
-                )
+        except ApiException as e:
+            pytest.fail(
+                f"Failed to verify shared Keycloak admin API accessibility: {e}"
+            )
 
 
 @pytest.mark.integration
@@ -375,21 +363,35 @@ class TestRealmBasicOperations:
     async def test_create_realm_resource(
         self,
         k8s_custom_objects,
-        shared_keycloak_instance,
+        shared_operator,
+        operator_namespace,
         sample_realm_spec,
         wait_for_condition,
     ):
         """Test creating a basic realm resource on the shared Keycloak instance."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        from keycloak_operator.models.common import AuthorizationSecretRef
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        namespace = shared_operator["namespace"]
         realm_name = "test-realm-basic"
 
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+        )
+
         realm_manifest = {
-            **sample_realm_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
-        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
-        realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
             # Create realm on the shared Keycloak instance
@@ -442,30 +444,57 @@ class TestClientBasicOperations:
     async def test_create_client_resource(
         self,
         k8s_custom_objects,
-        shared_keycloak_instance,
+        shared_operator,
+        operator_namespace,
         sample_realm_spec,
         sample_client_spec,
         wait_for_condition,
     ):
         """Test creating a basic client resource on the shared Keycloak instance."""
-        keycloak_name = shared_keycloak_instance["name"]
-        namespace = shared_keycloak_instance["namespace"]
+        from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
+        from keycloak_operator.models.common import AuthorizationSecretRef
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        namespace = shared_operator["namespace"]
         realm_name = "test-client-realm"
         client_name = "test-client-basic"
 
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+        )
+
         realm_manifest = {
-            **sample_realm_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
-        realm_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
-        realm_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
+
+        client_spec = KeycloakClientSpec(
+            realm_ref=RealmRef(
+                name=realm_name,
+                namespace=namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name=f"{realm_name}-auth-token",
+                    key="token",
+                ),
+            ),
+            client_id=client_name,
+        )
 
         client_manifest = {
-            **sample_client_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": namespace},
+            "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
         }
-        client_manifest["spec"]["keycloak_instance_ref"]["namespace"] = namespace
-        client_manifest["spec"]["keycloak_instance_ref"]["name"] = keycloak_name
 
         try:
             # Create realm on shared Keycloak instance

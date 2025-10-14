@@ -1,33 +1,17 @@
 #!/bin/bash
 # kind-teardown.sh - Clean up Kind cluster and resources
+#
+# Purpose: Completely removes Kind cluster and associated resources
+# Prerequisites: kind, kubectl, docker
+# Removes: Cluster, kubectl context, temporary files
+# Used by: Makefile kind-teardown target, test cleanup
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-log() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
-
-error() {
-    echo -e "${RED}[ERROR] $1${NC}"
-}
-
-success() {
-    echo -e "${GREEN}[SUCCESS] $1${NC}"
-}
-
-warn() {
-    echo -e "${YELLOW}[WARN] $1${NC}"
-}
-
-# Configuration
-CLUSTER_NAME="keycloak-operator-test"
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+source "$SCRIPT_DIR/config.sh"
 
 cleanup_cluster() {
     log "Cleaning up Kind cluster '$CLUSTER_NAME'..."

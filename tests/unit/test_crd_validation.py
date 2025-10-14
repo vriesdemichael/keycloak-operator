@@ -9,10 +9,7 @@ database types.
 import pytest
 from pydantic import ValidationError
 
-from keycloak_operator.models.keycloak import (
-    CloudNativePGReference,
-    KeycloakDatabaseConfig,
-)
+from keycloak_operator.models.keycloak import KeycloakDatabaseConfig
 
 BASE_DB_FIELDS = {
     "host": "postgres.example.svc",
@@ -32,18 +29,11 @@ class TestDatabaseTypeValidation:
             "mariadb",
             "oracle",
             "mssql",
-            "cnpg",
         ]
 
         for db_type in production_databases:
             # Should not raise ValidationError (minimal config for type validation)
-            extra = {}
-            if db_type == "cnpg":
-                extra["cnpg_cluster"] = CloudNativePGReference(name="cnpg-cluster")
-            else:
-                extra.update(BASE_DB_FIELDS)
-
-            database_config = KeycloakDatabaseConfig(type=db_type, **extra)
+            database_config = KeycloakDatabaseConfig(type=db_type, **BASE_DB_FIELDS)
             assert database_config.type == db_type
 
     def test_h2_database_rejected(self):
@@ -78,24 +68,18 @@ class TestDatabaseTypeValidation:
     def test_valid_production_types_comprehensive(self):
         """Test that exactly the expected production database types are supported."""
         # Test each production database type individually
-        valid_types = ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]
+        valid_types = ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
 
         for db_type in valid_types:
             # Should create successfully
-            extra = {}
-            if db_type == "cnpg":
-                extra["cnpg_cluster"] = CloudNativePGReference(name="cnpg-cluster")
-            else:
-                extra.update(BASE_DB_FIELDS)
-
-            config = KeycloakDatabaseConfig(type=db_type, **extra)
+            config = KeycloakDatabaseConfig(type=db_type, **BASE_DB_FIELDS)
             assert config.type == db_type
 
-        # Test that H2 and other common types are NOT in the valid list
-        invalid_types = ["h2", "sqlite", "mongodb", "redis", "cassandra"]
+        # Test that H2, CNPG, and other common types are NOT in the valid list
+        invalid_types = ["h2", "cnpg", "sqlite", "mongodb", "redis", "cassandra"]
         for invalid_type in invalid_types:
             with pytest.raises(ValidationError):
-                KeycloakDatabaseConfig(type=invalid_type)
+                KeycloakDatabaseConfig(type=invalid_type, **BASE_DB_FIELDS)
 
 
 class TestPortValidation:
@@ -138,7 +122,7 @@ class TestSecurityRequirements:
 
         # Should have credential management fields instead
         assert hasattr(database_config, "credentials_secret")
-        assert hasattr(database_config, "external_secret")
+        assert hasattr(database_config, "password_secret")
 
     def test_credential_management_options(self):
         """Test that proper credential management options are available."""
@@ -180,31 +164,12 @@ class TestBackwardCompatibilityValidation:
             "mariadb",
             "oracle",
             "mssql",
-            "cnpg",
         ]
 
         for db_type in production_databases:
             # Should create successfully with minimal configuration
-            extra = {}
-            if db_type == "cnpg":
-                extra["cnpg_cluster"] = CloudNativePGReference(name="cnpg-cluster")
-            else:
-                extra.update(BASE_DB_FIELDS)
-
-            config = KeycloakDatabaseConfig(type=db_type, **extra)
+            config = KeycloakDatabaseConfig(type=db_type, **BASE_DB_FIELDS)
             assert config.type == db_type
-
-    def test_cnpg_support_available(self):
-        """Test that CloudNativePG support is available."""
-        # CNPG should be a valid database type
-        config = KeycloakDatabaseConfig(
-            type="cnpg",
-            cnpg_cluster=CloudNativePGReference(name="cnpg-cluster"),
-        )
-        assert config.type == "cnpg"
-
-        # Should have CNPG-specific configuration options
-        assert hasattr(config, "cnpg_cluster")
 
 
 class TestValidationErrorMessages:
@@ -226,11 +191,10 @@ class TestValidationErrorMessages:
     def test_invalid_type_shows_valid_options(self):
         """Test that invalid type errors show valid options."""
         with pytest.raises(ValidationError) as exc_info:
-            KeycloakDatabaseConfig(type="invalid")
+            KeycloakDatabaseConfig(type="invalid", **BASE_DB_FIELDS)
 
         error_message = str(exc_info.value)
 
         # Should show valid database types
         assert "postgresql" in error_message
         assert "mysql" in error_message
-        assert "cnpg" in error_message

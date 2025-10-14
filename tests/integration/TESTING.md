@@ -66,11 +66,11 @@ async def test_simple_client_creation(
     test_namespace,
     sample_client_spec,
     wait_for_condition,
-    shared_keycloak_instance,  # Uses shared instance
+    shared_operator,  # Uses shared instance
 ):
     """Simple test using shared Keycloak."""
-    keycloak_name = shared_keycloak_instance["name"]
-    keycloak_namespace = shared_keycloak_instance["namespace"]
+    keycloak_name = shared_operator["name"]
+    keycloak_namespace = shared_operator["namespace"]
 
     # Create client in shared instance
     client_manifest = {
@@ -143,7 +143,7 @@ async def test_something(test_namespace):
     pass
 
 # Use shared instance for simple tests
-async def test_something(shared_keycloak_instance):
+async def test_something(shared_operator):
     # Shared instance handles parallelism internally
     pass
 ```
@@ -157,7 +157,7 @@ client_name = "test-client"  # WRONG: Will conflict between parallel tests
 namespace = "test"  # WRONG: Use test_namespace fixture instead
 
 # Modifying shared instance global state
-async def test_something(shared_keycloak_instance):
+async def test_something(shared_operator):
     # WRONG: Don't modify master realm or global settings
     admin_client.update_realm("master", {...})
 ```
@@ -277,7 +277,7 @@ finally:
 test_namespace: str
 
 # Shared Keycloak instance (optimized)
-shared_keycloak_instance: dict[str, str]  # {"name": "...", "namespace": "..."}
+shared_operator: dict[str, str]  # {"name": "...", "namespace": "..."}
 
 # Port-forward for host access
 keycloak_port_forward: Callable[[str, str], Awaitable[int]]
@@ -317,7 +317,7 @@ async def test_feature_name(
     k8s_custom_objects,
     k8s_core_v1,
     test_namespace,
-    shared_keycloak_instance,  # Or create dedicated if needed
+    shared_operator,  # Or create dedicated if needed
     sample_client_spec,
     wait_for_condition,
     keycloak_port_forward,  # If accessing Keycloak API
@@ -325,8 +325,8 @@ async def test_feature_name(
     """Test description explaining what this verifies."""
 
     # Use shared instance for simple tests
-    keycloak_name = shared_keycloak_instance["name"]
-    keycloak_namespace = shared_keycloak_instance["namespace"]
+    keycloak_name = shared_operator["name"]
+    keycloak_namespace = shared_operator["namespace"]
 
     # Generate unique names
     client_name = f"test-{uuid.uuid4().hex[:8]}"

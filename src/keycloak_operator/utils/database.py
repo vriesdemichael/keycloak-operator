@@ -1,8 +1,8 @@
 """
 Database connection utilities for Keycloak operator.
 
-This module provides utilities for managing database connections,
-including CloudNativePG integration and connection string generation.
+This module provides utilities for managing database connections
+and connection string generation.
 """
 
 import asyncio
@@ -12,12 +12,8 @@ from typing import Any
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from ..errors import ExternalServiceError, TemporaryError
-from ..models.keycloak import (
-    CloudNativePGReference,
-    ExternalSecretReference,
-    KeycloakDatabaseConfig,
-)
+from ..errors import ExternalServiceError
+from ..models.keycloak import KeycloakDatabaseConfig
 from ..observability.logging import OperatorLogger
 
 logger = OperatorLogger(__name__)
@@ -51,191 +47,13 @@ class DatabaseConnectionManager:
         Raises:
             ExternalServiceError: If database configuration cannot be resolved
         """
-        if db_config.type == "cnpg":
-            if db_config.cnpg_cluster is None:
-                raise ExternalServiceError(
-                    service="Database",
-                    message="CNPG database type requires cnpg_cluster configuration",
-                    retryable=False,
-                    user_action="Configure database.cnpg_cluster with valid CloudNativePG cluster reference",
-                )
-            return await self._resolve_cnpg_connection(
-                db_config.cnpg_cluster, namespace
-            )
-        else:
-            return await self._resolve_traditional_connection(db_config, namespace)
-
-    async def _resolve_cnpg_connection(
-        self, cnpg_ref: CloudNativePGReference, namespace: str
-    ) -> dict[str, Any]:
-        """
-        Resolve CloudNativePG cluster connection details.
-
-        Args:
-            cnpg_ref: CNPG cluster reference
-            namespace: Namespace context
-
-        Returns:
-            Dictionary with connection details
-        """
-        # CNPG cluster must be in the same namespace as the Keycloak resource
-        target_namespace = namespace
-        cluster_name = cnpg_ref.name
-
-        logger.info(
-            f"Resolving CNPG cluster '{cluster_name}' in namespace '{target_namespace}'"
-        )
-
-        try:
-            # Use dynamic client to access CNPG resources
-            from kubernetes import dynamic
-
-            dyn_client = dynamic.DynamicClient(self.k8s_client)
-
-            # Get CNPG Cluster resource
-            cluster_api = dyn_client.resources.get(
-                api_version="postgresql.cnpg.io/v1", kind="Cluster"
-            )
-
-            try:
-                cluster = cluster_api.get(name=cluster_name, namespace=target_namespace)
-            except ApiException as e:
-                if e.status == 404:
-                    raise ExternalServiceError(
-                        service="CloudNativePG",
-                        message=f"CNPG Cluster '{cluster_name}' not found in namespace '{target_namespace}'",
-                        retryable=True,
-                        user_action=f"Create CNPG Cluster '{cluster_name}' or check the cluster reference",
-                    ) from e
-                else:
-                    raise ExternalServiceError(
-                        service="CloudNativePG",
-                        message=f"Failed to access CNPG Cluster: {e}",
-                        retryable=True,
-                        user_action="Check Kubernetes API connectivity and RBAC permissions",
-                    ) from e
-
-            # Validate cluster is ready
-            cluster_status = cluster.get("status", {})
-            phase = cluster_status.get("phase", "Unknown")
-
-            if phase != "Cluster in healthy state":
-                logger.warning(
-                    f"CNPG Cluster '{cluster_name}' is not in healthy state: {phase}"
-                )
-                raise TemporaryError(
-                    f"CNPG Cluster '{cluster_name}' is not ready (phase: {phase}). "
-                    f"Waiting for cluster to become healthy."
-                )
-
-            # Extract connection details
-            connection_info = {
-                "type": "postgresql",  # CNPG is always PostgreSQL
-                "host": f"{cluster_name}-rw.{target_namespace}.svc.cluster.local",
-                "port": 5432,
-                "database": cnpg_ref.database,
-                "ssl_mode": "require",  # CNPG enables SSL by default
-                "application_name": cnpg_ref.application_name,
-            }
-
-            # Get credentials from CNPG-generated secret
-            secret_name = f"{cluster_name}-app"  # CNPG default app secret name
-            credentials = await self._get_cnpg_credentials(
-                secret_name, target_namespace
-            )
-            connection_info.update(credentials)
-
-            # Also include secret reference for deployment environment variables
-            connection_info["password_secret"] = {
-                "name": secret_name,
-                "key": "password",
-            }
-
-            logger.info(
-                f"Successfully resolved CNPG connection for cluster '{cluster_name}'"
-            )
-            return connection_info
-
-        except Exception as e:
-            if isinstance(e, (ExternalServiceError, TemporaryError)):
-                raise
-
-            logger.error(f"Failed to resolve CNPG cluster connection: {e}")
-            raise ExternalServiceError(
-                service="CloudNativePG",
-                message=f"Failed to resolve CNPG cluster connection: {str(e)}",
-                retryable=True,
-                user_action="Check CNPG operator installation and cluster configuration",
-            ) from e
-
-    async def _get_cnpg_credentials(
-        self, secret_name: str, namespace: str
-    ) -> dict[str, str]:
-        """
-        Get database credentials from CNPG-generated secret.
-
-        Args:
-            secret_name: Name of the CNPG secret
-            namespace: Namespace of the secret
-
-        Returns:
-            Dictionary with username and password
-        """
-        core_api = client.CoreV1Api(self.k8s_client)
-
-        try:
-            secret = core_api.read_namespaced_secret(
-                name=secret_name, namespace=namespace
-            )
-
-            if not secret.data:
-                raise ExternalServiceError(
-                    service="CloudNativePG",
-                    message=f"CNPG secret '{secret_name}' has no data",
-                    retryable=True,
-                    user_action="Check CNPG cluster status and secret generation",
-                )
-
-            # CNPG secrets contain username and password in base64
-            import base64
-
-            username = secret.data.get("username")
-            password = secret.data.get("password")
-
-            if not username or not password:
-                raise ExternalServiceError(
-                    service="CloudNativePG",
-                    message=f"CNPG secret '{secret_name}' missing username or password",
-                    retryable=True,
-                    user_action="Check CNPG secret format and regenerate if needed",
-                )
-
-            return {
-                "username": base64.b64decode(username).decode("utf-8"),
-                "password": base64.b64decode(password).decode("utf-8"),
-            }
-
-        except ApiException as e:
-            if e.status == 404:
-                raise ExternalServiceError(
-                    service="CloudNativePG",
-                    message=f"CNPG credentials secret '{secret_name}' not found",
-                    retryable=True,
-                    user_action="Check CNPG cluster configuration and secret generation",
-                ) from e
-            else:
-                raise ExternalServiceError(
-                    service="CloudNativePG",
-                    message=f"Failed to read CNPG credentials: {e}",
-                    retryable=True,
-                    user_action="Check Kubernetes API connectivity and RBAC permissions",
-                ) from e
+        return await self._resolve_traditional_connection(db_config, namespace)
 
     async def _resolve_traditional_connection(
         self, db_config: KeycloakDatabaseConfig, namespace: str
     ) -> dict[str, Any]:
         """
-        Resolve traditional database connection details.
+        Resolve database connection details.
 
         Args:
             db_config: Database configuration
@@ -255,14 +73,9 @@ class DatabaseConnectionManager:
         }
 
         # Resolve credentials
-        external_secret = getattr(db_config, "external_secret", None)
         credentials_secret = getattr(db_config, "credentials_secret", None)
 
-        if external_secret:
-            credentials = await self._get_external_secret_credentials(
-                external_secret, namespace
-            )
-        elif credentials_secret:
+        if credentials_secret:
             credentials = await self._get_k8s_secret_credentials(
                 credentials_secret, namespace
             )
@@ -274,32 +87,11 @@ class DatabaseConnectionManager:
                 service="Database",
                 message="No valid credential source configured",
                 retryable=False,
-                user_action="Configure credentials_secret, external_secret, or username",
+                user_action="Configure credentials_secret or username",
             )
 
         connection_info.update(credentials)
         return connection_info
-
-    async def _get_external_secret_credentials(
-        self, external_ref: ExternalSecretReference, namespace: str
-    ) -> dict[str, str]:
-        """
-        Get credentials from ExternalSecret resource.
-
-        Args:
-            external_ref: ExternalSecret reference
-            namespace: Namespace context
-
-        Returns:
-            Dictionary with credentials
-        """
-        # ExternalSecret must be in the same namespace as the Keycloak resource
-        target_namespace = namespace
-        secret_name = external_ref.name
-
-        # ExternalSecrets creates a regular Kubernetes secret
-        # So we can read it like a normal secret
-        return await self._get_k8s_secret_credentials(secret_name, target_namespace)
 
     async def _get_k8s_secret_credentials(
         self, secret_name: str, namespace: str

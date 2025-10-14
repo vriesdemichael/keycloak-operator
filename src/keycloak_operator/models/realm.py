@@ -10,7 +10,18 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from .keycloak import KeycloakInstanceRef
+from .common import AuthorizationSecretRef
+
+
+class OperatorRef(BaseModel):
+    """Reference to the operator managing this realm."""
+
+    model_config = {"populate_by_name": True}
+
+    namespace: str = Field(..., description="Namespace where the operator is running")
+    authorization_secret_ref: AuthorizationSecretRef = Field(
+        ..., alias="authorizationSecretRef"
+    )
 
 
 class KeycloakRealmTheme(BaseModel):
@@ -37,41 +48,57 @@ class KeycloakRealmLocalization(BaseModel):
 class KeycloakRealmTokenSettings(BaseModel):
     """Token settings for a realm."""
 
+    model_config = {"populate_by_name": True}
+
     # Access token settings
     access_token_lifespan: int = Field(
-        300, description="Access token lifespan in seconds"
+        300, alias="accessTokenLifespan", description="Access token lifespan in seconds"
     )
     access_token_lifespan_for_implicit_flow: int = Field(
-        900, description="Access token lifespan for implicit flow in seconds"
+        900,
+        alias="accessTokenLifespanForImplicitFlow",
+        description="Access token lifespan for implicit flow in seconds",
     )
 
     # SSO session settings
     sso_session_idle_timeout: int = Field(
-        1800, description="SSO session idle timeout in seconds"
+        1800,
+        alias="ssoSessionIdleTimeout",
+        description="SSO session idle timeout in seconds",
     )
     sso_session_max_lifespan: int = Field(
-        36000, description="SSO session max lifespan in seconds"
+        36000,
+        alias="ssoSessionMaxLifespan",
+        description="SSO session max lifespan in seconds",
     )
 
     # Offline session settings
     offline_session_idle_timeout: int = Field(
         2592000,
+        alias="offlineSessionIdleTimeout",
         description="Offline session idle timeout in seconds",  # 30 days
     )
     offline_session_max_lifespan_enabled: bool = Field(
-        False, description="Enable offline session max lifespan"
+        False,
+        alias="offlineSessionMaxLifespanEnabled",
+        description="Enable offline session max lifespan",
     )
     offline_session_max_lifespan: int = Field(
         5184000,
+        alias="offlineSessionMaxLifespan",
         description="Offline session max lifespan in seconds",  # 60 days
     )
 
     # Client session settings
     client_session_idle_timeout: int = Field(
-        0, description="Client session idle timeout in seconds"
+        0,
+        alias="clientSessionIdleTimeout",
+        description="Client session idle timeout in seconds",
     )
     client_session_max_lifespan: int = Field(
-        0, description="Client session max lifespan in seconds"
+        0,
+        alias="clientSessionMaxLifespan",
+        description="Client session max lifespan in seconds",
     )
 
     @field_validator(
@@ -318,19 +345,17 @@ class KeycloakSMTPPasswordSecret(BaseModel):
 class KeycloakSMTPConfig(BaseModel):
     """SMTP server configuration with validation."""
 
+    model_config = {"populate_by_name": True}
+
     host: str = Field(..., description="SMTP server host")
     port: int = Field(..., description="SMTP server port", ge=1, le=65535)
-    from_address: str = Field(
-        ..., serialization_alias="from", description="From email address"
-    )
+    from_address: str = Field(..., alias="from", description="From email address")
     from_display_name: str | None = Field(
-        None, serialization_alias="fromDisplayName", description="From display name"
+        None, alias="fromDisplayName", description="From display name"
     )
-    reply_to: str | None = Field(
-        None, serialization_alias="replyTo", description="Reply-to address"
-    )
+    reply_to: str | None = Field(None, alias="replyTo", description="Reply-to address")
     envelope_from: str | None = Field(
-        None, serialization_alias="envelopeFrom", description="Envelope from address"
+        None, alias="envelopeFrom", description="Envelope from address"
     )
     ssl: bool = Field(False, description="Use SSL")
     starttls: bool = Field(False, description="Use STARTTLS")
@@ -340,7 +365,7 @@ class KeycloakSMTPConfig(BaseModel):
         None, description="SMTP password (use password_secret instead)"
     )
     password_secret: KeycloakSMTPPasswordSecret | None = Field(
-        None, description="Secret reference for password"
+        None, alias="passwordSecret", description="Secret reference for password"
     )
 
     @field_validator("auth")
@@ -369,15 +394,23 @@ class KeycloakRealmSpec(BaseModel):
     including security, authentication, and user management settings.
     """
 
-    # Core realm configuration
-    realm_name: str = Field(..., description="Name of the realm")
-    display_name: str | None = Field(None, description="Human-readable display name")
-    description: str | None = Field(None, description="Realm description")
-    login_page_title: str | None = Field(None, description="HTML title for login pages")
+    model_config = {"populate_by_name": True}
 
-    # Target configuration
-    keycloak_instance_ref: KeycloakInstanceRef = Field(
-        ..., description="Reference to the target Keycloak instance"
+    # Core realm configuration
+    realm_name: str = Field(..., alias="realmName", description="Name of the realm")
+    display_name: str | None = Field(
+        None, alias="displayName", description="Human-readable display name"
+    )
+    description: str | None = Field(None, description="Realm description")
+    login_page_title: str | None = Field(
+        None, alias="loginPageTitle", description="HTML title for login pages"
+    )
+
+    # Operator reference and authorization
+    operator_ref: OperatorRef = Field(
+        ...,
+        alias="operatorRef",
+        description="Reference to the operator managing this realm",
     )
 
     # Themes and localization
@@ -389,6 +422,7 @@ class KeycloakRealmSpec(BaseModel):
     # Token and session settings
     token_settings: KeycloakRealmTokenSettings = Field(
         default_factory=KeycloakRealmTokenSettings,
+        alias="tokenSettings",
         description="Token and session configuration",
     )
 
@@ -399,22 +433,30 @@ class KeycloakRealmSpec(BaseModel):
 
     # Authentication flows
     authentication_flows: list[KeycloakAuthenticationFlow] = Field(
-        default_factory=list, description="Custom authentication flows"
+        default_factory=list,
+        alias="authenticationFlows",
+        description="Custom authentication flows",
     )
 
     # Identity providers
     identity_providers: list[KeycloakIdentityProvider] = Field(
-        default_factory=list, description="Identity provider configurations"
+        default_factory=list,
+        alias="identityProviders",
+        description="Identity provider configurations",
     )
 
     # User federation
     user_federation: list[KeycloakUserFederation] = Field(
-        default_factory=list, description="User federation configurations"
+        default_factory=list,
+        alias="userFederation",
+        description="User federation configurations",
     )
 
     # Client scopes
     client_scopes: list[KeycloakClientScope] = Field(
-        default_factory=list, description="Client scope definitions"
+        default_factory=list,
+        alias="clientScopes",
+        description="Client scope definitions",
     )
 
     # Roles
@@ -427,7 +469,7 @@ class KeycloakRealmSpec(BaseModel):
 
     # SMTP configuration
     smtp_server: KeycloakSMTPConfig | None = Field(
-        None, description="SMTP server configuration"
+        None, alias="smtpServer", description="SMTP server configuration"
     )
 
     # Advanced settings
@@ -437,7 +479,9 @@ class KeycloakRealmSpec(BaseModel):
 
     # Events and logging
     events_config: KeycloakEventsConfig = Field(
-        default_factory=KeycloakEventsConfig, description="Event logging configuration"
+        default_factory=KeycloakEventsConfig,
+        alias="eventsConfig",
+        description="Event logging configuration",
     )
 
     @field_validator("realm_name")
@@ -532,17 +576,28 @@ class KeycloakRealmSpec(BaseModel):
 
         # Add SMTP configuration
         if self.smtp_server:
-            # Exclude password fields - they will be injected by reconciler
-            smtp_config = self.smtp_server.model_dump(
-                by_alias=True,
-                exclude_none=True,
-                exclude={"password_secret", "password"},
-            )
-            # Convert all values to strings (Keycloak API requirement)
-            config["smtpServer"] = {
-                k: str(v).lower() if isinstance(v, bool) else str(v)
-                for k, v in smtp_config.items()
+            # Map Python field names to Keycloak API field names
+            smtp = self.smtp_server
+            smtp_config = {
+                "host": smtp.host,
+                "port": str(smtp.port),
+                "from": smtp.from_address,
+                "auth": str(smtp.auth).lower(),
+                "ssl": str(smtp.ssl).lower(),
+                "starttls": str(smtp.starttls).lower(),
             }
+            # Add optional fields if present
+            if smtp.from_display_name:
+                smtp_config["fromDisplayName"] = smtp.from_display_name
+            if smtp.reply_to:
+                smtp_config["replyTo"] = smtp.reply_to
+            if smtp.envelope_from:
+                smtp_config["envelopeFrom"] = smtp.envelope_from
+            if smtp.user:
+                smtp_config["user"] = smtp.user
+            # Password is injected by reconciler, not included here
+
+            config["smtpServer"] = smtp_config
 
         # Add events configuration
         events = self.events_config
@@ -563,38 +618,57 @@ class KeycloakRealmSpec(BaseModel):
 class KeycloakRealmCondition(BaseModel):
     """Status condition for KeycloakRealm resource."""
 
+    model_config = {"populate_by_name": True}
+
     type: str = Field(..., description="Condition type")
     status: str = Field(..., description="Condition status (True/False/Unknown)")
     reason: str | None = Field(None, description="Reason for the condition")
     message: str | None = Field(None, description="Human-readable message")
     last_transition_time: str | None = Field(
-        None, description="Last time the condition transitioned"
+        None,
+        alias="lastTransitionTime",
+        description="Last time the condition transitioned",
     )
 
 
 class KeycloakRealmEndpoints(BaseModel):
     """Endpoints for the KeycloakRealm."""
 
-    realm: str | None = Field(None, description="Realm endpoint")
-    admin: str | None = Field(None, description="Admin console endpoint")
-    account: str | None = Field(None, description="Account management endpoint")
-    openid_configuration: str | None = Field(
-        None, description="OpenID Connect discovery endpoint"
+    model_config = {"populate_by_name": True}
+
+    issuer: str | None = Field(None, description="Issuer endpoint")
+    auth: str | None = Field(None, description="Authorization endpoint")
+    token: str | None = Field(None, description="Token endpoint")
+    userinfo: str | None = Field(None, description="Userinfo endpoint")
+    jwks: str | None = Field(None, description="JWKS endpoint")
+    end_session: str | None = Field(
+        None, alias="endSession", description="End session endpoint"
     )
+    registration: str | None = Field(None, description="Registration endpoint")
 
 
 class KeycloakRealmFeatures(BaseModel):
     """Features configured for the realm."""
 
-    themes: bool = Field(False, description="Custom themes configured")
-    localization: bool = Field(False, description="Localization configured")
-    custom_auth_flows: bool = Field(False, description="Custom authentication flows")
-    identity_providers: int = Field(0, description="Number of identity providers")
-    user_federation: int = Field(0, description="Number of user federation providers")
-    brute_force_protection: bool = Field(
-        False, description="Brute force protection enabled"
+    model_config = {"populate_by_name": True}
+
+    user_registration: bool = Field(
+        False, alias="userRegistration", description="User registration enabled"
     )
-    events_logging: bool = Field(False, description="Events logging enabled")
+    password_reset: bool = Field(
+        False, alias="passwordReset", description="Password reset enabled"
+    )
+    identity_providers: int = Field(
+        0, alias="identityProviders", description="Number of identity providers"
+    )
+    user_federation_providers: int = Field(
+        0,
+        alias="userFederationProviders",
+        description="Number of user federation providers",
+    )
+    custom_themes: bool = Field(
+        False, alias="customThemes", description="Custom themes configured"
+    )
 
 
 class KeycloakRealmStatus(BaseModel):
@@ -604,6 +678,8 @@ class KeycloakRealmStatus(BaseModel):
     This model represents the current state of a realm as managed
     by the operator.
     """
+
+    model_config = {"populate_by_name": True}
 
     # Overall status
     phase: str = Field("Pending", description="Current phase of the realm")
@@ -615,13 +691,29 @@ class KeycloakRealmStatus(BaseModel):
         default_factory=list, description="Detailed status conditions"
     )
     observed_generation: int | None = Field(
-        None, description="Generation of the spec that was last processed"
+        None,
+        alias="observedGeneration",
+        description="Generation of the spec that was last processed",
     )
 
     # Realm information
-    realm_name: str | None = Field(None, description="Keycloak realm name")
+    realm_name: str | None = Field(
+        None, alias="realmName", description="Keycloak realm name"
+    )
+    internal_id: str | None = Field(
+        None, alias="internalId", description="Internal Keycloak realm ID"
+    )
     keycloak_instance: str | None = Field(
-        None, description="Keycloak instance reference (namespace/name)"
+        None,
+        alias="keycloakInstance",
+        description="Keycloak instance reference (namespace/name)",
+    )
+
+    # Authorization
+    authorization_secret_name: str | None = Field(
+        None,
+        alias="authorizationSecretName",
+        description="Name of the secret containing the realm's authorization token",
     )
 
     # Endpoints
@@ -636,15 +728,22 @@ class KeycloakRealmStatus(BaseModel):
 
     # Health and monitoring
     last_health_check: str | None = Field(
-        None, description="Timestamp of last health check"
+        None, alias="lastHealthCheck", description="Timestamp of last health check"
     )
     last_updated: str | None = Field(
-        None, description="Timestamp of last successful update"
+        None, alias="lastUpdated", description="Timestamp of last successful update"
     )
 
     # Statistics
-    total_users: int | None = Field(None, description="Total number of users in realm")
-    active_sessions: int | None = Field(None, description="Number of active sessions")
+    active_users: int | None = Field(
+        None, alias="activeUsers", description="Number of active users in realm"
+    )
+    total_clients: int | None = Field(
+        None, alias="totalClients", description="Total number of clients"
+    )
+    realm_roles_count: int | None = Field(
+        None, alias="realmRolesCount", description="Number of realm roles"
+    )
 
 
 class KeycloakRealm(BaseModel):

@@ -8,15 +8,33 @@ and provide proper error messages for invalid configurations.
 import pytest
 from pydantic import ValidationError
 
-from keycloak_operator.models.client import KeycloakClient, KeycloakClientSpec
+from keycloak_operator.models.client import KeycloakClient, KeycloakClientSpec, RealmRef
+from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.keycloak import (
     Keycloak,
-    KeycloakInstanceRef,
     KeycloakResourceRequirements,
     KeycloakServiceConfig,
     KeycloakSpec,
 )
-from keycloak_operator.models.realm import KeycloakRealm, KeycloakRealmSpec
+from keycloak_operator.models.realm import KeycloakRealm, KeycloakRealmSpec, OperatorRef
+
+
+# Helper functions for test data
+def _make_operator_ref(namespace="keycloak-system", secret_name="operator-token"):
+    """Create a test OperatorRef."""
+    return OperatorRef(
+        namespace=namespace,
+        authorization_secret_ref=AuthorizationSecretRef(name=secret_name),
+    )
+
+
+def _make_realm_ref(name="test-realm", namespace="default", secret_name="realm-token"):
+    """Create a test RealmRef."""
+    return RealmRef(
+        name=name,
+        namespace=namespace,
+        authorization_secret_ref=AuthorizationSecretRef(name=secret_name),
+    )
 
 
 class TestKeycloakModels:
@@ -118,25 +136,23 @@ class TestKeycloakClientModels:
         # Test valid client spec
         spec = KeycloakClientSpec(
             client_id="test-client",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            realm_ref=_make_realm_ref(),
         )
 
         assert spec.client_id == "test-client"
-        assert spec.realm == "master"
+        assert spec.realm_ref.name == "test-realm"
         assert spec.public_client is False
 
         # Test invalid client ID
         with pytest.raises(ValidationError) as exc_info:
-            KeycloakClientSpec(
-                client_id="", keycloak_instance_ref=KeycloakInstanceRef(name="keycloak")
-            )
+            KeycloakClientSpec(client_id="", realm_ref=_make_realm_ref())
         assert "non-empty string" in str(exc_info.value)
 
         # Test invalid redirect URI with wildcard in domain
         with pytest.raises(ValidationError) as exc_info:
             KeycloakClientSpec(
                 client_id="test-client",
-                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                realm_ref=_make_realm_ref(),
                 redirect_uris=["https://*.example.com/callback"],
             )
         assert "Wildcard not allowed in domain" in str(exc_info.value)
@@ -146,7 +162,7 @@ class TestKeycloakClientModels:
         spec = KeycloakClientSpec(
             client_id="test-client",
             client_name="Test Client",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            realm_ref=_make_realm_ref(),
             redirect_uris=["https://example.com/callback"],
             web_origins=["https://example.com"],
         )
@@ -168,11 +184,11 @@ class TestKeycloakClientModels:
             "metadata": {"name": "test-client", "namespace": "default"},
             "spec": {
                 "client_id": "webapp",
-                "keycloak_instance_ref": {
-                    "name": "keycloak",
-                    "namespace": "keycloak-system",
+                "realmRef": {
+                    "name": "demo-realm",
+                    "namespace": "default",
+                    "authorizationSecretRef": {"name": "realm-token"},
                 },
-                "realm": "demo",
                 "redirect_uris": ["https://webapp.example.com/callback"],
             },
         }
@@ -181,9 +197,9 @@ class TestKeycloakClientModels:
 
         assert client.kind == "KeycloakClient"
         assert client.spec.client_id == "webapp"
-        assert client.spec.keycloak_instance_ref.name == "keycloak"
-        assert client.spec.keycloak_instance_ref.namespace == "keycloak-system"
-        assert client.spec.realm == "demo"
+        assert client.spec.realm_ref.name == "demo-realm"
+        assert client.spec.realm_ref.namespace == "default"
+        assert client.spec.realm_ref.authorization_secret_ref.name == "realm-token"
 
     def test_redirect_uri_wildcard_validation(self):
         """Test comprehensive redirect URI wildcard validation following Keycloak rules."""
@@ -191,7 +207,7 @@ class TestKeycloakClientModels:
         # ✓ VALID: Wildcard in path (most common use case)
         spec = KeycloakClientSpec(
             client_id="test-client",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            realm_ref=_make_realm_ref(),
             redirect_uris=["http://localhost:3000/*"],
         )
         assert spec.redirect_uris == ["http://localhost:3000/*"]
@@ -199,7 +215,7 @@ class TestKeycloakClientModels:
         # ✓ VALID: Wildcard in nested path
         spec = KeycloakClientSpec(
             client_id="test-client",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            realm_ref=_make_realm_ref(),
             redirect_uris=["https://example.com/app/callback/*"],
         )
         assert spec.redirect_uris == ["https://example.com/app/callback/*"]
@@ -207,7 +223,7 @@ class TestKeycloakClientModels:
         # ✓ VALID: Custom scheme with wildcard
         spec = KeycloakClientSpec(
             client_id="test-client",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            realm_ref=_make_realm_ref(),
             redirect_uris=["myapp:/callback/*"],
         )
         assert spec.redirect_uris == ["myapp:/callback/*"]
@@ -215,7 +231,7 @@ class TestKeycloakClientModels:
         # ✓ VALID: Multiple URIs with and without wildcards
         spec = KeycloakClientSpec(
             client_id="test-client",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            realm_ref=_make_realm_ref(),
             redirect_uris=[
                 "https://example.com/exact",
                 "https://example.com/wildcard/*",
@@ -227,7 +243,7 @@ class TestKeycloakClientModels:
         # ✓ VALID: No wildcards at all
         spec = KeycloakClientSpec(
             client_id="test-client",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            realm_ref=_make_realm_ref(),
             redirect_uris=["https://example.com/callback"],
         )
         assert spec.redirect_uris == ["https://example.com/callback"]
@@ -236,7 +252,7 @@ class TestKeycloakClientModels:
         with pytest.raises(ValidationError) as exc_info:
             KeycloakClientSpec(
                 client_id="test-client",
-                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                realm_ref=_make_realm_ref(),
                 redirect_uris=["*"],
             )
         error_msg = str(exc_info.value)
@@ -247,7 +263,7 @@ class TestKeycloakClientModels:
         with pytest.raises(ValidationError) as exc_info:
             KeycloakClientSpec(
                 client_id="test-client",
-                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                realm_ref=_make_realm_ref(),
                 redirect_uris=["https://*.example.com"],
             )
         error_msg = str(exc_info.value)
@@ -258,7 +274,7 @@ class TestKeycloakClientModels:
         with pytest.raises(ValidationError) as exc_info:
             KeycloakClientSpec(
                 client_id="test-client",
-                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                realm_ref=_make_realm_ref(),
                 redirect_uris=["https://sub*.example.com/callback"],
             )
         error_msg = str(exc_info.value)
@@ -268,7 +284,7 @@ class TestKeycloakClientModels:
         with pytest.raises(ValidationError) as exc_info:
             KeycloakClientSpec(
                 client_id="test-client",
-                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                realm_ref=_make_realm_ref(),
                 redirect_uris=["https://example.com/pa*th/callback"],
             )
         error_msg = str(exc_info.value)
@@ -278,7 +294,7 @@ class TestKeycloakClientModels:
         with pytest.raises(ValidationError) as exc_info:
             KeycloakClientSpec(
                 client_id="test-client",
-                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                realm_ref=_make_realm_ref(),
                 redirect_uris=["http://example.com*"],
             )
         error_msg = str(exc_info.value)
@@ -294,7 +310,7 @@ class TestKeycloakRealmModels:
         # Test valid realm spec
         spec = KeycloakRealmSpec(
             realm_name="test-realm",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            operator_ref=_make_operator_ref(),
         )
 
         assert spec.realm_name == "test-realm"
@@ -303,7 +319,7 @@ class TestKeycloakRealmModels:
         with pytest.raises(ValidationError) as exc_info:
             KeycloakRealmSpec(
                 realm_name="test realm",  # Space not allowed
-                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                operator_ref=_make_operator_ref(),
             )
         assert "invalid character" in str(exc_info.value)
 
@@ -311,7 +327,7 @@ class TestKeycloakRealmModels:
         with pytest.raises(ValidationError) as exc_info:
             KeycloakRealmSpec(
                 realm_name="a" * 256,
-                keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+                operator_ref=_make_operator_ref(),
             )
         assert "255 characters or less" in str(exc_info.value)
 
@@ -320,7 +336,7 @@ class TestKeycloakRealmModels:
         spec = KeycloakRealmSpec(
             realm_name="demo-realm",
             display_name="Demo Realm",
-            keycloak_instance_ref=KeycloakInstanceRef(name="keycloak"),
+            operator_ref=_make_operator_ref(),
         )
 
         config = spec.to_keycloak_config()
@@ -339,7 +355,10 @@ class TestKeycloakRealmModels:
             "metadata": {"name": "demo-realm", "namespace": "default"},
             "spec": {
                 "realm_name": "demo",
-                "keycloak_instance_ref": {"name": "keycloak"},
+                "operatorRef": {
+                    "namespace": "keycloak-system",
+                    "authorizationSecretRef": {"name": "operator-token"},
+                },
                 "security": {"registration_allowed": True, "verify_email": True},
             },
         }
@@ -348,30 +367,40 @@ class TestKeycloakRealmModels:
 
         assert realm.kind == "KeycloakRealm"
         assert realm.spec.realm_name == "demo"
+        assert realm.spec.operator_ref.namespace == "keycloak-system"
+        assert realm.spec.operator_ref.authorization_secret_ref.name == "operator-token"
         assert realm.spec.security.registration_allowed is True
         assert realm.spec.security.verify_email is True
 
+    class TestAuthorizationRefs:
+        """Test cases for authorization reference models."""
 
-class TestInstanceRef:
-    """Test cases for KeycloakInstanceRef model."""
+        def test_operator_ref_validation(self):
+            """Test OperatorRef validation."""
+            ref = OperatorRef(
+                namespace="keycloak-system",
+                authorization_secret_ref=AuthorizationSecretRef(name="operator-token"),
+            )
+            assert ref.namespace == "keycloak-system"
+            assert ref.authorization_secret_ref.name == "operator-token"
+            assert ref.authorization_secret_ref.key == "token"  # default value
 
-    def test_instance_ref_validation(self):
-        """Test KeycloakInstanceRef validation."""
-        # Test valid instance ref
-        ref = KeycloakInstanceRef(name="keycloak")
-        assert ref.name == "keycloak"
-        assert ref.namespace is None
+        def test_realm_ref_validation(self):
+            """Test RealmRef validation."""
+            ref = RealmRef(
+                name="my-realm",
+                namespace="default",
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="realm-token", key="custom-key"
+                ),
+            )
+            assert ref.name == "my-realm"
+            assert ref.namespace == "default"
+            assert ref.authorization_secret_ref.name == "realm-token"
+            assert ref.authorization_secret_ref.key == "custom-key"
 
-        ref_with_namespace = KeycloakInstanceRef(
-            name="keycloak", namespace="keycloak-system"
-        )
-        assert ref_with_namespace.namespace == "keycloak-system"
-
-    def test_instance_ref_equality(self):
-        """Test KeycloakInstanceRef equality comparison."""
-        ref1 = KeycloakInstanceRef(name="keycloak", namespace="default")
-        ref2 = KeycloakInstanceRef(name="keycloak", namespace="default")
-        ref3 = KeycloakInstanceRef(name="keycloak", namespace="other")
-
-        assert ref1 == ref2
-        assert ref1 != ref3
+        def test_authorization_secret_ref_defaults(self):
+            """Test AuthorizationSecretRef default values."""
+            ref = AuthorizationSecretRef(name="my-secret")
+            assert ref.name == "my-secret"
+            assert ref.key == "token"  # default key

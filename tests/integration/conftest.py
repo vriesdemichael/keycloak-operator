@@ -27,6 +27,9 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
+from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
+from keycloak_operator.models.common import AuthorizationSecretRef
+from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
 
 @pytest.fixture(scope="session")
@@ -75,9 +78,109 @@ def k8s_custom_objects(k8s_client):
 
 
 @pytest.fixture(scope="session")
+def k8s_rbac_v1(k8s_client):
+    """Create RBAC Authorization V1 API client."""
+    return client.RbacAuthorizationV1Api(k8s_client)
+
+
+@pytest.fixture(scope="session")
 def operator_namespace():
     """Return the namespace where the operator is running."""
     return os.environ.get("OPERATOR_NAMESPACE", "keycloak-system")
+
+
+@pytest.fixture(scope="session")
+def operator_namespace_secrets(k8s_core_v1, operator_namespace) -> dict[str, str]:
+    """Return references to pre-installed secrets in operator namespace.
+
+    These secrets are created by the deployment script (scripts/deploy-test-keycloak.sh):
+    - keycloak-cnpg-app: Database credentials (created by CNPG operator)
+
+    Session-scoped to share across all tests.
+    """
+    secrets = {}
+
+    # Database secret is created by CNPG operator
+    db_secret_name = "keycloak-cnpg-app"
+    try:
+        k8s_core_v1.read_namespaced_secret(
+            name=db_secret_name, namespace=operator_namespace
+        )
+        secrets["database"] = db_secret_name
+    except ApiException as e:
+        if e.status == 404:
+            pytest.fail(
+                f"Database secret '{db_secret_name}' not found in namespace '{operator_namespace}'. "
+                f"Run 'make deploy-local' to create the test environment."
+            )
+        raise
+
+    return secrets
+
+
+@pytest.fixture(scope="session")
+def operator_namespace_cnpg(
+    k8s_client, operator_namespace, cnpg_installed
+) -> dict[str, str] | None:
+    """Return connection details for pre-installed CNPG cluster in operator namespace.
+
+    This fixture expects the CNPG cluster to be created by the deployment script
+    (scripts/deploy-test-keycloak.sh) as part of `make deploy-local`.
+
+    Returns PostgreSQL connection information (type: postgresql, host: cluster-name-rw, etc)
+    for use in test configurations.
+
+    Session-scoped to share across all tests.
+    """
+    if not cnpg_installed:
+        return None
+
+    from kubernetes import dynamic
+
+    dyn = dynamic.DynamicClient(k8s_client)
+    cluster_api = dyn.resources.get(api_version="postgresql.cnpg.io/v1", kind="Cluster")
+
+    cluster_name = "keycloak-cnpg"
+    db_name = "keycloak"
+
+    # Check if cluster exists and is ready
+    try:
+        obj = cluster_api.get(name=cluster_name, namespace=operator_namespace)
+        phase = obj.to_dict().get("status", {}).get("phase")
+
+        if phase != "Cluster in healthy state":
+            pytest.fail(
+                f"CNPG cluster '{cluster_name}' not ready (phase: {phase}). "
+                f"Run 'make deploy-local' to create the test environment."
+            )
+
+        # Verify app secret exists
+        core = client.CoreV1Api(k8s_client)
+        try:
+            core.read_namespaced_secret(f"{cluster_name}-app", operator_namespace)
+        except ApiException:
+            pytest.fail(
+                f"CNPG app secret '{cluster_name}-app' not found. "
+                f"Run 'make deploy-local' to create the test environment."
+            )
+
+        # Return standard PostgreSQL connection details
+        return {
+            "type": "postgresql",
+            "host": f"{cluster_name}-rw",
+            "port": 5432,
+            "database": db_name,
+            "username": "app",
+            "password_secret": f"{cluster_name}-app",
+        }
+
+    except ApiException as e:
+        if e.status == 404:
+            pytest.fail(
+                f"CNPG cluster '{cluster_name}' not found in namespace '{operator_namespace}'. "
+                f"Run 'make deploy-local' to create the test environment."
+            )
+        raise
 
 
 @pytest.fixture
@@ -154,11 +257,13 @@ def cnpg_installed(k8s_client) -> bool:
 @pytest.fixture
 async def cnpg_cluster(
     k8s_client, test_namespace, cnpg_installed, wait_for_condition
-) -> dict[str, str] | None:
-    """Create a minimal CloudNativePG Cluster in the test namespace.
+) -> dict[str, Any] | None:
+    """Create a minimal CloudNativePG Cluster and return standard PostgreSQL connection details.
 
-    Returns a dict with cluster connection info (cluster name, db name)
-    or None if CNPG is not installed.
+    Returns PostgreSQL connection information (type: postgresql, host: cluster-name-rw, etc)
+    instead of CNPG-specific references. This allows tests to use standard database configuration.
+
+    Returns None if CNPG is not installed.
     """
     if not cnpg_installed:
         # CNPG not available; returning None will let sample_keycloak_spec
@@ -222,19 +327,31 @@ async def cnpg_cluster(
     if not ready:
         pytest.skip("CNPG cluster was not ready in time")
 
-    return {"name": cluster_name, "database": db_name}
+    # Return standard PostgreSQL connection details
+    return {
+        "type": "postgresql",
+        "host": f"{cluster_name}-rw",
+        "port": 5432,
+        "database": db_name,
+        "username": "app",
+        "password_secret": f"{cluster_name}-app",
+    }
 
 
 @pytest.fixture
 def sample_keycloak_spec(test_secrets, cnpg_cluster) -> dict[str, Any]:
-    """Return a sample Keycloak resource specification using CNPG when available."""
+    """Return a sample Keycloak resource specification using standard PostgreSQL config."""
     if cnpg_cluster:
+        # Use standard PostgreSQL configuration with CNPG connection details
         database_block: dict[str, Any] = {
-            "type": "cnpg",
-            "cnpg_cluster": {
-                "name": cnpg_cluster["name"],
-                # namespace omitted to default to same test namespace
-                "database": cnpg_cluster["database"],
+            "type": cnpg_cluster["type"],
+            "host": cnpg_cluster["host"],
+            "port": cnpg_cluster["port"],
+            "database": cnpg_cluster["database"],
+            "username": cnpg_cluster["username"],
+            "password_secret": {
+                "name": cnpg_cluster["password_secret"],
+                "key": "password",
             },
         }
     else:
@@ -264,40 +381,68 @@ def sample_keycloak_spec(test_secrets, cnpg_cluster) -> dict[str, Any]:
 
 
 @pytest.fixture
-def sample_realm_spec() -> dict[str, Any]:
-    """Return a sample Keycloak realm specification."""
-    return {
-        "apiVersion": "keycloak.mdvr.nl/v1",
-        "kind": "KeycloakRealm",
-        "spec": {
-            "keycloak_instance_ref": {
-                "name": "test-keycloak",
-                "namespace": None,  # Will be set by test
-            },
-            "realm_name": "test-realm",
-            "enabled": True,
-            "display_name": "Test Realm",
-        },
-    }
+def sample_realm_spec() -> KeycloakRealmSpec:
+    """Return a sample Keycloak realm specification using Pydantic model."""
+    return KeycloakRealmSpec(
+        operator_ref=OperatorRef(
+            namespace="keycloak-system",
+            authorization_secret_ref=AuthorizationSecretRef(
+                name="keycloak-operator-auth-token",
+                key="token",
+            ),
+        ),
+        realm_name="test-realm",
+        display_name="Test Realm",
+    )
 
 
 @pytest.fixture
-def sample_client_spec() -> dict[str, Any]:
-    """Return a sample Keycloak client specification."""
+def sample_client_spec() -> KeycloakClientSpec:
+    """Return a sample Keycloak client specification using Pydantic model."""
+    return KeycloakClientSpec(
+        realm_ref=RealmRef(
+            name="test-realm",
+            namespace="test-namespace",  # Will be overridden by test
+            authorization_secret_ref=AuthorizationSecretRef(
+                name="keycloak-operator-auth-token",
+                key="token",
+            ),
+        ),
+        client_id="test-client",
+        client_name="Test Client",
+        public_client=False,
+    )
+
+
+def build_realm_manifest(
+    spec: KeycloakRealmSpec, name: str, namespace: str
+) -> dict[str, Any]:
+    """
+    Build a complete KeycloakRealm manifest from a Pydantic spec.
+
+    Uses model_dump(by_alias=True) to convert camelCase for Kubernetes API.
+    """
+    return {
+        "apiVersion": "keycloak.mdvr.nl/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {"name": name, "namespace": namespace},
+        "spec": spec.model_dump(by_alias=True, exclude_unset=True),
+    }
+
+
+def build_client_manifest(
+    spec: KeycloakClientSpec, name: str, namespace: str
+) -> dict[str, Any]:
+    """
+    Build a complete KeycloakClient manifest from a Pydantic spec.
+
+    Uses model_dump(by_alias=True) to convert camelCase for Kubernetes API.
+    """
     return {
         "apiVersion": "keycloak.mdvr.nl/v1",
         "kind": "KeycloakClient",
-        "spec": {
-            "keycloak_instance_ref": {
-                "name": "test-keycloak",
-                "namespace": None,  # Will be set by test
-            },
-            "realm": "test-realm",
-            "client_id": "test-client",
-            "client_name": "Test Client",
-            "enabled": True,
-            "public_client": False,
-        },
+        "metadata": {"name": name, "namespace": namespace},
+        "spec": spec.model_dump(by_alias=True, exclude_unset=True),
     }
 
 
@@ -536,124 +681,82 @@ def class_scoped_cnpg_cluster(
     pytest.skip("CNPG cluster was not ready in time")
 
 
-@pytest.fixture(scope="class")
-def shared_keycloak_instance(
+@pytest.fixture(scope="session")
+def shared_operator(
     k8s_custom_objects,
     k8s_apps_v1,
-    class_scoped_namespace,
-    class_scoped_test_secrets,
-    class_scoped_cnpg_cluster,
+    operator_namespace,
 ) -> dict[str, str]:
-    """Create a shared Keycloak instance for all tests in a class.
+    """Verify shared Keycloak instance exists in operator namespace.
 
-    This significantly reduces test execution time by reusing one Keycloak instance
-    across multiple tests instead of creating a new one for each test.
+    This fixture expects the Keycloak instance to be created by the deployment script
+    (scripts/deploy-test-keycloak.sh) as part of `make deploy-local`.
+
+    Architecture: Single fixed-name "keycloak" instance in operator namespace,
+    matching production deployment pattern (1-1 operator-Keycloak coupling).
+
+    Session-scoped for parallel test workers.
+
+    IMPORTANT RULES FOR USING SHARED OPERATOR:
+    1. **NO DESTRUCTIVE OPERATIONS**: Do not delete or modify the shared Keycloak
+       instance itself. If you need destructive testing, create a dedicated instance.
+    2. **UNIQUE REALM NAMES**: Always use unique realm names (e.g., uuid.uuid4().hex[:8])
+       to prevent collisions between parallel tests.
 
     Returns:
         dict with 'name' and 'namespace' of the shared Keycloak instance
+
+    Raises:
+        pytest.fail: If Keycloak instance not found or not ready
     """
-    import time
+    keycloak_name = "keycloak"  # Fixed name per architecture (1-1 coupling)
 
-    keycloak_name = "shared-keycloak"
-
-    # Build Keycloak spec
-    if class_scoped_cnpg_cluster:
-        database_block: dict[str, Any] = {
-            "type": "cnpg",
-            "cnpg_cluster": {
-                "name": class_scoped_cnpg_cluster["name"],
-                "database": class_scoped_cnpg_cluster["database"],
-            },
-        }
-    else:
-        database_block = {
-            "type": "postgresql",
-            "host": "postgres-test",
-            "database": "keycloak",
-            "username": "keycloak",
-            "password_secret": {
-                "name": class_scoped_test_secrets["database"],
-                "key": "password",
-            },
-        }
-
-    keycloak_manifest = {
-        "apiVersion": "keycloak.mdvr.nl/v1",
-        "kind": "Keycloak",
-        "metadata": {"name": keycloak_name, "namespace": class_scoped_namespace},
-        "spec": {
-            "image": DEFAULT_KEYCLOAK_IMAGE,
-            "replicas": 1,
-            "database": database_block,
-            "admin_access": {
-                "username": "admin",
-                "password_secret": {
-                    "name": class_scoped_test_secrets["admin"],
-                    "key": "password",
-                },
-            },
-            "service": {"type": "ClusterIP", "port": 8080},
-        },
-    }
-
-    # Create Keycloak instance
+    # Check if Keycloak exists
     try:
-        k8s_custom_objects.create_namespaced_custom_object(
+        kc = k8s_custom_objects.get_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
-            namespace=class_scoped_namespace,
+            namespace=operator_namespace,
             plural="keycloaks",
-            body=keycloak_manifest,
+            name=keycloak_name,
         )
-    except ApiException as e:
-        if e.status != 409:  # Allow already exists for class reuse
-            raise
+        status = kc.get("status", {}) or {}
+        phase = status.get("phase")
 
-    # Wait for Keycloak to be ready (synchronous polling for pytest-xdist compatibility)
-    timeout = 420
-    interval = 5
-    start_time = time.time()
-    deployment_name = f"{keycloak_name}-keycloak"
+        # Verify it's ready
+        if phase not in ("Running", "Ready"):
+            pytest.fail(
+                f"Shared Keycloak instance not ready (phase: {phase}). "
+                f"Run 'make deploy-local' to create the test environment."
+            )
 
-    while time.time() - start_time < timeout:
+        # Check deployment is ready
+        deployment_name = f"{keycloak_name}-keycloak"
         try:
-            # Check deployment readiness
             deployment = k8s_apps_v1.read_namespaced_deployment(
-                name=deployment_name, namespace=class_scoped_namespace
+                name=deployment_name, namespace=operator_namespace
             )
             desired = deployment.spec.replicas or 1
             ready = deployment.status.ready_replicas or 0
-
-            # Check CR status
-            kc = k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=class_scoped_namespace,
-                plural="keycloaks",
-                name=keycloak_name,
-            )
-            status = kc.get("status", {}) or {}
-            phase = status.get("phase")
-            conditions = status.get("conditions", []) or []
-            ready_condition_true = any(
-                c.get("type") == "Ready" and c.get("status") == "True"
-                for c in conditions
-            )
-
-            if (
-                ready >= desired
-                and status
-                and (phase in ("Running", "Ready") or ready_condition_true)
-            ):
-                return {"name": keycloak_name, "namespace": class_scoped_namespace}
-
+            if ready < desired:
+                pytest.fail(
+                    f"Shared Keycloak deployment not ready ({ready}/{desired} replicas ready)"
+                )
         except ApiException:
-            pass
+            pytest.fail(
+                f"Shared Keycloak deployment '{deployment_name}' not found. "
+                f"Run 'make deploy-local' to create the test environment."
+            )
 
-        time.sleep(interval)
+        return {"name": keycloak_name, "namespace": operator_namespace}
 
-    pytest.fail(f"Shared Keycloak instance {keycloak_name} did not become ready")
-    return {"name": "", "namespace": ""}  # Never reached, but satisfies type checker
+    except ApiException as e:
+        if e.status == 404:
+            pytest.fail(
+                f"Shared Keycloak instance '{keycloak_name}' not found in namespace '{operator_namespace}'. "
+                f"Run 'make deploy-local' to create the test environment."
+            )
+        raise
 
 
 @pytest.fixture

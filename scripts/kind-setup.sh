@@ -1,35 +1,19 @@
 #!/bin/bash
-# kind-setup.sh - Set up Kind cluster for Keycloak operator integration testing
+# kind-setup.sh - Create bare Kind cluster for Keycloak operator testing
+#
+# Purpose: Creates a minimal Kind cluster with required namespaces
+# Prerequisites: kind, kubectl, docker
+# Produces: Running cluster with operator and CNPG namespaces created
+# Used by: Makefile setup-cluster target
+#
+# Note: CRDs, RBAC, and operator deployment are handled by 'make deploy'
 
 set -e
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
-
-log() {
-    echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
-
-error() {
-    echo -e "${RED}[ERROR] $1${NC}"
-}
-
-success() {
-    echo -e "${GREEN}[SUCCESS] $1${NC}"
-}
-
-warn() {
-    echo -e "${YELLOW}[WARN] $1${NC}"
-}
-
-# Configuration
-CLUSTER_NAME="keycloak-operator-test"
-KIND_CONFIG="tests/kind/kind-config.yaml"
-KUBERNETES_VERSION="${KUBERNETES_VERSION:-v1.28.0}"
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+source "$SCRIPT_DIR/config.sh"
 
 check_prerequisites() {
     log "Checking prerequisites..."
@@ -75,7 +59,7 @@ create_cluster() {
 }
 
 setup_cluster() {
-    log "Setting up cluster for operator testing..."
+    log "Setting up cluster namespaces..."
 
     # Set kubectl context
     kubectl cluster-info --context "kind-${CLUSTER_NAME}"
@@ -84,100 +68,22 @@ setup_cluster() {
     log "Waiting for nodes to be ready..."
     kubectl wait --for=condition=Ready nodes --all --timeout=300s
 
-    # Install a CNI if needed (Kind usually comes with one, but let's ensure)
-    log "Checking CNI setup..."
+    # Check CNI setup
+    log "Verifying CNI setup..."
     if ! kubectl get pods -n kube-system | grep -q "kindnet\|flannel\|calico\|weave"; then
         warn "No CNI detected. Installing Kindnet..."
         kubectl apply -f https://raw.githubusercontent.com/aojea/kindnet/master/install-kindnet.yaml
         kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=300s
     fi
 
-    # Create the operator namespace
-    log "Creating operator namespace..."
-    kubectl create namespace keycloak-system --dry-run=client -o yaml | kubectl apply -f -
+    # Create required namespaces
+    log "Creating operator namespace ($OPERATOR_NAMESPACE)..."
+    kubectl create namespace "$OPERATOR_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-    # Install operator CRDs
-    log "Installing Keycloak operator CRDs..."
-  kubectl apply -f k8s/crds/keycloak-crd.yaml
-  kubectl apply -f k8s/crds/keycloakclient-crd.yaml
-  kubectl apply -f k8s/crds/keycloakrealm-crd.yaml
-
-    # Wait for CRDs to be established
-    log "Waiting for CRDs to be established..."
-    kubectl wait --for condition=established --timeout=60s crd/keycloaks.keycloak.mdvr.nl
-    kubectl wait --for condition=established --timeout=60s crd/keycloakrealms.keycloak.mdvr.nl
-    kubectl wait --for condition=established --timeout=60s crd/keycloakclients.keycloak.mdvr.nl
-
-    # Install RBAC
-    log "Installing operator RBAC..."
-    kubectl apply -f k8s/rbac/
+    log "Creating CNPG namespace ($CNPG_NAMESPACE)..."
+    kubectl create namespace "$CNPG_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
     success "Cluster setup completed"
-}
-
-install_test_dependencies() {
-    log "Installing test dependencies..."
-
-    # Install PostgreSQL for database testing
-    log "Installing PostgreSQL for database testing..."
-    kubectl create namespace postgres --dry-run=client -o yaml | kubectl apply -f -
-
-    cat <<EOF | kubectl apply -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: postgres
-  namespace: postgres
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: postgres
-  template:
-    metadata:
-      labels:
-        app: postgres
-    spec:
-      containers:
-      - name: postgres
-        image: postgres:15
-        ports:
-        - containerPort: 5432
-        env:
-        - name: POSTGRES_DB
-          value: keycloak
-        - name: POSTGRES_USER
-          value: keycloak
-        - name: POSTGRES_PASSWORD
-          value: keycloak
-        - name: PGDATA
-          value: /var/lib/postgresql/data/pgdata
-        volumeMounts:
-        - name: postgres-storage
-          mountPath: /var/lib/postgresql/data
-      volumes:
-      - name: postgres-storage
-        emptyDir: {}
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: postgres
-  namespace: postgres
-spec:
-  type: NodePort
-  ports:
-  - port: 5432
-    targetPort: 5432
-    nodePort: 30432
-  selector:
-    app: postgres
-EOF
-
-    # Wait for PostgreSQL to be ready
-    kubectl wait --for=condition=available deployment/postgres -n postgres --timeout=300s
-
-    success "Test dependencies installed"
 }
 
 verify_setup() {
@@ -190,17 +96,9 @@ verify_setup() {
     log "Cluster nodes:"
     kubectl get nodes -o wide
 
-    # Check CRDs
-    log "Installed CRDs:"
-    kubectl get crd | grep keycloak
-
-    # Check RBAC
-    log "Operator RBAC:"
-    kubectl get clusterrole,clusterrolebinding,serviceaccount -A | grep keycloak
-
-    # Check test dependencies
-    log "Test dependencies:"
-    kubectl get pods,services -n postgres
+    # Check namespaces
+    log "Created namespaces:"
+    kubectl get namespace | grep -E "$OPERATOR_NAMESPACE|$CNPG_NAMESPACE"
 
     success "Cluster verification completed"
 }
@@ -211,21 +109,26 @@ main() {
     check_prerequisites
     create_cluster
     setup_cluster
-    install_test_dependencies
     verify_setup
 
     success "🎉 Kind cluster setup completed successfully!"
     log "Cluster name: $CLUSTER_NAME"
     log "Kubernetes version: $KUBERNETES_VERSION"
     log "To use this cluster, run: kubectl config use-context kind-$CLUSTER_NAME"
-    log "To run integration tests, run: ./scripts/test-integration-local.sh"
-    log "To cleanup, run: ./scripts/kind-teardown.sh"
+    log ""
+    log "Next steps:"
+    log "  1. Run 'make deploy' to install operator, CNPG, and test Keycloak"
+    log "  2. Run 'make test-integration' to run integration tests"
+    log "  3. Run 'make kind-teardown' to cleanup when done"
 }
 
 # Handle command line arguments
 case "${1:-}" in
     --help|-h)
         echo "Usage: $0 [options]"
+        echo ""
+        echo "Creates a bare Kind cluster for Keycloak operator development."
+        echo "CRDs, RBAC, and operator deployment are handled by 'make deploy'."
         echo ""
         echo "Options:"
         echo "  --help, -h      Show this help message"

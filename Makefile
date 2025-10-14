@@ -35,24 +35,37 @@ type-check: ## Run type checking
 quality: lint format type-check
 
 # Testing
+# ========
+# Cluster reuse strategy: Integration tests reuse existing clusters for speed.
+# Use test-integration-clean for a guaranteed fresh cluster.
+
 .PHONY: test
-test: quality test-unit test-integration
+test: quality test-unit test-integration ## Run complete test suite (unit + integration)
 
 .PHONY: test-unit
 test-unit: ## Run unit tests only
 	uv run pytest tests/unit/ -v -m "not integration"
 
 .PHONY: test-integration
-test-integration: kind-teardown kind-setup deploy
-	@echo "Running integration tests on fresh cluster (with parallel execution)..."
-	uv run --group integration pytest tests/integration/ -v -m integration -n auto --dist=loadscope
+test-integration: setup-cluster deploy ## Run integration tests (reuses existing cluster)
+	@echo "Running integration tests (with parallel execution)..."
+	uv run --group integration pytest tests/integration/ -v -n auto --dist=loadscope
 
+.PHONY: test-integration-clean
+test-integration-clean: kind-teardown kind-setup deploy ## Run integration tests on fresh cluster
+	@echo "Running integration tests on fresh cluster (with parallel execution)..."
+	uv run --group integration pytest tests/integration/ -v -n auto --dist=loadscope
 
 .PHONY: test-cov
-test-cov: kind-teardown kind-setup deploy  ## Same as test, but with coverage
+test-cov: setup-cluster deploy ## Run tests with coverage
 	uv run pytest tests --cov=keycloak_operator --cov-report=term --cov-report=html
 
 # Kind cluster management
+# ========================
+# kind-setup: Creates bare cluster with namespaces (no operator/CRDs)
+# setup-cluster: Idempotent - creates cluster only if it doesn't exist
+# kind-teardown: Complete cleanup of cluster and resources
+
 .PHONY: kind-setup
 kind-setup: ## Set up Kind cluster for integration testing
 	./scripts/kind-setup.sh
@@ -92,25 +105,36 @@ push: build ## Build and push Docker image to registry
 	@echo "Pushed $(REGISTRY)/$(IMAGE_NAME):latest"
 
 # Deployment
+# ===========
+# Deployment flow:
+#   1. build-test: Build operator image tagged as 'test'
+#   2. setup-cluster: Ensure Kind cluster exists (idempotent)
+#   3. install-cnpg: Install CNPG operator (idempotent)
+#   4. Load image + apply CRDs/RBAC + deploy operator
+#   5. deploy-test-keycloak.sh: Create test Keycloak with CNPG database
+
 .PHONY: deploy
-deploy: deploy-local ## Deploy operator (standard target name) TODO: fix up with actual production deploy when images and manifest are stored externally.
+deploy: deploy-local ## Deploy operator (standard target name)
 
 .PHONY: deploy-local
-deploy-local: build-test setup-cluster install-cnpg ## Deploy operator to local Kind cluster (with CNPG if not already present)
+deploy-local: build-test setup-cluster install-cnpg ## Deploy operator + test Keycloak instance to local Kind cluster
 	kind load docker-image keycloak-operator:test --name keycloak-operator-test
-	# Re-apply CRDs to ensure the latest (idempotent)
+	# Apply CRDs and RBAC (idempotent)
 	kubectl apply -f k8s/crds/keycloak-crd.yaml
 	kubectl apply -f k8s/crds/keycloakclient-crd.yaml
 	kubectl apply -f k8s/crds/keycloakrealm-crd.yaml
 	kubectl apply -f k8s/rbac/
+	# Deploy operator with local image
 	sed 's|image: keycloak-operator:latest|image: keycloak-operator:test|g' k8s/operator-deployment.yaml | \
 	sed 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Never|g' | \
 	kubectl apply -f -
-	# Force a rollout to ensure latest local image is used even if spec unchanged
+	# Force rollout to ensure latest image is used
 	kubectl patch deployment keycloak-operator -n keycloak-system -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"restarted-at\":\"$$(date -u +%Y%m%d%H%M%S)\"}}}}}" >/dev/null 2>&1 || true
 	@echo "Waiting for operator to be ready..."
 	kubectl rollout status deployment keycloak-operator -n keycloak-system --timeout=60s
 	@echo "✓ Operator deployed successfully!"
+	@echo "Deploying test Keycloak instance..."
+	@./scripts/deploy-test-keycloak.sh
 
 
 .PHONY: install-cnpg

@@ -39,39 +39,19 @@ spec:
               # Database configuration
               database:
                 type: object
-                description: "Database configuration"
+                description: "Database configuration. For CloudNativePG clusters, use standard PostgreSQL connection details (host: cluster-name-rw, type: postgresql)"
                 properties:
                   type:
                     type: string
-                    enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]
+                    enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
                     default: "postgresql"
-                    description: "Database type. Use 'cnpg' for CloudNativePG-managed PostgreSQL (operator will configure as 'postgres' for Keycloak)"
-                  cnpg_cluster:
-                    type: object
-                    description: "CloudNativePG cluster reference (required when type=cnpg)"
-                    properties:
-                      name:
-                        type: string
-                        description: "Name of the CNPG Cluster"
-                      namespace:
-                        type: string
-                        description: "Namespace of the CNPG Cluster (defaults to current)"
-                      database:
-                        type: string
-                        description: "Database name inside the cluster"
-                        default: "keycloak"
-                      application_name:
-                        type: string
-                        description: "Application name for connection tracking"
-                        default: "keycloak"
-                    required:
-                    - name
+                    description: "Database type"
                   host:
                     type: string
                     description: "Database host"
                   port:
                     type: integer
-                    description: "Database port"
+                    description: "Database port (auto-detected if not specified)"
                     minimum: 1
                     maximum: 65535
                   database:
@@ -91,13 +71,44 @@ spec:
                         default: "password"
                     required:
                     - name
+                  credentials_secret:
+                    type: string
+                    description: "Kubernetes secret name with database credentials (alternative to username/password_secret)"
+                  connection_params:
+                    type: object
+                    description: "Additional database connection parameters"
+                    additionalProperties:
+                      type: string
+                  connection_pool:
+                    type: object
+                    description: "Database connection pool configuration"
+                    properties:
+                      max_connections:
+                        type: integer
+                        default: 20
+                        description: "Maximum number of connections"
+                      min_connections:
+                        type: integer
+                        default: 5
+                        description: "Minimum number of connections"
+                      connection_timeout:
+                        type: string
+                        default: "30s"
+                        description: "Connection timeout"
                   ssl_mode:
                     type: string
-                    enum: ["disable", "require", "verify-ca", "verify-full"]
+                    enum: ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]
                     default: "require"
-                # Only 'type' is strictly required now; other fields depend on the chosen type.
+                    description: "SSL mode for database connections"
+                  migration_strategy:
+                    type: string
+                    enum: ["auto", "manual", "skip"]
+                    default: "auto"
+                    description: "Database migration strategy"
                 required:
                 - type
+                - host
+                - database
 
               # TLS configuration
               tls:
