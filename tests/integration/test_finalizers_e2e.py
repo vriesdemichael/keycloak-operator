@@ -30,11 +30,14 @@ class TestFinalizersE2E:
         wait_for_condition,
     ):
         """Test finalizer behavior for Keycloak realm resources using shared instance."""
+        import uuid
+
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
         namespace = shared_operator["namespace"]
-        realm_name = "test-realm-finalizer"
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"test-realm-finalizer-{suffix}"
 
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(
@@ -81,7 +84,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_realm_finalizer, timeout=300), (
+            assert await wait_for_condition(check_realm_finalizer, timeout=120), (
                 "Realm finalizer was not added"
             )
 
@@ -108,7 +111,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await wait_for_condition(check_realm_deleted, timeout=180), (
+            assert await wait_for_condition(check_realm_deleted, timeout=60), (
                 "Realm finalizer cleanup did not complete"
             )
 
@@ -125,13 +128,16 @@ class TestFinalizersE2E:
         wait_for_condition,
     ):
         """Test finalizer behavior for Keycloak client resources using shared instance."""
+        import uuid
+
         from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
         namespace = shared_operator["namespace"]
-        realm_name = "test-client-finalizer-realm"
-        client_name = "test-client-finalizer"
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"test-client-finalizer-realm-{suffix}"
+        client_name = f"test-client-finalizer-{suffix}"
 
         # Prepare manifests
         realm_spec = KeycloakRealmSpec(
@@ -205,7 +211,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_client_finalizer, timeout=300), (
+            assert await wait_for_condition(check_client_finalizer, timeout=120), (
                 "Client finalizer was not added"
             )
 
@@ -232,7 +238,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await wait_for_condition(check_client_deleted, timeout=180), (
+            assert await wait_for_condition(check_client_deleted, timeout=60), (
                 "Client finalizer cleanup did not complete"
             )
 
@@ -262,13 +268,16 @@ class TestFinalizersE2E:
 
         Note: We use shared Keycloak which is not deleted during tests.
         """
+        import uuid
+
         from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
         # Use shared Keycloak and test realm→client cascading deletion
-        realm_name = "test-cascade-realm"
-        client_name = "test-cascade-client"
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"test-cascade-realm-{suffix}"
+        client_name = f"test-cascade-client-{suffix}"
 
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(
@@ -310,7 +319,7 @@ class TestFinalizersE2E:
         try:
             # Shared Keycloak instance is already ready from fixture
 
-            # Create realm and client sequentially (no arbitrary sleeps)
+            # Create realm and wait for it to become ready
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -318,6 +327,27 @@ class TestFinalizersE2E:
                 plural="keycloakrealms",
                 body=realm_manifest,
             )
+
+            # Wait for realm to be ready before creating client
+            async def check_realm_ready():
+                try:
+                    realm = k8s_custom_objects.get_namespaced_custom_object(
+                        group="keycloak.mdvr.nl",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakrealms",
+                        name=realm_name,
+                    )
+                    status = realm.get("status", {}) or {}
+                    return status.get("phase") == "Ready"
+                except ApiException:
+                    return False
+
+            assert await wait_for_condition(check_realm_ready, timeout=60), (
+                "Realm did not become ready before cascading deletion test"
+            )
+
+            # Create client
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -326,7 +356,27 @@ class TestFinalizersE2E:
                 body=client_manifest,
             )
 
-            # Delete the realm (should trigger cascading deletion to client)
+            # Wait for client to have finalizer (indicates it's been reconciled)
+            async def check_client_has_finalizer():
+                try:
+                    client = k8s_custom_objects.get_namespaced_custom_object(
+                        group="keycloak.mdvr.nl",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakclients",
+                        name=client_name,
+                    )
+                    meta = client.get("metadata", {})
+                    finalizers = meta.get("finalizers", [])
+                    return "keycloak.mdvr.nl/client-cleanup" in finalizers
+                except ApiException:
+                    return False
+
+            assert await wait_for_condition(check_client_has_finalizer, timeout=60), (
+                "Client finalizer was not added (client not reconciled)"
+            )
+
+            # Now delete the realm (should trigger cascading deletion to client)
             k8s_custom_objects.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -339,8 +389,6 @@ class TestFinalizersE2E:
             async def check_all_deleted():
                 try:
                     # Check if realm or client still exist
-                    resources_exist = False
-
                     for plural, name in [
                         ("keycloakclients", client_name),
                         ("keycloakrealms", realm_name),
@@ -353,17 +401,20 @@ class TestFinalizersE2E:
                                 plural=plural,
                                 name=name,
                             )
-                            resources_exist = True
+                            # Resource still exists, not all deleted yet
+                            return False
                         except ApiException as e:
                             if e.status != 404:
-                                resources_exist = True
+                                # Error checking resource, can't determine state
+                                return False
 
-                    return not resources_exist
+                    # All resources returned 404, all deleted
+                    return True
 
                 except Exception:
                     return False
 
-            assert await wait_for_condition(check_all_deleted, timeout=300), (
+            assert await wait_for_condition(check_all_deleted, timeout=120), (
                 "Cascading deletion did not complete"
             )
 

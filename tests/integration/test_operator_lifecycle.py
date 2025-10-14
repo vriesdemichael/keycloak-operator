@@ -369,11 +369,14 @@ class TestRealmBasicOperations:
         wait_for_condition,
     ):
         """Test creating a basic realm resource on the shared Keycloak instance."""
+        import uuid
+
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
         namespace = shared_operator["namespace"]
-        realm_name = "test-realm-basic"
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"test-realm-basic-{suffix}"
 
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(
@@ -451,13 +454,16 @@ class TestClientBasicOperations:
         wait_for_condition,
     ):
         """Test creating a basic client resource on the shared Keycloak instance."""
+        import uuid
+
         from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
         namespace = shared_operator["namespace"]
-        realm_name = "test-client-realm"
-        client_name = "test-client-basic"
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"test-client-realm-{suffix}"
+        client_name = f"test-client-basic-{suffix}"
 
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(

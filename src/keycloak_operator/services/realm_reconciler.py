@@ -1050,6 +1050,65 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         return None  # No changes needed
 
+    async def check_resource_exists(
+        self,
+        name: str,
+        namespace: str,
+        spec: dict[str, Any],
+        status: StatusProtocol,
+    ) -> bool:
+        """
+        Check if realm resource actually exists in Keycloak.
+
+        Args:
+            name: Name of the KeycloakRealm resource
+            namespace: Namespace containing the resource
+            spec: Realm specification
+            status: Resource status
+
+        Returns:
+            True if realm exists in Keycloak, False otherwise
+        """
+        realm_name = None
+        target_namespace = None
+
+        try:
+            realm_spec = KeycloakRealmSpec.model_validate(spec)
+            realm_name = realm_spec.realm_name
+            target_namespace = realm_spec.operator_ref.namespace
+        except Exception as e:
+            self.logger.warning(f"Cannot parse spec to check resource existence: {e}")
+            # Try to extract from raw dict
+            realm_name = spec.get("realmName") or spec.get("realm_name")
+            operator_ref = spec.get("operatorRef") or spec.get("operator_ref", {})
+            target_namespace = operator_ref.get("namespace")
+
+        if not realm_name or not target_namespace:
+            self.logger.warning("Cannot determine realm name or namespace from spec")
+            return False
+
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+
+        try:
+            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+
+            # Try to get realm
+            existing_realm = admin_client.get_realm(realm_name=realm_name)
+
+            if existing_realm:
+                self.logger.info(f"Realm {realm_name} exists in Keycloak")
+                return True
+            else:
+                self.logger.info(f"Realm {realm_name} does not exist in Keycloak")
+                return False
+
+        except Exception as e:
+            self.logger.warning(
+                f"Cannot verify if realm exists in Keycloak: {e}. "
+                f"Assuming it doesn't exist (resource never materialized)."
+            )
+            return False
+
     async def cleanup_resources(
         self,
         name: str,

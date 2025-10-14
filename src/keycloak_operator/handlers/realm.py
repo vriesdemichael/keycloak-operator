@@ -227,14 +227,28 @@ async def delete_keycloak_realm(
         # Delegate cleanup to the reconciler service layer
         reconciler = KeycloakRealmReconciler()
         status_wrapper = StatusWrapper(status)
-        await reconciler.cleanup_resources(
+
+        # Check if resource actually exists in Keycloak before attempting cleanup
+        resource_exists = await reconciler.check_resource_exists(
             name=name, namespace=namespace, spec=spec, status=status_wrapper
         )
 
-        # If cleanup succeeded, remove our finalizer to complete deletion
-        logger.info(
-            f"Cleanup completed successfully, removing finalizer {REALM_FINALIZER}"
-        )
+        if resource_exists:
+            # Resource exists in Keycloak, perform cleanup
+            logger.info(f"Realm {name} exists in Keycloak, performing cleanup")
+            await reconciler.cleanup_resources(
+                name=name, namespace=namespace, spec=spec, status=status_wrapper
+            )
+            logger.info(f"Cleanup completed successfully for KeycloakRealm {name}")
+        else:
+            # Resource never materialized in Keycloak, no cleanup needed
+            logger.info(
+                f"Realm {name} does not exist in Keycloak, "
+                f"skipping cleanup (resource never materialized)"
+            )
+
+        # Remove finalizer to complete deletion
+        logger.info(f"Removing finalizer {REALM_FINALIZER} from KeycloakRealm {name}")
         current_finalizers = list(current_finalizers)  # Make a copy
         if REALM_FINALIZER in current_finalizers:
             current_finalizers.remove(REALM_FINALIZER)

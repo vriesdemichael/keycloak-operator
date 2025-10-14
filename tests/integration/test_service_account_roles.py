@@ -15,8 +15,8 @@ class TestServiceAccountRoles:
     """Test service account role assignment with shared Keycloak instance."""
 
     @pytest.mark.timeout(
-        600
-    )  # Uses shared instance (10 minutes for realm+client creation)
+        180
+    )  # 3 minutes: realm (60s) + client (60s) + role operations (60s)
     async def test_service_account_realm_roles_assigned(
         self,
         k8s_custom_objects,
@@ -120,7 +120,7 @@ class TestServiceAccountRoles:
                 phase = status.get("phase")
                 return phase == "Ready"
 
-            assert await wait_for_condition(_condition, timeout=420, interval=5), (
+            assert await wait_for_condition(_condition, timeout=90, interval=3), (
                 f"Resource {plural}/{name} did not become Ready"
             )
 
@@ -137,6 +137,27 @@ class TestServiceAccountRoles:
             )
 
             await _wait_resource_ready("keycloakrealms", realm_name)
+
+            # Wait for realm authorization secret to be created before creating client
+            # The secret name pattern is: {realm_name}-realm-auth
+            realm_auth_secret_name = f"{realm_name}-realm-auth"
+
+            from kubernetes import client as k8s_client
+
+            k8s_core = k8s_client.CoreV1Api()
+
+            async def check_secret_exists():
+                try:
+                    k8s_core.read_namespaced_secret(realm_auth_secret_name, namespace)
+                    return True
+                except ApiException as e:
+                    if e.status == 404:
+                        return False
+                    raise
+
+            assert await wait_for_condition(
+                check_secret_exists, timeout=30, interval=2
+            ), f"Realm authorization secret {realm_auth_secret_name} was not created"
 
             # Set up port-forward to shared Keycloak instance
             local_port = await keycloak_port_forward(keycloak_name, keycloak_namespace)

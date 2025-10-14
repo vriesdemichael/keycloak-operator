@@ -1040,6 +1040,65 @@ class KeycloakClientReconciler(BaseReconciler):
         # Return empty dict - status updates are done via StatusWrapper
         return {}
 
+    async def check_resource_exists(
+        self,
+        name: str,
+        namespace: str,
+        spec: dict[str, Any],
+        status: StatusProtocol,
+    ) -> bool:
+        """
+        Check if client resource actually exists in Keycloak.
+
+        Args:
+            name: Name of the KeycloakClient resource
+            namespace: Namespace containing the resource
+            spec: Client specification
+            status: Resource status
+
+        Returns:
+            True if client exists in Keycloak, False otherwise
+        """
+        try:
+            client_spec = KeycloakClientSpec.model_validate(spec)
+        except Exception as e:
+            self.logger.warning(f"Cannot parse spec to check resource existence: {e}")
+            return False
+
+        # Get admin client for the target Keycloak instance
+        realm_ref = client_spec.realm_ref
+        target_namespace = realm_ref.namespace
+        realm_name = realm_ref.name
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+
+        try:
+            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+
+            # Try to get client by client_id
+            existing_client = admin_client.get_client_by_id(
+                realm_name=realm_name, client_id=client_spec.client_id
+            )
+
+            if existing_client:
+                self.logger.info(
+                    f"Client {client_spec.client_id} exists in Keycloak "
+                    f"realm {realm_name}"
+                )
+                return True
+            else:
+                self.logger.info(
+                    f"Client {client_spec.client_id} does not exist in Keycloak "
+                    f"realm {realm_name}"
+                )
+                return False
+
+        except Exception as e:
+            self.logger.warning(
+                f"Cannot verify if client exists in Keycloak: {e}. "
+                f"Assuming it doesn't exist (resource never materialized)."
+            )
+            return False
+
     async def cleanup_resources(
         self,
         name: str,
