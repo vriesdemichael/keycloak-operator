@@ -15,8 +15,11 @@ def spec_base() -> dict:
 
     return {
         "client_id": "test-client",
-        "keycloak_instance_ref": {"name": "test-keycloak", "namespace": None},
-        "realm": "master",
+        "realm_ref": {
+            "name": "master",
+            "namespace": "default",
+            "authorization_secret_ref": {"name": "realm-token"},
+        },
         "settings": {"service_accounts_enabled": True},
     }
 
@@ -26,8 +29,14 @@ def admin_mock() -> MagicMock:
     """Mock Keycloak admin client."""
 
     mock = MagicMock()
-    mock.get_service_account_user.return_value = {"id": "service-user-id"}
-    mock.get_client_by_name.return_value = {"id": "target-client-uuid"}
+    # Return objects with .id attribute (not dicts)
+    service_account_user_mock = MagicMock()
+    service_account_user_mock.id = "service-user-id"
+    mock.get_service_account_user.return_value = service_account_user_mock
+
+    target_client_mock = MagicMock()
+    target_client_mock.id = "target-client-uuid"
+    mock.get_client_by_name.return_value = target_client_mock
     return mock
 
 

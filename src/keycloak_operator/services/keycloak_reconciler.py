@@ -466,16 +466,6 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 "production (H2 and other embedded databases are not supported)",
             )
 
-        # Additional validation for CloudNativePG
-        if db_type == "cnpg" and not spec.database.cnpg_cluster:
-            from ..errors import ValidationError
-
-            raise ValidationError(
-                "CNPG database type requires cnpg_cluster configuration",
-                field="database.cnpg_cluster",
-                user_action="Configure database.cnpg_cluster with valid CloudNativePG cluster reference",
-            )
-
         # Validate SSL configuration for production
         ssl_mode = getattr(spec.database, "ssl_mode", "require")
         if ssl_mode in ["disable", "allow"]:

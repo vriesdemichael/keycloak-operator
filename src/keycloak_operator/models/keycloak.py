@@ -90,83 +90,24 @@ class KeycloakResourceRequirements(BaseModel):
     )
 
 
-class CloudNativePGReference(BaseModel):
-    """
-    Reference to a CloudNativePG Cluster resource.
-
-    The CNPG Cluster must be in the same namespace as the Keycloak resource.
-    Cross-namespace database references are not supported.
-    """
-
-    name: str = Field(..., description="Name of the CloudNativePG Cluster")
-    database: str = Field(
-        "keycloak", description="Database name to use within the cluster"
-    )
-    application_name: str = Field(
-        "keycloak", description="Application name for connection tracking"
-    )
-
-    @field_validator("name")
-    @classmethod
-    def validate_cluster_name(cls, v):
-        if not v or not v.strip():
-            raise ValueError("CloudNativePG cluster name cannot be empty")
-        return v.strip()
-
-
-class ExternalSecretReference(BaseModel):
-    """
-    Reference to an ExternalSecrets resource.
-
-    The ExternalSecret must be in the same namespace as the Keycloak resource.
-    Cross-namespace secret references are not supported for security reasons.
-    """
-
-    name: str = Field(..., description="Name of the ExternalSecret")
-    refresh_interval: str = Field(
-        "15m", description="Refresh interval for secret rotation"
-    )
-
-    @field_validator("refresh_interval")
-    @classmethod
-    def validate_refresh_interval(cls, v):
-        # Basic validation for Kubernetes duration format
-        import re
-
-        if not re.match(r"^\d+[smh]$", v):
-            raise ValueError(
-                "Refresh interval must be in format like '15m', '1h', '30s'"
-            )
-        return v
-
-
 class KeycloakDatabaseConfig(BaseModel):
     """
     Database configuration for Keycloak instance.
 
-    Production-ready configuration that enforces external database usage
-    with support for CloudNativePG integration and ExternalSecrets.
+    Production-ready configuration that enforces external database usage.
+    For CloudNativePG clusters, use standard PostgreSQL connection details.
     """
 
     type: str = Field(
         ..., description="Database type (no default - must be explicitly specified)"
     )
 
-    # CloudNativePG Integration (recommended)
-    cnpg_cluster: CloudNativePGReference | None = Field(
-        None, description="CloudNativePG cluster reference (recommended for PostgreSQL)"
-    )
-
-    # Traditional database configuration
-    host: str | None = Field(
-        None, description="Database host (required if not using CNPG)"
-    )
+    # Database connection details (all required)
+    host: str = Field(..., description="Database host")
     port: int | None = Field(
         None, description="Database port (auto-detected if not specified)"
     )
-    database: str | None = Field(
-        None, description="Database name (required if not using CNPG)"
-    )
+    database: str = Field(..., description="Database name")
     username: str | None = Field(None, description="Database username")
 
     # Secret management options
@@ -175,9 +116,6 @@ class KeycloakDatabaseConfig(BaseModel):
     )
     credentials_secret: str | None = Field(
         None, description="Kubernetes secret name with database credentials"
-    )
-    external_secret: ExternalSecretReference | None = Field(
-        None, description="ExternalSecrets reference for credential management"
     )
 
     # Advanced configuration
@@ -201,12 +139,11 @@ class KeycloakDatabaseConfig(BaseModel):
     @classmethod
     def validate_database_type(cls, v):
         # Removed H2 from valid types - enforce external database usage
-        valid_types = ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]
+        valid_types = ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
         if v not in valid_types:
             raise ValueError(
                 f"Database type must be one of {valid_types}. "
-                f"H2 is not supported for production deployments. "
-                f"Use 'cnpg' type with cnpg_cluster for CloudNativePG integration."
+                f"H2 is not supported for production deployments."
             )
         return v
 
@@ -244,24 +181,6 @@ class KeycloakDatabaseConfig(BaseModel):
     def validate_database_configuration(self) -> "KeycloakDatabaseConfig":
         """Validate complete database configuration with production-ready requirements."""
 
-        # CloudNativePG configuration
-        if self.type == "cnpg":
-            if not self.cnpg_cluster:
-                raise ValueError(
-                    "When using 'cnpg' type, cnpg_cluster reference must be specified"
-                )
-            # CNPG handles connection details automatically
-            return self
-
-        # Traditional external database configuration
-        missing_fields = []
-
-        if not self.host:
-            missing_fields.append("host")
-
-        if not self.database:
-            missing_fields.append("database")
-
         # Set default ports based on database type
         default_ports = {
             "postgresql": 5432,
@@ -274,24 +193,15 @@ class KeycloakDatabaseConfig(BaseModel):
         if not self.port and self.type in default_ports:
             object.__setattr__(self, "port", default_ports[self.type])
 
-        if missing_fields:
-            raise ValueError(
-                f"Database type '{self.type}' requires the following fields: {', '.join(missing_fields)}. "
-                f"Alternatively, use type 'cnpg' with cnpg_cluster for CloudNativePG integration."
-            )
-
         # Validate credential configuration
         credential_sources = [
             self.username,
             self.credentials_secret,
-            self.external_secret,
         ]
 
         if not any(credential_sources):
             raise ValueError(
-                "Database credentials must be specified via username/password, "
-                "credentials_secret, or external_secret. "
-                "For CloudNativePG, use type 'cnpg' with cnpg_cluster."
+                "Database credentials must be specified via username/password or credentials_secret."
             )
 
         # Warn about security best practices

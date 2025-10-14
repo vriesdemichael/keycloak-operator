@@ -27,34 +27,45 @@ spec:
             description: "Specification for a Keycloak realm"
             properties:
               # Core realm configuration
-              realm_name:
+              realmName:
                 type: string
                 description: "Realm name (must be unique in Keycloak)"
                 minLength: 1
                 maxLength: 255
-              display_name:
+              displayName:
                 type: string
                 description: "Human-readable realm name"
               description:
                 type: string
                 description: "Realm description"
-              login_page_title:
+              loginPageTitle:
                 type: string
                 description: "HTML title for login pages"
 
-              # Target configuration
-              keycloak_instance_ref:
+              # Operator reference and authorization
+              operatorRef:
                 type: object
-                description: "Reference to the target Keycloak instance"
+                description: "Reference to the operator managing this realm"
                 properties:
-                  name:
-                    type: string
-                    description: "Name of the Keycloak instance"
                   namespace:
                     type: string
-                    description: "Namespace of the Keycloak instance"
+                    description: "Namespace where the operator is running (e.g., keycloak-system)"
+                  authorizationSecretRef:
+                    type: object
+                    description: "Secret containing the token to authorize with the operator"
+                    properties:
+                      name:
+                        type: string
+                        description: "Name of the authorization secret"
+                      key:
+                        type: string
+                        description: "Key within the secret containing the token"
+                        default: "token"
+                    required:
+                    - name
                 required:
-                - name
+                - namespace
+                - authorizationSecretRef
 
               # Security settings
               security:
@@ -62,105 +73,105 @@ spec:
                 description: "Security and authentication settings"
                 properties:
                   # Registration and email
-                  registration_allowed:
+                  registrationAllowed:
                     type: boolean
                     default: false
-                  registration_email_as_username:
+                  registrationEmailAsUsername:
                     type: boolean
                     default: false
-                  edit_username_allowed:
+                  editUsernameAllowed:
                     type: boolean
                     default: false
-                  reset_password_allowed:
+                  resetPasswordAllowed:
                     type: boolean
                     default: true
-                  remember_me:
+                  rememberMe:
                     type: boolean
                     default: false
-                  verify_email:
+                  verifyEmail:
                     type: boolean
                     default: false
-                  login_with_email_allowed:
+                  loginWithEmailAllowed:
                     type: boolean
                     default: true
-                  duplicate_emails_allowed:
+                  duplicateEmailsAllowed:
                     type: boolean
                     default: false
                   # SSL/TLS requirements
-                  ssl_required:
+                  sslRequired:
                     type: string
                     enum: ["all", "external", "none"]
                     default: "external"
                   # Session and token settings
-                  revoke_refresh_token:
+                  revokeRefreshToken:
                     type: boolean
                     default: false
-                  refresh_token_max_reuse:
+                  refreshTokenMaxReuse:
                     type: integer
                     minimum: 0
                   # Brute force protection
-                  brute_force_protected:
+                  bruteForceProtected:
                     type: boolean
                     default: false
-                  permanent_lockout:
+                  permanentLockout:
                     type: boolean
                     default: false
-                  max_failure_wait:
+                  maxFailureWait:
                     type: integer
                     minimum: 1
-                  minimum_quick_login_wait:
+                  minimumQuickLoginWait:
                     type: integer
                     minimum: 1
-                  wait_increment:
+                  waitIncrement:
                     type: integer
                     minimum: 1
-                  quick_login_check_millis:
+                  quickLoginCheckMillis:
                     type: integer
                     minimum: 1
-                  max_delta_time:
+                  maxDeltaTime:
                     type: integer
                     minimum: 1
-                  failure_factor:
+                  failureFactor:
                     type: integer
                     minimum: 1
 
               # Token settings
-              token_settings:
+              tokenSettings:
                 type: object
                 description: "Token and session configuration"
                 properties:
-                  access_token_lifespan:
+                  accessTokenLifespan:
                     type: integer
                     minimum: 1
                     description: "Access token lifespan in seconds"
-                  access_token_lifespan_for_implicit_flow:
+                  accessTokenLifespanForImplicitFlow:
                     type: integer
                     minimum: 1
-                  sso_session_idle_timeout:
+                  ssoSessionIdleTimeout:
                     type: integer
                     minimum: 1
-                  sso_session_max_lifespan:
+                  ssoSessionMaxLifespan:
                     type: integer
                     minimum: 1
-                  offline_session_idle_timeout:
+                  offlineSessionIdleTimeout:
                     type: integer
                     minimum: 1
-                  offline_session_max_lifespan_enabled:
+                  offlineSessionMaxLifespanEnabled:
                     type: boolean
                     default: false
-                  offline_session_max_lifespan:
+                  offlineSessionMaxLifespan:
                     type: integer
                     minimum: 1
-                  client_session_idle_timeout:
+                  clientSessionIdleTimeout:
                     type: integer
                     minimum: 1
-                  client_session_max_lifespan:
+                  clientSessionMaxLifespan:
                     type: integer
                     minimum: 1
-                  client_offline_session_idle_timeout:
+                  clientOfflineSessionIdleTimeout:
                     type: integer
                     minimum: 1
-                  client_offline_session_max_lifespan:
+                  clientOfflineSessionMaxLifespan:
                     type: integer
                     minimum: 1
 
@@ -183,9 +194,9 @@ spec:
                     description: "Email theme"
 
               # SMTP configuration
-              smtp_server:
+              smtpServer:
                 type: object
-                description: "SMTP server configuration for email. Use password_secret for secure credential storage."
+                description: "SMTP server configuration for email. Use passwordSecret for secure credential storage."
                 properties:
                   host:
                     type: string
@@ -195,16 +206,16 @@ spec:
                     minimum: 1
                     maximum: 65535
                     description: "SMTP server port"
-                  from_address:
+                  from:
                     type: string
                     description: "From email address"
-                  from_display_name:
+                  fromDisplayName:
                     type: string
                     description: "From display name"
-                  reply_to:
+                  replyTo:
                     type: string
                     description: "Reply-to email address"
-                  envelope_from:
+                  envelopeFrom:
                     type: string
                     description: "Envelope from address"
                   ssl:
@@ -224,8 +235,8 @@ spec:
                     description: "SMTP username"
                   password:
                     type: string
-                    description: "SMTP password (use password_secret instead for better security)"
-                  password_secret:
+                    description: "SMTP password (use passwordSecret instead for better security)"
+                  passwordSecret:
                     type: object
                     description: "Reference to Kubernetes secret containing SMTP password (recommended over password)"
                     properties:
@@ -247,15 +258,15 @@ spec:
                   enabled:
                     type: boolean
                     default: false
-                  supported_locales:
+                  supportedLocales:
                     type: array
                     items:
                       type: string
-                  default_locale:
+                  defaultLocale:
                     type: string
 
               # Authentication flows
-              authentication_flows:
+              authenticationFlows:
                 type: array
                 description: "Custom authentication flows"
                 items:
@@ -265,20 +276,20 @@ spec:
                       type: string
                     description:
                       type: string
-                    provider_id:
+                    providerId:
                       type: string
-                    top_level:
+                    topLevel:
                       type: boolean
-                    built_in:
+                    builtIn:
                       type: boolean
-                    execution_config:
+                    executionConfig:
                       type: object
                       additionalProperties: true
                   required:
                   - alias
 
               # Identity providers
-              identity_providers:
+              identityProviders:
                 type: array
                 description: "Identity provider configurations"
                 items:
@@ -286,29 +297,29 @@ spec:
                   properties:
                     alias:
                       type: string
-                    provider_id:
+                    providerId:
                       type: string
                     enabled:
                       type: boolean
                       default: true
-                    trust_email:
+                    trustEmail:
                       type: boolean
                       default: false
-                    store_token:
+                    storeToken:
                       type: boolean
                       default: false
-                    add_read_token_role_on_create:
+                    addReadTokenRoleOnCreate:
                       type: boolean
                       default: false
-                    authenticate_by_default:
+                    authenticateByDefault:
                       type: boolean
                       default: false
-                    link_only:
+                    linkOnly:
                       type: boolean
                       default: false
-                    first_broker_login_flow_alias:
+                    firstBrokerLoginFlowAlias:
                       type: string
-                    post_broker_login_flow_alias:
+                    postBrokerLoginFlowAlias:
                       type: string
                     config:
                       type: object
@@ -316,18 +327,18 @@ spec:
                         type: string
                   required:
                   - alias
-                  - provider_id
+                  - providerId
 
               # User federation
-              user_federation:
+              userFederation:
                 type: array
                 description: "User federation provider configurations"
                 items:
                   type: object
                   properties:
-                    display_name:
+                    displayName:
                       type: string
-                    provider_name:
+                    providerName:
                       type: string
                     priority:
                       type: integer
@@ -337,11 +348,11 @@ spec:
                       additionalProperties:
                         type: string
                   required:
-                  - display_name
-                  - provider_name
+                  - displayName
+                  - providerName
 
               # Client scopes
-              client_scopes:
+              clientScopes:
                 type: array
                 description: "Client scope definitions"
                 items:
@@ -358,7 +369,7 @@ spec:
                       type: object
                       additionalProperties:
                         type: string
-                    protocol_mappers:
+                    protocolMappers:
                       type: array
                       items:
                         type: object
@@ -367,7 +378,7 @@ spec:
                             type: string
                           protocol:
                             type: string
-                          protocol_mapper:
+                          protocolMapper:
                             type: string
                           config:
                             type: object
@@ -375,7 +386,7 @@ spec:
                               type: string
                         required:
                         - name
-                        - protocol_mapper
+                        - protocolMapper
                   required:
                   - name
 
@@ -384,7 +395,7 @@ spec:
                 type: object
                 description: "Realm and client role definitions"
                 properties:
-                  realm_roles:
+                  realmRoles:
                     type: array
                     items:
                       type: object
@@ -396,10 +407,10 @@ spec:
                         composite:
                           type: boolean
                           default: false
-                        client_role:
+                        clientRole:
                           type: boolean
                           default: false
-                        container_id:
+                        containerId:
                           type: string
                       required:
                       - name
@@ -421,11 +432,11 @@ spec:
                         type: array
                         items:
                           type: string
-                    realm_roles:
+                    realmRoles:
                       type: array
                       items:
                         type: string
-                    client_roles:
+                    clientRoles:
                       type: object
                       additionalProperties:
                         type: array
@@ -442,34 +453,34 @@ spec:
                   type: string
 
               # Events configuration
-              events_config:
+              eventsConfig:
                 type: object
                 description: "Event logging configuration"
                 properties:
-                  events_enabled:
+                  eventsEnabled:
                     type: boolean
                     default: false
-                  events_listeners:
+                  eventsListeners:
                     type: array
                     items:
                       type: string
-                  enabled_event_types:
+                  enabledEventTypes:
                     type: array
                     items:
                       type: string
-                  events_expiration:
+                  eventsExpiration:
                     type: integer
                     minimum: 1
-                  admin_events_enabled:
+                  adminEventsEnabled:
                     type: boolean
                     default: false
-                  admin_events_details_enabled:
+                  adminEventsDetailsEnabled:
                     type: boolean
                     default: false
 
             required:
-            - realm_name
-            - keycloak_instance_ref
+            - realmName
+            - operatorRef
 
           status:
             type: object
@@ -497,22 +508,26 @@ spec:
                       type: string
                     message:
                       type: string
-                    last_transition_time:
+                    lastTransitionTime:
                       type: string
                       format: date-time
                   required:
                   - type
                   - status
-              observed_generation:
+              observedGeneration:
                 type: integer
               # Realm information
-              realm_name:
+              realmName:
                 type: string
-              internal_id:
+              internalId:
                 type: string
               # Connection information
-              keycloak_instance:
+              keycloakInstance:
                 type: string
+              # Authorization
+              authorizationSecretName:
+                type: string
+                description: "Name of the secret containing the realm's authorization token for client delegation"
               # Endpoints
               endpoints:
                 type: object
@@ -527,7 +542,7 @@ spec:
                     type: string
                   jwks:
                     type: string
-                  end_session:
+                  endSession:
                     type: string
                   registration:
                     type: string
@@ -535,31 +550,31 @@ spec:
               features:
                 type: object
                 properties:
-                  user_registration:
+                  userRegistration:
                     type: boolean
-                  password_reset:
+                  passwordReset:
                     type: boolean
-                  identity_providers:
+                  identityProviders:
                     type: integer
-                  user_federation_providers:
+                  userFederationProviders:
                     type: integer
-                  custom_themes:
+                  customThemes:
                     type: boolean
               # Health monitoring
-              last_health_check:
+              lastHealthCheck:
                 type: string
                 format: date-time
-              last_updated:
+              lastUpdated:
                 type: string
                 format: date-time
               # Statistics
-              active_users:
+              activeUsers:
                 type: integer
                 minimum: 0
-              total_clients:
+              totalClients:
                 type: integer
                 minimum: 0
-              realm_roles_count:
+              realmRolesCount:
                 type: integer
                 minimum: 0
     additionalPrinterColumns:
@@ -568,13 +583,13 @@ spec:
       jsonPath: .status.phase
     - name: Realm
       type: string
-      jsonPath: .spec.realm_name
+      jsonPath: .spec.realmName
     - name: Keycloak
       type: string
-      jsonPath: .status.keycloak_instance
+      jsonPath: .status.keycloakInstance
     - name: Users
       type: integer
-      jsonPath: .status.active_users
+      jsonPath: .status.activeUsers
     - name: Age
       type: date
       jsonPath: .metadata.creationTimestamp

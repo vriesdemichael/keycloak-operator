@@ -198,84 +198,32 @@ def create_keycloak_deployment(
 
     # Add database configuration environment variables if configured
     if spec.database and spec.database.type != "h2":
-        # For CNPG databases, use resolved connection info (which translates to postgres)
-        if spec.database.type == "cnpg" and db_connection_info:
-            # CNPG: Use resolved connection details that translate to standard PostgreSQL
-            logger.info("Configuring CNPG database using resolved connection info")
+        # Database type - map CRD values to Keycloak values
+        db_type_mapping = {
+            "postgresql": "postgres",
+            "mariadb": "mariadb",
+            "mysql": "mysql",
+            "oracle": "oracle",
+            "mssql": "mssql",
+        }
+        kc_db_type = db_type_mapping.get(spec.database.type, spec.database.type)
+        env_vars.append(client.V1EnvVar(name="KC_DB", value=kc_db_type))
 
-            # Database type: CNPG is PostgreSQL, so use "postgres" for Keycloak
-            env_vars.append(client.V1EnvVar(name="KC_DB", value="postgres"))
-
-            # Connection details from resolved CNPG cluster
+        # Database connection details
+        if spec.database.host:
             env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_HOST", value=db_connection_info["host"])
+                client.V1EnvVar(name="KC_DB_URL_HOST", value=spec.database.host)
             )
+
+        if spec.database.port:
             env_vars.append(
-                client.V1EnvVar(
-                    name="KC_DB_URL_PORT", value=str(db_connection_info["port"])
-                )
+                client.V1EnvVar(name="KC_DB_URL_PORT", value=str(spec.database.port))
             )
+
+        if spec.database.database:
             env_vars.append(
-                client.V1EnvVar(
-                    name="KC_DB_URL_DATABASE", value=db_connection_info["database"]
-                )
+                client.V1EnvVar(name="KC_DB_URL_DATABASE", value=spec.database.database)
             )
-            env_vars.append(
-                client.V1EnvVar(
-                    name="KC_DB_USERNAME", value=db_connection_info["username"]
-                )
-            )
-
-            # Password from CNPG app secret
-            if "password_secret" in db_connection_info:
-                env_vars.append(
-                    client.V1EnvVar(
-                        name="KC_DB_PASSWORD",
-                        value_from=client.V1EnvVarSource(
-                            secret_key_ref=client.V1SecretKeySelector(
-                                name=db_connection_info["password_secret"]["name"],
-                                key=db_connection_info["password_secret"]["key"],
-                            )
-                        ),
-                    )
-                )
-
-            logger.info(
-                f"CNPG database configured as postgres: {db_connection_info['host']}:{db_connection_info['port']}/{db_connection_info['database']}"
-            )
-
-        else:
-            # Traditional database configuration (non-CNPG)
-            # Database type - map CRD values to Keycloak values
-            db_type_mapping = {
-                "postgresql": "postgres",
-                "mariadb": "mariadb",
-                "mysql": "mysql",
-                "oracle": "oracle",
-                "mssql": "mssql",
-            }
-            kc_db_type = db_type_mapping.get(spec.database.type, spec.database.type)
-            env_vars.append(client.V1EnvVar(name="KC_DB", value=kc_db_type))
-
-            # Database connection details
-            if spec.database.host:
-                env_vars.append(
-                    client.V1EnvVar(name="KC_DB_URL_HOST", value=spec.database.host)
-                )
-
-            if spec.database.port:
-                env_vars.append(
-                    client.V1EnvVar(
-                        name="KC_DB_URL_PORT", value=str(spec.database.port)
-                    )
-                )
-
-            if spec.database.database:
-                env_vars.append(
-                    client.V1EnvVar(
-                        name="KC_DB_URL_DATABASE", value=spec.database.database
-                    )
-                )
 
             if spec.database.username:
                 env_vars.append(
@@ -359,7 +307,12 @@ def create_keycloak_deployment(
             initial_delay_seconds=30,
             period_seconds=10,
         ),
-        # Volume mounts and security context can be added as needed
+        security_context=client.V1SecurityContext(
+            allow_privilege_escalation=False,
+            run_as_non_root=True,
+            capabilities=client.V1Capabilities(drop=["ALL"]),
+            seccomp_profile=client.V1SeccompProfile(type="RuntimeDefault"),
+        ),
     )
 
     # Pod template
@@ -373,6 +326,10 @@ def create_keycloak_deployment(
         ),
         spec=client.V1PodSpec(
             containers=[container],
+            security_context=client.V1PodSecurityContext(
+                run_as_non_root=True,
+                seccomp_profile=client.V1SeccompProfile(type="RuntimeDefault"),
+            ),
             # Service account and volumes can be configured as needed
         ),
     )
@@ -1196,6 +1153,7 @@ def check_rbac_permissions(
     target_namespace: str,
     resource: str = "keycloaks",
     verb: str = "get",
+    api_group: str | None = None,
 ) -> bool:
     """
     Check if the current service account has RBAC permissions for cross-namespace access.
@@ -1208,6 +1166,7 @@ def check_rbac_permissions(
         target_namespace: Target namespace to access
         resource: Kubernetes resource type to check
         verb: Action to perform (get, create, update, delete, etc.)
+        api_group: API group for the resource (None for auto-detection)
 
     Returns:
         True if permission is granted, False otherwise
@@ -1219,15 +1178,35 @@ def check_rbac_permissions(
         k8s = get_kubernetes_client()
         auth_api = client.AuthorizationV1Api(k8s)
 
+        # Auto-detect API group if not specified
+        if api_group is None:
+            # Core resources use empty string, custom resources use keycloak.mdvr.nl
+            core_resources = {
+                "secrets",
+                "configmaps",
+                "services",
+                "pods",
+                "serviceaccounts",
+                "persistentvolumeclaims",
+            }
+            api_group = "" if resource in core_resources else "keycloak.mdvr.nl"
+
+        # Get service account information
+        sa_info = get_current_service_account_info()
+        service_account_user = (
+            f"system:serviceaccount:{sa_info['namespace']}:{sa_info['name']}"
+        )
+
         # Create SubjectAccessReview to check permissions
         access_review = client.V1SubjectAccessReview(
             spec=client.V1SubjectAccessReviewSpec(
+                user=service_account_user,
                 resource_attributes=client.V1ResourceAttributes(
                     namespace=target_namespace,
                     verb=verb,
-                    group="keycloak.mdvr.nl",
+                    group=api_group,
                     resource=resource,
-                )
+                ),
             )
         )
 

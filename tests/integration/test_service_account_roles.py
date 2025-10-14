@@ -12,33 +12,34 @@ from kubernetes.client.rest import ApiException
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestServiceAccountRoles:
-    """Test service account role assignment with dedicated Keycloak instance."""
+    """Test service account role assignment with shared Keycloak instance."""
 
-    @pytest.mark.timeout(600)  # Complex test with dedicated resources (10 minutes)
+    @pytest.mark.timeout(
+        600
+    )  # Uses shared instance (10 minutes for realm+client creation)
     async def test_service_account_realm_roles_assigned(
         self,
         k8s_custom_objects,
-        k8s_core_v1,
         test_namespace,
-        sample_keycloak_spec,
-        sample_realm_spec,
-        sample_client_spec,
+        operator_namespace,
+        shared_operator,
         wait_for_condition,
-        wait_for_keycloak_ready,
         keycloak_port_forward,
     ) -> None:
         """End-to-end verification that realm roles are assigned to service accounts.
 
-        This is a complex integration test requiring:
-        - Dedicated Keycloak instance creation (~60s)
+        This integration test uses the shared Keycloak instance and requires:
         - Custom realm with specific configuration
         - Realm role creation via API
         - Service account client with role mappings
         - Verification of role assignments
         """
 
-        # Use dedicated Keycloak instance for this complex test
-        keycloak_name = f"svc-roles-kc-{uuid.uuid4().hex[:8]}"
+        # Use shared Keycloak instance in operator namespace
+        keycloak_name = shared_operator["name"]
+        keycloak_namespace = shared_operator["namespace"]
+
+        # Create realm and client in test namespace for isolation
         namespace = test_namespace
 
         suffix = uuid.uuid4().hex[:8]
@@ -46,47 +47,58 @@ class TestServiceAccountRoles:
         client_name = f"svc-roles-client-{suffix}"
         service_account_role = f"svc-role-{suffix}"
 
-        # Create dedicated Keycloak instance for this test
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": namespace},
-        }
+        from keycloak_operator.models.client import (
+            KeycloakClientSettings,
+            KeycloakClientSpec,
+            RealmRef,
+            ServiceAccountRoles,
+        )
+        from keycloak_operator.models.common import AuthorizationSecretRef
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+        )
 
         realm_manifest = {
-            **sample_realm_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": {
-                **sample_realm_spec["spec"],
-                "keycloak_instance_ref": {
-                    "name": keycloak_name,
-                    "namespace": namespace,
-                },
-                "realm_name": realm_name,
-                "enabled": True,
-            },
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
+        client_spec = KeycloakClientSpec(
+            realm_ref=RealmRef(
+                name=realm_name,
+                namespace=namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name=f"{realm_name}-realm-auth",  # Created by realm reconciler
+                    key="token",
+                ),
+            ),
+            client_id=client_name,
+            public_client=False,
+            service_account_roles=ServiceAccountRoles(
+                realm_roles=[service_account_role],
+                client_roles={},
+            ),
+            settings=KeycloakClientSettings(
+                service_accounts_enabled=True,
+            ),
+        )
+
         client_manifest = {
-            **sample_client_spec,
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": namespace},
-            "spec": {
-                **sample_client_spec["spec"],
-                "keycloak_instance_ref": {
-                    "name": keycloak_name,
-                    "namespace": namespace,
-                },
-                "realm": realm_name,
-                "client_id": client_name,
-                "public_client": False,
-                "service_account_roles": {
-                    "realm_roles": [service_account_role],
-                    "client_roles": {},
-                },
-                "settings": {
-                    **sample_client_spec["spec"].get("settings", {}),
-                    "service_accounts_enabled": True,
-                },
-            },
+            "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         async def _wait_resource_ready(plural: str, name: str) -> None:
@@ -115,18 +127,6 @@ class TestServiceAccountRoles:
         admin_client = None
 
         try:
-            # Create dedicated Keycloak instance
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            # Wait for Keycloak to be ready
-            await wait_for_keycloak_ready(keycloak_name, namespace, timeout=600)
-
             # Create realm and wait until Ready
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
@@ -138,14 +138,16 @@ class TestServiceAccountRoles:
 
             await _wait_resource_ready("keycloakrealms", realm_name)
 
-            # Set up port-forward to access Keycloak from host
-            local_port = await keycloak_port_forward(keycloak_name, namespace)
+            # Set up port-forward to shared Keycloak instance
+            local_port = await keycloak_port_forward(keycloak_name, keycloak_namespace)
 
             # Create admin client using localhost (via port-forward)
             from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
             from keycloak_operator.utils.kubernetes import get_admin_credentials
 
-            username, password = get_admin_credentials(keycloak_name, namespace)
+            username, password = get_admin_credentials(
+                keycloak_name, keycloak_namespace
+            )
             admin_client = KeycloakAdminClient(
                 server_url=f"http://localhost:{local_port}",
                 username=username,
@@ -201,7 +203,7 @@ class TestServiceAccountRoles:
             if admin_client is not None:
                 admin_client.session.close()
 
-            # Cleanup all resources (in reverse order)
+            # Cleanup resources (client and realm only - shared Keycloak persists)
             with contextlib.suppress(ApiException):
                 k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
@@ -217,12 +219,4 @@ class TestServiceAccountRoles:
                     namespace=namespace,
                     plural="keycloakrealms",
                     name=realm_name,
-                )
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
                 )

@@ -12,12 +12,20 @@ from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_smtp_secret_reference(
-    shared_keycloak_instance, keycloak_port_forward
+    shared_operator, keycloak_port_forward, operator_namespace
 ):
     """Test creating realm with SMTP config using secret reference."""
+    from keycloak_operator.models.common import AuthorizationSecretRef
+    from keycloak_operator.models.realm import (
+        KeycloakRealmSpec,
+        KeycloakSMTPConfig,
+        KeycloakSMTPPasswordSecret,
+        OperatorRef,
+    )
+
     realm_name = f"test-smtp-{uuid.uuid4().hex[:8]}"
     secret_name = f"smtp-secret-{uuid.uuid4().hex[:8]}"
-    namespace = shared_keycloak_instance["namespace"]
+    namespace = shared_operator["namespace"]
 
     # Create SMTP password secret
     core_api = client.CoreV1Api()
@@ -30,27 +38,35 @@ async def test_realm_with_smtp_secret_reference(
     try:
         # Create KeycloakRealm with SMTP configuration
         custom_api = client.CustomObjectsApi()
+
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+            smtp_server=KeycloakSMTPConfig(
+                host="smtp.example.com",
+                port=587,
+                from_address="noreply@example.com",
+                from_display_name="Test Application",
+                auth=True,
+                user="noreply@example.com",
+                starttls=True,
+                password_secret=KeycloakSMTPPasswordSecret(
+                    name=secret_name, key="password"
+                ),
+            ),
+        )
+
         realm_resource = {
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": {
-                "realm_name": realm_name,
-                "keycloak_instance_ref": {
-                    "name": shared_keycloak_instance["name"],
-                    "namespace": shared_keycloak_instance["namespace"],
-                },
-                "smtp_server": {
-                    "host": "smtp.example.com",
-                    "port": 587,
-                    "from_address": "noreply@example.com",
-                    "from_display_name": "Test Application",
-                    "auth": True,
-                    "user": "noreply@example.com",
-                    "starttls": True,
-                    "password_secret": {"name": secret_name, "key": "password"},
-                },
-            },
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         custom_api.create_namespaced_custom_object(
@@ -65,16 +81,12 @@ async def test_realm_with_smtp_secret_reference(
         await wait_for_realm_ready(custom_api, realm_name, namespace, timeout=120)
 
         # Verify SMTP configuration in Keycloak
-        local_port = await keycloak_port_forward(
-            shared_keycloak_instance["name"], namespace
-        )
+        local_port = await keycloak_port_forward(shared_operator["name"], namespace)
 
         # Get admin credentials from operator-generated secret
         from keycloak_operator.utils.kubernetes import get_admin_credentials
 
-        username, password = get_admin_credentials(
-            shared_keycloak_instance["name"], namespace
-        )
+        username, password = get_admin_credentials(shared_operator["name"], namespace)
 
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
@@ -121,35 +133,47 @@ async def test_realm_with_smtp_secret_reference(
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_smtp_direct_password(
-    shared_keycloak_instance, keycloak_port_forward
+    shared_operator, keycloak_port_forward, operator_namespace
 ):
     """Test creating realm with SMTP config using direct password (deprecated)."""
+    from keycloak_operator.models.common import AuthorizationSecretRef
+    from keycloak_operator.models.realm import (
+        KeycloakRealmSpec,
+        KeycloakSMTPConfig,
+        OperatorRef,
+    )
+
     realm_name = f"test-smtp-direct-{uuid.uuid4().hex[:8]}"
-    namespace = shared_keycloak_instance["namespace"]
+    namespace = shared_operator["namespace"]
 
     custom_api = client.CustomObjectsApi()
 
     try:
         # Create KeycloakRealm with direct password
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+            smtp_server=KeycloakSMTPConfig(
+                host="smtp.example.com",
+                port=25,
+                from_address="test@example.com",
+                auth=True,
+                user="test@example.com",
+                password="direct-password",
+            ),
+        )
+
         realm_resource = {
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": {
-                "realm_name": realm_name,
-                "keycloak_instance_ref": {
-                    "name": shared_keycloak_instance["name"],
-                    "namespace": shared_keycloak_instance["namespace"],
-                },
-                "smtp_server": {
-                    "host": "smtp.example.com",
-                    "port": 25,
-                    "from_address": "test@example.com",
-                    "auth": True,
-                    "user": "test@example.com",
-                    "password": "direct-password",
-                },
-            },
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         custom_api.create_namespaced_custom_object(
@@ -164,16 +188,12 @@ async def test_realm_with_smtp_direct_password(
         await wait_for_realm_ready(custom_api, realm_name, namespace, timeout=120)
 
         # Verify realm was created
-        local_port = await keycloak_port_forward(
-            shared_keycloak_instance["name"], namespace
-        )
+        local_port = await keycloak_port_forward(shared_operator["name"], namespace)
 
         # Get admin credentials from operator-generated secret
         from keycloak_operator.utils.kubernetes import get_admin_credentials
 
-        username, password = get_admin_credentials(
-            shared_keycloak_instance["name"], namespace
-        )
+        username, password = get_admin_credentials(shared_operator["name"], namespace)
 
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
@@ -205,35 +225,48 @@ async def test_realm_with_smtp_direct_password(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_realm_with_missing_smtp_secret(shared_keycloak_instance):
+async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespace):
     """Test realm creation fails gracefully with missing SMTP secret."""
+    from keycloak_operator.models.common import AuthorizationSecretRef
+    from keycloak_operator.models.realm import (
+        KeycloakRealmSpec,
+        KeycloakSMTPConfig,
+        KeycloakSMTPPasswordSecret,
+        OperatorRef,
+    )
+
     realm_name = f"test-smtp-missing-{uuid.uuid4().hex[:8]}"
     secret_name = f"nonexistent-secret-{uuid.uuid4().hex[:8]}"
-    namespace = shared_keycloak_instance["namespace"]
+    namespace = shared_operator["namespace"]
 
     custom_api = client.CustomObjectsApi()
 
     try:
         # Create KeycloakRealm referencing non-existent secret
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+            smtp_server=KeycloakSMTPConfig(
+                host="smtp.example.com",
+                port=587,
+                from_address="noreply@example.com",
+                auth=True,
+                user="noreply@example.com",
+                password_secret=KeycloakSMTPPasswordSecret(name=secret_name),
+            ),
+        )
+
         realm_resource = {
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": {
-                "realm_name": realm_name,
-                "keycloak_instance_ref": {
-                    "name": shared_keycloak_instance["name"],
-                    "namespace": shared_keycloak_instance["namespace"],
-                },
-                "smtp_server": {
-                    "host": "smtp.example.com",
-                    "port": 587,
-                    "from_address": "noreply@example.com",
-                    "auth": True,
-                    "user": "noreply@example.com",
-                    "password_secret": {"name": secret_name},
-                },
-            },
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         custom_api.create_namespaced_custom_object(
@@ -282,11 +315,19 @@ async def test_realm_with_missing_smtp_secret(shared_keycloak_instance):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_realm_with_missing_secret_key(shared_keycloak_instance):
+async def test_realm_with_missing_secret_key(shared_operator, operator_namespace):
     """Test realm creation fails gracefully with missing key in secret."""
+    from keycloak_operator.models.common import AuthorizationSecretRef
+    from keycloak_operator.models.realm import (
+        KeycloakRealmSpec,
+        KeycloakSMTPConfig,
+        KeycloakSMTPPasswordSecret,
+        OperatorRef,
+    )
+
     realm_name = f"test-smtp-badkey-{uuid.uuid4().hex[:8]}"
     secret_name = f"smtp-secret-badkey-{uuid.uuid4().hex[:8]}"
-    namespace = shared_keycloak_instance["namespace"]
+    namespace = shared_operator["namespace"]
 
     core_api = client.CoreV1Api()
 
@@ -301,28 +342,33 @@ async def test_realm_with_missing_secret_key(shared_keycloak_instance):
 
     try:
         # Create KeycloakRealm referencing wrong key
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name="keycloak-operator-auth-token",
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+            smtp_server=KeycloakSMTPConfig(
+                host="smtp.example.com",
+                port=587,
+                from_address="noreply@example.com",
+                auth=True,
+                user="noreply@example.com",
+                password_secret=KeycloakSMTPPasswordSecret(
+                    name=secret_name,
+                    key="password",  # Key doesn't exist
+                ),
+            ),
+        )
+
         realm_resource = {
             "apiVersion": "keycloak.mdvr.nl/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": {
-                "realm_name": realm_name,
-                "keycloak_instance_ref": {
-                    "name": shared_keycloak_instance["name"],
-                    "namespace": shared_keycloak_instance["namespace"],
-                },
-                "smtp_server": {
-                    "host": "smtp.example.com",
-                    "port": 587,
-                    "from_address": "noreply@example.com",
-                    "auth": True,
-                    "user": "noreply@example.com",
-                    "password_secret": {
-                        "name": secret_name,
-                        "key": "password",  # Key doesn't exist
-                    },
-                },
-            },
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         custom_api.create_namespaced_custom_object(

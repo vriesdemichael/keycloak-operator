@@ -71,8 +71,14 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Validate cross-namespace permissions
         await self.validate_cross_namespace_access(realm_spec, namespace)
 
-        # Ensure basic realm exists
-        await self.ensure_realm_exists(realm_spec, name, namespace)
+        # Ensure basic realm exists (pass kwargs for ownership tracking)
+        await self.ensure_realm_exists(realm_spec, name, namespace, **kwargs)
+
+        # Generate/retrieve realm authorization token
+        owner_uid = kwargs.get("uid", "")
+        realm_auth_secret_name = await self.ensure_realm_authorization_secret(
+            realm_name=realm_spec.realm_name, namespace=namespace, owner_uid=owner_uid
+        )
 
         # Configure realm features
         if realm_spec.themes:
@@ -91,49 +97,36 @@ class KeycloakRealmReconciler(BaseReconciler):
         await self.manage_realm_backup(realm_spec, name, namespace)
 
         # Return status information
-        keycloak_ref = realm_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-
-        # Get keycloak instance for endpoint construction
-        from ..utils.kubernetes import validate_keycloak_reference
-
-        keycloak_instance = validate_keycloak_reference(
-            keycloak_ref.name, target_namespace
-        )
-
-        endpoints = {}
-        if (
-            keycloak_instance
-            and "status" in keycloak_instance
-            and "endpoints" in keycloak_instance["status"]
-        ):
-            base_url = keycloak_instance["status"]["endpoints"].get("public", "")
-            if base_url:
-                endpoints = {
-                    "realm": f"{base_url}/realms/{realm_spec.realm_name}",
-                    "admin": f"{base_url}/admin/{realm_spec.realm_name}/console",
-                    "account": f"{base_url}/realms/{realm_spec.realm_name}/account",
-                }
+        operator_ref = realm_spec.operator_ref
+        target_namespace = operator_ref.namespace
 
         # Extract generation for status tracking
         generation = kwargs.get("meta", {}).get("generation", 0)
 
-        # Update status to ready
+        # Set custom status fields using attribute assignment (camelCase as in CRD)
+        # IMPORTANT: Use attribute assignment, not item assignment!
+        # Kopf StatusWrapper supports status.camelCase = value
+        status.realmName = realm_spec.realm_name
+        status.keycloakInstance = f"{target_namespace}/keycloak"
+        status.authorizationSecretName = realm_auth_secret_name
+        status.features = {
+            "userRegistration": realm_spec.security.registration_allowed
+            if realm_spec.security
+            else False,
+            "passwordReset": realm_spec.security.reset_password_allowed
+            if realm_spec.security
+            else True,
+            "identityProviders": len(realm_spec.identity_providers or []),
+            "userFederationProviders": len(realm_spec.user_federation or []),
+            "customThemes": bool(realm_spec.themes),
+        }
+        # TODO: Add OIDC endpoint discovery (issuer, auth, token, userinfo, jwks, endSession, registration)
+
+        # Update status to indicate successful reconciliation
+        # This sets observedGeneration, phase, message, and timestamps
         self.update_status_ready(status, "Realm configured and ready", generation)
 
-        # Set additional status fields via StatusWrapper to avoid conflicts with Kopf
-        status.realm_name = realm_spec.realm_name
-        status.keycloak_instance = f"{target_namespace}/{keycloak_ref.name}"
-        status.endpoints = endpoints
-        status.features = {
-            "themes": bool(realm_spec.themes),
-            "localization": bool(realm_spec.localization),
-            "customAuthFlows": bool(realm_spec.authentication_flows),
-            "identityProviders": len(realm_spec.identity_providers or []),
-            "userFederation": len(realm_spec.user_federation or []),
-        }
-
-        # Return empty dict - status updates are done via StatusWrapper
+        # Return empty dict - status already set above
         return {}
 
     def _validate_spec(self, spec: dict[str, Any]) -> KeycloakRealmSpec:
@@ -167,7 +160,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         Raises:
             RBACError: If insufficient permissions for cross-namespace access
         """
-        target_namespace = spec.keycloak_instance_ref.namespace
+        target_namespace = spec.operator_ref.namespace
 
         # Define required operations for realm management
         required_operations = [
@@ -180,7 +173,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             source_namespace=namespace,
             target_namespace=target_namespace,
             operations=required_operations,
-            resource_name=spec.keycloak_instance_ref.name,
+            resource_name=spec.operator_ref.namespace,
         )
 
         # Validate namespace isolation policies
@@ -245,24 +238,160 @@ class KeycloakRealmReconciler(BaseReconciler):
                 f"Failed to decode SMTP password from secret '{secret_name}': {e}"
             ) from e
 
+    async def ensure_realm_authorization_secret(
+        self, realm_name: str, namespace: str, owner_uid: str
+    ) -> str:
+        """
+        Generate or retrieve authorization secret for this realm.
+
+        Creates a Kubernetes secret containing a secure token that will be used
+        by clients to authenticate their requests to manage resources within this realm.
+
+        The secret has an owner reference to the realm resource for automatic cleanup.
+
+        Args:
+            realm_name: Name of the realm (used in secret name)
+            namespace: Namespace to create the secret in
+            owner_uid: UID of the realm resource (for owner reference)
+
+        Returns:
+            Name of the secret containing the realm authorization token
+
+        Raises:
+            ValidationError: If secret creation fails
+        """
+        import base64
+
+        from ..utils.auth import generate_token
+
+        secret_name = f"{realm_name}-realm-auth"
+
+        # Check if secret already exists
+        core_api = client.CoreV1Api(self.k8s_client)
+        try:
+            core_api.read_namespaced_secret(name=secret_name, namespace=namespace)
+            self.logger.debug(
+                f"Realm authorization secret {secret_name} already exists, reusing"
+            )
+            return secret_name
+        except client.ApiException as e:
+            if e.status != 404:
+                raise ValidationError(
+                    f"Failed to check for existing realm authorization secret: {e}"
+                ) from e
+            # Secret doesn't exist, create it
+            self.logger.info(f"Creating realm authorization secret {secret_name}")
+
+        # Generate secure token
+        token = generate_token(length=32)  # 256-bit entropy
+        token_bytes = token.encode("utf-8")
+        encoded_token = base64.b64encode(token_bytes).decode("utf-8")
+
+        # Create secret with owner reference for automatic cleanup
+        secret_body = client.V1Secret(
+            metadata=client.V1ObjectMeta(
+                name=secret_name,
+                namespace=namespace,
+                labels={
+                    "app.kubernetes.io/managed-by": "keycloak-operator",
+                    "app.kubernetes.io/component": "realm-authorization",
+                    "keycloak.k8s.intility.io/realm": realm_name,
+                },
+                owner_references=[
+                    client.V1OwnerReference(
+                        api_version="keycloak.mdvr.nl/v1",
+                        kind="KeycloakRealm",
+                        name=realm_name,
+                        uid=owner_uid,
+                        controller=True,
+                        block_owner_deletion=True,
+                    )
+                ]
+                if owner_uid
+                else None,
+            ),
+            data={"token": encoded_token},
+            type="Opaque",
+        )
+
+        try:
+            core_api.create_namespaced_secret(namespace=namespace, body=secret_body)
+            self.logger.info(
+                f"Created realm authorization secret {secret_name} in namespace {namespace}"
+            )
+            return secret_name
+        except client.ApiException as e:
+            if e.status == 409:
+                # Secret was created by another reconciliation, reuse it
+                self.logger.debug(
+                    f"Realm authorization secret {secret_name} created by concurrent reconciliation"
+                )
+                return secret_name
+            raise ValidationError(
+                f"Failed to create realm authorization secret: {e}"
+            ) from e
+
     async def ensure_realm_exists(
-        self, spec: KeycloakRealmSpec, name: str, namespace: str
+        self, spec: KeycloakRealmSpec, name: str, namespace: str, **kwargs
     ) -> None:
         """
-        Ensure the basic realm exists in Keycloak.
+        Ensure the basic realm exists in Keycloak with ownership tracking.
+
+        This method implements ownership tracking to prevent multiple CRs from
+        managing the same realm and to handle orphaned realms properly.
 
         Args:
             spec: Keycloak realm specification
             name: Resource name
             namespace: Resource namespace
+            **kwargs: Additional handler arguments (uid, meta, etc.)
         """
         self.logger.info(f"Ensuring realm {spec.realm_name} exists")
+        from ..utils.auth import validate_authorization
         from ..utils.kubernetes import validate_keycloak_reference
 
-        # Resolve Keycloak instance reference
-        keycloak_ref = spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        keycloak_name = keycloak_ref.name
+        # Resolve Keycloak operator reference
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        # For now, use the operator namespace as keycloak name (will be updated in Phase 4)
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+
+        # Validate authorization: Check operator token
+        # Import here to avoid circular dependency
+        from ..operator import OPERATOR_AUTH_SECRET_NAME, OPERATOR_NAMESPACE
+
+        # Read the operator token directly from the secret to ensure we have the current value
+        # This avoids issues with module-level variables in multi-worker environments
+        core_v1 = client.CoreV1Api()
+        try:
+            operator_secret = core_v1.read_namespaced_secret(
+                name=OPERATOR_AUTH_SECRET_NAME, namespace=OPERATOR_NAMESPACE
+            )
+            import base64
+
+            expected_operator_token = base64.b64decode(
+                operator_secret.data["token"]
+            ).decode("utf-8")
+        except Exception as e:
+            from ..errors import PermanentError
+
+            raise PermanentError(
+                f"Cannot read operator authorization token: {e}"
+            ) from e
+
+        if not validate_authorization(
+            secret_ref=operator_ref.authorization_secret_ref,
+            secret_namespace=target_namespace,
+            expected_token=expected_operator_token,
+            k8s_client=client.CoreV1Api(),
+        ):
+            from ..errors import PermanentError
+
+            raise PermanentError(
+                f"Authorization failed: Invalid or missing operator token for realm {spec.realm_name}"
+            )
+
+        self.logger.info(f"Authorization validated for realm {spec.realm_name}")
 
         # Validate that the Keycloak instance exists and is ready
         keycloak_instance = validate_keycloak_reference(keycloak_name, target_namespace)
@@ -276,6 +405,9 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Get Keycloak admin client
         admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+
+        # Extract CR UID for ownership tracking
+        cr_uid = kwargs.get("uid", "")
 
         # Check if realm already exists
         realm_name = spec.realm_name
@@ -306,6 +438,21 @@ class KeycloakRealmReconciler(BaseReconciler):
                     "Consider using password_secret for better security."
                 )
 
+        # Add ownership metadata to realm attributes
+        from datetime import UTC, datetime
+
+        if "attributes" not in realm_payload:
+            realm_payload["attributes"] = {}
+
+        realm_payload["attributes"].update(
+            {
+                "kubernetes.operator.uid": cr_uid,
+                "kubernetes.operator.namespace": namespace,
+                "kubernetes.operator.name": name,
+                "kubernetes.operator.timestamp": datetime.now(UTC).isoformat(),
+            }
+        )
+
         payload_json = json.dumps(realm_payload, default=str)
         payload_preview = (
             payload_json
@@ -317,8 +464,13 @@ class KeycloakRealmReconciler(BaseReconciler):
             "Prepared realm configuration for apply",
             keycloak_instance=keycloak_name,
             realm_name=realm_name,
+            cr_uid=cr_uid,
             payload_preview=payload_preview,
         )
+
+        # Check if realm already exists and validate ownership
+        # Import errors early for ownership validation logic
+        from ..errors import PermanentError, TemporaryError
 
         try:
             existing_realm = admin_client.get_realm(realm_name)
@@ -337,41 +489,101 @@ class KeycloakRealmReconciler(BaseReconciler):
                 raise
 
         if existing_realm:
-            self.logger.info(
-                f"Realm {realm_name} already exists, updating...",
-                keycloak_instance=keycloak_name,
-                realm_name=realm_name,
+            # Validate ownership before updating
+            # Access Pydantic model attributes directly (not with .get())
+            attributes = existing_realm.attributes or {}
+            owner_uid = (
+                attributes.get("kubernetes.operator.uid") if attributes else None
             )
-            try:
-                admin_client.update_realm(realm_name, realm_payload)
-            except KeycloakAdminError as exc:
-                self.logger.error(
-                    "Realm update failed",
-                    keycloak_instance=keycloak_name,
-                    realm_name=realm_name,
-                    status_code=exc.status_code,
-                    response_body=exc.body_preview(),
-                    payload_preview=payload_preview,
+            owner_name = (
+                attributes.get("kubernetes.operator.name") if attributes else None
+            )
+            owner_namespace = (
+                attributes.get("kubernetes.operator.namespace") if attributes else None
+            )
+
+            if not owner_uid:
+                # Orphaned realm - adopt it
+                self.logger.info(
+                    f"Adopting orphaned realm {realm_name} "
+                    f"(no ownership metadata found)"
                 )
-                raise
+                try:
+                    admin_client.update_realm(realm_name, realm_payload)
+                    self.logger.info(f"Successfully adopted realm {realm_name}")
+                except KeycloakAdminError as exc:
+                    self.logger.error(
+                        "Failed to adopt orphaned realm",
+                        keycloak_instance=keycloak_name,
+                        realm_name=realm_name,
+                        status_code=exc.status_code,
+                        response_body=exc.body_preview(),
+                    )
+                    raise
+            elif owner_uid == cr_uid:
+                # Owned by this CR - normal update
+                self.logger.info(f"Updating realm {realm_name} (owned by this CR)")
+                try:
+                    admin_client.update_realm(realm_name, realm_payload)
+                except KeycloakAdminError as exc:
+                    self.logger.error(
+                        "Realm update failed",
+                        keycloak_instance=keycloak_name,
+                        realm_name=realm_name,
+                        status_code=exc.status_code,
+                        response_body=exc.body_preview(),
+                        payload_preview=payload_preview,
+                    )
+                    raise
+            else:
+                # Owned by different CR - conflict!
+                error_msg = (
+                    f"Realm {realm_name} is already managed by another KeycloakRealm CR. "
+                    f"Existing owner: {owner_name} in namespace {owner_namespace} (UID: {owner_uid[:8]}...). "
+                    f"This CR: {name} in namespace {namespace} (UID: {cr_uid[:8]}...). "
+                    f"Multiple CRs cannot manage the same realm name."
+                )
+                self.logger.error(
+                    "Realm ownership conflict detected",
+                    realm_name=realm_name,
+                    existing_owner=f"{owner_namespace}/{owner_name}",
+                    existing_owner_uid=owner_uid,
+                    this_cr=f"{namespace}/{name}",
+                    this_cr_uid=cr_uid,
+                )
+                raise PermanentError(error_msg)
         else:
+            # Realm doesn't exist - create it
             self.logger.info(
                 f"Creating new realm {realm_name}",
                 keycloak_instance=keycloak_name,
                 realm_name=realm_name,
+                cr_uid=cr_uid,
             )
             try:
                 admin_client.create_realm(realm_payload)
+                self.logger.info(f"Successfully created realm {realm_name}")
             except KeycloakAdminError as exc:
-                self.logger.error(
-                    "Realm creation failed",
-                    keycloak_instance=keycloak_name,
-                    realm_name=realm_name,
-                    status_code=exc.status_code,
-                    response_body=exc.body_preview(),
-                    payload_preview=payload_preview,
-                )
-                raise
+                # Handle 409 conflict (race condition - realm created between GET and CREATE)
+                if getattr(exc, "status_code", None) == 409:
+                    self.logger.warning(
+                        f"Realm {realm_name} was created concurrently (409 conflict). "
+                        f"Retrying to check ownership..."
+                    )
+                    raise TemporaryError(
+                        f"Realm {realm_name} created concurrently, retrying reconciliation",
+                        delay=5,
+                    ) from exc
+                else:
+                    self.logger.error(
+                        "Realm creation failed",
+                        keycloak_instance=keycloak_name,
+                        realm_name=realm_name,
+                        status_code=exc.status_code,
+                        response_body=exc.body_preview(),
+                        payload_preview=payload_preview,
+                    )
+                    raise
 
     async def configure_themes(
         self, spec: KeycloakRealmSpec, name: str, namespace: str
@@ -386,9 +598,10 @@ class KeycloakRealmReconciler(BaseReconciler):
         """
         self.logger.info(f"Configuring themes for realm {spec.realm_name}")
 
-        keycloak_ref = spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
 
         try:
             theme_config = {}
@@ -422,9 +635,10 @@ class KeycloakRealmReconciler(BaseReconciler):
         if not spec.authentication_flows:
             return
 
-        keycloak_ref = spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
 
         for flow_config in spec.authentication_flows:
             try:
@@ -456,9 +670,10 @@ class KeycloakRealmReconciler(BaseReconciler):
         if not spec.identity_providers:
             return
 
-        keycloak_ref = spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
 
         for idp_config in spec.identity_providers:
             try:
@@ -490,9 +705,10 @@ class KeycloakRealmReconciler(BaseReconciler):
         if not spec.user_federation:
             return
 
-        keycloak_ref = spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
 
         for federation_config in spec.user_federation:
             try:
@@ -566,11 +782,10 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         try:
             # Get admin client for the target Keycloak instance
-            keycloak_ref = spec.keycloak_instance_ref
-            target_namespace = keycloak_ref.namespace or namespace
-            admin_client = self.keycloak_admin_factory(
-                keycloak_ref.name, target_namespace
-            )
+            operator_ref = spec.operator_ref
+            target_namespace = operator_ref.namespace
+            keycloak_name = "keycloak"  # Default Keycloak instance name
+            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
 
             # Create realm backup
             backup_data = admin_client.backup_realm(spec.realm_name)
@@ -701,15 +916,14 @@ class KeycloakRealmReconciler(BaseReconciler):
         if old_realm_spec.realm_name != new_realm_spec.realm_name:
             raise PermanentError("Cannot change realm_name of existing KeycloakRealm")
 
-        if old_realm_spec.keycloak_instance_ref != new_realm_spec.keycloak_instance_ref:
-            raise PermanentError(
-                "Cannot change keycloak_instance_ref of existing KeycloakRealm"
-            )
+        if old_realm_spec.operator_ref != new_realm_spec.operator_ref:
+            raise PermanentError("Cannot change operatorRef of existing KeycloakRealm")
 
         # Get admin client for the target Keycloak instance
-        keycloak_ref = new_realm_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
-        admin_client = self.keycloak_admin_factory(keycloak_ref.name, target_namespace)
+        operator_ref = new_realm_spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
 
         realm_name = new_realm_spec.realm_name
 
@@ -855,30 +1069,47 @@ class KeycloakRealmReconciler(BaseReconciler):
         Raises:
             TemporaryError: If cleanup fails but should be retried
         """
-        from ..errors import TemporaryError
 
         self.logger.info(f"Starting cleanup of KeycloakRealm {name} in {namespace}")
 
+        # Try to parse spec, but fallback to raw dict extraction if validation fails
+        # This ensures we can still clean up realms with invalid/outdated specs
+        realm_spec = None
+        realm_name = None
+        target_namespace = None
+
         try:
             realm_spec = KeycloakRealmSpec.model_validate(spec)
+            realm_name = realm_spec.realm_name
+            target_namespace = realm_spec.operator_ref.namespace
         except Exception as e:
-            raise TemporaryError(f"Failed to parse KeycloakRealm spec: {e}") from e
+            self.logger.warning(
+                f"Failed to parse KeycloakRealm spec during cleanup (spec may be invalid/outdated): {e}. "
+                f"Attempting cleanup using raw spec dictionary..."
+            )
+            # Extract minimal required fields from raw spec dict
+            realm_name = spec.get("realmName") or spec.get("realm_name")
+            operator_ref = spec.get("operatorRef", {})
+            target_namespace = operator_ref.get("namespace")
+
+            if not realm_name or not target_namespace:
+                self.logger.error(
+                    f"Cannot extract realm name or target namespace from invalid spec. "
+                    f"Spec keys: {list(spec.keys())}. Skipping Keycloak cleanup."
+                )
+                # Still return successfully - we can't do Keycloak cleanup, but we won't block deletion
+                return
 
         # Get admin client for the target Keycloak instance
-        keycloak_ref = realm_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
 
         # Delete realm from Keycloak (if instance still exists)
         try:
-            admin_client = self.keycloak_admin_factory(
-                keycloak_ref.name, target_namespace
-            )
+            keycloak_name = "keycloak"  # Default Keycloak instance name
+            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
 
-            # Backup realm data if requested
-            if getattr(realm_spec, "backup_on_delete", False):
-                self.logger.info(
-                    f"Backing up realm {realm_spec.realm_name} before deletion"
-                )
+            # Backup realm data if requested (only if spec parsed successfully)
+            if realm_spec and getattr(realm_spec, "backup_on_delete", False):
+                self.logger.info(f"Backing up realm {realm_name} before deletion")
                 try:
                     await self._create_realm_backup(
                         realm_spec, name, namespace, backup_type="deletion"
@@ -886,22 +1117,87 @@ class KeycloakRealmReconciler(BaseReconciler):
                 except Exception as e:
                     self.logger.warning(f"Realm backup failed: {e}")
 
-            # Clean up all clients in this realm first
+            # Clean up all clients in this realm from Keycloak FIRST
+            # This prevents client finalizers from trying to access the realm during deletion
+            # Skip built-in Keycloak clients which cannot be deleted
+            BUILTIN_CLIENTS = {
+                "admin-cli",
+                "broker",
+                "realm-management",
+                "security-admin-console",
+                "account",
+                "account-console",
+            }
             try:
-                realm_clients = admin_client.get_realm_clients(realm_spec.realm_name)
+                realm_clients = admin_client.get_realm_clients(realm_name)
                 for client_config in realm_clients:
                     client_id = client_config.client_id
-                    if client_id:
+                    if client_id and client_id not in BUILTIN_CLIENTS:
                         self.logger.info(
-                            f"Cleaning up client {client_id} from realm {realm_spec.realm_name}"
+                            f"Cleaning up client {client_id} from realm {realm_name} in Keycloak"
                         )
-                        admin_client.delete_client(client_id, realm_spec.realm_name)
+                        admin_client.delete_client(client_id, realm_name)
+                    elif client_id in BUILTIN_CLIENTS:
+                        self.logger.debug(
+                            f"Skipping built-in client {client_id} (cannot be deleted)"
+                        )
             except Exception as e:
-                self.logger.warning(f"Failed to clean up realm clients: {e}")
+                self.logger.warning(
+                    f"Failed to clean up realm clients from Keycloak: {e}"
+                )
 
-            # Delete the realm itself
-            admin_client.delete_realm(realm_spec.realm_name)
-            self.logger.info(f"Deleted realm {realm_spec.realm_name} from Keycloak")
+            # Delete the realm itself from Keycloak
+            admin_client.delete_realm(realm_name)
+            self.logger.info(f"Deleted realm {realm_name} from Keycloak")
+
+            # Now delete KeycloakClient CRs (after Keycloak cleanup to avoid deadlock)
+            # We remove their finalizers first so they don't try to clean up Keycloak again
+            try:
+                custom_api = client.CustomObjectsApi(self.k8s_client)
+                clients = custom_api.list_namespaced_custom_object(
+                    group="keycloak.mdvr.nl",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakclients",
+                )
+                for client_cr in clients.get("items", []):
+                    client_spec_dict = client_cr.get("spec", {})
+                    realm_ref = client_spec_dict.get("realmRef", {})
+                    # Check if this client references the realm being deleted
+                    if (
+                        realm_ref.get("name") == realm_name
+                        and realm_ref.get("namespace") == namespace
+                    ):
+                        client_cr_name = client_cr["metadata"]["name"]
+                        self.logger.info(
+                            f"Cascading delete: Removing KeycloakClient CR {client_cr_name} "
+                            f"that references realm {realm_name}"
+                        )
+                        try:
+                            # Remove finalizers first to prevent deadlock
+                            client_cr["metadata"]["finalizers"] = []
+                            custom_api.patch_namespaced_custom_object(
+                                group="keycloak.mdvr.nl",
+                                version="v1",
+                                namespace=namespace,
+                                plural="keycloakclients",
+                                name=client_cr_name,
+                                body=client_cr,
+                            )
+                            # Then delete the CR
+                            custom_api.delete_namespaced_custom_object(
+                                group="keycloak.mdvr.nl",
+                                version="v1",
+                                namespace=namespace,
+                                plural="keycloakclients",
+                                name=client_cr_name,
+                            )
+                        except Exception as delete_error:
+                            self.logger.warning(
+                                f"Failed to delete KeycloakClient CR {client_cr_name}: {delete_error}"
+                            )
+            except Exception as e:
+                self.logger.warning(f"Failed to cascade delete KeycloakClient CRs: {e}")
 
         except Exception as e:
             self.logger.warning(
@@ -910,7 +1206,7 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Clean up Kubernetes resources associated with this realm
         try:
-            await self._delete_realm_k8s_resources(name, namespace, realm_spec)
+            await self._delete_realm_k8s_resources(name, namespace, realm_name)
         except Exception as e:
             self.logger.warning(f"Failed to clean up Kubernetes resources: {e}")
 
@@ -967,7 +1263,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             # Continue with deletion even if backup fails
 
     async def _delete_realm_k8s_resources(
-        self, name: str, namespace: str, realm_spec: KeycloakRealmSpec
+        self, name: str, namespace: str, realm_name: str
     ) -> None:
         """Delete Kubernetes resources associated with the realm."""
 
@@ -977,7 +1273,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         try:
             configmaps = core_api.list_namespaced_config_map(
                 namespace=namespace,
-                label_selector=f"keycloak.mdvr.nl/realm={realm_spec.realm_name},keycloak.mdvr.nl/backup!=true",
+                label_selector=f"keycloak.mdvr.nl/realm={realm_name},keycloak.mdvr.nl/backup!=true",
             )
             for cm in configmaps.items:
                 try:
@@ -997,7 +1293,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         try:
             secrets = core_api.list_namespaced_secret(
                 namespace=namespace,
-                label_selector=f"keycloak.mdvr.nl/realm={realm_spec.realm_name},keycloak.mdvr.nl/secret-type!=client-credentials",
+                label_selector=f"keycloak.mdvr.nl/realm={realm_name},keycloak.mdvr.nl/secret-type!=client-credentials",
             )
             for secret in secrets.items:
                 try:

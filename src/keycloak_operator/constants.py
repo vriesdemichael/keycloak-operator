@@ -84,7 +84,7 @@ DEFAULT_BACKOFF_FACTOR = 2.0
 DEFAULT_INITIAL_DELAY = 1.0
 
 # Production validation constants
-SUPPORTED_DATABASES = ["postgresql", "mysql", "mariadb", "oracle", "mssql", "cnpg"]
+SUPPORTED_DATABASES = ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
 DEPRECATED_DATABASES = ["h2"]  # No longer supported in production
 
 # Error message templates

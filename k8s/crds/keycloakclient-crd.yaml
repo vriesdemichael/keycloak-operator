@@ -39,23 +39,34 @@ spec:
                 type: string
                 description: "Client description"
 
-              # Target configuration
-              keycloak_instance_ref:
+              # Realm reference and authorization
+              realmRef:
                 type: object
-                description: "Reference to the target Keycloak instance"
+                description: "Reference to the parent KeycloakRealm"
                 properties:
                   name:
                     type: string
-                    description: "Name of the Keycloak instance"
+                    description: "Name of the KeycloakRealm CR"
                   namespace:
                     type: string
-                    description: "Namespace of the Keycloak instance"
+                    description: "Namespace of the KeycloakRealm CR"
+                  authorizationSecretRef:
+                    type: object
+                    description: "Secret containing the token to authorize with the realm"
+                    properties:
+                      name:
+                        type: string
+                        description: "Name of the realm's authorization secret"
+                      key:
+                        type: string
+                        description: "Key within the secret containing the token"
+                        default: "token"
+                    required:
+                    - name
                 required:
                 - name
-              realm:
-                type: string
-                description: "Target realm name"
-                default: "master"
+                - namespace
+                - authorizationSecretRef
 
               # Client type configuration
               public_client:
@@ -240,7 +251,7 @@ spec:
 
             required:
             - client_id
-            - keycloak_instance_ref
+            - realmRef
 
           status:
             type: object

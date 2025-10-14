@@ -113,26 +113,49 @@ make test                        # Quality + unit + integration tests with clust
 
 # Individual test types
 make test-unit                   # Fast unit tests only
-make test-integration            # Integration tests (auto-deploys operator)
+make test-integration            # Integration tests (reuses existing cluster for speed)
+make test-integration-clean      # Integration tests on fresh cluster (full teardown/setup)
 make quality                     # Linting and formatting
 ```
 
 **Cluster and Deployment Management:**
+
+The operator uses a **cluster reuse strategy** for fast iteration. Clusters are only recreated when explicitly requested.
+
 ```bash
 # One-command setup and deployment
 make dev-setup                   # Install deps + setup cluster
 make deploy                      # Deploy operator (auto-creates cluster if needed)
 
 # Cluster management
-make kind-setup                  # Create Kind cluster manually
+make kind-setup                  # Create bare Kind cluster (namespaces only)
+make setup-cluster               # Idempotent - creates cluster only if missing
 make kind-status                 # Check cluster status
-make kind-teardown              # Clean up cluster
+make kind-teardown              # Complete cleanup of cluster and resources
 
 # Operator monitoring
 make operator-status             # Check operator deployment status
 make operator-logs              # Show the most recent 200 log lines of the operator
 make operator-logs-tail         # Follow the operator logs (DO NOT USE THIS AS LLM, YOU WILL GET STUCK! ONLY FOR HUMANS)
 ```
+
+**Deployment Flow:**
+1. `make deploy` → `build-test` → `setup-cluster` → `install-cnpg` → deploy operator → deploy test Keycloak
+2. All steps are idempotent and safe to re-run
+3. `setup-cluster` reuses existing clusters (fast iteration)
+4. Use `make kind-teardown && make deploy` for a fresh start
+
+**Script Architecture:**
+
+The project uses a modular script architecture for maintainability:
+- `scripts/common.sh` - Shared logging functions (log, error, success, warn)
+- `scripts/config.sh` - Shared constants (cluster names, versions, namespaces)
+- `scripts/kind-setup.sh` - Creates bare Kind cluster with namespaces
+- `scripts/kind-teardown.sh` - Complete cleanup of cluster and resources
+- `scripts/install-cnpg.sh` - Installs CloudNativePG operator via Helm
+- `scripts/deploy-test-keycloak.sh` - Creates test Keycloak with CNPG database
+
+All scripts are idempotent and source common utilities for consistency.
 
 ### Critical Integration Testing Rules
 
