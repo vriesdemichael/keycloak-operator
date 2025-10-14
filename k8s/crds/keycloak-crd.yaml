@@ -60,7 +60,7 @@ spec:
                   username:
                     type: string
                     description: "Database username"
-                  password_secret:
+                  passwordSecret:
                     type: object
                     description: "Secret reference for database password"
                     properties:
@@ -71,36 +71,36 @@ spec:
                         default: "password"
                     required:
                     - name
-                  credentials_secret:
+                  credentialsSecret:
                     type: string
-                    description: "Kubernetes secret name with database credentials (alternative to username/password_secret)"
-                  connection_params:
+                    description: "Kubernetes secret name with database credentials (alternative to username/passwordSecret)"
+                  connectionParams:
                     type: object
                     description: "Additional database connection parameters"
                     additionalProperties:
                       type: string
-                  connection_pool:
+                  connectionPool:
                     type: object
                     description: "Database connection pool configuration"
                     properties:
-                      max_connections:
+                      maxConnections:
                         type: integer
                         default: 20
                         description: "Maximum number of connections"
-                      min_connections:
+                      minConnections:
                         type: integer
                         default: 5
                         description: "Minimum number of connections"
-                      connection_timeout:
+                      connectionTimeout:
                         type: string
                         default: "30s"
                         description: "Connection timeout"
-                  ssl_mode:
+                  sslMode:
                     type: string
                     enum: ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]
                     default: "require"
                     description: "SSL mode for database connections"
-                  migration_strategy:
+                  migrationStrategy:
                     type: string
                     enum: ["auto", "manual", "skip"]
                     default: "auto"
@@ -118,7 +118,7 @@ spec:
                   enabled:
                     type: boolean
                     default: false
-                  secret_name:
+                  secretName:
                     type: string
                     description: "Secret containing TLS certificate"
                   hostname:
@@ -134,12 +134,12 @@ spec:
                     type: string
                     enum: ["ClusterIP", "NodePort", "LoadBalancer"]
                     default: "ClusterIP"
-                  http_port:
+                  httpPort:
                     type: integer
                     minimum: 1
                     maximum: 65535
                     default: 8080
-                  https_port:
+                  httpsPort:
                     type: integer
                     minimum: 1
                     maximum: 65535
@@ -164,17 +164,17 @@ spec:
                     type: string
                     description: "Ingress path"
                     default: "/"
-                  tls_enabled:
+                  tlsEnabled:
                     type: boolean
                     default: true
-                  tls_secret_name:
+                  tlsSecretName:
                     type: string
                     description: "Secret name for ingress TLS certificate"
                   annotations:
                     type: object
                     additionalProperties:
                       type: string
-                  class_name:
+                  className:
                     type: string
                     description: "Ingress class name"
 
@@ -201,7 +201,7 @@ spec:
                   type: string
 
               # JVM configuration
-              jvm_options:
+              jvmOptions:
                 type: array
                 description: "JVM options for Keycloak (e.g., heap size, GC settings)"
                 items:
@@ -209,33 +209,33 @@ spec:
                 example: ["-Xms512m", "-Xmx2048m", "-XX:+UseG1GC"]
 
               # Service account
-              service_account:
+              serviceAccount:
                 type: string
                 description: "Service account name for Keycloak pods (for workload identity)"
 
               # Health probes
-              startup_probe:
+              startupProbe:
                 type: object
                 description: "Startup probe configuration (overrides defaults)"
                 x-kubernetes-preserve-unknown-fields: true
 
-              liveness_probe:
+              livenessProbe:
                 type: object
                 description: "Liveness probe configuration (overrides defaults)"
                 x-kubernetes-preserve-unknown-fields: true
 
-              readiness_probe:
+              readinessProbe:
                 type: object
                 description: "Readiness probe configuration (overrides defaults)"
                 x-kubernetes-preserve-unknown-fields: true
 
               # Security
-              pod_security_context:
+              podSecurityContext:
                 type: object
                 description: "Pod-level security context (fsGroup, runAsUser, etc.)"
                 x-kubernetes-preserve-unknown-fields: true
 
-              security_context:
+              securityContext:
                 type: object
                 description: "Container-level security context (capabilities, privileged, etc.)"
                 x-kubernetes-preserve-unknown-fields: true
@@ -271,23 +271,23 @@ spec:
                       type: string
                     message:
                       type: string
-                    last_transition_time:
+                    lastTransitionTime:
                       type: string
                       format: date-time
                   required:
                   - type
                   - status
-              observed_generation:
+              observedGeneration:
                 type: integer
                 description: "Generation of spec that was last processed"
               # Connection details
-              admin_username:
+              adminUsername:
                 type: string
-              admin_secret:
+              adminSecret:
                 type: string
-              internal_url:
+              internalUrl:
                 type: string
-              external_url:
+              externalUrl:
                 type: string
               # Service endpoints
               endpoints:
@@ -309,16 +309,13 @@ spec:
               service:
                 type: string
                 description: "Name of the Keycloak service"
-              adminSecret:
-                type: string
-                description: "Name of the admin credentials secret"
               # Health status
-              ready_replicas:
+              readyReplicas:
                 type: integer
-              last_health_check:
+              lastHealthCheck:
                 type: string
                 format: date-time
-              database_status:
+              databaseStatus:
                 type: string
                 enum: ["Connected", "Connecting", "Failed", "Unknown"]
     additionalPrinterColumns:
@@ -330,10 +327,10 @@ spec:
       jsonPath: .spec.replicas
     - name: Ready
       type: integer
-      jsonPath: .status.ready_replicas
+      jsonPath: .status.readyReplicas
     - name: External URL
       type: string
-      jsonPath: .status.external_url
+      jsonPath: .status.externalUrl
     - name: Age
       type: date
       jsonPath: .metadata.creationTimestamp

@@ -27,12 +27,12 @@ spec:
             description: "Specification for a Keycloak client"
             properties:
               # Core client configuration
-              client_id:
+              clientId:
                 type: string
                 description: "Unique client identifier"
                 minLength: 1
                 maxLength: 255
-              client_name:
+              clientName:
                 type: string
                 description: "Human-readable client name"
               description:
@@ -69,11 +69,11 @@ spec:
                 - authorizationSecretRef
 
               # Client type configuration
-              public_client:
+              publicClient:
                 type: boolean
                 description: "Whether this is a public client"
                 default: false
-              bearer_only:
+              bearerOnly:
                 type: boolean
                 description: "Bearer-only client"
                 default: false
@@ -84,18 +84,18 @@ spec:
                 default: "openid-connect"
 
               # OAuth2/OIDC configuration
-              redirect_uris:
+              redirectUris:
                 type: array
                 description: "Valid redirect URIs"
                 items:
                   type: string
                   format: uri
-              web_origins:
+              webOrigins:
                 type: array
                 description: "Valid web origins for CORS"
                 items:
                   type: string
-              post_logout_redirect_uris:
+              postLogoutRedirectUris:
                 type: array
                 description: "Valid post-logout redirect URIs"
                 items:
@@ -110,77 +110,77 @@ spec:
                   enabled:
                     type: boolean
                     default: true
-                  always_display_in_console:
+                  alwaysDisplayInConsole:
                     type: boolean
                     default: false
-                  client_authenticator_type:
+                  clientAuthenticatorType:
                     type: string
                     enum: ["client-secret", "client-jwt", "client-secret-jwt", "client-x509"]
                     default: "client-secret"
                   # Access settings
-                  standard_flow_enabled:
+                  standardFlowEnabled:
                     type: boolean
                     description: "Enable standard flow (authorization code flow)"
                     default: true
-                  implicit_flow_enabled:
+                  implicitFlowEnabled:
                     type: boolean
                     description: "Enable implicit flow"
                     default: false
-                  direct_access_grants_enabled:
+                  directAccessGrantsEnabled:
                     type: boolean
                     description: "Enable direct access grants (password flow)"
                     default: true
-                  service_accounts_enabled:
+                  serviceAccountsEnabled:
                     type: boolean
                     description: "Enable service accounts"
                     default: false
                   # Advanced settings
-                  consent_required:
+                  consentRequired:
                     type: boolean
                     default: false
-                  display_on_consent_screen:
+                  displayOnConsentScreen:
                     type: boolean
                     default: true
-                  include_in_token_scope:
+                  includeInTokenScope:
                     type: boolean
                     default: true
                   # Token settings
-                  access_token_lifespan:
+                  accessTokenLifespan:
                     type: integer
                     description: "Access token lifespan in seconds"
                     minimum: 1
-                  refresh_token_lifespan:
+                  refreshTokenLifespan:
                     type: integer
                     description: "Refresh token lifespan in seconds"
                     minimum: 1
 
               # Authentication flows
-              authentication_flows:
+              authenticationFlows:
                 type: object
                 description: "Client authentication flow overrides"
                 properties:
-                  browser_flow:
+                  browserFlow:
                     type: string
                     description: "Browser authentication flow"
-                  direct_grant_flow:
+                  directGrantFlow:
                     type: string
                     description: "Direct grant authentication flow"
-                  client_authentication_flow:
+                  clientAuthenticationFlow:
                     type: string
                     description: "Client authentication flow"
 
               # Scopes and mappers
-              default_client_scopes:
+              defaultClientScopes:
                 type: array
                 description: "Default client scopes"
                 items:
                   type: string
-              optional_client_scopes:
+              optionalClientScopes:
                 type: array
                 description: "Optional client scopes"
                 items:
                   type: string
-              protocol_mappers:
+              protocolMappers:
                 type: array
                 description: "Protocol mappers"
                 items:
@@ -191,7 +191,7 @@ spec:
                     protocol:
                       type: string
                       default: "openid-connect"
-                    protocol_mapper:
+                    protocolMapper:
                       type: string
                     config:
                       type: object
@@ -199,26 +199,26 @@ spec:
                         type: string
                   required:
                   - name
-                  - protocol_mapper
+                  - protocolMapper
 
               # Roles and permissions
-              client_roles:
+              clientRoles:
                 type: array
                 description: "Client-specific roles to create"
                 items:
                   type: string
 
-              service_account_roles:
+              serviceAccountRoles:
                 type: object
                 description: "Role mappings for the client's service account user"
                 properties:
-                  realm_roles:
+                  realmRoles:
                     type: array
                     description: "Realm-level roles to assign to the service account"
                     items:
                       type: string
                     example: ["offline_access", "uma_authorization"]
-                  client_roles:
+                  clientRoles:
                     type: object
                     description: "Client-level roles to assign to the service account"
                     additionalProperties:
@@ -237,20 +237,20 @@ spec:
                   type: string
 
               # Secret management
-              regenerate_secret:
+              regenerateSecret:
                 type: boolean
                 description: "Regenerate client secret on update"
                 default: false
-              secret_name:
+              secretName:
                 type: string
                 description: "Name of Kubernetes secret for client credentials"
-              manage_secret:
+              manageSecret:
                 type: boolean
                 description: "Create and manage Kubernetes secret for credentials"
                 default: true
 
             required:
-            - client_id
+            - clientId
             - realmRef
 
           status:
@@ -279,27 +279,27 @@ spec:
                       type: string
                     message:
                       type: string
-                    last_transition_time:
+                    lastTransitionTime:
                       type: string
                       format: date-time
                   required:
                   - type
                   - status
-              observed_generation:
+              observedGeneration:
                 type: integer
               # Client information
-              client_id:
+              clientId:
                 type: string
-              internal_id:
+              internalId:
                 type: string
               realm:
                 type: string
-              public_client:
+              publicClient:
                 type: boolean
               # Connection information
-              keycloak_instance:
+              keycloakInstance:
                 type: string
-              credentials_secret:
+              credentialsSecret:
                 type: string
               # Endpoints
               endpoints:
@@ -315,21 +315,21 @@ spec:
                     type: string
                   issuer:
                     type: string
-                  end_session:
+                  endSession:
                     type: string
               # Health monitoring
-              last_health_check:
+              lastHealthCheck:
                 type: string
                 format: date-time
-              last_updated:
+              lastUpdated:
                 type: string
                 format: date-time
               # Statistics
-              created_roles:
+              createdRoles:
                 type: array
                 items:
                   type: string
-              applied_mappers:
+              appliedMappers:
                 type: array
                 items:
                   type: string
@@ -339,16 +339,16 @@ spec:
       jsonPath: .status.phase
     - name: Client ID
       type: string
-      jsonPath: .spec.client_id
+      jsonPath: .spec.clientId
     - name: Realm
       type: string
       jsonPath: .spec.realm
     - name: Keycloak
       type: string
-      jsonPath: .status.keycloak_instance
+      jsonPath: .status.keycloakInstance
     - name: Public
       type: boolean
-      jsonPath: .status.public_client
+      jsonPath: .status.publicClient
     - name: Age
       type: date
       jsonPath: .metadata.creationTimestamp

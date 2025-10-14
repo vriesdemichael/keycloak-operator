@@ -16,6 +16,7 @@ Violating these rules will cause test failures, especially in parallel execution
 """
 
 import asyncio
+import logging
 import os
 import tempfile
 from collections.abc import AsyncGenerator
@@ -30,6 +31,48 @@ from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
 from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
 from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+from .cleanup_utils import (
+    CleanupTracker,
+    cleanup_namespace_resources,
+    delete_custom_resource_with_retry,
+    ensure_clean_test_environment,
+    force_delete_namespace,
+)
+
+logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session")
+def cleanup_tracker():
+    """Track cleanup failures across all tests for final reporting."""
+    tracker = CleanupTracker()
+    yield tracker
+
+    # Report any cleanup failures at the end of the session
+    if tracker.has_failures():
+        report = tracker.get_report()
+        logger.error(f"\n{'=' * 60}\n{report}\n{'=' * 60}")
+        # Don't fail tests, just warn
+        print(f"\n⚠️  WARNING: {report}\n")
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def check_test_environment(k8s_core_v1, k8s_custom_objects):
+    """Check test environment is clean before running tests."""
+    logger.info("Checking test environment for stale resources...")
+    is_clean, report = await ensure_clean_test_environment(
+        k8s_core_v1=k8s_core_v1,
+        k8s_custom_objects=k8s_custom_objects,
+    )
+
+    if not is_clean:
+        logger.warning(f"Test environment not clean:\n{report}")
+        print(
+            f"\n⚠️  WARNING: Found stale test resources. Consider running cleanup:\n{report}\n"
+        )
+    else:
+        logger.info("✓ Test environment is clean")
 
 
 @pytest.fixture(scope="session")
@@ -184,8 +227,18 @@ def operator_namespace_cnpg(
 
 
 @pytest.fixture
-async def test_namespace(k8s_core_v1) -> AsyncGenerator[str]:
-    """Create a test namespace and clean it up after the test."""
+async def test_namespace(
+    k8s_core_v1, k8s_custom_objects, cleanup_tracker
+) -> AsyncGenerator[str]:
+    """
+    Create a test namespace with robust cleanup.
+
+    This fixture ensures:
+    - Unique namespace per test
+    - Cleanup of all Keycloak resources before namespace deletion
+    - Force-delete fallback if resources get stuck
+    - Tracking of cleanup failures
+    """
     namespace_name = f"test-{os.urandom(4).hex()}"
 
     # Create namespace
@@ -197,17 +250,58 @@ async def test_namespace(k8s_core_v1) -> AsyncGenerator[str]:
 
     try:
         k8s_core_v1.create_namespace(namespace)
+        logger.info(f"Created test namespace: {namespace_name}")
         yield namespace_name
     finally:
-        # Cleanup namespace
+        # Robust cleanup
+        logger.info(f"Cleaning up test namespace: {namespace_name}")
+
         try:
-            k8s_core_v1.delete_namespace(
-                name=namespace_name,
-                body=client.V1DeleteOptions(propagation_policy="Foreground"),
+            # Step 1: Clean up Keycloak resources first
+            success, failed_resources = await cleanup_namespace_resources(
+                k8s_custom_objects=k8s_custom_objects,
+                namespace=namespace_name,
+                timeout=120,
             )
-        except ApiException as e:
-            if e.status != 404:  # Ignore not found errors
-                print(f"Warning: Failed to cleanup namespace {namespace_name}: {e}")
+
+            if not success:
+                logger.warning(
+                    f"Some resources failed to clean up in {namespace_name}: {failed_resources}"
+                )
+                for resource in failed_resources:
+                    cleanup_tracker.record_failure(
+                        resource_type="custom_resource",
+                        name=resource,
+                        namespace=namespace_name,
+                        error="Timeout during cleanup",
+                    )
+
+            # Step 2: Delete namespace (will cascade delete remaining resources)
+            success = await force_delete_namespace(
+                k8s_core_v1=k8s_core_v1,
+                namespace=namespace_name,
+                timeout=60,
+            )
+
+            if not success:
+                logger.error(f"Failed to delete namespace {namespace_name}")
+                cleanup_tracker.record_failure(
+                    resource_type="namespace",
+                    name=namespace_name,
+                    namespace="",
+                    error="Timeout during namespace deletion",
+                )
+            else:
+                logger.info(f"✓ Successfully cleaned up namespace: {namespace_name}")
+
+        except Exception as e:
+            logger.error(f"Error during namespace cleanup for {namespace_name}: {e}")
+            cleanup_tracker.record_failure(
+                resource_type="namespace",
+                name=namespace_name,
+                namespace="",
+                error=str(e),
+            )
 
 
 @pytest.fixture
@@ -831,3 +925,205 @@ async def keycloak_port_forward():
             proc.wait(timeout=5)
         except subprocess.TimeoutExpired:
             proc.kill()
+
+
+# ============================================================================
+# Managed Resource Fixtures (with robust cleanup)
+# ============================================================================
+
+
+@pytest.fixture
+async def managed_realm(
+    k8s_custom_objects,
+    test_namespace: str,
+    cleanup_tracker: CleanupTracker,
+):
+    """
+    Create and manage a KeycloakRealm with automatic cleanup.
+
+    Usage:
+        async def test_something(managed_realm):
+            realm_name, realm_manifest = await managed_realm(
+                realm_name="my-realm",
+                operator_namespace="keycloak-system"
+            )
+            # Test code here
+            # Cleanup happens automatically
+    """
+    created_realms = []
+
+    async def _create_realm(
+        realm_name: str,
+        operator_namespace: str,
+        admin_secret: str = "keycloak-admin-credentials",
+        **realm_spec_overrides,
+    ) -> tuple[str, dict[str, Any]]:
+        """
+        Create a realm and track it for cleanup.
+
+        Returns:
+            Tuple of (realm_name, realm_manifest)
+        """
+        realm_manifest = {
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": test_namespace},
+            "spec": {
+                "realmName": realm_name,
+                "operatorRef": {
+                    "namespace": operator_namespace,
+                    "authorizationSecretRef": {"name": admin_secret, "key": "token"},
+                },
+                **realm_spec_overrides,
+            },
+        }
+
+        k8s_custom_objects.create_namespaced_custom_object(
+            group="keycloak.mdvr.nl",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            body=realm_manifest,
+        )
+
+        logger.info(f"Created realm {realm_name} in namespace {test_namespace}")
+        created_realms.append(realm_name)
+
+        return realm_name, realm_manifest
+
+    yield _create_realm
+
+    # Cleanup all created realms
+    for realm_name in created_realms:
+        try:
+            success = await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                force_after=60,
+            )
+
+            if not success:
+                cleanup_tracker.record_failure(
+                    resource_type="keycloakrealm",
+                    name=realm_name,
+                    namespace=test_namespace,
+                    error="Cleanup timeout",
+                )
+            else:
+                logger.info(f"✓ Cleaned up realm {realm_name}")
+
+        except Exception as e:
+            logger.error(f"Error cleaning up realm {realm_name}: {e}")
+            cleanup_tracker.record_failure(
+                resource_type="keycloakrealm",
+                name=realm_name,
+                namespace=test_namespace,
+                error=str(e),
+            )
+
+
+@pytest.fixture
+async def managed_client(
+    k8s_custom_objects,
+    test_namespace: str,
+    cleanup_tracker: CleanupTracker,
+):
+    """
+    Create and manage a KeycloakClient with automatic cleanup.
+
+    Usage:
+        async def test_something(managed_client):
+            client_name, client_manifest = await managed_client(
+                client_name="my-client",
+                realm_name="my-realm",
+                client_id="test-client"
+            )
+            # Test code here
+            # Cleanup happens automatically
+    """
+    created_clients = []
+
+    async def _create_client(
+        client_name: str,
+        realm_name: str,
+        client_id: str,
+        realm_namespace: str | None = None,
+        auth_secret: str = "realm-auth",
+        **client_spec_overrides,
+    ) -> tuple[str, dict[str, Any]]:
+        """
+        Create a client and track it for cleanup.
+
+        Returns:
+            Tuple of (client_name, client_manifest)
+        """
+        if realm_namespace is None:
+            realm_namespace = test_namespace
+
+        client_manifest = {
+            "apiVersion": "keycloak.mdvr.nl/v1",
+            "kind": "KeycloakClient",
+            "metadata": {"name": client_name, "namespace": test_namespace},
+            "spec": {
+                "clientId": client_id,
+                "realmRef": {
+                    "name": realm_name,
+                    "namespace": realm_namespace,
+                    "authorizationSecretRef": {"name": auth_secret, "key": "token"},
+                },
+                **client_spec_overrides,
+            },
+        }
+
+        k8s_custom_objects.create_namespaced_custom_object(
+            group="keycloak.mdvr.nl",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            body=client_manifest,
+        )
+
+        logger.info(f"Created client {client_name} in namespace {test_namespace}")
+        created_clients.append(client_name)
+
+        return client_name, client_manifest
+
+    yield _create_client
+
+    # Cleanup all created clients
+    for client_name in created_clients:
+        try:
+            success = await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=120,
+                force_after=60,
+            )
+
+            if not success:
+                cleanup_tracker.record_failure(
+                    resource_type="keycloakclient",
+                    name=client_name,
+                    namespace=test_namespace,
+                    error="Cleanup timeout",
+                )
+            else:
+                logger.info(f"✓ Cleaned up client {client_name}")
+
+        except Exception as e:
+            logger.error(f"Error cleaning up client {client_name}: {e}")
+            cleanup_tracker.record_failure(
+                resource_type="keycloakclient",
+                name=client_name,
+                namespace=test_namespace,
+                error=str(e),
+            )

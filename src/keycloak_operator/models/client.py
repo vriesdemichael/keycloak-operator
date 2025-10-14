@@ -38,7 +38,7 @@ class KeycloakClientProtocolMapper(BaseModel):
 
     name: str = Field(..., description="Mapper name")
     protocol: str = Field("openid-connect", description="Protocol type")
-    protocol_mapper: str = Field(..., description="Mapper type")
+    protocol_mapper: str = Field(..., alias="protocolMapper", description="Mapper type")
     config: dict[str, Any] = Field(
         default_factory=dict, description="Mapper configuration"
     )
@@ -55,50 +55,76 @@ class KeycloakClientProtocolMapper(BaseModel):
 class KeycloakClientAuthenticationFlow(BaseModel):
     """Configuration for client authentication flows."""
 
-    browser_flow: str | None = Field(None, description="Browser authentication flow")
+    model_config = {"populate_by_name": True}
+
+    browser_flow: str | None = Field(
+        None, alias="browserFlow", description="Browser authentication flow"
+    )
     direct_grant_flow: str | None = Field(
-        None, description="Direct grant authentication flow"
+        None, alias="directGrantFlow", description="Direct grant authentication flow"
     )
     client_authentication_flow: str | None = Field(
-        None, description="Client authentication flow"
+        None, alias="clientAuthenticationFlow", description="Client authentication flow"
     )
 
 
 class KeycloakClientSettings(BaseModel):
     """Advanced client settings."""
 
+    model_config = {"populate_by_name": True}
+
     # Basic settings
     enabled: bool = Field(True, description="Whether the client is enabled")
     always_display_in_console: bool = Field(
-        False, description="Always display in admin console"
+        False,
+        alias="alwaysDisplayInConsole",
+        description="Always display in admin console",
     )
     client_authenticator_type: str = Field(
-        "client-secret", description="Client authenticator type"
+        "client-secret",
+        alias="clientAuthenticatorType",
+        description="Client authenticator type",
     )
 
     # Access settings
     standard_flow_enabled: bool = Field(
-        True, description="Enable standard flow (authorization code flow)"
+        True,
+        alias="standardFlowEnabled",
+        description="Enable standard flow (authorization code flow)",
     )
-    implicit_flow_enabled: bool = Field(False, description="Enable implicit flow")
+    implicit_flow_enabled: bool = Field(
+        False, alias="implicitFlowEnabled", description="Enable implicit flow"
+    )
     direct_access_grants_enabled: bool = Field(
-        True, description="Enable direct access grants (password flow)"
+        True,
+        alias="directAccessGrantsEnabled",
+        description="Enable direct access grants (password flow)",
     )
-    service_accounts_enabled: bool = Field(False, description="Enable service accounts")
+    service_accounts_enabled: bool = Field(
+        False, alias="serviceAccountsEnabled", description="Enable service accounts"
+    )
 
     # Advanced settings
-    consent_required: bool = Field(False, description="Require user consent")
-    display_on_consent_screen: bool = Field(
-        True, description="Display on consent screen"
+    consent_required: bool = Field(
+        False, alias="consentRequired", description="Require user consent"
     )
-    include_in_token_scope: bool = Field(True, description="Include in token scope")
+    display_on_consent_screen: bool = Field(
+        True, alias="displayOnConsentScreen", description="Display on consent screen"
+    )
+    include_in_token_scope: bool = Field(
+        True, alias="includeInTokenScope", description="Include in token scope"
+    )
 
     # Token settings
     access_token_lifespan: int | None = Field(
-        None, description="Access token lifespan in seconds"
+        None,
+        alias="accessTokenLifespan",
+        description="Access token lifespan in seconds",
     )
     refresh_token_lifespan: int | None = Field(
-        None, description="Refresh token lifespan in seconds"
+        None,
+        alias="refreshTokenLifespan",
+        description="Refresh token lifespan in seconds",
     )
 
     @field_validator("client_authenticator_type")
@@ -118,12 +144,16 @@ class KeycloakClientSettings(BaseModel):
 class ServiceAccountRoles(BaseModel):
     """Role mappings for service account users."""
 
+    model_config = {"populate_by_name": True}
+
     realm_roles: list[str] = Field(
         default_factory=list,
+        alias="realmRoles",
         description="Realm-level roles to assign to the service account",
     )
     client_roles: dict[str, list[str]] = Field(
         default_factory=dict,
+        alias="clientRoles",
         description=(
             "Client-level roles to assign to the service account (client_id -> role names)"
         ),
@@ -141,8 +171,12 @@ class KeycloakClientSpec(BaseModel):
     model_config = {"populate_by_name": True}
 
     # Core client configuration
-    client_id: str = Field(..., description="Unique client identifier")
-    client_name: str | None = Field(None, description="Human-readable client name")
+    client_id: str = Field(
+        ..., alias="clientId", description="Unique client identifier"
+    )
+    client_name: str | None = Field(
+        None, alias="clientName", description="Human-readable client name"
+    )
     description: str | None = Field(None, description="Client description")
 
     # Realm reference and authorization
@@ -151,19 +185,27 @@ class KeycloakClientSpec(BaseModel):
     )
 
     # Client type configuration
-    public_client: bool = Field(False, description="Whether this is a public client")
-    bearer_only: bool = Field(False, description="Bearer-only client")
+    public_client: bool = Field(
+        False, alias="publicClient", description="Whether this is a public client"
+    )
+    bearer_only: bool = Field(
+        False, alias="bearerOnly", description="Bearer-only client"
+    )
     protocol: str = Field("openid-connect", description="Client protocol")
 
     # OAuth2/OIDC configuration
     redirect_uris: list[str] = Field(
-        default_factory=list, description="Valid redirect URIs"
+        default_factory=list, alias="redirectUris", description="Valid redirect URIs"
     )
     web_origins: list[str] = Field(
-        default_factory=list, description="Valid web origins for CORS"
+        default_factory=list,
+        alias="webOrigins",
+        description="Valid web origins for CORS",
     )
     post_logout_redirect_uris: list[str] = Field(
-        default_factory=list, description="Valid post-logout redirect URIs"
+        default_factory=list,
+        alias="postLogoutRedirectUris",
+        description="Valid post-logout redirect URIs",
     )
 
     # Client settings
@@ -174,29 +216,37 @@ class KeycloakClientSpec(BaseModel):
     # Service account configuration
     service_account_roles: ServiceAccountRoles = Field(
         default_factory=ServiceAccountRoles,
+        alias="serviceAccountRoles",
         description="Role mappings for the client's service account user",
     )
 
     # Authentication flows
     authentication_flows: KeycloakClientAuthenticationFlow = Field(
         default_factory=KeycloakClientAuthenticationFlow,
+        alias="authenticationFlows",
         description="Client authentication flow overrides",
     )
 
     # Scopes and mappers
     default_client_scopes: list[str] = Field(
-        default_factory=list, description="Default client scopes"
+        default_factory=list,
+        alias="defaultClientScopes",
+        description="Default client scopes",
     )
     optional_client_scopes: list[str] = Field(
-        default_factory=list, description="Optional client scopes"
+        default_factory=list,
+        alias="optionalClientScopes",
+        description="Optional client scopes",
     )
     protocol_mappers: list[KeycloakClientProtocolMapper] = Field(
-        default_factory=list, description="Protocol mappers"
+        default_factory=list, alias="protocolMappers", description="Protocol mappers"
     )
 
     # Roles and permissions
     client_roles: list[str] = Field(
-        default_factory=list, description="Client-specific roles to create"
+        default_factory=list,
+        alias="clientRoles",
+        description="Client-specific roles to create",
     )
 
     # Advanced configuration
@@ -206,15 +256,21 @@ class KeycloakClientSpec(BaseModel):
 
     # Secret management
     regenerate_secret: bool = Field(
-        False, description="Regenerate client secret on update"
+        False,
+        alias="regenerateSecret",
+        description="Regenerate client secret on update",
     )
     secret_name: str | None = Field(
-        None, description="Name of Kubernetes secret for client credentials"
+        None,
+        alias="secretName",
+        description="Name of Kubernetes secret for client credentials",
     )
 
     # GitOps settings
     manage_secret: bool = Field(
-        True, description="Create and manage Kubernetes secret for credentials"
+        True,
+        alias="manageSecret",
+        description="Create and manage Kubernetes secret for credentials",
     )
 
     @field_validator("client_id")
@@ -390,24 +446,32 @@ class KeycloakClientSpec(BaseModel):
 class KeycloakClientCondition(BaseModel):
     """Status condition for KeycloakClient resource."""
 
+    model_config = {"populate_by_name": True}
+
     type: str = Field(..., description="Condition type")
     status: str = Field(..., description="Condition status (True/False/Unknown)")
     reason: str | None = Field(None, description="Reason for the condition")
     message: str | None = Field(None, description="Human-readable message")
     last_transition_time: str | None = Field(
-        None, description="Last time the condition transitioned"
+        None,
+        alias="lastTransitionTime",
+        description="Last time the condition transitioned",
     )
 
 
 class KeycloakClientEndpoints(BaseModel):
     """Endpoints for the KeycloakClient."""
 
+    model_config = {"populate_by_name": True}
+
     auth: str | None = Field(None, description="Authorization endpoint")
     token: str | None = Field(None, description="Token endpoint")
     userinfo: str | None = Field(None, description="UserInfo endpoint")
     jwks: str | None = Field(None, description="JWKS endpoint")
     issuer: str | None = Field(None, description="Issuer URL")
-    end_session: str | None = Field(None, description="End session (logout) endpoint")
+    end_session: str | None = Field(
+        None, alias="endSession", description="End session (logout) endpoint"
+    )
 
 
 class KeycloakClientStatus(BaseModel):
@@ -417,6 +481,8 @@ class KeycloakClientStatus(BaseModel):
     This model represents the current state of a client as managed
     by the operator.
     """
+
+    model_config = {"populate_by_name": True}
 
     # Overall status
     phase: str = Field("Pending", description="Current phase of the client")
@@ -428,23 +494,31 @@ class KeycloakClientStatus(BaseModel):
         default_factory=list, description="Detailed status conditions"
     )
     observed_generation: int | None = Field(
-        None, description="Generation of the spec that was last processed"
+        None,
+        alias="observedGeneration",
+        description="Generation of the spec that was last processed",
     )
 
     # Client information
-    client_id: str | None = Field(None, description="Keycloak client ID")
-    internal_id: str | None = Field(None, description="Internal Keycloak client UUID")
+    client_id: str | None = Field(
+        None, alias="clientId", description="Keycloak client ID"
+    )
+    internal_id: str | None = Field(
+        None, alias="internalId", description="Internal Keycloak client UUID"
+    )
     realm: str | None = Field(None, description="Target realm")
     public_client: bool | None = Field(
-        None, description="Whether this is a public client"
+        None, alias="publicClient", description="Whether this is a public client"
     )
 
     # Connection information
     keycloak_instance: str | None = Field(
-        None, description="Keycloak instance reference (namespace/name)"
+        None,
+        alias="keycloakInstance",
+        description="Keycloak instance reference (namespace/name)",
     )
     credentials_secret: str | None = Field(
-        None, description="Name of the credentials secret"
+        None, alias="credentialsSecret", description="Name of the credentials secret"
     )
 
     # Endpoints
@@ -454,18 +528,22 @@ class KeycloakClientStatus(BaseModel):
 
     # Health and monitoring
     last_health_check: str | None = Field(
-        None, description="Timestamp of last health check"
+        None, alias="lastHealthCheck", description="Timestamp of last health check"
     )
     last_updated: str | None = Field(
-        None, description="Timestamp of last successful update"
+        None, alias="lastUpdated", description="Timestamp of last successful update"
     )
 
     # Statistics
     created_roles: list[str] = Field(
-        default_factory=list, description="Client roles that were created"
+        default_factory=list,
+        alias="createdRoles",
+        description="Client roles that were created",
     )
     applied_mappers: list[str] = Field(
-        default_factory=list, description="Protocol mappers that were applied"
+        default_factory=list,
+        alias="appliedMappers",
+        description="Protocol mappers that were applied",
     )
 
 

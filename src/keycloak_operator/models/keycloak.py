@@ -19,6 +19,8 @@ class SecretReference(BaseModel):
     Cross-namespace secret references are not supported for security reasons.
     """
 
+    model_config = {"populate_by_name": True}
+
     name: str = Field(..., description="Name of the secret")
     key: str = Field("password", description="Key within the secret")
 
@@ -35,9 +37,13 @@ class KeycloakInstanceRef(BaseModel):
 class KeycloakTLSConfig(BaseModel):
     """TLS configuration for Keycloak instance."""
 
+    model_config = {"populate_by_name": True}
+
     enabled: bool = Field(False, description="Enable TLS/SSL")
     secret_name: str | None = Field(
-        None, description="Name of secret containing TLS certificate and key"
+        None,
+        alias="secretName",
+        description="Name of secret containing TLS certificate and key",
     )
     hostname: str | None = Field(None, description="Hostname for TLS certificate (SNI)")
 
@@ -45,9 +51,15 @@ class KeycloakTLSConfig(BaseModel):
 class KeycloakServiceConfig(BaseModel):
     """Service configuration for Keycloak instance."""
 
+    model_config = {"populate_by_name": True}
+
     type: str = Field("ClusterIP", description="Kubernetes service type")
-    http_port: int = Field(8080, description="HTTP port number", ge=1, le=65535)
-    https_port: int = Field(8443, description="HTTPS port number", ge=1, le=65535)
+    http_port: int = Field(
+        8080, alias="httpPort", description="HTTP port number", ge=1, le=65535
+    )
+    https_port: int = Field(
+        8443, alias="httpsPort", description="HTTPS port number", ge=1, le=65535
+    )
     annotations: dict[str, str] = Field(
         default_factory=dict, description="Service annotations"
     )
@@ -64,16 +76,22 @@ class KeycloakServiceConfig(BaseModel):
 class KeycloakIngressConfig(BaseModel):
     """Ingress configuration for Keycloak instance."""
 
+    model_config = {"populate_by_name": True}
+
     enabled: bool = Field(False, description="Enable ingress")
-    class_name: str | None = Field(None, description="Ingress class name")
+    class_name: str | None = Field(
+        None, alias="className", description="Ingress class name"
+    )
     host: str | None = Field(None, description="Ingress hostname")
     path: str = Field("/", description="Ingress path")
     annotations: dict[str, str] = Field(
         default_factory=dict, description="Ingress annotations"
     )
-    tls_enabled: bool = Field(True, description="Enable TLS for ingress")
+    tls_enabled: bool = Field(
+        True, alias="tlsEnabled", description="Enable TLS for ingress"
+    )
     tls_secret_name: str | None = Field(
-        None, description="Secret containing TLS certificate"
+        None, alias="tlsSecretName", description="Secret containing TLS certificate"
     )
 
 
@@ -98,6 +116,8 @@ class KeycloakDatabaseConfig(BaseModel):
     For CloudNativePG clusters, use standard PostgreSQL connection details.
     """
 
+    model_config = {"populate_by_name": True}
+
     type: str = Field(
         ..., description="Database type (no default - must be explicitly specified)"
     )
@@ -112,27 +132,38 @@ class KeycloakDatabaseConfig(BaseModel):
 
     # Secret management options
     password_secret: SecretReference | None = Field(
-        None, description="Secret reference for database password (recommended)"
+        None,
+        alias="passwordSecret",
+        description="Secret reference for database password (recommended)",
     )
     credentials_secret: str | None = Field(
-        None, description="Kubernetes secret name with database credentials"
+        None,
+        alias="credentialsSecret",
+        description="Kubernetes secret name with database credentials",
     )
 
     # Advanced configuration
     connection_params: dict[str, str] = Field(
-        default_factory=dict, description="Additional database connection parameters"
+        default_factory=dict,
+        alias="connectionParams",
+        description="Additional database connection parameters",
     )
     connection_pool: dict[str, Any] = Field(
         default_factory=lambda: {
-            "max_connections": 20,
-            "min_connections": 5,
-            "connection_timeout": "30s",
+            "maxConnections": 20,
+            "minConnections": 5,
+            "connectionTimeout": "30s",
         },
+        alias="connectionPool",
         description="Database connection pool configuration",
     )
-    ssl_mode: str = Field("require", description="SSL mode for database connections")
+    ssl_mode: str = Field(
+        "require", alias="sslMode", description="SSL mode for database connections"
+    )
     migration_strategy: str = Field(
-        "auto", description="Database migration strategy (auto, manual, skip)"
+        "auto",
+        alias="migrationStrategy",
+        description="Database migration strategy (auto, manual, skip)",
     )
 
     @field_validator("type")
@@ -226,6 +257,8 @@ class KeycloakSpec(BaseModel):
     including resources, networking, persistence, and authentication.
     """
 
+    model_config = {"populate_by_name": True}
+
     # Core configuration
     image: str = Field(
         "quay.io/keycloak/keycloak:26.4.0", description="Keycloak container image"
@@ -259,7 +292,7 @@ class KeycloakSpec(BaseModel):
         default_factory=dict, description="Additional environment variables"
     )
     jvm_options: list[str] = Field(
-        default_factory=list, description="JVM options for Keycloak"
+        default_factory=list, alias="jvmOptions", description="JVM options for Keycloak"
     )
 
     # Operational settings
@@ -271,6 +304,7 @@ class KeycloakSpec(BaseModel):
             "timeoutSeconds": 5,
             "failureThreshold": 30,
         },
+        alias="startupProbe",
         description="Startup probe configuration",
     )
     liveness_probe: dict[str, Any] = Field(
@@ -281,6 +315,7 @@ class KeycloakSpec(BaseModel):
             "timeoutSeconds": 5,
             "failureThreshold": 3,
         },
+        alias="livenessProbe",
         description="Liveness probe configuration",
     )
     readiness_probe: dict[str, Any] = Field(
@@ -291,18 +326,25 @@ class KeycloakSpec(BaseModel):
             "timeoutSeconds": 5,
             "failureThreshold": 3,
         },
+        alias="readinessProbe",
         description="Readiness probe configuration",
     )
 
     # Security and RBAC
     pod_security_context: dict[str, Any] = Field(
-        default_factory=dict, description="Pod security context"
+        default_factory=dict,
+        alias="podSecurityContext",
+        description="Pod security context",
     )
     security_context: dict[str, Any] = Field(
-        default_factory=dict, description="Container security context"
+        default_factory=dict,
+        alias="securityContext",
+        description="Container security context",
     )
     service_account: str | None = Field(
-        None, description="Service account to use for Keycloak pods"
+        None,
+        alias="serviceAccount",
+        description="Service account to use for Keycloak pods",
     )
 
     @field_validator("image")
@@ -343,12 +385,16 @@ class KeycloakEndpoints(BaseModel):
 class KeycloakCondition(BaseModel):
     """Status condition for Keycloak instance."""
 
+    model_config = {"populate_by_name": True}
+
     type: str = Field(..., description="Condition type")
     status: str = Field(..., description="Condition status (True/False/Unknown)")
     reason: str | None = Field(None, description="Reason for the condition")
     message: str | None = Field(None, description="Human-readable message")
     last_transition_time: str | None = Field(
-        None, description="Last time the condition transitioned"
+        None,
+        alias="lastTransitionTime",
+        description="Last time the condition transitioned",
     )
 
 
@@ -360,6 +406,8 @@ class KeycloakStatus(BaseModel):
     as observed by the operator.
     """
 
+    model_config = {"populate_by_name": True}
+
     # Overall status
     phase: str = Field("Pending", description="Current phase of the Keycloak instance")
     message: str | None = Field(None, description="Human-readable status message")
@@ -370,14 +418,18 @@ class KeycloakStatus(BaseModel):
         default_factory=list, description="Detailed status conditions"
     )
     observed_generation: int | None = Field(
-        None, description="Generation of the spec that was last processed"
+        None,
+        alias="observedGeneration",
+        description="Generation of the spec that was last processed",
     )
 
     # Deployment status
     replicas: int | None = Field(None, description="Total number of replicas")
-    ready_replicas: int | None = Field(None, description="Number of ready replicas")
+    ready_replicas: int | None = Field(
+        None, alias="readyReplicas", description="Number of ready replicas"
+    )
     available_replicas: int | None = Field(
-        None, description="Number of available replicas"
+        None, alias="availableReplicas", description="Number of available replicas"
     )
 
     # Resource information
@@ -385,7 +437,9 @@ class KeycloakStatus(BaseModel):
     service: str | None = Field(None, description="Name of the service")
     ingress: str | None = Field(None, description="Name of the ingress")
     persistent_volume_claims: list[str] = Field(
-        default_factory=list, description="Names of persistent volume claims"
+        default_factory=list,
+        alias="persistentVolumeClaims",
+        description="Names of persistent volume claims",
     )
 
     # Endpoints
@@ -401,9 +455,11 @@ class KeycloakStatus(BaseModel):
 
     # Health and monitoring
     last_health_check: str | None = Field(
-        None, description="Timestamp of last health check"
+        None, alias="lastHealthCheck", description="Timestamp of last health check"
     )
-    health_status: str | None = Field(None, description="Current health status")
+    health_status: str | None = Field(
+        None, alias="healthStatus", description="Current health status"
+    )
 
     # Statistics (optional)
     stats: dict[str, Any] = Field(

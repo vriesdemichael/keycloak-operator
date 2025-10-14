@@ -19,7 +19,6 @@ class MockStatus:
     def __init__(self):
         self.phase = None
         self.message = None
-        self.last_reconcile_time = None
         self.observedGeneration = None
         self.conditions = []
 
@@ -63,7 +62,7 @@ class TestStatusConditionTransitions:
         assert status.phase == "Reconciling"
         assert status.message == "Starting reconciliation"
         assert status.observedGeneration == generation
-        assert status.last_reconcile_time is not None
+        assert status.lastUpdated is not None
 
         # Check conditions
         assert len(status.conditions) == 2

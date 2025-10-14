@@ -434,7 +434,6 @@ class BaseReconciler(ABC):
         status.phase = "Reconciling"
         status.message = message
         timestamp = datetime.now(UTC).isoformat()
-        status.last_reconcile_time = timestamp
         status.lastUpdated = timestamp
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
@@ -471,7 +470,6 @@ class BaseReconciler(ABC):
         status.phase = "Ready"
         status.message = message
         timestamp = datetime.now(UTC).isoformat()
-        status.last_reconcile_time = timestamp
         status.lastUpdated = timestamp
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
@@ -498,7 +496,6 @@ class BaseReconciler(ABC):
         status.phase = "Failed"
         status.message = message
         timestamp = datetime.now(UTC).isoformat()
-        status.last_reconcile_time = timestamp
         status.lastUpdated = timestamp
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
@@ -532,7 +529,6 @@ class BaseReconciler(ABC):
         status.phase = "Degraded"
         status.message = message
         timestamp = datetime.now(UTC).isoformat()
-        status.last_reconcile_time = timestamp
         status.lastUpdated = timestamp
         # Track ObservedGeneration for GitOps compatibility
         status.observedGeneration = generation
