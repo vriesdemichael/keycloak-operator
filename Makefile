@@ -186,6 +186,11 @@ clean: ## Clean up development artifacts
 	rm -rf .tmp/
 	docker image prune -f
 
+.PHONY: clean-test-resources
+clean-test-resources: ## Clean up stuck test resources from Kubernetes
+	@echo "Cleaning up test resources..."
+	@./scripts/clean-test-resources.sh --force
+
 .PHONY: clean-all
 clean-all: clean kind-teardown ## Clean up everything including Kind cluster
 	docker system prune -f
