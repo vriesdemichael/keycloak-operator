@@ -1,0 +1,343 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: keycloaks.keycloak.mdvr.nl
+  labels:
+    app.kubernetes.io/name: keycloak-operator
+    app.kubernetes.io/component: crd
+spec:
+  group: keycloak.mdvr.nl
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        description: "Keycloak instance definition for dynamic identity and access management"
+        properties:
+          apiVersion:
+            type: string
+          kind:
+            type: string
+          metadata:
+            type: object
+          spec:
+            type: object
+            description: "Specification for a Keycloak instance"
+            properties:
+              # Core configuration
+              image:
+                type: string
+                description: "Container image for Keycloak"
+              replicas:
+                type: integer
+                description: "Number of Keycloak replicas"
+                minimum: 1
+                default: 1
+
+              # Database configuration
+              database:
+                type: object
+                description: "Database configuration. For CloudNativePG clusters, use standard PostgreSQL connection details (host: cluster-name-rw, type: postgresql)"
+                properties:
+                  type:
+                    type: string
+                    enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
+                    default: "postgresql"
+                    description: "Database type"
+                  host:
+                    type: string
+                    description: "Database host"
+                  port:
+                    type: integer
+                    description: "Database port (auto-detected if not specified)"
+                    minimum: 1
+                    maximum: 65535
+                  database:
+                    type: string
+                    description: "Database name"
+                  username:
+                    type: string
+                    description: "Database username"
+                  passwordSecret:
+                    type: object
+                    description: "Secret reference for database password"
+                    properties:
+                      name:
+                        type: string
+                      key:
+                        type: string
+                        default: "password"
+                    required:
+                    - name
+                  credentialsSecret:
+                    type: string
+                    description: "Kubernetes secret name with database credentials (alternative to username/passwordSecret)"
+                  connectionParams:
+                    type: object
+                    description: "Additional database connection parameters"
+                    additionalProperties:
+                      type: string
+                  connectionPool:
+                    type: object
+                    description: "Database connection pool configuration"
+                    properties:
+                      maxConnections:
+                        type: integer
+                        default: 20
+                        description: "Maximum number of connections"
+                      minConnections:
+                        type: integer
+                        default: 5
+                        description: "Minimum number of connections"
+                      connectionTimeout:
+                        type: string
+                        default: "30s"
+                        description: "Connection timeout"
+                  sslMode:
+                    type: string
+                    enum: ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]
+                    default: "require"
+                    description: "SSL mode for database connections"
+                  migrationStrategy:
+                    type: string
+                    enum: ["auto", "manual", "skip"]
+                    default: "auto"
+                    description: "Database migration strategy"
+                required:
+                - type
+                - host
+                - database
+
+              # TLS configuration
+              tls:
+                type: object
+                description: "TLS/SSL configuration"
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                  secretName:
+                    type: string
+                    description: "Secret containing TLS certificate"
+                  hostname:
+                    type: string
+                    description: "Hostname for TLS certificate (SNI)"
+
+              # Service configuration
+              service:
+                type: object
+                description: "Service configuration"
+                properties:
+                  type:
+                    type: string
+                    enum: ["ClusterIP", "NodePort", "LoadBalancer"]
+                    default: "ClusterIP"
+                  httpPort:
+                    type: integer
+                    minimum: 1
+                    maximum: 65535
+                    default: 8080
+                  httpsPort:
+                    type: integer
+                    minimum: 1
+                    maximum: 65535
+                    default: 8443
+                  annotations:
+                    type: object
+                    additionalProperties:
+                      type: string
+
+              # Ingress configuration
+              ingress:
+                type: object
+                description: "Ingress configuration"
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                  host:
+                    type: string
+                    description: "Ingress hostname"
+                  path:
+                    type: string
+                    description: "Ingress path"
+                    default: "/"
+                  tlsEnabled:
+                    type: boolean
+                    default: true
+                  tlsSecretName:
+                    type: string
+                    description: "Secret name for ingress TLS certificate"
+                  annotations:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  className:
+                    type: string
+                    description: "Ingress class name"
+
+
+              # Resource requirements
+              resources:
+                type: object
+                description: "Resource requirements"
+                properties:
+                  requests:
+                    type: object
+                    additionalProperties:
+                      type: string
+                  limits:
+                    type: object
+                    additionalProperties:
+                      type: string
+
+              # Environment variables
+              env:
+                type: object
+                description: "Environment variables"
+                additionalProperties:
+                  type: string
+
+              # JVM configuration
+              jvmOptions:
+                type: array
+                description: "JVM options for Keycloak (e.g., heap size, GC settings)"
+                items:
+                  type: string
+                example: ["-Xms512m", "-Xmx2048m", "-XX:+UseG1GC"]
+
+              # Service account
+              serviceAccount:
+                type: string
+                description: "Service account name for Keycloak pods (for workload identity)"
+
+              # Health probes
+              startupProbe:
+                type: object
+                description: "Startup probe configuration (overrides defaults)"
+                x-kubernetes-preserve-unknown-fields: true
+
+              livenessProbe:
+                type: object
+                description: "Liveness probe configuration (overrides defaults)"
+                x-kubernetes-preserve-unknown-fields: true
+
+              readinessProbe:
+                type: object
+                description: "Readiness probe configuration (overrides defaults)"
+                x-kubernetes-preserve-unknown-fields: true
+
+              # Security
+              podSecurityContext:
+                type: object
+                description: "Pod-level security context (fsGroup, runAsUser, etc.)"
+                x-kubernetes-preserve-unknown-fields: true
+
+              securityContext:
+                type: object
+                description: "Container-level security context (capabilities, privileged, etc.)"
+                x-kubernetes-preserve-unknown-fields: true
+
+            required:
+            - database
+
+          status:
+            type: object
+            description: "Current status of the Keycloak instance"
+            properties:
+              phase:
+                type: string
+                description: "Current phase"
+                enum: ["Pending", "Provisioning", "Ready", "Failed", "Updating", "Degraded"]
+              message:
+                type: string
+                description: "Human-readable status message"
+              reason:
+                type: string
+                description: "Reason for current phase"
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                      enum: ["True", "False", "Unknown"]
+                    reason:
+                      type: string
+                    message:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                  required:
+                  - type
+                  - status
+              observedGeneration:
+                type: integer
+                description: "Generation of spec that was last processed"
+              # Connection details
+              adminUsername:
+                type: string
+              adminSecret:
+                type: string
+              internalUrl:
+                type: string
+              externalUrl:
+                type: string
+              # Service endpoints
+              endpoints:
+                type: object
+                description: "Keycloak service endpoints"
+                properties:
+                  admin:
+                    type: string
+                    description: "Admin endpoint URL"
+                  public:
+                    type: string
+                    description: "Public endpoint URL"
+                  management:
+                    type: string
+                    description: "Management endpoint URL"
+              deployment:
+                type: string
+                description: "Name of the Keycloak deployment"
+              service:
+                type: string
+                description: "Name of the Keycloak service"
+              # Health status
+              readyReplicas:
+                type: integer
+              lastHealthCheck:
+                type: string
+                format: date-time
+              databaseStatus:
+                type: string
+                enum: ["Connected", "Connecting", "Failed", "Unknown"]
+    additionalPrinterColumns:
+    - name: Phase
+      type: string
+      jsonPath: .status.phase
+    - name: Replicas
+      type: integer
+      jsonPath: .spec.replicas
+    - name: Ready
+      type: integer
+      jsonPath: .status.readyReplicas
+    - name: External URL
+      type: string
+      jsonPath: .status.externalUrl
+    - name: Age
+      type: date
+      jsonPath: .metadata.creationTimestamp
+  scope: Namespaced
+  names:
+    plural: keycloaks
+    singular: keycloak
+    kind: Keycloak
+    shortNames:
+    - kc

@@ -1,0 +1,136 @@
+# Default values for keycloak-realm.
+# This is a YAML-formatted file.
+
+# Realm name (REQUIRED)
+# This is the Keycloak realm identifier
+realmName: ""
+
+# Display name for the realm
+displayName: ""
+
+# Operator reference (REQUIRED)
+# Reference to the Keycloak operator managing this realm
+operatorRef:
+  # Namespace where the operator is running
+  namespace: keycloak-system
+  
+  # Authorization secret containing the operator token
+  authorizationSecretRef:
+    # Name of the secret containing the operator's authorization token
+    name: keycloak-operator-auth-token
+    # Key within the secret (default: token)
+    key: token
+
+# Realm security settings
+security:
+  # Registration settings
+  registrationAllowed: false
+  registrationEmailAsUsername: false
+  
+  # Login settings
+  editUsernameAllowed: false
+  resetPasswordAllowed: true
+  rememberMe: false
+  verifyEmail: false
+  loginWithEmailAllowed: true
+  duplicateEmailsAllowed: false
+  
+  # Brute force protection
+  bruteForceProtected: true
+  permanentLockout: false
+  maxFailureWaitSeconds: 900
+  minimumQuickLoginWaitSeconds: 60
+  waitIncrementSeconds: 60
+  quickLoginCheckMilliSeconds: 1000
+  maxDeltaTimeSeconds: 43200
+  failureFactor: 30
+
+# Theme configuration
+theme:
+  login: ""
+  admin: ""
+  account: ""
+  email: ""
+
+# Localization settings
+localization:
+  defaultLocale: en
+  supportedLocales:
+    - en
+  internationalizationEnabled: true
+
+# Token settings
+tokens:
+  # Access token lifespan in seconds
+  accessTokenLifespan: 300
+  accessTokenLifespanForImplicitFlow: 900
+  
+  # SSO session settings
+  ssoSessionIdleTimeout: 1800
+  ssoSessionMaxLifespan: 36000
+  
+  # Offline session settings
+  offlineSessionIdleTimeout: 2592000
+  offlineSessionMaxLifespanEnabled: false
+  offlineSessionMaxLifespan: 5184000
+  
+  # Client session settings
+  clientSessionIdleTimeout: 0
+  clientSessionMaxLifespan: 0
+  
+  # Refresh token settings
+  refreshTokenMaxReuse: 0
+
+# SMTP configuration (optional)
+smtp:
+  enabled: false
+  host: ""
+  port: 587
+  from: ""
+  fromDisplayName: ""
+  replyTo: ""
+  replyToDisplayName: ""
+  envelopeFrom: ""
+  ssl: false
+  starttls: true
+  auth: true
+  user: ""
+  # Secret containing SMTP password
+  passwordSecret:
+    name: ""
+    key: password
+
+# Password policy (optional)
+# Example: "length(8) and digits(1) and lowerCase(1) and upperCase(1) and specialChars(1)"
+passwordPolicy: ""
+
+# OTP policy settings
+otpPolicy:
+  type: totp
+  algorithm: HmacSHA1
+  digits: 6
+  period: 30
+  lookAheadWindow: 1
+
+# WebAuthn settings
+webauthnPolicy:
+  enabled: false
+
+# Events configuration
+events:
+  enabled: false
+  eventsEnabled: false
+  eventsExpiration: 0
+  eventsListeners: []
+  adminEventsEnabled: false
+  adminEventsDetailsEnabled: false
+
+# Additional attributes (optional)
+# Free-form key-value pairs for custom realm attributes
+attributes: {}
+
+# Common labels applied to all resources
+commonLabels: {}
+
+# Common annotations applied to all resources
+commonAnnotations: {}

@@ -1,0 +1,70 @@
+🎉 Keycloak Realm has been created!
+
+📦 Release Name: {{ .Release.Name }}
+🏛️  Realm Name: {{ include "keycloak-realm.realmName" . }}
+🔧 Namespace: {{ .Release.Namespace }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔍 MONITORING YOUR REALM
+
+Check the realm status:
+
+    kubectl get keycloakrealm {{ include "keycloak-realm.fullname" . }} -n {{ .Release.Namespace }}
+
+Watch the realm reconciliation:
+
+    kubectl get keycloakrealm {{ include "keycloak-realm.fullname" . }} -n {{ .Release.Namespace }} -w
+
+View realm details:
+
+    kubectl describe keycloakrealm {{ include "keycloak-realm.fullname" . }} -n {{ .Release.Namespace }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔑 REALM AUTHORIZATION TOKEN
+
+Once the realm is Ready, it will generate an authorization token for clients.
+
+1️⃣  Wait for the realm to be ready:
+
+    kubectl wait --for=jsonpath='{.status.phase}'=Ready \
+      keycloakrealm/{{ include "keycloak-realm.fullname" . }} \
+      -n {{ .Release.Namespace }} --timeout=300s
+
+2️⃣  Get the authorization secret name:
+
+    REALM_SECRET=$(kubectl get keycloakrealm {{ include "keycloak-realm.fullname" . }} \
+      -n {{ .Release.Namespace }} \
+      -o jsonpath='{.status.authorizationSecretName}')
+
+3️⃣  Retrieve the realm authorization token:
+
+    kubectl get secret $REALM_SECRET \
+      -n {{ .Release.Namespace }} \
+      -o jsonpath='{.data.token}' | base64 -d
+
+    Save this token - you'll need it to create KeycloakClient resources!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 NEXT STEPS
+
+To create a client in this realm:
+
+1. Install the keycloak-client chart with this realm's token:
+
+   helm install my-client keycloak-client \
+     --set realmRef.name={{ include "keycloak-realm.fullname" . }} \
+     --set realmRef.namespace={{ .Release.Namespace }} \
+     --set realmRef.authorizationSecretRef.name=$REALM_SECRET
+
+2. Monitor the client status:
+
+   kubectl get keycloakclient -n {{ .Release.Namespace }}
+
+For more information:
+• Documentation: https://github.com/vriesdemichael/keycloak-operator
+• Issues: https://github.com/vriesdemichael/keycloak-operator/issues
+
+Happy realm managing! 🏰

@@ -1,0 +1,114 @@
+# Example values for keycloak-client chart
+# This demonstrates a typical OAuth2/OIDC client for a web application
+
+clientId: myapp
+description: "My Application"
+
+# Reference to the parent realm (required)
+realmRef:
+  name: my-realm
+  namespace: my-team
+  authorizationSecretRef:
+    name: my-realm-realm-auth  # Get this from realm status
+    key: token
+
+# Client type - confidential client for web application
+publicClient: false
+bearerOnly: false
+protocol: openid-connect
+
+# OAuth2/OIDC configuration
+redirectUris:
+  - "https://myapp.example.com/callback"
+  - "https://myapp.example.com/silent-check-sso.html"
+  - "http://localhost:3000/callback"  # For local development
+
+webOrigins:
+  - "https://myapp.example.com"
+  - "http://localhost:3000"
+
+postLogoutRedirectUris:
+  - "https://myapp.example.com/"
+  - "http://localhost:3000/"
+
+baseUrl: "https://myapp.example.com"
+rootUrl: "https://myapp.example.com"
+adminUrl: "https://myapp.example.com"
+
+# Authentication settings
+clientAuthenticatorType: client-secret
+
+# Access type settings
+standardFlowEnabled: true  # Authorization code flow
+implicitFlowEnabled: false
+directAccessGrantsEnabled: true  # Resource owner password credentials
+serviceAccountsEnabled: false
+
+# Consent settings
+consentRequired: false
+displayOnConsentScreen: true
+frontchannelLogout: true
+authorizationServicesEnabled: false
+alwaysDisplayInConsole: false
+fullScopeAllowed: true
+
+# Advanced settings
+settings:
+  enabled: true
+  pkceCodeChallengeMethod: "S256"  # Enable PKCE
+  accessTokenLifespan: 0  # Use realm default
+  clientSessionIdleTimeout: 0
+  clientSessionMaxLifespan: 0
+
+# Default client scopes
+defaultClientScopes:
+  - profile
+  - email
+  - roles
+  - web-origins
+
+# Optional client scopes
+optionalClientScopes:
+  - address
+  - phone
+  - offline_access
+
+# Protocol mappers
+protocolMappers:
+  - name: audience-mapper
+    protocol: openid-connect
+    protocolMapper: oidc-audience-mapper
+    config:
+      included.client.audience: "myapp-api"
+      id.token.claim: "false"
+      access.token.claim: "true"
+  
+  - name: group-membership
+    protocol: openid-connect
+    protocolMapper: oidc-group-membership-mapper
+    config:
+      full.path: "false"
+      id.token.claim: "true"
+      access.token.claim: "true"
+      claim.name: "groups"
+      userinfo.token.claim: "true"
+
+# Authentication flow overrides
+authenticationFlow:
+  browserFlow: ""
+  directGrantFlow: ""
+  clientAuthenticationFlow: ""
+
+# Secret management
+secret:
+  generate: true
+  secretName: ""  # Defaults to <release-name>-client-secret
+  secretKey: client-secret
+
+# Labels and annotations
+commonLabels:
+  app: myapp
+  environment: production
+
+commonAnnotations:
+  description: "OAuth2/OIDC client for My Application"

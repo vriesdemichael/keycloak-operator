@@ -1,0 +1,143 @@
+# Default values for keycloak-client.
+# This is a YAML-formatted file.
+
+# Client ID (REQUIRED)
+# This is the unique identifier for the client in Keycloak
+clientId: ""
+
+# Client description
+description: ""
+
+# Realm reference (REQUIRED)
+# Reference to the parent KeycloakRealm
+realmRef:
+  # Name of the KeycloakRealm CR
+  name: ""
+  
+  # Namespace of the KeycloakRealm CR
+  namespace: ""
+  
+  # Authorization secret containing the realm token
+  authorizationSecretRef:
+    # Name of the realm's authorization secret
+    # Get this from: kubectl get keycloakrealm <name> -o jsonpath='{.status.authorizationSecretName}'
+    name: ""
+    # Key within the secret (default: token)
+    key: token
+
+# Client type configuration
+publicClient: false
+bearerOnly: false
+protocol: openid-connect
+
+# OAuth2/OIDC configuration
+redirectUris: []
+  # - "https://example.com/callback"
+  # - "http://localhost:3000/callback"
+
+webOrigins: []
+  # - "https://example.com"
+  # - "http://localhost:3000"
+
+postLogoutRedirectUris: []
+  # - "https://example.com/logout"
+
+# Base URL for the client
+baseUrl: ""
+rootUrl: ""
+adminUrl: ""
+
+# Client authentication settings
+clientAuthenticatorType: client-secret
+
+# Access type settings
+standardFlowEnabled: true
+implicitFlowEnabled: false
+directAccessGrantsEnabled: true
+serviceAccountsEnabled: false
+
+# Consent settings
+consentRequired: false
+displayOnConsentScreen: true
+
+# Front-channel logout
+frontchannelLogout: true
+
+# Authorization settings
+authorizationServicesEnabled: false
+
+# Advanced settings
+alwaysDisplayInConsole: false
+fullScopeAllowed: true
+
+# Client settings
+settings:
+  enabled: true
+  
+  # PKCE settings
+  pkceCodeChallengeMethod: ""  # S256, plain, or empty for none
+  
+  # Token settings
+  accessTokenLifespan: 0  # 0 = use realm default
+  
+  # Session settings
+  clientSessionIdleTimeout: 0
+  clientSessionMaxLifespan: 0
+
+# Default client scopes
+defaultClientScopes: []
+  # - profile
+  # - email
+
+# Optional client scopes
+optionalClientScopes: []
+  # - address
+  # - phone
+
+# Service account roles (if serviceAccountsEnabled: true)
+serviceAccountRoles:
+  # Realm roles
+  realmRoles: []
+    # - view-users
+    # - manage-users
+  
+  # Client roles (map of client ID to roles)
+  clientRoles: {}
+    # account:
+    #   - view-profile
+    #   - manage-account
+
+# Protocol mappers
+protocolMappers: []
+  # - name: audience-mapper
+  #   protocol: openid-connect
+  #   protocolMapper: oidc-audience-mapper
+  #   config:
+  #     included.client.audience: "my-api"
+  #     id.token.claim: "false"
+  #     access.token.claim: "true"
+
+# Authentication flow overrides
+authenticationFlow:
+  browserFlow: ""
+  directGrantFlow: ""
+  clientAuthenticationFlow: ""
+
+# Secret management
+secret:
+  # Generate a client secret (for confidential clients)
+  # If false and client is confidential, you must provide the secret manually
+  generate: true
+  
+  # Kubernetes secret to store the client secret
+  # If not specified, defaults to: <release-name>-client-secret
+  secretName: ""
+  
+  # Key within the Kubernetes secret to store the client secret
+  secretKey: client-secret
+
+# Common labels applied to all resources
+commonLabels: {}
+
+# Common annotations applied to all resources
+commonAnnotations: {}

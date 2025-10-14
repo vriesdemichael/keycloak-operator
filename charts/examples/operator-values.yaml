@@ -1,0 +1,88 @@
+# Example values for keycloak-operator chart
+# This demonstrates a typical production configuration
+
+operator:
+  replicaCount: 2
+  
+  image:
+    repository: keycloak-operator
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  
+  env:
+    - name: KEYCLOAK_OPERATOR_LOG_LEVEL
+      value: "INFO"
+    - name: KEYCLOAK_OPERATOR_JSON_LOGS
+      value: "true"
+
+namespace:
+  name: keycloak-system
+  create: true
+
+serviceAccount:
+  create: true
+  name: keycloak-operator
+
+rbac:
+  create: true
+  createLeaderElectionRole: true
+
+crds:
+  install: true
+  keep: true
+
+monitoring:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+
+# Deploy a Keycloak instance managed by the operator
+keycloak:
+  enabled: true
+  name: keycloak
+  replicas: 3
+  version: "26.0.0"
+  image: quay.io/keycloak/keycloak
+  
+  database:
+    type: postgresql
+    cnpg:
+      enabled: true
+      clusterName: keycloak-postgres
+  
+  admin:
+    username: admin
+    passwordSecret:
+      name: keycloak-admin-password
+      key: password
+  
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      cert-manager.io/cluster-issuer: letsencrypt-prod
+    hosts:
+      - host: keycloak.example.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls:
+      - secretName: keycloak-tls
+        hosts:
+          - keycloak.example.com
+  
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 500m
+      memory: 1Gi

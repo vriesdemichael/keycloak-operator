@@ -1,0 +1,54 @@
+🎉 Keycloak Operator has been installed!
+
+📦 Release Name: {{ .Release.Name }}
+🔧 Namespace: {{ include "keycloak-operator.namespace" . }}
+📋 Operator Replicas: {{ .Values.operator.replicaCount }}
+
+{{- if .Values.keycloak.enabled }}
+
+🔐 Keycloak Instance: {{ .Values.keycloak.name }}
+   Replicas: {{ .Values.keycloak.replicas }}
+   Version: {{ .Values.keycloak.version }}
+
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔑 OPERATOR AUTHORIZATION TOKEN
+
+To create KeycloakRealm resources, you need the operator's authorization token.
+
+1️⃣  Wait for the operator to generate the token:
+
+    kubectl wait --for=condition=available deployment/{{ include "keycloak-operator.fullname" . }} \
+      -n {{ include "keycloak-operator.namespace" . }} --timeout=300s
+
+2️⃣  Retrieve the operator authorization token:
+
+    kubectl get secret keycloak-operator-auth-token \
+      -n {{ include "keycloak-operator.namespace" . }} \
+      -o jsonpath='{.data.token}' | base64 -d
+
+    Save this token - you'll need to reference it in your KeycloakRealm specs!
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 NEXT STEPS
+
+To create a realm:
+
+1. Install the keycloak-realm chart with the operator token:
+
+   helm install my-realm keycloak-realm \
+     --set operatorRef.namespace={{ include "keycloak-operator.namespace" . }} \
+     --set operatorRef.authorizationSecretRef.name=keycloak-operator-auth-token
+
+2. Monitor the realm status:
+
+   kubectl get keycloakrealm -A
+
+For more information:
+• Documentation: https://github.com/vriesdemichael/keycloak-operator
+• Issues: https://github.com/vriesdemichael/keycloak-operator/issues
+
+Happy authenticating! 🚀
