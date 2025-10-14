@@ -91,7 +91,7 @@ class TestAuthorizationDelegation:
                 # Accept Ready or Degraded (both mean resource is operational)
                 return phase in ("Ready", "Degraded")
 
-            return await wait_for_condition(_condition, timeout=420, interval=5)
+            return await wait_for_condition(_condition, timeout=90, interval=3)
 
         try:
             # Create realm with operator token reference (shared Keycloak already ready)
@@ -224,7 +224,7 @@ class TestAuthorizationDelegation:
                 phase = status.get("phase")
                 return phase in ("Ready", "Degraded")
 
-            return await wait_for_condition(_condition, timeout=420, interval=5)
+            return await wait_for_condition(_condition, timeout=90, interval=3)
 
         try:
             # Create realm (shared Keycloak already ready)
@@ -239,7 +239,7 @@ class TestAuthorizationDelegation:
             ready = await _wait_resource_ready("keycloakrealms", realm_name)
             assert ready, f"Realm {realm_name} did not become Ready"
 
-            # Get realm's authorization secret name from status
+            # Get realm's authorization secret name from status (camelCase in CRD)
             realm = k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -248,8 +248,30 @@ class TestAuthorizationDelegation:
                 name=realm_name,
             )
             status = realm.get("status", {}) or {}
+            # CRDs use camelCase, so read as camelCase from status dict
             realm_auth_secret_name = status.get("authorizationSecretName")
-            assert realm_auth_secret_name, "Realm should have authorizationSecretName"
+            assert realm_auth_secret_name, (
+                f"Realm should have authorizationSecretName in status. "
+                f"Status keys: {list(status.keys())}"
+            )
+
+            # Wait for the authorization secret to actually exist before using it
+            from kubernetes import client as k8s_client
+
+            k8s_core = k8s_client.CoreV1Api()
+
+            async def check_secret_exists():
+                try:
+                    k8s_core.read_namespaced_secret(realm_auth_secret_name, namespace)
+                    return True
+                except ApiException as e:
+                    if e.status == 404:
+                        return False
+                    raise
+
+            assert await wait_for_condition(
+                check_secret_exists, timeout=30, interval=2
+            ), f"Authorization secret {realm_auth_secret_name} was not created"
 
             # Create client with realmRef pointing to realm's token
             client_spec = KeycloakClientSpec(
@@ -405,7 +427,7 @@ class TestAuthorizationDelegation:
                 body=keycloak_manifest,
             )
 
-            await wait_for_keycloak_ready(keycloak_name, namespace, timeout=600)
+            await wait_for_keycloak_ready(keycloak_name, namespace, timeout=120)
 
             # Create fake secret
             k8s_core_v1.create_namespaced_secret(namespace=namespace, body=fake_secret)
@@ -525,7 +547,7 @@ class TestAuthorizationDelegation:
                 phase = status.get("phase")
                 return phase in ("Ready", "Degraded")
 
-            return await wait_for_condition(_condition, timeout=420, interval=5)
+            return await wait_for_condition(_condition, timeout=90, interval=3)
 
         async def _wait_client_failed() -> bool:
             async def _condition() -> bool:
@@ -709,7 +731,7 @@ class TestAuthorizationDelegation:
                 phase = status.get("phase")
                 return phase in ("Ready", "Degraded")
 
-            return await wait_for_condition(_condition, timeout=420, interval=5)
+            return await wait_for_condition(_condition, timeout=90, interval=3)
 
         async def _wait_secret_deleted(secret_name: str) -> bool:
             async def _condition() -> bool:
@@ -723,7 +745,7 @@ class TestAuthorizationDelegation:
                         return True  # Secret deleted
                     raise
 
-            return await wait_for_condition(_condition, timeout=60, interval=2)
+            return await wait_for_condition(_condition, timeout=90, interval=2)
 
         try:
             # Create realm (shared Keycloak already ready)

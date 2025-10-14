@@ -229,14 +229,28 @@ async def delete_keycloak_client(
         # Delegate cleanup to the reconciler service layer
         reconciler = KeycloakClientReconciler()
         status_wrapper = StatusWrapper(status)
-        await reconciler.cleanup_resources(
+
+        # Check if resource actually exists in Keycloak before attempting cleanup
+        resource_exists = await reconciler.check_resource_exists(
             name=name, namespace=namespace, spec=spec, status=status_wrapper
         )
 
-        # If cleanup succeeded, remove our finalizer to complete deletion
-        logger.info(
-            f"Cleanup completed successfully, removing finalizer {CLIENT_FINALIZER}"
-        )
+        if resource_exists:
+            # Resource exists in Keycloak, perform cleanup
+            logger.info(f"Client {name} exists in Keycloak, performing cleanup")
+            await reconciler.cleanup_resources(
+                name=name, namespace=namespace, spec=spec, status=status_wrapper
+            )
+            logger.info(f"Cleanup completed successfully for KeycloakClient {name}")
+        else:
+            # Resource never materialized in Keycloak, no cleanup needed
+            logger.info(
+                f"Client {name} does not exist in Keycloak, "
+                f"skipping cleanup (resource never materialized)"
+            )
+
+        # Remove finalizer to complete deletion
+        logger.info(f"Removing finalizer {CLIENT_FINALIZER} from KeycloakClient {name}")
         current_finalizers = list(current_finalizers)  # Make a copy
         if CLIENT_FINALIZER in current_finalizers:
             current_finalizers.remove(CLIENT_FINALIZER)
