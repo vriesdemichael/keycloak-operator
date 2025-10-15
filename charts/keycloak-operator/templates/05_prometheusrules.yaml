@@ -1,0 +1,126 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.prometheusRules.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}
+  namespace: {{ default (include "keycloak-operator.namespace" .) .Values.monitoring.namespace }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    {{- with .Values.monitoring.prometheusRules.labels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- with include "keycloak-operator.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  groups:
+    - name: keycloak-operator.rules
+      interval: {{ .Values.monitoring.prometheusRules.interval }}
+      rules:
+        # High reconciliation failure rate
+        - alert: KeycloakOperatorHighFailureRate
+          expr: |
+            (
+              rate(kopf_reconciliation_total{result="failure"}[5m])
+              /
+              rate(kopf_reconciliation_total[5m])
+            ) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+            component: keycloak-operator
+          annotations:
+            summary: "Keycloak operator has high reconciliation failure rate"
+            description: "Keycloak operator reconciliation failure rate is {{`{{ $value | humanizePercentage }}`}} (threshold: 10%) for resource_type={{`{{ $labels.resource_type }}`}} in namespace={{`{{ $labels.namespace }}`}}"
+            runbook_url: "https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/runbooks/high-failure-rate.md"
+
+        # Critical: All Keycloak instances failed
+        - alert: KeycloakOperatorAllInstancesFailed
+          expr: |
+            sum(keycloak_operator_resource_status{resource_type="keycloak", phase="Ready"}) == 0
+            and
+            sum(keycloak_operator_resource_status{resource_type="keycloak"}) > 0
+          for: 10m
+          labels:
+            severity: critical
+            component: keycloak-operator
+          annotations:
+            summary: "All Keycloak instances are in failed state"
+            description: "No Ready Keycloak instances found. All instances are Failed or Pending."
+            runbook_url: "https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/runbooks/all-instances-failed.md"
+
+        # Circuit breaker stuck open
+        - alert: KeycloakOperatorCircuitBreakerOpen
+          expr: |
+            increase(keycloak_operator_errors_total{error_type="circuit_breaker"}[5m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+            component: keycloak-operator
+          annotations:
+            summary: "Keycloak API circuit breaker is open"
+            description: "Circuit breaker has been open for more than 5 minutes for resource_type={{`{{ $labels.resource_type }}`}}. Keycloak API may be unavailable."
+            runbook_url: "https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/runbooks/circuit-breaker-open.md"
+
+        # Operator pod crashlooping
+        - alert: KeycloakOperatorCrashlooping
+          expr: |
+            rate(kube_pod_container_status_restarts_total{namespace="{{ include "keycloak-operator.namespace" . }}", pod=~"keycloak-operator-.*"}[15m]) > 0
+          for: 5m
+          labels:
+            severity: critical
+            component: keycloak-operator
+          annotations:
+            summary: "Keycloak operator pod is crashlooping"
+            description: "Keycloak operator pod {{`{{ $labels.pod }}`}} has restarted {{`{{ $value }}`}} times in the last 15 minutes."
+            runbook_url: "https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/runbooks/operator-crashlooping.md"
+
+        # Slow reconciliation
+        - alert: KeycloakOperatorSlowReconciliation
+          expr: |
+            histogram_quantile(0.95, rate(kopf_reconciliation_duration_seconds_bucket[5m])) > {{ .Values.monitoring.prometheusRules.slowReconciliationThreshold }}
+          for: 10m
+          labels:
+            severity: warning
+            component: keycloak-operator
+          annotations:
+            summary: "Keycloak operator reconciliation is slow"
+            description: "95th percentile reconciliation duration is {{`{{ $value }}`}}s (threshold: {{ .Values.monitoring.prometheusRules.slowReconciliationThreshold }}s) for resource_type={{`{{ $labels.resource_type }}`}}"
+            runbook_url: "https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/runbooks/slow-reconciliation.md"
+
+        # No reconciliation activity (operator may be stuck)
+        - alert: KeycloakOperatorNoActivity
+          expr: |
+            rate(kopf_reconciliation_total[10m]) == 0
+            and
+            sum(keycloak_operator_resource_status) > 0
+          for: 15m
+          labels:
+            severity: warning
+            component: keycloak-operator
+          annotations:
+            summary: "Keycloak operator has no reconciliation activity"
+            description: "No reconciliation activity detected for 15 minutes despite having managed resources. Operator may be stuck."
+            runbook_url: "https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/runbooks/no-activity.md"
+
+        # High memory usage
+        - alert: KeycloakOperatorHighMemory
+          expr: |
+            container_memory_working_set_bytes{namespace="{{ include "keycloak-operator.namespace" . }}", pod=~"keycloak-operator-.*"} 
+            / 
+            container_spec_memory_limit_bytes{namespace="{{ include "keycloak-operator.namespace" . }}", pod=~"keycloak-operator-.*"} 
+            > 0.9
+          for: 5m
+          labels:
+            severity: warning
+            component: keycloak-operator
+          annotations:
+            summary: "Keycloak operator is using high memory"
+            description: "Keycloak operator pod {{`{{ $labels.pod }}`}} is using {{`{{ $value | humanizePercentage }}`}} of its memory limit."
+            runbook_url: "https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/runbooks/high-memory.md"
+
+        {{- with .Values.monitoring.prometheusRules.additionalRules }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+{{- end }}
