@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "clientId": {
+      "type": "string",
+      "description": "Unique identifier for the client in Keycloak"
+    },
+    "description": {
+      "type": "string",
+      "description": "Client description"
+    },
+    "realmRef": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the KeycloakRealm CR"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace of the KeycloakRealm CR"
+        },
+        "authorizationSecretRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the realm's authorization secret"
+            },
+            "key": {
+              "type": "string",
+              "description": "Key within the secret",
+              "default": "token"
+            }
+          },
+          "required": ["name"]
+        }
+      },
+      "required": ["name", "namespace", "authorizationSecretRef"]
+    },
+    "publicClient": {"type": "boolean"},
+    "bearerOnly": {"type": "boolean"},
+    "protocol": {
+      "type": "string",
+      "enum": ["openid-connect", "saml"]
+    },
+    "redirectUris": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "webOrigins": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "postLogoutRedirectUris": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "baseUrl": {"type": "string"},
+    "rootUrl": {"type": "string"},
+    "adminUrl": {"type": "string"},
+    "clientAuthenticatorType": {"type": "string"},
+    "standardFlowEnabled": {"type": "boolean"},
+    "implicitFlowEnabled": {"type": "boolean"},
+    "directAccessGrantsEnabled": {"type": "boolean"},
+    "serviceAccountsEnabled": {"type": "boolean"},
+    "consentRequired": {"type": "boolean"},
+    "displayOnConsentScreen": {"type": "boolean"},
+    "frontchannelLogout": {"type": "boolean"},
+    "authorizationServicesEnabled": {"type": "boolean"},
+    "alwaysDisplayInConsole": {"type": "boolean"},
+    "fullScopeAllowed": {"type": "boolean"},
+    "settings": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "pkceCodeChallengeMethod": {"type": "string"},
+        "accessTokenLifespan": {"type": "integer"},
+        "clientSessionIdleTimeout": {"type": "integer"},
+        "clientSessionMaxLifespan": {"type": "integer"}
+      }
+    },
+    "defaultClientScopes": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "optionalClientScopes": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "serviceAccountRoles": {
+      "type": "object",
+      "properties": {
+        "realmRoles": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "clientRoles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        }
+      }
+    },
+    "protocolMappers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "protocol": {"type": "string"},
+          "protocolMapper": {"type": "string"},
+          "config": {
+            "type": "object",
+            "additionalProperties": {"type": "string"}
+          }
+        }
+      }
+    },
+    "authenticationFlow": {
+      "type": "object",
+      "properties": {
+        "browserFlow": {"type": "string"},
+        "directGrantFlow": {"type": "string"},
+        "clientAuthenticationFlow": {"type": "string"}
+      }
+    },
+    "manageSecret": {
+      "type": "boolean",
+      "description": "Create and manage Kubernetes secret for credentials"
+    },
+    "secretName": {
+      "type": "string",
+      "description": "Name of Kubernetes secret for client credentials"
+    },
+    "regenerateSecret": {
+      "type": "boolean",
+      "description": "Regenerate client secret on update"
+    },
+    "commonLabels": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "commonAnnotations": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    }
+  }
+}

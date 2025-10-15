@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "realmName": {
+      "type": "string",
+      "description": "Name of the Keycloak realm"
+    },
+    "displayName": {
+      "type": "string",
+      "description": "Display name for the realm"
+    },
+    "operatorRef": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "Namespace where the operator is running"
+        },
+        "authorizationSecretRef": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Name of the secret containing the operator's authorization token"
+            },
+            "key": {
+              "type": "string",
+              "description": "Key within the secret",
+              "default": "token"
+            }
+          },
+          "required": ["name"]
+        }
+      },
+      "required": ["namespace", "authorizationSecretRef"]
+    },
+    "security": {
+      "type": "object",
+      "properties": {
+        "registrationAllowed": {"type": "boolean"},
+        "registrationEmailAsUsername": {"type": "boolean"},
+        "editUsernameAllowed": {"type": "boolean"},
+        "resetPasswordAllowed": {"type": "boolean"},
+        "rememberMe": {"type": "boolean"},
+        "verifyEmail": {"type": "boolean"},
+        "loginWithEmailAllowed": {"type": "boolean"},
+        "duplicateEmailsAllowed": {"type": "boolean"},
+        "bruteForceProtected": {"type": "boolean"},
+        "permanentLockout": {"type": "boolean"},
+        "maxFailureWait": {"type": "integer"},
+        "minimumQuickLoginWait": {"type": "integer"},
+        "waitIncrement": {"type": "integer"},
+        "quickLoginCheckMillis": {"type": "integer"},
+        "maxDeltaTime": {"type": "integer"},
+        "failureFactor": {"type": "integer"}
+      }
+    },
+    "themes": {
+      "type": "object",
+      "properties": {
+        "login": {"type": "string"},
+        "admin": {"type": "string"},
+        "account": {"type": "string"},
+        "email": {"type": "string"}
+      }
+    },
+    "localization": {
+      "type": "object",
+      "properties": {
+        "defaultLocale": {"type": "string"},
+        "supportedLocales": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "enabled": {"type": "boolean"}
+      }
+    },
+    "tokenSettings": {
+      "type": "object",
+      "properties": {
+        "accessTokenLifespan": {"type": "integer"},
+        "accessTokenLifespanForImplicitFlow": {"type": "integer"},
+        "ssoSessionIdleTimeout": {"type": "integer"},
+        "ssoSessionMaxLifespan": {"type": "integer"},
+        "offlineSessionIdleTimeout": {"type": "integer"},
+        "offlineSessionMaxLifespanEnabled": {"type": "boolean"},
+        "offlineSessionMaxLifespan": {"type": "integer"},
+        "clientSessionIdleTimeout": {"type": "integer"},
+        "clientSessionMaxLifespan": {"type": "integer"}
+      }
+    },
+    "smtpServer": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "host": {"type": "string"},
+        "port": {"type": "integer"},
+        "from": {"type": "string"},
+        "fromDisplayName": {"type": "string"},
+        "replyTo": {"type": "string"},
+        "envelopeFrom": {"type": "string"},
+        "ssl": {"type": "boolean"},
+        "starttls": {"type": "boolean"},
+        "auth": {"type": "boolean"},
+        "user": {"type": "string"},
+        "passwordSecret": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "key": {"type": "string"}
+          }
+        }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "commonLabels": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "commonAnnotations": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    }
+  }
+}

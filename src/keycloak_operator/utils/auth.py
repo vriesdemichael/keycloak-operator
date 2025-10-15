@@ -40,7 +40,7 @@ def generate_token(length: int = 32) -> str:
 
 
 def validate_authorization(
-    secret_ref: "AuthorizationSecretRef | dict[str, str]",
+    secret_ref: "AuthorizationSecretRef | dict[str, str] | None",
     secret_namespace: str,
     expected_token: str,
     k8s_client: client.CoreV1Api,
@@ -52,7 +52,7 @@ def validate_authorization(
     against an expected token using constant-time comparison to prevent timing attacks.
 
     Args:
-        secret_ref: AuthorizationSecretRef object or dict with 'name' and optional 'key'
+        secret_ref: AuthorizationSecretRef object or dict with 'name' and optional 'key', or None
         secret_namespace: Namespace where the secret is located
         expected_token: The token value to compare against
         k8s_client: Kubernetes CoreV1Api client instance
@@ -72,6 +72,13 @@ def validate_authorization(
     """
     # Import here to avoid circular dependency
     from keycloak_operator.models.common import AuthorizationSecretRef
+
+    # Handle None secret_ref - authorization is mandatory
+    if secret_ref is None:
+        logger.warning(
+            "Authorization secret reference is required but was not provided"
+        )
+        return False
 
     # Convert dict to AuthorizationSecretRef if needed
     if isinstance(secret_ref, dict):

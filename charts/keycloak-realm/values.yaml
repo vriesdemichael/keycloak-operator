@@ -14,10 +14,11 @@ operatorRef:
   # Namespace where the operator is running
   namespace: keycloak-system
   
-  # Authorization secret containing the operator token
+  # Authorization secret containing the operator token (optional for now)
+  # This feature is not yet implemented - leave empty
   authorizationSecretRef:
     # Name of the secret containing the operator's authorization token
-    name: keycloak-operator-auth-token
+    name: ""
     # Key within the secret (default: token)
     key: token
 
@@ -38,15 +39,15 @@ security:
   # Brute force protection
   bruteForceProtected: true
   permanentLockout: false
-  maxFailureWaitSeconds: 900
-  minimumQuickLoginWaitSeconds: 60
-  waitIncrementSeconds: 60
-  quickLoginCheckMilliSeconds: 1000
-  maxDeltaTimeSeconds: 43200
+  maxFailureWait: 900
+  minimumQuickLoginWait: 60
+  waitIncrement: 60
+  quickLoginCheckMillis: 1000
+  maxDeltaTime: 43200
   failureFactor: 30
 
 # Theme configuration
-theme:
+themes:
   login: ""
   admin: ""
   account: ""
@@ -57,10 +58,10 @@ localization:
   defaultLocale: en
   supportedLocales:
     - en
-  internationalizationEnabled: true
+  enabled: true
 
 # Token settings
-tokens:
+tokenSettings:
   # Access token lifespan in seconds
   accessTokenLifespan: 300
   accessTokenLifespanForImplicitFlow: 900
@@ -74,22 +75,18 @@ tokens:
   offlineSessionMaxLifespanEnabled: false
   offlineSessionMaxLifespan: 5184000
   
-  # Client session settings
-  clientSessionIdleTimeout: 0
-  clientSessionMaxLifespan: 0
-  
-  # Refresh token settings
-  refreshTokenMaxReuse: 0
+  # Client session settings (omit or set to positive values)
+  # clientSessionIdleTimeout: 1800
+  # clientSessionMaxLifespan: 3600
 
 # SMTP configuration (optional)
-smtp:
+smtpServer:
   enabled: false
   host: ""
   port: 587
   from: ""
   fromDisplayName: ""
   replyTo: ""
-  replyToDisplayName: ""
   envelopeFrom: ""
   ssl: false
   starttls: true
@@ -99,31 +96,6 @@ smtp:
   passwordSecret:
     name: ""
     key: password
-
-# Password policy (optional)
-# Example: "length(8) and digits(1) and lowerCase(1) and upperCase(1) and specialChars(1)"
-passwordPolicy: ""
-
-# OTP policy settings
-otpPolicy:
-  type: totp
-  algorithm: HmacSHA1
-  digits: 6
-  period: 30
-  lookAheadWindow: 1
-
-# WebAuthn settings
-webauthnPolicy:
-  enabled: false
-
-# Events configuration
-events:
-  enabled: false
-  eventsEnabled: false
-  eventsExpiration: 0
-  eventsListeners: []
-  adminEventsEnabled: false
-  adminEventsDetailsEnabled: false
 
 # Additional attributes (optional)
 # Free-form key-value pairs for custom realm attributes

@@ -23,7 +23,7 @@ View client details:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-{{- if and (not .Values.publicClient) .Values.secret.generate }}
+{{- if and (not .Values.publicClient) .Values.manageSecret }}
 
 🔐 CLIENT SECRET
 
@@ -37,9 +37,15 @@ Your client secret will be stored in a Kubernetes secret.
 
 2️⃣  Retrieve the client secret:
 
-    kubectl get secret {{ include "keycloak-client.secretName" . }} \
+    {{- if .Values.secretName }}
+    SECRET_NAME="{{ .Values.secretName }}"
+    {{- else }}
+    SECRET_NAME="{{ include "keycloak-client.fullname" . }}-credentials"
+    {{- end }}
+    
+    kubectl get secret $SECRET_NAME \
       -n {{ .Release.Namespace }} \
-      -o jsonpath='{.data.{{ .Values.secret.secretKey }}}' | base64 -d
+      -o jsonpath='{.data.client-secret}' | base64 -d
 
     ⚠️  Keep this secret safe! It's used to authenticate your application.
 

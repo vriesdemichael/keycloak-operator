@@ -62,10 +62,10 @@ Client ID
 Client secret name
 */}}
 {{- define "keycloak-client.secretName" -}}
-{{- if .Values.secret.secretName }}
-{{- .Values.secret.secretName }}
+{{- if .Values.secretName }}
+{{- .Values.secretName }}
 {{- else }}
-{{- printf "%s-client-secret" (include "keycloak-client.fullname" .) }}
+{{- printf "%s-credentials" (include "keycloak-client.fullname" .) }}
 {{- end }}
 {{- end }}
 

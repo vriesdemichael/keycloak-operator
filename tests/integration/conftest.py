@@ -19,6 +19,7 @@ import asyncio
 import logging
 import os
 import tempfile
+from asyncio.subprocess import PIPE
 from collections.abc import AsyncGenerator
 from pathlib import Path
 from typing import Any
@@ -1124,6 +1125,309 @@ async def managed_client(
             cleanup_tracker.record_failure(
                 resource_type="keycloakclient",
                 name=client_name,
+                namespace=test_namespace,
+                error=str(e),
+            )
+
+
+# ============================================================================
+# Helm-based fixtures for realm and client management
+# ============================================================================
+
+
+@pytest.fixture
+def helm_realm_chart_path() -> Path:
+    """Return the path to the keycloak-realm Helm chart."""
+    return Path(__file__).parent.parent.parent / "charts" / "keycloak-realm"
+
+
+@pytest.fixture
+def helm_client_chart_path() -> Path:
+    """Return the path to the keycloak-client Helm chart."""
+    return Path(__file__).parent.parent.parent / "charts" / "keycloak-client"
+
+
+@pytest.fixture
+async def helm_realm(
+    helm_realm_chart_path: Path,
+    test_namespace: str,
+    cleanup_tracker: CleanupTracker,
+):
+    """
+    Create and manage a KeycloakRealm using Helm with automatic cleanup.
+
+    Usage:
+        async def test_something(helm_realm):
+            release_name = await helm_realm(
+                release_name="my-realm",
+                realm_name="test-realm",
+                operator_namespace="keycloak-system"
+            )
+            # Test code here
+            # Cleanup happens automatically
+    """
+    created_releases: list[str] = []
+
+    async def _install_realm(
+        release_name: str,
+        realm_name: str,
+        operator_namespace: str = "keycloak-system",
+        operator_auth_secret: str = "keycloak-operator-auth-token",
+        **values_overrides,
+    ) -> str:
+        """
+        Install a realm via Helm and track it for cleanup.
+
+        Returns:
+            Release name
+        """
+        # Build Helm values
+        values = {
+            "realmName": realm_name,
+            "operatorRef": {
+                "namespace": operator_namespace,
+                "authorizationSecretRef": {
+                    "name": operator_auth_secret,
+                    "key": "token",
+                },
+            },
+            **values_overrides,
+        }
+
+        # Create values file
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False
+        ) as values_file:
+            import yaml
+
+            yaml.dump(values, values_file)
+            values_path = values_file.name
+
+        try:
+            # Install Helm chart
+            cmd = [
+                "helm",
+                "install",
+                release_name,
+                str(helm_realm_chart_path),
+                "-n",
+                test_namespace,
+                "-f",
+                values_path,
+                "--wait",
+                "--timeout",
+                "5m",
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=PIPE,
+                stderr=PIPE,
+            )
+
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                raise RuntimeError(
+                    f"Helm install failed: {stderr.decode() if stderr else 'Unknown error'}"
+                )
+
+            logger.info(
+                f"Installed realm {realm_name} via Helm release {release_name} in namespace {test_namespace}"
+            )
+            created_releases.append(release_name)
+
+            return release_name
+
+        finally:
+            # Clean up values file
+            Path(values_path).unlink(missing_ok=True)
+
+    yield _install_realm
+
+    # Cleanup all created Helm releases
+    for release_name in created_releases:
+        try:
+            cmd = [
+                "helm",
+                "uninstall",
+                release_name,
+                "-n",
+                test_namespace,
+                "--wait",
+                "--timeout",
+                "2m",
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=PIPE,
+                stderr=PIPE,
+            )
+
+            await proc.communicate()
+
+            if proc.returncode == 0:
+                logger.info(f"✓ Cleaned up Helm release {release_name}")
+            else:
+                cleanup_tracker.record_failure(
+                    resource_type="helm_release",
+                    name=release_name,
+                    namespace=test_namespace,
+                    error="Helm uninstall failed",
+                )
+
+        except Exception as e:
+            logger.error(f"Error cleaning up Helm release {release_name}: {e}")
+            cleanup_tracker.record_failure(
+                resource_type="helm_release",
+                name=release_name,
+                namespace=test_namespace,
+                error=str(e),
+            )
+
+
+@pytest.fixture
+async def helm_client(
+    helm_client_chart_path: Path,
+    test_namespace: str,
+    cleanup_tracker: CleanupTracker,
+):
+    """
+    Create and manage a KeycloakClient using Helm with automatic cleanup.
+
+    Usage:
+        async def test_something(helm_client):
+            release_name = await helm_client(
+                release_name="my-client",
+                client_id="test-client",
+                realm_name="test-realm",
+                realm_namespace="test-ns"
+            )
+            # Test code here
+            # Cleanup happens automatically
+    """
+    created_releases: list[str] = []
+
+    async def _install_client(
+        release_name: str,
+        client_id: str,
+        realm_name: str,
+        realm_namespace: str,
+        realm_auth_secret: str | None = None,
+        **values_overrides,
+    ) -> str:
+        """
+        Install a client via Helm and track it for cleanup.
+
+        Returns:
+            Release name
+        """
+        # Build Helm values
+        values = {
+            "clientId": client_id,
+            "realmRef": {
+                "name": realm_name,
+                "namespace": realm_namespace,
+            },
+            **values_overrides,
+        }
+
+        # Add authorization secret ref if provided
+        if realm_auth_secret:
+            values["realmRef"]["authorizationSecretRef"] = {
+                "name": realm_auth_secret,
+                "key": "token",
+            }
+
+        # Create values file
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".yaml", delete=False
+        ) as values_file:
+            import yaml
+
+            yaml.dump(values, values_file)
+            values_path = values_file.name
+
+        try:
+            # Install Helm chart
+            cmd = [
+                "helm",
+                "install",
+                release_name,
+                str(helm_client_chart_path),
+                "-n",
+                test_namespace,
+                "-f",
+                values_path,
+                "--wait",
+                "--timeout",
+                "5m",
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=PIPE,
+                stderr=PIPE,
+            )
+
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                raise RuntimeError(
+                    f"Helm install failed: {stderr.decode() if stderr else 'Unknown error'}"
+                )
+
+            logger.info(
+                f"Installed client {client_id} via Helm release {release_name} in namespace {test_namespace}"
+            )
+            created_releases.append(release_name)
+
+            return release_name
+
+        finally:
+            # Clean up values file
+            Path(values_path).unlink(missing_ok=True)
+
+    yield _install_client
+
+    # Cleanup all created Helm releases
+    for release_name in created_releases:
+        try:
+            cmd = [
+                "helm",
+                "uninstall",
+                release_name,
+                "-n",
+                test_namespace,
+                "--wait",
+                "--timeout",
+                "2m",
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *cmd,
+                stdout=PIPE,
+                stderr=PIPE,
+            )
+
+            await proc.communicate()
+
+            if proc.returncode == 0:
+                logger.info(f"✓ Cleaned up Helm release {release_name}")
+            else:
+                cleanup_tracker.record_failure(
+                    resource_type="helm_release",
+                    name=release_name,
+                    namespace=test_namespace,
+                    error="Helm uninstall failed",
+                )
+
+        except Exception as e:
+            logger.error(f"Error cleaning up Helm release {release_name}: {e}")
+            cleanup_tracker.record_failure(
+                resource_type="helm_release",
+                name=release_name,
                 namespace=test_namespace,
                 error=str(e),
             )

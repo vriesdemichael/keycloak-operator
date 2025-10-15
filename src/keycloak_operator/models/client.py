@@ -21,7 +21,9 @@ class RealmRef(BaseModel):
     name: str = Field(..., description="Name of the KeycloakRealm CR")
     namespace: str = Field(..., description="Namespace of the KeycloakRealm CR")
     authorization_secret_ref: AuthorizationSecretRef = Field(
-        ..., alias="authorizationSecretRef"
+        ...,
+        alias="authorizationSecretRef",
+        description="Secret containing the token to authorize with the realm",
     )
 
 
