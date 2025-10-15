@@ -142,7 +142,7 @@ monitoring:
   # Enable Prometheus ServiceMonitor
   enabled: false
   
-  # Namespace for ServiceMonitor (if different from operator namespace)
+  # Namespace for monitoring resources (if different from operator namespace)
   namespace: ""
   
   # Additional labels for ServiceMonitor
@@ -153,6 +153,47 @@ monitoring:
   
   # Scrape timeout
   scrapeTimeout: 10s
+  
+  # Prometheus alert rules
+  prometheusRules:
+    # Enable PrometheusRule resource
+    enabled: false
+    
+    # Namespace for PrometheusRule (if different from operator namespace)
+    namespace: ""
+    
+    # Additional labels for PrometheusRule (required for Prometheus discovery)
+    # Example: prometheus: kube-prometheus
+    labels: {}
+    
+    # Evaluation interval for rules
+    interval: 30s
+    
+    # Threshold for slow reconciliation alert (seconds)
+    slowReconciliationThreshold: 30
+    
+    # Additional custom rules to include
+    additionalRules: []
+      # - alert: CustomAlert
+      #   expr: custom_metric > 100
+      #   for: 5m
+      #   labels:
+      #     severity: warning
+      #   annotations:
+      #     summary: "Custom alert triggered"
+  
+  # Grafana dashboard
+  grafanaDashboard:
+    # Enable Grafana dashboard ConfigMap
+    enabled: false
+    
+    # Namespace for dashboard ConfigMap (typically the Grafana namespace)
+    namespace: ""
+    
+    # Labels for dashboard discovery by Grafana sidecar
+    # Example for grafana-operator: grafana_dashboard: "1"
+    labels: {}
+      # grafana_dashboard: "1"
 
 # Keycloak instance configuration (optional)
 # Set enabled: true to deploy a Keycloak instance managed by the operator
