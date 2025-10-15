@@ -79,6 +79,8 @@ extra:
 nav:
   - Home: index.md
   - Architecture: architecture.md
+  - Security Model: security.md
+  - Observability: observability.md
   - Development: development.md
   - API Reference:
       - Overview: api/keycloak_operator.md
