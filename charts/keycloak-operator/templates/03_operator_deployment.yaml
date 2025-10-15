@@ -45,6 +45,8 @@ spec:
           name: metrics
           protocol: TCP
         env:
+        - name: KOPF_STANDALONE
+          value: "false"
         - name: KOPF_PEERING_NAME
           value: {{ include "keycloak-operator.fullname" . }}
         - name: KOPF_PRIORITY

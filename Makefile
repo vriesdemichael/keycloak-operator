@@ -110,31 +110,60 @@ push: build ## Build and push Docker image to registry
 #   1. build-test: Build operator image tagged as 'test'
 #   2. setup-cluster: Ensure Kind cluster exists (idempotent)
 #   3. install-cnpg: Install CNPG operator (idempotent)
-#   4. Load image + apply CRDs/RBAC + deploy operator
-#   5. deploy-test-keycloak.sh: Create test Keycloak with CNPG database
+#   4. helm-deploy-operator: Deploy operator + Keycloak using Helm chart
 
 .PHONY: deploy
 deploy: deploy-local ## Deploy operator (standard target name)
 
 .PHONY: deploy-local
 deploy-local: build-test setup-cluster install-cnpg ## Deploy operator + test Keycloak instance to local Kind cluster
+	@echo "Loading operator image into Kind cluster..."
 	kind load docker-image keycloak-operator:test --name keycloak-operator-test
-	# Apply CRDs and RBAC (idempotent)
-	kubectl apply -f k8s/crds/keycloak-crd.yaml
-	kubectl apply -f k8s/crds/keycloakclient-crd.yaml
-	kubectl apply -f k8s/crds/keycloakrealm-crd.yaml
-	kubectl apply -f k8s/rbac/
-	# Deploy operator with local image
-	sed 's|image: keycloak-operator:latest|image: keycloak-operator:test|g' k8s/operator-deployment.yaml | \
-	sed 's|imagePullPolicy: IfNotPresent|imagePullPolicy: Never|g' | \
-	kubectl apply -f -
-	# Force rollout to ensure latest image is used
-	kubectl patch deployment keycloak-operator -n keycloak-system -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"restarted-at\":\"$$(date -u +%Y%m%d%H%M%S)\"}}}}}" >/dev/null 2>&1 || true
+	@echo "Deploying operator and Keycloak using Helm chart..."
+	@$(MAKE) helm-deploy-operator
 	@echo "Waiting for operator to be ready..."
 	kubectl rollout status deployment keycloak-operator -n keycloak-system --timeout=60s
-	@echo "✓ Operator deployed successfully!"
-	@echo "Deploying test Keycloak instance..."
-	@./scripts/deploy-test-keycloak.sh
+	@echo "✓ Operator and Keycloak deployed successfully!"
+
+.PHONY: helm-deploy-operator
+helm-deploy-operator: ## Deploy operator using Helm chart (with Keycloak for testing)
+	@echo "Deploying operator with Helm..."
+	helm upgrade --install keycloak-operator ./charts/keycloak-operator \
+		--namespace keycloak-system \
+		--create-namespace \
+		--set namespace.create=false \
+		--set operator.image.repository=keycloak-operator \
+		--set operator.image.tag=test \
+		--set operator.image.pullPolicy=Never \
+		--set operator.replicaCount=2 \
+		--set keycloak.enabled=true \
+		--set keycloak.replicas=1 \
+		--set keycloak.version=26.0.0 \
+		--set keycloak.database.type=postgresql \
+		--set keycloak.database.cnpg.enabled=true \
+		--set keycloak.database.cnpg.clusterName=keycloak-postgres \
+		--set keycloak.admin.username=admin \
+		--set keycloak.admin.passwordSecret.name=keycloak-admin-secret \
+		--set keycloak.admin.passwordSecret.key=password \
+		--wait=false \
+		--timeout=300s
+	@echo "Creating admin password secret..."
+	@kubectl create secret generic keycloak-admin-secret \
+		--from-literal=password=admin \
+		--namespace keycloak-system \
+		--dry-run=client -o yaml | kubectl apply -f -
+	@echo "Waiting for Keycloak operator deployment..."
+	@helm upgrade --install keycloak-operator ./charts/keycloak-operator \
+		--namespace keycloak-system \
+		--reuse-values \
+		--wait \
+		--timeout=300s
+	@echo "✓ Operator Helm release deployed"
+
+.PHONY: helm-uninstall-operator
+helm-uninstall-operator: ## Uninstall operator Helm release
+	@echo "Uninstalling operator Helm release..."
+	helm uninstall keycloak-operator -n keycloak-system || echo "Release not found"
 
 
 .PHONY: install-cnpg
