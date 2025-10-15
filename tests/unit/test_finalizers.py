@@ -221,7 +221,13 @@ class TestClientFinalizers:
 
     @pytest.fixture
     def client_reconciler(self):
-        return KeycloakClientReconciler()
+        reconciler = KeycloakClientReconciler()
+        # Mock _get_realm_info to return expected values without calling K8s API
+        # Returns: (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
+        reconciler._get_realm_info = MagicMock(
+            return_value=("test-realm", "test-namespace", "keycloak", {})
+        )
+        return reconciler
 
     @pytest.fixture
     def mock_keycloak_admin(self):

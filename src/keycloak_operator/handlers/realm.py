@@ -64,8 +64,8 @@ class StatusWrapper:
             self._patch_status[k] = v
 
 
-@kopf.on.create("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
-@kopf.on.resume("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.create("keycloakrealms", group="keycloak.mdvr.nl", version="v1", backoff=1.5)
+@kopf.on.resume("keycloakrealms", group="keycloak.mdvr.nl", version="v1", backoff=1.5)
 async def ensure_keycloak_realm(
     spec: dict[str, Any],
     name: str,
@@ -143,7 +143,7 @@ async def ensure_keycloak_realm(
     return None
 
 
-@kopf.on.update("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.update("keycloakrealms", backoff=1.5, group="keycloak.mdvr.nl", version="v1")
 async def update_keycloak_realm(
     old: dict[str, Any],
     new: dict[str, Any],
@@ -191,7 +191,7 @@ async def update_keycloak_realm(
     return None
 
 
-@kopf.on.delete("keycloakrealms", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.delete("keycloakrealms", backoff=1.5, group="keycloak.mdvr.nl", version="v1")
 async def delete_keycloak_realm(
     spec: dict[str, Any],
     name: str,
