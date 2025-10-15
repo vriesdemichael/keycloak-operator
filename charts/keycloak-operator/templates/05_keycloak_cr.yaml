@@ -18,8 +18,13 @@ spec:
   {{- if .Values.keycloak.database.cnpg.enabled }}
   database:
     type: {{ .Values.keycloak.database.type }}
-    cnpg:
-      clusterName: {{ .Values.keycloak.database.cnpg.clusterName }}
+    host: {{ .Values.keycloak.database.cnpg.clusterName }}-rw
+    port: 5432
+    database: app
+    username: app
+    passwordSecret:
+      name: {{ .Values.keycloak.database.cnpg.clusterName }}-app
+      key: password
   {{- else }}
   database:
     type: {{ .Values.keycloak.database.type }}

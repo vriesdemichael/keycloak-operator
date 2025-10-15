@@ -135,6 +135,11 @@ rules:
   resources: ["leases"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
+# Kopf peering for leader election (HA)
+- apiGroups: ["kopf.dev"]
+  resources: ["clusterkopfpeerings", "kopfpeerings"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
 # Admission webhook configuration (for validation)
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingadmissionwebhooks", "mutatingadmissionwebhooks"]

@@ -77,9 +77,9 @@ setup_cluster() {
     fi
 
     # Create required namespaces
-    log "Creating operator namespace ($OPERATOR_NAMESPACE)..."
-    kubectl create namespace "$OPERATOR_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
-
+    # Note: operator namespace (keycloak-system) is created by Helm chart
+    # Only create CNPG namespace here as it's managed by CNPG Helm chart
+    
     log "Creating CNPG namespace ($CNPG_NAMESPACE)..."
     kubectl create namespace "$CNPG_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 

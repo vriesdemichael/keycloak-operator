@@ -84,7 +84,7 @@ spec:
     port: 5432
     database: $DATABASE_NAME
     username: app
-    password_secret:
+    passwordSecret:
       name: ${CNPG_CLUSTER}-app
       key: password
 EOF

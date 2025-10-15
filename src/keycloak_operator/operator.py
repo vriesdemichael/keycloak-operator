@@ -22,6 +22,7 @@ Environment Variables:
 import base64
 import logging
 import os
+import random
 import sys
 
 import kopf
@@ -182,17 +183,17 @@ async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
     - Metrics and health check endpoints
     """
     logging.info("Starting Keycloak Operator...")
-
+    # Defaults commented out - adjust as needed
     # Configure operator behavior
-    settings.scanning.disabled = False  # Enable resource scanning
-    settings.posting.enabled = True  # Enable status posting
+    # settings.scanning.disabled = False  # Enable resource scanning
+    # settings.posting.enabled = True  # Enable status posting
     settings.watching.reconnect_backoff = 1.0  # Reconnect delay
 
-    # Configure leader election for high availability
-    settings.peering.name = "keycloak-operator"  # Unique name for leader election
-    settings.peering.priority = 100  # Priority for leader selection
-    settings.peering.lifetime = 30  # Lease lifetime in seconds
-    settings.peering.standalone = False  # Enable leader election (not standalone mode)
+    # Configure peering for leader election with random priority
+    # Each pod gets a unique priority to enable leader election
+    settings.peering.name = "keycloak-operator"
+    settings.peering.priority = random.randint(0, 32767)
+    logging.info(f"Peering priority set to {settings.peering.priority} for leader election")
 
     # Configure error handling - be more forgiving for temporary issues
     settings.execution.max_workers = 20  # Allow concurrent processing
@@ -348,21 +349,19 @@ def main() -> None:
     watched_namespaces = get_watched_namespaces()
 
     try:
-        # Run the operator
-        # Kopf will automatically discover all handlers through the imports above
+        # Run the operator with leader election support
+        # Peering settings are configured in the startup handler
         if watched_namespaces:
             # Watch specific namespaces
             kopf.run(
                 namespaces=watched_namespaces,
                 liveness_endpoint="http://0.0.0.0:8080/healthz",
-                priority=100,
             )
         else:
             # Watch all namespaces (cluster-wide)
             kopf.run(
                 clusterwide=True,
                 liveness_endpoint="http://0.0.0.0:8080/healthz",
-                priority=100,
             )
     except KeyboardInterrupt:
         logging.info("Received shutdown signal")
