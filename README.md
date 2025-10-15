@@ -7,6 +7,30 @@
 
 A comprehensive Kubernetes operator for managing Keycloak instances, realms, and clients with full GitOps compatibility and cross-namespace support.
 
+## 🚀 Quick Start
+
+Get started in under 10 minutes! See the **[Quick Start Guide](examples/quickstart/README.md)** for step-by-step instructions.
+
+```bash
+# 1. Install the operator
+helm install keycloak-operator ./charts/keycloak-operator \
+  --namespace keycloak-system --create-namespace
+
+# 2. Deploy Keycloak instance
+kubectl apply -f examples/quickstart/01-keycloak-instance.yaml
+
+# 3. Create a realm
+kubectl apply -f examples/quickstart/02-realm-example.yaml
+
+# 4. Create an OAuth2 client
+kubectl apply -f examples/quickstart/03-client-example.yaml
+
+# 5. Get client credentials
+kubectl get secret my-app-client-credentials -n my-app -o yaml
+```
+
+**📖 [Full Quick Start Guide →](examples/quickstart/README.md)**
+
 ## 🎯 Overview
 
 This operator provides declarative management of Keycloak identity and access management infrastructure through Kubernetes custom resources. Built with Python and the Kopf framework, it supports enterprise-grade features including:

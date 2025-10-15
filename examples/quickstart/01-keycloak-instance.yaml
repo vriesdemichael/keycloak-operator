@@ -1,0 +1,54 @@
+# Basic Keycloak instance with CloudNativePG database
+#
+# This creates a production-ready Keycloak instance with:
+# - High availability (3 replicas)
+# - PostgreSQL database managed by CloudNativePG operator
+# - Automatic admin credentials generation
+# - Health probes and resource limits
+#
+# Prerequisites:
+# - CloudNativePG operator installed (for database)
+# - Or modify to use external database
+
+apiVersion: keycloak.mdvr.nl/v1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak-system
+spec:
+  # Number of Keycloak replicas for high availability
+  replicas: 3
+  
+  # Keycloak version (image tag)
+  version: "26.0.0"
+  
+  # Keycloak container image
+  image: quay.io/keycloak/keycloak
+  
+  # Database configuration using CloudNativePG
+  database:
+    type: cnpg
+    cluster: keycloak-postgres
+    # CNPG cluster will be created automatically by the operator
+  
+  # Resource limits for Keycloak pods
+  resources:
+    requests:
+      cpu: "500m"
+      memory: "1Gi"
+    limits:
+      cpu: "2000m"
+      memory: "2Gi"
+  
+  # Optional: TLS configuration (recommended for production)
+  # tls:
+  #   enabled: true
+  #   secretName: keycloak-tls-cert
+  
+  # Optional: Ingress configuration
+  # ingress:
+  #   enabled: true
+  #   host: keycloak.example.com
+  #   className: nginx
+  #   annotations:
+  #     cert-manager.io/cluster-issuer: letsencrypt-prod

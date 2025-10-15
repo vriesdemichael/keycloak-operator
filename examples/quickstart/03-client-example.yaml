@@ -1,0 +1,103 @@
+# KeycloakClient - OAuth2/OIDC client application
+#
+# This creates an OAuth2/OIDC client for your application to authenticate users.
+# The operator will generate client credentials and store them in a Kubernetes secret.
+#
+# Prerequisites:
+# - KeycloakRealm must be Ready
+# - Realm authorization secret exists in this namespace
+
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakClient
+metadata:
+  name: my-app-client
+  namespace: my-app  # Same namespace as your application
+spec:
+  # Client ID used in OAuth2 flows
+  clientId: my-app
+  
+  # Human-readable client name
+  clientName: "My Application"
+  
+  # Description shown in Keycloak admin console
+  description: "OAuth2 client for My Application"
+  
+  # Reference to the realm this client belongs to
+  realmRef:
+    name: my-app-realm  # The KeycloakRealm resource name
+    namespace: my-app
+    authorizationSecretRef:
+      # This secret is automatically created by the realm reconciliation
+      name: my-app-realm-realm-auth
+  
+  # Client type: false = confidential (has secret), true = public (no secret)
+  publicClient: false
+  
+  # OAuth2 redirect URIs (where users are redirected after login)
+  redirectUris:
+    - "https://my-app.example.com/callback"
+    - "https://my-app.example.com/auth/callback"
+    - "http://localhost:3000/callback"  # For local development
+  
+  # OAuth2 settings
+  settings:
+    # Enable standard OAuth2 authorization code flow
+    standardFlowEnabled: true
+    
+    # Enable implicit flow (not recommended for production)
+    implicitFlowEnabled: false
+    
+    # Enable direct access grants (Resource Owner Password Credentials)
+    directAccessGrantsEnabled: true
+    
+    # Enable service accounts (for machine-to-machine auth)
+    serviceAccountsEnabled: true
+    
+    # Enable OAuth2 client
+    enabled: true
+  
+  # Web origins for CORS (Cross-Origin Resource Sharing)
+  webOrigins:
+    - "https://my-app.example.com"
+    - "http://localhost:3000"
+  
+  # Optional: Service account roles
+  # These roles are assigned to the client's service account user
+  # serviceAccountRoles:
+  #   realmRoles:
+  #     - "offline_access"
+  #     - "uma_authorization"
+  #   clientRoles:
+  #     other-client:
+  #       - "read"
+  #       - "write"
+  
+  # Optional: Protocol mappers (add custom claims to tokens)
+  # protocolMappers:
+  #   - name: "audience-mapper"
+  #     protocol: "openid-connect"
+  #     protocolMapper: "oidc-audience-mapper"
+  #     config:
+  #       included.client.audience: "my-api"
+  #       access.token.claim: "true"
+  
+  # Optional: Client roles (custom roles specific to this client)
+  # clientRoles:
+  #   - "admin"
+  #   - "user"
+  #   - "viewer"
+
+---
+# After applying this manifest, the operator will create a secret with client credentials:
+#
+# kubectl get secret my-app-client-credentials -n my-app -o yaml
+#
+# The secret contains:
+# - client_id: The OAuth2 client ID
+# - client_secret: The client secret (for confidential clients)
+# - issuer_url: The OIDC issuer URL
+# - token_url: The OAuth2 token endpoint
+# - auth_url: The OAuth2 authorization endpoint
+# - userinfo_url: The OIDC userinfo endpoint
+#
+# Use these credentials in your application's OAuth2 configuration.
