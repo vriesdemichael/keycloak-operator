@@ -103,8 +103,8 @@ class KopfHandlerKwargs(TypedDict, total=False):
 logger = logging.getLogger(__name__)
 
 
-@kopf.on.create("keycloaks", group="keycloak.mdvr.nl", version="v1")
-@kopf.on.resume("keycloaks", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.create("keycloaks", group="keycloak.mdvr.nl", version="v1", backoff=1.5)
+@kopf.on.resume("keycloaks", group="keycloak.mdvr.nl", version="v1", backoff=1.5)
 async def ensure_keycloak_instance(
     spec: dict[str, Any],
     name: str,
@@ -190,7 +190,7 @@ async def ensure_keycloak_instance(
     return None
 
 
-@kopf.on.update("keycloaks", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.update("keycloaks", group="keycloak.mdvr.nl", version="v1", backoff=1.5)
 async def update_keycloak_instance(
     old: dict[str, Any],
     new: dict[str, Any],
@@ -236,7 +236,7 @@ async def update_keycloak_instance(
     return None
 
 
-@kopf.on.delete("keycloaks", group="keycloak.mdvr.nl", version="v1")
+@kopf.on.delete("keycloaks", group="keycloak.mdvr.nl", version="v1", backoff=1.5)
 async def delete_keycloak_instance(
     spec: dict[str, Any],
     name: str,

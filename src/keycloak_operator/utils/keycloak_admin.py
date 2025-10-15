@@ -17,6 +17,7 @@ from typing import Any
 from urllib.parse import urljoin
 
 import requests
+from pybreaker import CircuitBreaker, CircuitBreakerError
 from pydantic import BaseModel
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -118,6 +119,14 @@ class KeycloakAdminClient:
         # Set session defaults
         self.session.verify = verify_ssl
         self.session.timeout = timeout
+
+        # Circuit breaker to prevent hammering Keycloak when it's down
+        # Opens after 5 consecutive failures, tries again after 60 seconds
+        self.breaker = CircuitBreaker(
+            fail_max=5,
+            reset_timeout=60,
+            name=f"keycloak-{server_url}",
+        )
 
         # Authentication state
         self.access_token: str | None = None
@@ -265,29 +274,45 @@ class KeycloakAdminClient:
         url = urljoin(f"{self.server_url}/admin/", endpoint.lstrip("/"))
 
         try:
-            response = self.session.request(
-                method=method,
-                url=url,
-                json=json if json else data if data else None,
-                params=params,
-            )
-
-            # Handle common HTTP errors
-            if response.status_code == 401:
-                # Token might be expired, try re-authenticating once
-                logger.warning("Received 401, attempting re-authentication")
-                self.authenticate()
-                # Retry the request
+            # Wrap HTTP call with circuit breaker to prevent hammering Keycloak when down
+            def make_http_request():
                 response = self.session.request(
                     method=method,
                     url=url,
-                    json=data if data else None,
+                    json=json if json else data if data else None,
                     params=params,
                 )
 
-            response.raise_for_status()
-            return response
+                # Handle common HTTP errors
+                if response.status_code == 401:
+                    # Token might be expired, try re-authenticating once
+                    logger.warning("Received 401, attempting re-authentication")
+                    self.authenticate()
+                    # Retry the request
+                    response = self.session.request(
+                        method=method,
+                        url=url,
+                        json=data if data else None,
+                        params=params,
+                    )
 
+                response.raise_for_status()
+                return response
+
+            # Call through circuit breaker
+            return self.breaker.call(make_http_request)
+
+        except CircuitBreakerError as e:
+            # Circuit breaker is open - Keycloak API is unavailable
+            logger.error(
+                f"Circuit breaker open for Keycloak at {self.server_url} - "
+                f"API temporarily unavailable after repeated failures"
+            )
+            raise KeycloakAdminError(
+                f"Keycloak API circuit breaker open - service temporarily unavailable. "
+                f"The circuit breaker will retry after {self.breaker.reset_timeout} seconds.",
+                status_code=503,
+            ) from e
         except requests.HTTPError as e:
             status_code = getattr(e.response, "status_code", None)
             response_body: str | None = None

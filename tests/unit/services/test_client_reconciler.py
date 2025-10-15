@@ -48,6 +48,13 @@ def reconciler(admin_mock: MagicMock) -> KeycloakClientReconciler:
         keycloak_admin_factory=lambda name, namespace: admin_mock,
     )
     reconciler_instance.logger = MagicMock()
+
+    # Mock _get_realm_info to return expected values without calling K8s API
+    # Returns: (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
+    reconciler_instance._get_realm_info = MagicMock(
+        return_value=("master", "default", "keycloak", {})
+    )
+
     return reconciler_instance
 
 
