@@ -373,6 +373,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         status.deployment = f"{name}-keycloak"
         status.service = f"{name}-keycloak"
         status.adminSecret = f"{name}-admin-credentials"
+        status.authorizationSecretName = "keycloak-operator-auth-token"
         status.endpoints = {
             "admin": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
             "public": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",

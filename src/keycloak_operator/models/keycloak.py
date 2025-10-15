@@ -442,6 +442,13 @@ class KeycloakStatus(BaseModel):
         description="Names of persistent volume claims",
     )
 
+    # Authorization
+    authorization_secret_name: str | None = Field(
+        None,
+        alias="authorizationSecretName",
+        description="Name of the secret containing the operator's authorization token",
+    )
+
     # Endpoints
     endpoints: KeycloakEndpoints = Field(
         default_factory=KeycloakEndpoints, description="Access endpoints"

@@ -77,7 +77,10 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Generate/retrieve realm authorization token
         owner_uid = kwargs.get("uid", "")
         realm_auth_secret_name = await self.ensure_realm_authorization_secret(
-            realm_name=realm_spec.realm_name, namespace=namespace, owner_uid=owner_uid
+            realm_name=realm_spec.realm_name,
+            realm_cr_name=name,
+            namespace=namespace,
+            owner_uid=owner_uid,
         )
 
         # Configure realm features
@@ -239,7 +242,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             ) from e
 
     async def ensure_realm_authorization_secret(
-        self, realm_name: str, namespace: str, owner_uid: str
+        self, realm_name: str, realm_cr_name: str, namespace: str, owner_uid: str
     ) -> str:
         """
         Generate or retrieve authorization secret for this realm.
@@ -251,6 +254,7 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         Args:
             realm_name: Name of the realm (used in secret name)
+            realm_cr_name: Name of the realm CR (used in owner reference)
             namespace: Namespace to create the secret in
             owner_uid: UID of the realm resource (for owner reference)
 
@@ -301,7 +305,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                     client.V1OwnerReference(
                         api_version="keycloak.mdvr.nl/v1",
                         kind="KeycloakRealm",
-                        name=realm_name,
+                        name=realm_cr_name,
                         uid=owner_uid,
                         controller=True,
                         block_owner_deletion=True,

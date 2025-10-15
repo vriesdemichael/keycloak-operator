@@ -20,7 +20,9 @@ class OperatorRef(BaseModel):
 
     namespace: str = Field(..., description="Namespace where the operator is running")
     authorization_secret_ref: AuthorizationSecretRef = Field(
-        ..., alias="authorizationSecretRef"
+        ...,
+        alias="authorizationSecretRef",
+        description="Secret containing the token to authorize with the operator",
     )
 
 

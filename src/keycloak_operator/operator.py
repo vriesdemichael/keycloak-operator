@@ -193,7 +193,9 @@ async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
     # Each pod gets a unique priority to enable leader election
     settings.peering.name = "keycloak-operator"
     settings.peering.priority = random.randint(0, 32767)
-    logging.info(f"Peering priority set to {settings.peering.priority} for leader election")
+    logging.info(
+        f"Peering priority set to {settings.peering.priority} for leader election"
+    )
 
     # Configure error handling - be more forgiving for temporary issues
     settings.execution.max_workers = 20  # Allow concurrent processing
