@@ -81,7 +81,23 @@ jobs:
       run: |
         # Use Makefile for deployment following 2025 operator best practices
         # Note: Kind cluster already exists, so setup-cluster will detect and reuse it
-        make deploy
+        echo "Building operator image..."
+        make build-test || { echo "Build failed!"; exit 1; }
+        
+        echo "Setting up cluster requirements..."
+        make setup-cluster || { echo "Setup cluster failed!"; exit 1; }
+        
+        echo "Installing CNPG..."
+        make install-cnpg || echo "CNPG install failed (may already be installed)"
+        
+        echo "Loading operator image into Kind..."
+        kind load docker-image keycloak-operator:test --name keycloak-operator-test || { echo "Image load failed!"; exit 1; }
+        
+        echo "Deploying operator via Helm..."
+        make helm-deploy-operator || { echo "Helm deploy failed!"; exit 1; }
+        
+        echo "Waiting for operator to be ready..."
+        kubectl rollout status deployment keycloak-operator -n keycloak-system --timeout=60s || { echo "Operator rollout failed!"; kubectl get pods -n keycloak-system; exit 1; }
 
     - name: Deploy test database (PostgreSQL)
       run: |
