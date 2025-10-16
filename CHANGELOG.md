@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.2.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.0...operator-v0.2.1) (2025-10-16)
+
+
+### Features
+
+* **ci:** add CODEOWNERS for automated review requests ([2e81678](https://github.com/vriesdemichael/keycloak-operator/commit/2e81678808cf1cca99dc668878f434cd5ae98310))
+* **ci:** add comprehensive security scanning workflow ([116ef6f](https://github.com/vriesdemichael/keycloak-operator/commit/116ef6f12d73fd58bfbe3cc96906b7e38984d2bf))
+* **ci:** add Dependabot for automated dependency updates ([61614e5](https://github.com/vriesdemichael/keycloak-operator/commit/61614e512728595dfaff0597882ea473e15b84c4))
+* **ci:** add security validation to image publishing ([582caf1](https://github.com/vriesdemichael/keycloak-operator/commit/582caf117d9deb0978030651a7ac94cb0198b563))
+
+
+### Bug Fixes
+
+* **ci:** improve integration test isolation and coverage ([5a03f23](https://github.com/vriesdemichael/keycloak-operator/commit/5a03f2339bbdd916084ee3f66b6699e2ed4c8a1e))
+* **ci:** pin Helm version for deterministic builds ([3acb30f](https://github.com/vriesdemichael/keycloak-operator/commit/3acb30f17687a4bb79e84236ec448739239ee86f))
+
+
+### Documentation
+
+* add comprehensive security and reliability review for CI/CD workflows ([1fb53d4](https://github.com/vriesdemichael/keycloak-operator/commit/1fb53d4d4716cbc5cd5999e0df0feaca8385f7d9))
+* add security scanning badge to README ([8edd36b](https://github.com/vriesdemichael/keycloak-operator/commit/8edd36b9ba27b74717fdd2c6ac44a2b7361d05b6))
+* **ci:** add CI/CD improvements tracking document ([67f714a](https://github.com/vriesdemichael/keycloak-operator/commit/67f714ae03578335b85370f1da540e9242a822a0))
+
 ## [0.2.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.1.0...operator-v0.2.0) (2025-10-16)
 
 
