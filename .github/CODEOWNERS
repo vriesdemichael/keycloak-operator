@@ -1,0 +1,21 @@
+# CODEOWNERS file for automated review requests
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+* @vriesdemichael
+
+# Critical paths requiring extra scrutiny
+/.github/workflows/ @vriesdemichael
+/k8s/ @vriesdemichael
+/charts/ @vriesdemichael
+/Dockerfile @vriesdemichael
+
+# Security-sensitive files
+/pyproject.toml @vriesdemichael
+/uv.lock @vriesdemichael
+/.github/dependabot.yml @vriesdemichael
+
+# Documentation
+/docs/ @vriesdemichael
+/README.md @vriesdemichael
+/CLAUDE.md @vriesdemichael
