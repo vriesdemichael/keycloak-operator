@@ -50,7 +50,7 @@ kubectl logs -n keycloak-system -l app=keycloak-operator --tail=50
 Create a Keycloak instance with an integrated PostgreSQL database:
 
 ```bash
-kubectl apply -f 01-keycloak-instance.yaml
+kubectl apply -f examples/01-keycloak-instance.yaml
 ```
 
 This creates:
@@ -122,7 +122,7 @@ kubectl get secret keycloak-operator-auth-token -n my-app
 A realm is an identity domain that contains users, roles, and clients.
 
 ```bash
-kubectl apply -f 02-realm-example.yaml
+kubectl apply -f examples/02-realm-example.yaml
 ```
 
 Wait for the realm to become ready (takes 10-30 seconds):
@@ -152,7 +152,7 @@ The realm is now available at: `http://localhost:8080/realms/my-app` (via port-f
 Create an OAuth2/OIDC client for your application:
 
 ```bash
-kubectl apply -f 03-client-example.yaml
+kubectl apply -f examples/03-client-example.yaml
 ```
 
 Wait for the client to become ready:
@@ -345,13 +345,10 @@ helm uninstall keycloak-operator -n keycloak-system
 
 ## Next Steps
 
-- 📖 Read the [Security Model](../../docs/security.md) documentation
-- 📊 Learn about [Observability](../../docs/observability.md) features
-- 🏗️ Understand the [Architecture](../../docs/architecture.md)
-- 🔧 Configure [SMTP for email](../../docs/realm-smtp.md)
-- 🎨 Customize [Themes](../../docs/themes.md)
-- 🔐 Set up [Identity Providers](../../docs/identity-providers.md)
-- 👥 Configure [User Federation](../../docs/user-federation.md)
+- 📖 Read the [Security Model](../security.md) documentation
+- 📊 Learn about [Observability](../observability.md) features
+- 🏗️ Understand the [Architecture](../architecture.md)
+- 🔧 Explore [Development Guide](../development.md)
 
 ## Troubleshooting
 
@@ -406,6 +403,6 @@ kubectl get secret my-app-realm-realm-auth -n my-app
 
 ## Support
 
-- 📚 [Full Documentation](../../README.md)
+- 📚 [Full Documentation](../index.md)
 - 🐛 [Report Issues](https://github.com/vriesdemichael/keycloak-operator/issues)
 - 💬 [Discussions](https://github.com/vriesdemichael/keycloak-operator/discussions)
