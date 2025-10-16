@@ -470,7 +470,9 @@ def _verify_authentication_flows(
         return False
 
 
-def _verify_identity_providers(admin_client: Any, realm_name: str, idp_specs: list) -> bool:
+def _verify_identity_providers(
+    admin_client: Any, realm_name: str, idp_specs: list
+) -> bool:
     """
     Verify that identity providers exist and are configured correctly.
 

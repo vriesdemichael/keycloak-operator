@@ -36,7 +36,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
     """
 
     def __init__(
-        self, k8s_client: client.ApiClient | None = None, keycloak_admin_factory: Any = None
+        self,
+        k8s_client: client.ApiClient | None = None,
+        keycloak_admin_factory: Any = None,
     ):
         """
         Initialize Keycloak instance reconciler.

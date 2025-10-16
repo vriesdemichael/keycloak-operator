@@ -130,7 +130,6 @@ make deploy                      # Deploy operator (auto-creates cluster if need
 # Cluster management
 make kind-setup                  # Create bare Kind cluster (namespaces only)
 make setup-cluster               # Idempotent - creates cluster only if missing
-make kind-status                 # Check cluster status
 make kind-teardown              # Complete cleanup of cluster and resources
 
 # Operator monitoring
