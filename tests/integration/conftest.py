@@ -797,6 +797,8 @@ def shared_operator(
        instance itself. If you need destructive testing, create a dedicated instance.
     2. **UNIQUE REALM NAMES**: Always use unique realm names (e.g., uuid.uuid4().hex[:8])
        to prevent collisions between parallel tests.
+    3. **CLEAN UP YOUR MESS**: Always delete any realms or clients you create
+       to avoid polluting the shared instance.
 
     Returns:
         dict with 'name' and 'namespace' of the shared Keycloak instance

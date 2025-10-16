@@ -109,6 +109,8 @@ wait_for_operator() {
         target_dep=cnpg
     elif kubectl get deployment cloudnative-pg -n "$CNPG_NAMESPACE" >/dev/null 2>&1; then
         target_dep=cloudnative-pg
+    elif kubectl get deployment cnpg-cloudnative-pg -n "$CNPG_NAMESPACE" >/dev/null 2>&1; then
+        target_dep=cnpg-cloudnative-pg        
     else
         warn "Could not find CNPG operator deployment yet; listing resources"
         kubectl get all -n "$CNPG_NAMESPACE" || true
