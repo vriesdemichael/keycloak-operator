@@ -207,21 +207,31 @@ jobs:
               memory: 2Gi
         EOF
         
-        echo "Waiting for Keycloak to be ready..."
-        # Wait for Keycloak resource to be processed
-        sleep 10
+        echo "Waiting for Keycloak deployment to be created..."
+        # Wait for deployment to exist (operator needs time to create it)
+        for i in {1..30}; do
+          if kubectl get deployment test-keycloak-keycloak -n keycloak-system 2>/dev/null; then
+            echo "Deployment found!"
+            break
+          fi
+          echo "Waiting for deployment to be created... ($i/30)"
+          sleep 2
+        done
         
-        # Wait for Keycloak deployment to exist
+        echo "Waiting for Keycloak deployment to be ready..."
         kubectl wait -n keycloak-system \
-          --for=condition=available deployment/test-keycloak \
-          --timeout=300s || echo "Deployment not yet available, checking status..."
+          --for=condition=available deployment/test-keycloak-keycloak \
+          --timeout=300s
         
-        # Show Keycloak status
+        echo "Waiting for Keycloak pods to be ready..."
+        kubectl wait -n keycloak-system \
+          --for=condition=ready pod -l app.kubernetes.io/name=test-keycloak \
+          --timeout=300s
+        
+        echo "Keycloak instance is ready!"
         kubectl get keycloaks -n keycloak-system -o wide
         kubectl get deployments -n keycloak-system
         kubectl get pods -n keycloak-system
-        
-        echo "Keycloak instance created and ready!"
 
     - name: Run integration
       if: success()  # Only run if operator deployed successfully
