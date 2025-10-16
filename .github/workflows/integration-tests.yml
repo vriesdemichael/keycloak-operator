@@ -49,8 +49,12 @@ jobs:
       with:
         enable-cache: true
         cache-dependency-glob: "pyproject.toml"
+
     - name: Install dependencies
-      run: uv sync --all-extras
+      run: |
+        # Install with integration test dependencies (includes pytest-xdist)
+        uv sync --group integration
+
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
     - name: Set up Kind
