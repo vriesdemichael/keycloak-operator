@@ -34,8 +34,7 @@ jobs:
       matrix:
         k8s-version:
           - v1.28.0
-          # - v1.29.0
-          - v1.34.0
+          - v1.30.0
 
     steps:
     - name: Checkout code
