@@ -28,9 +28,13 @@ Since the original review (2025-10-15), significant progress has been made on pr
 ### ❌ Still Missing (Blocking v1.0)
 - **Operational Runbooks** - Prometheus alerts reference runbooks but docs/runbooks/ missing
 - **Upgrade Testing** - No automated tests for operator version upgrades
-- **Performance Testing** - No formal load tests (500+ instances)
+- ~~**Performance Testing** - No formal load tests (500+ instances)~~ **[Deferred to post-v1.0]**
 
 **Updated Production Readiness Score: 7.5/10** (up from 6.5/10)
+
+**Additional Improvements (Post-Review):**
+- ✅ **values.schema.json** - Added to keycloak-operator chart (all charts now have schemas)
+- ✅ **extraManifests Support** - All charts support deploying ESO, SealedSecrets, etc.
 
 ---
 
@@ -1031,9 +1035,10 @@ If performance testing reveals Python/Kopf cannot handle required scale (e.g., >
 
 ### P3: Future Enhancements
 
-13. **Helm Chart Improvements**: ~~Add values.schema.json to operator chart~~, more examples
-    - **Status: values.schema.json exists in keycloak-client and keycloak-realm charts**
-    - **TODO: Add values.schema.json to keycloak-operator chart**
+13. **~~Helm Chart Improvements~~** **[✅ COMPLETED]**: ~~Add values.schema.json to operator chart~~, more examples
+    - **Status: values.schema.json added to all charts (operator, realm, client)**
+    - **Status: extraManifests support added to all charts for ESO/SealedSecrets/etc**
+    - **Remaining: More example values files**
 14. **Chaos Testing**: Pod restarts, network partitions, database failures
 15. **Multi-Cluster Support**: Federation, DR scenarios
 16. **Advanced Features**: Realm templates, policy-as-code, audit logging integration

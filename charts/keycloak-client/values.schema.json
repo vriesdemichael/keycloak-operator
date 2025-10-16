@@ -140,6 +140,14 @@
       "type": "boolean",
       "description": "Regenerate client secret on update"
     },
+    "extraManifests": {
+      "type": "array",
+      "description": "Extra Kubernetes manifests to deploy (e.g., ExternalSecrets, SealedSecrets, ConfigMaps)",
+      "items": {
+        "type": "object",
+        "description": "A Kubernetes manifest in YAML format"
+      }
+    },
     "commonLabels": {
       "type": "object",
       "additionalProperties": {"type": "string"}

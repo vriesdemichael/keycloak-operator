@@ -270,6 +270,31 @@ keycloak:
       cpu: 500m
       memory: 1Gi
 
+# Extra Kubernetes manifests to deploy
+# Useful for deploying ExternalSecrets, SealedSecrets, PVs, ConfigMaps, etc.
+extraManifests: []
+  # - apiVersion: v1
+  #   kind: Secret
+  #   metadata:
+  #     name: custom-secret
+  #   stringData:
+  #     key: value
+  # - apiVersion: external-secrets.io/v1beta1
+  #   kind: ExternalSecret
+  #   metadata:
+  #     name: keycloak-db-password
+  #   spec:
+  #     secretStoreRef:
+  #       name: vault-backend
+  #       kind: SecretStore
+  #     target:
+  #       name: keycloak-db-password
+  #     data:
+  #       - secretKey: password
+  #         remoteRef:
+  #           key: /keycloak/database
+  #           property: password
+
 # Common labels applied to all resources
 commonLabels: {}
 

@@ -101,6 +101,31 @@ smtpServer:
 # Free-form key-value pairs for custom realm attributes
 attributes: {}
 
+# Extra Kubernetes manifests to deploy
+# Useful for deploying ExternalSecrets, SealedSecrets, ConfigMaps, etc.
+extraManifests: []
+  # - apiVersion: v1
+  #   kind: Secret
+  #   metadata:
+  #     name: smtp-password
+  #   stringData:
+  #     password: my-smtp-password
+  # - apiVersion: external-secrets.io/v1beta1
+  #   kind: ExternalSecret
+  #   metadata:
+  #     name: smtp-password
+  #   spec:
+  #     secretStoreRef:
+  #       name: vault-backend
+  #       kind: SecretStore
+  #     target:
+  #       name: smtp-password
+  #     data:
+  #       - secretKey: password
+  #         remoteRef:
+  #           key: /keycloak/smtp
+  #           property: password
+
 # Common labels applied to all resources
 commonLabels: {}
 

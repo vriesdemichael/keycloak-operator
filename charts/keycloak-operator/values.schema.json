@@ -1,0 +1,499 @@
+{
+  "$schema": "https://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "operator": {
+      "type": "object",
+      "description": "Operator deployment configuration",
+      "properties": {
+        "replicaCount": {
+          "type": "integer",
+          "description": "Number of operator replicas for HA",
+          "minimum": 1,
+          "default": 2
+        },
+        "image": {
+          "type": "object",
+          "properties": {
+            "repository": {
+              "type": "string",
+              "description": "Container image repository"
+            },
+            "pullPolicy": {
+              "type": "string",
+              "description": "Image pull policy",
+              "enum": ["Always", "IfNotPresent", "Never"],
+              "default": "IfNotPresent"
+            },
+            "tag": {
+              "type": "string",
+              "description": "Image tag override (defaults to chart appVersion)"
+            }
+          },
+          "required": ["repository"]
+        },
+        "imagePullSecrets": {
+          "type": "array",
+          "description": "Image pull secrets for private registries",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"}
+            }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "description": "Resource limits and requests",
+          "properties": {
+            "limits": {
+              "type": "object",
+              "properties": {
+                "cpu": {"type": "string"},
+                "memory": {"type": "string"}
+              }
+            },
+            "requests": {
+              "type": "object",
+              "properties": {
+                "cpu": {"type": "string"},
+                "memory": {"type": "string"}
+              }
+            }
+          }
+        },
+        "nodeSelector": {
+          "type": "object",
+          "description": "Node selector for pod scheduling",
+          "additionalProperties": {"type": "string"}
+        },
+        "tolerations": {
+          "type": "array",
+          "description": "Tolerations for pod scheduling",
+          "items": {
+            "type": "object"
+          }
+        },
+        "affinity": {
+          "type": "object",
+          "description": "Affinity rules for pod scheduling"
+        },
+        "securityContext": {
+          "type": "object",
+          "description": "Pod-level security context"
+        },
+        "containerSecurityContext": {
+          "type": "object",
+          "description": "Container-level security context"
+        },
+        "livenessProbe": {
+          "type": "object",
+          "description": "Liveness probe configuration",
+          "properties": {
+            "httpGet": {
+              "type": "object",
+              "properties": {
+                "path": {"type": "string"},
+                "port": {"type": ["string", "integer"]}
+              }
+            },
+            "initialDelaySeconds": {"type": "integer"},
+            "periodSeconds": {"type": "integer"},
+            "timeoutSeconds": {"type": "integer"},
+            "failureThreshold": {"type": "integer"}
+          }
+        },
+        "readinessProbe": {
+          "type": "object",
+          "description": "Readiness probe configuration",
+          "properties": {
+            "httpGet": {
+              "type": "object",
+              "properties": {
+                "path": {"type": "string"},
+                "port": {"type": ["string", "integer"]}
+              }
+            },
+            "initialDelaySeconds": {"type": "integer"},
+            "periodSeconds": {"type": "integer"},
+            "timeoutSeconds": {"type": "integer"},
+            "failureThreshold": {"type": "integer"}
+          }
+        },
+        "env": {
+          "type": "array",
+          "description": "Environment variables for operator pods",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "value": {"type": "string"},
+              "valueFrom": {"type": "object"}
+            }
+          }
+        }
+      }
+    },
+    "namespace": {
+      "type": "object",
+      "description": "Namespace configuration",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Namespace name",
+          "default": "keycloak-system"
+        },
+        "create": {
+          "type": "boolean",
+          "description": "Create the namespace",
+          "default": true
+        },
+        "podSecurityStandards": {
+          "type": "object",
+          "description": "Pod Security Standards labels",
+          "properties": {
+            "enforce": {
+              "type": "string",
+              "enum": ["privileged", "baseline", "restricted"]
+            },
+            "audit": {
+              "type": "string",
+              "enum": ["privileged", "baseline", "restricted"]
+            },
+            "warn": {
+              "type": "string",
+              "enum": ["privileged", "baseline", "restricted"]
+            }
+          }
+        }
+      }
+    },
+    "serviceAccount": {
+      "type": "object",
+      "description": "Service account configuration",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "Create service account",
+          "default": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Service account name"
+        },
+        "annotations": {
+          "type": "object",
+          "description": "Service account annotations",
+          "additionalProperties": {"type": "string"}
+        }
+      }
+    },
+    "rbac": {
+      "type": "object",
+      "description": "RBAC configuration",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "Create ClusterRole and ClusterRoleBinding",
+          "default": true
+        },
+        "createLeaderElectionRole": {
+          "type": "boolean",
+          "description": "Create namespace-scoped Role for leader election",
+          "default": true
+        }
+      }
+    },
+    "crds": {
+      "type": "object",
+      "description": "CRD installation configuration",
+      "properties": {
+        "install": {
+          "type": "boolean",
+          "description": "Install CRDs as part of this chart",
+          "default": true
+        },
+        "keep": {
+          "type": "boolean",
+          "description": "Keep CRDs on chart uninstall",
+          "default": true
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "description": "Monitoring and observability configuration",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable Prometheus ServiceMonitor",
+          "default": false
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace for monitoring resources"
+        },
+        "labels": {
+          "type": "object",
+          "description": "Additional labels for ServiceMonitor",
+          "additionalProperties": {"type": "string"}
+        },
+        "interval": {
+          "type": "string",
+          "description": "Scrape interval",
+          "default": "30s"
+        },
+        "scrapeTimeout": {
+          "type": "string",
+          "description": "Scrape timeout",
+          "default": "10s"
+        },
+        "prometheusRules": {
+          "type": "object",
+          "description": "Prometheus alert rules configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable PrometheusRule resource",
+              "default": false
+            },
+            "namespace": {
+              "type": "string",
+              "description": "Namespace for PrometheusRule"
+            },
+            "labels": {
+              "type": "object",
+              "description": "Labels for PrometheusRule discovery",
+              "additionalProperties": {"type": "string"}
+            },
+            "interval": {
+              "type": "string",
+              "description": "Evaluation interval",
+              "default": "30s"
+            },
+            "slowReconciliationThreshold": {
+              "type": "integer",
+              "description": "Threshold for slow reconciliation alert in seconds",
+              "minimum": 1,
+              "default": 30
+            },
+            "additionalRules": {
+              "type": "array",
+              "description": "Additional custom alert rules",
+              "items": {"type": "object"}
+            }
+          }
+        },
+        "grafanaDashboard": {
+          "type": "object",
+          "description": "Grafana dashboard configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable Grafana dashboard ConfigMap",
+              "default": false
+            },
+            "namespace": {
+              "type": "string",
+              "description": "Namespace for dashboard ConfigMap"
+            },
+            "labels": {
+              "type": "object",
+              "description": "Labels for dashboard discovery",
+              "additionalProperties": {"type": "string"}
+            }
+          }
+        }
+      }
+    },
+    "keycloak": {
+      "type": "object",
+      "description": "Optional Keycloak instance deployment",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Deploy a Keycloak instance",
+          "default": false
+        },
+        "name": {
+          "type": "string",
+          "description": "Keycloak instance name",
+          "default": "keycloak"
+        },
+        "replicas": {
+          "type": "integer",
+          "description": "Number of Keycloak replicas",
+          "minimum": 1,
+          "default": 1
+        },
+        "version": {
+          "type": "string",
+          "description": "Keycloak version (image tag)",
+          "default": "26.0.0"
+        },
+        "image": {
+          "type": "string",
+          "description": "Keycloak container image",
+          "default": "quay.io/keycloak/keycloak"
+        },
+        "database": {
+          "type": "object",
+          "description": "Database configuration",
+          "properties": {
+            "type": {
+              "type": "string",
+              "description": "Database type",
+              "enum": ["postgresql", "mysql", "mariadb", "oracle", "mssql"],
+              "default": "postgresql"
+            },
+            "host": {
+              "type": "string",
+              "description": "Database host"
+            },
+            "port": {
+              "type": "integer",
+              "description": "Database port",
+              "default": 5432
+            },
+            "database": {
+              "type": "string",
+              "description": "Database name",
+              "default": "keycloak"
+            },
+            "username": {
+              "type": "string",
+              "description": "Database username",
+              "default": "keycloak"
+            },
+            "passwordSecret": {
+              "type": "object",
+              "description": "Secret containing database password",
+              "properties": {
+                "name": {"type": "string"},
+                "key": {"type": "string", "default": "password"}
+              }
+            },
+            "cnpg": {
+              "type": "object",
+              "description": "CloudNativePG cluster configuration",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Use CloudNativePG cluster",
+                  "default": false
+                },
+                "clusterName": {
+                  "type": "string",
+                  "description": "CNPG cluster name",
+                  "default": "keycloak-postgres"
+                }
+              }
+            }
+          }
+        },
+        "admin": {
+          "type": "object",
+          "description": "Admin user configuration",
+          "properties": {
+            "username": {
+              "type": "string",
+              "description": "Admin username",
+              "default": "admin"
+            },
+            "passwordSecret": {
+              "type": "object",
+              "description": "Secret containing admin password",
+              "properties": {
+                "name": {"type": "string"},
+                "key": {"type": "string", "default": "password"}
+              }
+            }
+          }
+        },
+        "ingress": {
+          "type": "object",
+          "description": "Ingress configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable ingress",
+              "default": false
+            },
+            "className": {
+              "type": "string",
+              "description": "Ingress class name"
+            },
+            "annotations": {
+              "type": "object",
+              "description": "Ingress annotations",
+              "additionalProperties": {"type": "string"}
+            },
+            "hosts": {
+              "type": "array",
+              "description": "Ingress hosts",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "host": {"type": "string"},
+                  "paths": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "path": {"type": "string"},
+                        "pathType": {"type": "string"}
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "tls": {
+              "type": "array",
+              "description": "TLS configuration",
+              "items": {"type": "object"}
+            }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "description": "Resource limits and requests",
+          "properties": {
+            "limits": {
+              "type": "object",
+              "properties": {
+                "cpu": {"type": "string"},
+                "memory": {"type": "string"}
+              }
+            },
+            "requests": {
+              "type": "object",
+              "properties": {
+                "cpu": {"type": "string"},
+                "memory": {"type": "string"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "extraManifests": {
+      "type": "array",
+      "description": "Extra Kubernetes manifests to deploy (e.g., ExternalSecrets, SealedSecrets, PVs, ConfigMaps)",
+      "items": {
+        "type": "object",
+        "description": "A Kubernetes manifest in YAML format"
+      }
+    },
+    "commonLabels": {
+      "type": "object",
+      "description": "Labels applied to all resources",
+      "additionalProperties": {"type": "string"}
+    },
+    "commonAnnotations": {
+      "type": "object",
+      "description": "Annotations applied to all resources",
+      "additionalProperties": {"type": "string"}
+    }
+  }
+}
