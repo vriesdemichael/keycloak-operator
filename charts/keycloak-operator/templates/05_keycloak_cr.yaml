@@ -12,8 +12,7 @@ metadata:
   {{- end }}
 spec:
   replicas: {{ .Values.keycloak.replicas }}
-  version: {{ .Values.keycloak.version | quote }}
-  image: {{ .Values.keycloak.image }}
+  image: {{ .Values.keycloak.image }}:{{ .Values.keycloak.version }}
   
   {{- if .Values.keycloak.database.cnpg.enabled }}
   database:
@@ -35,18 +34,6 @@ spec:
     passwordSecret:
       name: {{ .Values.keycloak.database.passwordSecret.name }}
       key: {{ .Values.keycloak.database.passwordSecret.key }}
-  {{- end }}
-  
-  {{- if or .Values.keycloak.admin.username .Values.keycloak.admin.passwordSecret.name }}
-  admin:
-    {{- if .Values.keycloak.admin.username }}
-    username: {{ .Values.keycloak.admin.username }}
-    {{- end }}
-    {{- if .Values.keycloak.admin.passwordSecret.name }}
-    passwordSecret:
-      name: {{ .Values.keycloak.admin.passwordSecret.name }}
-      key: {{ .Values.keycloak.admin.passwordSecret.key }}
-    {{- end }}
   {{- end }}
   
   {{- if .Values.keycloak.ingress.enabled }}
