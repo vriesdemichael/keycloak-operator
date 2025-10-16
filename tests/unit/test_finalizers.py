@@ -110,8 +110,9 @@ class TestKeycloakFinalizers:
 
     @pytest.fixture
     def keycloak_reconciler(self):
-        with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
-            return KeycloakInstanceReconciler()
+        # Create a mock Kubernetes API client to avoid loading kubeconfig
+        mock_k8s_client = MagicMock()
+        return KeycloakInstanceReconciler(k8s_client=mock_k8s_client)
 
     @staticmethod
     def make_keycloak_spec(**overrides) -> dict:
@@ -179,7 +180,9 @@ class TestRealmFinalizers:
 
     @pytest.fixture
     def realm_reconciler(self):
-        return KeycloakRealmReconciler()
+        # Create a mock Kubernetes API client to avoid loading kubeconfig
+        mock_k8s_client = MagicMock()
+        return KeycloakRealmReconciler(k8s_client=mock_k8s_client)
 
     @pytest.fixture
     def mock_keycloak_admin(self):
@@ -221,7 +224,9 @@ class TestClientFinalizers:
 
     @pytest.fixture
     def client_reconciler(self):
-        reconciler = KeycloakClientReconciler()
+        # Create a mock Kubernetes API client to avoid loading kubeconfig
+        mock_k8s_client = MagicMock()
+        reconciler = KeycloakClientReconciler(k8s_client=mock_k8s_client)
         # Mock _get_realm_info to return expected values without calling K8s API
         # Returns: (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
         reconciler._get_realm_info = MagicMock(  # ty: ignore[invalid-assignment]
@@ -338,8 +343,9 @@ class TestFinalizerErrorHandling:
 
     @pytest.fixture
     def keycloak_reconciler(self):
-        with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
-            return KeycloakInstanceReconciler()
+        # Create a mock Kubernetes API client to avoid loading kubeconfig
+        mock_k8s_client = MagicMock()
+        return KeycloakInstanceReconciler(k8s_client=mock_k8s_client)
 
     @pytest.mark.asyncio
     async def test_cleanup_continues_on_partial_failures(
