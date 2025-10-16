@@ -49,12 +49,12 @@ test-unit: ## Run unit tests only
 .PHONY: test-integration
 test-integration: setup-cluster deploy ## Run integration tests (reuses existing cluster)
 	@echo "Running integration tests (with parallel execution)..."
-	uv run --group integration pytest tests/integration/ -v -n auto --dist=loadscope
+	uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
 .PHONY: test-integration-clean
 test-integration-clean: kind-teardown kind-setup deploy ## Run integration tests on fresh cluster
 	@echo "Running integration tests on fresh cluster (with parallel execution)..."
-	uv run --group integration pytest tests/integration/ -v -n auto --dist=loadscope
+	uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
 .PHONY: test-cov
 test-cov: setup-cluster deploy ## Run tests with coverage
