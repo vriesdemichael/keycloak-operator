@@ -94,92 +94,36 @@ jobs:
           --wait \
           --timeout=300s
         
-        echo "Installing CRDs..."
-        kubectl apply -f k8s/crds/
+        echo "Creating keycloak-system namespace..."
+        kubectl create namespace keycloak-system || true
         
-        echo "Deploying operator via Helm (operator only, no test Keycloak)..."
+        echo "Creating admin password secret..."
+        kubectl create secret generic keycloak-admin-password \
+          --from-literal=password=admin123 \
+          --namespace keycloak-system \
+          --dry-run=client -o yaml | kubectl apply -f -
+        
+        echo "Deploying operator + test Keycloak via Helm chart..."
         helm upgrade --install keycloak-operator ./charts/keycloak-operator \
           --namespace keycloak-system \
-          --create-namespace \
+          --set namespace.create=false \
+          --set crds.install=true \
           --set operator.image.repository=keycloak-operator \
           --set operator.image.tag=test \
           --set operator.image.pullPolicy=Never \
           --set operator.replicaCount=1 \
-          --set keycloak.enabled=false \
+          --set keycloak.enabled=true \
+          --set keycloak.name=test-keycloak \
+          --set keycloak.replicas=1 \
+          --set keycloak.database.cnpg.enabled=true \
+          --set keycloak.database.cnpg.clusterName=test-keycloak-postgres \
           --wait \
-          --timeout=300s
+          --timeout=600s
         
-        echo "Waiting for operator to be ready..."
-        kubectl wait --for=condition=available deployment/keycloak-operator \
-          -n keycloak-system --timeout=60s
-        
-        echo "Operator deployed successfully!"
+        echo "Deployment complete!"
         kubectl get pods -n keycloak-system
-
-    - name: Deploy test database (PostgreSQL)
-      run: |
-        kubectl create namespace postgres || true
-        cat <<EOF | kubectl apply -f -
-        apiVersion: apps/v1
-        kind: Deployment
-        metadata:
-          name: postgres
-          namespace: postgres
-        spec:
-          replicas: 1
-          selector:
-            matchLabels:
-              app: postgres
-          template:
-            metadata:
-              labels:
-                app: postgres
-            spec:
-              containers:
-              - name: postgres
-                image: postgres:15-alpine
-                ports:
-                - containerPort: 5432
-                env:
-                - name: POSTGRES_DB
-                  value: keycloak
-                - name: POSTGRES_USER
-                  value: keycloak
-                - name: POSTGRES_PASSWORD
-                  value: keycloak
-                - name: PGDATA
-                  value: /var/lib/postgresql/data/pgdata
-                resources:
-                  requests:
-                    memory: "256Mi"
-                    cpu: "100m"
-                  limits:
-                    memory: "512Mi"
-                    cpu: "500m"
-                volumeMounts:
-                - name: postgres-storage
-                  mountPath: /var/lib/postgresql/data
-              volumes:
-              - name: postgres-storage
-                emptyDir: {}
-        ---
-        apiVersion: v1
-        kind: Service
-        metadata:
-          name: postgres
-          namespace: postgres
-        spec:
-          type: ClusterIP
-          ports:
-          - port: 5432
-            targetPort: 5432
-          selector:
-            app: postgres
-        EOF
-
-        # Wait for PostgreSQL to be ready
-        kubectl wait -n postgres --for=condition=available deployment/postgres --timeout=300s
-        kubectl wait -n postgres --for=condition=ready pod -l app=postgres --timeout=300s
+        kubectl get clusters.postgresql.cnpg.io -n keycloak-system
+        kubectl get keycloaks -n keycloak-system
 
     - name: Wait for operator deployment
       run: |
