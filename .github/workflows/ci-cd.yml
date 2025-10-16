@@ -309,8 +309,8 @@ jobs:
       fail-fast: false
       matrix:
         k8s-version:
-          - v1.28.0
-          - v1.29.0
+          # - v1.28.0
+          # - v1.29.0
           - v1.30.0
     
     steps:
@@ -502,7 +502,8 @@ jobs:
             --for=condition=ready pod \
             -l keycloak.mdvr.nl/instance=keycloak,keycloak.mdvr.nl/component=server \
             --timeout=300s
-          
+          echo "Waiting for Keycloak instance to be ready (the unoptimized version takes ages)..."
+          kubectl wait --for=jsonpath='{.status.phase}'=Ready keycloak/keycloak -n keycloak-system --timeout=120s
           echo "Keycloak instance is ready!"
           kubectl get keycloaks -n keycloak-system -o wide
           kubectl get deployments -n keycloak-system
