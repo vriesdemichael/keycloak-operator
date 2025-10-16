@@ -120,12 +120,17 @@ jobs:
         echo "Admin credentials will be in secret: test-keycloak-admin-credentials"
 
     - name: Wait for operator deployment
+      if: success()  # Only run if previous steps succeeded
       run: |
-        # Wait for operator to be ready (deployed by make deploy)
+        echo "Verifying operator is ready..."
         kubectl wait -n keycloak-system --for=condition=available deployment/keycloak-operator --timeout=300s
         kubectl wait -n keycloak-system --for=condition=ready pod -l app.kubernetes.io/name=keycloak-operator --timeout=300s
+        
+        echo "Operator is ready!"
+        kubectl get pods -n keycloak-system
 
     - name: Run integration tests using 2025 best practices
+      if: success()  # Only run if operator deployed successfully
       env:
         KUBERNETES_VERSION: ${{ matrix.k8s-version }}
         KUBECONFIG: ${{ env.KUBECONFIG }}
@@ -134,7 +139,7 @@ jobs:
         make test-integration
 
     - name: Run leader election tests
-      if: success() || failure()  # Run even if previous step failed
+      if: success()  # Only run if integration tests passed
       run: |
         # Test leader election specifically
         kubectl scale -n keycloak-system deployment keycloak-operator --replicas=2
@@ -164,7 +169,7 @@ jobs:
         echo "New leader: $NEW_LEADER"
 
     - name: Test basic operator functionality
-      if: success() || failure()
+      if: success()  # Only run if leader election tests passed
       run: |
         # Create test namespace and resources
         kubectl create namespace operator-test || true
