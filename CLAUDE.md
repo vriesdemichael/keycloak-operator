@@ -457,7 +457,7 @@ For `kubectl` use `kubectl create` instead of `kubectl apply` whenever possible,
 
 Prefer not to change the directory. Keep in the same directory as this file. The construction (cd somedir && cmd) is known to change your working dir, which confuses you.
 
-Do not use ` cat << 'EOF' | kubectl create -f -` constructions for applying, this requires manual approval every time because it cannot be targeted by auto approval rules properly. Prefer a tmp file, which you then ofcourse will delete afterwards.
+Do not use ` cat << 'EOF' | kubectl create -f -` constructions for applying, this requires manual approval every time because it cannot be targeted by auto approval rules properly. Prefer a tmp file, which you then ofcourse will delete afterwards. When possible use non piped input, it trips up the approval rules.
 
 ## Planning
 When creating a plan be detailed. Expect the developer that will follow your plan to be a complete idiot (but do not mention it in the plan). You will have to be explicit in the steps to be taken. Treat the implementer of the plan as an intern, which needs the work to be validated.
@@ -465,30 +465,10 @@ When creating a plan be detailed. Expect the developer that will follow your pla
 ## Git
 
 **⚠️ REQUIRED: Before committing ANY changes, you MUST read `RELEASES.md` to understand:**
-- Multi-component versioning (operator vs Helm chart)
+- Multi-component versioning (operator vs specific Helm chart)
 - Conventional commit scoping requirements
 - How commit messages trigger releases
 - Version bump rules (feat vs fix vs BREAKING CHANGE)
 
 When committing changes to git you are to use conventional commit messages.
 Be strict with breaking changes, versioning is managed by semantic versioning, so commit messages matter!
-
-### Commit Scoping Rules
-
-**Operator releases** (Docker images):
-- Use standard conventional commits: `feat:`, `fix:`, `refactor!:`
-- OR use explicit scope: `feat(operator):`, `fix(operator):`
-- Triggers release with tag `vX.Y.Z`
-
-**Helm chart releases** (future):
-- MUST use `(chart)` scope: `feat(chart):`, `fix(chart):`
-- Triggers release with tag `chart-vX.Y.Z`
-
-**Examples:**
-```bash
-feat: add SMTP configuration          # → operator release
-fix(operator): resolve sync issue     # → operator release
-feat(chart): add custom probes        # → chart release only
-refactor!: remove deprecated fields   # → BREAKING operator release
-```
-
