@@ -180,16 +180,14 @@ jobs:
         kubectl get pods -n keycloak-system
         kubectl get crds | grep keycloak
 
-    - name: Run integration tests using 2025 best practices
+    - name: Run integration
       if: success()  # Only run if operator deployed successfully
       env:
         KUBERNETES_VERSION: ${{ matrix.k8s-version }}
       run: |
         # KUBECONFIG is already set from the export step
         echo "Using KUBECONFIG: $KUBECONFIG"
-        # Use Makefile for integration tests following 2025 best practices
-        make test-integration
-
+        uv run pytest tests/integration/ -v -n auto --dist=loadscope
     - name: Run leader election tests
       if: success()  # Only run if integration tests passed
       run: |
