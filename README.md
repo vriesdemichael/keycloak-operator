@@ -1,6 +1,7 @@
 # Keycloak Operator
 
 [![Tests](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/integration-tests.yml)
+[![Security](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/security-scan.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/security-scan.yml)
 [![Release](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
