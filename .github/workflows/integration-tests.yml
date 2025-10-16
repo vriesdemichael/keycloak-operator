@@ -109,8 +109,6 @@ jobs:
           --set keycloak.replicas=1 \
           --set keycloak.database.cnpg.enabled=true \
           --set keycloak.database.cnpg.clusterName=test-keycloak-postgres \
-          --set keycloak.admin.username=admin \
-          --set keycloak.admin.passwordSecret.name="" \
           --wait \
           --timeout=600s
         

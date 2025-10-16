@@ -142,8 +142,6 @@ helm-deploy-operator: ## Deploy operator using Helm chart (with Keycloak for tes
 		--set keycloak.database.type=postgresql \
 		--set keycloak.database.cnpg.enabled=true \
 		--set keycloak.database.cnpg.clusterName=keycloak-postgres \
-		--set keycloak.admin.username=admin \
-		--set keycloak.admin.passwordSecret.name="" \
 		--wait \
 		--timeout=300s
 	@echo "✓ Operator deployed successfully"
