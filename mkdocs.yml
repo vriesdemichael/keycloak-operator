@@ -1,6 +1,6 @@
 site_name: Keycloak Operator
 site_description: GitOps-compatible Keycloak Kubernetes operator
-site_url: https://example.com/keycloak-operator  # TODO actual url
+site_url: https://vriesdemichael.github.io/keycloak-operator/
 repo_url: https://github.com/vriesdemichael/keycloak-operator
 repo_name: vriesdemichael/keycloak-operator
 edit_uri: blob/main/docs/
