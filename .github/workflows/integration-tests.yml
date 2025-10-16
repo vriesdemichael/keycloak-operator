@@ -99,6 +99,7 @@ jobs:
         helm upgrade --install keycloak-operator ./charts/keycloak-operator \
           --namespace keycloak-system \
           --create-namespace \
+          --set namespace.create=false \
           --set crds.install=true \
           --set operator.image.repository=keycloak-operator \
           --set operator.image.tag=test \
