@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/integration-tests.yml)
 [![Release](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 
 A Kubernetes operator for managing Keycloak instances, realms, and OAuth2/OIDC clients declaratively with full GitOps compatibility.
@@ -167,7 +167,7 @@ See [Development Guide](docs/development.md) for more details.
 
 ## 📝 License
 
-Apache License 2.0 - see [LICENSE](LICENSE) for details.
+MIT License - see [LICENSE](LICENSE) for details.
 
 ## 🔗 Links
 
