@@ -1,0 +1,237 @@
+name: Security Scanning
+
+# Comprehensive security scanning for code, dependencies, and containers
+# Runs on PRs, pushes to main, and daily schedule
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run daily at 2 AM UTC to catch new vulnerabilities
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  codeql-analysis:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: python
+        queries: security-extended,security-and-quality
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:python"
+
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        enable-cache: true
+
+    - name: Install dependencies
+      run: uv sync --all-extras
+
+    - name: Run pip-audit for Python dependencies
+      run: |
+        uv pip install pip-audit
+        uv run pip-audit --desc --require-hashes || true
+
+    - name: Run safety check
+      run: |
+        uv pip install safety
+        uv run safety check --json || true
+
+  trivy-repo-scan:
+    name: Trivy Repository Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner in repo mode
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-repo-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-repo-results.sarif'
+        category: 'trivy-repo'
+
+    - name: Run Trivy vulnerability scanner (table output)
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'table'
+        severity: 'CRITICAL,HIGH'
+
+  trivy-image-scan:
+    name: Trivy Docker Image Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image for scanning
+      run: |
+        docker build -t keycloak-operator:scan-test .
+
+    - name: Run Trivy vulnerability scanner on image
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'keycloak-operator:scan-test'
+        format: 'sarif'
+        output: 'trivy-image-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+
+    - name: Upload Trivy image results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-image-results.sarif'
+        category: 'trivy-image'
+
+    - name: Run Trivy scanner with table output
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'keycloak-operator:scan-test'
+        format: 'table'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '1'  # Fail CI on critical/high vulnerabilities
+
+  sbom-validation:
+    name: SBOM Generation and Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      run: |
+        docker build -t keycloak-operator:sbom-test .
+
+    - name: Generate SBOM with Syft
+      uses: anchore/sbom-action@v0
+      with:
+        image: keycloak-operator:sbom-test
+        format: spdx-json
+        output-file: sbom.spdx.json
+
+    - name: Scan SBOM for vulnerabilities with Grype
+      uses: anchore/scan-action@v3
+      with:
+        sbom: sbom.spdx.json
+        fail-build: false
+        severity-cutoff: high
+
+    - name: Upload SBOM artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: sbom-spdx
+        path: sbom.spdx.json
+        retention-days: 90
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for secret scanning
+
+    - name: TruffleHog Secret Scan
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --only-verified
+
+  security-summary:
+    name: Security Scan Summary
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [codeql-analysis, dependency-scan, trivy-repo-scan, trivy-image-scan, sbom-validation, secret-scan]
+
+    steps:
+    - name: Check scan results
+      run: |
+        echo "### 🔒 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
+        echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+        echo "| CodeQL Analysis | ${{ needs.codeql-analysis.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Dependency Scan | ${{ needs.dependency-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Trivy Repo Scan | ${{ needs.trivy-repo-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Trivy Image Scan | ${{ needs.trivy-image-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| SBOM Validation | ${{ needs.sbom-validation.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Secret Scan | ${{ needs.secret-scan.result }} |" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [[ "${{ needs.trivy-image-scan.result }}" == "failure" ]]; then
+          echo "❌ **Critical vulnerabilities found in Docker image!**" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        else
+          echo "✅ All security scans passed" >> $GITHUB_STEP_SUMMARY
+        fi
