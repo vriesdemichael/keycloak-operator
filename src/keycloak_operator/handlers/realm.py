@@ -429,7 +429,7 @@ def _verify_realm_config(
 
 
 def _verify_authentication_flows(
-    admin_client, realm_name: str, flow_specs: list
+    admin_client: Any, realm_name: str, flow_specs: list
 ) -> bool:
     """
     Verify that authentication flows exist and are configured correctly.
@@ -470,7 +470,7 @@ def _verify_authentication_flows(
         return False
 
 
-def _verify_identity_providers(admin_client, realm_name: str, idp_specs: list) -> bool:
+def _verify_identity_providers(admin_client: Any, realm_name: str, idp_specs: list) -> bool:
     """
     Verify that identity providers exist and are configured correctly.
 
@@ -509,7 +509,7 @@ def _verify_identity_providers(admin_client, realm_name: str, idp_specs: list) -
 
 
 def _test_user_federation(
-    admin_client, realm_name: str, federation_specs: list
+    admin_client: Any, realm_name: str, federation_specs: list
 ) -> bool:
     """
     Test user federation connections.

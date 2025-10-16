@@ -357,7 +357,7 @@ class KeycloakAdminClient:
         endpoint: str,
         request_model: BaseModel | None = None,
         response_model: type[BaseModel] | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Any:
         """
         Make an authenticated request with automatic Pydantic validation.

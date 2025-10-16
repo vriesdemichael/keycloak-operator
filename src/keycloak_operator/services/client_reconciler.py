@@ -30,7 +30,7 @@ class KeycloakClientReconciler(BaseReconciler):
     """
 
     def __init__(
-        self, k8s_client: client.ApiClient | None = None, keycloak_admin_factory=None
+        self, k8s_client: client.ApiClient | None = None, keycloak_admin_factory: Any = None
     ):
         """
         Initialize Keycloak client reconciler.
@@ -136,7 +136,7 @@ class KeycloakClientReconciler(BaseReconciler):
         name: str,
         namespace: str,
         status: StatusProtocol,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """
         Reconcile Keycloak client to desired state.
@@ -994,7 +994,7 @@ class KeycloakClientReconciler(BaseReconciler):
         name: str,
         namespace: str,
         status: StatusProtocol,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any] | None:
         """
         Handle updates to Keycloak client specifications.
