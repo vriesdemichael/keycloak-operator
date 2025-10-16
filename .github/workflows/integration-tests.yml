@@ -33,6 +33,8 @@ jobs:
       fail-fast: false
       matrix:
         k8s-version:
+          - v1.28.0
+          - v1.29.0
           - v1.30.0
 
     steps:
@@ -62,7 +64,8 @@ jobs:
       with:
         version: v0.20.0
         kubectl_version: ${{ matrix.k8s-version }}
-        cluster_name: keycloak-operator-test
+        # Use unique cluster name per workflow run to ensure isolation
+        cluster_name: keycloak-operator-test-${{ github.run_id }}
         config: tests/kind/kind-config.yaml
         node_image: kindest/node:${{ matrix.k8s-version }}
         wait: 300s
@@ -90,7 +93,7 @@ jobs:
       if: success()
       run: |
         echo "Loading operator image into Kind cluster..."
-        kind load docker-image keycloak-operator:test --name keycloak-operator-test
+        kind load docker-image keycloak-operator:test --name keycloak-operator-test-${{ github.run_id }}
         echo "Image loaded successfully"
 
     - name: Install CloudNativePG operator
@@ -246,32 +249,42 @@ jobs:
     - name: Collect logs and diagnostics
       if: always()
       run: |
-        echo "=== Cluster Info ==="
-        kubectl cluster-info
+        # Create logs directory
+        mkdir -p test-logs
+        
+        echo "=== Cluster Info ===" | tee test-logs/cluster-info.log
+        kubectl cluster-info | tee -a test-logs/cluster-info.log
 
-        echo "=== Operator Logs ==="
-        make operator-logs || kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --all-containers=true --tail=500 || true
+        echo "=== Operator Logs ===" | tee test-logs/operator-logs.log
+        kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --all-containers=true --tail=1000 >> test-logs/operator-logs.log 2>&1 || true
 
-        echo "=== Operator Status ==="
-        make operator-status || true
+        echo "=== Operator Status ===" | tee test-logs/operator-status.log
+        kubectl get deployment -n keycloak-system -o wide >> test-logs/operator-status.log 2>&1 || true
+        kubectl describe deployment -n keycloak-system keycloak-operator >> test-logs/operator-status.log 2>&1 || true
 
-        echo "=== Test Resources ==="
-        kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces || true
+        echo "=== Test Resources ===" | tee test-logs/test-resources.log
+        kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
+        kubectl describe keycloaks --all-namespaces >> test-logs/test-resources-describe.log 2>&1 || true
 
-        echo "=== Events ==="
-        kubectl get events --all-namespaces --sort-by='.lastTimestamp' --tail=50 || true
+        echo "=== Events ===" | tee test-logs/events.log
+        kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
 
-        echo "=== PostgreSQL Status ==="
-        kubectl get -n postgres pods,services || true
-        kubectl logs -n postgres -l app=postgres --tail=100 || true
+        echo "=== Keycloak Logs ===" | tee test-logs/keycloak-logs.log
+        kubectl logs -n keycloak-system -l keycloak.mdvr.nl/component=server --tail=500 >> test-logs/keycloak-logs.log 2>&1 || true
+
+        echo "=== PostgreSQL Status ===" | tee test-logs/postgres-status.log
+        kubectl get clusters.postgresql.cnpg.io -n keycloak-system -o wide >> test-logs/postgres-status.log 2>&1 || true
+        kubectl logs -n keycloak-system -l cnpg.io/cluster=test-keycloak-postgres --tail=500 >> test-logs/postgres-logs.log 2>&1 || true
+
+        echo "=== All Pods ===" | tee test-logs/all-pods.log
+        kubectl get pods --all-namespaces -o wide >> test-logs/all-pods.log 2>&1 || true
 
     - name: Upload test artifacts
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: test-logs-k8s-${{ matrix.k8s-version }}
-        path: |
-          test-logs/
+        name: test-logs-k8s-${{ matrix.k8s-version }}-run-${{ github.run_id }}
+        path: test-logs/
         retention-days: 7
 
   # Separate job for running unit tests (faster feedback)
