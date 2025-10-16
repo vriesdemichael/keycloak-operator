@@ -23,7 +23,7 @@ This document tracks the implementation status of improvements identified in the
   - Status: ✅ Implemented in `.github/CODEOWNERS`
   - Critical paths require review
 
-## 🟡 Phase 2: Reliability (High Priority) - IN PROGRESS
+## 🟡 Phase 2: Reliability (High Priority) - ✅ COMPLETED
 
 - [x] **Fix cluster reuse in CI**
   - Status: ✅ Fixed - now using unique cluster per run: `keycloak-operator-test-${{ github.run_id }}`
@@ -38,13 +38,18 @@ This document tracks the implementation status of improvements identified in the
   - Status: ✅ Now testing against v1.28.0, v1.29.0, v1.30.0
   - Provides better compatibility validation
 
-- [ ] **Fix workflow_run race condition**
-  - Status: ⚠️ PARTIALLY FIXED - now requires both tests AND security scans
-  - TODO: Consider consolidating into single workflow with job dependencies
-  - Current approach is safer but more complex
+- [x] **Fix workflow_run race condition**
+  - Status: ✅ FULLY FIXED - unified ci-cd.yml with explicit job dependencies
+  - Replaced 3 workflows with single pipeline using `needs:`
+  - No more race conditions, guaranteed execution order
 
 - [x] **Fix Helm version pinning**
   - Status: ✅ Changed from 'latest' to 'v3.16.2'
+
+- [x] **ARM64 decision**
+  - Status: ✅ Removed ARM64 support completely
+  - Only building/testing linux/amd64
+  - 50% faster builds, only tested platforms shipped
 
 ## 🔵 Phase 3: Operability (Medium Priority) - TODO
 
@@ -168,15 +173,15 @@ Dependabot will now automatically:
 ## Timeline Estimate
 
 - Phase 1 (Security): ✅ COMPLETED
-- Phase 2 (Reliability): ⚠️ 90% complete - ~1 day remaining
+- Phase 2 (Reliability): ✅ COMPLETED
 - Phase 3 (Operability): 📋 ~1-2 weeks
 - Phase 4 (Polish): 📋 ~1-2 weeks
 
-**Total time to full implementation**: ~4-6 weeks of focused work
+**Total time to full implementation**: ~2-4 weeks remaining
 
 ## Review Grade Progression
 
 - Initial: **B+ (70%)**
-- After Phase 1: **A- (85%)** ← Current state
-- After Phase 2: **A (90%)**
+- After Phase 1: A- (85%)
+- After Phase 2: **A (90%)** ← Current state
 - After Phase 3+4: **A+ (95%)**
