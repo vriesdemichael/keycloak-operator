@@ -8,6 +8,7 @@
 #
 # Prerequisites:
 # - CloudNativePG operator installed (for database)
+# - CloudNativePG Cluster created (see CNPG documentation)
 # - Or modify to use external database
 
 apiVersion: keycloak.mdvr.nl/v1
@@ -19,17 +20,20 @@ spec:
   # Number of Keycloak replicas for high availability
   replicas: 3
   
-  # Keycloak version (image tag)
-  version: "26.0.0"
+  # Keycloak container image (version is part of tag)
+  image: quay.io/keycloak/keycloak:26.0.0
   
-  # Keycloak container image
-  image: quay.io/keycloak/keycloak
-  
-  # Database configuration using CloudNativePG
+  # Database configuration for CloudNativePG
+  # Note: Use standard PostgreSQL connection to CNPG cluster
   database:
-    type: cnpg
-    cluster: keycloak-postgres
-    # CNPG cluster will be created automatically by the operator
+    type: postgresql
+    host: keycloak-postgres-rw  # CNPG read-write service
+    port: 5432
+    database: app
+    username: app
+    passwordSecret:
+      name: keycloak-postgres-app  # CNPG-generated secret
+      key: password
   
   # Resource limits for Keycloak pods
   resources:
