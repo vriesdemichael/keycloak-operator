@@ -4,12 +4,12 @@ name: Build and Publish
 # - After tests pass on main: publish 'latest' and 'sha-<commit>'
 # - On release: publish semantic version tags (v1.2.3, v1.2, v1)
 #
-# IMPORTANT: This workflow only runs AFTER integration tests succeed
-# to prevent publishing broken images
+# IMPORTANT: This workflow only runs AFTER integration tests AND security scans succeed
+# to prevent publishing broken or vulnerable images
 
 on:
   workflow_run:
-    workflows: ["Integration Tests"]
+    workflows: ["Integration Tests", "Security Scanning"]
     types: [completed]
     branches: [main]
   release:
@@ -24,12 +24,13 @@ jobs:
   build-and-publish:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
-    # Only run if tests passed (or if manually triggered/release)
+    # Only run if tests AND security scans passed (or if manually triggered/release)
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'release' || github.event_name == 'workflow_dispatch' }}
     permissions:
       contents: read
       packages: write
       id-token: write  # For cosign signing
+      security-events: write  # For uploading security scan results
 
     steps:
     - name: Checkout code
@@ -89,6 +90,28 @@ jobs:
         format: spdx-json
         output-file: sbom.spdx.json
         upload-artifact: true
+
+    - name: Scan published image with Trivy
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        format: 'sarif'
+        output: 'trivy-published-results.sarif'
+        severity: 'CRITICAL,HIGH'
+
+    - name: Upload Trivy results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-published-results.sarif'
+        category: 'trivy-published-image'
+
+    - name: Scan SBOM for vulnerabilities
+      uses: anchore/scan-action@v3
+      with:
+        sbom: sbom.spdx.json
+        fail-build: true
+        severity-cutoff: critical
 
     - name: Summary
       run: |
