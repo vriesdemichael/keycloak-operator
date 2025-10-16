@@ -173,13 +173,11 @@ jobs:
       
       - name: Run pip-audit
         run: |
-          uv pip install pip-audit
-          uv run pip-audit --desc || true
+          uv run --with pip-audit pip-audit --desc || true
       
       - name: Run safety check
         run: |
-          uv pip install safety
-          uv run safety check --json || true
+          uv run --with safety safety check --json || true
   
   security-image-scan:
     name: Security - Container Image Scan
