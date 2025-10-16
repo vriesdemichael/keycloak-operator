@@ -127,7 +127,7 @@ deploy-local: build-test setup-cluster install-cnpg ## Deploy operator + test Ke
 
 .PHONY: helm-deploy-operator
 helm-deploy-operator: ## Deploy operator using Helm chart (with Keycloak for testing)
-	@echo "Deploying operator with Helm..."
+	@echo "Deploying operator with Helm (admin password will be auto-generated)..."
 	helm upgrade --install keycloak-operator ./charts/keycloak-operator \
 		--namespace keycloak-system \
 		--create-namespace \
@@ -143,22 +143,11 @@ helm-deploy-operator: ## Deploy operator using Helm chart (with Keycloak for tes
 		--set keycloak.database.cnpg.enabled=true \
 		--set keycloak.database.cnpg.clusterName=keycloak-postgres \
 		--set keycloak.admin.username=admin \
-		--set keycloak.admin.passwordSecret.name=keycloak-admin-secret \
-		--set keycloak.admin.passwordSecret.key=password \
-		--wait=false \
-		--timeout=300s
-	@echo "Creating admin password secret..."
-	@kubectl create secret generic keycloak-admin-secret \
-		--from-literal=password=admin \
-		--namespace keycloak-system \
-		--dry-run=client -o yaml | kubectl apply -f -
-	@echo "Waiting for Keycloak operator deployment..."
-	@helm upgrade --install keycloak-operator ./charts/keycloak-operator \
-		--namespace keycloak-system \
-		--reuse-values \
+		--set keycloak.admin.passwordSecret.name="" \
 		--wait \
 		--timeout=300s
-	@echo "✓ Operator Helm release deployed"
+	@echo "✓ Operator deployed successfully"
+	@echo "Admin credentials auto-generated in secret: keycloak-admin-credentials"
 
 .PHONY: helm-uninstall-operator
 helm-uninstall-operator: ## Uninstall operator Helm release
