@@ -34,7 +34,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0  # Full history for better layer caching
 
@@ -71,7 +71,7 @@ jobs:
           org.opencontainers.image.licenses=Apache-2.0
 
     - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         platforms: linux/amd64,linux/arm64
@@ -100,14 +100,14 @@ jobs:
         severity: 'CRITICAL,HIGH'
 
     - name: Upload Trivy results to GitHub Security
-      uses: github/codeql-action/upload-sarif@v3
+      uses: github/codeql-action/upload-sarif@v4
       if: always()
       with:
         sarif_file: 'trivy-published-results.sarif'
         category: 'trivy-published-image'
 
     - name: Scan SBOM for vulnerabilities
-      uses: anchore/scan-action@v3
+      uses: anchore/scan-action@v7
       with:
         sbom: sbom.spdx.json
         fail-build: true
