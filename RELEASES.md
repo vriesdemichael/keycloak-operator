@@ -4,24 +4,36 @@ This project uses [release-please](https://github.com/googleapis/release-please)
 
 ## Components
 
-The repository contains two independently versioned components:
+The repository contains four independently versioned components:
 
 ### 1. Operator (Docker Image)
 - **Path**: Root directory (`.`)
 - **Artifact**: Docker image at `ghcr.io/vriesdemichael/keycloak-operator`
 - **Release Tags**: `v1.2.3` (no component prefix)
-- **Triggered by**: Any conventional commit without `(chart)` scope
+- **Triggered by**: Any conventional commit **without** chart scope
 
-### 2. Helm Chart (Future)
+### 2. Keycloak Operator Helm Chart
 - **Path**: `charts/keycloak-operator/`
 - **Artifact**: Helm chart package
-- **Release Tags**: `chart-v0.5.0` (includes component prefix)
-- **Triggered by**: Conventional commits with `(chart)` scope
+- **Release Tags**: `chart-operator-v0.5.0`
+- **Triggered by**: Conventional commits with `(chart-operator)` scope
+
+### 3. Keycloak Realm Helm Chart
+- **Path**: `charts/keycloak-realm/`
+- **Artifact**: Helm chart package
+- **Release Tags**: `chart-realm-v0.5.0`
+- **Triggered by**: Conventional commits with `(chart-realm)` scope
+
+### 4. Keycloak Client Helm Chart
+- **Path**: `charts/keycloak-client/`
+- **Artifact**: Helm chart package
+- **Release Tags**: `chart-client-v0.5.0`
+- **Triggered by**: Conventional commits with `(chart-client)` scope
 
 ## Conventional Commits & Scoping
 
-### Operator Releases
-Use standard conventional commits or `(operator)` scope:
+### Operator Releases (Docker Image)
+Use standard conventional commits **without** scope, or use `(operator)` explicitly:
 ```bash
 feat: add realm deletion protection
 fix: resolve client sync issue
@@ -30,11 +42,25 @@ feat(operator): implement external secrets integration
 ```
 
 ### Helm Chart Releases
-Use `(chart)` scope explicitly:
+Use specific chart scopes:
+
+**Operator Chart:**
 ```bash
-feat(chart): add values for custom probes
-fix(chart): correct RBAC permissions
-docs(chart): update README with examples
+feat(chart-operator): add values for custom probes
+fix(chart-operator): correct RBAC permissions
+docs(chart-operator): update README with examples
+```
+
+**Realm Chart:**
+```bash
+feat(chart-realm): add support for custom themes
+fix(chart-realm): correct realm import logic
+```
+
+**Client Chart:**
+```bash
+feat(chart-client): add protocol mapper configuration
+fix(chart-client): handle missing redirect URIs
 ```
 
 ## Release Workflow
@@ -87,33 +113,48 @@ git push origin main
 #    - ghcr.io/vriesdemichael/keycloak-operator:latest
 ```
 
-### Example: Chart Release
+### Example: Operator Chart Release
 
 ```bash
-# Chart-scoped commits
-git commit -m "feat(chart): add custom resource limits"
-git commit -m "fix(chart): correct service account annotations"
+# Operator chart commits
+git commit -m "feat(chart-operator): add custom resource limits"
+git commit -m "fix(chart-operator): correct service account annotations"
 git push origin main
 
-# → Release-please creates PR: "chore: release chart 0.2.0"
+# → Release-please creates PR: "chore: release chart-operator 0.2.0"
 # → Merge PR
-# → Release chart-v0.2.0 created
-# → Helm chart published (when chart registry is configured)
+# → Release chart-operator-v0.2.0 created
+# → Helm chart published to GitHub Pages
 ```
 
-### Example: Both Components
+### Example: Realm Chart Release
 
 ```bash
-# Mixed commits
-git commit -m "feat: add new CRD field"
-git commit -m "feat(chart): expose new field in values"
+# Realm chart commits
+git commit -m "feat(chart-realm): add theme support"
+git commit -m "fix(chart-realm): handle empty realm names"
 git push origin main
 
-# → Release-please creates TWO separate PRs:
+# → Release-please creates PR: "chore: release chart-realm 0.2.0"
+# → Merge PR
+# → Release chart-realm-v0.2.0 created
+```
+
+### Example: Multiple Components
+
+```bash
+# Mixed commits affecting different components
+git commit -m "feat: add new CRD field"                           # → operator
+git commit -m "feat(chart-operator): expose new field in values"  # → operator chart
+git commit -m "feat(chart-realm): support new realm settings"     # → realm chart
+git push origin main
+
+# → Release-please creates THREE separate PRs:
 #    1. "chore: release operator 0.3.0"
-#    2. "chore: release chart 0.3.0"
-# → Merge both PRs
-# → Two releases created with independent versions
+#    2. "chore: release chart-operator 0.3.0"
+#    3. "chore: release chart-realm 0.3.0"
+# → Merge relevant PRs
+# → Separate releases created with independent versions
 ```
 
 ## Version Bumping Rules
@@ -160,12 +201,17 @@ gh release create v0.2.0 --title "v0.2.0" --notes "Emergency release"
 - Ensure breaking changes use `!` or `BREAKING CHANGE:`
 
 **Q: Chart not releasing separately?**
-- Verify commits use `(chart)` scope: `feat(chart): ...`
-- Check `charts/keycloak-operator/` directory exists
+- Verify commits use correct scope:
+  - Operator chart: `feat(chart-operator): ...`
+  - Realm chart: `feat(chart-realm): ...`
+  - Client chart: `feat(chart-client): ...`
+- Check corresponding chart directory exists
+- Ensure Chart.yaml has correct version
 
-**Q: Multiple PRs for single component?**
-- This is normal if separate-pull-requests is enabled
-- Merge the PR for the component you want to release
+**Q: Multiple PRs for different charts?**
+- This is expected - each component releases independently
+- Merge only the PRs for components you want to release
+- Each chart has independent versioning
 
 **Q: Image published despite test failures?**
 - This should NEVER happen - build workflow requires tests to pass
