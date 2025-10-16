@@ -187,7 +187,7 @@ jobs:
       run: |
         # KUBECONFIG is already set from the export step
         echo "Using KUBECONFIG: $KUBECONFIG"
-        uv run pytest tests/integration/ -v -n auto --dist=loadscope
+        uv run --group dev pytest tests/integration/ -v -n auto --dist=loadscope
     - name: Run leader election tests
       if: success()  # Only run if integration tests passed
       run: |
