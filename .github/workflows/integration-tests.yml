@@ -225,7 +225,8 @@ jobs:
         
         echo "Waiting for Keycloak pods to be ready..."
         kubectl wait -n keycloak-system \
-          --for=condition=ready pod -l app.kubernetes.io/name=test-keycloak \
+          --for=condition=ready pod \
+          -l keycloak.mdvr.nl/instance=test-keycloak,keycloak.mdvr.nl/component=server \
           --timeout=300s
         
         echo "Keycloak instance is ready!"
