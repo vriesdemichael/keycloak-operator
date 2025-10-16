@@ -2,10 +2,6 @@
 
 # Docker registry configuration
 VERSION ?= $(shell grep '^version = ' pyproject.toml | cut -d'"' -f2)
-REGISTRY ?= ghcr.io
-IMAGE_NAME ?= vriesdemichael/keycloak-operator
-IMAGE_TAG ?= $(VERSION)
-FULL_IMAGE ?= $(REGISTRY)/$(IMAGE_NAME):$(IMAGE_TAG)
 
 .PHONY: help
 help: ## Show this help message
@@ -21,15 +17,15 @@ install: ## Install development dependencies
 # Code quality
 .PHONY: lint
 lint: ## Run linting checks
-	uv run ruff check --fix
+	uv run --group quality ruff check --fix
 
 .PHONY: format
 format: ## Format code
-	uv run ruff format
+	uv run --group quality ruff format
 
 .PHONY: type-check
 type-check: ## Run type checking
-	uv run ty check
+	uv run --group quality ty check
 
 .PHONY: quality
 quality: lint format type-check
@@ -44,26 +40,20 @@ test: quality test-unit test-integration ## Run complete test suite (unit + inte
 
 .PHONY: test-unit
 test-unit: ## Run unit tests only
-	uv run pytest tests/unit/ -v -m "not integration"
+	uv run --group test pytest tests/unit/ -v
 
 .PHONY: test-integration
-test-integration: setup-cluster deploy ## Run integration tests (reuses existing cluster)
-	@echo "Running integration tests (with parallel execution)..."
+test-integration: ensure-kind-cluster deploy ## Run integration tests (reuses existing cluster)
 	uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
 .PHONY: test-integration-clean
-test-integration-clean: kind-teardown kind-setup deploy ## Run integration tests on fresh cluster
-	@echo "Running integration tests on fresh cluster (with parallel execution)..."
-	uv run pytest tests/integration/ -v -n auto --dist=loadscope
+test-integration-clean: kind-teardown test-integration
 
-.PHONY: test-cov
-test-cov: setup-cluster deploy ## Run tests with coverage
-	uv run pytest tests --cov=keycloak_operator --cov-report=term --cov-report=html
 
 # Kind cluster management
 # ========================
 # kind-setup: Creates bare cluster with namespaces (no operator/CRDs)
-# setup-cluster: Idempotent - creates cluster only if it doesn't exist
+# ensure-kind-cluster: Idempotent - creates cluster only if it doesn't exist
 # kind-teardown: Complete cleanup of cluster and resources
 
 .PHONY: kind-setup
@@ -74,17 +64,6 @@ kind-setup: ## Set up Kind cluster for integration testing
 kind-teardown: ## Tear down Kind cluster
 	./scripts/kind-teardown.sh
 
-.PHONY: kind-status
-kind-status: ## Check Kind cluster status
-	@echo "Kind clusters:"
-	@kind get clusters || echo "No Kind clusters found"
-	@echo ""
-	@echo "Kubernetes context:"
-	@kubectl config current-context || echo "No active context"
-	@echo ""
-	@echo "Cluster info:"
-	@kubectl cluster-info || echo "Cannot connect to cluster"
-
 
 # Operator operations
 .PHONY: build
@@ -92,23 +71,17 @@ build: ## Build operator Docker image
 	docker build -t keycloak-operator:latest .
 
 .PHONY: build-test
-build-test: ## Build operator Docker image for testing
+build-test: ## Build operator Docker image for testing and load it into kind cluster
 	docker build -t keycloak-operator:test .
+	@echo "Loading operator image into Kind cluster..."
+	kind load docker-image keycloak-operator:test --name keycloak-operator-test
 
-.PHONY: push
-push: build ## Build and push Docker image to registry
-	docker tag keycloak-operator:latest $(FULL_IMAGE)
-	docker tag keycloak-operator:latest $(REGISTRY)/$(IMAGE_NAME):latest
-	docker push $(FULL_IMAGE)
-	docker push $(REGISTRY)/$(IMAGE_NAME):latest
-	@echo "Pushed $(FULL_IMAGE)"
-	@echo "Pushed $(REGISTRY)/$(IMAGE_NAME):latest"
 
 # Deployment
 # ===========
 # Deployment flow:
 #   1. build-test: Build operator image tagged as 'test'
-#   2. setup-cluster: Ensure Kind cluster exists (idempotent)
+#   2. ensure-kind-cluster: Ensure Kind cluster exists (idempotent)
 #   3. install-cnpg: Install CNPG operator (idempotent)
 #   4. helm-deploy-operator: Deploy operator + Keycloak using Helm chart
 
@@ -116,13 +89,13 @@ push: build ## Build and push Docker image to registry
 deploy: deploy-local ## Deploy operator (standard target name)
 
 .PHONY: deploy-local
-deploy-local: build-test setup-cluster install-cnpg ## Deploy operator + test Keycloak instance to local Kind cluster
-	@echo "Loading operator image into Kind cluster..."
-	kind load docker-image keycloak-operator:test --name keycloak-operator-test
+deploy-local: build-test ensure-kind-cluster install-cnpg ## Deploy operator + test Keycloak instance to local Kind cluster
 	@echo "Deploying operator and Keycloak using Helm chart..."
 	@$(MAKE) helm-deploy-operator
 	@echo "Waiting for operator to be ready..."
 	kubectl rollout status deployment keycloak-operator -n keycloak-system --timeout=60s
+	@echo "Waiting for keycloak instance to be ready..."
+	kubectl wait --for=jsonpath='{.status.phase}'=Ready keycloak/keycloak -n keycloak-system --timeout=120s
 	@echo "✓ Operator and Keycloak deployed successfully!"
 
 .PHONY: helm-deploy-operator
@@ -157,8 +130,8 @@ helm-uninstall-operator: ## Uninstall operator Helm release
 install-cnpg: ## Install CloudNativePG operator (idempotent)
 	@./scripts/install-cnpg.sh || echo "CNPG install script exited with code $$? (already installed?)"
 
-.PHONY: setup-cluster
-setup-cluster: ## Ensure Kind cluster is running
+.PHONY: ensure-kind-cluster
+ensure-kind-cluster: ## Ensure Kind cluster is running
 	@if ! kind get clusters | grep -q keycloak-operator-test; then \
 		echo "Setting up Kind cluster..."; \
 		make kind-setup; \
@@ -186,7 +159,7 @@ operator-status: ## Show operator status
 	@kubectl get crd | grep keycloak || echo "No Keycloak CRDs found"
 
 .PHONY: dev-setup
-dev-setup: install setup-cluster ## Full development environment setup
+dev-setup: install ensure-kind-cluster ## Full development environment setup
 	@echo "Development environment ready!"
 	@echo "Run 'make deploy' to deploy the operator"
 	@echo "Run 'make test' to run complete test suite"
@@ -216,11 +189,11 @@ clean-all: clean kind-teardown ## Clean up everything including Kind cluster
 # Documentation
 .PHONY: docs-serve
 docs-serve: ## Serve documentation locally
-	uv run mkdocs serve
+	uv run --group docs mkdocs serve
 
 .PHONY: docs-build
 docs-build: ## Build documentation
-	uv run mkdocs build
+	uv run --group docs mkdocs build
 
 # Default target
 .DEFAULT_GOAL := help
