@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 # ---- Stage 1: Build / Resolve deps -----------------------------------------
-FROM python:3.13-slim AS builder
+FROM python:3.14-slim AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     UV_LINK_MODE=copy \
@@ -34,7 +34,7 @@ COPY src/ src/
 RUN uv sync --frozen --no-dev
 
 # ---- Stage 2: Runtime ------------------------------------------------------
-FROM python:3.13-slim AS runtime
+FROM python:3.14-slim AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH=/app/.venv/bin:$PATH \
