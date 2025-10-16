@@ -176,6 +176,53 @@ jobs:
         kubectl get pods -n keycloak-system
         kubectl get crds | grep keycloak
 
+    - name: Create shared Keycloak instance for tests
+      if: success()
+      run: |
+        echo "Creating shared Keycloak instance..."
+        kubectl apply -f - <<EOF
+        apiVersion: keycloak.mdvr.nl/v1
+        kind: Keycloak
+        metadata:
+          name: test-keycloak
+          namespace: keycloak-system
+        spec:
+          replicas: 1
+          image: quay.io/keycloak/keycloak:26.0.0
+          database:
+            type: postgresql
+            host: test-keycloak-postgres-rw
+            port: 5432
+            database: app
+            username: app
+            passwordSecret:
+              name: test-keycloak-postgres-app
+              key: password
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+        EOF
+        
+        echo "Waiting for Keycloak to be ready..."
+        # Wait for Keycloak resource to be processed
+        sleep 10
+        
+        # Wait for Keycloak deployment to exist
+        kubectl wait -n keycloak-system \
+          --for=condition=available deployment/test-keycloak \
+          --timeout=300s || echo "Deployment not yet available, checking status..."
+        
+        # Show Keycloak status
+        kubectl get keycloaks -n keycloak-system -o wide
+        kubectl get deployments -n keycloak-system
+        kubectl get pods -n keycloak-system
+        
+        echo "Keycloak instance created and ready!"
+
     - name: Run integration
       if: success()  # Only run if operator deployed successfully
       env:
