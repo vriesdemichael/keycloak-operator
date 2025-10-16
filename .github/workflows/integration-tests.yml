@@ -184,7 +184,7 @@ jobs:
         apiVersion: keycloak.mdvr.nl/v1
         kind: Keycloak
         metadata:
-          name: test-keycloak
+          name: keycloak
           namespace: keycloak-system
         spec:
           replicas: 1
@@ -220,13 +220,13 @@ jobs:
         
         echo "Waiting for Keycloak deployment to be ready..."
         kubectl wait -n keycloak-system \
-          --for=condition=available deployment/test-keycloak-keycloak \
+          --for=condition=available deployment/keycloak-keycloak \
           --timeout=300s
         
         echo "Waiting for Keycloak pods to be ready..."
         kubectl wait -n keycloak-system \
           --for=condition=ready pod \
-          -l keycloak.mdvr.nl/instance=test-keycloak,keycloak.mdvr.nl/component=server \
+          -l keycloak.mdvr.nl/instance=keycloak,keycloak.mdvr.nl/component=server \
           --timeout=300s
         
         echo "Keycloak instance is ready!"
