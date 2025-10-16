@@ -30,7 +30,7 @@ class KeycloakRealmReconciler(BaseReconciler):
     """
 
     def __init__(
-        self, k8s_client: client.ApiClient | None = None, keycloak_admin_factory=None
+        self, k8s_client: client.ApiClient | None = None, keycloak_admin_factory: Any = None
     ):
         """
         Initialize Keycloak realm reconciler.
@@ -50,7 +50,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         name: str,
         namespace: str,
         status: StatusProtocol,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """
         Reconcile Keycloak realm to desired state.
@@ -336,7 +336,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             ) from e
 
     async def ensure_realm_exists(
-        self, spec: KeycloakRealmSpec, name: str, namespace: str, **kwargs
+        self, spec: KeycloakRealmSpec, name: str, namespace: str, **kwargs: Any
     ) -> None:
         """
         Ensure the basic realm exists in Keycloak with ownership tracking.
@@ -879,7 +879,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         name: str,
         namespace: str,
         status: StatusProtocol,
-        **kwargs,
+        **kwargs: Any,
     ) -> dict[str, Any] | None:
         """
         Handle updates to Keycloak realm specifications.
