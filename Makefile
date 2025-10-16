@@ -16,7 +16,7 @@ help: ## Show this help message
 # Development setup
 .PHONY: install
 install: ## Install development dependencies
-	uv sync --all-extras
+	uv sync --group dev
 
 # Code quality
 .PHONY: lint
