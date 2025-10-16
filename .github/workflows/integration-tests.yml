@@ -71,18 +71,19 @@ jobs:
         node_image: kindest/node:${{ matrix.k8s-version }}
         wait: 300s
 
-    - name: Export kubeconfig path
+    - name: Verify Kind cluster and export kubeconfig
       run: |
-        # helm/kind-action sets KUBECONFIG, make it available to all steps
-        echo "KUBECONFIG=$KUBECONFIG" >> $GITHUB_ENV
-        echo "Kubeconfig is at: $KUBECONFIG"
-        ls -la $KUBECONFIG
-
-    - name: Verify Kind cluster
-      run: |
+        # Verify cluster is working
         kubectl cluster-info
         kubectl get nodes
         kubectl get pods -A
+        
+        # Export kubeconfig for integration tests
+        # Kind/helm-kind-action configures kubectl at ~/.kube/config
+        export KUBECONFIG="${HOME}/.kube/config"
+        echo "KUBECONFIG=${KUBECONFIG}" >> $GITHUB_ENV
+        ls -la ${KUBECONFIG}
+        echo "Kubeconfig configured at: ${KUBECONFIG}"
 
     - name: Build operator image
       run: |
