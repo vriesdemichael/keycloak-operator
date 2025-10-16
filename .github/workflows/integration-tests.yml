@@ -71,6 +71,13 @@ jobs:
         node_image: kindest/node:${{ matrix.k8s-version }}
         wait: 300s
 
+    - name: Export kubeconfig path
+      run: |
+        # helm/kind-action sets KUBECONFIG, make it available to all steps
+        echo "KUBECONFIG=$KUBECONFIG" >> $GITHUB_ENV
+        echo "Kubeconfig is at: $KUBECONFIG"
+        ls -la $KUBECONFIG
+
     - name: Verify Kind cluster
       run: |
         kubectl cluster-info
@@ -113,6 +120,17 @@ jobs:
           --wait \
           --timeout=600s
         
+        echo "Waiting for CNPG PostgreSQL cluster to be ready..."
+        kubectl wait --for=condition=ready cluster/test-keycloak-postgres \
+          -n keycloak-system \
+          --timeout=300s
+        
+        echo "Waiting for PostgreSQL primary pod to be ready..."
+        kubectl wait --for=condition=ready pod \
+          -l cnpg.io/cluster=test-keycloak-postgres,role=primary \
+          -n keycloak-system \
+          --timeout=300s
+        
         echo "Deployment complete!"
         kubectl get pods -n keycloak-system
         kubectl get clusters.postgresql.cnpg.io -n keycloak-system
@@ -134,8 +152,9 @@ jobs:
       if: success()  # Only run if operator deployed successfully
       env:
         KUBERNETES_VERSION: ${{ matrix.k8s-version }}
-        KUBECONFIG: ${{ env.KUBECONFIG }}
       run: |
+        # KUBECONFIG is already set from the export step
+        echo "Using KUBECONFIG: $KUBECONFIG"
         # Use Makefile for integration tests following 2025 best practices
         make test-integration
 
