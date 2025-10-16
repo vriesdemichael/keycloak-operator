@@ -85,6 +85,7 @@ class TestCircuitBreaker:
 
         # Verify it's a circuit breaker error
         assert "circuit breaker" in str(exc_info.value).lower()
+        assert isinstance(exc_info.value, KeycloakAdminError)
         assert exc_info.value.status_code == 503
 
     def test_circuit_breaker_status_code_503(self, admin_client, mock_session):
@@ -102,6 +103,7 @@ class TestCircuitBreaker:
         with pytest.raises(KeycloakAdminError) as exc_info:
             admin_client._make_request("GET", "realms/master")
 
+        assert isinstance(exc_info.value, KeycloakAdminError)
         assert exc_info.value.status_code == 503
         assert "circuit breaker" in str(exc_info.value).lower()
 
@@ -231,4 +233,5 @@ class TestCircuitBreakerIntegration:
         with pytest.raises(KeycloakAdminError) as exc_info:
             failing_admin_client.get_realm("master")
 
+        assert isinstance(exc_info.value, KeycloakAdminError)
         assert exc_info.value.status_code == 503

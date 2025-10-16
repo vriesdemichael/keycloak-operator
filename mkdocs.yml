@@ -78,6 +78,7 @@ extra:
 
 nav:
   - Home: index.md
+  - Quick Start: quickstart/README.md
   - Architecture: architecture.md
   - Security Model: security.md
   - Observability: observability.md

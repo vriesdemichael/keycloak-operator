@@ -224,7 +224,7 @@ class TestClientFinalizers:
         reconciler = KeycloakClientReconciler()
         # Mock _get_realm_info to return expected values without calling K8s API
         # Returns: (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
-        reconciler._get_realm_info = MagicMock(
+        reconciler._get_realm_info = MagicMock(  # ty: ignore[invalid-assignment]
             return_value=("test-realm", "test-namespace", "keycloak", {})
         )
         return reconciler
