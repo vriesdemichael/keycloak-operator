@@ -52,8 +52,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        # Install with integration test dependencies (includes pytest-xdist)
-        uv sync --group integration
+        # Install with dev and integration test dependencies
+        uv sync --group dev --group integration
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
