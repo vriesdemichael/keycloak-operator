@@ -49,10 +49,10 @@ jobs:
           enable-cache: true
 
       - name: Install Python dependencies
-        run: uv sync --frozen
+        run: uv sync --frozen --group docs
 
       - name: Build MkDocs documentation
-        run: uv run mkdocs build --strict
+        run: uv run --group docs mkdocs build --strict
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
