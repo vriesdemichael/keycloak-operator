@@ -135,6 +135,32 @@ secretName: ""
 # Regenerate the client secret on update
 regenerateSecret: false
 
+# Extra Kubernetes manifests to deploy
+# Useful for deploying ExternalSecrets, SealedSecrets, ConfigMaps, etc.
+extraManifests: []
+  # - apiVersion: v1
+  #   kind: Secret
+  #   metadata:
+  #     name: client-credentials
+  #   stringData:
+  #     client-id: my-client
+  #     client-secret: my-secret
+  # - apiVersion: external-secrets.io/v1beta1
+  #   kind: ExternalSecret
+  #   metadata:
+  #     name: client-credentials
+  #   spec:
+  #     secretStoreRef:
+  #       name: vault-backend
+  #       kind: SecretStore
+  #     target:
+  #       name: client-credentials
+  #     data:
+  #       - secretKey: client-secret
+  #         remoteRef:
+  #           key: /keycloak/clients/{{ .Values.clientId }}
+  #           property: secret
+
 # Common labels applied to all resources
 commonLabels: {}
 
