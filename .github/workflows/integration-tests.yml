@@ -79,25 +79,42 @@ jobs:
 
     - name: Deploy operator
       run: |
-        # Use Makefile for deployment following 2025 operator best practices
-        # Note: Kind cluster already exists, so setup-cluster will detect and reuse it
         echo "Building operator image..."
-        make build-test || { echo "Build failed!"; exit 1; }
-        
-        echo "Setting up cluster requirements..."
-        make setup-cluster || { echo "Setup cluster failed!"; exit 1; }
-        
-        echo "Installing CNPG..."
-        make install-cnpg || echo "CNPG install failed (may already be installed)"
+        make build-test
         
         echo "Loading operator image into Kind..."
-        kind load docker-image keycloak-operator:test --name keycloak-operator-test || { echo "Image load failed!"; exit 1; }
+        kind load docker-image keycloak-operator:test --name keycloak-operator-test
         
-        echo "Deploying operator via Helm..."
-        make helm-deploy-operator || { echo "Helm deploy failed!"; exit 1; }
+        echo "Installing CloudNativePG operator..."
+        helm repo add cnpg https://cloudnative-pg.github.io/charts
+        helm repo update
+        helm upgrade --install cnpg cnpg/cloudnative-pg \
+          --namespace cnpg-system \
+          --create-namespace \
+          --wait \
+          --timeout=300s
+        
+        echo "Installing CRDs..."
+        kubectl apply -f k8s/crds/
+        
+        echo "Deploying operator via Helm (operator only, no test Keycloak)..."
+        helm upgrade --install keycloak-operator ./charts/keycloak-operator \
+          --namespace keycloak-system \
+          --create-namespace \
+          --set operator.image.repository=keycloak-operator \
+          --set operator.image.tag=test \
+          --set operator.image.pullPolicy=Never \
+          --set operator.replicaCount=1 \
+          --set keycloak.enabled=false \
+          --wait \
+          --timeout=300s
         
         echo "Waiting for operator to be ready..."
-        kubectl rollout status deployment keycloak-operator -n keycloak-system --timeout=60s || { echo "Operator rollout failed!"; kubectl get pods -n keycloak-system; exit 1; }
+        kubectl wait --for=condition=available deployment/keycloak-operator \
+          -n keycloak-system --timeout=60s
+        
+        echo "Operator deployed successfully!"
+        kubectl get pods -n keycloak-system
 
     - name: Deploy test database (PostgreSQL)
       run: |
