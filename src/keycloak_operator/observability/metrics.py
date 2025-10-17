@@ -8,8 +8,16 @@ operator performance, resource reconciliation, and system health.
 import logging
 import time
 from contextlib import asynccontextmanager
+from typing import Any
 
-from aiohttp import web
+from aiohttp.web import (
+    Application,
+    AppRunner,
+    Request,
+    Response,
+    TCPSite,
+    json_response,
+)
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     CollectorRegistry,
@@ -375,30 +383,33 @@ class MetricsServer:
         """
         self.port = port
         self.host = host
-        self.app = web.Application()  # type: ignore[attr-defined]
-        self.runner: web.AppRunner | None = None  # type: ignore[attr-defined]
-        self.site: web.TCPSite | None = None  # type: ignore[attr-defined]
+        self.app = Application()
+        self.runner: AppRunner | None = None
+        self.site: TCPSite | None = None
         # Set up routes
         self._setup_routes()
 
-    def _setup_routes(self):
+    def _setup_routes(self) -> None:
         """Set up HTTP routes for the metrics server."""
         self.app.router.add_get("/metrics", self._metrics_handler)
         self.app.router.add_get("/health", self._health_handler)
         self.app.router.add_get("/ready", self._ready_handler)
         self.app.router.add_get("/healthz", self._healthz_handler)  # K8s compatibility
 
-    async def _metrics_handler(self, request: web.Request) -> web.Response:  # type: ignore[attr-defined]
+    async def _metrics_handler(self, request: Request) -> Response:
         """Handle /metrics endpoint for Prometheus scraping."""
         try:
             registry = get_metrics_registry()
             metrics_data = generate_latest(registry)
-            return web.Response(body=metrics_data, content_type=CONTENT_TYPE_LATEST)  # type: ignore[attr-defined]
+            return Response(body=metrics_data, content_type=CONTENT_TYPE_LATEST)
         except Exception as e:
             logger.error(f"Failed to generate metrics: {e}")
-            return web.Response(text=f"Error generating metrics: {type(e).__name__}. Check logs for details.", status=500)  # type: ignore[attr-defined]
+            return Response(
+                text=f"Error generating metrics: {type(e).__name__}. Check logs for details.",
+                status=500,
+            )
 
-    async def _health_handler(self, request: web.Request) -> web.Response:  # type: ignore[attr-defined]
+    async def _health_handler(self, request: Request) -> Response:
         """Handle /health endpoint for operator health checks."""
         try:
             from .health import HealthChecker
@@ -411,22 +422,26 @@ class MetricsServer:
                 200 if health_dict["status"] in ["healthy", "degraded"] else 503
             )
 
-            return web.json_response(health_dict, status=status_code)  # type: ignore[attr-defined]
+            return json_response(health_dict, status=status_code)
         except Exception as e:
             logger.error(f"Health check failed: {e}")
-            return web.json_response(  # type: ignore[attr-defined]
-                {"status": "unhealthy", "error": f"{type(e).__name__}. Check logs for details.", "timestamp": time.time()},
+            return json_response(
+                {
+                    "status": "unhealthy",
+                    "error": f"{type(e).__name__}. Check logs for details.",
+                    "timestamp": time.time(),
+                },
                 status=500,
             )
 
-    async def _ready_handler(self, request: web.Request) -> web.Response:  # type: ignore[attr-defined]
+    async def _ready_handler(self, request: Request) -> Response:
         """Handle /ready endpoint for readiness probes."""
         try:
             from .health import HealthChecker
 
             health_checker = HealthChecker()
             # For readiness, only check essential components
-            results = {}
+            results: dict[str, Any] = {}
             results["kubernetes_api"] = await health_checker._check_kubernetes_api()
             results["crds_installed"] = await health_checker._check_crds_installed()
 
@@ -443,7 +458,7 @@ class MetricsServer:
                         "crds_installed": results["crds_installed"].status,
                     },
                 }
-                return web.json_response(ready_status)  # type: ignore[attr-defined]
+                return json_response(ready_status)
             else:
                 ready_status = {
                     "status": "not_ready",
@@ -453,27 +468,31 @@ class MetricsServer:
                         "crds_installed": results["crds_installed"].status,
                     },
                 }
-                return web.json_response(ready_status, status=503)  # type: ignore[attr-defined]
+                return json_response(ready_status, status=503)
 
         except Exception as e:
             logger.error(f"Readiness check failed: {e}")
-            return web.json_response(  # type: ignore[attr-defined]
-                {"status": "not_ready", "error": f"{type(e).__name__}. Check logs for details.", "timestamp": time.time()},
+            return json_response(
+                {
+                    "status": "not_ready",
+                    "error": f"{type(e).__name__}. Check logs for details.",
+                    "timestamp": time.time(),
+                },
                 status=503,
             )
 
-    async def _healthz_handler(self, request: web.Request) -> web.Response:  # type: ignore[attr-defined]
+    async def _healthz_handler(self, request: Request) -> Response:
         """Handle /healthz endpoint for Kubernetes compatibility."""
         # Simple health check that returns 200 if the server is running
-        return web.Response(text="ok")  # type: ignore[attr-defined]
+        return Response(text="ok")
 
-    async def start(self):
+    async def start(self) -> None:
         """Start the metrics server."""
         try:
-            self.runner = web.AppRunner(self.app)  # type: ignore[attr-defined]
+            self.runner = AppRunner(self.app)
             await self.runner.setup()
 
-            self.site = web.TCPSite(self.runner, self.host, self.port)  # type: ignore[attr-defined]
+            self.site = TCPSite(self.runner, self.host, self.port)
             await self.site.start()
 
             logger.info(f"Metrics server started on {self.host}:{self.port}")
@@ -489,7 +508,7 @@ class MetricsServer:
             logger.error(f"Failed to start metrics server: {e}")
             raise
 
-    async def stop(self):
+    async def stop(self) -> None:
         """Stop the metrics server."""
         try:
             if self.site:
