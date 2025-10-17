@@ -814,7 +814,12 @@ async def shared_operator(
         "keycloak": {
             "enabled": True,
             "replicas": 1,
-            "database": {"cnpg": {"enabled": cnpg_installed}},
+            "database": {
+                "cnpg": {
+                    "enabled": cnpg_installed,
+                    "clusterName": "keycloak-cnpg",  # Required for CNPG
+                }
+            },
         },
         "operator": {"replicaCount": 1},
     }
@@ -855,7 +860,7 @@ async def shared_operator(
                 values_path,
                 "--wait",
                 "--timeout",
-                "10m",
+                "3m",  # Max 3 minutes for Helm install
             ]
 
             logger.info("Installing Keycloak operator via Helm...")
@@ -883,7 +888,7 @@ async def shared_operator(
             except ApiException:
                 return False
 
-        ready = await wait_for_condition(operator_ready, timeout=300, interval=5)
+        ready = await wait_for_condition(operator_ready, timeout=120, interval=3)
         if not ready:
             pytest.skip("Operator deployment not ready in time")
 
@@ -915,7 +920,7 @@ async def shared_operator(
             except ApiException:
                 return False
 
-        ready = await wait_for_condition(keycloak_ready, timeout=600, interval=10)
+        ready = await wait_for_condition(keycloak_ready, timeout=120, interval=5)
         if not ready:
             # Check Keycloak CR status for error details
             try:

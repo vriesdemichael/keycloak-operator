@@ -14,10 +14,17 @@ from kubernetes.client.rest import ApiException
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestOperatorLifecycle:
-    """Test operator deployment and basic lifecycle."""
+    """Test operator deployment and basic lifecycle.
 
-    async def test_operator_deployment_exists(self, k8s_apps_v1, operator_namespace):
+    These tests depend on the shared_operator fixture which deploys
+    the operator and Keycloak instance via Helm.
+    """
+
+    async def test_operator_deployment_exists(
+        self, k8s_apps_v1, shared_operator, operator_namespace
+    ):
         """Test that the operator deployment exists and is ready."""
+        # shared_operator ensures operator is deployed
         try:
             deployment = k8s_apps_v1.read_namespaced_deployment(
                 name="keycloak-operator", namespace=operator_namespace
@@ -33,7 +40,9 @@ class TestOperatorLifecycle:
         except ApiException as e:
             pytest.fail(f"Failed to read operator deployment: {e}")
 
-    async def test_operator_pods_healthy(self, k8s_core_v1, operator_namespace):
+    async def test_operator_pods_healthy(
+        self, k8s_core_v1, shared_operator, operator_namespace
+    ):
         """Test that operator pods are running and healthy."""
         try:
             pods = k8s_core_v1.list_namespaced_pod(
@@ -58,8 +67,9 @@ class TestOperatorLifecycle:
         except ApiException as e:
             pytest.fail(f"Failed to list operator pods: {e}")
 
-    async def test_operator_crds_installed(self, k8s_client):
+    async def test_operator_crds_installed(self, k8s_client, shared_operator):
         """Test that required CRDs are installed and available."""
+        # shared_operator ensures CRDs are installed via Helm
         from kubernetes import client
 
         api = client.ApiextensionsV1Api(k8s_client)
@@ -87,8 +97,11 @@ class TestOperatorLifecycle:
             except ApiException as e:
                 pytest.fail(f"Failed to read CRD {crd_name}: {e}")
 
-    async def test_operator_rbac_permissions(self, k8s_client, operator_namespace):
+    async def test_operator_rbac_permissions(
+        self, k8s_client, shared_operator, operator_namespace
+    ):
         """Test that operator has required RBAC permissions with new namespaced model."""
+        # shared_operator ensures RBAC is configured via Helm
         from kubernetes import client
 
         rbac_api = client.RbacAuthorizationV1Api(k8s_client)
