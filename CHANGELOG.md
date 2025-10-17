@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.2...operator-v0.2.3) (2025-10-17)
+
+
+### Bug Fixes
+
+* **security:** remove unnecessary verify=False from HTTP health check ([dd5217f](https://github.com/vriesdemichael/keycloak-operator/commit/dd5217f3e0df2407ffb594dd554c238889884b38))
+
 ## [0.2.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.1...operator-v0.2.2) (2025-10-17)
 
 
