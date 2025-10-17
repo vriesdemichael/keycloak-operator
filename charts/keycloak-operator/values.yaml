@@ -116,7 +116,9 @@ serviceAccount:
   create: true
   
   # The name of the service account to use
-  name: keycloak-operator
+  # If not set, defaults to: keycloak-operator-<namespace>
+  # This prevents conflicts when multiple operators are deployed
+  name: ""
   
   # Annotations to add to the service account
   annotations: {}

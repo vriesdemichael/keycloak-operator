@@ -6,13 +6,16 @@ themes, authentication flows, identity providers, and user federation.
 """
 
 import json
+import os
 from typing import Any
 
 from kubernetes import client
+from pykube import HTTPClient
 
 from ..errors import ValidationError
 from ..models.realm import KeycloakRealmSpec
 from ..utils.keycloak_admin import KeycloakAdminError, get_keycloak_admin_client
+from ..utils.rbac import get_secret_with_validation
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 
@@ -197,7 +200,12 @@ class KeycloakRealmReconciler(BaseReconciler):
         self, namespace: str, secret_name: str, secret_key: str = "password"
     ) -> str:
         """
-        Fetch SMTP password from Kubernetes secret.
+        Fetch SMTP password from Kubernetes secret with RBAC validation.
+
+        This method enforces namespace access control and secret labeling requirements.
+        The secret must:
+        1. Be accessible via RoleBinding granting operator access to the namespace
+        2. Have the label: keycloak.mdvr.nl/allow-operator-read=true
 
         Args:
             namespace: Namespace containing the secret
@@ -208,39 +216,47 @@ class KeycloakRealmReconciler(BaseReconciler):
             Decoded password string
 
         Raises:
-            ValidationError: If secret not found or key missing
+            ValidationError: If RBAC validation fails, secret not found, or key missing
         """
-        import base64
-
         try:
-            core_api = client.CoreV1Api(self.k8s_client)
-            secret = core_api.read_namespaced_secret(
-                name=secret_name, namespace=namespace
+            # Get operator namespace from environment
+            operator_namespace = os.getenv("OPERATOR_NAMESPACE", "keycloak-system")
+
+            # Create pykube HTTPClient from kubernetes client
+            api = HTTPClient(config=self.k8s_client.configuration)
+
+            # Validate RBAC and read secret
+            result, error = await get_secret_with_validation(
+                api=api,
+                secret_name=secret_name,
+                namespace=namespace,
+                operator_namespace=operator_namespace,
+                key=secret_key,
             )
 
-            if secret_key not in secret.data:
+            if error:
+                raise ValidationError(error)
+
+            if result is None or not isinstance(result, str):
                 raise ValidationError(
-                    f"Key '{secret_key}' not found in secret '{secret_name}'"
+                    f"Key '{secret_key}' not found in secret '{secret_name}' or invalid value type"
                 )
 
-            password = base64.b64decode(secret.data[secret_key]).decode("utf-8")
+            password = result
+
             self.logger.debug(
-                f"Successfully fetched SMTP password from secret {secret_name}"
+                f"Successfully fetched SMTP password from secret {secret_name} "
+                f"in namespace {namespace} with RBAC validation"
             )
             return password
 
-        except client.ApiException as e:
-            if e.status == 404:
-                raise ValidationError(
-                    f"SMTP password secret '{secret_name}' not found in namespace '{namespace}'"
-                ) from e
-            else:
-                raise ValidationError(
-                    f"Failed to fetch SMTP password from secret '{secret_name}': {e}"
-                ) from e
+        except ValidationError:
+            # Re-raise validation errors as-is
+            raise
         except Exception as e:
             raise ValidationError(
-                f"Failed to decode SMTP password from secret '{secret_name}': {e}"
+                f"Failed to fetch SMTP password from secret '{secret_name}' "
+                f"in namespace '{namespace}': {e}"
             ) from e
 
     async def ensure_realm_authorization_secret(

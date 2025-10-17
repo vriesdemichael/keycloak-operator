@@ -39,7 +39,9 @@ rbac:
   operatorClusterRoleName: keycloak-operator-namespace-access
   
   # Name of the operator's ServiceAccount
-  operatorServiceAccountName: keycloak-operator
+  # Default format: keycloak-operator-<namespace>
+  # Override if your operator uses a different service account name
+  operatorServiceAccountName: ""
 
 # Client type configuration
 publicClient: false

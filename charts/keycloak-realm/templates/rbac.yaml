@@ -20,6 +20,6 @@ roleRef:
   name: {{ .Values.rbac.operatorClusterRoleName }}
 subjects:
 - kind: ServiceAccount
-  name: {{ .Values.rbac.operatorServiceAccountName }}
+  name: {{ include "keycloak-realm.operatorServiceAccountName" . }}
   namespace: {{ .Values.operatorRef.namespace }}
 {{- end }}

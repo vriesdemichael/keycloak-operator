@@ -54,10 +54,15 @@ app.kubernetes.io/component: operator
 
 {{/*
 Create the name of the service account to use
+Defaults to keycloak-operator-<namespace> to avoid conflicts
 */}}
 {{- define "keycloak-operator.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "keycloak-operator.fullname" .) .Values.serviceAccount.name }}
+{{- if .Values.serviceAccount.name }}
+{{- .Values.serviceAccount.name }}
+{{- else }}
+{{- printf "keycloak-operator-%s" (include "keycloak-operator.namespace" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
