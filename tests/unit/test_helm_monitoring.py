@@ -302,14 +302,30 @@ class TestMonitoringResources:
 
     def test_grafana_dashboard_custom_labels(self, chart_path):
         """Grafana dashboard should support custom labels."""
-        docs = helm_template(
+        # Note: Using --set-string to ensure label value stays as string
+        # The schema requires labels to be strings, not numbers
+        cmd = [
+            "helm",
+            "template",
+            "test",
             chart_path,
-            {
-                "monitoring.enabled": True,
-                "monitoring.grafanaDashboard.enabled": True,
-                "monitoring.grafanaDashboard.labels.grafana_dashboard": "1",
-            },
+            "--set",
+            "monitoring.enabled=true",
+            "--set",
+            "monitoring.grafanaDashboard.enabled=true",
+            "--set-string",
+            "monitoring.grafanaDashboard.labels.grafana_dashboard=1",
+        ]
+
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True,
         )
+
+        docs = list(yaml.safe_load_all(result.stdout))
+        docs = [doc for doc in docs if doc is not None]
 
         dashboards = [
             doc
@@ -319,8 +335,8 @@ class TestMonitoringResources:
         ]
 
         cm = dashboards[0]
-        # YAML parser converts "1" to int, so check for both
-        assert cm["metadata"]["labels"]["grafana_dashboard"] in ("1", 1)
+        # Should be string "1" as enforced by schema
+        assert cm["metadata"]["labels"]["grafana_dashboard"] == "1"
 
     def test_all_monitoring_resources_together(self, chart_path):
         """All monitoring resources should work together when enabled."""
