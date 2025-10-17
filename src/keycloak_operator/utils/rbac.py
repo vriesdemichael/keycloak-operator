@@ -1,0 +1,255 @@
+"""
+RBAC utilities for namespace access control and secret validation.
+
+This module provides functions to:
+- Check if operator has access to a namespace
+- Validate secrets have required labels before reading
+- Perform SubjectAccessReview checks
+"""
+
+import logging
+from typing import Any
+
+from pykube import HTTPClient, Secret
+from pykube.exceptions import HTTPError, KubernetesError
+from pykube.objects import APIObject
+
+from keycloak_operator.constants import (
+    ALLOW_OPERATOR_READ_LABEL,
+    ERROR_NAMESPACE_ACCESS_DENIED,
+    ERROR_SECRET_NOT_LABELED,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class SubjectAccessReview(APIObject):
+    """SubjectAccessReview resource for RBAC checks."""
+
+    version = "authorization.k8s.io/v1"
+    endpoint = "subjectaccessreviews"
+    kind = "SubjectAccessReview"
+
+
+async def check_namespace_access(
+    api: HTTPClient, namespace: str, operator_namespace: str
+) -> tuple[bool, str | None]:
+    """
+    Check if the operator has access to read secrets in a namespace.
+
+    Performs a SubjectAccessReview to verify the operator service account
+    has permission to read secrets in the target namespace.
+
+    Args:
+        api: Kubernetes API client
+        namespace: Target namespace to check access for
+        operator_namespace: Namespace where the operator is running
+
+    Returns:
+        Tuple of (has_access, error_message)
+        - has_access: True if operator has access, False otherwise
+        - error_message: Detailed error message if access denied, None if allowed
+
+    """
+    try:
+        sar = SubjectAccessReview(
+            api,
+            {
+                "apiVersion": "authorization.k8s.io/v1",
+                "kind": "SubjectAccessReview",
+                "spec": {
+                    "resourceAttributes": {
+                        "namespace": namespace,
+                        "verb": "get",
+                        "group": "",
+                        "resource": "secrets",
+                    },
+                    "user": f"system:serviceaccount:{operator_namespace}:keycloak-operator",
+                },
+            },
+        )
+
+        # Create the SubjectAccessReview
+        sar.create()
+
+        # Check the status
+        status = sar.obj.get("status", {})
+        allowed = status.get("allowed", False)
+
+        if not allowed:
+            reason = status.get("reason", "Unknown reason")
+            error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
+                namespace, operator_namespace, namespace
+            )
+            logger.warning(
+                f"Namespace access denied for {namespace}: {reason}. "
+                f"RoleBinding may be missing."
+            )
+            return False, error_msg
+
+        logger.debug(f"Namespace access verified for {namespace}")
+        return True, None
+
+    except HTTPError as e:
+        if e.code == 403:
+            error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
+                namespace, operator_namespace, namespace
+            )
+            logger.error(
+                f"HTTP 403 when checking namespace access for {namespace}: {e}"
+            )
+            return False, error_msg
+        logger.error(f"HTTP error checking namespace access for {namespace}: {e}")
+        return False, f"HTTP error checking namespace access: {e}"
+    except KubernetesError as e:
+        logger.error(f"Kubernetes error checking namespace access for {namespace}: {e}")
+        return False, f"Kubernetes error checking namespace access: {e}"
+    except Exception as e:
+        logger.error(f"Unexpected error checking namespace access for {namespace}: {e}")
+        return False, f"Unexpected error checking namespace access: {e}"
+
+
+async def validate_secret_label(
+    api: HTTPClient, secret_name: str, namespace: str
+) -> tuple[bool, str | None]:
+    """
+    Validate that a secret has the required label for operator access.
+
+    The operator requires secrets to have the label:
+    keycloak.mdvr.nl/allow-operator-read=true
+
+    This provides an explicit opt-in mechanism where users must label
+    secrets before the operator can read them.
+
+    Args:
+        api: Kubernetes API client
+        secret_name: Name of the secret to validate
+        namespace: Namespace containing the secret
+
+    Returns:
+        Tuple of (is_valid, error_message)
+        - is_valid: True if secret has required label, False otherwise
+        - error_message: Detailed error message if label missing, None if valid
+
+    """
+    try:
+        secret = Secret.objects(api, namespace=namespace).get_by_name(secret_name)
+        labels = secret.obj.get("metadata", {}).get("labels", {})
+
+        # Check for the required label
+        label_value = labels.get(ALLOW_OPERATOR_READ_LABEL)
+
+        if label_value != "true":
+            error_msg = ERROR_SECRET_NOT_LABELED.format(
+                secret_name, namespace, ALLOW_OPERATOR_READ_LABEL
+            )
+            logger.warning(
+                f"Secret {secret_name} in {namespace} is missing required label "
+                f"{ALLOW_OPERATOR_READ_LABEL}=true"
+            )
+            return False, error_msg
+
+        logger.debug(
+            f"Secret {secret_name} in {namespace} has required label, access allowed"
+        )
+        return True, None
+
+    except HTTPError as e:
+        if e.code == 404:
+            logger.error(f"Secret {secret_name} not found in namespace {namespace}")
+            return False, f"Secret '{secret_name}' not found in namespace '{namespace}'"
+        elif e.code == 403:
+            error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
+                namespace, "operator-namespace", namespace
+            )
+            logger.error(
+                f"HTTP 403 when accessing secret {secret_name} in {namespace}: {e}"
+            )
+            return False, error_msg
+        logger.error(f"HTTP error validating secret {secret_name} in {namespace}: {e}")
+        return False, f"HTTP error validating secret: {e}"
+    except KubernetesError as e:
+        logger.error(
+            f"Kubernetes error validating secret {secret_name} in {namespace}: {e}"
+        )
+        return False, f"Kubernetes error validating secret: {e}"
+    except Exception as e:
+        logger.error(
+            f"Unexpected error validating secret {secret_name} in {namespace}: {e}"
+        )
+        return False, f"Unexpected error validating secret: {e}"
+
+
+async def get_secret_with_validation(
+    api: HTTPClient,
+    secret_name: str,
+    namespace: str,
+    operator_namespace: str,
+    key: str | None = None,
+) -> tuple[str | dict[str, Any] | None, str | None]:
+    """
+    Get a secret value after validating RBAC and label requirements.
+
+    This function performs a complete validation workflow:
+    1. Check namespace access via SubjectAccessReview (if not operator namespace)
+    2. Validate secret has required label
+    3. Read and return secret data
+
+    Args:
+        api: Kubernetes API client
+        secret_name: Name of the secret to read
+        namespace: Namespace containing the secret
+        operator_namespace: Namespace where the operator is running
+        key: Optional key to extract from secret data. If None, returns all data
+
+    Returns:
+        Tuple of (secret_value, error_message)
+        - secret_value: Secret data (string if key specified, dict if not)
+        - error_message: Detailed error message if validation fails
+
+    """
+    # Skip namespace access check if reading from operator's own namespace
+    if namespace != operator_namespace:
+        has_access, error_msg = await check_namespace_access(
+            api, namespace, operator_namespace
+        )
+        if not has_access:
+            return None, error_msg
+
+    # Validate secret has required label
+    is_valid, error_msg = await validate_secret_label(api, secret_name, namespace)
+    if not is_valid:
+        return None, error_msg
+
+    # Read the secret
+    try:
+        secret = Secret.objects(api, namespace=namespace).get_by_name(secret_name)
+        data = secret.obj.get("data", {})
+
+        if key:
+            if key not in data:
+                error_msg = f"Key '{key}' not found in secret '{secret_name}'"
+                logger.error(f"{error_msg} in namespace {namespace}")
+                return None, error_msg
+            # Decode base64 data
+            import base64
+
+            value = base64.b64decode(data[key]).decode("utf-8")
+            return value, None
+        else:
+            # Return all decoded data
+            import base64
+
+            decoded_data = {
+                k: base64.b64decode(v).decode("utf-8") for k, v in data.items()
+            }
+            return decoded_data, None
+
+    except HTTPError as e:
+        logger.error(f"HTTP error reading secret {secret_name} in {namespace}: {e}")
+        return None, f"HTTP error reading secret: {e}"
+    except Exception as e:
+        logger.error(
+            f"Unexpected error reading secret {secret_name} in {namespace}: {e}"
+        )
+        return None, f"Unexpected error reading secret: {e}"

@@ -1,0 +1,25 @@
+{{- if .Values.rbac.create }}
+---
+# RoleBinding to grant operator access to this namespace
+# This is the "opt-in" mechanism - without this, the operator cannot read secrets
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "keycloak-client.fullname" . }}-operator-access
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "keycloak-client.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rbac
+  {{- with .Values.commonAnnotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Values.rbac.operatorClusterRoleName }}
+subjects:
+- kind: ServiceAccount
+  name: {{ .Values.rbac.operatorServiceAccountName }}
+  namespace: {{ .Values.rbac.operatorNamespace }}
+{{- end }}

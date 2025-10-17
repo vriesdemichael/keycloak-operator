@@ -26,6 +26,21 @@ realmRef:
     # Key within the secret (default: token)
     key: token
 
+# RBAC configuration
+# Creates a RoleBinding to grant the operator access to this namespace
+rbac:
+  # Create RoleBinding (required for operator to read secrets in this namespace)
+  create: true
+  
+  # Namespace where the operator is running
+  operatorNamespace: keycloak-system
+  
+  # Name of the operator's ClusterRole for namespace access
+  operatorClusterRoleName: keycloak-operator-namespace-access
+  
+  # Name of the operator's ServiceAccount
+  operatorServiceAccountName: keycloak-operator
+
 # Client type configuration
 publicClient: false
 bearerOnly: false

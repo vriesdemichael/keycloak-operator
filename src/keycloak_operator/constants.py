@@ -20,6 +20,9 @@ OPERATOR_LABEL_VALUE = "keycloak-operator"
 INSTANCE_LABEL_KEY = "keycloak.mdvr.nl/instance"
 COMPONENT_LABEL_KEY = "keycloak.mdvr.nl/component"
 
+# RBAC security labels
+ALLOW_OPERATOR_READ_LABEL = "keycloak.mdvr.nl/allow-operator-read"
+
 # Annotation constants for configuration and metadata
 PRESERVE_DATA_ANNOTATION = "keycloak.mdvr.nl/preserve-data"
 BACKUP_ANNOTATION = "keycloak.mdvr.nl/backup-before-delete"
@@ -89,9 +92,20 @@ DEPRECATED_DATABASES = ["h2"]  # No longer supported in production
 
 # Error message templates
 ERROR_MISSING_SECRET = "Required secret '{}' not found in namespace '{}'"
+ERROR_SECRET_NOT_LABELED = (
+    "Secret '{}' in namespace '{}' is missing required label '{}=true'. "
+    "Add this label to grant operator access to the secret."
+)
 ERROR_INVALID_DATABASE = "Database type '{}' is not supported. Supported types: {}"
 ERROR_RBAC_DENIED = (
     "RBAC permission denied for operation '{}' on resource '{}' in namespace '{}'"
+)
+ERROR_NAMESPACE_ACCESS_DENIED = (
+    "Operator does not have access to namespace '{}'. "
+    "Create a RoleBinding to grant access: "
+    "kubectl create rolebinding keycloak-operator-access "
+    "--clusterrole=keycloak-operator-namespace-access "
+    "--serviceaccount={}:keycloak-operator -n {}"
 )
 ERROR_NAMESPACE_ISOLATION = (
     "Namespace isolation policy prevents access from '{}' to '{}'"

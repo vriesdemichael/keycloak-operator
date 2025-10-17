@@ -16,10 +16,11 @@ automountServiceAccountToken: true
 
 {{- if .Values.rbac.create }}
 ---
+# Minimal ClusterRole for watching CRDs across all namespaces
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "keycloak-operator.fullname" . }}
+  name: {{ include "keycloak-operator.fullname" . }}-core
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
   {{- with include "keycloak-operator.annotations" . }}
@@ -27,7 +28,69 @@ metadata:
     {{- . | nindent 4 }}
   {{- end }}
 rules:
-# Core Keycloak resource management
+# Watch CRDs cluster-wide (read-only metadata)
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloaks
+  - keycloakclients
+  - keycloakrealms
+  verbs: ["list", "watch"]
+
+# Update CRD status and finalizers (required by Kopf)
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloaks/status
+  - keycloakclients/status
+  - keycloakrealms/status
+  verbs: ["get", "update", "patch"]
+
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloaks/finalizers
+  - keycloakclients/finalizers
+  - keycloakrealms/finalizers
+  verbs: ["update"]
+
+# Namespace discovery (for validation)
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "watch"]
+
+# Leader election (cluster-wide leases)
+- apiGroups: ["coordination.k8s.io"]
+  resources: ["leases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch"]
+
+# Events (cluster-wide)
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+
+# Self-permission checks
+- apiGroups: ["authorization.k8s.io"]
+  resources: ["subjectaccessreviews"]
+  verbs: ["create"]
+
+# Kopf peering for leader election (HA)
+- apiGroups: ["kopf.dev"]
+  resources: ["clusterkopfpeerings"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+---
+# Namespace-scoped Role for managing resources in operator's own namespace
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}-manager
+  namespace: {{ include "keycloak-operator.namespace" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+  {{- with include "keycloak-operator.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+rules:
+# CRDs in operator namespace (Keycloak instances live here)
 - apiGroups: ["keycloak.mdvr.nl"]
   resources:
   - keycloaks
@@ -35,23 +98,11 @@ rules:
   - keycloakrealms
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-# Status and finalizers for custom resources
-- apiGroups: ["keycloak.mdvr.nl"]
-  resources:
-  - keycloaks/status
-  - keycloakclients/status
-  - keycloakrealms/status
-  - keycloaks/finalizers
-  - keycloakclients/finalizers
-  - keycloakrealms/finalizers
-  verbs: ["get", "update", "patch"]
-
 # Kubernetes core resource management
 - apiGroups: ["apps"]
   resources: ["deployments", "statefulsets", "replicasets"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-# Status subresources for workload introspection
 - apiGroups: ["apps"]
   resources: ["deployments/status", "statefulsets/status", "replicasets/status"]
   verbs: ["get"]
@@ -61,8 +112,8 @@ rules:
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 - apiGroups: [""]
-  resources: ["pods", "pods/log", "events", "namespaces", "nodes"]
-  verbs: ["get", "list", "watch", "create", "patch"]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
 
 # Networking
 - apiGroups: ["networking.k8s.io"]
@@ -79,24 +130,14 @@ rules:
   resources: ["certificates", "certificaterequests", "issuers", "clusterissuers"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-# CRD management
-- apiGroups: ["apiextensions.k8s.io"]
-  resources: ["customresourcedefinitions"]
-  verbs: ["get", "list", "watch"]
-
-# Authorization API for self-permission checks (health/diagnostics)
-- apiGroups: ["authorization.k8s.io"]
-  resources: ["subjectaccessreviews"]
-  verbs: ["create"]
-
-# CloudNativePG read-only access (database cluster resolution)
+# CloudNativePG (database cluster in operator namespace)
 - apiGroups: ["postgresql.cnpg.io"]
   resources: ["clusters", "poolers", "backups"]
-  verbs: ["get", "list", "watch"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 # Webhook configuration
 - apiGroups: ["admissionregistration.k8s.io"]
-  resources: ["validatingadmissionwebhooks", "mutatingadmissionwebhooks"]
+  resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 # OpenShift support (optional)
@@ -104,26 +145,50 @@ rules:
   resources: ["routes"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-- apiGroups: ["security.openshift.io"]
-  resources: ["securitycontextconstraints"]
-  verbs: ["use"]
-  resourceNames: ["anyuid", "restricted"]
-
-# Leader election (leases)
-- apiGroups: ["coordination.k8s.io"]
-  resources: ["leases"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-
-# Kopf peering for leader election (HA)
+# Kopf peering (namespace-scoped)
 - apiGroups: ["kopf.dev"]
-  resources: ["clusterkopfpeerings", "kopfpeerings"]
+  resources: ["kopfpeerings"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
+# Template ClusterRole for teams to grant operator access to their namespace
+# Teams create a RoleBinding in their namespace referencing this ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}-namespace-access
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: rbac-template
+  {{- with include "keycloak-operator.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+rules:
+# Read CRDs in the namespace
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloakclients
+  - keycloakrealms
+  verbs: ["get", "list", "watch"]
+
+# Read labeled secrets only (validation enforced in code)
+# Label required: keycloak.mdvr.nl/allow-operator-read=true
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list"]
+
+# Create events for status reporting
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "patch"]
+
+---
+# ClusterRoleBinding for minimal cluster-wide permissions
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "keycloak-operator.fullname" . }}
+  name: {{ include "keycloak-operator.fullname" . }}-core
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
   {{- with include "keycloak-operator.annotations" . }}
@@ -133,42 +198,18 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "keycloak-operator.fullname" . }}
+  name: {{ include "keycloak-operator.fullname" . }}-core
 subjects:
 - kind: ServiceAccount
   name: {{ include "keycloak-operator.serviceAccountName" . }}
   namespace: {{ include "keycloak-operator.namespace" . }}
-{{- end }}
-
-{{- if .Values.rbac.createLeaderElectionRole }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: {{ include "keycloak-operator.fullname" . }}-leader-election
-  namespace: {{ include "keycloak-operator.namespace" . }}
-  labels:
-    {{- include "keycloak-operator.labels" . | nindent 4 }}
-  {{- with include "keycloak-operator.annotations" . }}
-  annotations:
-    {{- . | nindent 4 }}
-  {{- end }}
-rules:
-- apiGroups: [""]
-  resources: ["configmaps"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-- apiGroups: ["coordination.k8s.io"]
-  resources: ["leases"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
-- apiGroups: [""]
-  resources: ["events"]
-  verbs: ["create", "patch"]
 
 ---
+# RoleBinding for namespace-scoped permissions in operator namespace
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "keycloak-operator.fullname" . }}-leader-election
+  name: {{ include "keycloak-operator.fullname" . }}-manager
   namespace: {{ include "keycloak-operator.namespace" . }}
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
@@ -179,7 +220,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ include "keycloak-operator.fullname" . }}-leader-election
+  name: {{ include "keycloak-operator.fullname" . }}-manager
 subjects:
 - kind: ServiceAccount
   name: {{ include "keycloak-operator.serviceAccountName" . }}
