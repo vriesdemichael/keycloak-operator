@@ -277,10 +277,9 @@ async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespac
             body=realm_resource,
         )
 
-        # Wait a bit for reconciliation to attempt
-        import asyncio
-
-        await asyncio.sleep(5)
+        # Wait for reconciliation to process and fail
+        # (reconciliation must start and detect the missing secret)
+        await wait_for_realm_not_ready(custom_api, realm_name, namespace, timeout=60)
 
         # Check realm status - should show error
         realm = custom_api.get_namespaced_custom_object(
@@ -294,7 +293,8 @@ async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespac
         # Realm should not be in Ready phase
         status = realm.get("status", {})
         phase = status.get("phase", "Unknown")
-        assert phase in ["Failed", "Degraded", "Pending"]
+        # Phase should have transitioned from Unknown to an error state
+        assert phase in ["Failed", "Degraded", "Pending"], f"Expected error phase, got: {phase}"
 
         # At minimum, it should not be Ready
         assert phase != "Ready"
@@ -379,10 +379,9 @@ async def test_realm_with_missing_secret_key(shared_operator, operator_namespace
             body=realm_resource,
         )
 
-        # Wait for reconciliation
-        import asyncio
-
-        await asyncio.sleep(5)
+        # Wait for reconciliation to process and fail
+        # (reconciliation must start and detect the missing secret key)
+        await wait_for_realm_not_ready(custom_api, realm_name, namespace, timeout=60)
 
         # Check realm status
         realm = custom_api.get_namespaced_custom_object(
@@ -395,7 +394,8 @@ async def test_realm_with_missing_secret_key(shared_operator, operator_namespace
 
         status = realm.get("status", {})
         phase = status.get("phase", "Unknown")
-        assert phase in ["Failed", "Degraded", "Pending"]
+        # Phase should have transitioned from Unknown to an error state
+        assert phase in ["Failed", "Degraded", "Pending"], f"Expected error phase, got: {phase}"
         assert phase != "Ready"
 
     finally:
@@ -421,14 +421,27 @@ async def wait_for_realm_ready(
     namespace: str,
     timeout: int = 120,
 ):
-    """Wait for realm to reach Ready phase."""
+    """
+    Wait for realm to reach Ready phase.
+    
+    This function tolerates transient Failed states because kopf will retry
+    failed reconciliations automatically. Only permanent failures that persist
+    for the full timeout will raise an error.
+    """
     import asyncio
 
     start_time = asyncio.get_event_loop().time()
+    last_failed_message = None
 
     while True:
         elapsed = asyncio.get_event_loop().time() - start_time
         if elapsed > timeout:
+            # If we consistently saw Failed state, report it
+            if last_failed_message:
+                raise RuntimeError(
+                    f"Realm {realm_name} failed: {last_failed_message}\n"
+                    f"Action required: Wait for automatic retry or check system status"
+                )
             raise TimeoutError(
                 f"Timeout waiting for realm {realm_name} to be ready after {timeout}s"
             )
@@ -448,8 +461,56 @@ async def wait_for_realm_ready(
             if phase == "Ready":
                 return
             elif phase == "Failed":
+                # Store the failure message but continue waiting
+                # Kopf will retry failed reconciliations automatically
                 message = status.get("message", "Unknown error")
-                raise RuntimeError(f"Realm {realm_name} failed: {message}")
+                last_failed_message = message
+                # Continue waiting - kopf might retry and succeed
+
+        except client.ApiException:
+            pass  # Resource might not exist yet
+
+        await asyncio.sleep(2)
+
+
+async def wait_for_realm_not_ready(
+    custom_api: client.CustomObjectsApi,
+    realm_name: str,
+    namespace: str,
+    timeout: int = 60,
+):
+    """
+    Wait for realm to transition from Unknown phase to any other phase.
+    
+    This is useful for error condition tests where we expect the realm
+    to fail but need to wait for reconciliation to actually start and process.
+    """
+    import asyncio
+
+    start_time = asyncio.get_event_loop().time()
+
+    while True:
+        elapsed = asyncio.get_event_loop().time() - start_time
+        if elapsed > timeout:
+            raise TimeoutError(
+                f"Timeout waiting for realm {realm_name} to transition from Unknown phase after {timeout}s"
+            )
+
+        try:
+            realm = custom_api.get_namespaced_custom_object(
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
+            status = realm.get("status", {})
+            phase = status.get("phase", "Unknown")
+
+            # Wait until phase is no longer Unknown (reconciliation has started)
+            if phase != "Unknown":
+                return
 
         except client.ApiException:
             pass  # Resource might not exist yet
