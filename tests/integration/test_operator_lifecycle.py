@@ -88,40 +88,94 @@ class TestOperatorLifecycle:
                 pytest.fail(f"Failed to read CRD {crd_name}: {e}")
 
     async def test_operator_rbac_permissions(self, k8s_client, operator_namespace):
-        """Test that operator has required RBAC permissions."""
+        """Test that operator has required RBAC permissions with new namespaced model."""
         from kubernetes import client
 
         rbac_api = client.RbacAuthorizationV1Api(k8s_client)
 
         try:
-            # Check ClusterRole exists
-            cluster_role = rbac_api.read_cluster_role(name="keycloak-operator")
+            # Check core ClusterRole exists (minimal cluster-wide permissions)
+            cluster_role_name = f"keycloak-operator-{operator_namespace}-core"
+            cluster_role = rbac_api.read_cluster_role(name=cluster_role_name)
             assert cluster_role.rules, "ClusterRole has no rules"
 
-            # Check if essential permissions are present
+            # Check if essential cluster-wide permissions are present (read-only CRDs)
             required_permissions = [
                 (
                     "keycloak.mdvr.nl",
                     ["keycloaks", "keycloakrealms", "keycloakclients"],
+                    ["list", "watch"],  # Only list/watch at cluster level
                 ),
-                ("apps", ["deployments"]),
-                ("", ["services", "secrets"]),
-                ("coordination.k8s.io", ["leases"]),  # For leader election
+                ("", ["namespaces"], ["get", "list", "watch"]),
+                ("authorization.k8s.io", ["subjectaccessreviews"], ["create"]),
+                ("coordination.k8s.io", ["leases"], ["get", "list", "watch"]),
             ]
 
-            for api_group, resources in required_permissions:
+            for api_group, resources, expected_verbs in required_permissions:
                 found = False
                 for rule in cluster_role.rules:
-                    if api_group in (rule.api_groups or []) and any(
-                        resource in (rule.resources or []) for resource in resources
+                    if (
+                        api_group in (rule.api_groups or [])
+                        and any(
+                            resource in (rule.resources or []) for resource in resources
+                        )
+                        and any(verb in (rule.verbs or []) for verb in expected_verbs)
                     ):
                         found = True
                         break
                 assert found, (
-                    f"Missing permissions for {api_group} resources: {resources}"
+                    f"Missing permissions for {api_group} resources: {resources} "
+                    f"with verbs: {expected_verbs}"
+                )
+
+            # Check namespace-access ClusterRole template exists
+            namespace_access_role_name = (
+                f"keycloak-operator-{operator_namespace}-namespace-access"
+            )
+            namespace_access_role = rbac_api.read_cluster_role(
+                name=namespace_access_role_name
+            )
+            assert namespace_access_role.rules, (
+                "Namespace access ClusterRole has no rules"
+            )
+
+            # Check namespace Role exists (full management in operator namespace)
+            manager_role_name = f"keycloak-operator-{operator_namespace}-manager"
+            manager_role = rbac_api.read_namespaced_role(
+                name=manager_role_name, namespace=operator_namespace
+            )
+            assert manager_role.rules, "Manager Role has no rules"
+
+            # Verify manager role has full CRUD on deployments, services, secrets
+            full_crud_resources = [
+                ("apps", ["deployments"]),
+                ("", ["services", "secrets"]),
+            ]
+
+            for api_group, resources in full_crud_resources:
+                found = False
+                for rule in manager_role.rules:
+                    if (
+                        api_group in (rule.api_groups or [])
+                        and any(
+                            resource in (rule.resources or []) for resource in resources
+                        )
+                        and all(
+                            verb in (rule.verbs or [])
+                            for verb in ["create", "update", "delete"]
+                        )
+                    ):
+                        found = True
+                        break
+                assert found, (
+                    f"Missing full CRUD permissions for {api_group} resources: {resources}"
                 )
 
         except ApiException as e:
+            if e.status == 404:
+                pytest.fail(
+                    f"RBAC resources not found. The new namespaced RBAC model may not be deployed correctly: {e}"
+                )
             pytest.fail(f"Failed to check RBAC permissions: {e}")
 
 
