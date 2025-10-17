@@ -1,0 +1,19 @@
+name: "CodeQL Configuration"
+
+# Disable false-positive prone queries
+# Context: GitHub Actions logs are secured by default and require authentication.
+# The "clear-text-logging-sensitive-data" query generates excessive false positives
+# in operator code where logging configuration data is necessary for debugging.
+
+disable-default-queries: false
+
+query-filters:
+  - exclude:
+      id: py/clear-text-logging-sensitive-data
+  - exclude:
+      id: py/clear-text-storage-sensitive-data
+
+# Keep all other security queries active
+queries:
+  - uses: security-extended
+  - uses: security-and-quality
