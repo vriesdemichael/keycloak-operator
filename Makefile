@@ -28,7 +28,7 @@ type-check: ## Run type checking
 	uv run --group quality ty check
 
 .PHONY: quality
-quality: lint format type-check
+quality: format lint type-check
 
 # Testing
 # ========
