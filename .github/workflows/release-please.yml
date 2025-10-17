@@ -51,3 +51,11 @@ jobs:
           echo "**PR:** ${PR_DATA}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Merge this PR to create a release." >> $GITHUB_STEP_SUMMARY
+
+      - name: Enable auto-merge for release PR
+        if: steps.release.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ fromJSON(steps.release.outputs.pr).number }}
+        run: |
+          gh pr merge $PR_NUMBER --auto --squash --repo ${{ github.repository }}
