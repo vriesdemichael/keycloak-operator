@@ -138,7 +138,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: python
-          queries: security-extended,security-and-quality
+          config-file: .github/codeql-config.yml
       
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3
