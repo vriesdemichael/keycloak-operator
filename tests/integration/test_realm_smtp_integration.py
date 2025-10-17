@@ -294,7 +294,9 @@ async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespac
         status = realm.get("status", {})
         phase = status.get("phase", "Unknown")
         # Phase should have transitioned from Unknown to an error state
-        assert phase in ["Failed", "Degraded", "Pending"], f"Expected error phase, got: {phase}"
+        assert phase in ["Failed", "Degraded", "Pending"], (
+            f"Expected error phase, got: {phase}"
+        )
 
         # At minimum, it should not be Ready
         assert phase != "Ready"
@@ -395,7 +397,9 @@ async def test_realm_with_missing_secret_key(shared_operator, operator_namespace
         status = realm.get("status", {})
         phase = status.get("phase", "Unknown")
         # Phase should have transitioned from Unknown to an error state
-        assert phase in ["Failed", "Degraded", "Pending"], f"Expected error phase, got: {phase}"
+        assert phase in ["Failed", "Degraded", "Pending"], (
+            f"Expected error phase, got: {phase}"
+        )
         assert phase != "Ready"
 
     finally:
@@ -423,7 +427,7 @@ async def wait_for_realm_ready(
 ):
     """
     Wait for realm to reach Ready phase.
-    
+
     This function tolerates transient Failed states because kopf will retry
     failed reconciliations automatically. Only permanent failures that persist
     for the full timeout will raise an error.
@@ -481,7 +485,7 @@ async def wait_for_realm_not_ready(
 ):
     """
     Wait for realm to transition from Unknown phase to any other phase.
-    
+
     This is useful for error condition tests where we expect the realm
     to fail but need to wait for reconciliation to actually start and process.
     """
