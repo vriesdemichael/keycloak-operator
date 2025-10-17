@@ -365,12 +365,16 @@ class TestAuthorizationDelegation:
             "metadata": {"name": keycloak_name, "namespace": namespace},
         }
 
-        # Create fake secret with invalid token
+        # Create fake secret with invalid token (with required RBAC label)
         fake_token = b"invalid-fake-token-not-matching-operator"
         fake_secret = {
             "apiVersion": "v1",
             "kind": "Secret",
-            "metadata": {"name": fake_secret_name, "namespace": namespace},
+            "metadata": {
+                "name": fake_secret_name,
+                "namespace": namespace,
+                "labels": {"keycloak.mdvr.nl/allow-operator-read": "true"},
+            },
             "type": "Opaque",
             "data": {"token": base64.b64encode(fake_token).decode("utf-8")},
         }
@@ -586,12 +590,16 @@ class TestAuthorizationDelegation:
             ready = await _wait_resource_ready("keycloakrealms", realm_name)
             assert ready, f"Realm {realm_name} did not become Ready"
 
-            # Create fake secret with invalid token
+            # Create fake secret with invalid token (with required RBAC label)
             fake_token = b"invalid-fake-realm-token"
             fake_secret = {
                 "apiVersion": "v1",
                 "kind": "Secret",
-                "metadata": {"name": fake_secret_name, "namespace": namespace},
+                "metadata": {
+                    "name": fake_secret_name,
+                    "namespace": namespace,
+                    "labels": {"keycloak.mdvr.nl/allow-operator-read": "true"},
+                },
                 "type": "Opaque",
                 "data": {"token": base64.b64encode(fake_token).decode("utf-8")},
             }
