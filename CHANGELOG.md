@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.3...operator-v0.2.4) (2025-10-17)
+
+
+### Bug Fixes
+
+* **security:** prevent sensitive exception details from leaking in HTTP responses ([b0ff023](https://github.com/vriesdemichael/keycloak-operator/commit/b0ff0236e1e559940b9deb111c30be0b6345708e))
+
 ## [0.2.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.2...operator-v0.2.3) (2025-10-17)
 
 
