@@ -2,6 +2,52 @@
 
 This project uses [release-please](https://github.com/googleapis/release-please) for automated semantic releases with **multi-component versioning**.
 
+## Branch Protection & Development Workflow
+
+**Important**: The `main` branch is protected and requires Pull Requests for all changes.
+
+### Development Workflow
+
+1. **Create a Feature Branch**
+   ```bash
+   git checkout -b feat/my-feature
+   # or for fixes:
+   git checkout -b fix/bug-description
+   ```
+
+2. **Make Changes & Commit**
+   ```bash
+   # Run quality checks before committing
+   make quality
+   
+   # If checks pass, commit your changes
+   git add .
+   git commit -m "feat: add new feature"
+   git push origin feat/my-feature
+   ```
+
+3. **Create Pull Request**
+   - Open PR against `main` branch
+   - CI/CD pipeline runs all checks automatically
+   - Review and address any feedback
+
+4. **Merge to Main**
+   - Once approved and checks pass, merge the PR
+   - Release-please automatically creates/updates release PRs
+   - Release PRs auto-merge when all checks pass
+
+**Important**: Always run `make quality` before committing to ensure your code passes linting, formatting, and type checking. This prevents CI failures and speeds up the review process.
+
+### Branch Naming Convention
+
+Follow conventional commit prefixes for branch names:
+- `feat/` - New features
+- `fix/` - Bug fixes
+- `refactor/` - Code refactoring
+- `docs/` - Documentation changes
+- `chore/` - Maintenance tasks
+- `test/` - Test additions/changes
+
 ## Components
 
 The repository contains four independently versioned components:
@@ -67,31 +113,35 @@ fix(chart-client): handle missing redirect URIs
 
 ### Automatic Process
 
-1. **Push Commits to Main**
+1. **Create Feature Branch & Push Commits**
    ```bash
+   git checkout -b feat/new-feature
    git commit -m "feat: add new feature"
-   git push origin main
+   git push origin feat/new-feature
    ```
 
-2. **Integration Tests Run**
-   - All tests must pass before image publishing
-   - Unit tests + integration tests on multiple K8s versions
-   - **Safety:** Build workflow only runs if tests succeed
+2. **Create Pull Request**
+   - Open PR to `main` branch
+   - CI/CD runs all checks (tests, linting, security scans)
+   - Review and get approval
 
-3. **Release-Please Creates PRs**
+3. **Merge to Main**
+   - Merge the approved PR
+   - Integration tests run on `main`
+
+4. **Release-Please Creates PRs**
    - Scans commits since last release
    - Creates **separate PRs** for each component (if both have changes)
    - Updates version in files (operator: `pyproject.toml`, chart: `Chart.yaml`)
    - Generates CHANGELOG
+   - **Auto-merges** when all checks pass
 
-4. **Docker Images Published** (only if tests passed)
+5. **Docker Images Published** (only if tests passed)
    - Build workflow waits for integration tests to succeed
    - On main push: publishes `latest` and `sha-<commit>` tags
    - Publishes versioned images to ghcr.io
 
-5. **Merge Release PR**
-   - Review the generated changelog
-   - Merge the PR
+6. **Releases Created**
    - Release-please creates GitHub release automatically
    - Triggers build workflow to publish versioned images (v1.2.3)
 
