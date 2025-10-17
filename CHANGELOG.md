@@ -1,5 +1,42 @@
 # Changelog
 
+## [0.2.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.1...operator-v0.2.2) (2025-10-17)
+
+
+### Features
+
+* **charts:** add values.schema.json and extraManifests support ([039e00d](https://github.com/vriesdemichael/keycloak-operator/commit/039e00d1fe0874b2eb24f21d95f5e58d9f4a50cc))
+* **ci:** create unified CI/CD pipeline workflow ([3209445](https://github.com/vriesdemichael/keycloak-operator/commit/3209445882e6ed40a67b966939550c5e976259f8))
+* **ci:** enable auto-merge for release-please PRs ([0a74683](https://github.com/vriesdemichael/keycloak-operator/commit/0a746834e37fae0ad17088caa6b0c6b0757a0d0e))
+
+
+### Bug Fixes
+
+* **ci:** add all helm charts to release-please config ([2c2280b](https://github.com/vriesdemichael/keycloak-operator/commit/2c2280bd8d9faab8669738baa9dd3a58607383eb))
+* **ci:** resolve release-please bash error and disable CodeQL false positives ([f0479fe](https://github.com/vriesdemichael/keycloak-operator/commit/f0479fec32047fd49a95502d610adb3741807d48))
+* **deps:** add missing pytest-xdist to test dependency group ([cb01362](https://github.com/vriesdemichael/keycloak-operator/commit/cb01362dce1f702458b8a605fa223bce11b173b4))
+* **examples:** correct Keycloak CR database configuration ([be1495c](https://github.com/vriesdemichael/keycloak-operator/commit/be1495cc70125048d2f73f71b30aa727b2eccb3e))
+* race condition in CI/CD and cleanup Makefile ([91b0640](https://github.com/vriesdemichael/keycloak-operator/commit/91b0640961ead705430efaa61c70daa6da8a45c0))
+* **tests:** improve integration test reliability for CI environments ([77f6aa0](https://github.com/vriesdemichael/keycloak-operator/commit/77f6aa03aebbcda3fed2104619efa4a2f3da2f59))
+* **tests:** resolve Helm chart schema validation error in CI ([7db635e](https://github.com/vriesdemichael/keycloak-operator/commit/7db635e5dd7924e56c4742fa1de8582b11243e85))
+* TruffleHog BASE/HEAD commit issue in CI/CD workflow ([9067632](https://github.com/vriesdemichael/keycloak-operator/commit/90676320138f30044c30d1e2c9f494ff2eb056f5))
+
+
+### Code Refactoring
+
+* **ci:** remove old workflow files ([2205530](https://github.com/vriesdemichael/keycloak-operator/commit/2205530eb3e8bd30ac6cb30c1962517fbad3d807))
+* **ci:** use uv run --with for ephemeral dependencies ([649d65f](https://github.com/vriesdemichael/keycloak-operator/commit/649d65f4c3167cf69f0982978255230ce786dd7a))
+* use targeted dependency groups in CI and Makefile ([12142e4](https://github.com/vriesdemichael/keycloak-operator/commit/12142e4d22059103603537bcbf9862723698a335))
+
+
+### Documentation
+
+* **ci:** add complete implementation summary ([b42a0dd](https://github.com/vriesdemichael/keycloak-operator/commit/b42a0dd87beb71689f096a671da89eea2bf97699))
+* **ci:** add workflow migration documentation ([7028b35](https://github.com/vriesdemichael/keycloak-operator/commit/7028b354f4b5f0badb48bf3f3f84c457bc2f9280))
+* **ci:** update tracking to reflect Phase 2 completion ([33baaf6](https://github.com/vriesdemichael/keycloak-operator/commit/33baaf64537594e4500bc838e5baa64bd00a3b31))
+* removed outdated todos ([3f7f227](https://github.com/vriesdemichael/keycloak-operator/commit/3f7f2276767642986318633df1d9ae332daf98a5))
+* update README badges to reference unified CI/CD workflow ([03ba009](https://github.com/vriesdemichael/keycloak-operator/commit/03ba009eb0aac6e4db6ebdbc8f6315b0ccf0dd4a))
+
 ## [0.2.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.0...operator-v0.2.1) (2025-10-16)
 
 
