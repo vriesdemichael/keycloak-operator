@@ -396,7 +396,7 @@ class MetricsServer:
             return web.Response(body=metrics_data, content_type=CONTENT_TYPE_LATEST)  # type: ignore[attr-defined]
         except Exception as e:
             logger.error(f"Failed to generate metrics: {e}")
-            return web.Response(text=f"Error generating metrics: {str(e)}", status=500)  # type: ignore[attr-defined]
+            return web.Response(text=f"Error generating metrics: {type(e).__name__}. Check logs for details.", status=500)  # type: ignore[attr-defined]
 
     async def _health_handler(self, request: web.Request) -> web.Response:  # type: ignore[attr-defined]
         """Handle /health endpoint for operator health checks."""
@@ -415,7 +415,7 @@ class MetricsServer:
         except Exception as e:
             logger.error(f"Health check failed: {e}")
             return web.json_response(  # type: ignore[attr-defined]
-                {"status": "unhealthy", "error": str(e), "timestamp": time.time()},
+                {"status": "unhealthy", "error": f"{type(e).__name__}. Check logs for details.", "timestamp": time.time()},
                 status=500,
             )
 
@@ -458,7 +458,7 @@ class MetricsServer:
         except Exception as e:
             logger.error(f"Readiness check failed: {e}")
             return web.json_response(  # type: ignore[attr-defined]
-                {"status": "not_ready", "error": str(e), "timestamp": time.time()},
+                {"status": "not_ready", "error": f"{type(e).__name__}. Check logs for details.", "timestamp": time.time()},
                 status=503,
             )
 
