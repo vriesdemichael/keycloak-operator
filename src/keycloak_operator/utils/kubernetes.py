@@ -941,7 +941,7 @@ def check_http_health(url: str, timeout: int = 5) -> tuple[bool, str | None]:
     try:
         import requests
 
-        response = requests.get(url, timeout=timeout, verify=False)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True, None
         else:
