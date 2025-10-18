@@ -7,12 +7,13 @@ This module provides functions to:
 - Perform SubjectAccessReview checks
 """
 
+import base64
 import logging
+import os
 from typing import Any
 
-from pykube import HTTPClient, Secret
-from pykube.exceptions import HTTPError, KubernetesError
-from pykube.objects import APIObject
+from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
     ALLOW_OPERATOR_READ_LABEL,
@@ -23,16 +24,8 @@ from keycloak_operator.constants import (
 logger = logging.getLogger(__name__)
 
 
-class SubjectAccessReview(APIObject):
-    """SubjectAccessReview resource for RBAC checks."""
-
-    version = "authorization.k8s.io/v1"
-    endpoint = "subjectaccessreviews"
-    kind = "SubjectAccessReview"
-
-
 async def check_namespace_access(
-    api: HTTPClient, namespace: str, operator_namespace: str
+    namespace: str, operator_namespace: str
 ) -> tuple[bool, str | None]:
     """
     Check if the operator has access to read secrets in a namespace.
@@ -41,7 +34,6 @@ async def check_namespace_access(
     has permission to read secrets in the target namespace.
 
     Args:
-        api: Kubernetes API client
         namespace: Target namespace to check access for
         operator_namespace: Namespace where the operator is running
 
@@ -52,32 +44,33 @@ async def check_namespace_access(
 
     """
     try:
-        sar = SubjectAccessReview(
-            api,
-            {
-                "apiVersion": "authorization.k8s.io/v1",
-                "kind": "SubjectAccessReview",
-                "spec": {
-                    "resourceAttributes": {
-                        "namespace": namespace,
-                        "verb": "get",
-                        "group": "",
-                        "resource": "secrets",
-                    },
-                    "user": f"system:serviceaccount:{operator_namespace}:keycloak-operator",
-                },
-            },
+        auth_api = client.AuthorizationV1Api()
+
+        # Get service account name from chart (default: keycloak-operator-<namespace>)
+        service_account_name = os.getenv(
+            "OPERATOR_SERVICE_ACCOUNT", f"keycloak-operator-{operator_namespace}"
+        )
+
+        sar = client.V1SubjectAccessReview(
+            spec=client.V1SubjectAccessReviewSpec(
+                resource_attributes=client.V1ResourceAttributes(
+                    namespace=namespace,
+                    verb="get",
+                    group="",
+                    resource="secrets",
+                ),
+                user=f"system:serviceaccount:{operator_namespace}:{service_account_name}",
+            )
         )
 
         # Create the SubjectAccessReview
-        sar.create()
+        result = auth_api.create_subject_access_review(body=sar)
 
         # Check the status
-        status = sar.obj.get("status", {})
-        allowed = status.get("allowed", False)
+        allowed = result.status.allowed
 
         if not allowed:
-            reason = status.get("reason", "Unknown reason")
+            reason = result.status.reason or "Unknown reason"
             error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
                 namespace, operator_namespace, namespace
             )
@@ -90,8 +83,8 @@ async def check_namespace_access(
         logger.debug(f"Namespace access verified for {namespace}")
         return True, None
 
-    except HTTPError as e:
-        if e.code == 403:
+    except ApiException as e:
+        if e.status == 403:
             error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
                 namespace, operator_namespace, namespace
             )
@@ -99,18 +92,15 @@ async def check_namespace_access(
                 f"HTTP 403 when checking namespace access for {namespace}: {e}"
             )
             return False, error_msg
-        logger.error(f"HTTP error checking namespace access for {namespace}: {e}")
-        return False, f"HTTP error checking namespace access: {e}"
-    except KubernetesError as e:
-        logger.error(f"Kubernetes error checking namespace access for {namespace}: {e}")
-        return False, f"Kubernetes error checking namespace access: {e}"
+        logger.error(f"API error checking namespace access for {namespace}: {e}")
+        return False, f"API error checking namespace access: {e}"
     except Exception as e:
         logger.error(f"Unexpected error checking namespace access for {namespace}: {e}")
         return False, f"Unexpected error checking namespace access: {e}"
 
 
 async def validate_secret_label(
-    api: HTTPClient, secret_name: str, namespace: str
+    secret_name: str, namespace: str
 ) -> tuple[bool, str | None]:
     """
     Validate that a secret has the required label for operator access.
@@ -122,7 +112,6 @@ async def validate_secret_label(
     secrets before the operator can read them.
 
     Args:
-        api: Kubernetes API client
         secret_name: Name of the secret to validate
         namespace: Namespace containing the secret
 
@@ -133,8 +122,9 @@ async def validate_secret_label(
 
     """
     try:
-        secret = Secret.objects(api, namespace=namespace).get_by_name(secret_name)
-        labels = secret.obj.get("metadata", {}).get("labels", {})
+        core_api = client.CoreV1Api()
+        secret = core_api.read_namespaced_secret(name=secret_name, namespace=namespace)
+        labels = secret.metadata.labels or {}
 
         # Check for the required label
         label_value = labels.get(ALLOW_OPERATOR_READ_LABEL)
@@ -154,11 +144,11 @@ async def validate_secret_label(
         )
         return True, None
 
-    except HTTPError as e:
-        if e.code == 404:
+    except ApiException as e:
+        if e.status == 404:
             logger.error(f"Secret {secret_name} not found in namespace {namespace}")
             return False, f"Secret '{secret_name}' not found in namespace '{namespace}'"
-        elif e.code == 403:
+        elif e.status == 403:
             error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
                 namespace, "operator-namespace", namespace
             )
@@ -166,13 +156,8 @@ async def validate_secret_label(
                 f"HTTP 403 when accessing secret {secret_name} in {namespace}: {e}"
             )
             return False, error_msg
-        logger.error(f"HTTP error validating secret {secret_name} in {namespace}: {e}")
-        return False, f"HTTP error validating secret: {e}"
-    except KubernetesError as e:
-        logger.error(
-            f"Kubernetes error validating secret {secret_name} in {namespace}: {e}"
-        )
-        return False, f"Kubernetes error validating secret: {e}"
+        logger.error(f"API error validating secret {secret_name} in {namespace}: {e}")
+        return False, f"API error validating secret: {e}"
     except Exception as e:
         logger.error(
             f"Unexpected error validating secret {secret_name} in {namespace}: {e}"
@@ -181,7 +166,6 @@ async def validate_secret_label(
 
 
 async def get_secret_with_validation(
-    api: HTTPClient,
     secret_name: str,
     namespace: str,
     operator_namespace: str,
@@ -196,7 +180,6 @@ async def get_secret_with_validation(
     3. Read and return secret data
 
     Args:
-        api: Kubernetes API client
         secret_name: Name of the secret to read
         namespace: Namespace containing the secret
         operator_namespace: Namespace where the operator is running
@@ -211,20 +194,21 @@ async def get_secret_with_validation(
     # Skip namespace access check if reading from operator's own namespace
     if namespace != operator_namespace:
         has_access, error_msg = await check_namespace_access(
-            api, namespace, operator_namespace
+            namespace, operator_namespace
         )
         if not has_access:
             return None, error_msg
 
     # Validate secret has required label
-    is_valid, error_msg = await validate_secret_label(api, secret_name, namespace)
+    is_valid, error_msg = await validate_secret_label(secret_name, namespace)
     if not is_valid:
         return None, error_msg
 
     # Read the secret
     try:
-        secret = Secret.objects(api, namespace=namespace).get_by_name(secret_name)
-        data = secret.obj.get("data", {})
+        core_api = client.CoreV1Api()
+        secret = core_api.read_namespaced_secret(name=secret_name, namespace=namespace)
+        data = secret.data or {}
 
         if key:
             if key not in data:
@@ -232,22 +216,18 @@ async def get_secret_with_validation(
                 logger.error(f"{error_msg} in namespace {namespace}")
                 return None, error_msg
             # Decode base64 data
-            import base64
-
             value = base64.b64decode(data[key]).decode("utf-8")
             return value, None
         else:
             # Return all decoded data
-            import base64
-
             decoded_data = {
                 k: base64.b64decode(v).decode("utf-8") for k, v in data.items()
             }
             return decoded_data, None
 
-    except HTTPError as e:
-        logger.error(f"HTTP error reading secret {secret_name} in {namespace}: {e}")
-        return None, f"HTTP error reading secret: {e}"
+    except ApiException as e:
+        logger.error(f"API error reading secret {secret_name} in {namespace}: {e}")
+        return None, f"API error reading secret: {e}"
     except Exception as e:
         logger.error(
             f"Unexpected error reading secret {secret_name} in {namespace}: {e}"

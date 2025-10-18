@@ -10,7 +10,6 @@ from typing import Any
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
-from pykube import HTTPClient
 
 from ..errors import KeycloakAdminError, ReconciliationError, ValidationError
 from ..models.client import KeycloakClientSpec
@@ -358,12 +357,8 @@ class KeycloakClientReconciler(BaseReconciler):
                 # Get operator namespace from environment
                 operator_namespace = os.getenv("OPERATOR_NAMESPACE", "keycloak-system")
 
-                # Create pykube HTTPClient from kubernetes client
-                api = HTTPClient(config=self.k8s_client.configuration)
-
                 # Validate RBAC and read realm authorization secret
                 result, error = await get_secret_with_validation(
-                    api=api,
                     secret_name=realm_auth_secret_name,
                     namespace=target_namespace,
                     operator_namespace=operator_namespace,
