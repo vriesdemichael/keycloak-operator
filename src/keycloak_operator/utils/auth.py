@@ -48,9 +48,9 @@ def validate_authorization(
     """
     Validate an authorization token from a referenced secret.
 
-    This function retrieves a secret from Kubernetes using RBAC-aware validation
-    and compares its token value against an expected token using constant-time
-    comparison to prevent timing attacks.
+    This function retrieves a secret from Kubernetes, validates it has the required
+    RBAC label, and compares its token value against an expected token using
+    constant-time comparison to prevent timing attacks.
 
     Args:
         secret_ref: AuthorizationSecretRef object or dict with 'name' and optional 'key', or None
@@ -59,7 +59,7 @@ def validate_authorization(
         k8s_client: Kubernetes CoreV1Api client instance
 
     Returns:
-        True if the token matches, False otherwise
+        True if the token matches and has required label, False otherwise
 
     Example:
         >>> from keycloak_operator.models.common import AuthorizationSecretRef
@@ -73,7 +73,6 @@ def validate_authorization(
     """
     # Import here to avoid circular dependency
     from keycloak_operator.models.common import AuthorizationSecretRef
-    from keycloak_operator.utils.rbac import get_secret_with_validation
 
     # Handle None secret_ref - authorization is mandatory
     if secret_ref is None:
@@ -87,32 +86,39 @@ def validate_authorization(
         secret_ref = AuthorizationSecretRef(**secret_ref)
 
     try:
-        # Use RBAC-aware secret reading to enforce label requirement
-        secret_data = get_secret_with_validation(
-            secret_name=secret_ref.name,
+        secret = k8s_client.read_namespaced_secret(
+            name=secret_ref.name,
             namespace=secret_namespace,
-            k8s_client=k8s_client,
         )
         
-        # If secret_data is None, RBAC validation failed
-        if secret_data is None:
+        # Validate RBAC label is present
+        if not secret.metadata or not secret.metadata.labels:
             logger.warning(
-                f"RBAC validation failed for authorization secret '{secret_ref.name}' "
-                f"in namespace '{secret_namespace}' - missing required label or not found"
+                f"Secret '{secret_ref.name}' in namespace '{secret_namespace}' "
+                f"has no labels - missing required RBAC label"
+            )
+            return False
+        
+        required_label = "keycloak.mdvr.nl/allow-operator-read"
+        if secret.metadata.labels.get(required_label) != "true":
+            logger.warning(
+                f"Secret '{secret_ref.name}' in namespace '{secret_namespace}' "
+                f"is missing required label {required_label}=true"
             )
             return False
 
         token_key = secret_ref.key
 
-        if token_key not in secret_data:
+        if token_key not in secret.data:
             logger.warning(
                 f"Key '{token_key}' not found in secret '{secret_ref.name}' "
                 f"in namespace '{secret_namespace}'"
             )
             return False
 
-        # Decode the token (secret_data is already decoded by get_secret_with_validation)
-        decoded_token = secret_data[token_key]
+        # Decode the base64-encoded token from the secret
+        encoded_token = secret.data[token_key]
+        decoded_token = base64.b64decode(encoded_token).decode("utf-8")
 
         # Use constant-time comparison to prevent timing attacks
         result = secrets.compare_digest(decoded_token, expected_token)
