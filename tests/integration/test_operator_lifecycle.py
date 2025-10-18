@@ -108,23 +108,32 @@ class TestOperatorLifecycle:
 
         try:
             # Check core ClusterRole exists (minimal cluster-wide permissions)
-            cluster_role_name = f"keycloak-operator-{operator_namespace}-core"
+            cluster_role_name = "keycloak-operator-core"
             cluster_role = rbac_api.read_cluster_role(name=cluster_role_name)
             assert cluster_role.rules, "ClusterRole has no rules"
 
-            # Check if essential cluster-wide permissions are present (read-only CRDs)
-            required_permissions = [
+            # Check if essential cluster-wide permissions are present
+            required_cluster_permissions = [
                 (
                     "keycloak.mdvr.nl",
                     ["keycloaks", "keycloakrealms", "keycloakclients"],
                     ["list", "watch"],  # Only list/watch at cluster level
+                ),
+                (
+                    "keycloak.mdvr.nl",
+                    [
+                        "keycloaks/status",
+                        "keycloakrealms/status",
+                        "keycloakclients/status",
+                    ],
+                    ["get", "update", "patch"],
                 ),
                 ("", ["namespaces"], ["get", "list", "watch"]),
                 ("authorization.k8s.io", ["subjectaccessreviews"], ["create"]),
                 ("coordination.k8s.io", ["leases"], ["get", "list", "watch"]),
             ]
 
-            for api_group, resources, expected_verbs in required_permissions:
+            for api_group, resources, expected_verbs in required_cluster_permissions:
                 found = False
                 for rule in cluster_role.rules:
                     if (
@@ -137,14 +146,12 @@ class TestOperatorLifecycle:
                         found = True
                         break
                 assert found, (
-                    f"Missing permissions for {api_group} resources: {resources} "
+                    f"Missing cluster permissions for {api_group} resources: {resources} "
                     f"with verbs: {expected_verbs}"
                 )
 
             # Check namespace-access ClusterRole template exists
-            namespace_access_role_name = (
-                f"keycloak-operator-{operator_namespace}-namespace-access"
-            )
+            namespace_access_role_name = "keycloak-operator-namespace-access"
             namespace_access_role = rbac_api.read_cluster_role(
                 name=namespace_access_role_name
             )
@@ -152,8 +159,44 @@ class TestOperatorLifecycle:
                 "Namespace access ClusterRole has no rules"
             )
 
+            # Verify namespace-access role has status/finalizers permissions
+            namespace_permissions = [
+                (
+                    "keycloak.mdvr.nl",
+                    ["keycloakrealms/status", "keycloakclients/status"],
+                    ["get", "update", "patch"],
+                ),
+                (
+                    "keycloak.mdvr.nl",
+                    ["keycloakrealms/finalizers", "keycloakclients/finalizers"],
+                    ["update"],
+                ),
+                (
+                    "",
+                    ["secrets"],
+                    ["get", "list"],
+                ),
+            ]
+
+            for api_group, resources, expected_verbs in namespace_permissions:
+                found = False
+                for rule in namespace_access_role.rules:
+                    if (
+                        api_group in (rule.api_groups or [])
+                        and any(
+                            resource in (rule.resources or []) for resource in resources
+                        )
+                        and any(verb in (rule.verbs or []) for verb in expected_verbs)
+                    ):
+                        found = True
+                        break
+                assert found, (
+                    f"Missing namespace-access permissions for {api_group} resources: {resources} "
+                    f"with verbs: {expected_verbs}"
+                )
+
             # Check namespace Role exists (full management in operator namespace)
-            manager_role_name = f"keycloak-operator-{operator_namespace}-manager"
+            manager_role_name = "keycloak-operator-manager"
             manager_role = rbac_api.read_namespaced_role(
                 name=manager_role_name, namespace=operator_namespace
             )

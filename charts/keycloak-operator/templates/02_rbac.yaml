@@ -172,6 +172,19 @@ rules:
   - keycloakrealms
   verbs: ["get", "list", "watch"]
 
+# Update CRD status and finalizers in delegated namespaces
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloakclients/status
+  - keycloakrealms/status
+  verbs: ["get", "update", "patch"]
+
+- apiGroups: ["keycloak.mdvr.nl"]
+  resources:
+  - keycloakclients/finalizers
+  - keycloakrealms/finalizers
+  verbs: ["update"]
+
 # Read labeled secrets only (validation enforced in code)
 # Label required: keycloak.mdvr.nl/allow-operator-read=true
 - apiGroups: [""]

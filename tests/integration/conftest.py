@@ -254,7 +254,7 @@ async def test_namespace(
             role_ref=client.V1RoleRef(
                 api_group="rbac.authorization.k8s.io",
                 kind="ClusterRole",
-                name=f"keycloak-operator-{operator_namespace}-namespace-access",
+                name="keycloak-operator-namespace-access",
             ),
             subjects=[
                 client.RbacV1Subject(
