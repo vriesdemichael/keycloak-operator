@@ -165,12 +165,13 @@ metadata:
     {{- . | nindent 4 }}
   {{- end }}
 rules:
-# Read CRDs in the namespace
+# Read and patch CRDs in delegated namespaces (realms and clients)
+# Note: patch is required for Kopf to update status via strategic merge patch
 - apiGroups: ["keycloak.mdvr.nl"]
   resources:
   - keycloakclients
   - keycloakrealms
-  verbs: ["get", "list", "watch"]
+  verbs: ["get", "list", "watch", "patch"]
 
 # Update CRD status and finalizers in delegated namespaces
 - apiGroups: ["keycloak.mdvr.nl"]
