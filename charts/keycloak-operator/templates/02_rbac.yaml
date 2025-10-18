@@ -186,11 +186,12 @@ rules:
   - keycloakrealms/finalizers
   verbs: ["update"]
 
-# Read labeled secrets only (validation enforced in code)
+# Read and create labeled secrets only (validation enforced in code)
 # Label required: keycloak.mdvr.nl/allow-operator-read=true
+# Create permission needed for realm authorization secrets
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list"]
+  verbs: ["get", "list", "create"]
 
 # Create events for status reporting
 - apiGroups: [""]
