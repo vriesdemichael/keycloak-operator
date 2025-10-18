@@ -44,6 +44,79 @@ from .cleanup_utils import (
 logger = logging.getLogger(__name__)
 
 
+@pytest.fixture(scope="session", autouse=True)
+async def check_prerequisites(k8s_client, k8s_core_v1):
+    """Validate all prerequisites before running integration tests.
+
+    Prerequisites (MUST be met before running tests):
+    1. Kind cluster is available and accessible
+    2. CNPG operator is installed
+    3. Operator Docker image is built and loaded into Kind
+
+    This fixture fails fast with clear error messages if any prerequisite is missing.
+    """
+    logger.info("Validating integration test prerequisites...")
+
+    # 1. Check Kind cluster is available
+    try:
+        k8s_core_v1.list_node()
+        logger.info("✓ Kind cluster is accessible")
+    except Exception as e:
+        pytest.fail(
+            f"Kind cluster not accessible. Run 'make kind-setup' first.\nError: {e}"
+        )
+
+    # 2. Check CNPG operator is installed
+    from kubernetes import client as k8s
+
+    api = k8s.ApiextensionsV1Api(k8s_client)
+    try:
+        api.read_custom_resource_definition("clusters.postgresql.cnpg.io")
+        logger.info("✓ CNPG operator is installed")
+    except ApiException as e:
+        if e.status == 404:
+            pytest.fail(
+                "CNPG operator not installed. Run 'make kind-setup' which installs CNPG automatically."
+            )
+        raise
+
+    # 3. Check operator image is available in Kind
+    # We do this by checking if the image exists in any Kind node
+    try:
+        import subprocess
+
+        result = subprocess.run(
+            [
+                "docker",
+                "exec",
+                "keycloak-operator-test-control-plane",
+                "crictl",
+                "images",
+                "keycloak-operator:1.0.0",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if "keycloak-operator" not in result.stdout:
+            pytest.fail(
+                "Operator image 'keycloak-operator:1.0.0' not found in Kind cluster.\n"
+                "Run:\n"
+                "  make docker-build\n"
+                "  make kind-load"
+            )
+        logger.info("✓ Operator image is loaded in Kind")
+    except subprocess.TimeoutExpired:
+        pytest.fail("Timeout checking for operator image in Kind")
+    except FileNotFoundError:
+        pytest.fail("Docker or crictl not available. Cannot verify operator image.")
+    except Exception as e:
+        logger.warning(f"Could not verify operator image: {e}")
+        logger.warning("Proceeding anyway - tests will fail if image is missing")
+
+    logger.info("✓ All prerequisites validated")
+
+
 @pytest.fixture(scope="session")
 def cleanup_tracker():
     """Track cleanup failures across all tests for final reporting."""
@@ -755,12 +828,15 @@ async def shared_operator(
 ) -> dict[str, str]:
     """Deploy Keycloak operator and instance via Helm for all tests.
 
-    This fixture replaces the old pre-deployed operator model. Instead of expecting
-    `make deploy-local` to have run, we now deploy the operator and Keycloak instance
-    dynamically using Helm charts.
+    Prerequisites (validated by check_prerequisites fixture):
+    - Kind cluster available
+    - CNPG operator installed
+    - Operator image built and loaded
+
+    This fixture deploys the operator and Keycloak instance using Helm charts.
 
     Architecture:
-    - Single operator deployment in operator namespace (default: keycloak-system)
+    - Single operator deployment in operator namespace (default: keycloak-test-system)
     - Single Keycloak instance co-located with operator (1-1 coupling)
     - RBAC model: Minimal cluster-wide permissions + namespace Role
     - All secrets properly labeled with keycloak.mdvr.nl/allow-operator-read=true
@@ -779,7 +855,7 @@ async def shared_operator(
         dict with 'name' and 'namespace' of the deployed Keycloak instance
 
     Raises:
-        pytest.skip: If deployment fails (allows graceful test skipping)
+        pytest.fail: If deployment fails (hard failure - no skipping)
     """
     keycloak_name = "keycloak"
     logger.info(
@@ -872,7 +948,7 @@ async def shared_operator(
             if proc.returncode != 0:
                 error_msg = stderr.decode() if stderr else "Unknown error"
                 logger.error(f"Helm install failed: {error_msg}")
-                pytest.skip(f"Failed to install operator via Helm: {error_msg}")
+                pytest.fail(f"Failed to install operator via Helm: {error_msg}")
 
             logger.info("✓ Operator installed via Helm")
 
@@ -890,7 +966,10 @@ async def shared_operator(
 
         ready = await wait_for_condition(operator_ready, timeout=120, interval=3)
         if not ready:
-            pytest.skip("Operator deployment not ready in time")
+            pytest.fail(
+                "Operator deployment not ready in time (timeout: 120s). "
+                "Check if operator image was loaded correctly with 'make kind-load'."
+            )
 
         logger.info("✓ Operator deployment ready")
 
@@ -933,10 +1012,12 @@ async def shared_operator(
                 )
                 status = kc.get("status", {})
                 logger.error(f"Keycloak instance status: {status}")
+                pytest.fail(
+                    f"Keycloak instance not ready in time (timeout: 120s). Status: {status}"
+                )
             except Exception as e:
                 logger.error(f"Failed to get Keycloak status: {e}")
-
-            pytest.skip("Keycloak instance not ready in time")
+                pytest.fail(f"Keycloak instance not ready in time (timeout: 120s): {e}")
 
         logger.info("✓ Keycloak instance ready")
 
@@ -944,10 +1025,8 @@ async def shared_operator(
 
     except Exception as e:
         logger.error(f"Error during operator deployment: {e}")
-        pytest.skip(f"Failed to deploy operator: {e}")
-        # pytest.skip raises an exception, so this won't be reached
-        # but added for type checker
-        return {"name": "", "namespace": ""}
+        pytest.fail(f"Failed to deploy operator: {e}")
+        raise  # Unreachable but satisfies type checker
 
     finally:
         # Clean up values file
