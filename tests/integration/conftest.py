@@ -897,7 +897,14 @@ async def shared_operator(
                 }
             },
         },
-        "operator": {"replicaCount": 1},
+        "operator": {
+            "replicaCount": 1,
+            "image": {
+                "repository": "keycloak-operator",
+                "tag": "test",
+                "pullPolicy": "Never",  # Use local image only
+            },
+        },
     }
 
     # Create values file
@@ -912,45 +919,35 @@ async def shared_operator(
         values_path = values_file.name
 
     try:
-        # Check if Helm release already exists (xdist: another worker may have installed it)
-        check_cmd = ["helm", "status", "keycloak-operator", "-n", operator_namespace]
-        check_proc = await asyncio.create_subprocess_exec(
-            *check_cmd, stdout=PIPE, stderr=PIPE
+        # Install/upgrade operator via Helm (idempotent for xdist workers)
+        # Using 'upgrade --install' makes this safe for multiple workers
+        install_cmd = [
+            "helm",
+            "upgrade",
+            "--install",
+            "keycloak-operator",
+            str(helm_operator_chart_path),
+            "-n",
+            operator_namespace,
+            "-f",
+            values_path,
+            "--wait",
+            "--timeout",
+            "3m",  # Max 3 minutes for Helm install
+        ]
+
+        logger.info("Installing/upgrading Keycloak operator via Helm...")
+        proc = await asyncio.create_subprocess_exec(
+            *install_cmd, stdout=PIPE, stderr=PIPE
         )
-        await check_proc.communicate()
+        stdout, stderr = await proc.communicate()
 
-        if check_proc.returncode == 0:
-            logger.info(
-                "Keycloak operator Helm release already exists (likely from another test worker)"
-            )
-        else:
-            # Install operator via Helm
-            install_cmd = [
-                "helm",
-                "install",
-                "keycloak-operator",
-                str(helm_operator_chart_path),
-                "-n",
-                operator_namespace,
-                "-f",
-                values_path,
-                "--wait",
-                "--timeout",
-                "3m",  # Max 3 minutes for Helm install
-            ]
+        if proc.returncode != 0:
+            error_msg = stderr.decode() if stderr else "Unknown error"
+            logger.error(f"Helm install failed: {error_msg}")
+            pytest.fail(f"Failed to install operator via Helm: {error_msg}")
 
-            logger.info("Installing Keycloak operator via Helm...")
-            proc = await asyncio.create_subprocess_exec(
-                *install_cmd, stdout=PIPE, stderr=PIPE
-            )
-            stdout, stderr = await proc.communicate()
-
-            if proc.returncode != 0:
-                error_msg = stderr.decode() if stderr else "Unknown error"
-                logger.error(f"Helm install failed: {error_msg}")
-                pytest.fail(f"Failed to install operator via Helm: {error_msg}")
-
-            logger.info("✓ Operator installed via Helm")
+        logger.info("✓ Operator installed/upgraded via Helm")
 
         # Wait for operator deployment to be ready
         async def operator_ready():
