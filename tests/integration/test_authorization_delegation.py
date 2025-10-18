@@ -332,7 +332,6 @@ class TestAuthorizationDelegation:
         k8s_custom_objects,
         k8s_core_v1,
         test_namespace,
-        operator_namespace,
         wait_for_condition,
     ) -> None:
         """Verify that realms with invalid operator token are rejected.
@@ -351,8 +350,6 @@ class TestAuthorizationDelegation:
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"invalid-realm-{suffix}"
-        fake_secret_name = f"fake-token-{suffix}"
-
         fake_secret_name = f"fake-operator-token-{suffix}"
 
         # Create fake secret with invalid token (with required RBAC label)

@@ -93,7 +93,7 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
                 "keycloak-operator-test-control-plane",
                 "crictl",
                 "images",
-                "keycloak-operator:1.0.0",
+                "keycloak-operator",
             ],
             capture_output=True,
             text=True,
@@ -101,7 +101,7 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
         )
         if "keycloak-operator" not in result.stdout:
             pytest.fail(
-                "Operator image 'keycloak-operator:1.0.0' not found in Kind cluster.\n"
+                "Operator image 'keycloak-operator' not found in Kind cluster.\n"
                 "Run:\n"
                 "  make docker-build\n"
                 "  make kind-load"
