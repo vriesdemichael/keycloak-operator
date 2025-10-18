@@ -1227,7 +1227,7 @@ async def shared_operator(
                         except Exception as e:
                             logger.warning(f"Failed to uninstall Helm release: {e}")
 
-                        # Delete operator namespace
+                        # Delete operator namespace (with shorter timeout to avoid hanging tests)
                         logger.info(
                             f"Deleting operator namespace {operator_namespace}..."
                         )
@@ -1239,12 +1239,12 @@ async def shared_operator(
                                     "namespace",
                                     operator_namespace,
                                     "--wait=true",
-                                    "--timeout=120s",
+                                    "--timeout=60s",  # Reduced from 120s
                                 ],
                                 check=False,
                                 capture_output=True,
                                 text=True,
-                                timeout=130,
+                                timeout=70,  # Reduced from 130s
                             )
                             logger.info(
                                 f"✓ Operator namespace {operator_namespace} deleted"

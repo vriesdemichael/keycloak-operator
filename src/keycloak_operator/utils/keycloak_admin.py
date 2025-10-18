@@ -106,11 +106,13 @@ class KeycloakAdminClient:
         # Set up requests session with proper configuration
         self.session = requests.Session()
 
-        # Configure retry strategy
+        # Configure retry strategy with connection error handling
         retry_strategy = Retry(
             total=3,
             status_forcelist=[429, 500, 502, 503, 504],
             backoff_factor=1,
+            allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"],
+            raise_on_status=False,  # Don't raise on retryable errors
         )
         adapter = HTTPAdapter(max_retries=retry_strategy)
         self.session.mount("http://", adapter)
