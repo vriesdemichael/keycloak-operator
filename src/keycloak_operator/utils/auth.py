@@ -90,7 +90,7 @@ def validate_authorization(
             name=secret_ref.name,
             namespace=secret_namespace,
         )
-        
+
         # Validate RBAC label is present
         if not secret.metadata or not secret.metadata.labels:
             logger.warning(
@@ -98,7 +98,7 @@ def validate_authorization(
                 f"has no labels - missing required RBAC label"
             )
             return False
-        
+
         required_label = "keycloak.mdvr.nl/allow-operator-read"
         if secret.metadata.labels.get(required_label) != "true":
             logger.warning(

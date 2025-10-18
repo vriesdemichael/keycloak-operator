@@ -826,7 +826,7 @@ async def shared_operator(
     helm_operator_chart_path,
     wait_for_condition,
     cnpg_installed,
-) -> dict[str, str]:
+) -> AsyncGenerator[dict[str, str]]:
     """Deploy Keycloak operator and instance via Helm for all tests.
 
     Prerequisites (validated by check_prerequisites fixture):
@@ -847,6 +847,11 @@ async def shared_operator(
     - pytest-xdist compatibility (each worker gets own session)
     - Realistic production architecture
 
+    Worker coordination:
+    - Uses file-based reference counting to prevent premature cleanup
+    - Each worker increments count on setup, decrements on teardown
+    - Last worker (count=0) performs cleanup
+
     IMPORTANT RULES:
     1. **NO DESTRUCTIVE OPERATIONS** on the operator or Keycloak instance
     2. **UNIQUE REALM NAMES** for parallel test execution
@@ -859,6 +864,27 @@ async def shared_operator(
         pytest.fail: If deployment fails (hard failure - no skipping)
     """
     keycloak_name = "keycloak"
+
+    # Worker reference counting for cleanup coordination
+    tmp_dir = Path(__file__).parent.parent.parent / ".tmp"
+    tmp_dir.mkdir(exist_ok=True)
+    worker_count_file = tmp_dir / "shared-operator-workers.count"
+    worker_lock_file = tmp_dir / "shared-operator-workers.lock"
+
+    # Increment worker count atomically
+    with open(worker_lock_file, "w") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            if worker_count_file.exists():
+                count = int(worker_count_file.read_text().strip())
+            else:
+                count = 0
+            count += 1
+            worker_count_file.write_text(str(count))
+            logger.info(f"Worker registered. Active workers: {count}")
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
     logger.info(
         f"Deploying Keycloak operator and instance via Helm in {operator_namespace}"
     )
@@ -1006,7 +1032,7 @@ async def shared_operator(
                 status = kc.get("status", {}) or {}
                 phase = status.get("phase")
 
-                if phase not in ("Running", "Ready"):
+                if phase not in ("Ready", "Degraded"):
                     return False
 
                 # Check deployment too
@@ -1041,7 +1067,7 @@ async def shared_operator(
 
         logger.info("✓ Keycloak instance ready")
 
-        return {"name": keycloak_name, "namespace": operator_namespace}
+        yield {"name": keycloak_name, "namespace": operator_namespace}
 
     except Exception as e:
         logger.error(f"Error during operator deployment: {e}")
@@ -1052,12 +1078,148 @@ async def shared_operator(
         # Clean up values file
         Path(values_path).unlink(missing_ok=True)
 
+        # Decrement worker count and cleanup if last worker
+        with open(worker_lock_file, "w") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                if worker_count_file.exists():
+                    count = int(worker_count_file.read_text().strip())
+                    count -= 1
 
-# Note: Cleanup is NOT performed in the fixture itself because:
-# 1. Session-scoped fixtures run once per test session (not per worker)
-# 2. xdist workers share the cluster but have independent Python processes
-# 3. Manual cleanup via `make clean-test-env` or namespace deletion is preferred
-# This matches the original design where operator was pre-deployed.
+                    if count <= 0:
+                        # Last worker - perform cleanup immediately
+                        logger.info("Last worker exiting - cleaning up shared operator")
+
+                        # Run cleanup synchronously in blocking subprocess
+                        import subprocess
+
+                        # Capture operator logs before cleanup
+                        logger.info("Capturing operator logs...")
+                        try:
+                            # Create logs directory if it doesn't exist
+                            logs_dir = (
+                                Path(__file__).parent.parent.parent
+                                / ".tmp"
+                                / "operator-logs"
+                            )
+                            logs_dir.mkdir(parents=True, exist_ok=True)
+
+                            # Generate timestamped log filename
+                            from datetime import datetime
+
+                            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                            log_file = logs_dir / f"operator-{timestamp}.log"
+
+                            # Get operator pod name
+                            get_pod_result = subprocess.run(
+                                [
+                                    "kubectl",
+                                    "get",
+                                    "pods",
+                                    "-n",
+                                    operator_namespace,
+                                    "-l",
+                                    "app.kubernetes.io/name=keycloak-operator",
+                                    "-o",
+                                    "jsonpath={.items[0].metadata.name}",
+                                ],
+                                capture_output=True,
+                                text=True,
+                                timeout=10,
+                            )
+
+                            if (
+                                get_pod_result.returncode == 0
+                                and get_pod_result.stdout.strip()
+                            ):
+                                pod_name = get_pod_result.stdout.strip()
+
+                                # Capture logs
+                                logs_result = subprocess.run(
+                                    [
+                                        "kubectl",
+                                        "logs",
+                                        pod_name,
+                                        "-n",
+                                        operator_namespace,
+                                        "--tail=-1",  # Get all logs
+                                    ],
+                                    capture_output=True,
+                                    text=True,
+                                    timeout=30,
+                                )
+
+                                if logs_result.returncode == 0:
+                                    log_file.write_text(logs_result.stdout)
+                                    logger.info(f"✓ Operator logs saved to: {log_file}")
+                                else:
+                                    logger.warning(
+                                        f"Failed to capture logs: {logs_result.stderr}"
+                                    )
+                            else:
+                                logger.warning("Could not find operator pod")
+                        except Exception as e:
+                            logger.warning(f"Failed to capture operator logs: {e}")
+
+                        # Uninstall Helm release
+                        logger.info("Uninstalling Helm release...")
+                        try:
+                            subprocess.run(
+                                [
+                                    "helm",
+                                    "uninstall",
+                                    "keycloak-operator",
+                                    "-n",
+                                    operator_namespace,
+                                    "--wait",
+                                    "--timeout",
+                                    "2m",
+                                ],
+                                check=False,
+                                capture_output=True,
+                                text=True,
+                                timeout=130,
+                            )
+                            logger.info("✓ Helm release uninstalled")
+                        except Exception as e:
+                            logger.warning(f"Failed to uninstall Helm release: {e}")
+
+                        # Delete operator namespace
+                        logger.info(
+                            f"Deleting operator namespace {operator_namespace}..."
+                        )
+                        try:
+                            subprocess.run(
+                                [
+                                    "kubectl",
+                                    "delete",
+                                    "namespace",
+                                    operator_namespace,
+                                    "--wait=true",
+                                    "--timeout=120s",
+                                ],
+                                check=False,
+                                capture_output=True,
+                                text=True,
+                                timeout=130,
+                            )
+                            logger.info(
+                                f"✓ Operator namespace {operator_namespace} deleted"
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to delete operator namespace: {e}")
+
+                        # Remove count file
+                        worker_count_file.unlink(missing_ok=True)
+                        logger.info("✓ Shared operator cleanup complete")
+                    else:
+                        # Not last worker - just decrement
+                        worker_count_file.write_text(str(count))
+                        logger.info(
+                            f"Worker exiting. Remaining active workers: {count}"
+                        )
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 @pytest.fixture

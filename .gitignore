@@ -211,3 +211,6 @@ __marimo__/
 
 # Temporary development files
 .tmp/
+
+# Test operator logs (for debugging)
+.tmp/operator-logs/

@@ -165,13 +165,14 @@ metadata:
     {{- . | nindent 4 }}
   {{- end }}
 rules:
-# Read and patch CRDs in delegated namespaces (realms and clients)
+# Read, patch, and delete CRDs in delegated namespaces (realms and clients)
 # Note: patch is required for Kopf to update status via strategic merge patch
+# Note: delete is required for cascading deletion (realm deletes dependent clients)
 - apiGroups: ["keycloak.mdvr.nl"]
   resources:
   - keycloakclients
   - keycloakrealms
-  verbs: ["get", "list", "watch", "patch"]
+  verbs: ["get", "list", "watch", "patch", "delete"]
 
 # Update CRD status and finalizers in delegated namespaces
 - apiGroups: ["keycloak.mdvr.nl"]
@@ -189,9 +190,15 @@ rules:
 # Read and create labeled secrets only (validation enforced in code)
 # Label required: keycloak.mdvr.nl/allow-operator-read=true
 # Create permission needed for realm authorization secrets
+# Update/patch permission needed for client credentials
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list", "create"]
+  verbs: ["get", "list", "create", "update", "patch"]
+
+# Read and delete configmaps for realm cleanup
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "delete"]
 
 # Create events for status reporting
 - apiGroups: [""]

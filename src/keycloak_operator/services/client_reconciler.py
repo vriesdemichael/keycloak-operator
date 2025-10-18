@@ -1229,8 +1229,8 @@ class KeycloakClientReconciler(BaseReconciler):
             )
 
             # Try to get client by client_id
-            existing_client = admin_client.get_client_by_id(
-                actual_realm_name=actual_realm_name, client_id=client_spec.client_id
+            existing_client = admin_client.get_client_by_name(
+                client_id=client_spec.client_id, realm_name=actual_realm_name
             )
 
             if existing_client:
