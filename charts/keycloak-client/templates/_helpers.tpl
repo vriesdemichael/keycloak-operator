@@ -77,3 +77,15 @@ Common annotations
 {{ toYaml . }}
 {{- end }}
 {{- end }}
+
+{{/*
+Operator service account name
+Defaults to keycloak-operator-<operator-namespace>
+*/}}
+{{- define "keycloak-client.operatorServiceAccountName" -}}
+{{- if .Values.rbac.operatorServiceAccountName }}
+{{- .Values.rbac.operatorServiceAccountName }}
+{{- else }}
+{{- printf "keycloak-operator-%s" .Values.rbac.operatorNamespace | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}

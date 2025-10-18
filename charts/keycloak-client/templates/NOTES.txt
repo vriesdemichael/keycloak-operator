@@ -7,6 +7,48 @@
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+{{- if .Values.rbac.create }}
+✅ RBAC CONFIGURATION
+
+A RoleBinding has been created to grant the Keycloak operator access to this namespace.
+
+Operator Details:
+• Namespace: {{ .Values.rbac.operatorNamespace }}
+• ServiceAccount: {{ .Values.rbac.operatorServiceAccountName }}
+• ClusterRole: {{ .Values.rbac.operatorClusterRoleName }}
+
+The operator can now read secrets in this namespace that have the required label.
+
+{{- else }}
+⚠️  RBAC NOT CONFIGURED
+
+You need to manually create a RoleBinding to grant operator access:
+
+    kubectl create rolebinding keycloak-operator-access \
+      --clusterrole={{ .Values.rbac.operatorClusterRoleName }} \
+      --serviceaccount={{ .Values.rbac.operatorNamespace }}:{{ .Values.rbac.operatorServiceAccountName }} \
+      -n {{ .Release.Namespace }}
+
+{{- end }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🔐 IMPORTANT: SECRET LABEL REQUIREMENT
+
+All secrets used by this client MUST have the following label:
+
+    keycloak.mdvr.nl/allow-operator-read=true
+
+Without this label, the operator will refuse to read the secret.
+
+Example - label an existing secret:
+
+    kubectl label secret my-client-secret \
+      keycloak.mdvr.nl/allow-operator-read=true \
+      -n {{ .Release.Namespace }}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 🔍 MONITORING YOUR CLIENT
 
 Check the client status:

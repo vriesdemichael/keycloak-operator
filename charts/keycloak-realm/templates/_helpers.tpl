@@ -66,3 +66,15 @@ Common annotations
 {{ toYaml . }}
 {{- end }}
 {{- end }}
+
+{{/*
+Operator service account name
+Defaults to keycloak-operator-<operator-namespace>
+*/}}
+{{- define "keycloak-realm.operatorServiceAccountName" -}}
+{{- if .Values.rbac.operatorServiceAccountName }}
+{{- .Values.rbac.operatorServiceAccountName }}
+{{- else }}
+{{- printf "keycloak-operator-%s" .Values.operatorRef.namespace | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}

@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.constants import ALLOW_OPERATOR_READ_LABEL
+
 if TYPE_CHECKING:
     from keycloak_operator.models.common import AuthorizationSecretRef
 
@@ -48,8 +50,9 @@ def validate_authorization(
     """
     Validate an authorization token from a referenced secret.
 
-    This function retrieves a secret from Kubernetes and compares its token value
-    against an expected token using constant-time comparison to prevent timing attacks.
+    This function retrieves a secret from Kubernetes, validates it has the required
+    RBAC label, and compares its token value against an expected token using
+    constant-time comparison to prevent timing attacks.
 
     Args:
         secret_ref: AuthorizationSecretRef object or dict with 'name' and optional 'key', or None
@@ -58,7 +61,7 @@ def validate_authorization(
         k8s_client: Kubernetes CoreV1Api client instance
 
     Returns:
-        True if the token matches, False otherwise
+        True if the token matches and has required label, False otherwise
 
     Example:
         >>> from keycloak_operator.models.common import AuthorizationSecretRef
@@ -89,6 +92,22 @@ def validate_authorization(
             name=secret_ref.name,
             namespace=secret_namespace,
         )
+
+        # Validate RBAC label is present
+        if not secret.metadata or not secret.metadata.labels:
+            logger.warning(
+                f"Secret '{secret_ref.name}' in namespace '{secret_namespace}' "
+                f"has no labels - missing required RBAC label"
+            )
+            return False
+
+        if secret.metadata.labels.get(ALLOW_OPERATOR_READ_LABEL) != "true":
+            logger.warning(
+                f"Secret '{secret_ref.name}' in namespace '{secret_namespace}' "
+                f"is missing required label {ALLOW_OPERATOR_READ_LABEL}=true"
+            )
+            return False
+
         token_key = secret_ref.key
 
         if token_key not in secret.data:
@@ -128,6 +147,12 @@ def validate_authorization(
     except (binascii.Error, UnicodeDecodeError) as e:
         logger.error(
             f"Failed to decode token from secret '{secret_ref.name}' "
+            f"in namespace '{secret_namespace}': {e}"
+        )
+        return False
+    except Exception as e:
+        logger.error(
+            f"Unexpected error validating authorization secret '{secret_ref.name}' "
             f"in namespace '{secret_namespace}': {e}"
         )
         return False

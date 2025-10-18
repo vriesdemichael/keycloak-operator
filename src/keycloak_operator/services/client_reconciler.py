@@ -5,6 +5,7 @@ This module handles the lifecycle of Keycloak clients including
 client creation, credential management, and OAuth2 configuration.
 """
 
+import os
 from typing import Any
 
 from kubernetes import client
@@ -13,6 +14,7 @@ from kubernetes.client.rest import ApiException
 from ..errors import KeycloakAdminError, ReconciliationError, ValidationError
 from ..models.client import KeycloakClientSpec
 from ..utils.keycloak_admin import get_keycloak_admin_client
+from ..utils.rbac import get_secret_with_validation
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 
@@ -350,28 +352,54 @@ class KeycloakClientReconciler(BaseReconciler):
                     delay=30,
                 )
 
-            # Read the expected token from the realm's secret
-            core_v1 = client.CoreV1Api()
+            # Read the expected token from the realm's secret with RBAC validation
             try:
-                realm_secret = core_v1.read_namespaced_secret(
-                    name=realm_auth_secret_name, namespace=target_namespace
-                )
-                import base64
+                # Get operator namespace from environment
+                operator_namespace = os.getenv("OPERATOR_NAMESPACE", "keycloak-system")
 
-                realm_token_encoded = realm_secret.data.get("token", "")
-                realm_token = base64.b64decode(realm_token_encoded).decode("utf-8")
-            except client.ApiException as secret_err:
+                # Validate RBAC and read realm authorization secret
+                result, error = await get_secret_with_validation(
+                    secret_name=realm_auth_secret_name,
+                    namespace=target_namespace,
+                    operator_namespace=operator_namespace,
+                    key="token",
+                )
+
+                if error:
+                    raise ValidationError(
+                        f"Failed to read realm authorization secret: {error}"
+                    )
+
+                if not result or not isinstance(result, str):
+                    from ..errors import TemporaryError
+
+                    raise TemporaryError(
+                        f"Realm authorization secret {realm_auth_secret_name} is empty or invalid. "
+                        f"Waiting for realm to populate the secret.",
+                        delay=30,
+                    )
+
+                realm_token: str = result
+
+            except ValidationError as ve:
                 from ..errors import TemporaryError
 
-                if secret_err.status == 404:
-                    raise TemporaryError(
-                        f"Realm authorization secret {realm_auth_secret_name} not found. "
-                        f"Waiting for realm to create the secret.",
-                        delay=30,
-                    ) from secret_err
-                raise
+                # RBAC validation failures are temporary - user needs to fix permissions
+                raise TemporaryError(
+                    f"RBAC validation failed for realm authorization secret: {ve}",
+                    delay=60,
+                ) from ve
+            except Exception as secret_err:
+                from ..errors import TemporaryError
+
+                raise TemporaryError(
+                    f"Failed to read realm authorization secret {realm_auth_secret_name}: {secret_err}",
+                    delay=30,
+                ) from secret_err
 
             # Validate the provided token matches the realm's token
+            # Need to create CoreV1Api for validate_authorization function
+            core_v1 = client.CoreV1Api()
             if not validate_authorization(
                 secret_ref=realm_ref.authorization_secret_ref,
                 secret_namespace=namespace,  # Client's namespace (where the secret should be)
@@ -1201,8 +1229,8 @@ class KeycloakClientReconciler(BaseReconciler):
             )
 
             # Try to get client by client_id
-            existing_client = admin_client.get_client_by_id(
-                actual_realm_name=actual_realm_name, client_id=client_spec.client_id
+            existing_client = admin_client.get_client_by_name(
+                client_id=client_spec.client_id, realm_name=actual_realm_name
             )
 
             if existing_client:

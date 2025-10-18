@@ -84,13 +84,15 @@ class TestHelmRealmDeployment:
         realm_name = f"helm-smtp-{uuid.uuid4().hex[:8]}"
         release_name = f"helm-smtp-{uuid.uuid4().hex[:8]}"
 
-        # Create SMTP password secret
+        # Create SMTP password secret (with required RBAC label)
         smtp_secret_name = f"smtp-secret-{uuid.uuid4().hex[:8]}"
         from kubernetes import client
 
         secret = client.V1Secret(
             metadata=client.V1ObjectMeta(
-                name=smtp_secret_name, namespace=test_namespace
+                name=smtp_secret_name,
+                namespace=test_namespace,
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
             ),
             string_data={"password": "test-smtp-password"},
         )

@@ -27,10 +27,14 @@ async def test_realm_with_smtp_secret_reference(
     secret_name = f"smtp-secret-{uuid.uuid4().hex[:8]}"
     namespace = shared_operator["namespace"]
 
-    # Create SMTP password secret
+    # Create SMTP password secret (with required RBAC label)
     core_api = client.CoreV1Api()
     secret = client.V1Secret(
-        metadata=client.V1ObjectMeta(name=secret_name, namespace=namespace),
+        metadata=client.V1ObjectMeta(
+            name=secret_name,
+            namespace=namespace,
+            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+        ),
         string_data={"password": "test-smtp-password"},
     )
     core_api.create_namespaced_secret(namespace=namespace, body=secret)
@@ -333,9 +337,13 @@ async def test_realm_with_missing_secret_key(shared_operator, operator_namespace
 
     core_api = client.CoreV1Api()
 
-    # Create secret without the expected key
+    # Create secret without the expected key (but with required RBAC label)
     secret = client.V1Secret(
-        metadata=client.V1ObjectMeta(name=secret_name, namespace=namespace),
+        metadata=client.V1ObjectMeta(
+            name=secret_name,
+            namespace=namespace,
+            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+        ),
         string_data={"wrong-key": "some-password"},
     )
     core_api.create_namespaced_secret(namespace=namespace, body=secret)
