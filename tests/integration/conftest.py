@@ -869,7 +869,7 @@ async def shared_operator(
         logger.info(f"Operator namespace {operator_namespace} already exists")
     except ApiException as e:
         if e.status == 404:
-            # Create namespace
+            # Create namespace (handle race condition with other workers)
             namespace = client.V1Namespace(
                 metadata=client.V1ObjectMeta(
                     name=operator_namespace,
@@ -880,8 +880,17 @@ async def shared_operator(
                     },
                 )
             )
-            k8s_core_v1.create_namespace(namespace)
-            logger.info(f"Created operator namespace: {operator_namespace}")
+            try:
+                k8s_core_v1.create_namespace(namespace)
+                logger.info(f"Created operator namespace: {operator_namespace}")
+            except ApiException as create_err:
+                if create_err.status == 409:
+                    # Another worker created it between our check and create - that's fine
+                    logger.info(
+                        f"Operator namespace {operator_namespace} created by another worker"
+                    )
+                else:
+                    raise
         else:
             raise
 

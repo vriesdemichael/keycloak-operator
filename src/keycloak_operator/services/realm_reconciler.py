@@ -313,6 +313,8 @@ class KeycloakRealmReconciler(BaseReconciler):
                     "app.kubernetes.io/managed-by": "keycloak-operator",
                     "app.kubernetes.io/component": "realm-authorization",
                     "keycloak.k8s.intility.io/realm": realm_name,
+                    # RBAC label required for operator to read this secret
+                    "keycloak.mdvr.nl/allow-operator-read": "true",
                 },
                 owner_references=[
                     client.V1OwnerReference(

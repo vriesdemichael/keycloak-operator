@@ -48,8 +48,9 @@ def validate_authorization(
     """
     Validate an authorization token from a referenced secret.
 
-    This function retrieves a secret from Kubernetes and compares its token value
-    against an expected token using constant-time comparison to prevent timing attacks.
+    This function retrieves a secret from Kubernetes using RBAC-aware validation
+    and compares its token value against an expected token using constant-time
+    comparison to prevent timing attacks.
 
     Args:
         secret_ref: AuthorizationSecretRef object or dict with 'name' and optional 'key', or None
@@ -72,6 +73,7 @@ def validate_authorization(
     """
     # Import here to avoid circular dependency
     from keycloak_operator.models.common import AuthorizationSecretRef
+    from keycloak_operator.utils.rbac import get_secret_with_validation
 
     # Handle None secret_ref - authorization is mandatory
     if secret_ref is None:
@@ -85,22 +87,32 @@ def validate_authorization(
         secret_ref = AuthorizationSecretRef(**secret_ref)
 
     try:
-        secret = k8s_client.read_namespaced_secret(
-            name=secret_ref.name,
+        # Use RBAC-aware secret reading to enforce label requirement
+        secret_data = get_secret_with_validation(
+            secret_name=secret_ref.name,
             namespace=secret_namespace,
+            k8s_client=k8s_client,
         )
+        
+        # If secret_data is None, RBAC validation failed
+        if secret_data is None:
+            logger.warning(
+                f"RBAC validation failed for authorization secret '{secret_ref.name}' "
+                f"in namespace '{secret_namespace}' - missing required label or not found"
+            )
+            return False
+
         token_key = secret_ref.key
 
-        if token_key not in secret.data:
+        if token_key not in secret_data:
             logger.warning(
                 f"Key '{token_key}' not found in secret '{secret_ref.name}' "
                 f"in namespace '{secret_namespace}'"
             )
             return False
 
-        # Decode the base64-encoded token from the secret
-        encoded_token = secret.data[token_key]
-        decoded_token = base64.b64decode(encoded_token).decode("utf-8")
+        # Decode the token (secret_data is already decoded by get_secret_with_validation)
+        decoded_token = secret_data[token_key]
 
         # Use constant-time comparison to prevent timing attacks
         result = secrets.compare_digest(decoded_token, expected_token)
@@ -128,6 +140,12 @@ def validate_authorization(
     except (binascii.Error, UnicodeDecodeError) as e:
         logger.error(
             f"Failed to decode token from secret '{secret_ref.name}' "
+            f"in namespace '{secret_namespace}': {e}"
+        )
+        return False
+    except Exception as e:
+        logger.error(
+            f"Unexpected error validating authorization secret '{secret_ref.name}' "
             f"in namespace '{secret_namespace}': {e}"
         )
         return False
