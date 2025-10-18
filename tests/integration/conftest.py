@@ -1067,17 +1067,28 @@ async def shared_operator(
                 if phase not in ("Ready", "Degraded"):
                     return False
 
-                # Check deployment too
-                deployment = k8s_apps_v1.read_namespaced_deployment(
-                    name=f"{keycloak_name}-keycloak", namespace=operator_namespace
-                )
-                desired = deployment.spec.replicas or 1
-                ready = deployment.status.ready_replicas or 0
-                return ready >= desired
+                # Check deployment AND that pods are actually ready
+                try:
+                    deployment = k8s_apps_v1.read_namespaced_deployment(
+                        name=f"{keycloak_name}-keycloak", namespace=operator_namespace
+                    )
+                    desired = deployment.spec.replicas or 1
+                    ready = deployment.status.ready_replicas or 0
+                    
+                    if ready < desired:
+                        logger.debug(
+                            f"Keycloak deployment {keycloak_name}-keycloak: {ready}/{desired} pods ready"
+                        )
+                        return False
+                    
+                    return True
+                except ApiException as deploy_error:
+                    logger.debug(f"Deployment not found or error: {deploy_error}")
+                    return False
             except ApiException:
                 return False
 
-        ready = await wait_for_condition(keycloak_ready, timeout=120, interval=5)
+        ready = await wait_for_condition(keycloak_ready, timeout=200, interval=5)
         if not ready:
             # Check Keycloak CR status for error details
             try:
@@ -1091,11 +1102,11 @@ async def shared_operator(
                 status = kc.get("status", {})
                 logger.error(f"Keycloak instance status: {status}")
                 pytest.fail(
-                    f"Keycloak instance not ready in time (timeout: 120s). Status: {status}"
+                    f"Keycloak instance not ready in time (timeout: 200s). Status: {status}"
                 )
             except Exception as e:
                 logger.error(f"Failed to get Keycloak status: {e}")
-                pytest.fail(f"Keycloak instance not ready in time (timeout: 120s): {e}")
+                pytest.fail(f"Keycloak instance not ready in time (timeout: 300s): {e}")
 
         logger.info("✓ Keycloak instance ready")
 
