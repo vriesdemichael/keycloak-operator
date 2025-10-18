@@ -16,6 +16,7 @@ Violating these rules will cause test failures, especially in parallel execution
 """
 
 import asyncio
+import fcntl
 import logging
 import os
 import tempfile
@@ -918,37 +919,50 @@ async def shared_operator(
         yaml.dump(helm_values, values_file)
         values_path = values_file.name
 
+    # Use file lock to serialize Helm operations across xdist workers
+    lock_path = Path(tempfile.gettempdir()) / "keycloak-operator-helm-install.lock"
+
+    with open(lock_path, "w") as lock_file:
+        # Acquire exclusive lock (blocks until available)
+        logger.info("Acquiring lock for Helm install...")
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        logger.info("Lock acquired")
+
+        try:
+            # Install/upgrade operator via Helm (now serialized across workers)
+            install_cmd = [
+                "helm",
+                "upgrade",
+                "--install",
+                "keycloak-operator",
+                str(helm_operator_chart_path),
+                "-n",
+                operator_namespace,
+                "-f",
+                values_path,
+                "--wait",
+                "--timeout",
+                "3m",  # Max 3 minutes for Helm install
+            ]
+
+            logger.info("Installing/upgrading Keycloak operator via Helm...")
+            proc = await asyncio.create_subprocess_exec(
+                *install_cmd, stdout=PIPE, stderr=PIPE
+            )
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                error_msg = stderr.decode() if stderr else "Unknown error"
+                logger.error(f"Helm install failed: {error_msg}")
+                pytest.fail(f"Failed to install operator via Helm: {error_msg}")
+
+            logger.info("✓ Operator installed/upgraded via Helm")
+        finally:
+            # Release lock (file will auto-close via context manager)
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            logger.info("Lock released")
+
     try:
-        # Install/upgrade operator via Helm (idempotent for xdist workers)
-        # Using 'upgrade --install' makes this safe for multiple workers
-        install_cmd = [
-            "helm",
-            "upgrade",
-            "--install",
-            "keycloak-operator",
-            str(helm_operator_chart_path),
-            "-n",
-            operator_namespace,
-            "-f",
-            values_path,
-            "--wait",
-            "--timeout",
-            "3m",  # Max 3 minutes for Helm install
-        ]
-
-        logger.info("Installing/upgrading Keycloak operator via Helm...")
-        proc = await asyncio.create_subprocess_exec(
-            *install_cmd, stdout=PIPE, stderr=PIPE
-        )
-        stdout, stderr = await proc.communicate()
-
-        if proc.returncode != 0:
-            error_msg = stderr.decode() if stderr else "Unknown error"
-            logger.error(f"Helm install failed: {error_msg}")
-            pytest.fail(f"Failed to install operator via Helm: {error_msg}")
-
-        logger.info("✓ Operator installed/upgraded via Helm")
-
         # Wait for operator deployment to be ready
         async def operator_ready():
             try:
