@@ -71,7 +71,10 @@ class TestValidateAuthorization:
 
         # Mock secret with matching token
         mock_secret = V1Secret(
-            metadata=V1ObjectMeta(name="test-secret"), data={"token": encoded_token}
+            metadata=V1ObjectMeta(
+                name="test-secret",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ), data={"token": encoded_token}
         )
         mock_k8s_client.read_namespaced_secret.return_value = mock_secret
 
@@ -95,7 +98,10 @@ class TestValidateAuthorization:
         encoded_token = base64.b64encode(wrong_token.encode("utf-8")).decode("utf-8")
 
         mock_secret = V1Secret(
-            metadata=V1ObjectMeta(name="test-secret"), data={"token": encoded_token}
+            metadata=V1ObjectMeta(
+                name="test-secret",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ), data={"token": encoded_token}
         )
         mock_k8s_client.read_namespaced_secret.return_value = mock_secret
 
@@ -139,7 +145,10 @@ class TestValidateAuthorization:
         """Test validation fails when secret exists but missing the expected key."""
         # Secret with wrong key
         mock_secret = V1Secret(
-            metadata=V1ObjectMeta(name="test-secret"),
+            metadata=V1ObjectMeta(
+                name="test-secret",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ),
             data={"wrong-key": base64.b64encode(b"token").decode("utf-8")},
         )
         mock_k8s_client.read_namespaced_secret.return_value = mock_secret
@@ -156,7 +165,10 @@ class TestValidateAuthorization:
     def test_validate_authorization_empty_token(self, mock_k8s_client, secret_ref):
         """Test validation fails with empty token in secret."""
         mock_secret = V1Secret(
-            metadata=V1ObjectMeta(name="test-secret"),
+            metadata=V1ObjectMeta(
+                name="test-secret",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ),
             data={"token": base64.b64encode(b"").decode("utf-8")},
         )
         mock_k8s_client.read_namespaced_secret.return_value = mock_secret
@@ -178,7 +190,10 @@ class TestValidateAuthorization:
         encoded_token = base64.b64encode(expected_token.encode("utf-8")).decode("utf-8")
 
         mock_secret = V1Secret(
-            metadata=V1ObjectMeta(name="test-secret"),
+            metadata=V1ObjectMeta(
+                name="test-secret",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ),
             data={"custom-key": encoded_token},
         )
         mock_k8s_client.read_namespaced_secret.return_value = mock_secret
@@ -209,12 +224,18 @@ class TestValidateAuthorization:
 
         # Mock secret for short wrong token
         mock_secret_short = V1Secret(
-            metadata=V1ObjectMeta(name="test-secret"), data={"token": encoded_short}
+            metadata=V1ObjectMeta(
+                name="test-secret",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ), data={"token": encoded_short}
         )
 
         # Mock secret for long wrong token
         mock_secret_long = V1Secret(
-            metadata=V1ObjectMeta(name="test-secret"), data={"token": encoded_long}
+            metadata=V1ObjectMeta(
+                name="test-secret",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ), data={"token": encoded_long}
         )
 
         # Test with short wrong token
@@ -243,7 +264,10 @@ class TestValidateAuthorization:
     def test_validate_authorization_non_base64_data(self, mock_k8s_client, secret_ref):
         """Test validation handles non-base64 encoded data gracefully."""
         mock_secret = V1Secret(
-            metadata=V1ObjectMeta(name="test-secret"),
+            metadata=V1ObjectMeta(
+                name="test-secret",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ),
             data={"token": "not-base64-encoded!!!"},
         )
         mock_k8s_client.read_namespaced_secret.return_value = mock_secret
@@ -281,7 +305,10 @@ class TestValidateAuthorization:
         ).decode("utf-8")
 
         mock_secret = V1Secret(
-            metadata=V1ObjectMeta(name="keycloak-operator-auth-token"),
+            metadata=V1ObjectMeta(
+                name="keycloak-operator-auth-token",
+                labels={"keycloak.mdvr.nl/allow-operator-read": "true"}
+            ),
             data={"token": encoded_correct_token},
         )
         mock_k8s_client.read_namespaced_secret.return_value = mock_secret

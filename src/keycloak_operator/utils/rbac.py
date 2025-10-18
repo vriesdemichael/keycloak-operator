@@ -46,9 +46,10 @@ async def check_namespace_access(
     try:
         auth_api = client.AuthorizationV1Api()
 
-        # Get service account name from chart (default: keycloak-operator-<namespace>)
+        # Get service account name from environment or use default
+        # Chart sets SERVICE_ACCOUNT_NAME env var
         service_account_name = os.getenv(
-            "OPERATOR_SERVICE_ACCOUNT", f"keycloak-operator-{operator_namespace}"
+            "SERVICE_ACCOUNT_NAME", f"keycloak-operator-{operator_namespace}"
         )
 
         sar = client.V1SubjectAccessReview(
@@ -72,7 +73,7 @@ async def check_namespace_access(
         if not allowed:
             reason = result.status.reason or "Unknown reason"
             error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
-                namespace, operator_namespace, namespace
+                namespace, operator_namespace, operator_namespace, namespace
             )
             logger.warning(
                 f"Namespace access denied for {namespace}: {reason}. "
@@ -86,7 +87,7 @@ async def check_namespace_access(
     except ApiException as e:
         if e.status == 403:
             error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
-                namespace, operator_namespace, namespace
+                namespace, operator_namespace, operator_namespace, namespace
             )
             logger.error(
                 f"HTTP 403 when checking namespace access for {namespace}: {e}"
@@ -100,7 +101,7 @@ async def check_namespace_access(
 
 
 async def validate_secret_label(
-    secret_name: str, namespace: str
+    secret_name: str, namespace: str, operator_namespace: str | None = None
 ) -> tuple[bool, str | None]:
     """
     Validate that a secret has the required label for operator access.
@@ -114,6 +115,7 @@ async def validate_secret_label(
     Args:
         secret_name: Name of the secret to validate
         namespace: Namespace containing the secret
+        operator_namespace: Namespace where operator is running (for error messages)
 
     Returns:
         Tuple of (is_valid, error_message)
@@ -149,8 +151,10 @@ async def validate_secret_label(
             logger.error(f"Secret {secret_name} not found in namespace {namespace}")
             return False, f"Secret '{secret_name}' not found in namespace '{namespace}'"
         elif e.status == 403:
+            # Use operator_namespace if provided, otherwise use generic placeholder
+            op_ns = operator_namespace or "keycloak-system"
             error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
-                namespace, "operator-namespace", namespace
+                namespace, op_ns, op_ns, namespace
             )
             logger.error(
                 f"HTTP 403 when accessing secret {secret_name} in {namespace}: {e}"

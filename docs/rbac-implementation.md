@@ -318,13 +318,13 @@ If upgrading from a previous version with cluster-wide secret access:
 
 ## Testing
 
-Run the integration test:
+Run the integration tests:
 
 ```bash
-./scripts/test-rbac-integration.sh
+make test-integration
 ```
 
-This test validates:
+This validates:
 - Operator deployment with minimal RBAC
 - Realm creation in different namespace
 - Client creation in different namespace
@@ -361,8 +361,7 @@ kubectl get secret smtp-password -n my-team -o jsonpath='{.metadata.labels}'
 
 ## References
 
-- Design Document: `TODO/rbac-centralized-operator-design.md`
-- Test Script: `scripts/test-rbac-integration.sh`
 - Operator Chart: `charts/keycloak-operator/`
 - Realm Chart: `charts/keycloak-realm/`
 - Client Chart: `charts/keycloak-client/`
+- Integration Tests: `tests/integration/`

@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.constants import ALLOW_OPERATOR_READ_LABEL
+
 if TYPE_CHECKING:
     from keycloak_operator.models.common import AuthorizationSecretRef
 
@@ -99,11 +101,10 @@ def validate_authorization(
             )
             return False
 
-        required_label = "keycloak.mdvr.nl/allow-operator-read"
-        if secret.metadata.labels.get(required_label) != "true":
+        if secret.metadata.labels.get(ALLOW_OPERATOR_READ_LABEL) != "true":
             logger.warning(
                 f"Secret '{secret_ref.name}' in namespace '{secret_namespace}' "
-                f"is missing required label {required_label}=true"
+                f"is missing required label {ALLOW_OPERATOR_READ_LABEL}=true"
             )
             return False
 

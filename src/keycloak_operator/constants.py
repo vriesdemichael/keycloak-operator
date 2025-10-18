@@ -105,7 +105,7 @@ ERROR_NAMESPACE_ACCESS_DENIED = (
     "Create a RoleBinding to grant access: "
     "kubectl create rolebinding keycloak-operator-access "
     "--clusterrole=keycloak-operator-namespace-access "
-    "--serviceaccount={}:keycloak-operator -n {}"
+    "--serviceaccount={}:keycloak-operator-{} -n {}"
 )
 ERROR_NAMESPACE_ISOLATION = (
     "Namespace isolation policy prevents access from '{}' to '{}'"
