@@ -1247,9 +1247,20 @@ def get_current_service_account_info() -> dict[str, str]:
         with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace") as f:
             namespace = f.read().strip()
 
-        # For now, assume service account name is "keycloak-operator"
-        # In a real deployment, this could be read from environment or metadata
-        service_account = "keycloak-operator"
+        # Read service account name from environment variable (set by Helm chart)
+        # or fall back to reading from mounted service account token directory
+        import os
+
+        service_account = os.getenv("SERVICE_ACCOUNT_NAME")
+        if not service_account:
+            # Try to infer from mounted token path
+            try:
+                # The token is mounted at /var/run/secrets/kubernetes.io/serviceaccount/
+                # and the SA name can be found via the Kubernetes downward API if configured,
+                # but since we control the deployment, we can use a naming convention
+                service_account = f"keycloak-operator-{namespace}"
+            except Exception:
+                service_account = "keycloak-operator"
 
         return {"name": service_account, "namespace": namespace}
 
