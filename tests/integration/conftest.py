@@ -82,15 +82,47 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
         raise
 
     # 3. Check operator image is available in Kind
-    # We do this by checking if the image exists in any Kind node
+    # Find the Kind cluster control plane node dynamically
     try:
         import subprocess
 
+        # First, find the Kind control plane node name
+        result = subprocess.run(
+            [
+                "docker",
+                "ps",
+                "--filter",
+                "name=control-plane",
+                "--format",
+                "{{.Names}}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        control_plane_nodes = [
+            name
+            for name in result.stdout.strip().split("\n")
+            if name and "control-plane" in name
+        ]
+
+        if not control_plane_nodes:
+            pytest.fail(
+                "No Kind control plane node found. Is the Kind cluster running?\n"
+                "Run: make kind-setup"
+            )
+
+        # Use the first control plane node found
+        control_plane_name = control_plane_nodes[0]
+        logger.info(f"Found Kind control plane: {control_plane_name}")
+
+        # Check if operator image exists in the node
         result = subprocess.run(
             [
                 "docker",
                 "exec",
-                "keycloak-operator-test-control-plane",
+                control_plane_name,
                 "crictl",
                 "images",
                 "keycloak-operator",
