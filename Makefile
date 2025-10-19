@@ -32,8 +32,8 @@ quality: format lint type-check
 
 # Testing
 # ========
-# Cluster reuse strategy: Integration tests reuse existing clusters for speed.
-# Use test-integration-clean for a guaranteed fresh cluster.
+# NEW: Tests deploy operator themselves via Helm (no pre-deployment needed)
+# Prerequisites: Kind cluster + operator image built and loaded
 
 .PHONY: test
 test: quality test-unit test-integration ## Run complete test suite (unit + integration)
@@ -43,11 +43,12 @@ test-unit: ## Run unit tests only
 	uv run --group test pytest tests/unit/ -v
 
 .PHONY: test-integration
-test-integration: ensure-kind-cluster deploy ## Run integration tests (reuses existing cluster)
+test-integration: ensure-kind-cluster build-test ## Run integration tests (builds image, tests deploy via Helm)
+	@echo "Running integration tests (tests will deploy operator via Helm)..."
 	uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
 .PHONY: test-integration-clean
-test-integration-clean: kind-teardown test-integration
+test-integration-clean: kind-teardown test-integration ## Clean cluster first, then run integration tests
 
 
 # Kind cluster management

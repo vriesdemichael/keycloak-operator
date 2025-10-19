@@ -326,51 +326,42 @@ class TestAuthorizationDelegation:
                     name=realm_name,
                 )
 
-    @pytest.mark.skip(
-        reason="Invalid operator token test incompatible with 1-1 operator-keycloak architecture. "
-        "The operator's expected token is always read from the global OPERATOR_NAMESPACE at runtime, "
-        "making it impossible to test invalid tokens without tampering with the shared operator instance "
-        "(which would cause flaky tests in parallel execution). Authorization validation is covered by "
-        "unit tests in tests/unit/test_auth.py instead."
-    )
     @pytest.mark.timeout(600)
     async def test_invalid_operator_token_rejects_realm(
         self,
         k8s_custom_objects,
         k8s_core_v1,
         test_namespace,
-        sample_keycloak_spec,
-        sample_realm_spec,
         wait_for_condition,
-        wait_for_keycloak_ready,
     ) -> None:
         """Verify that realms with invalid operator token are rejected.
 
         Test flow:
-        1. Create Keycloak instance
-        2. Create fake secret with wrong token
-        3. Create realm pointing to fake secret
-        4. Verify realm enters Failed state (not Ready)
+        1. Use shared operator instance
+        2. Create fake secret with wrong token in test namespace
+        3. Create realm pointing to fake secret (invalid token)
+        4. Verify realm enters Degraded/Failed state (not Ready)
+
+        Note: We use the shared operator but create a realm with an invalid token
+        reference, which the operator will reject during authorization validation.
         """
 
-        keycloak_name = f"invalid-token-kc-{uuid.uuid4().hex[:8]}"
         namespace = test_namespace
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"invalid-realm-{suffix}"
-        fake_secret_name = f"fake-token-{suffix}"
+        fake_secret_name = f"fake-operator-token-{suffix}"
 
-        keycloak_manifest = {
-            **sample_keycloak_spec,
-            "metadata": {"name": keycloak_name, "namespace": namespace},
-        }
-
-        # Create fake secret with invalid token
+        # Create fake secret with invalid token (with required RBAC label)
         fake_token = b"invalid-fake-token-not-matching-operator"
         fake_secret = {
             "apiVersion": "v1",
             "kind": "Secret",
-            "metadata": {"name": fake_secret_name, "namespace": namespace},
+            "metadata": {
+                "name": fake_secret_name,
+                "namespace": namespace,
+                "labels": {"keycloak.mdvr.nl/allow-operator-read": "true"},
+            },
             "type": "Opaque",
             "data": {"token": base64.b64encode(fake_token).decode("utf-8")},
         }
@@ -412,27 +403,19 @@ class TestAuthorizationDelegation:
                 phase = status.get("phase")
                 message = status.get("message", "")
 
-                # Should be in Failed state with authorization error message
-                return phase == "Failed" and "Authorization failed" in message
+                # Should be in Failed or Degraded state with authorization error message
+                return (
+                    phase in ("Failed", "Degraded")
+                    and "Authorization failed" in message
+                )
 
             return await wait_for_condition(_condition, timeout=120, interval=3)
 
         try:
-            # Create Keycloak instance
-            k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=namespace,
-                plural="keycloaks",
-                body=keycloak_manifest,
-            )
-
-            await wait_for_keycloak_ready(keycloak_name, namespace, timeout=120)
-
             # Create fake secret
             k8s_core_v1.create_namespaced_secret(namespace=namespace, body=fake_secret)
 
-            # Create realm with invalid token
+            # Create realm with invalid token reference
             k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -455,8 +438,10 @@ class TestAuthorizationDelegation:
             )
             status = realm.get("status", {}) or {}
             message = status.get("message", "")
-            assert "Authorization failed" in message
-            assert "Invalid or missing operator token" in message
+
+            assert "Authorization failed" in message, (
+                f"Realm should report authorization failure, got: {message}"
+            )
 
         finally:
             # Cleanup
@@ -472,15 +457,6 @@ class TestAuthorizationDelegation:
             with contextlib.suppress(ApiException):
                 k8s_core_v1.delete_namespaced_secret(
                     name=fake_secret_name, namespace=namespace
-                )
-
-            with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloaks",
-                    name=keycloak_name,
                 )
 
     @pytest.mark.timeout(600)
@@ -586,12 +562,16 @@ class TestAuthorizationDelegation:
             ready = await _wait_resource_ready("keycloakrealms", realm_name)
             assert ready, f"Realm {realm_name} did not become Ready"
 
-            # Create fake secret with invalid token
+            # Create fake secret with invalid token (with required RBAC label)
             fake_token = b"invalid-fake-realm-token"
             fake_secret = {
                 "apiVersion": "v1",
                 "kind": "Secret",
-                "metadata": {"name": fake_secret_name, "namespace": namespace},
+                "metadata": {
+                    "name": fake_secret_name,
+                    "namespace": namespace,
+                    "labels": {"keycloak.mdvr.nl/allow-operator-read": "true"},
+                },
                 "type": "Opaque",
                 "data": {"token": base64.b64encode(fake_token).decode("utf-8")},
             }
