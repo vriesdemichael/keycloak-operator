@@ -1227,27 +1227,28 @@ async def shared_operator(
                         except Exception as e:
                             logger.warning(f"Failed to uninstall Helm release: {e}")
 
-                        # Delete operator namespace (with shorter timeout to avoid hanging tests)
+                        # Delete operator namespace (without waiting to avoid hanging)
                         logger.info(
                             f"Deleting operator namespace {operator_namespace}..."
                         )
                         try:
+                            # Don't wait for namespace deletion to complete
+                            # This avoids hanging on finalizers in CI
                             subprocess.run(
                                 [
                                     "kubectl",
                                     "delete",
                                     "namespace",
                                     operator_namespace,
-                                    "--wait=true",
-                                    "--timeout=60s",  # Reduced from 120s
+                                    "--wait=false",  # Don't wait for completion
                                 ],
                                 check=False,
                                 capture_output=True,
                                 text=True,
-                                timeout=70,  # Reduced from 130s
+                                timeout=10,  # Just enough time to issue the delete command
                             )
                             logger.info(
-                                f"✓ Operator namespace {operator_namespace} deleted"
+                                f"✓ Operator namespace {operator_namespace} deletion initiated"
                             )
                         except Exception as e:
                             logger.warning(f"Failed to delete operator namespace: {e}")
