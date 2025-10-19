@@ -209,7 +209,7 @@ keycloak:
   replicas: 1
   
   # Keycloak version (image tag)
-  version: "26.0.0"
+  version: "26.4.1"
   
   # Keycloak image
   image: quay.io/keycloak/keycloak

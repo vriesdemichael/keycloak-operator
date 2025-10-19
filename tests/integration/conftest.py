@@ -29,7 +29,10 @@ import pytest
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
+from keycloak_operator.constants import (
+    DEFAULT_KEYCLOAK_IMAGE,
+    DEFAULT_KEYCLOAK_OPTIMIZED_VERSION,
+)
 from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
 from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
@@ -953,11 +956,26 @@ async def shared_operator(
             raise
 
     # Prepare Helm values for operator deployment
+    # Use optimized Keycloak image if available for faster test startup
+    # Format: "keycloak-optimized:26.4.1" or "ghcr.io/<repo>/keycloak-optimized:26.4.1"
+    keycloak_image_full = os.getenv(
+        "KEYCLOAK_IMAGE", f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}"
+    )
+    
+    # Split image and tag for Helm values
+    if ":" in keycloak_image_full:
+        keycloak_image, keycloak_version = keycloak_image_full.rsplit(":", 1)
+    else:
+        keycloak_image = keycloak_image_full
+        keycloak_version = DEFAULT_KEYCLOAK_OPTIMIZED_VERSION
+    
     helm_values = {
         "namespace": {"name": operator_namespace, "create": False},
         "keycloak": {
             "enabled": True,
             "replicas": 1,
+            "image": keycloak_image,  # Use optimized image for faster startup
+            "version": keycloak_version,
             "database": {
                 "cnpg": {
                     "enabled": cnpg_installed,

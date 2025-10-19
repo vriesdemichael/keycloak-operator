@@ -2,6 +2,7 @@
 
 # Docker registry configuration
 VERSION ?= $(shell grep '^version = ' pyproject.toml | cut -d'"' -f2)
+KEYCLOAK_VERSION ?= 26.4.1
 
 .PHONY: help
 help: ## Show this help message
@@ -43,7 +44,7 @@ test-unit: ## Run unit tests only
 	uv run --group test pytest tests/unit/ -v
 
 .PHONY: test-integration
-test-integration: ensure-kind-cluster build-test ## Run integration tests (builds image, tests deploy via Helm)
+test-integration: ensure-kind-cluster build-all-test ## Run integration tests (builds images, tests deploy via Helm)
 	@echo "Running integration tests (tests will deploy operator via Helm)..."
 	uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
@@ -69,13 +70,33 @@ kind-teardown: ## Tear down Kind cluster
 # Operator operations
 .PHONY: build
 build: ## Build operator Docker image
-	docker build -t keycloak-operator:latest .
+	docker build -f images/operator/Dockerfile -t keycloak-operator:latest .
 
 .PHONY: build-test
 build-test: ## Build operator Docker image for testing and load it into kind cluster
-	docker build -t keycloak-operator:test .
+	docker build -f images/operator/Dockerfile -t keycloak-operator:test .
 	@echo "Loading operator image into Kind cluster..."
 	kind load docker-image keycloak-operator:test --name keycloak-operator-test
+
+# Optimized Keycloak image operations
+.PHONY: build-keycloak-optimized
+build-keycloak-optimized: ## Build optimized Keycloak image for faster test startup
+	@echo "Building optimized Keycloak image (version: $(KEYCLOAK_VERSION))..."
+	@echo "This may take 2-3 minutes on first build (downloads and optimizes Keycloak)..."
+	docker build -f images/keycloak-optimized/Dockerfile \
+		--build-arg KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) \
+		-t keycloak-optimized:$(KEYCLOAK_VERSION) \
+		images/keycloak-optimized/
+	@echo "✓ Optimized Keycloak image built successfully"
+
+.PHONY: kind-load-keycloak-optimized
+kind-load-keycloak-optimized: build-keycloak-optimized ## Build and load optimized Keycloak image into Kind
+	@echo "Loading optimized Keycloak image into Kind cluster..."
+	kind load docker-image keycloak-optimized:$(KEYCLOAK_VERSION) --name keycloak-operator-test
+	@echo "✓ Optimized Keycloak image loaded into Kind"
+
+.PHONY: build-all-test
+build-all-test: build-test kind-load-keycloak-optimized ## Build operator and optimized Keycloak, load both into Kind
 
 
 # Deployment
