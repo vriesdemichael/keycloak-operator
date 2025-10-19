@@ -5,7 +5,9 @@
 # Build time optimization trades container build time for runtime startup speed.
 # Expected startup time: 20-30s (vs 70s+ for unoptimized)
 
-FROM quay.io/keycloak/keycloak:26.0.0 AS builder
+ARG KEYCLOAK_VERSION=26.0.0
+
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION} AS builder
 
 # Configure for PostgreSQL (used in tests via CNPG)
 ENV KC_DB=postgres
@@ -32,7 +34,7 @@ WORKDIR /opt/keycloak
 RUN /opt/keycloak/bin/kc.sh build
 
 # Production image - copy optimized build
-FROM quay.io/keycloak/keycloak:26.0.0
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
 
 # Copy the optimized Keycloak build from builder stage
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
