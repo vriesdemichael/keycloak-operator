@@ -66,3 +66,13 @@ Our Dockerfile only adds build configuration and does not modify the Keycloak so
 | CI (GitHub) | ~180s         | ~75s            | 58% faster  |
 
 *Measurements are from pod creation to readiness probe success.*
+
+## Test Results
+
+Full integration test suite results with optimized image:
+
+✅ **29/29 tests PASSED** in **82 seconds** (vs 440 seconds with default image)
+
+**Performance Improvement**: **81% faster total test execution time**
+
+See [TEST_RESULTS.md](TEST_RESULTS.md) for detailed breakdown.
