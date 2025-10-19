@@ -430,7 +430,7 @@ jobs:
         env:
           KEYCLOAK_IMAGE: ${{ needs.build-test-image.outputs.keycloak-image }}
         run: |
-          if [[ "${KEYCLOAK_IMAGE}" == ghcr.io/* ]]; then
+          if [[ "${KEYCLOAK_IMAGE}" =~ ^ghcr\.io/ ]]; then
             echo "Using existing optimized Keycloak image from registry: ${KEYCLOAK_IMAGE}"
             docker pull "${KEYCLOAK_IMAGE}"
             docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}

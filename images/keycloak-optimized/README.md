@@ -61,7 +61,7 @@ make kind-load-keycloak-optimized
 ### CI/CD Build
 
 The CI/CD pipeline automatically:
-1. Checks if `ghcr.io/<repo>/keycloak-optimized:26.4.1` exists
+1. Checks if `ghcr.io/<your-repo>/keycloak-optimized:26.4.1` exists
 2. If not, builds and publishes it
 3. Reuses the published image on subsequent runs
 

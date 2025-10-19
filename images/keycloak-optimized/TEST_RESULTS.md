@@ -41,7 +41,7 @@
 - Uses `--optimized` flag for fast startup
 
 **Integration**:
-- Tests automatically use `keycloak-optimized:test` image
+- Tests automatically use `keycloak-optimized:26.4.1` image
 - `make test-integration` builds both operator and Keycloak images
 - Backwards compatible via `KEYCLOAK_IMAGE` env var
 
