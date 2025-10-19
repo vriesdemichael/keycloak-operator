@@ -5,7 +5,7 @@
 # Build time optimization trades container build time for runtime startup speed.
 # Expected startup time: 20-30s (vs 70s+ for unoptimized)
 
-ARG KEYCLOAK_VERSION=26.0.0
+ARG KEYCLOAK_VERSION=26.4.1
 
 FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION} AS builder
 

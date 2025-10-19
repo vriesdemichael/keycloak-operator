@@ -2,6 +2,7 @@
 
 # Docker registry configuration
 VERSION ?= $(shell grep '^version = ' pyproject.toml | cut -d'"' -f2)
+KEYCLOAK_VERSION ?= 26.4.1
 
 .PHONY: help
 help: ## Show this help message
@@ -80,15 +81,18 @@ build-test: ## Build operator Docker image for testing and load it into kind clu
 # Optimized Keycloak image operations
 .PHONY: build-keycloak-optimized
 build-keycloak-optimized: ## Build optimized Keycloak image for faster test startup
-	@echo "Building optimized Keycloak image..."
+	@echo "Building optimized Keycloak image (version: $(KEYCLOAK_VERSION))..."
 	@echo "This may take 2-3 minutes on first build (downloads and optimizes Keycloak)..."
-	docker build -f images/keycloak-optimized/Dockerfile -t keycloak-optimized:test images/keycloak-optimized/
+	docker build -f images/keycloak-optimized/Dockerfile \
+		--build-arg KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) \
+		-t keycloak-optimized:$(KEYCLOAK_VERSION) \
+		images/keycloak-optimized/
 	@echo "✓ Optimized Keycloak image built successfully"
 
 .PHONY: kind-load-keycloak-optimized
 kind-load-keycloak-optimized: build-keycloak-optimized ## Build and load optimized Keycloak image into Kind
 	@echo "Loading optimized Keycloak image into Kind cluster..."
-	kind load docker-image keycloak-optimized:test --name keycloak-operator-test
+	kind load docker-image keycloak-optimized:$(KEYCLOAK_VERSION) --name keycloak-operator-test
 	@echo "✓ Optimized Keycloak image loaded into Kind"
 
 .PHONY: build-all-test

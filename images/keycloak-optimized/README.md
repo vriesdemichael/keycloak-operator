@@ -1,6 +1,6 @@
 # Optimized Keycloak Image
 
-This directory contains a pre-optimized Keycloak container image designed for faster startup times in test and development environments.
+This directory contains a pre-optimized Keycloak container image designed for faster startup times in test, development, and production environments.
 
 ## Why Optimize?
 
@@ -33,23 +33,69 @@ You can still configure via environment variables:
 - **Hostname**: KC_HOSTNAME, KC_HOSTNAME_STRICT
 - **Logging**: KC_LOG_LEVEL
 
+## Version
+
+**Current Version**: 26.4.1 (matches upstream Keycloak)
+
+The optimized image uses the same version tag as the upstream Keycloak image it's based on. This ensures version consistency and makes it easy to use as a drop-in replacement.
+
 ## Building the Image
 
+### Local Build
+
 ```bash
-# Build locally
+# Build with default version (26.4.1)
 make build-keycloak-optimized
+
+# Build with specific version
+docker build \
+  --build-arg KEYCLOAK_VERSION=26.4.1 \
+  -t keycloak-optimized:26.4.1 \
+  -f images/keycloak-optimized/Dockerfile \
+  images/keycloak-optimized/
 
 # Load into Kind cluster
 make kind-load-keycloak-optimized
 ```
 
-## Usage in Tests
+### CI/CD Build
 
-The test fixtures automatically use this optimized image when available:
+The CI/CD pipeline automatically:
+1. Checks if `ghcr.io/<repo>/keycloak-optimized:26.4.1` exists
+2. If not, builds and publishes it
+3. Reuses the published image on subsequent runs
+
+## Usage
+
+### In Tests (Automatic)
+
+The test fixtures automatically use this optimized image:
 
 ```python
 # In conftest.py
-keycloak_image = os.getenv("KEYCLOAK_IMAGE", "keycloak-optimized:test")
+keycloak_image = os.getenv("KEYCLOAK_IMAGE", "keycloak-optimized:26.4.1")
+```
+
+### In Production (Helm)
+
+```yaml
+keycloak:
+  image: ghcr.io/<your-repo>/keycloak-operator/keycloak-optimized
+  version: "26.4.1"
+```
+
+### Direct Docker Usage
+
+```bash
+# Pull from registry
+docker pull ghcr.io/<your-repo>/keycloak-operator/keycloak-optimized:26.4.1
+
+# Run with PostgreSQL
+docker run -e KC_DB_URL_HOST=postgres \
+           -e KC_DB_URL_DATABASE=keycloak \
+           -e KC_DB_USERNAME=keycloak \
+           -e KC_DB_PASSWORD=password \
+           ghcr.io/<your-repo>/keycloak-operator/keycloak-optimized:26.4.1
 ```
 
 ## License Considerations

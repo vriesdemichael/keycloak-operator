@@ -19,7 +19,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
-  KEYCLOAK_VERSION: "26.0.0"  # Match version from charts/keycloak-operator/values.yaml
+  KEYCLOAK_VERSION: "26.4.1"  # Latest stable Keycloak version (update as needed)
 
 jobs:
   # ==========================================================================
@@ -83,7 +83,7 @@ jobs:
             echo "exists=true" >> $GITHUB_OUTPUT
           else
             echo "✗ Optimized Keycloak image does not exist, will build"
-            echo "image=keycloak-optimized:test" >> $GITHUB_OUTPUT
+            echo "image=keycloak-optimized:${{ env.KEYCLOAK_VERSION }}" >> $GITHUB_OUTPUT
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
       
@@ -94,7 +94,7 @@ jobs:
           context: images/keycloak-optimized
           file: images/keycloak-optimized/Dockerfile
           platforms: linux/amd64
-          tags: keycloak-optimized:test
+          tags: keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
           outputs: type=docker,dest=/tmp/keycloak-optimized.tar
           cache-from: type=gha,scope=keycloak-optimized
           cache-to: type=gha,mode=max,scope=keycloak-optimized
@@ -433,22 +433,20 @@ jobs:
           if [[ "${KEYCLOAK_IMAGE}" == ghcr.io/* ]]; then
             echo "Using existing optimized Keycloak image from registry: ${KEYCLOAK_IMAGE}"
             docker pull "${KEYCLOAK_IMAGE}"
-            docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:test
+            docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
           else
             echo "Loading newly built optimized Keycloak image from artifact..."
-            # Download artifact
-            mkdir -p /tmp/keycloak
           fi
       
       - name: Download optimized Keycloak image artifact
-        if: needs.build-test-image.outputs.keycloak-image == 'keycloak-optimized:test'
+        if: "!startsWith(needs.build-test-image.outputs.keycloak-image, 'ghcr.io')"
         uses: actions/download-artifact@v4
         with:
           name: keycloak-optimized-image
           path: /tmp
       
       - name: Load optimized Keycloak image from artifact
-        if: needs.build-test-image.outputs.keycloak-image == 'keycloak-optimized:test'
+        if: "!startsWith(needs.build-test-image.outputs.keycloak-image, 'ghcr.io')"
         run: |
           docker load --input /tmp/keycloak-optimized.tar
           echo "Optimized Keycloak image loaded from artifact"
@@ -456,7 +454,7 @@ jobs:
       - name: Load optimized Keycloak image into Kind
         run: |
           echo "Loading optimized Keycloak image into Kind cluster..."
-          kind load docker-image keycloak-optimized:test --name keycloak-operator-test-${{ github.run_id }}
+          kind load docker-image keycloak-optimized:${{ env.KEYCLOAK_VERSION }} --name keycloak-operator-test-${{ github.run_id }}
           echo "Optimized Keycloak image loaded successfully"
       
       - name: Install CloudNativePG operator
@@ -535,7 +533,7 @@ jobs:
     name: Publish Optimized Keycloak Image
     needs: [build-test-image, integration-tests]
     if: |
-      needs.build-test-image.outputs.keycloak-image == 'keycloak-optimized:test' &&
+      !startsWith(needs.build-test-image.outputs.keycloak-image, 'ghcr.io') &&
       ((github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'release')
     runs-on: ubuntu-latest
     timeout-minutes: 20
