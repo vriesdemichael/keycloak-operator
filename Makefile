@@ -69,13 +69,30 @@ kind-teardown: ## Tear down Kind cluster
 # Operator operations
 .PHONY: build
 build: ## Build operator Docker image
-	docker build -t keycloak-operator:latest .
+	docker build -f images/operator/Dockerfile -t keycloak-operator:latest .
 
 .PHONY: build-test
 build-test: ## Build operator Docker image for testing and load it into kind cluster
-	docker build -t keycloak-operator:test .
+	docker build -f images/operator/Dockerfile -t keycloak-operator:test .
 	@echo "Loading operator image into Kind cluster..."
 	kind load docker-image keycloak-operator:test --name keycloak-operator-test
+
+# Optimized Keycloak image operations
+.PHONY: build-keycloak-optimized
+build-keycloak-optimized: ## Build optimized Keycloak image for faster test startup
+	@echo "Building optimized Keycloak image..."
+	@echo "This may take 2-3 minutes on first build (downloads and optimizes Keycloak)..."
+	docker build -f images/keycloak-optimized/Dockerfile -t keycloak-optimized:test images/keycloak-optimized/
+	@echo "✓ Optimized Keycloak image built successfully"
+
+.PHONY: kind-load-keycloak-optimized
+kind-load-keycloak-optimized: build-keycloak-optimized ## Build and load optimized Keycloak image into Kind
+	@echo "Loading optimized Keycloak image into Kind cluster..."
+	kind load docker-image keycloak-optimized:test --name keycloak-operator-test
+	@echo "✓ Optimized Keycloak image loaded into Kind"
+
+.PHONY: build-all-test
+build-all-test: build-test kind-load-keycloak-optimized ## Build operator and optimized Keycloak, load both into Kind
 
 
 # Deployment

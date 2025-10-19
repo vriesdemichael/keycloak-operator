@@ -1,0 +1,49 @@
+# Optimized Keycloak Image for Testing
+# This image pre-builds Keycloak with PostgreSQL database support and common settings
+# to significantly reduce startup time in test environments.
+#
+# Build time optimization trades container build time for runtime startup speed.
+# Expected startup time: 20-30s (vs 70s+ for unoptimized)
+
+FROM quay.io/keycloak/keycloak:26.0.0 AS builder
+
+# Configure for PostgreSQL (used in tests via CNPG)
+ENV KC_DB=postgres
+
+# Enable health and metrics endpoints
+ENV KC_HEALTH_ENABLED=true
+ENV KC_METRICS_ENABLED=true
+
+# Enable HTTP for ingress TLS termination
+ENV KC_HTTP_ENABLED=true
+
+# Enable proxy headers forwarding
+ENV KC_PROXY_HEADERS=xforwarded
+
+WORKDIR /opt/keycloak
+
+# Build the optimized Keycloak image
+# This pre-processes:
+# - Database drivers (PostgreSQL)
+# - Feature configuration (health, metrics)
+# - HTTP/proxy settings
+# - Theme compilation
+# - Cache configuration
+RUN /opt/keycloak/bin/kc.sh build
+
+# Production image - copy optimized build
+FROM quay.io/keycloak/keycloak:26.0.0
+
+# Copy the optimized Keycloak build from builder stage
+COPY --from=builder /opt/keycloak/ /opt/keycloak/
+
+# Set working directory
+WORKDIR /opt/keycloak
+
+# Use optimized startup mode
+# Runtime configuration (connection details, credentials) can still be provided via env vars:
+# - KC_DB_URL_HOST, KC_DB_URL_PORT, KC_DB_URL_DATABASE
+# - KC_DB_USERNAME, KC_DB_PASSWORD
+# - KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
+CMD ["start", "--optimized"]

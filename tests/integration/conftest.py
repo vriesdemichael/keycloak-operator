@@ -953,11 +953,24 @@ async def shared_operator(
             raise
 
     # Prepare Helm values for operator deployment
+    # Use optimized Keycloak image if available for faster test startup
+    # Format: "keycloak-optimized:test" or "quay.io/keycloak/keycloak:26.0.0"
+    keycloak_image_full = os.getenv("KEYCLOAK_IMAGE", "keycloak-optimized:test")
+    
+    # Split image and tag for Helm values
+    if ":" in keycloak_image_full:
+        keycloak_image, keycloak_version = keycloak_image_full.rsplit(":", 1)
+    else:
+        keycloak_image = keycloak_image_full
+        keycloak_version = "test"
+    
     helm_values = {
         "namespace": {"name": operator_namespace, "create": False},
         "keycloak": {
             "enabled": True,
             "replicas": 1,
+            "image": keycloak_image,  # Use optimized image for faster startup
+            "version": keycloak_version,
             "database": {
                 "cnpg": {
                     "enabled": cnpg_installed,
