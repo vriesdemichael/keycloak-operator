@@ -391,129 +391,12 @@ jobs:
           echo "CNPG operator is ready!"
           kubectl get pods -n cnpg-system
       
-      - name: Create PostgreSQL database cluster
-        run: |
-          echo "Creating namespace for Keycloak resources..."
-          kubectl create namespace keycloak-system || true
-          
-          echo "Creating PostgreSQL cluster for Keycloak..."
-          cat <<EOF | kubectl apply -f -
-          apiVersion: postgresql.cnpg.io/v1
-          kind: Cluster
-          metadata:
-            name: test-keycloak-postgres
-            namespace: keycloak-system
-          spec:
-            instances: 1
-            storage:
-              size: 1Gi
-          EOF
-          
-          echo "Waiting for PostgreSQL cluster to be ready..."
-          kubectl wait --for=condition=ready cluster/test-keycloak-postgres \
-            -n keycloak-system \
-            --timeout=300s
-          
-          echo "Waiting for PostgreSQL primary pod to be ready..."
-          kubectl wait --for=condition=ready pod \
-            -l cnpg.io/cluster=test-keycloak-postgres,role=primary \
-            -n keycloak-system \
-            --timeout=300s
-          
-          echo "PostgreSQL cluster is ready!"
-          kubectl get clusters.postgresql.cnpg.io -n keycloak-system
-          kubectl get pods -n keycloak-system
-      
-      - name: Install Keycloak operator
-        run: |
-          echo "Installing Keycloak operator via Helm chart..."
-          helm upgrade --install keycloak-operator ./charts/keycloak-operator \
-            --namespace keycloak-system \
-            --create-namespace \
-            --set namespace.create=false \
-            --set crds.install=true \
-            --set operator.image.repository=keycloak-operator \
-            --set operator.image.tag=test \
-            --set operator.image.pullPolicy=Never \
-            --set operator.replicaCount=1 \
-            --set keycloak.enabled=false \
-            --wait \
-            --timeout=300s
-          
-          echo "Waiting for operator to be ready..."
-          kubectl wait -n keycloak-system \
-            --for=condition=available deployment/keycloak-operator \
-            --timeout=300s
-          kubectl wait -n keycloak-system \
-            --for=condition=ready pod -l app.kubernetes.io/name=keycloak-operator \
-            --timeout=300s
-          
-          echo "Operator is ready!"
-          kubectl get pods -n keycloak-system
-          kubectl get crds | grep keycloak
-      
-      - name: Create shared Keycloak instance for tests
-        run: |
-          echo "Creating shared Keycloak instance..."
-          kubectl apply -f - <<EOF
-          apiVersion: keycloak.mdvr.nl/v1
-          kind: Keycloak
-          metadata:
-            name: keycloak
-            namespace: keycloak-system
-          spec:
-            replicas: 1
-            image: quay.io/keycloak/keycloak:26.0.0
-            database:
-              type: postgresql
-              host: test-keycloak-postgres-rw
-              port: 5432
-              database: app
-              username: app
-              passwordSecret:
-                name: test-keycloak-postgres-app
-                key: password
-            resources:
-              requests:
-                cpu: 500m
-                memory: 1Gi
-              limits:
-                cpu: 2000m
-                memory: 2Gi
-          EOF
-          
-          echo "Waiting for Keycloak deployment to be created..."
-          for i in {1..30}; do
-            if kubectl get deployment keycloak-keycloak -n keycloak-system 2>/dev/null; then
-              echo "Deployment found!"
-              break
-            fi
-            echo "Waiting for deployment to be created... ($i/30)"
-            sleep 2
-          done
-          
-          echo "Waiting for Keycloak deployment to be ready..."
-          kubectl wait -n keycloak-system \
-            --for=condition=available deployment/keycloak-keycloak \
-            --timeout=300s
-          
-          echo "Waiting for Keycloak pods to be ready..."
-          kubectl wait -n keycloak-system \
-            --for=condition=ready pod \
-            -l keycloak.mdvr.nl/instance=keycloak,keycloak.mdvr.nl/component=server \
-            --timeout=300s
-          echo "Waiting for Keycloak instance to be ready (the unoptimized version takes ages)..."
-          kubectl wait --for=jsonpath='{.status.phase}'=Ready keycloak/keycloak -n keycloak-system --timeout=120s
-          echo "Keycloak instance is ready!"
-          kubectl get keycloaks -n keycloak-system -o wide
-          kubectl get deployments -n keycloak-system
-          kubectl get pods -n keycloak-system
-      
       - name: Run integration tests
         env:
           KUBERNETES_VERSION: ${{ matrix.k8s-version }}
         run: |
           echo "Using KUBECONFIG: $KUBECONFIG"
+          echo "Running integration tests (tests will deploy operator and Keycloak via Helm)..."
           uv run pytest tests/integration/ -v -n auto --dist=loadscope
       
       - name: Collect logs and diagnostics
@@ -525,11 +408,11 @@ jobs:
           kubectl cluster-info | tee -a test-logs/cluster-info.log
           
           echo "=== Operator Logs ===" | tee test-logs/operator-logs.log
-          kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --all-containers=true --tail=1000 >> test-logs/operator-logs.log 2>&1 || true
+          kubectl logs -n keycloak-test-system -l app.kubernetes.io/name=keycloak-operator --all-containers=true --tail=1000 >> test-logs/operator-logs.log 2>&1 || echo "No operator logs found in keycloak-test-system"
           
           echo "=== Operator Status ===" | tee test-logs/operator-status.log
-          kubectl get deployment -n keycloak-system -o wide >> test-logs/operator-status.log 2>&1 || true
-          kubectl describe deployment -n keycloak-system keycloak-operator >> test-logs/operator-status.log 2>&1 || true
+          kubectl get deployment -n keycloak-test-system -o wide >> test-logs/operator-status.log 2>&1 || echo "No deployments in keycloak-test-system"
+          kubectl describe deployment -n keycloak-test-system keycloak-operator >> test-logs/operator-status.log 2>&1 || echo "No operator deployment found"
           
           echo "=== Test Resources ===" | tee test-logs/test-resources.log
           kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
@@ -539,11 +422,10 @@ jobs:
           kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
           
           echo "=== Keycloak Logs ===" | tee test-logs/keycloak-logs.log
-          kubectl logs -n keycloak-system -l keycloak.mdvr.nl/component=server --tail=500 >> test-logs/keycloak-logs.log 2>&1 || true
+          kubectl logs -n keycloak-test-system -l keycloak.mdvr.nl/component=server --tail=500 >> test-logs/keycloak-logs.log 2>&1 || echo "No Keycloak logs in keycloak-test-system"
           
           echo "=== PostgreSQL Status ===" | tee test-logs/postgres-status.log
-          kubectl get clusters.postgresql.cnpg.io -n keycloak-system -o wide >> test-logs/postgres-status.log 2>&1 || true
-          kubectl logs -n keycloak-system -l cnpg.io/cluster=test-keycloak-postgres --tail=500 >> test-logs/postgres-logs.log 2>&1 || true
+          kubectl get clusters.postgresql.cnpg.io --all-namespaces -o wide >> test-logs/postgres-status.log 2>&1 || true
           
           echo "=== All Pods ===" | tee test-logs/all-pods.log
           kubectl get pods --all-namespaces -o wide >> test-logs/all-pods.log 2>&1 || true

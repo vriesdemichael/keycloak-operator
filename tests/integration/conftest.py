@@ -16,6 +16,7 @@ Violating these rules will cause test failures, especially in parallel execution
 """
 
 import asyncio
+import fcntl
 import logging
 import os
 import tempfile
@@ -42,6 +43,111 @@ from .cleanup_utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def check_prerequisites(k8s_client, k8s_core_v1):
+    """Validate all prerequisites before running integration tests.
+
+    Prerequisites (MUST be met before running tests):
+    1. Kind cluster is available and accessible
+    2. CNPG operator is installed
+    3. Operator Docker image is built and loaded into Kind
+
+    This fixture fails fast with clear error messages if any prerequisite is missing.
+    """
+    logger.info("Validating integration test prerequisites...")
+
+    # 1. Check Kind cluster is available
+    try:
+        k8s_core_v1.list_node()
+        logger.info("✓ Kind cluster is accessible")
+    except Exception as e:
+        pytest.fail(
+            f"Kind cluster not accessible. Run 'make kind-setup' first.\nError: {e}"
+        )
+
+    # 2. Check CNPG operator is installed
+    from kubernetes import client as k8s
+
+    api = k8s.ApiextensionsV1Api(k8s_client)
+    try:
+        api.read_custom_resource_definition("clusters.postgresql.cnpg.io")
+        logger.info("✓ CNPG operator is installed")
+    except ApiException as e:
+        if e.status == 404:
+            pytest.fail(
+                "CNPG operator not installed. Run 'make kind-setup' which installs CNPG automatically."
+            )
+        raise
+
+    # 3. Check operator image is available in Kind
+    # Find the Kind cluster control plane node dynamically
+    try:
+        import subprocess
+
+        # First, find the Kind control plane node name
+        result = subprocess.run(
+            [
+                "docker",
+                "ps",
+                "--filter",
+                "name=control-plane",
+                "--format",
+                "{{.Names}}",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+
+        control_plane_nodes = [
+            name
+            for name in result.stdout.strip().split("\n")
+            if name and "control-plane" in name
+        ]
+
+        if not control_plane_nodes:
+            pytest.fail(
+                "No Kind control plane node found. Is the Kind cluster running?\n"
+                "Run: make kind-setup"
+            )
+
+        # Use the first control plane node found
+        control_plane_name = control_plane_nodes[0]
+        logger.info(f"Found Kind control plane: {control_plane_name}")
+
+        # Check if operator image exists in the node
+        result = subprocess.run(
+            [
+                "docker",
+                "exec",
+                control_plane_name,
+                "crictl",
+                "images",
+                "keycloak-operator",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if "keycloak-operator" not in result.stdout:
+            pytest.fail(
+                "Operator image 'keycloak-operator' not found in Kind cluster.\n"
+                "Run:\n"
+                "  make docker-build\n"
+                "  make kind-load"
+            )
+        logger.info("✓ Operator image is loaded in Kind")
+    except subprocess.TimeoutExpired:
+        pytest.fail("Timeout checking for operator image in Kind")
+    except FileNotFoundError:
+        pytest.fail("Docker or crictl not available. Cannot verify operator image.")
+    except Exception as e:
+        logger.warning(f"Could not verify operator image: {e}")
+        logger.warning("Proceeding anyway - tests will fail if image is missing")
+
+    logger.info("✓ All prerequisites validated")
 
 
 @pytest.fixture(scope="session")
@@ -129,116 +235,33 @@ def k8s_rbac_v1(k8s_client):
 
 @pytest.fixture(scope="session")
 def operator_namespace():
-    """Return the namespace where the operator is running."""
-    return os.environ.get("OPERATOR_NAMESPACE", "keycloak-system")
+    """Return the namespace where the operator will be deployed.
 
-
-@pytest.fixture(scope="session")
-def operator_namespace_secrets(k8s_core_v1, operator_namespace) -> dict[str, str]:
-    """Return references to pre-installed secrets in operator namespace.
-
-    These secrets are created by the deployment script (scripts/deploy-test-keycloak.sh):
-    - keycloak-cnpg-app: Database credentials (created by CNPG operator)
-
-    Session-scoped to share across all tests.
+    Changed from reading environment to using a deterministic session-scoped name.
+    This ensures consistency across xdist workers while maintaining isolation
+    per test session.
     """
-    secrets = {}
-
-    # Database secret is created by CNPG operator
-    db_secret_name = "keycloak-cnpg-app"
-    try:
-        k8s_core_v1.read_namespaced_secret(
-            name=db_secret_name, namespace=operator_namespace
-        )
-        secrets["database"] = db_secret_name
-    except ApiException as e:
-        if e.status == 404:
-            pytest.fail(
-                f"Database secret '{db_secret_name}' not found in namespace '{operator_namespace}'. "
-                f"Run 'make deploy-local' to create the test environment."
-            )
-        raise
-
-    return secrets
-
-
-@pytest.fixture(scope="session")
-def operator_namespace_cnpg(
-    k8s_client, operator_namespace, cnpg_installed
-) -> dict[str, str] | None:
-    """Return connection details for pre-installed CNPG cluster in operator namespace.
-
-    This fixture expects the CNPG cluster to be created by the deployment script
-    (scripts/deploy-test-keycloak.sh) as part of `make deploy-local`.
-
-    Returns PostgreSQL connection information (type: postgresql, host: cluster-name-rw, etc)
-    for use in test configurations.
-
-    Session-scoped to share across all tests.
-    """
-    if not cnpg_installed:
-        return None
-
-    from kubernetes import dynamic
-
-    dyn = dynamic.DynamicClient(k8s_client)
-    cluster_api = dyn.resources.get(api_version="postgresql.cnpg.io/v1", kind="Cluster")
-
-    cluster_name = "keycloak-cnpg"
-    db_name = "keycloak"
-
-    # Check if cluster exists and is ready
-    try:
-        obj = cluster_api.get(name=cluster_name, namespace=operator_namespace)
-        phase = obj.to_dict().get("status", {}).get("phase")
-
-        if phase != "Cluster in healthy state":
-            pytest.fail(
-                f"CNPG cluster '{cluster_name}' not ready (phase: {phase}). "
-                f"Run 'make deploy-local' to create the test environment."
-            )
-
-        # Verify app secret exists
-        core = client.CoreV1Api(k8s_client)
-        try:
-            core.read_namespaced_secret(f"{cluster_name}-app", operator_namespace)
-        except ApiException:
-            pytest.fail(
-                f"CNPG app secret '{cluster_name}-app' not found. "
-                f"Run 'make deploy-local' to create the test environment."
-            )
-
-        # Return standard PostgreSQL connection details
-        return {
-            "type": "postgresql",
-            "host": f"{cluster_name}-rw",
-            "port": 5432,
-            "database": db_name,
-            "username": "app",
-            "password_secret": f"{cluster_name}-app",
-        }
-
-    except ApiException as e:
-        if e.status == 404:
-            pytest.fail(
-                f"CNPG cluster '{cluster_name}' not found in namespace '{operator_namespace}'. "
-                f"Run 'make deploy-local' to create the test environment."
-            )
-        raise
+    # Use a fixed name for session-scoped operator
+    # xdist workers will share this namespace via the cluster
+    return "keycloak-test-system"
 
 
 @pytest.fixture
 async def test_namespace(
-    k8s_core_v1, k8s_custom_objects, cleanup_tracker
+    k8s_core_v1, k8s_custom_objects, k8s_rbac_v1, operator_namespace, cleanup_tracker
 ) -> AsyncGenerator[str]:
     """
-    Create a test namespace with robust cleanup.
+    Create a test namespace with robust cleanup and RBAC setup.
 
     This fixture ensures:
     - Unique namespace per test
+    - RoleBinding for operator access (new RBAC model)
     - Cleanup of all Keycloak resources before namespace deletion
     - Force-delete fallback if resources get stuck
     - Tracking of cleanup failures
+
+    The RoleBinding grants the operator access to read labeled secrets
+    in this namespace, which is required by the new RBAC model.
     """
     namespace_name = f"test-{os.urandom(4).hex()}"
 
@@ -252,6 +275,35 @@ async def test_namespace(
     try:
         k8s_core_v1.create_namespace(namespace)
         logger.info(f"Created test namespace: {namespace_name}")
+
+        # Create RoleBinding for operator access (new RBAC model)
+
+        role_binding = client.V1RoleBinding(
+            metadata=client.V1ObjectMeta(
+                name="keycloak-operator-access",
+                namespace=namespace_name,
+            ),
+            role_ref=client.V1RoleRef(
+                api_group="rbac.authorization.k8s.io",
+                kind="ClusterRole",
+                name="keycloak-operator-namespace-access",
+            ),
+            subjects=[
+                client.RbacV1Subject(
+                    kind="ServiceAccount",
+                    name=f"keycloak-operator-{operator_namespace}",
+                    namespace=operator_namespace,
+                )
+            ],
+        )
+
+        try:
+            k8s_rbac_v1.create_namespaced_role_binding(namespace_name, role_binding)
+            logger.info(f"Created RoleBinding for operator access in {namespace_name}")
+        except ApiException as e:
+            if e.status != 409:  # Ignore AlreadyExists
+                raise
+
         yield namespace_name
     finally:
         # Robust cleanup
@@ -307,12 +359,20 @@ async def test_namespace(
 
 @pytest.fixture
 async def test_secrets(k8s_core_v1, test_namespace) -> dict[str, str]:
-    """Create test secrets for Keycloak instances."""
+    """Create test secrets for Keycloak instances with required RBAC label.
+
+    All secrets now require the label: keycloak.mdvr.nl/allow-operator-read=true
+    This is enforced by the new RBAC model.
+    """
     secrets = {}
 
     # Database secret
     db_secret = client.V1Secret(
-        metadata=client.V1ObjectMeta(name="test-db-secret", namespace=test_namespace),
+        metadata=client.V1ObjectMeta(
+            name="test-db-secret",
+            namespace=test_namespace,
+            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+        ),
         string_data={"password": "test-db-password", "username": "keycloak"},
     )
     k8s_core_v1.create_namespaced_secret(test_namespace, db_secret)
@@ -321,7 +381,9 @@ async def test_secrets(k8s_core_v1, test_namespace) -> dict[str, str]:
     # Admin secret
     admin_secret = client.V1Secret(
         metadata=client.V1ObjectMeta(
-            name="test-admin-secret", namespace=test_namespace
+            name="test-admin-secret",
+            namespace=test_namespace,
+            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
         ),
         string_data={"password": "admin-password", "username": "admin"},
     )
@@ -679,7 +741,7 @@ def class_scoped_namespace(k8s_core_v1, request) -> str:
 
 @pytest.fixture(scope="class")
 def class_scoped_test_secrets(k8s_core_v1, class_scoped_namespace) -> dict[str, str]:
-    """Create test secrets for class-scoped Keycloak instances.
+    """Create test secrets for class-scoped Keycloak instances with required RBAC label.
 
     Note: Synchronous fixture for pytest-xdist compatibility.
     """
@@ -688,7 +750,9 @@ def class_scoped_test_secrets(k8s_core_v1, class_scoped_namespace) -> dict[str, 
     # Database secret
     db_secret = client.V1Secret(
         metadata=client.V1ObjectMeta(
-            name="shared-db-secret", namespace=class_scoped_namespace
+            name="shared-db-secret",
+            namespace=class_scoped_namespace,
+            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
         ),
         string_data={"password": "test-db-password", "username": "keycloak"},
     )
@@ -698,7 +762,9 @@ def class_scoped_test_secrets(k8s_core_v1, class_scoped_namespace) -> dict[str, 
     # Admin secret
     admin_secret = client.V1Secret(
         metadata=client.V1ObjectMeta(
-            name="shared-admin-secret", namespace=class_scoped_namespace
+            name="shared-admin-secret",
+            namespace=class_scoped_namespace,
+            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
         ),
         string_data={"password": "admin-password", "username": "admin"},
     )
@@ -777,83 +843,427 @@ def class_scoped_cnpg_cluster(
 
 
 @pytest.fixture(scope="session")
-def shared_operator(
+def helm_operator_chart_path() -> Path:
+    """Return the path to the keycloak-operator Helm chart."""
+    return Path(__file__).parent.parent.parent / "charts" / "keycloak-operator"
+
+
+@pytest.fixture(scope="session")
+async def shared_operator(
+    k8s_client,
     k8s_custom_objects,
     k8s_apps_v1,
+    k8s_core_v1,
     operator_namespace,
-) -> dict[str, str]:
-    """Verify shared Keycloak instance exists in operator namespace.
+    helm_operator_chart_path,
+    wait_for_condition,
+    cnpg_installed,
+) -> AsyncGenerator[dict[str, str]]:
+    """Deploy Keycloak operator and instance via Helm for all tests.
 
-    This fixture expects the Keycloak instance to be created by the deployment script
-    (scripts/deploy-test-keycloak.sh) as part of `make deploy-local`.
+    Prerequisites (validated by check_prerequisites fixture):
+    - Kind cluster available
+    - CNPG operator installed
+    - Operator image built and loaded
 
-    Architecture: Single fixed-name "keycloak" instance in operator namespace,
-    matching production deployment pattern (1-1 operator-Keycloak coupling).
+    This fixture deploys the operator and Keycloak instance using Helm charts.
 
-    Session-scoped for parallel test workers.
+    Architecture:
+    - Single operator deployment in operator namespace (default: keycloak-test-system)
+    - Single Keycloak instance co-located with operator (1-1 coupling)
+    - RBAC model: Minimal cluster-wide permissions + namespace Role
+    - All secrets properly labeled with keycloak.mdvr.nl/allow-operator-read=true
 
-    IMPORTANT RULES FOR USING SHARED OPERATOR:
-    1. **NO DESTRUCTIVE OPERATIONS**: Do not delete or modify the shared Keycloak
-       instance itself. If you need destructive testing, create a dedicated instance.
-    2. **UNIQUE REALM NAMES**: Always use unique realm names (e.g., uuid.uuid4().hex[:8])
-       to prevent collisions between parallel tests.
-    3. **CLEAN UP YOUR MESS**: Always delete any realms or clients you create
-       to avoid polluting the shared instance.
+    Session-scoped for:
+    - Performance (one operator for all tests)
+    - pytest-xdist compatibility (each worker gets own session)
+    - Realistic production architecture
+
+    Worker coordination:
+    - Uses file-based reference counting to prevent premature cleanup
+    - Each worker increments count on setup, decrements on teardown
+    - Last worker (count=0) performs cleanup
+
+    IMPORTANT RULES:
+    1. **NO DESTRUCTIVE OPERATIONS** on the operator or Keycloak instance
+    2. **UNIQUE REALM NAMES** for parallel test execution
+    3. **CLEAN UP REALMS/CLIENTS** created during tests
 
     Returns:
-        dict with 'name' and 'namespace' of the shared Keycloak instance
+        dict with 'name' and 'namespace' of the deployed Keycloak instance
 
     Raises:
-        pytest.fail: If Keycloak instance not found or not ready
+        pytest.fail: If deployment fails (hard failure - no skipping)
     """
-    keycloak_name = "keycloak"  # Fixed name per architecture (1-1 coupling)
+    keycloak_name = "keycloak"
 
-    # Check if Keycloak exists
-    try:
-        kc = k8s_custom_objects.get_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
-            version="v1",
-            namespace=operator_namespace,
-            plural="keycloaks",
-            name=keycloak_name,
-        )
-        status = kc.get("status", {}) or {}
-        phase = status.get("phase")
+    # Worker reference counting for cleanup coordination
+    tmp_dir = Path(__file__).parent.parent.parent / ".tmp"
+    tmp_dir.mkdir(exist_ok=True)
+    worker_count_file = tmp_dir / "shared-operator-workers.count"
+    worker_lock_file = tmp_dir / "shared-operator-workers.lock"
 
-        # Verify it's ready
-        if phase not in ("Running", "Ready"):
-            pytest.fail(
-                f"Shared Keycloak instance not ready (phase: {phase}). "
-                f"Run 'make deploy-local' to create the test environment."
-            )
-
-        # Check deployment is ready
-        deployment_name = f"{keycloak_name}-keycloak"
+    # Increment worker count atomically
+    with open(worker_lock_file, "w") as lock_file:
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
         try:
-            deployment = k8s_apps_v1.read_namespaced_deployment(
-                name=deployment_name, namespace=operator_namespace
-            )
-            desired = deployment.spec.replicas or 1
-            ready = deployment.status.ready_replicas or 0
-            if ready < desired:
-                pytest.fail(
-                    f"Shared Keycloak deployment not ready ({ready}/{desired} replicas ready)"
-                )
-        except ApiException:
-            pytest.fail(
-                f"Shared Keycloak deployment '{deployment_name}' not found. "
-                f"Run 'make deploy-local' to create the test environment."
-            )
+            if worker_count_file.exists():
+                count = int(worker_count_file.read_text().strip())
+            else:
+                count = 0
+            count += 1
+            worker_count_file.write_text(str(count))
+            logger.info(f"Worker registered. Active workers: {count}")
+        finally:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
-        return {"name": keycloak_name, "namespace": operator_namespace}
+    logger.info(
+        f"Deploying Keycloak operator and instance via Helm in {operator_namespace}"
+    )
 
+    # Check if operator namespace already exists (xdist: another worker may have created it)
+    try:
+        k8s_core_v1.read_namespace(operator_namespace)
+        logger.info(f"Operator namespace {operator_namespace} already exists")
     except ApiException as e:
         if e.status == 404:
-            pytest.fail(
-                f"Shared Keycloak instance '{keycloak_name}' not found in namespace '{operator_namespace}'. "
-                f"Run 'make deploy-local' to create the test environment."
+            # Create namespace (handle race condition with other workers)
+            namespace = client.V1Namespace(
+                metadata=client.V1ObjectMeta(
+                    name=operator_namespace,
+                    labels={
+                        "test": "integration",
+                        "operator": "keycloak",
+                        "pod-security.kubernetes.io/enforce": "restricted",
+                    },
+                )
             )
-        raise
+            try:
+                k8s_core_v1.create_namespace(namespace)
+                logger.info(f"Created operator namespace: {operator_namespace}")
+            except ApiException as create_err:
+                if create_err.status == 409:
+                    # Another worker created it between our check and create - that's fine
+                    logger.info(
+                        f"Operator namespace {operator_namespace} created by another worker"
+                    )
+                else:
+                    raise
+        else:
+            raise
+
+    # Prepare Helm values for operator deployment
+    helm_values = {
+        "namespace": {"name": operator_namespace, "create": False},
+        "keycloak": {
+            "enabled": True,
+            "replicas": 1,
+            "database": {
+                "cnpg": {
+                    "enabled": cnpg_installed,
+                    "clusterName": "keycloak-cnpg",  # Required for CNPG
+                }
+            },
+        },
+        "operator": {
+            "replicaCount": 1,
+            "image": {
+                "repository": "keycloak-operator",
+                "tag": "test",
+                "pullPolicy": "Never",  # Use local image only
+            },
+        },
+    }
+
+    # Create values file
+    import tempfile
+
+    import yaml
+
+    with tempfile.NamedTemporaryFile(
+        mode="w", suffix=".yaml", delete=False
+    ) as values_file:
+        yaml.dump(helm_values, values_file)
+        values_path = values_file.name
+
+    # Use file lock to serialize Helm operations across xdist workers
+    lock_path = Path(tempfile.gettempdir()) / "keycloak-operator-helm-install.lock"
+
+    with open(lock_path, "w") as lock_file:
+        # Acquire exclusive lock (blocks until available)
+        logger.info("Acquiring lock for Helm install...")
+        fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        logger.info("Lock acquired")
+
+        try:
+            # Install/upgrade operator via Helm (now serialized across workers)
+            install_cmd = [
+                "helm",
+                "upgrade",
+                "--install",
+                "keycloak-operator",
+                str(helm_operator_chart_path),
+                "-n",
+                operator_namespace,
+                "-f",
+                values_path,
+                "--wait",
+                "--timeout",
+                "3m",  # Max 3 minutes for Helm install
+            ]
+
+            logger.info("Installing/upgrading Keycloak operator via Helm...")
+            proc = await asyncio.create_subprocess_exec(
+                *install_cmd, stdout=PIPE, stderr=PIPE
+            )
+            stdout, stderr = await proc.communicate()
+
+            if proc.returncode != 0:
+                error_msg = stderr.decode() if stderr else "Unknown error"
+                logger.error(f"Helm install failed: {error_msg}")
+                pytest.fail(f"Failed to install operator via Helm: {error_msg}")
+
+            logger.info("✓ Operator installed/upgraded via Helm")
+        finally:
+            # Release lock (file will auto-close via context manager)
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+            logger.info("Lock released")
+
+    try:
+        # Wait for operator deployment to be ready
+        async def operator_ready():
+            try:
+                deployment = k8s_apps_v1.read_namespaced_deployment(
+                    name="keycloak-operator", namespace=operator_namespace
+                )
+                desired = deployment.spec.replicas or 1
+                ready = deployment.status.ready_replicas or 0
+                return ready >= desired
+            except ApiException:
+                return False
+
+        ready = await wait_for_condition(operator_ready, timeout=120, interval=3)
+        if not ready:
+            pytest.fail(
+                "Operator deployment not ready in time (timeout: 120s). "
+                "Check if operator image was loaded correctly with 'make kind-load'."
+            )
+
+        logger.info("✓ Operator deployment ready")
+
+        # Wait for Keycloak instance to be ready (deployed by operator chart)
+        async def keycloak_ready():
+            try:
+                kc = k8s_custom_objects.get_namespaced_custom_object(
+                    group="keycloak.mdvr.nl",
+                    version="v1",
+                    namespace=operator_namespace,
+                    plural="keycloaks",
+                    name=keycloak_name,
+                )
+                status = kc.get("status", {}) or {}
+                phase = status.get("phase")
+
+                if phase not in ("Ready", "Degraded"):
+                    return False
+
+                # Check deployment AND that pods are actually ready
+                try:
+                    deployment = k8s_apps_v1.read_namespaced_deployment(
+                        name=f"{keycloak_name}-keycloak", namespace=operator_namespace
+                    )
+                    desired = deployment.spec.replicas or 1
+                    ready = deployment.status.ready_replicas or 0
+                    
+                    if ready < desired:
+                        logger.debug(
+                            f"Keycloak deployment {keycloak_name}-keycloak: {ready}/{desired} pods ready"
+                        )
+                        return False
+                    
+                    return True
+                except ApiException as deploy_error:
+                    logger.debug(f"Deployment not found or error: {deploy_error}")
+                    return False
+            except ApiException:
+                return False
+
+        ready = await wait_for_condition(keycloak_ready, timeout=200, interval=5)
+        if not ready:
+            # Check Keycloak CR status for error details
+            try:
+                kc = k8s_custom_objects.get_namespaced_custom_object(
+                    group="keycloak.mdvr.nl",
+                    version="v1",
+                    namespace=operator_namespace,
+                    plural="keycloaks",
+                    name=keycloak_name,
+                )
+                status = kc.get("status", {})
+                logger.error(f"Keycloak instance status: {status}")
+                pytest.fail(
+                    f"Keycloak instance not ready in time (timeout: 200s). Status: {status}"
+                )
+            except Exception as e:
+                logger.error(f"Failed to get Keycloak status: {e}")
+                pytest.fail(f"Keycloak instance not ready in time (timeout: 300s): {e}")
+
+        logger.info("✓ Keycloak instance ready")
+
+        yield {"name": keycloak_name, "namespace": operator_namespace}
+
+    except Exception as e:
+        logger.error(f"Error during operator deployment: {e}")
+        pytest.fail(f"Failed to deploy operator: {e}")
+        raise  # Unreachable but satisfies type checker
+
+    finally:
+        # Clean up values file
+        Path(values_path).unlink(missing_ok=True)
+
+        # Decrement worker count and cleanup if last worker
+        with open(worker_lock_file, "w") as lock_file:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+            try:
+                if worker_count_file.exists():
+                    count = int(worker_count_file.read_text().strip())
+                    count -= 1
+
+                    if count <= 0:
+                        # Last worker - perform cleanup immediately
+                        logger.info("Last worker exiting - cleaning up shared operator")
+
+                        # Run cleanup synchronously in blocking subprocess
+                        import subprocess
+
+                        # Capture operator logs before cleanup
+                        logger.info("Capturing operator logs...")
+                        try:
+                            # Create logs directory if it doesn't exist
+                            logs_dir = (
+                                Path(__file__).parent.parent.parent
+                                / ".tmp"
+                                / "operator-logs"
+                            )
+                            logs_dir.mkdir(parents=True, exist_ok=True)
+
+                            # Generate timestamped log filename
+                            from datetime import datetime
+
+                            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+                            log_file = logs_dir / f"operator-{timestamp}.log"
+
+                            # Get operator pod name
+                            get_pod_result = subprocess.run(
+                                [
+                                    "kubectl",
+                                    "get",
+                                    "pods",
+                                    "-n",
+                                    operator_namespace,
+                                    "-l",
+                                    "app.kubernetes.io/name=keycloak-operator",
+                                    "-o",
+                                    "jsonpath={.items[0].metadata.name}",
+                                ],
+                                capture_output=True,
+                                text=True,
+                                timeout=10,
+                            )
+
+                            if (
+                                get_pod_result.returncode == 0
+                                and get_pod_result.stdout.strip()
+                            ):
+                                pod_name = get_pod_result.stdout.strip()
+
+                                # Capture logs
+                                logs_result = subprocess.run(
+                                    [
+                                        "kubectl",
+                                        "logs",
+                                        pod_name,
+                                        "-n",
+                                        operator_namespace,
+                                        "--tail=-1",  # Get all logs
+                                    ],
+                                    capture_output=True,
+                                    text=True,
+                                    timeout=30,
+                                )
+
+                                if logs_result.returncode == 0:
+                                    log_file.write_text(logs_result.stdout)
+                                    logger.info(f"✓ Operator logs saved to: {log_file}")
+                                else:
+                                    logger.warning(
+                                        f"Failed to capture logs: {logs_result.stderr}"
+                                    )
+                            else:
+                                logger.warning("Could not find operator pod")
+                        except Exception as e:
+                            logger.warning(f"Failed to capture operator logs: {e}")
+
+                        # Uninstall Helm release
+                        logger.info("Uninstalling Helm release...")
+                        try:
+                            subprocess.run(
+                                [
+                                    "helm",
+                                    "uninstall",
+                                    "keycloak-operator",
+                                    "-n",
+                                    operator_namespace,
+                                    "--wait",
+                                    "--timeout",
+                                    "2m",
+                                ],
+                                check=False,
+                                capture_output=True,
+                                text=True,
+                                timeout=130,
+                            )
+                            logger.info("✓ Helm release uninstalled")
+                        except Exception as e:
+                            logger.warning(f"Failed to uninstall Helm release: {e}")
+
+                        # Delete operator namespace (without waiting to avoid hanging)
+                        logger.info(
+                            f"Deleting operator namespace {operator_namespace}..."
+                        )
+                        try:
+                            # Don't wait for namespace deletion to complete
+                            # This avoids hanging on finalizers in CI
+                            subprocess.run(
+                                [
+                                    "kubectl",
+                                    "delete",
+                                    "namespace",
+                                    operator_namespace,
+                                    "--wait=false",  # Don't wait for completion
+                                ],
+                                check=False,
+                                capture_output=True,
+                                text=True,
+                                timeout=10,  # Just enough time to issue the delete command
+                            )
+                            logger.info(
+                                f"✓ Operator namespace {operator_namespace} deletion initiated"
+                            )
+                        except Exception as e:
+                            logger.warning(f"Failed to delete operator namespace: {e}")
+
+                        # Remove count file
+                        worker_count_file.unlink(missing_ok=True)
+                        logger.info("✓ Shared operator cleanup complete")
+                    else:
+                        # Not last worker - just decrement
+                        worker_count_file.write_text(str(count))
+                        logger.info(
+                            f"Worker exiting. Remaining active workers: {count}"
+                        )
+            finally:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
 
 
 @pytest.fixture
