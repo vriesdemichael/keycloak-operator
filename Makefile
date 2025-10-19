@@ -215,7 +215,3 @@ docs-build: ## Build documentation
 
 # Default target
 .DEFAULT_GOAL := help
-.PHONY: measure-startup
-measure-startup: ensure-kind-cluster kind-load-keycloak-optimized ## Measure startup time: default vs optimized Keycloak
-@echo "Measuring Keycloak startup times..."
-@./scripts/measure-keycloak-startup.sh

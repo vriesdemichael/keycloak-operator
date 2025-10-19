@@ -48,18 +48,6 @@ See [keycloak-optimized/README.md](keycloak-optimized/README.md) for detailed in
 make build-all-test
 ```
 
-## Measuring Performance
-
-Compare startup times between default and optimized images:
-
-```bash
-make measure-startup
-```
-
-This will:
-1. Deploy default Keycloak image and measure startup time
-2. Deploy optimized Keycloak image and measure startup time
-3. Report the improvement
 
 ## License
 
