@@ -43,7 +43,7 @@ test-unit: ## Run unit tests only
 	uv run --group test pytest tests/unit/ -v
 
 .PHONY: test-integration
-test-integration: ensure-kind-cluster build-test ## Run integration tests (builds image, tests deploy via Helm)
+test-integration: ensure-kind-cluster build-all-test ## Run integration tests (builds images, tests deploy via Helm)
 	@echo "Running integration tests (tests will deploy operator via Helm)..."
 	uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
