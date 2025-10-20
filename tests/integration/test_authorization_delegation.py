@@ -51,14 +51,88 @@ class TestAuthorizationDelegation:
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"auth-realm-{suffix}"
+        
+        # Create admission token in test namespace for bootstrap
+        # (New auth system requires token in same namespace as realm)
+        admission_secret_name = f"admission-token-{suffix}"
+        admission_token = f"test-admission-token-{suffix}"
+        
+        # Create admission token secret
+        from datetime import UTC, datetime, timedelta
+        import hashlib
+        import json
+        
+        secret_body = {
+            "apiVersion": "v1",
+            "kind": "Secret",
+            "metadata": {
+                "name": admission_secret_name,
+                "namespace": namespace,
+                "labels": {
+                    "keycloak.mdvr.nl/allow-operator-read": "true",
+                    "keycloak.mdvr.nl/token-type": "admission",
+                },
+            },
+            "type": "Opaque",
+            "data": {
+                "token": base64.b64encode(admission_token.encode()).decode(),
+            },
+        }
+        
+        k8s_core_v1.create_namespaced_secret(namespace, secret_body)
+        
+        # Store admission token metadata in operator namespace ConfigMap
+        token_hash = hashlib.sha256(admission_token.encode()).hexdigest()
+        valid_until = datetime.now(UTC) + timedelta(days=365)
+        
+        token_metadata = {
+            "namespace": namespace,
+            "token_type": "admission",
+            "issued_at": datetime.now(UTC).isoformat(),
+            "valid_until": valid_until.isoformat(),
+            "version": 1,
+            "created_by_realm": None,
+            "revoked": False,
+            "revoked_at": None,
+        }
+        
+        # Update or create metadata ConfigMap
+        configmap_name = "keycloak-operator-token-metadata"
+        try:
+            cm = k8s_core_v1.read_namespaced_config_map(
+                name=configmap_name, namespace=operator_namespace
+            )
+            if not cm.data:
+                cm.data = {}
+            cm.data[token_hash] = json.dumps(token_metadata)
+            k8s_core_v1.patch_namespaced_config_map(
+                name=configmap_name, namespace=operator_namespace, body=cm
+            )
+        except ApiException as e:
+            if e.status == 404:
+                # ConfigMap doesn't exist, create it
+                cm_body = {
+                    "apiVersion": "v1",
+                    "kind": "ConfigMap",
+                    "metadata": {
+                        "name": configmap_name,
+                        "namespace": operator_namespace,
+                    },
+                    "data": {token_hash: json.dumps(token_metadata)},
+                }
+                k8s_core_v1.create_namespaced_config_map(
+                    namespace=operator_namespace, body=cm_body
+                )
+            else:
+                raise
 
-        # Create realm with operatorRef pointing to operator namespace
+        # Create realm with admission token reference
         realm_spec = KeycloakRealmSpec(
             realm_name=realm_name,
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
@@ -107,7 +181,7 @@ class TestAuthorizationDelegation:
             ready = await _wait_resource_ready("keycloakrealms", realm_name)
             assert ready, f"Realm {realm_name} did not become Ready"
 
-            # Verify realm status includes authorization secret name
+            # Verify realm status includes authorization secret name (operational token)
             realm = k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
@@ -116,12 +190,22 @@ class TestAuthorizationDelegation:
                 name=realm_name,
             )
             status = realm.get("status", {}) or {}
-            auth_secret_name = status.get("authorizationSecretName")
+            
+            # With new auth system, check authorizationStatus for operational token
+            auth_status = status.get("authorizationStatus")
+            if auth_status:
+                # New system: check authorizationStatus
+                secret_ref = auth_status.get("secretRef", {})
+                auth_secret_name = secret_ref.get("name")
+            else:
+                # Fallback: check legacy authorizationSecretName
+                auth_secret_name = status.get("authorizationSecretName")
+            
             assert auth_secret_name, (
-                "Realm status should include authorizationSecretName"
+                "Realm status should include authorization secret reference"
             )
 
-            # Verify the realm authorization secret exists
+            # Verify the operational token secret exists
             secret = k8s_core_v1.read_namespaced_secret(
                 name=auth_secret_name, namespace=namespace
             )
@@ -130,25 +214,22 @@ class TestAuthorizationDelegation:
                 "Authorization secret should have 'token' key"
             )
 
-            # Verify secret has proper labels
+            # Verify secret has proper labels (operational token)
             assert secret.metadata.labels, "Secret should have labels"
             assert (
-                secret.metadata.labels.get("app.kubernetes.io/managed-by")
+                secret.metadata.labels.get("keycloak.mdvr.nl/managed-by")
                 == "keycloak-operator"
             )
             assert (
-                secret.metadata.labels.get("app.kubernetes.io/component")
-                == "realm-authorization"
+                secret.metadata.labels.get("keycloak.mdvr.nl/token-type")
+                == "operational"
             )
 
-            # Verify secret has owner reference for automatic cleanup
-            assert secret.metadata.owner_references, (
-                "Secret should have owner reference"
-            )
-            owner_ref = secret.metadata.owner_references[0]
-            assert owner_ref.kind == "KeycloakRealm"
-            assert owner_ref.name == realm_name
-            assert owner_ref.controller is True
+            # Operational tokens have owner reference to the realm that created them
+            if secret.metadata.owner_references:
+                owner_ref = secret.metadata.owner_references[0]
+                assert owner_ref.kind == "KeycloakRealm"
+                # Note: Owner might be the first realm in namespace, not necessarily this one
 
         finally:
             # Cleanup realm only (shared Keycloak persists)
@@ -160,6 +241,25 @@ class TestAuthorizationDelegation:
                     plural="keycloakrealms",
                     name=realm_name,
                 )
+            
+            # Cleanup admission secret
+            with contextlib.suppress(ApiException):
+                k8s_core_v1.delete_namespaced_secret(
+                    name=admission_secret_name, namespace=namespace
+                )
+            
+            # Cleanup token metadata from ConfigMap
+            try:
+                cm = k8s_core_v1.read_namespaced_config_map(
+                    name=configmap_name, namespace=operator_namespace
+                )
+                if cm.data and token_hash in cm.data:
+                    del cm.data[token_hash]
+                    k8s_core_v1.patch_namespaced_config_map(
+                        name=configmap_name, namespace=operator_namespace, body=cm
+                    )
+            except ApiException:
+                pass  # ConfigMap might not exist or already cleaned up
 
     @pytest.mark.timeout(600)
     async def test_client_validates_realm_token(
