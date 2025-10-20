@@ -181,6 +181,15 @@ class TestAuthorizationDelegation:
             ready = await _wait_resource_ready("keycloakrealms", realm_name)
             assert ready, f"Realm {realm_name} did not become Ready"
 
+            # Get realm status
+            realm = k8s_custom_objects.get_namespaced_custom_object(
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
             # Verify realm bootstrapped operational token
             operational_secret_name = f"{namespace}-operator-token"
             operational_secret = k8s_core_v1.read_namespaced_secret(
