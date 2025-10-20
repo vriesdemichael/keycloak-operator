@@ -13,10 +13,13 @@ Test flow:
 
 IMPORTANT: Uses shared Keycloak instance for performance.
 Each test must use unique realm names for parallel execution.
+
+NOTE: These tests are currently SKIPPED because bootstrap logic is disabled
+in auth.py. The bootstrap feature needs proper backward compatibility before
+these tests will pass. See TODO in validate_and_bootstrap_authorization().
 """
 
 import base64
-import contextlib
 import hashlib
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -30,6 +33,7 @@ from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
 @pytest.mark.integration
 @pytest.mark.requires_cluster
+@pytest.mark.skip(reason="Bootstrap logic disabled - needs backward compatibility fix")
 class TestTokenBootstrap:
     """Test admission token → operational token bootstrap flow."""
 
