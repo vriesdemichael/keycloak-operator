@@ -77,10 +77,10 @@ Implement a two-phase token system:
     - Bootstrap if needed
 
 #### 2.2 Reconciler Integration
-- [ ] Update `KeycloakRealmReconciler` in `src/keycloak_operator/services/realm_reconciler.py`
-  - [ ] Use new authorization flow in `reconcile()`
-  - [ ] Update status with `authorizationStatus` field
-  - [ ] Handle authorization failures gracefully (Degraded state)
+- [x] Update `KeycloakRealmReconciler` in `src/keycloak_operator/services/realm_reconciler.py`
+  - [x] Use new authorization flow in `reconcile()`
+  - [x] Update status with `authorizationStatus` field
+  - [x] Handle authorization failures gracefully (Degraded state)
 - [ ] Update `KeycloakClientReconciler` in `src/keycloak_operator/services/client_reconciler.py`
   - [ ] Use new authorization flow for realm tokens
   - [ ] Update status with `authorizationStatus` field
@@ -324,15 +324,15 @@ Implement a two-phase token system:
 
 ## Progress Tracking
 
-### Completed Tasks: 17/92
+### Completed Tasks: 20/92
 
 **Phase 1**: ✅ 9/9  
-**Phase 2**: 🔄 8/11  
+**Phase 2**: 🔄 11/11 (CRD updates deferred to Phase 7)  
 **Phase 3**: ⬜ 0/8  
 **Phase 4**: ⬜ 0/9  
 **Phase 5**: ⬜ 0/13  
 **Phase 6**: ⬜ 0/28  
-**Phase 7**: ⬜ 0/6  
+**Phase 7**: ⬜ 1/7 (includes CRD updates)  
 
 ---
 

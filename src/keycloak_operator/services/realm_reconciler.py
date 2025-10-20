@@ -116,6 +116,36 @@ class KeycloakRealmReconciler(BaseReconciler):
         status.realmName = realm_spec.realm_name
         status.keycloakInstance = f"{target_namespace}/keycloak"
         status.authorizationSecretName = realm_auth_secret_name
+
+        # Update authorization status if operational token was bootstrapped
+        # Check if operational token secret exists
+        from ..utils.secret_manager import SecretManager
+
+        secret_manager = SecretManager()
+        operational_secret_name = f"{namespace}-operator-token"
+        operational_secret = await secret_manager.get_secret(
+            operational_secret_name, namespace
+        )
+
+        if operational_secret and operational_secret.metadata:
+            # Operational token exists, update status
+
+            token_version = operational_secret.metadata.annotations.get(
+                "keycloak.mdvr.nl/version", "1"
+            )
+            valid_until_str = operational_secret.metadata.annotations.get(
+                "keycloak.mdvr.nl/valid-until"
+            )
+
+            if valid_until_str:
+                status.authorizationStatus = {
+                    "secretRef": {"name": operational_secret_name, "key": "token"},
+                    "tokenType": "operational",
+                    "tokenVersion": token_version,
+                    "validUntil": valid_until_str,
+                    "requiresUpdate": False,
+                }
+
         status.features = {
             "userRegistration": realm_spec.security.registration_allowed
             if realm_spec.security
@@ -366,7 +396,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             **kwargs: Additional handler arguments (uid, meta, etc.)
         """
         self.logger.info(f"Ensuring realm {spec.realm_name} exists")
-        from ..utils.auth import validate_authorization
+        from ..utils.auth import AuthorizationContext, get_authorization_token
         from ..utils.kubernetes import validate_keycloak_reference
 
         # Resolve Keycloak operator reference
@@ -375,40 +405,35 @@ class KeycloakRealmReconciler(BaseReconciler):
         # For now, use the operator namespace as keycloak name (will be updated in Phase 4)
         keycloak_name = "keycloak"  # Default Keycloak instance name
 
-        # Validate authorization: Check operator token
-        # Import here to avoid circular dependency
-        from ..operator import OPERATOR_AUTH_SECRET_NAME, OPERATOR_NAMESPACE
+        # NEW: Use bootstrap-based authorization flow
+        # Get resource UID from kwargs
+        resource_uid = kwargs.get("uid", "")
 
-        # Read the operator token directly from the secret to ensure we have the current value
-        # This avoids issues with module-level variables in multi-worker environments
-        core_v1 = client.CoreV1Api()
+        # Create authorization context
+        auth_context = AuthorizationContext(
+            namespace=namespace,
+            secret_ref=operator_ref.authorization_secret_ref,
+            resource_name=name,
+            resource_uid=resource_uid,
+            resource_kind="KeycloakRealm",
+        )
+
+        # Get authorization token (handles bootstrap if needed)
         try:
-            operator_secret = core_v1.read_namespaced_secret(
-                name=OPERATOR_AUTH_SECRET_NAME, namespace=OPERATOR_NAMESPACE
+            _operator_token = await get_authorization_token(
+                context=auth_context,
+                k8s_client=client.CoreV1Api(),
             )
-            import base64
-
-            expected_operator_token = base64.b64decode(
-                operator_secret.data["token"]
-            ).decode("utf-8")
+            self.logger.info(
+                f"Authorization validated for realm {spec.realm_name} in namespace {namespace}"
+            )
         except Exception as e:
             from ..errors import PermanentError
 
+            # Authorization failures are permanent (won't succeed on retry without fixing the token)
             raise PermanentError(
-                f"Cannot read operator authorization token: {e}"
+                f"Authorization failed for realm {spec.realm_name}: {e}"
             ) from e
-
-        if not validate_authorization(
-            secret_ref=operator_ref.authorization_secret_ref,
-            secret_namespace=target_namespace,
-            expected_token=expected_operator_token,
-            k8s_client=client.CoreV1Api(),
-        ):
-            from ..errors import PermanentError
-
-            raise PermanentError(
-                f"Authorization failed: Invalid or missing operator token for realm {spec.realm_name}"
-            )
 
         self.logger.info(f"Authorization validated for realm {spec.realm_name}")
 
