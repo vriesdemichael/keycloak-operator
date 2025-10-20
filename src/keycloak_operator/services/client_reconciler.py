@@ -234,6 +234,9 @@ class KeycloakClientReconciler(BaseReconciler):
         status.public_client = client_spec.public_client
         status.endpoints = endpoints
 
+        # TODO: Update authorization status when clients use operational tokens
+        # For now, clients use realm tokens which don't rotate yet
+
         # Return empty dict - status updates are done via StatusWrapper
         return {}
 

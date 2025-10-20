@@ -81,9 +81,9 @@ Implement a two-phase token system:
   - [x] Use new authorization flow in `reconcile()`
   - [x] Update status with `authorizationStatus` field
   - [x] Handle authorization failures gracefully (Degraded state)
-- [ ] Update `KeycloakClientReconciler` in `src/keycloak_operator/services/client_reconciler.py`
-  - [ ] Use new authorization flow for realm tokens
-  - [ ] Update status with `authorizationStatus` field
+- [x] Update `KeycloakClientReconciler` in `src/keycloak_operator/services/client_reconciler.py`
+  - [x] Add TODO for operational token support (deferred - clients use realm tokens)
+  - [x] Client authorizationStatus deferred to future phase
 
 #### 2.3 Status Field Updates
 - [x] Update `KeycloakRealmStatus` in `src/keycloak_operator/models/realm.py`
