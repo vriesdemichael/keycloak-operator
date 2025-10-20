@@ -25,6 +25,7 @@ class TestServiceAccountRoles:
         shared_operator,
         wait_for_condition,
         keycloak_port_forward,
+        admission_token_setup,
     ) -> None:
         """End-to-end verification that realm roles are assigned to service accounts.
 
@@ -55,12 +56,15 @@ class TestServiceAccountRoles:
         )
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+        
+        # Get admission token from fixture
+        admission_secret_name, _ = admission_token_setup
 
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
