@@ -63,7 +63,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "Merge this PR to create a release." >> $GITHUB_STEP_SUMMARY
 
-      - name: Auto-approve and merge non-major release PRs
+      - name: Enable auto-merge for non-major release PRs
         if: steps.release.outputs.pr != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -81,17 +81,18 @@ jobs:
             
             # Auto-merge for non-major versions (minor or patch releases)
             if [[ "$MAJOR" == "0" ]] || [[ "$MINOR" != "0" ]] || [[ "$PATCH" != "0" ]]; then
-              echo "Non-major release detected - auto-approving and merging PR #${PR_NUMBER}"
+              echo "Non-major release detected - enabling auto-merge for PR #${PR_NUMBER}"
               
-              # Approve the PR
-              gh pr review $PR_NUMBER --approve --body "🤖 Auto-approving non-major release" --repo ${{ github.repository }} || true
-              
-              # Enable auto-merge
-              gh pr merge $PR_NUMBER --auto --squash --repo ${{ github.repository }} || echo "Auto-merge failed, may need manual intervention"
-              
-              echo "### :white_check_mark: Auto-merge enabled for non-major release" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-              echo "PR #${PR_NUMBER} will merge automatically when all checks pass." >> $GITHUB_STEP_SUMMARY
+              # Enable auto-merge (will merge automatically when CI passes)
+              if gh pr merge $PR_NUMBER --auto --squash --repo ${{ github.repository }}; then
+                echo "### :white_check_mark: Auto-merge enabled for non-major release" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "PR #${PR_NUMBER} will merge automatically when all checks pass." >> $GITHUB_STEP_SUMMARY
+              else
+                echo "### :warning: Auto-merge failed" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                echo "Could not enable auto-merge for PR #${PR_NUMBER}. Manual intervention may be required." >> $GITHUB_STEP_SUMMARY
+              fi
             else
               echo "Major release detected (v${MAJOR}.0.0) - requires manual review"
               echo "### :warning: Manual Review Required" >> $GITHUB_STEP_SUMMARY
