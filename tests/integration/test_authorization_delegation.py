@@ -478,11 +478,12 @@ class TestAuthorizationDelegation:
         operator_namespace,
         shared_operator,
         wait_for_condition,
+        admission_token_setup,
     ) -> None:
         """Verify that clients with invalid realm token are rejected.
 
         Test flow:
-        1. Use shared Keycloak and create realm
+        1. Use shared Keycloak and create realm with admission token
         2. Create fake secret with wrong token
         3. Create client pointing to fake secret (not realm's token)
         4. Verify client enters Failed state
@@ -496,12 +497,15 @@ class TestAuthorizationDelegation:
         client_name = f"bad-client-{suffix}"
         fake_secret_name = f"fake-realm-token-{suffix}"
 
+        # Get admission token from fixture
+        admission_secret_name, _admission_token = admission_token_setup
+
         realm_spec = KeycloakRealmSpec(
             realm_name=realm_name,
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
@@ -668,14 +672,18 @@ class TestAuthorizationDelegation:
         operator_namespace,
         shared_operator,
         wait_for_condition,
+        admission_token_setup,
     ) -> None:
-        """Verify that realm authorization secrets are deleted with the realm.
+        """Verify that operational token secrets are cleaned up with realm deletion.
 
         Test flow:
-        1. Use shared Keycloak and create realm
-        2. Verify realm authorization secret exists
+        1. Use shared Keycloak and create realm with admission token
+        2. Verify operational token secret exists (bootstrapped)
         3. Delete realm
-        4. Verify authorization secret is automatically deleted (owner reference)
+        4. Verify operational token secret persists (shared across realms)
+        
+        Note: Operational tokens are per-namespace, not per-realm, so they
+        persist even after realm deletion (cleaned up when all realms gone).
         """
 
         # Use shared Keycloak instance (already ready)
@@ -683,13 +691,16 @@ class TestAuthorizationDelegation:
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"cleanup-realm-{suffix}"
+        
+        # Get admission token from fixture
+        admission_secret_name, _admission_token = admission_token_setup
 
         realm_spec = KeycloakRealmSpec(
             realm_name=realm_name,
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
@@ -750,23 +761,12 @@ class TestAuthorizationDelegation:
             ready = await _wait_resource_ready("keycloakrealms", realm_name)
             assert ready, f"Realm {realm_name} did not become Ready"
 
-            # Get authorization secret name
-            realm = k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakrealms",
-                name=realm_name,
+            # Verify operational token secret was bootstrapped
+            operational_secret_name = f"{namespace}-operator-token"
+            operational_secret = k8s_core_v1.read_namespaced_secret(
+                name=operational_secret_name, namespace=namespace
             )
-            status = realm.get("status", {}) or {}
-            auth_secret_name = status.get("authorizationSecretName")
-            assert auth_secret_name, "Realm should have authorizationSecretName"
-
-            # Verify secret exists
-            secret = k8s_core_v1.read_namespaced_secret(
-                name=auth_secret_name, namespace=namespace
-            )
-            assert secret, "Authorization secret should exist"
+            assert operational_secret, "Operational token secret should exist"
 
             # Delete realm
             k8s_custom_objects.delete_namespaced_custom_object(
@@ -777,12 +777,23 @@ class TestAuthorizationDelegation:
                 name=realm_name,
             )
 
-            # Wait for secret to be deleted (via owner reference)
-            deleted = await _wait_secret_deleted(auth_secret_name)
-            assert deleted, (
-                f"Authorization secret {auth_secret_name} should be "
-                "automatically deleted with realm"
-            )
+            # Verify operational token persists (shared across all realms in namespace)
+            # It should NOT be deleted with a single realm
+            try:
+                secret_after_delete = k8s_core_v1.read_namespaced_secret(
+                    name=operational_secret_name, namespace=namespace
+                )
+                assert secret_after_delete, (
+                    "Operational token should persist after realm deletion "
+                    "(shared across all realms in namespace)"
+                )
+            except ApiException as e:
+                if e.status == 404:
+                    pytest.fail(
+                        f"Operational token {operational_secret_name} was deleted "
+                        "but should persist (shared resource)"
+                    )
+                raise
 
         finally:
             # Cleanup is automatic via owner references (shared Keycloak persists)
