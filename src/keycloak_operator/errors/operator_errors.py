@@ -222,3 +222,22 @@ class RBACError(OperatorError):
         super().__init__(
             message=message, category="rbac", retryable=False, user_action=action
         )
+
+
+class AuthorizationError(OperatorError):
+    """Error related to token-based authorization."""
+
+    def __init__(
+        self,
+        message: str,
+        retryable: bool = False,
+        user_action: str | None = None,
+    ):
+        action = user_action or "Check authorization token validity and permissions"
+
+        super().__init__(
+            message=message,
+            category="authorization",
+            retryable=retryable,
+            user_action=action,
+        )
