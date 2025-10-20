@@ -151,19 +151,13 @@ async def validate_and_bootstrap_authorization(
         return token
 
     else:
-        # Legacy or unknown token type - attempt basic validation
-        logger.warning(
-            f"Unknown token type '{token_type}' for secret "
-            f"{context.namespace}/{context.secret_ref.name}, "
-            f"attempting legacy validation"
+        # Unknown token type - reject (no legacy fallback since not in production)
+        raise AuthorizationError(
+            f"Invalid token type '{token_type}' for secret "
+            f"{context.namespace}/{context.secret_ref.name}. "
+            f"Expected 'admission' or 'operational'.\n"
+            "Action required: Ensure secret has correct keycloak.mdvr.nl/token-type label"
         )
-
-        # Extract token from secret
-        token = await secret_manager.get_token_from_secret(secret, context.namespace)
-
-        # For legacy tokens, we just return them (no metadata validation)
-        # This maintains backward compatibility
-        return token
 
 
 async def bootstrap_operational_token(

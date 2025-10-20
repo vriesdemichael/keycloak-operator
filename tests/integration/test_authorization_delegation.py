@@ -338,6 +338,7 @@ class TestAuthorizationDelegation:
         k8s_custom_objects,
         k8s_core_v1,
         test_namespace,
+        operator_namespace,
         wait_for_condition,
     ) -> None:
         """Verify that realms with invalid operator token are rejected.
@@ -375,12 +376,15 @@ class TestAuthorizationDelegation:
         realm_spec = KeycloakRealmSpec(
             realm_name=realm_name,
             operator_ref=OperatorRef(
-                namespace=namespace,  # Point to our fake secret in test namespace
+                namespace=test_namespace,  # Secret is in test namespace  
                 authorization_secret_ref=AuthorizationSecretRef(
                     name=fake_secret_name,
                     key="token",
                 ),
             ),
+            # But Keycloak is in operator namespace  
+            keycloak_name="keycloak",
+            keycloak_namespace=operator_namespace,
         )
 
         realm_manifest = {
