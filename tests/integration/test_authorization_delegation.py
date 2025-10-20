@@ -172,12 +172,13 @@ class TestAuthorizationDelegation:
         operator_namespace,
         shared_operator,
         wait_for_condition,
+        admission_token_setup,
     ) -> None:
         """Verify that clients validate realm token before reconciliation.
 
         Test flow:
         1. Use shared Keycloak instance
-        2. Create realm (generates realm token)
+        2. Create realm with admission token (bootstraps operational token)
         3. Create client with realmRef pointing to realm's token
         4. Verify client reaches Ready state
         """
@@ -188,13 +189,16 @@ class TestAuthorizationDelegation:
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"client-realm-{suffix}"
         client_name = f"client-{suffix}"
+        
+        # Get admission token from fixture
+        admission_secret_name, _admission_token = admission_token_setup
 
         realm_spec = KeycloakRealmSpec(
             realm_name=realm_name,
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
