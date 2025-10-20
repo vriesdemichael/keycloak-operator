@@ -33,6 +33,7 @@ jobs:
     timeout-minutes: 15
     outputs:
       keycloak-image: ${{ steps.check-keycloak.outputs.image }}
+      keycloak-image-exists: ${{ steps.check-keycloak.outputs.exists }}
     
     permissions:
       contents: read
@@ -429,8 +430,9 @@ jobs:
       - name: Load or pull optimized Keycloak image
         env:
           KEYCLOAK_IMAGE: ${{ needs.build-test-image.outputs.keycloak-image }}
+          IMAGE_EXISTS: ${{ needs.build-test-image.outputs.keycloak-image-exists }}
         run: |
-          if [[ "${KEYCLOAK_IMAGE}" =~ ^ghcr\.io/ ]]; then
+          if [[ "${IMAGE_EXISTS}" == "true" ]]; then
             echo "Using existing optimized Keycloak image from registry: ${KEYCLOAK_IMAGE}"
             docker pull "${KEYCLOAK_IMAGE}"
             docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
@@ -439,14 +441,14 @@ jobs:
           fi
       
       - name: Download optimized Keycloak image artifact
-        if: "!startsWith(needs.build-test-image.outputs.keycloak-image, 'ghcr.io')"
+        if: needs.build-test-image.outputs.keycloak-image-exists == 'false'
         uses: actions/download-artifact@v4
         with:
           name: keycloak-optimized-image
           path: /tmp
       
       - name: Load optimized Keycloak image from artifact
-        if: "!startsWith(needs.build-test-image.outputs.keycloak-image, 'ghcr.io')"
+        if: needs.build-test-image.outputs.keycloak-image-exists == 'false'
         run: |
           docker load --input /tmp/keycloak-optimized.tar
           echo "Optimized Keycloak image loaded from artifact"
@@ -533,7 +535,7 @@ jobs:
     name: Publish Optimized Keycloak Image
     needs: [build-test-image, integration-tests]
     if: |
-      !startsWith(needs.build-test-image.outputs.keycloak-image, 'ghcr.io') &&
+      needs.build-test-image.outputs.keycloak-image-exists == 'false' &&
       ((github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'release')
     runs-on: ubuntu-latest
     timeout-minutes: 20
