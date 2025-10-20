@@ -86,6 +86,7 @@ async def validate_and_bootstrap_authorization(
         KubernetesAPIError: If Kubernetes operations fail
     """
     from .secret_manager import SecretManager
+    from .token_manager import validate_token
 
     secret_manager = SecretManager()
 
@@ -117,66 +118,52 @@ async def validate_and_bootstrap_authorization(
     # Detect token type
     token_type = await secret_manager.get_token_type(secret)
 
-    # TODO: Re-enable bootstrap logic after fixing tests
-    # For now, always use legacy flow for backward compatibility
-    logger.debug(
-        f"Token type detected: {token_type} for {context.namespace}/{context.secret_ref.name}"
-    )
+    if token_type == "admission":
+        # Bootstrap: Create operational token for this namespace
+        logger.info(
+            f"First {context.resource_kind} creation in {context.namespace}, "
+            f"bootstrapping operational token"
+        )
 
-    # Extract and return token (legacy behavior)
-    token = await secret_manager.get_token_from_secret(secret, context.namespace)
+        operational_token = await bootstrap_operational_token(
+            context=context, admission_secret=secret, k8s_client=k8s_client
+        )
 
-    logger.debug(f"Using token from secret (legacy mode) for {context.namespace}")
+        return operational_token
 
-    return token
+    elif token_type == "operational":
+        # Normal operation: Use operational token
+        token = await secret_manager.get_token_from_secret(secret, context.namespace)
 
-    # DISABLED: Bootstrap logic - needs proper testing setup
-    # if token_type == "admission":
-    #     # Bootstrap: Create operational token for this namespace
-    #     logger.info(
-    #         f"First {context.resource_kind} creation in {context.namespace}, "
-    #         f"bootstrapping operational token"
-    #     )
-    #
-    #     operational_token = await bootstrap_operational_token(
-    #         context=context, admission_secret=secret, k8s_client=k8s_client
-    #     )
-    #
-    #     return operational_token
-    #
-    # elif token_type == "operational":
-    #     # Normal operation: Use operational token
-    #     token = await secret_manager.get_token_from_secret(secret, context.namespace)
-    #
-    #     # Validate token against metadata
-    #     metadata = await validate_token(token, context.namespace)
-    #
-    #     if not metadata:
-    #         raise AuthorizationError(
-    #             f"Operational token invalid or expired for namespace {context.namespace}"
-    #         )
-    #
-    #     logger.debug(
-    #         f"Operational token validated: namespace={context.namespace}, "
-    #         f"version={metadata.version}, expires={metadata.valid_until}"
-    #         )
-    #
-    #     return token
-    #
-    # else:
-    #     # Legacy or unknown token type - attempt basic validation
-    #     logger.warning(
-    #         f"Unknown token type '{token_type}' for secret "
-    #         f"{context.namespace}/{context.secret_ref.name}, "
-    #         f"attempting legacy validation"
-    #     )
-    #
-    #     # Extract token from secret
-    #     token = await secret_manager.get_token_from_secret(secret, context.namespace)
-    #
-    #     # For legacy tokens, we just return them (no metadata validation)
-    #     # This maintains backward compatibility
-    #     return token
+        # Validate token against metadata
+        metadata = await validate_token(token, context.namespace)
+
+        if not metadata:
+            raise AuthorizationError(
+                f"Operational token invalid or expired for namespace {context.namespace}"
+            )
+
+        logger.debug(
+            f"Operational token validated: namespace={context.namespace}, "
+            f"version={metadata.version}, expires={metadata.valid_until}"
+        )
+
+        return token
+
+    else:
+        # Legacy or unknown token type - attempt basic validation
+        logger.warning(
+            f"Unknown token type '{token_type}' for secret "
+            f"{context.namespace}/{context.secret_ref.name}, "
+            f"attempting legacy validation"
+        )
+
+        # Extract token from secret
+        token = await secret_manager.get_token_from_secret(secret, context.namespace)
+
+        # For legacy tokens, we just return them (no metadata validation)
+        # This maintains backward compatibility
+        return token
 
 
 async def bootstrap_operational_token(
