@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.2.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.5...operator-v0.2.6) (2025-10-20)
+
+
+### Features
+
+* **ci:** auto-approve and merge non-major release PRs ([609e19b](https://github.com/vriesdemichael/keycloak-operator/commit/609e19b0b821c478c0c05962d74d1a3325d6781a))
+
+
+### Bug Fixes
+
+* **ci:** add missing Dockerfile path to publish job ([4986bec](https://github.com/vriesdemichael/keycloak-operator/commit/4986becd3b89c79f48493064a74940a1243a0cd2))
+* **ci:** remove approval step to work with auto-merge setting ([5428eb3](https://github.com/vriesdemichael/keycloak-operator/commit/5428eb3ccf96396c4cbd8a6c1869669527078ac5))
+
 ## [0.2.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.4...operator-v0.2.5) (2025-10-20)
 
 
