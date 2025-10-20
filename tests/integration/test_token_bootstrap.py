@@ -490,7 +490,7 @@ class TestTokenBootstrap:
             )
 
             realm2_manifest = {
-                "apiVersion": "v1",
+                "apiVersion": "keycloak.mdvr.nl/v1",
                 "kind": "KeycloakRealm",
                 "metadata": {"name": realm2_name, "namespace": namespace},
                 "spec": realm2_spec.model_dump(by_alias=True, exclude_unset=True),
