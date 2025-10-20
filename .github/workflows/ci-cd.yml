@@ -31,12 +31,9 @@ jobs:
     name: Build Test Image
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      keycloak-image: ${{ steps.check-keycloak.outputs.image }}
     
     permissions:
       contents: read
-      packages: write
     
     steps:
       - name: Checkout code
@@ -62,45 +59,6 @@ jobs:
           name: operator-image
           path: /tmp/operator-test.tar
           retention-days: 1
-      
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Check if optimized Keycloak image exists
-        id: check-keycloak
-        run: |
-          OPTIMIZED_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}"
-          
-          echo "Checking if optimized Keycloak image exists: ${OPTIMIZED_IMAGE}"
-          
-          if docker manifest inspect ${OPTIMIZED_IMAGE} >/dev/null 2>&1; then
-            echo "✓ Optimized Keycloak image already exists in registry"
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "✗ Optimized Keycloak image does not exist, will build and push"
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-          
-          # Always output the full registry image path
-          echo "image=${OPTIMIZED_IMAGE}" >> $GITHUB_OUTPUT
-      
-      - name: Build and push optimized Keycloak image
-        if: steps.check-keycloak.outputs.exists == 'false'
-        uses: docker/build-push-action@v6
-        with:
-          context: images/keycloak-optimized
-          file: images/keycloak-optimized/Dockerfile
-          platforms: linux/amd64
-          tags: ${{ steps.check-keycloak.outputs.image }}
-          push: true
-          cache-from: type=gha,scope=keycloak-optimized
-          cache-to: type=gha,mode=max,scope=keycloak-optimized
-          build-args: |
-            KEYCLOAK_VERSION=${{ env.KEYCLOAK_VERSION }}
 
   # ==========================================================================
   # STAGE 2: FAST FEEDBACK (parallel execution)
@@ -422,7 +380,7 @@ jobs:
       
       - name: Pull optimized Keycloak image from registry
         env:
-          KEYCLOAK_IMAGE: ${{ needs.build-test-image.outputs.keycloak-image }}
+          KEYCLOAK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
         run: |
           echo "Pulling optimized Keycloak image from registry: ${KEYCLOAK_IMAGE}"
           docker pull "${KEYCLOAK_IMAGE}"
@@ -506,62 +464,6 @@ jobs:
   # Build production images and publish to registry
   # Only runs on main branch after all tests pass
   # ==========================================================================
-  
-  scan-keycloak-optimized:
-    name: Scan Optimized Keycloak Image
-    needs: [build-test-image, integration-tests]
-    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'release'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    
-    permissions:
-      contents: read
-      packages: read
-      security-events: write
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-      
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Scan optimized Keycloak image with Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ needs.build-test-image.outputs.keycloak-image }}
-          format: 'sarif'
-          output: 'trivy-keycloak-optimized.sarif'
-          severity: 'CRITICAL,HIGH'
-      
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: 'trivy-keycloak-optimized.sarif'
-          category: 'trivy-keycloak-optimized'
-      
-      - name: Summary
-        run: |
-          echo "### :mag: Optimized Keycloak Image Scanned" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Base Image:** \`quay.io/keycloak/keycloak:${{ env.KEYCLOAK_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Features:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Pre-built with PostgreSQL driver" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Health and metrics endpoints enabled" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Optimized startup (~64% faster)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
   
   publish:
     name: Build & Publish Production Images
