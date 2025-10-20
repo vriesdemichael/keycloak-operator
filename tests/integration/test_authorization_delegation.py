@@ -36,14 +36,15 @@ class TestAuthorizationDelegation:
         operator_namespace,
         shared_operator,
         wait_for_condition,
+        admission_token_setup,
     ) -> None:
         """Verify that realms validate the operator token before reconciliation.
 
         Test flow:
         1. Use shared Keycloak instance
-        2. Create realm with valid operator token reference
-        3. Verify realm reaches Ready state
-        4. Verify realm authorization secret is created
+        2. Create realm with admission token reference
+        3. Verify realm reaches Ready state and bootstraps operational token
+        4. Verify operational token secret is created
         """
 
         # Use shared Keycloak instance (already ready)
@@ -52,79 +53,8 @@ class TestAuthorizationDelegation:
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"auth-realm-{suffix}"
         
-        # Create admission token in test namespace for bootstrap
-        # (New auth system requires token in same namespace as realm)
-        admission_secret_name = f"admission-token-{suffix}"
-        admission_token = f"test-admission-token-{suffix}"
-        
-        # Create admission token secret
-        from datetime import UTC, datetime, timedelta
-        import hashlib
-        import json
-        
-        secret_body = {
-            "apiVersion": "v1",
-            "kind": "Secret",
-            "metadata": {
-                "name": admission_secret_name,
-                "namespace": namespace,
-                "labels": {
-                    "keycloak.mdvr.nl/allow-operator-read": "true",
-                    "keycloak.mdvr.nl/token-type": "admission",
-                },
-            },
-            "type": "Opaque",
-            "data": {
-                "token": base64.b64encode(admission_token.encode()).decode(),
-            },
-        }
-        
-        k8s_core_v1.create_namespaced_secret(namespace, secret_body)
-        
-        # Store admission token metadata in operator namespace ConfigMap
-        token_hash = hashlib.sha256(admission_token.encode()).hexdigest()
-        valid_until = datetime.now(UTC) + timedelta(days=365)
-        
-        token_metadata = {
-            "namespace": namespace,
-            "token_type": "admission",
-            "issued_at": datetime.now(UTC).isoformat(),
-            "valid_until": valid_until.isoformat(),
-            "version": 1,
-            "created_by_realm": None,
-            "revoked": False,
-            "revoked_at": None,
-        }
-        
-        # Update or create metadata ConfigMap
-        configmap_name = "keycloak-operator-token-metadata"
-        try:
-            cm = k8s_core_v1.read_namespaced_config_map(
-                name=configmap_name, namespace=operator_namespace
-            )
-            if not cm.data:
-                cm.data = {}
-            cm.data[token_hash] = json.dumps(token_metadata)
-            k8s_core_v1.patch_namespaced_config_map(
-                name=configmap_name, namespace=operator_namespace, body=cm
-            )
-        except ApiException as e:
-            if e.status == 404:
-                # ConfigMap doesn't exist, create it
-                cm_body = {
-                    "apiVersion": "v1",
-                    "kind": "ConfigMap",
-                    "metadata": {
-                        "name": configmap_name,
-                        "namespace": operator_namespace,
-                    },
-                    "data": {token_hash: json.dumps(token_metadata)},
-                }
-                k8s_core_v1.create_namespaced_config_map(
-                    namespace=operator_namespace, body=cm_body
-                )
-            else:
-                raise
+        # Get admission token from fixture
+        admission_secret_name, _admission_token = admission_token_setup
 
         # Create realm with admission token reference
         realm_spec = KeycloakRealmSpec(
@@ -223,7 +153,7 @@ class TestAuthorizationDelegation:
                 assert "validUntil" in auth_status
 
         finally:
-            # Cleanup realm only (shared Keycloak persists)
+            # Cleanup realm only (admission token cleaned by fixture)
             with contextlib.suppress(ApiException):
                 k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
@@ -232,25 +162,6 @@ class TestAuthorizationDelegation:
                     plural="keycloakrealms",
                     name=realm_name,
                 )
-            
-            # Cleanup admission secret
-            with contextlib.suppress(ApiException):
-                k8s_core_v1.delete_namespaced_secret(
-                    name=admission_secret_name, namespace=namespace
-                )
-            
-            # Cleanup token metadata from ConfigMap
-            try:
-                cm = k8s_core_v1.read_namespaced_config_map(
-                    name=configmap_name, namespace=operator_namespace
-                )
-                if cm.data and token_hash in cm.data:
-                    del cm.data[token_hash]
-                    k8s_core_v1.patch_namespaced_config_map(
-                        name=configmap_name, namespace=operator_namespace, body=cm
-                    )
-            except ApiException:
-                pass  # ConfigMap might not exist or already cleaned up
 
     @pytest.mark.timeout(600)
     async def test_client_validates_realm_token(
