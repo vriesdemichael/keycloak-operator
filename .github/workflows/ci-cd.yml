@@ -311,6 +311,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     
+    permissions:
+      contents: read
+      packages: read
+    
     strategy:
       fail-fast: false
       matrix:
@@ -377,6 +381,13 @@ jobs:
           echo "Loading operator image into Kind cluster..."
           kind load docker-image keycloak-operator:test --name keycloak-operator-test-${{ github.run_id }}
           echo "Image loaded successfully"
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Pull optimized Keycloak image from registry
         env:
