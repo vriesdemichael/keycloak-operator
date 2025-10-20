@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.2.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.4...operator-v0.2.5) (2025-10-20)
+
+
+### Features
+
+* Add optimized Keycloak image for 81% faster tests ([#15](https://github.com/vriesdemichael/keycloak-operator/issues/15)) ([3093a10](https://github.com/vriesdemichael/keycloak-operator/commit/3093a10239538b76d4fe7ae094e9ddcc85a519bd))
+
+
+### Bug Fixes
+
+* Add operator log capture and fix all integration tests ([#14](https://github.com/vriesdemichael/keycloak-operator/issues/14)) ([bf4e84f](https://github.com/vriesdemichael/keycloak-operator/commit/bf4e84ff8e4e5f8a0ebb0210ac2d6922beae2174))
+* **ci:** correct JSON syntax errors in release-please manifest ([31577b3](https://github.com/vriesdemichael/keycloak-operator/commit/31577b39ef5accb576f713b162ea62f84b554fd7))
+* **ci:** enable semver Docker tags by dispatching CI/CD on release creation ([ff95842](https://github.com/vriesdemichael/keycloak-operator/commit/ff958422945707c65f2556e5813a465028e64789))
+* Use explicit exists output for artifact conditionals ([f52b7cd](https://github.com/vriesdemichael/keycloak-operator/commit/f52b7cdc66de1d7294fa34e4a3862aaf29b1d286))
+
+
+### Documentation
+
+* add comprehensive release workflow analysis and fix documentation ([87838c9](https://github.com/vriesdemichael/keycloak-operator/commit/87838c9b57e0d0ad840cf4160e2e6f50ac53d3ab))
+* update release process for branch protection and PR workflow ([#12](https://github.com/vriesdemichael/keycloak-operator/issues/12)) ([6508868](https://github.com/vriesdemichael/keycloak-operator/commit/6508868dbf3b245f598fa4f1253952ae01193947))
+
 ## [0.2.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.3...operator-v0.2.4) (2025-10-17)
 
 
