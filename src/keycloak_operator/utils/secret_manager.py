@@ -101,6 +101,7 @@ class SecretManager:
                 "labels": {
                     "keycloak.mdvr.nl/token-type": "operational",
                     "keycloak.mdvr.nl/managed-by": "keycloak-operator",
+                    "keycloak.mdvr.nl/allow-operator-read": "true",
                 },
                 "annotations": {
                     "keycloak.mdvr.nl/version": str(token_version),
