@@ -304,7 +304,7 @@ class TestTokenBootstrap:
                     for _token_hash_key, metadata_json in cm.data.items():
                         metadata = json.loads(metadata_json)
                         if metadata.get("namespace") == namespace:
-                            keys_to_remove.append(token_hash_key)
+                            keys_to_remove.append(_token_hash_key)
 
                     for key in keys_to_remove:
                         cm.data.pop(key, None)
@@ -553,7 +553,7 @@ class TestTokenBootstrap:
                     for _token_hash_key, metadata_json in cm.data.items():
                         metadata = json.loads(metadata_json)
                         if metadata.get("namespace") == namespace:
-                            keys_to_remove.append(token_hash_key)
+                            keys_to_remove.append(_token_hash_key)
 
                     for key in keys_to_remove:
                         cm.data.pop(key, None)
