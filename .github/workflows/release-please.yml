@@ -3,7 +3,7 @@ name: Release Please
 # Automated release management using conventional commits
 # - Creates/updates release PR with changelog and version bump
 # - When PR is merged, creates GitHub release
-# - Triggers build-and-publish workflow to tag Docker images
+# - CI/CD workflow triggers on tag push to publish Docker images
 
 on:
   push:
@@ -31,6 +31,17 @@ jobs:
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 
+      - name: Dispatch CI/CD workflow for release
+        if: steps.release.outputs.release_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Dispatching CI/CD workflow for tag ${{ steps.release.outputs.tag_name }}"
+          gh api repos/${{ github.repository }}/dispatches \
+            --method POST \
+            --field event_type='release-published' \
+            --field client_payload[tag]='${{ steps.release.outputs.tag_name }}'
+
       - name: Release summary
         if: steps.release.outputs.release_created == 'true'
         run: |
@@ -39,7 +50,7 @@ jobs:
           echo "**Tag:** \`${{ steps.release.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Release URL:** ${{ steps.release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Docker images will be published by the build-and-publish workflow." >> $GITHUB_STEP_SUMMARY
+          echo "CI/CD workflow will publish Docker images with semver tags." >> $GITHUB_STEP_SUMMARY
 
       - name: PR summary
         if: steps.release.outputs.pr != ''
