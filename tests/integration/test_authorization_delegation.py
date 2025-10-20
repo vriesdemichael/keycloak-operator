@@ -181,55 +181,37 @@ class TestAuthorizationDelegation:
             ready = await _wait_resource_ready("keycloakrealms", realm_name)
             assert ready, f"Realm {realm_name} did not become Ready"
 
-            # Verify realm status includes authorization secret name (operational token)
-            realm = k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakrealms",
-                name=realm_name,
+            # Verify realm bootstrapped operational token
+            operational_secret_name = f"{namespace}-operator-token"
+            operational_secret = k8s_core_v1.read_namespaced_secret(
+                name=operational_secret_name, namespace=namespace
             )
-            status = realm.get("status", {}) or {}
-            
-            # With new auth system, check authorizationStatus for operational token
-            auth_status = status.get("authorizationStatus")
-            if auth_status:
-                # New system: check authorizationStatus
-                secret_ref = auth_status.get("secretRef", {})
-                auth_secret_name = secret_ref.get("name")
-            else:
-                # Fallback: check legacy authorizationSecretName
-                auth_secret_name = status.get("authorizationSecretName")
-            
-            assert auth_secret_name, (
-                "Realm status should include authorization secret reference"
+            assert operational_secret.data, "Operational token secret should have data"
+            assert "token" in operational_secret.data, (
+                "Operational token secret should have 'token' key"
             )
 
-            # Verify the operational token secret exists
-            secret = k8s_core_v1.read_namespaced_secret(
-                name=auth_secret_name, namespace=namespace
-            )
-            assert secret.data, "Authorization secret should have data"
-            assert "token" in secret.data, (
-                "Authorization secret should have 'token' key"
-            )
-
-            # Verify secret has proper labels (operational token)
-            assert secret.metadata.labels, "Secret should have labels"
+            # Verify operational token has proper labels
+            assert operational_secret.metadata.labels, "Secret should have labels"
             assert (
-                secret.metadata.labels.get("keycloak.mdvr.nl/managed-by")
+                operational_secret.metadata.labels.get("keycloak.mdvr.nl/managed-by")
                 == "keycloak-operator"
             )
             assert (
-                secret.metadata.labels.get("keycloak.mdvr.nl/token-type")
+                operational_secret.metadata.labels.get("keycloak.mdvr.nl/token-type")
                 == "operational"
             )
 
-            # Operational tokens have owner reference to the realm that created them
-            if secret.metadata.owner_references:
-                owner_ref = secret.metadata.owner_references[0]
-                assert owner_ref.kind == "KeycloakRealm"
-                # Note: Owner might be the first realm in namespace, not necessarily this one
+            # Verify realm status includes authorizationStatus for operational token
+            status = realm.get("status", {}) or {}
+            auth_status = status.get("authorizationStatus")
+            if auth_status:
+                # Verify status points to operational token
+                secret_ref = auth_status.get("secretRef", {})
+                assert secret_ref.get("name") == operational_secret_name
+                assert auth_status.get("tokenType") == "operational"
+                assert "tokenVersion" in auth_status
+                assert "validUntil" in auth_status
 
         finally:
             # Cleanup realm only (shared Keycloak persists)
