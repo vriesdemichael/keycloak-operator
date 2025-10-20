@@ -103,34 +103,34 @@ Implement a two-phase token system:
 ### Phase 3: Automatic Rotation Handlers
 
 #### 3.1 Operational Token Rotation
-- [ ] Add timer handler in `src/keycloak_operator/handlers/token_rotation.py`
-  - [ ] `@kopf.timer` for operational secrets (daily check)
-  - [ ] Check `valid-until` annotation, rotate if < 7 days remaining
-  - [ ] Generate new token, update secret with dual tokens
-  - [ ] Update metadata with grace period
-  - [ ] Log rotation event
-  - [ ] Emit Kubernetes event
+- [x] Add timer handler in `src/keycloak_operator/handlers/token_rotation.py`
+  - [x] `@kopf.timer` for operational secrets (daily check)
+  - [x] Check `valid-until` annotation, rotate if < 7 days remaining
+  - [x] Generate new token, update secret with dual tokens
+  - [x] Update metadata with grace period
+  - [x] Log rotation event
+  - [x] Emit Kubernetes event
 
 #### 3.2 Grace Period Cleanup
-- [ ] Add timer handler in `src/keycloak_operator/handlers/token_rotation.py`
-  - [ ] `@kopf.timer` for operational secrets (hourly check)
-  - [ ] Check `grace-period-ends` annotation
-  - [ ] Remove `token-previous` after grace period expires
-  - [ ] Update metadata
-  - [ ] Log cleanup event
+- [x] Add timer handler in `src/keycloak_operator/handlers/token_rotation.py`
+  - [x] `@kopf.timer` for operational secrets (hourly check)
+  - [x] Check `grace-period-ends` annotation
+  - [x] Remove `token-previous` after grace period expires
+  - [x] Update metadata
+  - [x] Log cleanup event
 
 #### 3.3 Orphaned Token Detection
-- [ ] Add daemon handler in `src/keycloak_operator/handlers/token_rotation.py`
-  - [ ] Detect operational tokens with no owning realms
-  - [ ] Mark for cleanup after 7 days
-  - [ ] Optional: Emit warning event
+- [x] Add daemon handler in `src/keycloak_operator/handlers/token_rotation.py`
+  - [x] Detect operational tokens with no owning realms
+  - [x] Mark for cleanup after 7 days
+  - [x] Optional: Emit warning event
 
 ---
 
 ### Phase 4: Observability
 
 #### 4.1 Metrics
-- [ ] Add metrics in `src/keycloak_operator/observability/metrics.py`
+- [x] Add metrics in `src/keycloak_operator/observability/metrics.py`
   - `keycloak_operator_token_rotations_total` - Counter by namespace
   - `keycloak_operator_token_expires_timestamp` - Gauge by namespace
   - `keycloak_operator_token_bootstrap_total` - Counter by namespace
@@ -138,14 +138,14 @@ Implement a two-phase token system:
   - `keycloak_operator_operational_tokens_active` - Gauge
 
 #### 4.2 Logging
-- [ ] Add structured logging for token lifecycle events
+- [x] Add structured logging for token lifecycle events
   - Bootstrap events (admission → operational)
   - Rotation events (version increments)
   - Validation failures (expired, invalid, missing)
   - Grace period transitions
 
 #### 4.3 Kubernetes Events
-- [ ] Emit events for user-visible token lifecycle
+- [x] Emit events for user-visible token lifecycle
   - "OperationalTokenBootstrapped" - Normal
   - "OperationalTokenRotated" - Normal
   - "TokenExpiringSoon" - Warning (< 7 days)
@@ -324,15 +324,15 @@ Implement a two-phase token system:
 
 ## Progress Tracking
 
-### Completed Tasks: 20/92
+### Completed Tasks: 37/92
 
 **Phase 1**: ✅ 9/9  
-**Phase 2**: 🔄 11/11 (CRD updates deferred to Phase 7)  
-**Phase 3**: ⬜ 0/8  
-**Phase 4**: ⬜ 0/9  
+**Phase 2**: ✅ 11/11  
+**Phase 3**: ✅ 8/8  
+**Phase 4**: ✅ 9/9  
 **Phase 5**: ⬜ 0/13  
 **Phase 6**: ⬜ 0/28  
-**Phase 7**: ⬜ 1/7 (includes CRD updates)  
+**Phase 7**: ⬜ 0/7  
 
 ---
 
