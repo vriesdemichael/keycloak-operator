@@ -33,7 +33,6 @@ jobs:
     timeout-minutes: 15
     outputs:
       keycloak-image: ${{ steps.check-keycloak.outputs.image }}
-      keycloak-image-exists: ${{ steps.check-keycloak.outputs.exists }}
     
     permissions:
       contents: read
@@ -80,35 +79,28 @@ jobs:
           
           if docker manifest inspect ${OPTIMIZED_IMAGE} >/dev/null 2>&1; then
             echo "✓ Optimized Keycloak image already exists in registry"
-            echo "image=${OPTIMIZED_IMAGE}" >> $GITHUB_OUTPUT
             echo "exists=true" >> $GITHUB_OUTPUT
           else
-            echo "✗ Optimized Keycloak image does not exist, will build"
-            echo "image=keycloak-optimized:${{ env.KEYCLOAK_VERSION }}" >> $GITHUB_OUTPUT
+            echo "✗ Optimized Keycloak image does not exist, will build and push"
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
+          
+          # Always output the full registry image path
+          echo "image=${OPTIMIZED_IMAGE}" >> $GITHUB_OUTPUT
       
-      - name: Build optimized Keycloak image
+      - name: Build and push optimized Keycloak image
         if: steps.check-keycloak.outputs.exists == 'false'
         uses: docker/build-push-action@v6
         with:
           context: images/keycloak-optimized
           file: images/keycloak-optimized/Dockerfile
           platforms: linux/amd64
-          tags: keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-          outputs: type=docker,dest=/tmp/keycloak-optimized.tar
+          tags: ${{ steps.check-keycloak.outputs.image }}
+          push: true
           cache-from: type=gha,scope=keycloak-optimized
           cache-to: type=gha,mode=max,scope=keycloak-optimized
           build-args: |
             KEYCLOAK_VERSION=${{ env.KEYCLOAK_VERSION }}
-      
-      - name: Upload optimized Keycloak image artifact
-        if: steps.check-keycloak.outputs.exists == 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: keycloak-optimized-image
-          path: /tmp/keycloak-optimized.tar
-          retention-days: 1
 
   # ==========================================================================
   # STAGE 2: FAST FEEDBACK (parallel execution)
@@ -350,6 +342,7 @@ jobs:
   integration-tests:
     name: Integration Tests (K8s ${{ matrix.k8s-version }})
     needs: 
+      - build-test-image
       - unit-tests
       - code-quality
       - security-sast
@@ -427,31 +420,14 @@ jobs:
           kind load docker-image keycloak-operator:test --name keycloak-operator-test-${{ github.run_id }}
           echo "Image loaded successfully"
       
-      - name: Load or pull optimized Keycloak image
+      - name: Pull optimized Keycloak image from registry
         env:
           KEYCLOAK_IMAGE: ${{ needs.build-test-image.outputs.keycloak-image }}
-          IMAGE_EXISTS: ${{ needs.build-test-image.outputs.keycloak-image-exists }}
         run: |
-          if [[ "${IMAGE_EXISTS}" == "true" ]]; then
-            echo "Using existing optimized Keycloak image from registry: ${KEYCLOAK_IMAGE}"
-            docker pull "${KEYCLOAK_IMAGE}"
-            docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-          else
-            echo "Loading newly built optimized Keycloak image from artifact..."
-          fi
-      
-      - name: Download optimized Keycloak image artifact
-        if: needs.build-test-image.outputs.keycloak-image-exists == 'false'
-        uses: actions/download-artifact@v5
-        with:
-          name: keycloak-optimized-image
-          path: /tmp
-      
-      - name: Load optimized Keycloak image from artifact
-        if: needs.build-test-image.outputs.keycloak-image-exists == 'false'
-        run: |
-          docker load --input /tmp/keycloak-optimized.tar
-          echo "Optimized Keycloak image loaded from artifact"
+          echo "Pulling optimized Keycloak image from registry: ${KEYCLOAK_IMAGE}"
+          docker pull "${KEYCLOAK_IMAGE}"
+          docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
+          echo "Optimized Keycloak image pulled and tagged successfully"
       
       - name: Load optimized Keycloak image into Kind
         run: |
@@ -531,26 +507,21 @@ jobs:
   # Only runs on main branch after all tests pass
   # ==========================================================================
   
-  publish-keycloak-optimized:
-    name: Publish Optimized Keycloak Image
+  scan-keycloak-optimized:
+    name: Scan Optimized Keycloak Image
     needs: [build-test-image, integration-tests]
-    if: |
-      needs.build-test-image.outputs.keycloak-image-exists == 'false' &&
-      ((github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'release')
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'release'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     
     permissions:
       contents: read
-      packages: write
+      packages: read
       security-events: write
     
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
       
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -559,29 +530,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Build and push optimized Keycloak image
-        uses: docker/build-push-action@v6
-        with:
-          context: images/keycloak-optimized
-          file: images/keycloak-optimized/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-          labels: |
-            org.opencontainers.image.title=Keycloak Optimized
-            org.opencontainers.image.description=Pre-optimized Keycloak image for faster startup
-            org.opencontainers.image.vendor=Michaël de Vries
-            org.opencontainers.image.licenses=Apache-2.0
-            org.opencontainers.image.base.name=quay.io/keycloak/keycloak:${{ env.KEYCLOAK_VERSION }}
-          cache-from: type=gha,scope=keycloak-optimized
-          cache-to: type=gha,mode=max,scope=keycloak-optimized
-          build-args: |
-            KEYCLOAK_VERSION=${{ env.KEYCLOAK_VERSION }}
-      
       - name: Scan optimized Keycloak image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
+          image-ref: ${{ needs.build-test-image.outputs.keycloak-image }}
           format: 'sarif'
           output: 'trivy-keycloak-optimized.sarif'
           severity: 'CRITICAL,HIGH'
@@ -595,7 +547,7 @@ jobs:
       
       - name: Summary
         run: |
-          echo "### :zap: Optimized Keycloak Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "### :mag: Optimized Keycloak Image Scanned" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** \`${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
