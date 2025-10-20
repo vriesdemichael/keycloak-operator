@@ -1,0 +1,123 @@
+name: Build Optimized Keycloak
+
+on:
+  workflow_dispatch:
+    inputs:
+      keycloak_version:
+        description: 'Keycloak version to build (e.g., 26.4.1)'
+        required: true
+        type: string
+  push:
+    paths:
+      - 'images/keycloak-optimized/**'
+      - '.github/workflows/keycloak-optimized.yml'
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-publish:
+    name: Build and Publish Optimized Keycloak
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+      
+      - name: Determine Keycloak version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ inputs.keycloak_version }}"
+          else
+            # Extract from Dockerfile or use default
+            VERSION=$(grep -oP 'ARG KEYCLOAK_VERSION=\K[0-9.]+' images/keycloak-optimized/Dockerfile || echo "26.4.1")
+          fi
+          echo "keycloak_version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Building Keycloak optimized image for version: ${VERSION}"
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Check if image already exists
+        id: check
+        run: |
+          IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ steps.version.outputs.keycloak_version }}"
+          if docker manifest inspect ${IMAGE} >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Image already exists: ${IMAGE}"
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "✓ Image does not exist, will build: ${IMAGE}"
+          fi
+      
+      - name: Build and push optimized Keycloak image
+        if: steps.check.outputs.exists == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: images/keycloak-optimized
+          file: images/keycloak-optimized/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ steps.version.outputs.keycloak_version }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:latest
+          labels: |
+            org.opencontainers.image.title=Keycloak Optimized
+            org.opencontainers.image.description=Pre-optimized Keycloak image for faster startup
+            org.opencontainers.image.version=${{ steps.version.outputs.keycloak_version }}
+            org.opencontainers.image.vendor=Michaël de Vries
+            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.base.name=quay.io/keycloak/keycloak:${{ steps.version.outputs.keycloak_version }}
+          cache-from: type=gha,scope=keycloak-optimized
+          cache-to: type=gha,mode=max,scope=keycloak-optimized
+          build-args: |
+            KEYCLOAK_VERSION=${{ steps.version.outputs.keycloak_version }}
+      
+      - name: Scan optimized Keycloak image with Trivy
+        if: steps.check.outputs.exists == 'false'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ steps.version.outputs.keycloak_version }}
+          format: 'sarif'
+          output: 'trivy-keycloak-optimized.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy results to GitHub Security
+        if: steps.check.outputs.exists == 'false'
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: 'trivy-keycloak-optimized.sarif'
+          category: 'trivy-keycloak-optimized'
+      
+      - name: Summary
+        run: |
+          if [[ "${{ steps.check.outputs.exists }}" == "true" ]]; then
+            echo "### ℹ️ Optimized Keycloak Image Already Exists" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No build was performed as the image already exists in the registry." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### ✅ Optimized Keycloak Image Published" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Image:** \`${{ env.IMAGE_NAME }}/keycloak-optimized:${{ steps.version.outputs.keycloak_version }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The optimized Keycloak image has been built, scanned, and published to the container registry." >> $GITHUB_STEP_SUMMARY
+          fi

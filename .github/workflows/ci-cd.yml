@@ -31,23 +31,19 @@ jobs:
     name: Build Test Image
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    outputs:
-      keycloak-image: ${{ steps.check-keycloak.outputs.image }}
-      keycloak-image-exists: ${{ steps.check-keycloak.outputs.exists }}
     
     permissions:
       contents: read
-      packages: write
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
       - name: Build operator test image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: images/operator/Dockerfile
@@ -63,52 +59,6 @@ jobs:
           name: operator-image
           path: /tmp/operator-test.tar
           retention-days: 1
-      
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Check if optimized Keycloak image exists
-        id: check-keycloak
-        run: |
-          OPTIMIZED_IMAGE="${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}"
-          
-          echo "Checking if optimized Keycloak image exists: ${OPTIMIZED_IMAGE}"
-          
-          if docker manifest inspect ${OPTIMIZED_IMAGE} >/dev/null 2>&1; then
-            echo "✓ Optimized Keycloak image already exists in registry"
-            echo "image=${OPTIMIZED_IMAGE}" >> $GITHUB_OUTPUT
-            echo "exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "✗ Optimized Keycloak image does not exist, will build"
-            echo "image=keycloak-optimized:${{ env.KEYCLOAK_VERSION }}" >> $GITHUB_OUTPUT
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Build optimized Keycloak image
-        if: steps.check-keycloak.outputs.exists == 'false'
-        uses: docker/build-push-action@v5
-        with:
-          context: images/keycloak-optimized
-          file: images/keycloak-optimized/Dockerfile
-          platforms: linux/amd64
-          tags: keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-          outputs: type=docker,dest=/tmp/keycloak-optimized.tar
-          cache-from: type=gha,scope=keycloak-optimized
-          cache-to: type=gha,mode=max,scope=keycloak-optimized
-          build-args: |
-            KEYCLOAK_VERSION=${{ env.KEYCLOAK_VERSION }}
-      
-      - name: Upload optimized Keycloak image artifact
-        if: steps.check-keycloak.outputs.exists == 'false'
-        uses: actions/upload-artifact@v4
-        with:
-          name: keycloak-optimized-image
-          path: /tmp/keycloak-optimized.tar
-          retention-days: 1
 
   # ==========================================================================
   # STAGE 2: FAST FEEDBACK (parallel execution)
@@ -123,15 +73,15 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       
@@ -142,7 +92,7 @@ jobs:
         run: uv run pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
       
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         if: success() || failure()
         with:
           file: ./coverage.xml
@@ -156,15 +106,15 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       
@@ -187,19 +137,19 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: python
           config-file: .github/codeql-config.yml
       
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
       
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:python"
   
@@ -211,15 +161,15 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
       
@@ -246,10 +196,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Download image artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: operator-image
           path: /tmp
@@ -266,7 +216,7 @@ jobs:
           severity: 'CRITICAL,HIGH,MEDIUM'
       
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
@@ -288,10 +238,10 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       
       - name: Download image artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: operator-image
           path: /tmp
@@ -307,7 +257,7 @@ jobs:
           output-file: sbom.spdx.json
       
       - name: Scan SBOM for vulnerabilities with Grype
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         with:
           sbom: sbom.spdx.json
           fail-build: false
@@ -329,7 +279,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       
@@ -350,6 +300,7 @@ jobs:
   integration-tests:
     name: Integration Tests (K8s ${{ matrix.k8s-version }})
     needs: 
+      - build-test-image
       - unit-tests
       - code-quality
       - security-sast
@@ -359,6 +310,10 @@ jobs:
       - security-secrets
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    
+    permissions:
+      contents: read
+      packages: read
     
     strategy:
       fail-fast: false
@@ -370,17 +325,17 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.13'
       
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
@@ -389,7 +344,7 @@ jobs:
         run: uv sync --group test
       
       - name: Download image artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: operator-image
           path: /tmp
@@ -401,7 +356,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       
       - name: Set up Kind
-        uses: helm/kind-action@v1.10.0
+        uses: helm/kind-action@v1.12.0
         with:
           version: v0.20.0
           kubectl_version: ${{ matrix.k8s-version }}
@@ -427,31 +382,21 @@ jobs:
           kind load docker-image keycloak-operator:test --name keycloak-operator-test-${{ github.run_id }}
           echo "Image loaded successfully"
       
-      - name: Load or pull optimized Keycloak image
-        env:
-          KEYCLOAK_IMAGE: ${{ needs.build-test-image.outputs.keycloak-image }}
-          IMAGE_EXISTS: ${{ needs.build-test-image.outputs.keycloak-image-exists }}
-        run: |
-          if [[ "${IMAGE_EXISTS}" == "true" ]]; then
-            echo "Using existing optimized Keycloak image from registry: ${KEYCLOAK_IMAGE}"
-            docker pull "${KEYCLOAK_IMAGE}"
-            docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-          else
-            echo "Loading newly built optimized Keycloak image from artifact..."
-          fi
-      
-      - name: Download optimized Keycloak image artifact
-        if: needs.build-test-image.outputs.keycloak-image-exists == 'false'
-        uses: actions/download-artifact@v4
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
         with:
-          name: keycloak-optimized-image
-          path: /tmp
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Load optimized Keycloak image from artifact
-        if: needs.build-test-image.outputs.keycloak-image-exists == 'false'
+      - name: Pull optimized Keycloak image from registry
+        env:
+          KEYCLOAK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
         run: |
-          docker load --input /tmp/keycloak-optimized.tar
-          echo "Optimized Keycloak image loaded from artifact"
+          echo "Pulling optimized Keycloak image from registry: ${KEYCLOAK_IMAGE}"
+          docker pull "${KEYCLOAK_IMAGE}"
+          docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
+          echo "Optimized Keycloak image pulled and tagged successfully"
       
       - name: Load optimized Keycloak image into Kind
         run: |
@@ -531,86 +476,6 @@ jobs:
   # Only runs on main branch after all tests pass
   # ==========================================================================
   
-  publish-keycloak-optimized:
-    name: Publish Optimized Keycloak Image
-    needs: [build-test-image, integration-tests]
-    if: |
-      needs.build-test-image.outputs.keycloak-image-exists == 'false' &&
-      ((github.ref == 'refs/heads/main' && github.event_name == 'push') || github.event_name == 'release')
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    
-    permissions:
-      contents: read
-      packages: write
-      security-events: write
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-      
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Build and push optimized Keycloak image
-        uses: docker/build-push-action@v5
-        with:
-          context: images/keycloak-optimized
-          file: images/keycloak-optimized/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-          labels: |
-            org.opencontainers.image.title=Keycloak Optimized
-            org.opencontainers.image.description=Pre-optimized Keycloak image for faster startup
-            org.opencontainers.image.vendor=Michaël de Vries
-            org.opencontainers.image.licenses=Apache-2.0
-            org.opencontainers.image.base.name=quay.io/keycloak/keycloak:${{ env.KEYCLOAK_VERSION }}
-          cache-from: type=gha,scope=keycloak-optimized
-          cache-to: type=gha,mode=max,scope=keycloak-optimized
-          build-args: |
-            KEYCLOAK_VERSION=${{ env.KEYCLOAK_VERSION }}
-      
-      - name: Scan optimized Keycloak image with Trivy
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-          format: 'sarif'
-          output: 'trivy-keycloak-optimized.sarif'
-          severity: 'CRITICAL,HIGH'
-      
-      - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-keycloak-optimized.sarif'
-          category: 'trivy-keycloak-optimized'
-      
-      - name: Summary
-        run: |
-          echo "### :zap: Optimized Keycloak Image Published" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Image:** \`${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Base Image:** \`quay.io/keycloak/keycloak:${{ env.KEYCLOAK_VERSION }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Features:**" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Pre-built with PostgreSQL driver" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Health and metrics endpoints enabled" >> $GITHUB_STEP_SUMMARY
-          echo "- ✅ Optimized startup (~64% faster)" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-  
   publish:
     name: Build & Publish Production Images
     needs: [integration-tests]
@@ -628,7 +493,7 @@ jobs:
     
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
       
@@ -663,7 +528,7 @@ jobs:
             org.opencontainers.image.licenses=MIT
       
       - name: Build and push Docker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64
@@ -692,14 +557,14 @@ jobs:
           severity: 'CRITICAL,HIGH'
       
       - name: Upload Trivy results to GitHub Security
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-published-results.sarif'
           category: 'trivy-published-image'
       
       - name: Scan SBOM for vulnerabilities
-        uses: anchore/scan-action@v3
+        uses: anchore/scan-action@v7
         with:
           sbom: sbom.spdx.json
           fail-build: true
