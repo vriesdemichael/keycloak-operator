@@ -92,7 +92,7 @@ kubectl port-forward svc/keycloak-keycloak -n keycloak-system 8080:8080
 # Access: http://localhost:8080
 ```
 
-## Step 3: Create Application Namespace and Secrets
+## Step 3: Create Application Namespace and Bootstrap Token
 
 Create a namespace for your application:
 
@@ -100,29 +100,95 @@ Create a namespace for your application:
 kubectl create namespace my-app
 ```
 
-Copy the operator authorization token to your application namespace:
+### Understanding Token Types
+
+The operator uses a **two-phase token system** for enhanced security:
+
+1. **Admission Token** (one-time, platform team creates)
+   - Used to bootstrap a namespace
+   - Creates the first realm
+   - Triggers automatic generation of operational token
+
+2. **Operational Token** (auto-rotating, operator manages)
+   - Generated automatically after first realm
+   - Used by all subsequent realms
+   - Rotates every 90 days with zero downtime
+
+### Create Admission Token
+
+Platform teams create admission tokens for application teams:
 
 ```bash
-# This token allows your realm to be created on the Keycloak instance
-kubectl get secret keycloak-operator-auth-token \
-  -n keycloak-system \
-  -o yaml | \
-  sed 's/namespace: keycloak-system/namespace: my-app/' | \
-  kubectl apply -f -
+# Generate a cryptographically secure token
+ADMISSION_TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
+
+# Create admission token secret
+kubectl create secret generic admission-token-my-app \
+  --from-literal=token="$ADMISSION_TOKEN" \
+  --namespace=my-app
+
+# Add required labels
+kubectl label secret admission-token-my-app \
+  keycloak.mdvr.nl/token-type=admission \
+  keycloak.mdvr.nl/allow-operator-read=true \
+  --namespace=my-app
+
+# Store token metadata in operator ConfigMap
+TOKEN_HASH=$(echo -n "$ADMISSION_TOKEN" | sha256sum | cut -d' ' -f1)
+kubectl patch configmap keycloak-operator-token-metadata \
+  --namespace=keycloak-operator-system \
+  --type=merge \
+  --patch "{
+    \"data\": {
+      \"$TOKEN_HASH\": \"{\\\"namespace\\\": \\\"my-app\\\", \\\"token_type\\\": \\\"admission\\\", \\\"token_hash\\\": \\\"$TOKEN_HASH\\\", \\\"issued_at\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"valid_until\\\": \\\"$(date -u -d '+1 year' +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"version\\\": 1, \\\"created_by_realm\\\": null, \\\"revoked\\\": false}\"
+    }
+  }"
 ```
 
-Verify the secret was copied:
+Verify the admission token was created:
 
 ```bash
-kubectl get secret keycloak-operator-auth-token -n my-app
+kubectl get secret admission-token-my-app -n my-app
 ```
 
-## Step 4: Create a Realm
+**📝 Note**: In production, platform teams typically:
+- Use sealed secrets or external secret managers
+- Distribute via GitOps repositories
+- Include token setup in namespace provisioning automation
+
+## Step 4: Create Your First Realm (Bootstrap)
 
 A realm is an identity domain that contains users, roles, and clients.
 
+**The first realm in a namespace is special** - it triggers the bootstrap process:
+1. Validates the admission token
+2. Generates an operational token (auto-rotating)
+3. Stores operational token in `my-app-operator-token` secret
+4. Future realms automatically use the operational token
+
+Create your first realm:
+
 ```bash
-kubectl apply -f examples/02-realm-example.yaml
+kubectl apply -f - <<EOF
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakRealm
+metadata:
+  name: my-app-realm
+  namespace: my-app
+spec:
+  realmName: my-app
+  operatorRef:
+    namespace: keycloak-operator-system
+    authorizationSecretRef:
+      name: admission-token-my-app  # ← Uses admission token (one-time)
+      key: token
+  security:
+    registrationAllowed: false
+    resetPasswordAllowed: true
+  themes:
+    loginTheme: keycloak
+    accountTheme: keycloak
+EOF
 ```
 
 Wait for the realm to become ready (takes 10-30 seconds):
@@ -145,7 +211,55 @@ kubectl get keycloakrealm -n my-app
 kubectl get keycloakrealm my-app-realm -n my-app -o yaml | grep -A 10 status:
 ```
 
+**Verify operational token was created**:
+
+```bash
+# After first realm creation, operational token should exist
+kubectl get secret my-app-operator-token -n my-app
+
+# Check token metadata
+kubectl get secret my-app-operator-token -n my-app -o yaml | grep -A5 annotations:
+# You should see:
+#   keycloak.mdvr.nl/version: "1"
+#   keycloak.mdvr.nl/valid-until: "<90 days from now>"
+#   keycloak.mdvr.nl/created-by-realm: "my-app-realm"
+```
+
 The realm is now available at: `http://localhost:8080/realms/my-app` (via port-forward)
+
+**🎉 Bootstrap Complete!** 
+- ✅ Admission token used (one-time)
+- ✅ Operational token generated
+- ✅ Automatic rotation enabled (90-day cycle)
+- ✅ Future realms will use operational token
+
+### Optional: Create Additional Realms
+
+After bootstrap, create additional realms using the operational token:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakRealm
+metadata:
+  name: my-second-realm
+  namespace: my-app
+spec:
+  realmName: my-second-app
+  operatorRef:
+    namespace: keycloak-operator-system
+    authorizationSecretRef:
+      name: my-app-operator-token  # ← Uses operational token (auto-rotating)
+      key: token
+  security:
+    registrationAllowed: false
+    resetPasswordAllowed: true
+EOF
+```
+
+**Notice the difference:**
+- First realm: Uses `admission-token-my-app` (one-time)
+- Additional realms: Use `my-app-operator-token` (auto-rotating)
 
 ## Step 5: Create an OAuth2 Client
 
@@ -381,11 +495,82 @@ kubectl get events -n keycloak-system --sort-by='.lastTimestamp'
 # Check realm status
 kubectl describe keycloakrealm my-app-realm -n my-app
 
-# Verify authorization secret exists
-kubectl get secret keycloak-operator-auth-token -n my-app
+# Verify authorization token exists (admission or operational)
+kubectl get secret admission-token-my-app -n my-app  # For first realm
+kubectl get secret my-app-operator-token -n my-app    # For subsequent realms
 
 # Check operator can reach Keycloak
-kubectl logs -n keycloak-system -l app=keycloak-operator | grep "my-app-realm"
+kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep "my-app-realm"
+```
+
+### Bootstrap not working (no operational token created)
+
+**Symptoms**: First realm created but no `my-app-operator-token` secret generated
+
+```bash
+# Check if admission token exists
+kubectl get secret admission-token-my-app -n my-app
+
+# Check if admission token has correct labels
+kubectl get secret admission-token-my-app -n my-app -o yaml | grep -A3 labels:
+# Should include:
+#   keycloak.mdvr.nl/token-type: admission
+#   keycloak.mdvr.nl/allow-operator-read: "true"
+
+# Check if token is in metadata ConfigMap
+TOKEN_HASH=$(kubectl get secret admission-token-my-app -n my-app -o jsonpath='{.data.token}' | base64 -d | sha256sum | cut -d' ' -f1)
+kubectl get configmap keycloak-operator-token-metadata \
+  -n keycloak-operator-system -o json | jq --arg hash "$TOKEN_HASH" '.data[$hash]'
+
+# Check operator logs for bootstrap
+kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep -i "bootstrap\|admission"
+```
+
+### Token rotation issues
+
+**Symptoms**: Token expired, rotation not happening automatically
+
+```bash
+# Check token status
+kubectl get secret my-app-operator-token -n my-app -o yaml | grep -A10 annotations:
+
+# Check if token is past expiry
+VALID_UNTIL=$(kubectl get secret my-app-operator-token -n my-app \
+  -o jsonpath='{.metadata.annotations.keycloak\.mdvr\.nl/valid-until}')
+echo "Token expires: $VALID_UNTIL"
+echo "Current time:  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+# Check operator logs for rotation
+kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep -i "rotation"
+
+# Check for rotation metrics
+kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
+  curl -s localhost:8080/metrics | grep token_rotation
+```
+
+### Authorization failed after token rotation
+
+**Symptoms**: Realms fail with "Authorization failed" after automatic rotation
+
+```bash
+# Check if realm is using admission token (should use operational)
+kubectl get keycloakrealm my-app-realm -n my-app -o yaml | grep -A3 authorizationSecretRef:
+# First realm can use admission token OR operational token
+# Subsequent realms MUST use operational token
+
+# Check if grace period has ended
+kubectl get secret my-app-operator-token -n my-app -o jsonpath='{.data}' | jq 'keys'
+# During grace period: ["token", "token-previous"]
+# After grace period: ["token"]
+
+# Update realm to use operational token
+kubectl patch keycloakrealm my-app-realm -n my-app --type=merge -p '
+spec:
+  operatorRef:
+    authorizationSecretRef:
+      name: my-app-operator-token
+      key: token
+'
 ```
 
 ### Client creation fails
