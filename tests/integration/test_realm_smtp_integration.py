@@ -240,9 +240,6 @@ async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespac
     # Get admission token from fixture
     admission_secret_name, _ = admission_token_setup
 
-    # Get admission token from fixture
-    admission_secret_name, _ = admission_token_setup
-
     from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
@@ -335,9 +332,6 @@ async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespac
 @pytest.mark.asyncio
 async def test_realm_with_missing_secret_key(shared_operator, operator_namespace, admission_token_setup):
     """Test realm creation fails gracefully with missing key in secret."""
-    # Get admission token from fixture
-    admission_secret_name, _ = admission_token_setup
-
     # Get admission token from fixture
     admission_secret_name, _ = admission_token_setup
 
