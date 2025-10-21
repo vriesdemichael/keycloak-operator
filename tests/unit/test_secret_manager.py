@@ -10,7 +10,6 @@ from kubernetes.client.rest import ApiException
 
 from keycloak_operator.errors import AuthorizationError, KubernetesAPIError
 from keycloak_operator.utils.secret_manager import SecretManager
-from keycloak_operator.utils.token_manager import GRACE_PERIOD_DAYS
 
 
 class TestSecretManagerInit:
@@ -30,8 +29,10 @@ class TestSecretManagerInit:
     def test_v1_property_creates_client(self):
         """Should create CoreV1Api client on first access."""
         manager = SecretManager()
-        
-        with patch("keycloak_operator.utils.secret_manager.client.CoreV1Api") as mock_v1:
+
+        with patch(
+            "keycloak_operator.utils.secret_manager.client.CoreV1Api"
+        ) as mock_v1:
             _ = manager.v1
             mock_v1.assert_called_once()
 
@@ -65,9 +66,7 @@ class TestGetSecret:
     async def test_returns_none_for_missing_secret(self):
         """Should return None for non-existent secret."""
         mock_v1 = MagicMock()
-        mock_v1.read_namespaced_secret = MagicMock(
-            side_effect=ApiException(status=404)
-        )
+        mock_v1.read_namespaced_secret = MagicMock(side_effect=ApiException(status=404))
 
         manager = SecretManager()
         manager._v1 = mock_v1
@@ -211,8 +210,6 @@ class TestUpdateSecretWithRotation:
         manager = SecretManager()
         manager._v1 = mock_v1
 
-        grace_period_ends = datetime.now(UTC) + timedelta(days=GRACE_PERIOD_DAYS)
-
         await manager.update_secret_with_rotation(
             secret=existing_secret,
             new_token=new_token,
@@ -222,7 +219,7 @@ class TestUpdateSecretWithRotation:
 
         # Verify update was called
         mock_v1.replace_namespaced_secret.assert_called_once()
-        
+
         call_args = mock_v1.replace_namespaced_secret.call_args
         updated_secret = call_args[1]["body"]
 
@@ -238,7 +235,9 @@ class TestUpdateSecretWithRotation:
         assert updated_secret.data["token-previous"] == old_token
 
         # Should have grace period annotation
-        assert "keycloak.mdvr.nl/grace-period-ends" in updated_secret.metadata.annotations
+        assert (
+            "keycloak.mdvr.nl/grace-period-ends" in updated_secret.metadata.annotations
+        )
 
     @pytest.mark.asyncio
     async def test_updates_version_annotation(self):
@@ -301,20 +300,23 @@ class TestCleanupPreviousToken:
         manager = SecretManager()
         manager._v1 = mock_v1
 
-        result = await manager.cleanup_previous_token(existing_secret)
+        await manager.cleanup_previous_token(existing_secret)
 
         call_args = mock_v1.replace_namespaced_secret.call_args
         updated_secret = call_args[1]["body"]
 
         # token-previous should be removed
         assert "token-previous" not in updated_secret.data
-        
+
         # Current token should remain
         assert "token" in updated_secret.data
         assert updated_secret.data["token"] == current_token
 
         # Grace period annotation should be removed
-        assert "keycloak.mdvr.nl/grace-period-ends" not in updated_secret.metadata.annotations
+        assert (
+            "keycloak.mdvr.nl/grace-period-ends"
+            not in updated_secret.metadata.annotations
+        )
 
     @pytest.mark.asyncio
     async def test_handles_secret_without_previous_token(self):
@@ -337,7 +339,7 @@ class TestCleanupPreviousToken:
         manager._v1 = mock_v1
 
         # Should not raise error
-        result = await manager.cleanup_previous_token(existing_secret)
+        await manager.cleanup_previous_token(existing_secret)
 
         # Should still update the secret
         mock_v1.replace_namespaced_secret.assert_called_once()
@@ -358,9 +360,9 @@ class TestGetTokenFromSecret:
         )
 
         manager = SecretManager()
-        
+
         result = await manager.get_token_from_secret(secret, "test-ns")
-        
+
         assert result == token_value
 
     @pytest.mark.asyncio
@@ -375,9 +377,9 @@ class TestGetTokenFromSecret:
         )
 
         manager = SecretManager()
-        
+
         result = await manager.get_token_from_secret(secret, "test-ns")
-        
+
         assert result == previous_value
 
     @pytest.mark.asyncio
@@ -395,9 +397,9 @@ class TestGetTokenFromSecret:
         )
 
         manager = SecretManager()
-        
+
         result = await manager.get_token_from_secret(secret, "test-ns")
-        
+
         assert result == current
 
     @pytest.mark.asyncio

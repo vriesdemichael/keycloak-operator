@@ -3,7 +3,7 @@
 import hashlib
 import json
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from kubernetes import client
@@ -12,7 +12,6 @@ from kubernetes.client.rest import ApiException
 from keycloak_operator.errors import KubernetesAPIError
 from keycloak_operator.models.common import TokenMetadata
 from keycloak_operator.utils.token_manager import (
-    GRACE_PERIOD_DAYS,
     TOKEN_VALIDITY_DAYS,
     _hash_token,
     generate_operational_token,
@@ -92,7 +91,9 @@ class TestGenerateOperationalToken:
             _, metadata = await generate_operational_token("ns", "realm")
 
             # Should be valid for TOKEN_VALIDITY_DAYS
-            expected_valid_until = datetime.now(UTC) + timedelta(days=TOKEN_VALIDITY_DAYS)
+            expected_valid_until = datetime.now(UTC) + timedelta(
+                days=TOKEN_VALIDITY_DAYS
+            )
             actual_valid_until = metadata.valid_until
 
             # Allow 1 second tolerance for test execution time
@@ -136,7 +137,9 @@ class TestRotateToken:
         """Rotation should preserve namespace."""
         with patch("keycloak_operator.utils.token_manager.store_token_metadata"):
             _, original_metadata = await generate_operational_token("test-ns", "realm")
-            _, new_metadata = await rotate_operational_token("test-ns", original_metadata)
+            _, new_metadata = await rotate_operational_token(
+                "test-ns", original_metadata
+            )
 
             assert new_metadata.namespace == original_metadata.namespace
 
@@ -144,7 +147,9 @@ class TestRotateToken:
     async def test_rotate_preserves_created_by_realm(self):
         """Rotation should preserve created_by_realm."""
         with patch("keycloak_operator.utils.token_manager.store_token_metadata"):
-            _, original_metadata = await generate_operational_token("ns", "original-realm")
+            _, original_metadata = await generate_operational_token(
+                "ns", "original-realm"
+            )
             _, new_metadata = await rotate_operational_token("ns", original_metadata)
 
             assert new_metadata.created_by_realm == original_metadata.created_by_realm
@@ -163,7 +168,9 @@ class TestRotateToken:
             new_valid_until = new_metadata.valid_until
 
             # New token should be valid for TOKEN_VALIDITY_DAYS from now
-            expected_valid_until = datetime.now(UTC) + timedelta(days=TOKEN_VALIDITY_DAYS)
+            expected_valid_until = datetime.now(UTC) + timedelta(
+                days=TOKEN_VALIDITY_DAYS
+            )
             diff = abs((new_valid_until - expected_valid_until).total_seconds())
             assert diff < 1
 
@@ -216,7 +223,10 @@ class TestStoreTokenMetadata:
         )
         mock_v1.create_namespaced_config_map = MagicMock()
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             await store_token_metadata(metadata)
 
             # Should attempt to read first
@@ -248,7 +258,10 @@ class TestStoreTokenMetadata:
         mock_v1.read_namespaced_config_map = MagicMock(return_value=existing_cm)
         mock_v1.replace_namespaced_config_map = MagicMock()
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             await store_token_metadata(metadata)
 
             # Should update existing ConfigMap
@@ -279,7 +292,10 @@ class TestStoreTokenMetadata:
             side_effect=ApiException(status=500, reason="Internal Error")
         )
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             with pytest.raises(KubernetesAPIError) as exc_info:
                 await store_token_metadata(metadata)
 
@@ -293,16 +309,18 @@ class TestGetTokenMetadata:
     async def test_retrieves_valid_metadata(self):
         """Should retrieve and parse valid metadata."""
         token_hash = "abc123"
-        metadata_json = json.dumps({
-            "namespace": "test-ns",
-            "token_type": "operational",
-            "token_hash": token_hash,
-            "issued_at": "2025-01-01T00:00:00+00:00",
-            "valid_until": "2025-04-01T00:00:00+00:00",
-            "version": 1,
-            "created_by_realm": "realm",
-            "revoked": False,
-        })
+        metadata_json = json.dumps(
+            {
+                "namespace": "test-ns",
+                "token_type": "operational",
+                "token_hash": token_hash,
+                "issued_at": "2025-01-01T00:00:00+00:00",
+                "valid_until": "2025-04-01T00:00:00+00:00",
+                "version": 1,
+                "created_by_realm": "realm",
+                "revoked": False,
+            }
+        )
 
         existing_cm = client.V1ConfigMap(
             metadata=client.V1ObjectMeta(name="token-metadata"),
@@ -312,7 +330,10 @@ class TestGetTokenMetadata:
         mock_v1 = MagicMock()
         mock_v1.read_namespaced_config_map = MagicMock(return_value=existing_cm)
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             result = await get_token_metadata(token_hash)
 
             assert result is not None
@@ -331,7 +352,10 @@ class TestGetTokenMetadata:
         mock_v1 = MagicMock()
         mock_v1.read_namespaced_config_map = MagicMock(return_value=existing_cm)
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             result = await get_token_metadata("nonexistent-hash")
             assert result is None
 
@@ -343,7 +367,10 @@ class TestGetTokenMetadata:
             side_effect=ApiException(status=404)
         )
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             result = await get_token_metadata("any-hash")
             assert result is None
 
@@ -511,7 +538,10 @@ class TestListTokensForNamespace:
         mock_v1 = MagicMock()
         mock_v1.read_namespaced_config_map = MagicMock(return_value=existing_cm)
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             result = await list_tokens_for_namespace("target-ns")
 
             # Should only return tokens for target-ns
@@ -540,7 +570,10 @@ class TestListTokensForNamespace:
         mock_v1 = MagicMock()
         mock_v1.read_namespaced_config_map = MagicMock(return_value=existing_cm)
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             result = await list_tokens_for_namespace("target-ns")
             assert result == []
 
@@ -552,6 +585,9 @@ class TestListTokensForNamespace:
             side_effect=ApiException(status=404)
         )
 
-        with patch("keycloak_operator.utils.token_manager.client.CoreV1Api", return_value=mock_v1):
+        with patch(
+            "keycloak_operator.utils.token_manager.client.CoreV1Api",
+            return_value=mock_v1,
+        ):
             result = await list_tokens_for_namespace("any-ns")
             assert result == []

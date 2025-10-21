@@ -1961,7 +1961,6 @@ async def helm_client(
             )
 
 
-
 @pytest.fixture
 async def admission_token_setup(
     k8s_core_v1: client.CoreV1Api,
@@ -2065,4 +2064,3 @@ async def admission_token_setup(
             )
     except ApiException:
         pass
-
