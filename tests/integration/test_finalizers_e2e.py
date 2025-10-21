@@ -263,6 +263,7 @@ class TestFinalizersE2E:
         operator_namespace,
         shared_operator,
         wait_for_condition,
+        admission_token_setup,
     ):
         """Test that cascading deletion happens when realm is deleted (realm→client).
 
@@ -279,11 +280,14 @@ class TestFinalizersE2E:
         realm_name = f"test-cascade-realm-{suffix}"
         client_name = f"test-cascade-client-{suffix}"
 
+        # Get admission token from fixture
+        admission_secret_name, _ = admission_token_setup
+
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),

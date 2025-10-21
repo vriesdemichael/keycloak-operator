@@ -22,16 +22,21 @@ class TestHelmRealmDeployment:
         k8s_custom_objects,
         operator_namespace,
         wait_for_condition,
+        admission_token_setup,
     ):
         """Test deploying a KeycloakRealm using Helm chart."""
         realm_name = f"helm-test-{uuid.uuid4().hex[:8]}"
         release_name = f"helm-realm-{uuid.uuid4().hex[:8]}"
 
-        # Deploy realm via Helm
+        # Get admission token from fixture
+        admission_secret_name, _ = admission_token_setup
+
+        # Deploy realm via Helm with admission token
         await helm_realm(
             release_name=release_name,
             realm_name=realm_name,
             operator_namespace=operator_namespace,
+            operator_auth_secret=admission_secret_name,
             displayName="Helm Test Realm",
         )
 
@@ -79,10 +84,14 @@ class TestHelmRealmDeployment:
         k8s_custom_objects,
         operator_namespace,
         wait_for_condition,
+        admission_token_setup,
     ):
         """Test deploying a realm with SMTP configuration via Helm."""
         realm_name = f"helm-smtp-{uuid.uuid4().hex[:8]}"
         release_name = f"helm-smtp-{uuid.uuid4().hex[:8]}"
+
+        # Get admission token from fixture
+        admission_secret_name, _ = admission_token_setup
 
         # Create SMTP password secret (with required RBAC label)
         smtp_secret_name = f"smtp-secret-{uuid.uuid4().hex[:8]}"
@@ -103,6 +112,7 @@ class TestHelmRealmDeployment:
             release_name=release_name,
             realm_name=realm_name,
             operator_namespace=operator_namespace,
+            operator_auth_secret=admission_secret_name,
             smtpServer={
                 "enabled": True,
                 "host": "smtp.example.com",
@@ -144,16 +154,21 @@ class TestHelmClientDeployment:
         k8s_custom_objects,
         operator_namespace,
         wait_for_condition,
+        admission_token_setup,
     ):
         """Test deploying a KeycloakClient using Helm chart."""
         realm_name = f"client-realm-{uuid.uuid4().hex[:8]}"
         realm_release = f"realm-{uuid.uuid4().hex[:8]}"
+
+        # Get admission token from fixture
+        admission_secret_name, _ = admission_token_setup
 
         # First deploy a realm
         await helm_realm(
             release_name=realm_release,
             realm_name=realm_name,
             operator_namespace=operator_namespace,
+            operator_auth_secret=admission_secret_name,
         )
 
         # Wait for realm to be ready and get auth secret

@@ -69,6 +69,42 @@ DATABASE_CONNECTION_STATUS = Gauge(
     registry=None,
 )
 
+# Token rotation metrics
+TOKEN_ROTATIONS_TOTAL = Counter(
+    "keycloak_operator_token_rotations_total",
+    "Total number of token rotations",
+    ["namespace"],
+    registry=None,
+)
+
+TOKEN_BOOTSTRAP_TOTAL = Counter(
+    "keycloak_operator_token_bootstrap_total",
+    "Total number of token bootstraps (admission → operational)",
+    ["namespace"],
+    registry=None,
+)
+
+TOKEN_EXPIRES_TIMESTAMP = Gauge(
+    "keycloak_operator_token_expires_timestamp",
+    "Unix timestamp when operational token expires",
+    ["namespace", "secret_name"],
+    registry=None,
+)
+
+AUTHORIZATION_FAILURES_TOTAL = Counter(
+    "keycloak_operator_authorization_failures_total",
+    "Total number of authorization failures",
+    ["namespace", "reason"],
+    registry=None,
+)
+
+OPERATIONAL_TOKENS_ACTIVE = Gauge(
+    "keycloak_operator_operational_tokens_active",
+    "Number of active operational tokens",
+    [],
+    registry=None,
+)
+
 DATABASE_CONNECTION_DURATION = Histogram(
     "keycloak_operator_database_connection_duration_seconds",
     "Time spent testing database connections",
@@ -237,6 +273,32 @@ class MetricsCollector:
         ACTIVE_RESOURCES.labels(
             resource_type=resource_type, namespace=namespace, phase=phase
         ).set(count)
+
+    # Token rotation metrics properties
+    @property
+    def token_rotations(self):
+        """Counter for token rotations."""
+        return TOKEN_ROTATIONS_TOTAL
+
+    @property
+    def token_bootstraps(self):
+        """Counter for token bootstraps."""
+        return TOKEN_BOOTSTRAP_TOTAL
+
+    @property
+    def token_expires(self):
+        """Gauge for token expiry timestamps."""
+        return TOKEN_EXPIRES_TIMESTAMP
+
+    @property
+    def authorization_failures(self):
+        """Counter for authorization failures."""
+        return AUTHORIZATION_FAILURES_TOTAL
+
+    @property
+    def operational_tokens_active(self):
+        """Gauge for active operational tokens."""
+        return OPERATIONAL_TOKENS_ACTIVE
 
     def record_database_connection_test(
         self,

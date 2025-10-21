@@ -337,6 +337,11 @@ class TestRealmReconcilerGenerationTracking:
                 "keycloak_operator.utils.kubernetes.validate_keycloak_reference",
                 return_value=None,
             ),
+            patch(
+                "keycloak_operator.utils.secret_manager.SecretManager.get_secret",
+                new_callable=AsyncMock,
+                return_value=None,
+            ),
         ):
             await realm_reconciler.do_reconcile(
                 spec=spec,

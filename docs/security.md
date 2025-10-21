@@ -309,20 +309,561 @@ spec:
 
 ### Token Rotation
 
-Tokens should be rotated periodically for security:
+**🆕 AUTOMATIC TOKEN ROTATION SYSTEM**
+
+The operator now features automatic token rotation to enhance security without requiring manual intervention. This system ensures long-lived operational tokens are regularly refreshed while maintaining zero-downtime for applications.
+
+#### Overview
+
+The operator implements a **two-phase token system**:
+
+1. **Admission Tokens** (One-time use)
+   - Created by platform teams
+   - Used only for bootstrapping
+   - Trigger creation of operational tokens
+
+2. **Operational Tokens** (Auto-rotating)
+   - Generated automatically by the operator
+   - Rotate every 90 days
+   - Support graceful transition (7-day grace period)
+
+#### Token Lifecycle
+
+```
+Day 1:   Platform team creates admission token
+         ↓
+         First realm created → Operational token generated
+         ↓
+Day 2-82: All realms in namespace use operational token
+         ↓
+Day 83:  Operator detects token expires in 7 days
+         → Generates new token (version N+1)
+         → Stores BOTH tokens (grace period)
+         ↓
+Day 84-90: Applications can use either token
+         ↓
+Day 90:  Grace period ends
+         → Old token removed automatically
+         → Only new token remains
+```
+
+#### How It Works
+
+##### 1. Bootstrap Flow (First Realm)
+
+When the **first** realm is created in a namespace:
+
+```yaml
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakRealm
+metadata:
+  name: first-realm
+  namespace: team-a
+spec:
+  realmName: first-realm
+  operatorRef:
+    namespace: platform
+    authorizationSecretRef:
+      name: admission-token-team-a  # One-time admission token
+      key: token
+```
+
+**What happens:**
+1. Operator validates the admission token
+2. Generates a new operational token (version 1)
+3. Stores operational token in `team-a-operator-token` secret
+4. Records metadata in ConfigMap for persistence
+5. Realm uses operational token going forward
+
+##### 2. Subsequent Realms (Use Operational Token)
+
+All subsequent realms in the same namespace use the operational token:
+
+```yaml
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakRealm
+metadata:
+  name: second-realm
+  namespace: team-a
+spec:
+  realmName: second-realm
+  operatorRef:
+    namespace: platform
+    authorizationSecretRef:
+      name: team-a-operator-token  # Operational token (auto-rotating)
+      key: token
+```
+
+**Benefits:**
+- ✅ No manual token management needed
+- ✅ Tokens rotate automatically every 90 days
+- ✅ Zero downtime during rotation (grace period)
+- ✅ Audit trail in ConfigMap metadata
+
+##### 3. Automatic Rotation
+
+The operator runs rotation handlers automatically:
+
+**Daily Check (00:00 UTC)**:
+- Scans all operational tokens
+- Identifies tokens expiring within 7 days
+- Generates new tokens (version increment)
+- Updates secrets with dual-token data:
+  ```yaml
+  data:
+    token: <new-token>           # Version N+1
+    token-previous: <old-token>  # Version N (for grace period)
+  ```
+
+**Hourly Cleanup**:
+- Checks for expired grace periods
+- Removes `token-previous` from secrets
+- Cleans up old metadata
+
+#### Token Secret Structure
+
+##### Operational Token Secret
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: team-a-operator-token
+  namespace: team-a
+  labels:
+    keycloak.mdvr.nl/token-type: operational
+    keycloak.mdvr.nl/managed-by: keycloak-operator
+    keycloak.mdvr.nl/allow-operator-read: "true"
+  annotations:
+    keycloak.mdvr.nl/version: "2"
+    keycloak.mdvr.nl/valid-until: "2025-04-15T00:00:00Z"
+    keycloak.mdvr.nl/created-by-realm: "first-realm"
+    keycloak.mdvr.nl/grace-period-ends: "2025-04-22T00:00:00Z"  # During rotation
+  ownerReferences:
+    - apiVersion: keycloak.mdvr.nl/v1
+      kind: KeycloakRealm
+      name: first-realm
+      uid: <realm-uid>
+type: Opaque
+data:
+  token: <base64-new-token>      # Current token (version 2)
+  token-previous: <base64-old>   # Previous token (version 1, during grace period)
+```
+
+##### Token Metadata ConfigMap
+
+Token metadata persists in a ConfigMap for operator restarts:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-operator-token-metadata
+  namespace: keycloak-operator-system
+data:
+  <token-hash-1>: |
+    {
+      "namespace": "team-a",
+      "token_type": "operational",
+      "token_hash": "<sha256-hash>",
+      "issued_at": "2025-01-15T00:00:00Z",
+      "valid_until": "2025-04-15T00:00:00Z",
+      "version": 2,
+      "created_by_realm": "first-realm",
+      "revoked": false
+    }
+```
+
+#### Platform Team Setup
+
+##### 1. Create Admission Token (One-time)
 
 ```bash
-# 1. Generate new token
-kubectl create secret generic keycloak-operator-auth-token-new \
-  --from-literal=token=$(python -c 'import secrets; print(secrets.token_urlsafe(32))') \
-  -n keycloak-operator-system
+# Generate admission token
+ADMISSION_TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
 
-# 2. Update all realms to reference new token
-# (This requires updating the operatorRef.authorizationSecretRef in each realm)
+# Create admission token secret in team namespace
+kubectl create secret generic admission-token-team-a \
+  --from-literal=token="$ADMISSION_TOKEN" \
+  --namespace=team-a
 
-# 3. Delete old token after migration
-kubectl delete secret keycloak-operator-auth-token -n keycloak-operator-system
+# Add required labels
+kubectl label secret admission-token-team-a \
+  keycloak.mdvr.nl/token-type=admission \
+  keycloak.mdvr.nl/allow-operator-read=true \
+  --namespace=team-a
+
+# Store token metadata
+TOKEN_HASH=$(echo -n "$ADMISSION_TOKEN" | sha256sum | cut -d' ' -f1)
+kubectl patch configmap keycloak-operator-token-metadata \
+  --namespace=keycloak-operator-system \
+  --type=merge \
+  --patch "{
+    \"data\": {
+      \"$TOKEN_HASH\": \"{\\\"namespace\\\": \\\"team-a\\\", \\\"token_type\\\": \\\"admission\\\", \\\"token_hash\\\": \\\"$TOKEN_HASH\\\", \\\"issued_at\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"valid_until\\\": \\\"$(date -u -d '+1 year' +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"version\\\": 1, \\\"created_by_realm\\\": null, \\\"revoked\\\": false}\"
+    }
+  }"
 ```
+
+##### 2. Share Token with Team
+
+```bash
+# Export admission token for GitOps
+kubectl get secret admission-token-team-a \
+  -n team-a -o yaml > team-a-admission-token.yaml
+
+# Team applies to their namespace
+kubectl apply -f team-a-admission-token.yaml -n team-a
+```
+
+##### 3. Team Creates First Realm
+
+Team applies realm manifest (see example above). Operator automatically:
+- Validates admission token
+- Generates operational token
+- Stores it in `team-a-operator-token` secret
+- Sets up automatic rotation
+
+#### Monitoring Token Rotation
+
+##### Metrics
+
+The operator exposes Prometheus metrics for monitoring:
+
+```promql
+# Token rotations performed
+keycloak_operator_token_rotations_total
+
+# Bootstrap operations (admission → operational)
+keycloak_operator_token_bootstraps_total
+
+# Tokens expiring soon (within 7 days)
+keycloak_operator_tokens_expiring_soon
+
+# Active operational tokens
+keycloak_operator_active_tokens
+
+# Rotation failures
+keycloak_operator_token_rotation_failures_total
+```
+
+##### Kubernetes Events
+
+Watch for rotation events:
+
+```bash
+# Watch all token-related events
+kubectl get events --all-namespaces \
+  --field-selector involvedObject.kind=Secret \
+  -w | grep -i token
+
+# Example events:
+# Normal  TokenRotated     Secret/team-a-operator-token  Token rotated: version 1 → 2
+# Normal  GracePeriodStart Secret/team-a-operator-token  Grace period started, expires 2025-04-22
+# Normal  TokenCleanup     Secret/team-a-operator-token  Previous token removed after grace period
+```
+
+##### Manual Inspection
+
+```bash
+# Check operational token status
+kubectl get secret team-a-operator-token -n team-a -o yaml
+
+# Check token metadata
+kubectl get configmap keycloak-operator-token-metadata \
+  -n keycloak-operator-system -o yaml
+
+# Check realm authorization status (if CRD updated)
+kubectl get keycloakrealm first-realm -n team-a -o jsonpath='{.status.authorizationStatus}'
+```
+
+#### Token Revocation
+
+To revoke a token immediately (e.g., security incident):
+
+```bash
+# Method 1: Delete operational token (operator will detect unauthorized realms)
+kubectl delete secret team-a-operator-token -n team-a
+
+# Method 2: Mark token as revoked in metadata
+TOKEN_HASH="<your-token-hash>"
+kubectl patch configmap keycloak-operator-token-metadata \
+  --namespace=keycloak-operator-system \
+  --type=json \
+  -p "[{\"op\": \"replace\", \"path\": \"/data/$TOKEN_HASH\", \"value\": \"$(kubectl get configmap keycloak-operator-token-metadata -n keycloak-operator-system -o jsonpath="{.data.$TOKEN_HASH}" | jq '.revoked = true')\"}]"
+
+# Realms using revoked token will fail authorization
+# You must provide new admission token to re-bootstrap
+```
+
+#### Troubleshooting
+
+##### Realm Fails Authorization After Rotation
+
+**Symptom**: Realm shows "Authorization failed" in status
+
+**Cause**: Application is using old token after grace period expired
+
+**Solution**: Update realm to use operational token (not admission token)
+
+```bash
+# Check if realm is using admission token (wrong)
+kubectl get keycloakrealm my-realm -n team-a -o yaml | grep authorizationSecretRef
+
+# Should reference operational token:
+# name: team-a-operator-token  ✅ Correct
+# name: admission-token-team-a  ❌ Wrong (one-time use only)
+```
+
+##### Operational Token Not Generated
+
+**Symptom**: First realm fails, no operational token secret created
+
+**Possible causes**:
+1. Admission token not found in namespace
+2. Admission token not in ConfigMap metadata
+3. Admission token already used (must be one-time per namespace)
+
+**Solution**:
+```bash
+# Verify admission token exists
+kubectl get secret admission-token-team-a -n team-a
+
+# Verify admission token in metadata
+kubectl get configmap keycloak-operator-token-metadata \
+  -n keycloak-operator-system -o yaml | grep team-a
+
+# Check operator logs
+kubectl logs -n keycloak-operator-system \
+  deployment/keycloak-operator | grep -i "bootstrap\|admission"
+```
+
+##### Token Rotation Stuck
+
+**Symptom**: Token shows expired but not rotated
+
+**Check rotation handler status**:
+```bash
+# Check operator logs for rotation handler
+kubectl logs -n keycloak-operator-system \
+  deployment/keycloak-operator | grep -i "rotation\|timer"
+
+# Verify ConfigMap is accessible
+kubectl auth can-i get configmap \
+  --as=system:serviceaccount:keycloak-operator-system:keycloak-operator \
+  --namespace=keycloak-operator-system
+
+# Manually trigger rotation (if needed)
+# Delete the secret, operator will recreate on next reconciliation
+kubectl delete secret team-a-operator-token -n team-a
+```
+
+#### Security Best Practices
+
+##### 1. Protect Admission Tokens
+
+Admission tokens are sensitive - protect them like root credentials:
+
+```yaml
+# Use SealedSecrets for GitOps
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: admission-token-team-a
+  namespace: team-a
+spec:
+  encryptedData:
+    token: AgBB9j6FnMU5z...  # Encrypted token
+```
+
+##### 2. Monitor Token Expiry
+
+Set up alerts for expiring tokens:
+
+```yaml
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: keycloak-token-alerts
+spec:
+  groups:
+    - name: keycloak-tokens
+      rules:
+        - alert: KeycloakTokenExpiryWarning
+          expr: keycloak_operator_tokens_expiring_soon > 0
+          for: 24h
+          labels:
+            severity: warning
+          annotations:
+            summary: "Keycloak operational token expiring soon"
+            description: "Token in {{ $labels.namespace }} expires in less than 7 days"
+
+        - alert: KeycloakTokenRotationFailed
+          expr: increase(keycloak_operator_token_rotation_failures_total[1h]) > 0
+          labels:
+            severity: critical
+          annotations:
+            summary: "Keycloak token rotation failed"
+            description: "Token rotation failed, check operator logs"
+```
+
+##### 3. Audit Token Access
+
+Enable audit logging for token access:
+
+```yaml
+# Kubernetes audit policy
+apiVersion: audit.k8s.io/v1
+kind: Policy
+rules:
+  - level: Metadata
+    resources:
+      - group: ""
+        resources: ["secrets"]
+    namespaces: ["team-a", "team-b"]
+    verbs: ["get", "list"]
+    omitStages:
+      - RequestReceived
+```
+
+##### 4. Namespace Isolation
+
+Operational tokens are namespace-scoped:
+
+```bash
+# ✅ This works (token in same namespace)
+kubectl apply -f realm.yaml -n team-a  # Uses team-a-operator-token
+
+# ❌ This fails (token not in namespace)
+kubectl apply -f realm.yaml -n team-b  # No access to team-a-operator-token
+```
+
+##### 5. Principle of Least Privilege
+
+Application teams only need to read operational tokens:
+
+```yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keycloak-realm-manager
+  namespace: team-a
+rules:
+  - apiGroups: ["keycloak.mdvr.nl"]
+    resources: ["keycloakrealms", "keycloakclients"]
+    verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["team-a-operator-token", "*-realm-auth"]
+    verbs: ["get"]  # Read-only access to tokens
+```
+
+#### Migration from Manual Tokens
+
+If you're currently using manual operator tokens, migrate to the new system:
+
+##### Step 1: Create Admission Token
+
+```bash
+# Generate admission token
+ADMISSION_TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
+
+# Create secret
+kubectl create secret generic admission-token-team-a \
+  --from-literal=token="$ADMISSION_TOKEN" \
+  --namespace=team-a
+
+# Add required labels
+kubectl label secret admission-token-team-a \
+  keycloak.mdvr.nl/token-type=admission \
+  keycloak.mdvr.nl/allow-operator-read=true \
+  --namespace=team-a
+
+# Store metadata
+# (See "Platform Team Setup" section above for full command)
+```
+
+##### Step 2: Update First Realm to Bootstrap
+
+```yaml
+# Update the first realm in namespace to use admission token
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakRealm
+metadata:
+  name: first-realm
+  namespace: team-a
+spec:
+  realmName: first-realm
+  operatorRef:
+    namespace: platform
+    authorizationSecretRef:
+      name: admission-token-team-a  # Changed from manual token
+      key: token
+```
+
+```bash
+kubectl apply -f first-realm.yaml
+```
+
+**Operator will:**
+1. Detect admission token
+2. Generate operational token (`team-a-operator-token`)
+3. Store metadata in ConfigMap
+
+##### Step 3: Update Other Realms
+
+```bash
+# Update all other realms in namespace to use operational token
+for realm in $(kubectl get keycloakrealm -n team-a -o name); do
+  kubectl patch $realm -n team-a --type=merge -p '
+spec:
+  operatorRef:
+    authorizationSecretRef:
+      name: team-a-operator-token
+  '
+done
+```
+
+##### Step 4: Cleanup Old Token
+
+```bash
+# After migration complete, delete old manual token
+kubectl delete secret keycloak-operator-auth-token -n team-a
+
+# Operational token now rotates automatically
+```
+
+#### Configuration
+
+Token rotation parameters can be configured (if needed) via operator environment variables:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak-operator
+  namespace: keycloak-operator-system
+spec:
+  template:
+    spec:
+      containers:
+        - name: operator
+          env:
+            # Token validity period (default: 90 days)
+            - name: TOKEN_VALIDITY_DAYS
+              value: "90"
+            # Grace period for dual tokens (default: 7 days)
+            - name: TOKEN_GRACE_PERIOD_DAYS
+              value: "7"
+            # Rotation check interval (default: daily at 00:00 UTC)
+            - name: ROTATION_CHECK_HOUR
+              value: "0"
+            # Cleanup check interval (default: hourly)
+            - name: CLEANUP_CHECK_INTERVAL_HOURS
+              value: "1"
+```
+
+**Note**: These are operator-wide settings. Changing them requires operator restart.
 
 ### Network Security
 
@@ -453,15 +994,28 @@ rules:
 - Organization policy forbids secret-based authorization
 - Integration with external IAM systems required
 
+## Implemented Features
+
+### ✅ Automatic Token Rotation
+
+The operator now features automatic token rotation (implemented):
+
+- ✅ **Token expiration**: Operational tokens expire after 90 days with automatic rotation
+- ✅ **Zero-downtime rotation**: 7-day grace period with dual-token support
+- ✅ **Audit trail**: Complete token lifecycle tracked in ConfigMap metadata
+- ✅ **Bootstrap system**: One-time admission tokens for secure initialization
+
+See the [Token Rotation](#token-rotation) section for complete documentation.
+
 ## Future Enhancements
 
 Potential future additions to the security model:
 
-- **Token expiration**: Add TTL to tokens with automatic rotation
 - **External token validation**: Integrate with external authorization systems (OPA, Kyverno)
-- **mTLS authentication**: Use client certificates instead of tokens
-- **Token scoping**: Limit tokens to specific operations (read-only tokens)
-- **Audit events**: Emit custom events for authorization decisions
+- **mTLS authentication**: Use client certificates instead of/alongside tokens
+- **Token scoping**: Limit tokens to specific operations (read-only tokens, realm-specific tokens)
+- **Custom rotation schedules**: Per-namespace rotation policies
+- **Token revocation webhooks**: External notification of token revocation events
 
 ## References
 

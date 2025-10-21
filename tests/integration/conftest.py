@@ -16,6 +16,7 @@ Violating these rules will cause test failures, especially in parallel execution
 """
 
 import asyncio
+import contextlib
 import fcntl
 import logging
 import os
@@ -961,14 +962,14 @@ async def shared_operator(
     keycloak_image_full = os.getenv(
         "KEYCLOAK_IMAGE", f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}"
     )
-    
+
     # Split image and tag for Helm values
     if ":" in keycloak_image_full:
         keycloak_image, keycloak_version = keycloak_image_full.rsplit(":", 1)
     else:
         keycloak_image = keycloak_image_full
         keycloak_version = DEFAULT_KEYCLOAK_OPTIMIZED_VERSION
-    
+
     helm_values = {
         "namespace": {"name": operator_namespace, "create": False},
         "keycloak": {
@@ -1069,6 +1070,103 @@ async def shared_operator(
 
         logger.info("✓ Operator deployment ready")
 
+        # Create operator authentication token secret for tests
+        # This acts as the "admission token" that realms will use to bootstrap
+        logger.info("Creating operator authentication token secret...")
+        try:
+            import base64
+            import hashlib
+            import json
+            from datetime import UTC, datetime, timedelta
+
+            operator_token = "test-operator-token-12345"
+            operator_secret_name = "keycloak-operator-auth-token"
+
+            # Check if secret already exists
+            try:
+                k8s_core_v1.read_namespaced_secret(
+                    name=operator_secret_name, namespace=operator_namespace
+                )
+                logger.info("✓ Operator auth token secret already exists")
+            except ApiException as e:
+                if e.status == 404:
+                    # Create the secret
+                    secret_body = {
+                        "apiVersion": "v1",
+                        "kind": "Secret",
+                        "metadata": {
+                            "name": operator_secret_name,
+                            "namespace": operator_namespace,
+                            "labels": {
+                                "keycloak.mdvr.nl/allow-operator-read": "true",
+                                "keycloak.mdvr.nl/token-type": "admission",
+                                "app.kubernetes.io/name": "keycloak-operator",
+                            },
+                        },
+                        "type": "Opaque",
+                        "data": {
+                            "token": base64.b64encode(operator_token.encode()).decode(),
+                        },
+                    }
+
+                    k8s_core_v1.create_namespaced_secret(
+                        namespace=operator_namespace, body=secret_body
+                    )
+                    logger.info("✓ Created operator auth token secret")
+                else:
+                    raise
+
+            # Initialize token metadata ConfigMap
+            configmap_name = "keycloak-operator-token-metadata"
+
+            # Check if ConfigMap already exists
+            try:
+                k8s_core_v1.read_namespaced_config_map(
+                    name=configmap_name, namespace=operator_namespace
+                )
+                logger.info("✓ Token metadata ConfigMap already exists")
+            except ApiException as e:
+                if e.status == 404:
+                    # Create the operator's token metadata
+                    token_hash = hashlib.sha256(operator_token.encode()).hexdigest()
+
+                    token_metadata = {
+                        "namespace": operator_namespace,
+                        "token_type": "admission",
+                        "issued_at": datetime.now(UTC).isoformat(),
+                        "valid_until": (
+                            datetime.now(UTC) + timedelta(days=365)
+                        ).isoformat(),
+                        "version": 1,
+                        "created_by_realm": None,
+                        "revoked": False,
+                        "revoked_at": None,
+                    }
+
+                    cm_body = {
+                        "apiVersion": "v1",
+                        "kind": "ConfigMap",
+                        "metadata": {
+                            "name": configmap_name,
+                            "namespace": operator_namespace,
+                            "labels": {
+                                "app.kubernetes.io/name": "keycloak-operator",
+                                "app.kubernetes.io/component": "token-metadata",
+                            },
+                        },
+                        "data": {token_hash: json.dumps(token_metadata)},
+                    }
+
+                    k8s_core_v1.create_namespaced_config_map(
+                        namespace=operator_namespace, body=cm_body
+                    )
+                    logger.info("✓ Created token metadata ConfigMap")
+                else:
+                    raise
+        except Exception as setup_error:
+            logger.error(f"Failed to setup token infrastructure: {setup_error}")
+            pytest.fail(f"Failed to setup token infrastructure: {setup_error}")
+
         # Wait for Keycloak instance to be ready (deployed by operator chart)
         async def keycloak_ready():
             try:
@@ -1092,13 +1190,13 @@ async def shared_operator(
                     )
                     desired = deployment.spec.replicas or 1
                     ready = deployment.status.ready_replicas or 0
-                    
+
                     if ready < desired:
                         logger.debug(
                             f"Keycloak deployment {keycloak_name}-keycloak: {ready}/{desired} pods ready"
                         )
                         return False
-                    
+
                     return True
                 except ApiException as deploy_error:
                     logger.debug(f"Deployment not found or error: {deploy_error}")
@@ -1861,3 +1959,109 @@ async def helm_client(
                 namespace=test_namespace,
                 error=str(e),
             )
+
+
+@pytest.fixture
+async def admission_token_setup(
+    k8s_core_v1: client.CoreV1Api,
+    test_namespace: str,
+    operator_namespace: str,
+) -> AsyncGenerator[tuple[str, str]]:
+    """
+    Create admission token for testing new auth system.
+
+    Returns tuple of (secret_name, token_value) for use in tests.
+    Creates the secret and metadata, yields for test, then cleans up.
+    """
+    import base64
+    import hashlib
+    import json
+    import uuid
+    from datetime import UTC, datetime, timedelta
+
+    suffix = uuid.uuid4().hex[:8]
+    secret_name = f"admission-token-{suffix}"
+    token_value = f"test-admission-token-{suffix}"
+
+    # Create admission token secret
+    secret_body = {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {
+            "name": secret_name,
+            "namespace": test_namespace,
+            "labels": {
+                "keycloak.mdvr.nl/allow-operator-read": "true",
+                "keycloak.mdvr.nl/token-type": "admission",
+            },
+        },
+        "type": "Opaque",
+        "data": {
+            "token": base64.b64encode(token_value.encode()).decode(),
+        },
+    }
+
+    k8s_core_v1.create_namespaced_secret(test_namespace, secret_body)
+
+    # Store admission token metadata in operator namespace ConfigMap
+    token_hash = hashlib.sha256(token_value.encode()).hexdigest()
+    valid_until = datetime.now(UTC) + timedelta(days=365)
+
+    token_metadata = {
+        "namespace": test_namespace,
+        "token_type": "admission",
+        "issued_at": datetime.now(UTC).isoformat(),
+        "valid_until": valid_until.isoformat(),
+        "version": 1,
+        "created_by_realm": None,
+        "revoked": False,
+        "revoked_at": None,
+    }
+
+    configmap_name = "keycloak-operator-token-metadata"
+    try:
+        cm = k8s_core_v1.read_namespaced_config_map(
+            name=configmap_name, namespace=operator_namespace
+        )
+        if not cm.data:
+            cm.data = {}
+        cm.data[token_hash] = json.dumps(token_metadata)
+        k8s_core_v1.patch_namespaced_config_map(
+            name=configmap_name, namespace=operator_namespace, body=cm
+        )
+    except ApiException as e:
+        if e.status == 404:
+            cm_body = {
+                "apiVersion": "v1",
+                "kind": "ConfigMap",
+                "metadata": {
+                    "name": configmap_name,
+                    "namespace": operator_namespace,
+                },
+                "data": {token_hash: json.dumps(token_metadata)},
+            }
+            k8s_core_v1.create_namespaced_config_map(
+                namespace=operator_namespace, body=cm_body
+            )
+        else:
+            raise
+
+    # Yield for test to use
+    yield (secret_name, token_value)
+
+    # Cleanup
+    with contextlib.suppress(ApiException):
+        k8s_core_v1.delete_namespaced_secret(name=secret_name, namespace=test_namespace)
+
+    try:
+        cm = k8s_core_v1.read_namespaced_config_map(
+            name=configmap_name, namespace=operator_namespace
+        )
+        if cm.data and token_hash in cm.data:
+            del cm.data[token_hash]
+            k8s_core_v1.patch_namespaced_config_map(
+                name=configmap_name, namespace=operator_namespace, body=cm
+            )
+    except ApiException:
+        # Cleanup failure is not critical for test execution
+        pass

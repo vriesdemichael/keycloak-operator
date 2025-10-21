@@ -6,6 +6,7 @@ and provides clear categorization for different types of failures.
 """
 
 from .operator_errors import (
+    AuthorizationError,
     ConfigurationError,
     DatabaseValidationError,
     ExternalServiceError,
@@ -31,4 +32,5 @@ __all__ = [
     "ConfigurationError",
     "RBACError",
     "ReconciliationError",
+    "AuthorizationError",
 ]

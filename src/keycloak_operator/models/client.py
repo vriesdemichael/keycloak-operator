@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from .common import AuthorizationSecretRef
+from .common import AuthorizationSecretRef, AuthorizationStatus
 
 
 class RealmRef(BaseModel):
@@ -526,6 +526,13 @@ class KeycloakClientStatus(BaseModel):
     # Endpoints
     endpoints: KeycloakClientEndpoints = Field(
         default_factory=KeycloakClientEndpoints, description="Client endpoints"
+    )
+
+    # Authorization status (new two-phase token system)
+    authorization_status: AuthorizationStatus | None = Field(
+        None,
+        alias="authorizationStatus",
+        description="Status of authorization token (admission vs operational)",
     )
 
     # Health and monitoring

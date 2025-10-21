@@ -79,6 +79,8 @@ nav:
   - Quick Start: quickstart/README.md
   - Architecture: architecture.md
   - Security Model: security.md
+  - Operations:
+      - Token Management: operations/token-management.md
   - Observability: observability.md
   - Development: development.md
   - API Reference:
