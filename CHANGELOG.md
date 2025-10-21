@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.6...operator-v0.2.7) (2025-10-21)
+
+
+### Features
+
+* Automatic Token Rotation System with Bootstrap Flow ([#26](https://github.com/vriesdemichael/keycloak-operator/issues/26)) ([ca28c1b](https://github.com/vriesdemichael/keycloak-operator/commit/ca28c1b995a8b953935f61d255de49921ac4cd85))
+
 ## [0.2.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.5...operator-v0.2.6) (2025-10-20)
 
 
