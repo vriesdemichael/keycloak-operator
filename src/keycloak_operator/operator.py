@@ -32,7 +32,11 @@ from kubernetes.client.rest import ApiException
 # Import all handler modules to register them with kopf
 # This is the standard pattern - importing modules registers their decorators
 from keycloak_operator.handlers import client as client_handler  # noqa: F401
-from keycloak_operator.handlers import keycloak, realm  # noqa: F401
+from keycloak_operator.handlers import (  # noqa: F401
+    keycloak,
+    realm,
+    token_rotation,  # noqa: F401
+)
 from keycloak_operator.observability.health import HealthChecker
 from keycloak_operator.observability.leader_election import (
     get_leader_election_monitor,  # noqa: F401

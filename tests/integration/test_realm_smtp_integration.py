@@ -12,9 +12,16 @@ from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_smtp_secret_reference(
-    shared_operator, keycloak_port_forward, operator_namespace
+    shared_operator,
+    keycloak_port_forward,
+    operator_namespace,
+    test_namespace,
+    admission_token_setup,
 ):
     """Test creating realm with SMTP config using secret reference."""
+    # Get admission token from fixture
+    admission_secret_name, _ = admission_token_setup
+
     from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
@@ -25,7 +32,7 @@ async def test_realm_with_smtp_secret_reference(
 
     realm_name = f"test-smtp-{uuid.uuid4().hex[:8]}"
     secret_name = f"smtp-secret-{uuid.uuid4().hex[:8]}"
-    namespace = shared_operator["namespace"]
+    namespace = test_namespace
 
     # Create SMTP password secret (with required RBAC label)
     core_api = client.CoreV1Api()
@@ -47,7 +54,7 @@ async def test_realm_with_smtp_secret_reference(
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
@@ -85,12 +92,17 @@ async def test_realm_with_smtp_secret_reference(
         await wait_for_realm_ready(custom_api, realm_name, namespace, timeout=120)
 
         # Verify SMTP configuration in Keycloak
-        local_port = await keycloak_port_forward(shared_operator["name"], namespace)
+        keycloak_namespace = shared_operator["namespace"]
+        local_port = await keycloak_port_forward(
+            shared_operator["name"], keycloak_namespace
+        )
 
         # Get admin credentials from operator-generated secret
         from keycloak_operator.utils.kubernetes import get_admin_credentials
 
-        username, password = get_admin_credentials(shared_operator["name"], namespace)
+        username, password = get_admin_credentials(
+            shared_operator["name"], keycloak_namespace
+        )
 
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
@@ -137,9 +149,16 @@ async def test_realm_with_smtp_secret_reference(
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_smtp_direct_password(
-    shared_operator, keycloak_port_forward, operator_namespace
+    shared_operator,
+    keycloak_port_forward,
+    operator_namespace,
+    test_namespace,
+    admission_token_setup,
 ):
     """Test creating realm with SMTP config using direct password (deprecated)."""
+    # Get admission token from fixture
+    admission_secret_name, _ = admission_token_setup
+
     from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
@@ -148,7 +167,7 @@ async def test_realm_with_smtp_direct_password(
     )
 
     realm_name = f"test-smtp-direct-{uuid.uuid4().hex[:8]}"
-    namespace = shared_operator["namespace"]
+    namespace = test_namespace
 
     custom_api = client.CustomObjectsApi()
 
@@ -158,7 +177,7 @@ async def test_realm_with_smtp_direct_password(
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
@@ -192,12 +211,17 @@ async def test_realm_with_smtp_direct_password(
         await wait_for_realm_ready(custom_api, realm_name, namespace, timeout=120)
 
         # Verify realm was created
-        local_port = await keycloak_port_forward(shared_operator["name"], namespace)
+        keycloak_namespace = shared_operator["namespace"]
+        local_port = await keycloak_port_forward(
+            shared_operator["name"], keycloak_namespace
+        )
 
         # Get admin credentials from operator-generated secret
         from keycloak_operator.utils.kubernetes import get_admin_credentials
 
-        username, password = get_admin_credentials(shared_operator["name"], namespace)
+        username, password = get_admin_credentials(
+            shared_operator["name"], keycloak_namespace
+        )
 
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
@@ -229,8 +253,13 @@ async def test_realm_with_smtp_direct_password(
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespace):
+async def test_realm_with_missing_smtp_secret(
+    shared_operator, operator_namespace, test_namespace, admission_token_setup
+):
     """Test realm creation fails gracefully with missing SMTP secret."""
+    # Get admission token from fixture
+    admission_secret_name, _ = admission_token_setup
+
     from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
@@ -241,7 +270,7 @@ async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespac
 
     realm_name = f"test-smtp-missing-{uuid.uuid4().hex[:8]}"
     secret_name = f"nonexistent-secret-{uuid.uuid4().hex[:8]}"
-    namespace = shared_operator["namespace"]
+    namespace = test_namespace
 
     custom_api = client.CustomObjectsApi()
 
@@ -251,7 +280,7 @@ async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespac
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
@@ -321,8 +350,13 @@ async def test_realm_with_missing_smtp_secret(shared_operator, operator_namespac
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_realm_with_missing_secret_key(shared_operator, operator_namespace):
+async def test_realm_with_missing_secret_key(
+    shared_operator, operator_namespace, test_namespace, admission_token_setup
+):
     """Test realm creation fails gracefully with missing key in secret."""
+    # Get admission token from fixture
+    admission_secret_name, _ = admission_token_setup
+
     from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
@@ -333,7 +367,7 @@ async def test_realm_with_missing_secret_key(shared_operator, operator_namespace
 
     realm_name = f"test-smtp-badkey-{uuid.uuid4().hex[:8]}"
     secret_name = f"smtp-secret-badkey-{uuid.uuid4().hex[:8]}"
-    namespace = shared_operator["namespace"]
+    namespace = test_namespace
 
     core_api = client.CoreV1Api()
 
@@ -356,7 +390,7 @@ async def test_realm_with_missing_secret_key(shared_operator, operator_namespace
             operator_ref=OperatorRef(
                 namespace=operator_namespace,
                 authorization_secret_ref=AuthorizationSecretRef(
-                    name="keycloak-operator-auth-token",
+                    name=admission_secret_name,
                     key="token",
                 ),
             ),
