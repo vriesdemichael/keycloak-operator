@@ -65,7 +65,7 @@ async def store_token_metadata(metadata: TokenMetadata) -> None:
                 raise KubernetesAPIError(
                     f"Failed to read token metadata ConfigMap: {e.reason}",
                     reason=e.reason,
-                )
+                ) from e
 
         # Store metadata as JSON under token hash key
         data[metadata.token_hash] = json.dumps(
@@ -114,7 +114,7 @@ async def store_token_metadata(metadata: TokenMetadata) -> None:
     except ApiException as e:
         raise KubernetesAPIError(
             f"Failed to store token metadata: {e.reason}", reason=e.reason
-        )
+        ) from e
 
 
 async def get_token_metadata(token_hash: str) -> TokenMetadata | None:
@@ -162,7 +162,7 @@ async def get_token_metadata(token_hash: str) -> TokenMetadata | None:
             return None
         raise KubernetesAPIError(
             f"Failed to read token metadata: {e.reason}", reason=e.reason
-        )
+        ) from e
     except (json.JSONDecodeError, KeyError, ValueError) as e:
         logger.error(f"Failed to parse token metadata: {e}")
         return None
@@ -223,7 +223,7 @@ async def list_tokens_for_namespace(namespace: str) -> list[TokenMetadata]:
             return []
         raise KubernetesAPIError(
             f"Failed to list token metadata: {e.reason}", reason=e.reason
-        )
+        ) from e
 
 
 async def validate_token(token: str, namespace: str) -> TokenMetadata | None:

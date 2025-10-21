@@ -16,6 +16,7 @@ Violating these rules will cause test failures, especially in parallel execution
 """
 
 import asyncio
+import contextlib
 import fcntl
 import logging
 import os
@@ -1086,7 +1087,7 @@ async def shared_operator(
                 k8s_core_v1.read_namespaced_secret(
                     name=operator_secret_name, namespace=operator_namespace
                 )
-                logger.info(f"✓ Operator auth token secret already exists")
+                logger.info("✓ Operator auth token secret already exists")
             except ApiException as e:
                 if e.status == 404:
                     # Create the secret
@@ -1111,7 +1112,7 @@ async def shared_operator(
                     k8s_core_v1.create_namespaced_secret(
                         namespace=operator_namespace, body=secret_body
                     )
-                    logger.info(f"✓ Created operator auth token secret")
+                    logger.info("✓ Created operator auth token secret")
                 else:
                     raise
 
@@ -1123,7 +1124,7 @@ async def shared_operator(
                 k8s_core_v1.read_namespaced_config_map(
                     name=configmap_name, namespace=operator_namespace
                 )
-                logger.info(f"✓ Token metadata ConfigMap already exists")
+                logger.info("✓ Token metadata ConfigMap already exists")
             except ApiException as e:
                 if e.status == 404:
                     # Create the operator's token metadata
@@ -1159,7 +1160,7 @@ async def shared_operator(
                     k8s_core_v1.create_namespaced_config_map(
                         namespace=operator_namespace, body=cm_body
                     )
-                    logger.info(f"✓ Created token metadata ConfigMap")
+                    logger.info("✓ Created token metadata ConfigMap")
                 else:
                     raise
         except Exception as setup_error:
@@ -1966,10 +1967,10 @@ async def admission_token_setup(
     k8s_core_v1: client.CoreV1Api,
     test_namespace: str,
     operator_namespace: str,
-) -> AsyncGenerator[tuple[str, str], None]:
+) -> AsyncGenerator[tuple[str, str]]:
     """
     Create admission token for testing new auth system.
-    
+
     Returns tuple of (secret_name, token_value) for use in tests.
     Creates the secret and metadata, yields for test, then cleans up.
     """
@@ -1978,11 +1979,11 @@ async def admission_token_setup(
     import json
     import uuid
     from datetime import UTC, datetime, timedelta
-    
+
     suffix = uuid.uuid4().hex[:8]
     secret_name = f"admission-token-{suffix}"
     token_value = f"test-admission-token-{suffix}"
-    
+
     # Create admission token secret
     secret_body = {
         "apiVersion": "v1",
@@ -2000,13 +2001,13 @@ async def admission_token_setup(
             "token": base64.b64encode(token_value.encode()).decode(),
         },
     }
-    
+
     k8s_core_v1.create_namespaced_secret(test_namespace, secret_body)
-    
+
     # Store admission token metadata in operator namespace ConfigMap
     token_hash = hashlib.sha256(token_value.encode()).hexdigest()
     valid_until = datetime.now(UTC) + timedelta(days=365)
-    
+
     token_metadata = {
         "namespace": test_namespace,
         "token_type": "admission",
@@ -2017,7 +2018,7 @@ async def admission_token_setup(
         "revoked": False,
         "revoked_at": None,
     }
-    
+
     configmap_name = "keycloak-operator-token-metadata"
     try:
         cm = k8s_core_v1.read_namespaced_config_map(
@@ -2045,16 +2046,14 @@ async def admission_token_setup(
             )
         else:
             raise
-    
+
     # Yield for test to use
     yield (secret_name, token_value)
-    
+
     # Cleanup
-    try:
+    with contextlib.suppress(ApiException):
         k8s_core_v1.delete_namespaced_secret(name=secret_name, namespace=test_namespace)
-    except ApiException:
-        pass
-    
+
     try:
         cm = k8s_core_v1.read_namespaced_config_map(
             name=configmap_name, namespace=operator_namespace

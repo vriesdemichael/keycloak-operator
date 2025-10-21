@@ -52,7 +52,7 @@ class TestAuthorizationDelegation:
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"auth-realm-{suffix}"
-        
+
         # Get admission token from fixture
         admission_secret_name, _admission_token = admission_token_setup
 
@@ -189,7 +189,7 @@ class TestAuthorizationDelegation:
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"client-realm-{suffix}"
         client_name = f"client-{suffix}"
-        
+
         # Get admission token from fixture
         admission_secret_name, _admission_token = admission_token_setup
 
@@ -376,15 +376,12 @@ class TestAuthorizationDelegation:
         realm_spec = KeycloakRealmSpec(
             realm_name=realm_name,
             operator_ref=OperatorRef(
-                namespace=test_namespace,  # Secret is in test namespace  
+                namespace=test_namespace,  # Secret is in test namespace
                 authorization_secret_ref=AuthorizationSecretRef(
                     name=fake_secret_name,
                     key="token",
                 ),
             ),
-            # But Keycloak is in operator namespace  
-            keycloak_name="keycloak",
-            keycloak_namespace=operator_namespace,
         )
 
         realm_manifest = {
@@ -681,7 +678,7 @@ class TestAuthorizationDelegation:
         2. Verify operational token secret exists (bootstrapped)
         3. Delete realm
         4. Verify operational token secret persists (shared across realms)
-        
+
         Note: Operational tokens are per-namespace, not per-realm, so they
         persist even after realm deletion (cleaned up when all realms gone).
         """
@@ -691,7 +688,7 @@ class TestAuthorizationDelegation:
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"cleanup-realm-{suffix}"
-        
+
         # Get admission token from fixture
         admission_secret_name, _admission_token = admission_token_setup
 

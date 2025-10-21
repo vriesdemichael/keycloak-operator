@@ -27,7 +27,7 @@ class TestHelmRealmDeployment:
         """Test deploying a KeycloakRealm using Helm chart."""
         realm_name = f"helm-test-{uuid.uuid4().hex[:8]}"
         release_name = f"helm-realm-{uuid.uuid4().hex[:8]}"
-        
+
         # Get admission token from fixture
         admission_secret_name, _ = admission_token_setup
 
@@ -89,7 +89,7 @@ class TestHelmRealmDeployment:
         """Test deploying a realm with SMTP configuration via Helm."""
         realm_name = f"helm-smtp-{uuid.uuid4().hex[:8]}"
         release_name = f"helm-smtp-{uuid.uuid4().hex[:8]}"
-        
+
         # Get admission token from fixture
         admission_secret_name, _ = admission_token_setup
 
@@ -159,7 +159,7 @@ class TestHelmClientDeployment:
         """Test deploying a KeycloakClient using Helm chart."""
         realm_name = f"client-realm-{uuid.uuid4().hex[:8]}"
         realm_release = f"realm-{uuid.uuid4().hex[:8]}"
-        
+
         # Get admission token from fixture
         admission_secret_name, _ = admission_token_setup
 

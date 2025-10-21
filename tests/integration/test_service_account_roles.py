@@ -56,7 +56,7 @@ class TestServiceAccountRoles:
         )
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
-        
+
         # Get admission token from fixture
         admission_secret_name, _ = admission_token_setup
 

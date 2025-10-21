@@ -64,7 +64,7 @@ class SecretManager:
             raise KubernetesAPIError(
                 f"Failed to read secret {namespace}/{name}: {e.reason}",
                 reason=e.reason,
-            )
+            ) from e
 
     async def create_operational_secret(
         self,
@@ -149,7 +149,7 @@ class SecretManager:
             raise KubernetesAPIError(
                 f"Failed to create operational token secret: {e.reason}",
                 reason=e.reason,
-            )
+            ) from e
 
     async def update_secret_with_rotation(
         self,
@@ -214,7 +214,7 @@ class SecretManager:
         except ApiException as e:
             raise KubernetesAPIError(
                 f"Failed to update secret with rotation: {e.reason}", reason=e.reason
-            )
+            ) from e
 
     async def cleanup_previous_token(self, secret: client.V1Secret) -> client.V1Secret:
         """
@@ -252,7 +252,7 @@ class SecretManager:
         except ApiException as e:
             raise KubernetesAPIError(
                 f"Failed to cleanup previous token: {e.reason}", reason=e.reason
-            )
+            ) from e
 
     async def get_token_from_secret(
         self, secret: client.V1Secret, namespace: str

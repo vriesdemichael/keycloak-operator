@@ -279,7 +279,7 @@ class TestFinalizersE2E:
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"test-cascade-realm-{suffix}"
         client_name = f"test-cascade-client-{suffix}"
-        
+
         # Get admission token from fixture
         admission_secret_name, _ = admission_token_setup
 
