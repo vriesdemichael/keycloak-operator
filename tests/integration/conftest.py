@@ -2063,4 +2063,5 @@ async def admission_token_setup(
                 name=configmap_name, namespace=operator_namespace, body=cm
             )
     except ApiException:
+        # Cleanup failure is not critical for test execution
         pass

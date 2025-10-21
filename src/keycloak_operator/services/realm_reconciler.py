@@ -420,7 +420,7 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Get authorization token (handles bootstrap if needed)
         try:
-            _operator_token = await get_authorization_token(
+            await get_authorization_token(
                 context=auth_context,
                 k8s_client=client.CoreV1Api(),
             )

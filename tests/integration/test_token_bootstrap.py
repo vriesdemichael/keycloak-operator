@@ -314,6 +314,7 @@ class TestTokenBootstrap:
                             name=configmap_name, namespace=operator_namespace, body=cm
                         )
             except ApiException:
+                # Cleanup failure is not critical for test execution
                 pass
 
     @pytest.mark.timeout(600)
@@ -565,4 +566,5 @@ class TestTokenBootstrap:
                             body=cm,
                         )
             except ApiException:
+                # Cleanup failure is not critical for test execution
                 pass
