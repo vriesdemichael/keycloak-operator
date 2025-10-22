@@ -446,8 +446,16 @@ jobs:
           kubectl cluster-info | tee -a test-logs/cluster-info.log
           
           echo "=== Operator Logs ===" | tee test-logs/operator-logs.log
-          # Search for operator in all namespaces
-          kubectl logs -l app.kubernetes.io/name=keycloak-operator --all-namespaces=true --all-containers=true --tail=1000 >> test-logs/operator-logs.log 2>&1 || echo "No operator logs found"
+          # Find operator pods and collect their logs
+          for pod in $(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
+            namespace=$(echo $pod | cut -d/ -f1)
+            podname=$(echo $pod | cut -d/ -f2)
+            echo "--- Logs from $namespace/$podname ---" >> test-logs/operator-logs.log
+            kubectl logs -n $namespace $podname --all-containers=true --tail=2000 >> test-logs/operator-logs.log 2>&1 || echo "Failed to get logs from $pod"
+          done
+          if [ ! -s test-logs/operator-logs.log ]; then
+            echo "No operator pods found" > test-logs/operator-logs.log
+          fi
           
           echo "=== Operator Status ===" | tee test-logs/operator-status.log
           # Get operator deployments from all namespaces
@@ -457,12 +465,22 @@ jobs:
           echo "=== Test Resources ===" | tee test-logs/test-resources.log
           kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
           kubectl describe keycloaks --all-namespaces >> test-logs/test-resources-describe.log 2>&1 || true
+          kubectl describe keycloakrealms --all-namespaces >> test-logs/test-resources-describe.log 2>&1 || true
           
           echo "=== Events ===" | tee test-logs/events.log
           kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
           
           echo "=== Keycloak Logs ===" | tee test-logs/keycloak-logs.log
-          kubectl logs -l keycloak.mdvr.nl/component=server --all-namespaces=true --tail=500 >> test-logs/keycloak-logs.log 2>&1 || echo "No Keycloak logs found"
+          # Find Keycloak pods and collect their logs
+          for pod in $(kubectl get pods --all-namespaces -l keycloak.mdvr.nl/component=server -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
+            namespace=$(echo $pod | cut -d/ -f1)
+            podname=$(echo $pod | cut -d/ -f2)
+            echo "--- Logs from $namespace/$podname ---" >> test-logs/keycloak-logs.log
+            kubectl logs -n $namespace $podname --tail=500 >> test-logs/keycloak-logs.log 2>&1 || echo "Failed to get logs from $pod"
+          done
+          if [ ! -s test-logs/keycloak-logs.log ]; then
+            echo "No Keycloak pods found" > test-logs/keycloak-logs.log
+          fi
           
           echo "=== PostgreSQL Status ===" | tee test-logs/postgres-status.log
           kubectl get clusters.postgresql.cnpg.io --all-namespaces -o wide >> test-logs/postgres-status.log 2>&1 || true
