@@ -108,7 +108,7 @@ class TestServiceAccountRoles:
         async def _wait_resource_ready(plural: str, name: str) -> None:
             async def _condition() -> bool:
                 try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -132,7 +132,7 @@ class TestServiceAccountRoles:
 
         try:
             # Create realm and wait until Ready
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -202,7 +202,7 @@ class TestServiceAccountRoles:
                         )
 
             # Create client and wait until Ready
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -244,7 +244,7 @@ class TestServiceAccountRoles:
 
             # Cleanup resources (client and realm only - shared Keycloak persists)
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -252,7 +252,7 @@ class TestServiceAccountRoles:
                     name=client_name,
                 )
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,

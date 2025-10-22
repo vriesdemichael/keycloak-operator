@@ -49,6 +49,23 @@ from .cleanup_utils import (
 logger = logging.getLogger(__name__)
 
 
+class AsyncK8sClientWrapper:
+    """Wrapper that makes synchronous K8s client calls async-safe using asyncio.to_thread()."""
+
+    def __init__(self, sync_client):
+        self._sync_client = sync_client
+
+    def __getattr__(self, name):
+        attr = getattr(self._sync_client, name)
+        if callable(attr):
+
+            async def async_wrapper(*args, **kwargs):
+                return await asyncio.to_thread(attr, *args, **kwargs)
+
+            return async_wrapper
+        return attr
+
+
 @pytest.fixture(scope="session", autouse=True)
 async def check_prerequisites(k8s_client, k8s_core_v1):
     """Validate all prerequisites before running integration tests.
@@ -64,7 +81,7 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
 
     # 1. Check Kind cluster is available
     try:
-        k8s_core_v1.list_node()
+        await k8s_core_v1.list_node()
         logger.info("✓ Kind cluster is accessible")
     except Exception as e:
         pytest.fail(
@@ -214,27 +231,51 @@ def k8s_client(kube_config):
 
 
 @pytest.fixture(scope="session")
-def k8s_core_v1(k8s_client):
-    """Create Core V1 API client."""
+def k8s_core_v1_sync(k8s_client):
+    """Create Core V1 API client (synchronous, for use in non-async fixtures)."""
     return client.CoreV1Api(k8s_client)
 
 
 @pytest.fixture(scope="session")
-def k8s_apps_v1(k8s_client):
-    """Create Apps V1 API client."""
+def k8s_core_v1(k8s_core_v1_sync):
+    """Create Core V1 API client (async-safe wrapper for async tests)."""
+    return AsyncK8sClientWrapper(k8s_core_v1_sync)
+
+
+@pytest.fixture(scope="session")
+def k8s_apps_v1_sync(k8s_client):
+    """Create Apps V1 API client (synchronous, for use in non-async fixtures)."""
     return client.AppsV1Api(k8s_client)
 
 
 @pytest.fixture(scope="session")
-def k8s_custom_objects(k8s_client):
-    """Create Custom Objects API client."""
+def k8s_apps_v1(k8s_apps_v1_sync):
+    """Create Apps V1 API client (async-safe wrapper for async tests)."""
+    return AsyncK8sClientWrapper(k8s_apps_v1_sync)
+
+
+@pytest.fixture(scope="session")
+def k8s_custom_objects_sync(k8s_client):
+    """Create Custom Objects API client (synchronous, for use in non-async fixtures)."""
     return client.CustomObjectsApi(k8s_client)
 
 
 @pytest.fixture(scope="session")
-def k8s_rbac_v1(k8s_client):
-    """Create RBAC Authorization V1 API client."""
+def k8s_custom_objects(k8s_custom_objects_sync):
+    """Create Custom Objects API client (async-safe wrapper for async tests)."""
+    return AsyncK8sClientWrapper(k8s_custom_objects_sync)
+
+
+@pytest.fixture(scope="session")
+def k8s_rbac_v1_sync(k8s_client):
+    """Create RBAC Authorization V1 API client (synchronous, for use in non-async fixtures)."""
     return client.RbacAuthorizationV1Api(k8s_client)
+
+
+@pytest.fixture(scope="session")
+def k8s_rbac_v1(k8s_rbac_v1_sync):
+    """Create RBAC Authorization V1 API client (async-safe wrapper for async tests)."""
+    return AsyncK8sClientWrapper(k8s_rbac_v1_sync)
 
 
 @pytest.fixture(scope="session")
@@ -277,7 +318,7 @@ async def test_namespace(
     )
 
     try:
-        k8s_core_v1.create_namespace(namespace)
+        await k8s_core_v1.create_namespace(namespace)
         logger.info(f"Created test namespace: {namespace_name}")
 
         # Create RoleBinding for operator access (new RBAC model)
@@ -302,7 +343,9 @@ async def test_namespace(
         )
 
         try:
-            k8s_rbac_v1.create_namespaced_role_binding(namespace_name, role_binding)
+            await k8s_rbac_v1.create_namespaced_role_binding(
+                namespace_name, role_binding
+            )
             logger.info(f"Created RoleBinding for operator access in {namespace_name}")
         except ApiException as e:
             if e.status != 409:  # Ignore AlreadyExists
@@ -379,7 +422,7 @@ async def test_secrets(k8s_core_v1, test_namespace) -> dict[str, str]:
         ),
         string_data={"password": "test-db-password", "username": "keycloak"},
     )
-    k8s_core_v1.create_namespaced_secret(test_namespace, db_secret)
+    await k8s_core_v1.create_namespaced_secret(test_namespace, db_secret)
     secrets["database"] = "test-db-secret"
 
     # Admin secret
@@ -391,7 +434,7 @@ async def test_secrets(k8s_core_v1, test_namespace) -> dict[str, str]:
         ),
         string_data={"password": "admin-password", "username": "admin"},
     )
-    k8s_core_v1.create_namespaced_secret(test_namespace, admin_secret)
+    await k8s_core_v1.create_namespaced_secret(test_namespace, admin_secret)
     secrets["admin"] = "test-admin-secret"
 
     return secrets
@@ -658,7 +701,7 @@ def wait_for_keycloak_ready(
 
             # Check deployment readiness first (acts as fallback if CR status lags)
             try:
-                deployment = k8s_apps_v1.read_namespaced_deployment(
+                deployment = await k8s_apps_v1.read_namespaced_deployment(
                     name=deployment_name, namespace=namespace
                 )
                 desired = deployment.spec.replicas or 1
@@ -670,7 +713,7 @@ def wait_for_keycloak_ready(
 
             # Try to read CR status for phase/conditions
             try:
-                kc = k8s_custom_objects.get_namespaced_custom_object(
+                kc = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -711,7 +754,7 @@ def wait_for_keycloak_ready(
 
 
 @pytest.fixture(scope="class")
-def class_scoped_namespace(k8s_core_v1, request) -> str:
+def class_scoped_namespace(k8s_core_v1_sync, request) -> str:
     """Create a test namespace that lives for entire test class.
 
     This allows tests within a class to share resources like Keycloak instances,
@@ -726,12 +769,12 @@ def class_scoped_namespace(k8s_core_v1, request) -> str:
         )
     )
 
-    k8s_core_v1.create_namespace(namespace)
+    k8s_core_v1_sync.create_namespace(namespace)
 
     # Register cleanup finalizer
     def cleanup():
         try:
-            k8s_core_v1.delete_namespace(
+            k8s_core_v1_sync.delete_namespace(
                 name=namespace_name,
                 body=client.V1DeleteOptions(propagation_policy="Foreground"),
             )
@@ -744,7 +787,9 @@ def class_scoped_namespace(k8s_core_v1, request) -> str:
 
 
 @pytest.fixture(scope="class")
-def class_scoped_test_secrets(k8s_core_v1, class_scoped_namespace) -> dict[str, str]:
+def class_scoped_test_secrets(
+    k8s_core_v1_sync, class_scoped_namespace
+) -> dict[str, str]:
     """Create test secrets for class-scoped Keycloak instances with required RBAC label.
 
     Note: Synchronous fixture for pytest-xdist compatibility.
@@ -760,7 +805,7 @@ def class_scoped_test_secrets(k8s_core_v1, class_scoped_namespace) -> dict[str, 
         ),
         string_data={"password": "test-db-password", "username": "keycloak"},
     )
-    k8s_core_v1.create_namespaced_secret(class_scoped_namespace, db_secret)
+    k8s_core_v1_sync.create_namespaced_secret(class_scoped_namespace, db_secret)
     secrets["database"] = "shared-db-secret"
 
     # Admin secret
@@ -772,7 +817,7 @@ def class_scoped_test_secrets(k8s_core_v1, class_scoped_namespace) -> dict[str, 
         ),
         string_data={"password": "admin-password", "username": "admin"},
     )
-    k8s_core_v1.create_namespaced_secret(class_scoped_namespace, admin_secret)
+    k8s_core_v1_sync.create_namespaced_secret(class_scoped_namespace, admin_secret)
     secrets["admin"] = "shared-admin-secret"
 
     return secrets
@@ -927,7 +972,7 @@ async def shared_operator(
 
     # Check if operator namespace already exists (xdist: another worker may have created it)
     try:
-        k8s_core_v1.read_namespace(operator_namespace)
+        await k8s_core_v1.read_namespace(operator_namespace)
         logger.info(f"Operator namespace {operator_namespace} already exists")
     except ApiException as e:
         if e.status == 404:
@@ -943,7 +988,7 @@ async def shared_operator(
                 )
             )
             try:
-                k8s_core_v1.create_namespace(namespace)
+                await k8s_core_v1.create_namespace(namespace)
                 logger.info(f"Created operator namespace: {operator_namespace}")
             except ApiException as create_err:
                 if create_err.status == 409:
@@ -1052,7 +1097,7 @@ async def shared_operator(
         # Wait for operator deployment to be ready
         async def operator_ready():
             try:
-                deployment = k8s_apps_v1.read_namespaced_deployment(
+                deployment = await k8s_apps_v1.read_namespaced_deployment(
                     name="keycloak-operator", namespace=operator_namespace
                 )
                 desired = deployment.spec.replicas or 1
@@ -1084,7 +1129,7 @@ async def shared_operator(
 
             # Check if secret already exists
             try:
-                k8s_core_v1.read_namespaced_secret(
+                await k8s_core_v1.read_namespaced_secret(
                     name=operator_secret_name, namespace=operator_namespace
                 )
                 logger.info("✓ Operator auth token secret already exists")
@@ -1109,7 +1154,7 @@ async def shared_operator(
                         },
                     }
 
-                    k8s_core_v1.create_namespaced_secret(
+                    await k8s_core_v1.create_namespaced_secret(
                         namespace=operator_namespace, body=secret_body
                     )
                     logger.info("✓ Created operator auth token secret")
@@ -1121,7 +1166,7 @@ async def shared_operator(
 
             # Check if ConfigMap already exists
             try:
-                k8s_core_v1.read_namespaced_config_map(
+                await k8s_core_v1.read_namespaced_config_map(
                     name=configmap_name, namespace=operator_namespace
                 )
                 logger.info("✓ Token metadata ConfigMap already exists")
@@ -1157,7 +1202,7 @@ async def shared_operator(
                         "data": {token_hash: json.dumps(token_metadata)},
                     }
 
-                    k8s_core_v1.create_namespaced_config_map(
+                    await k8s_core_v1.create_namespaced_config_map(
                         namespace=operator_namespace, body=cm_body
                     )
                     logger.info("✓ Created token metadata ConfigMap")
@@ -1170,7 +1215,7 @@ async def shared_operator(
         # Wait for Keycloak instance to be ready (deployed by operator chart)
         async def keycloak_ready():
             try:
-                kc = k8s_custom_objects.get_namespaced_custom_object(
+                kc = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=operator_namespace,
@@ -1185,7 +1230,7 @@ async def shared_operator(
 
                 # Check deployment AND that pods are actually ready
                 try:
-                    deployment = k8s_apps_v1.read_namespaced_deployment(
+                    deployment = await k8s_apps_v1.read_namespaced_deployment(
                         name=f"{keycloak_name}-keycloak", namespace=operator_namespace
                     )
                     desired = deployment.spec.replicas or 1
@@ -1208,7 +1253,7 @@ async def shared_operator(
         if not ready:
             # Check Keycloak CR status for error details
             try:
-                kc = k8s_custom_objects.get_namespaced_custom_object(
+                kc = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=operator_namespace,
@@ -1507,7 +1552,7 @@ async def managed_realm(
             },
         }
 
-        k8s_custom_objects.create_namespaced_custom_object(
+        await k8s_custom_objects.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=test_namespace,
@@ -1609,7 +1654,7 @@ async def managed_client(
             },
         }
 
-        k8s_custom_objects.create_namespaced_custom_object(
+        await k8s_custom_objects.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=test_namespace,
@@ -2001,7 +2046,7 @@ async def admission_token_setup(
         },
     }
 
-    k8s_core_v1.create_namespaced_secret(test_namespace, secret_body)
+    await k8s_core_v1.create_namespaced_secret(test_namespace, secret_body)
 
     # Store admission token metadata in operator namespace ConfigMap
     token_hash = hashlib.sha256(token_value.encode()).hexdigest()
@@ -2020,13 +2065,13 @@ async def admission_token_setup(
 
     configmap_name = "keycloak-operator-token-metadata"
     try:
-        cm = k8s_core_v1.read_namespaced_config_map(
+        cm = await k8s_core_v1.read_namespaced_config_map(
             name=configmap_name, namespace=operator_namespace
         )
         if not cm.data:
             cm.data = {}
         cm.data[token_hash] = json.dumps(token_metadata)
-        k8s_core_v1.patch_namespaced_config_map(
+        await k8s_core_v1.patch_namespaced_config_map(
             name=configmap_name, namespace=operator_namespace, body=cm
         )
     except ApiException as e:
@@ -2040,7 +2085,7 @@ async def admission_token_setup(
                 },
                 "data": {token_hash: json.dumps(token_metadata)},
             }
-            k8s_core_v1.create_namespaced_config_map(
+            await k8s_core_v1.create_namespaced_config_map(
                 namespace=operator_namespace, body=cm_body
             )
         else:
@@ -2051,15 +2096,17 @@ async def admission_token_setup(
 
     # Cleanup
     with contextlib.suppress(ApiException):
-        k8s_core_v1.delete_namespaced_secret(name=secret_name, namespace=test_namespace)
+        await k8s_core_v1.delete_namespaced_secret(
+            name=secret_name, namespace=test_namespace
+        )
 
     try:
-        cm = k8s_core_v1.read_namespaced_config_map(
+        cm = await k8s_core_v1.read_namespaced_config_map(
             name=configmap_name, namespace=operator_namespace
         )
         if cm.data and token_hash in cm.data:
             del cm.data[token_hash]
-            k8s_core_v1.patch_namespaced_config_map(
+            await k8s_core_v1.patch_namespaced_config_map(
                 name=configmap_name, namespace=operator_namespace, body=cm
             )
     except ApiException:
