@@ -11,7 +11,8 @@ on:
   push:
     branches: [main, develop]
     tags:
-      - 'operator-v*'
+      - 'v*'
+      - 'operator-v*'  # Legacy format for backward compatibility
       - 'chart-*-v*'
   pull_request:
     branches: [main, develop]
@@ -525,6 +526,9 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-,format=short,enable={{is_default_branch}}
+            type=match,pattern=operator-v(.*),group=1
+            type=match,pattern=operator-v(\d+\.\d+),group=1
+            type=match,pattern=operator-v(\d+),group=1,enable=${{ !startsWith(github.ref, 'refs/tags/operator-v0.') }}
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
