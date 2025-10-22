@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased]
+
+### Features
+
+* **rate-limiting:** Implement comprehensive two-level rate limiting for Keycloak API calls
+  - Global rate limiter (50 req/s default) protects Keycloak from total overload
+  - Per-namespace rate limiter (5 req/s default) ensures fair access across teams
+  - Prevents API flooding on operator restart via jitter (0-5s random delay)
+  - Protects against DDoS via spam creation of thousands of realms/clients
+  - Addresses issue #31
+
+* **async:** Complete async/await conversion of Keycloak Admin Client
+  - Migrated from `requests` to `aiohttp` for async HTTP operations
+  - All 44 admin client methods converted to async
+  - All reconcilers updated to use async admin client
+  - All handlers updated with jitter and rate limiter integration
+
+* **metrics:** Add Prometheus metrics for rate limiting observability
+  - `keycloak_api_rate_limit_wait_seconds` - Time waiting for tokens
+  - `keycloak_api_rate_limit_acquired_total` - Successful acquisitions
+  - `keycloak_api_rate_limit_timeouts_total` - Timeout errors
+  - `keycloak_api_tokens_available` - Current available tokens
+
+### Breaking Changes
+
+* **admin-client:** KeycloakAdminClient methods now require `namespace` parameter
+  - All methods accept `namespace: str` for rate limiting
+  - Factory function `get_keycloak_admin_client` now accepts `rate_limiter` parameter
+  - Circuit breaker removed (replaced by rate limiting)
+
+### Documentation
+
+* Add comprehensive rate limiting documentation to README.md
+* Update CLAUDE.md with async patterns and rate limiting architecture
+* Add implementation plan in `docs/rate-limiting-implementation-plan.md`
+
 ## [0.2.9](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.8...v0.2.9) (2025-10-22)
 
 

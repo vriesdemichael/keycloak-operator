@@ -33,7 +33,8 @@ kubectl apply -f examples/03-client-example.yaml
 - **Declarative Configuration** - Manage Keycloak entirely through Kubernetes resources
 - **GitOps Ready** - Full observability with status conditions and `observedGeneration` tracking
 - **Cross-Namespace Support** - Secure delegation model for multi-tenant environments
-- **Production Ready** - Circuit breakers, exponential backoff, and comprehensive monitoring
+- **Production Ready** - Rate limiting, exponential backoff, and comprehensive monitoring
+- **Rate Limiting** - Two-level throttling (global + per-namespace) protects Keycloak from overload
 - **High Availability** - Multi-replica Keycloak with PostgreSQL clustering via CloudNativePG
 - **OAuth2/OIDC Clients** - Automated client provisioning with credential management
 - **Service Accounts** - Declarative role assignment for machine-to-machine authentication
@@ -136,11 +137,52 @@ helm install keycloak-operator ./charts/keycloak-operator \
 
 Key metrics:
 - Reconciliation success/failure rates
-- Circuit breaker state
+- Rate limiting wait times and timeouts
 - Reconciliation duration (p50/p95/p99)
 - Resource counts by phase
 
 See [Observability](docs/observability.md) for full details.
+
+## 🚦 Rate Limiting
+
+The operator implements two-level rate limiting to protect Keycloak from API overload:
+
+### Configuration
+
+```yaml
+env:
+  # Global rate limit (all namespaces combined)
+  - name: KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS
+    value: "50"  # requests per second
+  - name: KEYCLOAK_API_GLOBAL_BURST
+    value: "100"  # burst capacity
+
+  # Per-namespace rate limit (fair sharing)
+  - name: KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS
+    value: "5"  # requests per second
+  - name: KEYCLOAK_API_NAMESPACE_BURST
+    value: "10"  # burst capacity
+
+  # Jitter to prevent thundering herd
+  - name: RECONCILE_JITTER_MAX_SECONDS
+    value: "5.0"  # 0-5 second random delay
+```
+
+### Protection Scenarios
+
+| Scenario | Protection |
+|----------|-----------|
+| Spam 1000 realms in one namespace | Limited to 5 req/s = 200s minimum |
+| Multiple teams overwhelming Keycloak | Global 50 req/s enforced |
+| Operator restart (50+ resources) | Jitter + rate limiting prevents flood |
+
+### Monitoring
+
+Prometheus metrics available at `:8081/metrics`:
+- `keycloak_api_rate_limit_wait_seconds` - Time waiting for tokens
+- `keycloak_api_rate_limit_acquired_total` - Successful token acquisitions
+- `keycloak_api_rate_limit_timeouts_total` - Rate limit timeout errors  
+- `keycloak_api_tokens_available` - Current available tokens per namespace
 
 ## 🤝 Contributing
 
