@@ -55,7 +55,7 @@ The repository contains four independently versioned components:
 ### 1. Operator (Docker Image)
 - **Path**: Root directory (`.`)
 - **Artifact**: Docker image at `ghcr.io/vriesdemichael/keycloak-operator`
-- **Release Tags**: `v1.2.3` (no component prefix)
+- **Release Tags**: `v1.2.3` (semver format without component prefix)
 - **Triggered by**: Any conventional commit **without** chart scope
 
 ### 2. Keycloak Operator Helm Chart
