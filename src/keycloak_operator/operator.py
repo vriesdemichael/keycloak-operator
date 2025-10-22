@@ -44,6 +44,13 @@ from keycloak_operator.observability.leader_election import (
 from keycloak_operator.observability.logging import setup_structured_logging
 from keycloak_operator.observability.metrics import MetricsServer
 from keycloak_operator.utils.auth import generate_token
+from keycloak_operator.utils.rate_limiter import RateLimiter
+from keycloak_operator.constants import (
+    RATE_LIMIT_GLOBAL_TPS,
+    RATE_LIMIT_GLOBAL_BURST,
+    RATE_LIMIT_NAMESPACE_TPS,
+    RATE_LIMIT_NAMESPACE_BURST,
+)
 
 # Global reference to metrics server for cleanup
 _global_metrics_server: MetricsServer | None = None
@@ -176,7 +183,7 @@ async def initialize_operator_token() -> None:
 
 
 @kopf.on.startup()
-async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
+async def startup_handler(settings: kopf.OperatorSettings, memo: kopf.Memo, **_) -> None:
     """
     Operator startup configuration.
 
@@ -187,6 +194,7 @@ async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
     - Networking settings
     - Performance tuning
     - Metrics and health check endpoints
+    - Rate limiting for Keycloak API calls
     """
     logging.info("Starting Keycloak Operator...")
     # Defaults commented out - adjust as needed
@@ -257,6 +265,19 @@ async def startup_handler(settings: kopf.OperatorSettings, **_) -> None:
     monitor = get_leader_election_monitor()
     logging.info(
         f"Leader election monitoring initialized for instance: {monitor.instance_id}"
+    )
+
+    # Initialize rate limiter for Keycloak API calls
+    memo.rate_limiter = RateLimiter(
+        global_rate=RATE_LIMIT_GLOBAL_TPS,
+        global_burst=RATE_LIMIT_GLOBAL_BURST,
+        namespace_rate=RATE_LIMIT_NAMESPACE_TPS,
+        namespace_burst=RATE_LIMIT_NAMESPACE_BURST,
+    )
+    logging.info(
+        f"Rate limiter initialized: "
+        f"global={RATE_LIMIT_GLOBAL_TPS} TPS (burst={RATE_LIMIT_GLOBAL_BURST}), "
+        f"namespace={RATE_LIMIT_NAMESPACE_TPS} TPS (burst={RATE_LIMIT_NAMESPACE_BURST})"
     )
 
 

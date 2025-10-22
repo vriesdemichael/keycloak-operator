@@ -87,6 +87,19 @@ DEFAULT_MAX_RETRIES = 3
 DEFAULT_BACKOFF_FACTOR = 2.0
 DEFAULT_INITIAL_DELAY = 1.0
 
+# Rate limiting configuration
+import os
+
+RATE_LIMIT_GLOBAL_TPS = float(
+    os.getenv("KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS", "50")
+)
+RATE_LIMIT_GLOBAL_BURST = int(os.getenv("KEYCLOAK_API_GLOBAL_BURST", "100"))
+RATE_LIMIT_NAMESPACE_TPS = float(
+    os.getenv("KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS", "5")
+)
+RATE_LIMIT_NAMESPACE_BURST = int(os.getenv("KEYCLOAK_API_NAMESPACE_BURST", "10"))
+RECONCILE_JITTER_MAX = float(os.getenv("RECONCILE_JITTER_MAX_SECONDS", "5.0"))
+
 # Production validation constants
 SUPPORTED_DATABASES = ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
 DEPRECATED_DATABASES = ["h2"]  # No longer supported in production
