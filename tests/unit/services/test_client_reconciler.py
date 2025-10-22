@@ -1,6 +1,6 @@
 """Unit tests for KeycloakClientReconciler service account role management."""
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -32,11 +32,11 @@ def admin_mock() -> MagicMock:
     # Return objects with .id attribute (not dicts)
     service_account_user_mock = MagicMock()
     service_account_user_mock.id = "service-user-id"
-    mock.get_service_account_user.return_value = service_account_user_mock
+    mock.get_service_account_user = AsyncMock(return_value=service_account_user_mock)
 
     target_client_mock = MagicMock()
     target_client_mock.id = "target-client-uuid"
-    mock.get_client_by_name.return_value = target_client_mock
+    mock.get_client_by_name = AsyncMock(return_value=target_client_mock)
     return mock
 
 
