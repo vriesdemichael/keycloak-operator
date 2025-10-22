@@ -522,7 +522,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         from ..errors import PermanentError, TemporaryError
 
         try:
-            existing_realm = admin_client.get_realm(realm_name, namespace)
+            existing_realm = await admin_client.get_realm(realm_name, namespace)
         except KeycloakAdminError as exc:
             if getattr(exc, "status_code", None) == 404:
                 self.logger.info("Realm %s not found, creating new realm", realm_name)
@@ -558,7 +558,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     f"(no ownership metadata found)"
                 )
                 try:
-                    admin_client.update_realm(realm_name, realm_payload, namespace)
+                    await admin_client.update_realm(
+                        realm_name, realm_payload, namespace
+                    )
                     self.logger.info(f"Successfully adopted realm {realm_name}")
                 except KeycloakAdminError as exc:
                     self.logger.error(
@@ -573,7 +575,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                 # Owned by this CR - normal update
                 self.logger.info(f"Updating realm {realm_name} (owned by this CR)")
                 try:
-                    admin_client.update_realm(realm_name, realm_payload, namespace)
+                    await admin_client.update_realm(
+                        realm_name, realm_payload, namespace
+                    )
                 except KeycloakAdminError as exc:
                     self.logger.error(
                         "Realm update failed",
@@ -610,7 +614,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                 cr_uid=cr_uid,
             )
             try:
-                admin_client.create_realm(realm_payload, namespace)
+                await admin_client.create_realm(realm_payload, namespace)
                 self.logger.info(f"Successfully created realm {realm_name}")
             except KeycloakAdminError as exc:
                 # Handle 409 conflict (race condition - realm created between GET and CREATE)
@@ -666,7 +670,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                 theme_config["email_theme"] = spec.themes.email_theme
 
             if theme_config:
-                admin_client.update_realm_themes(
+                await admin_client.update_realm_themes(
                     spec.realm_name, theme_config, namespace
                 )
         except Exception as e:
@@ -855,7 +859,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             )
 
             # Create realm backup
-            backup_data = admin_client.backup_realm(spec.realm_name, namespace)
+            backup_data = await admin_client.backup_realm(spec.realm_name, namespace)
             if not backup_data:
                 self.logger.error(
                     f"Failed to create backup data for realm {spec.realm_name}"
@@ -1034,7 +1038,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                             )
 
                         if theme_config:
-                            admin_client.update_realm_themes(
+                            await admin_client.update_realm_themes(
                                 realm_name, theme_config, namespace
                             )
                     configuration_changed = True
@@ -1168,7 +1172,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             )
 
             # Try to get realm
-            existing_realm = admin_client.get_realm(realm_name, namespace)
+            existing_realm = await admin_client.get_realm(realm_name, namespace)
 
             if existing_realm:
                 self.logger.info(f"Realm {realm_name} exists in Keycloak")
@@ -1265,14 +1269,16 @@ class KeycloakRealmReconciler(BaseReconciler):
                 "account-console",
             }
             try:
-                realm_clients = admin_client.get_realm_clients(realm_name, namespace)
+                realm_clients = await admin_client.get_realm_clients(
+                    realm_name, namespace
+                )
                 for client_config in realm_clients:
                     client_id = client_config.client_id
                     if client_id and client_id not in BUILTIN_CLIENTS:
                         self.logger.info(
                             f"Cleaning up client {client_id} from realm {realm_name} in Keycloak"
                         )
-                        admin_client.delete_client(client_id, realm_name)
+                        await admin_client.delete_client(client_id, realm_name)
                     elif client_id in BUILTIN_CLIENTS:
                         self.logger.debug(
                             f"Skipping built-in client {client_id} (cannot be deleted)"

@@ -303,7 +303,7 @@ async def delete_keycloak_realm(
 
 
 @kopf.timer("keycloakrealms", interval=600)  # Check every 10 minutes
-def monitor_realm_health(
+async def monitor_realm_health(
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -340,7 +340,9 @@ def monitor_realm_health(
         # Get admin client and verify connection
         keycloak_ref = realm_spec.keycloak_instance_ref
         target_namespace = keycloak_ref.namespace or namespace
-        admin_client = get_keycloak_admin_client(keycloak_ref.name, target_namespace)
+        admin_client = await get_keycloak_admin_client(
+            keycloak_ref.name, target_namespace
+        )
 
         # Check if realm exists in Keycloak
         realm_name = realm_spec.realm_name

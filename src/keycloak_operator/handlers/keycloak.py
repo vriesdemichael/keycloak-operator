@@ -338,7 +338,7 @@ async def delete_keycloak_instance(
 
 
 @kopf.timer("keycloaks", interval=60)
-def monitor_keycloak_health(
+async def monitor_keycloak_health(
     spec: dict[str, Any],
     name: str,
     namespace: str,

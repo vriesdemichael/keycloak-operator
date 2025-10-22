@@ -305,7 +305,7 @@ async def delete_keycloak_client(
 
 
 @kopf.timer("keycloakclients", interval=300)  # Check every 5 minutes
-def monitor_client_health(
+async def monitor_client_health(
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -344,7 +344,9 @@ def monitor_client_health(
         # Get admin client and verify connection
         keycloak_ref = client_spec.keycloak_instance_ref
         target_namespace = keycloak_ref.namespace or namespace
-        admin_client = get_keycloak_admin_client(keycloak_ref.name, target_namespace)
+        admin_client = await get_keycloak_admin_client(
+            keycloak_ref.name, target_namespace
+        )
 
         # Check if client exists in Keycloak
         realm_name = client_spec.realm or "master"

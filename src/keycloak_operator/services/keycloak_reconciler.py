@@ -1151,7 +1151,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
             )
 
             # Get list of all realms
-            realms = admin_client.get_realms(namespace)
+            realms = await admin_client.get_realms(namespace)
             if not realms:
                 self.logger.warning("No realms found for backup")
                 return
@@ -1178,7 +1178,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     continue
 
                 self.logger.info(f"Backing up realm: {realm_name}")
-                realm_backup = admin_client.backup_realm(realm_name, namespace)
+                realm_backup = await admin_client.backup_realm(realm_name, namespace)
                 if realm_backup:
                     backup_data["realms"][realm_name] = realm_backup
                 else:
