@@ -20,6 +20,9 @@ from datetime import UTC
 from typing import Any, Protocol, TypedDict, cast
 
 import kopf
+import random
+import asyncio
+from keycloak_operator.constants import RECONCILE_JITTER_MAX
 from kopf import Diff, Meta
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -111,6 +114,7 @@ async def ensure_keycloak_instance(
     namespace: str,
     status: StatusProtocol,
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: KopfHandlerKwargs,
 ) -> None:
     """
@@ -144,7 +148,15 @@ async def ensure_keycloak_instance(
         current_finalizers = meta.get("finalizers", [])
         if KEYCLOAK_FINALIZER in current_finalizers:
             try:
-                reconciler = KeycloakInstanceReconciler()
+                # Add jitter to prevent thundering herd
+
+                jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+                await asyncio.sleep(jitter)
+
+                
+
+                reconciler = reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
                 await reconciler.cleanup_resources(
                     name=name, namespace=namespace, spec=spec
                 )
@@ -177,7 +189,15 @@ async def ensure_keycloak_instance(
         patch.metadata.setdefault("finalizers", []).append(KEYCLOAK_FINALIZER)
 
     # Use patch.status for updates instead of wrapping the read-only status dict
-    reconciler = KeycloakInstanceReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    
+
+    reconciler = reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.reconcile(
         spec=spec,
@@ -199,6 +219,7 @@ async def update_keycloak_instance(
     namespace: str,
     status: StatusProtocol,
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: KopfHandlerKwargs,
 ) -> dict[str, Any] | None:
     """
@@ -222,7 +243,15 @@ async def update_keycloak_instance(
     logger.info(f"Updating Keycloak instance {name} in namespace {namespace}")
 
     # Use patch.status for updates instead of wrapping the read-only status dict
-    reconciler = KeycloakInstanceReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    
+
+    reconciler = reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.update(
         old_spec=old.get("spec", {}),
@@ -243,6 +272,7 @@ async def delete_keycloak_instance(
     namespace: str,
     status: StatusProtocol,
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: KopfHandlerKwargs,
 ) -> None:
     """
@@ -274,7 +304,15 @@ async def delete_keycloak_instance(
 
     try:
         # Delegate cleanup to the reconciler service layer
-        reconciler = KeycloakInstanceReconciler()
+        # Add jitter to prevent thundering herd
+
+        jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+        await asyncio.sleep(jitter)
+
+        
+
+        reconciler = reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
         await reconciler.cleanup_resources(name=name, namespace=namespace, spec=spec)
 
         # If cleanup succeeded, remove our finalizer to complete deletion

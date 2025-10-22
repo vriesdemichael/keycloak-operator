@@ -17,6 +17,9 @@ from datetime import UTC, datetime
 from typing import Any, Protocol
 
 import kopf
+import random
+import asyncio
+from keycloak_operator.constants import RECONCILE_JITTER_MAX
 
 from keycloak_operator.constants import REALM_FINALIZER
 from keycloak_operator.models.realm import KeycloakRealmSpec
@@ -72,6 +75,7 @@ async def ensure_keycloak_realm(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -102,7 +106,15 @@ async def ensure_keycloak_realm(
         current_finalizers = meta.get("finalizers", [])
         if REALM_FINALIZER in current_finalizers:
             try:
-                reconciler = KeycloakRealmReconciler()
+                # Add jitter to prevent thundering herd
+
+                jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+                await asyncio.sleep(jitter)
+
+                
+
+                reconciler = reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
                 status_wrapper = StatusWrapper(status)
                 await reconciler.cleanup_resources(
                     name=name, namespace=namespace, spec=spec, status=status_wrapper
@@ -134,7 +146,15 @@ async def ensure_keycloak_realm(
 
     # Create reconciler and delegate to service layer
     # Use patch.status instead of the read-only status dict for updates
-    reconciler = KeycloakRealmReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    
+
+    reconciler = reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.reconcile(
         spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
@@ -152,6 +172,7 @@ async def update_keycloak_realm(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
     """
@@ -177,7 +198,15 @@ async def update_keycloak_realm(
 
     # Create reconciler and delegate to service layer
     # Use patch.status instead of the read-only status dict for updates
-    reconciler = KeycloakRealmReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    
+
+    reconciler = reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.update(
         old_spec=old.get("spec", {}),
@@ -198,6 +227,7 @@ async def delete_keycloak_realm(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -225,7 +255,15 @@ async def delete_keycloak_realm(
 
     try:
         # Delegate cleanup to the reconciler service layer
-        reconciler = KeycloakRealmReconciler()
+        # Add jitter to prevent thundering herd
+
+        jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+        await asyncio.sleep(jitter)
+
+        
+
+        reconciler = reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
         status_wrapper = StatusWrapper(status)
 
         # Check if resource actually exists in Keycloak before attempting cleanup

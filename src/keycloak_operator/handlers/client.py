@@ -23,6 +23,9 @@ from datetime import UTC, datetime
 from typing import Any
 
 import kopf
+import random
+import asyncio
+from keycloak_operator.constants import RECONCILE_JITTER_MAX
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
@@ -76,6 +79,7 @@ async def ensure_keycloak_client(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -106,7 +110,15 @@ async def ensure_keycloak_client(
         current_finalizers = meta.get("finalizers", [])
         if CLIENT_FINALIZER in current_finalizers:
             try:
-                reconciler = KeycloakClientReconciler()
+                # Add jitter to prevent thundering herd
+
+                jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+                await asyncio.sleep(jitter)
+
+                
+
+                reconciler = reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
                 status_wrapper = StatusWrapper(status)
                 await reconciler.cleanup_resources(
                     name=name, namespace=namespace, spec=spec, status=status_wrapper
@@ -137,7 +149,15 @@ async def ensure_keycloak_client(
         patch.metadata.setdefault("finalizers", []).append(CLIENT_FINALIZER)
 
     # Use patch.status for updates instead of wrapping the read-only status dict
-    reconciler = KeycloakClientReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    
+
+    reconciler = reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.reconcile(
         spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
@@ -155,6 +175,7 @@ async def update_keycloak_client(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
     """
@@ -179,7 +200,15 @@ async def update_keycloak_client(
     logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
 
     # Use patch.status for updates instead of wrapping the read-only status dict
-    reconciler = KeycloakClientReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    
+
+    reconciler = reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.update(
         old_spec=old.get("spec", {}),
@@ -200,6 +229,7 @@ async def delete_keycloak_client(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -227,7 +257,15 @@ async def delete_keycloak_client(
 
     try:
         # Delegate cleanup to the reconciler service layer
-        reconciler = KeycloakClientReconciler()
+        # Add jitter to prevent thundering herd
+
+        jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+        await asyncio.sleep(jitter)
+
+        
+
+        reconciler = reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
         status_wrapper = StatusWrapper(status)
 
         # Check if resource actually exists in Keycloak before attempting cleanup
