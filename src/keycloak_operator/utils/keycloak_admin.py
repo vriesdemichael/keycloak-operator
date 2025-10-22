@@ -89,6 +89,7 @@ class KeycloakAdminClient:
         verify_ssl: bool = True,
         timeout: int = 60,
         rate_limiter: "RateLimiter | None" = None,
+
     ) -> None:
         """
         Initialize Keycloak Admin client.
@@ -408,14 +409,15 @@ class KeycloakAdminClient:
 
     # Realm Management Methods
 
-    def create_realm(
-        self, realm_config: RealmRepresentation | dict[str, Any]
+    async def create_realm(
+        self, realm_config: RealmRepresentation | dict[str, Any], namespace: str
     ) -> RealmRepresentation:
         """
         Create a new realm in Keycloak.
 
         Args:
             realm_config: Realm configuration as RealmRepresentation or dict
+            namespace: Origin namespace for rate limiting
 
         Returns:
             Created realm information as RealmRepresentation
@@ -430,26 +432,27 @@ class KeycloakAdminClient:
         logger.info(f"Creating realm: {realm_config.realm or 'unknown'}")
 
         # Use validated request
-        response = self._make_validated_request(
-            "POST", "realms", request_model=realm_config
+        response = await self._make_validated_request(
+            "POST", "realms", namespace, request_model=realm_config
         )
 
-        if response.status_code == 201:
+        if response.status == 201:
             logger.info("Realm created successfully")
             # Return the realm config as validated model
             return realm_config
         else:
             raise KeycloakAdminError(
-                f"Failed to create realm: {response.status_code}",
-                response.status_code,
+                f"Failed to create realm: {response.status}",
+                response.status,
             )
 
-    def get_realm(self, realm_name: str) -> RealmRepresentation | None:
+    async def get_realm(self, realm_name: str, namespace: str) -> RealmRepresentation | None:
         """
         Get realm configuration from Keycloak.
 
         Args:
             realm_name: Name of the realm to retrieve
+            namespace: Origin namespace for rate limiting
 
         Returns:
             Realm configuration as RealmRepresentation or None if not found
@@ -458,15 +461,15 @@ class KeycloakAdminClient:
             KeycloakAdminError: If the request fails (except 404)
         """
         try:
-            return self._make_validated_request(
-                "GET", f"realms/{realm_name}", response_model=RealmRepresentation
+            return await self._make_validated_request(
+                "GET", f"realms/{realm_name}", namespace, response_model=RealmRepresentation
             )
         except KeycloakAdminError as e:
             if e.status_code == 404:
                 return None
             raise
 
-    def export_realm(self, realm_name: str) -> RealmRepresentation | None:
+    async def export_realm(self, realm_name: str, namespace: str) -> RealmRepresentation | None:
         """
         Export realm configuration from Keycloak.
 
@@ -475,20 +478,21 @@ class KeycloakAdminClient:
 
         Args:
             realm_name: Name of the realm to export
+            namespace: Origin namespace for rate limiting
 
         Returns:
             Complete realm configuration as RealmRepresentation or None if not found
 
         Example:
-            realm = client.export_realm("my-realm")
+            realm = await client.export_realm("my-realm", "default")
             if realm:
                 print(f"Realm {realm.realm} has {len(realm.clients or [])} clients")
         """
         logger.info(f"Exporting realm '{realm_name}'")
 
         try:
-            return self._make_validated_request(
-                "GET", f"realms/{realm_name}", response_model=RealmRepresentation
+            return await self._make_validated_request(
+                "GET", f"realms/{realm_name}", namespace, response_model=RealmRepresentation
             )
         except KeycloakAdminError as e:
             if e.status_code == 404:
@@ -497,8 +501,8 @@ class KeycloakAdminClient:
             logger.error(f"Failed to export realm '{realm_name}': {e}")
             return None
 
-    def get_realms(
-        self, brief_representation: bool = False
+    async def get_realms(
+        self, namespace: str, brief_representation: bool = False
     ) -> list[RealmRepresentation] | None:
         """
         Get all accessible realms from Keycloak.
@@ -507,13 +511,14 @@ class KeycloakAdminClient:
         Returns a list of accessible realms filtered by what the caller is allowed to view.
 
         Args:
+            namespace: Origin namespace for rate limiting
             brief_representation: If True, return brief representation of realms
 
         Returns:
             List of realm configurations as RealmRepresentation or None on error
 
         Example:
-            realms = client.get_realms()
+            realms = await client.get_realms("default")
             for realm in realms:
                 print(f"Realm: {realm.realm}, Enabled: {realm.enabled}")
         """
@@ -524,24 +529,24 @@ class KeycloakAdminClient:
             if brief_representation:
                 params["briefRepresentation"] = "true"
 
-            response = self._make_request("GET", "realms", params=params)
+            response = await self._make_request("GET", "realms", namespace, params=params)
 
-            if response.status_code == 200:
-                realms_data = response.json()
+            if response.status == 200:
+                realms_data = await response.json()
                 # Validate each realm with Pydantic
                 return [
                     RealmRepresentation.model_validate(realm) for realm in realms_data
                 ]
             else:
-                logger.error(f"Failed to get realms: HTTP {response.status_code}")
+                logger.error(f"Failed to get realms: HTTP {response.status}")
                 return None
 
         except Exception as e:
             logger.error(f"Failed to get realms: {e}")
             return None
 
-    def update_realm(
-        self, realm_name: str, realm_config: RealmRepresentation | dict[str, Any]
+    async def update_realm(
+        self, realm_name: str, realm_config: RealmRepresentation | dict[str, Any], namespace: str
     ) -> RealmRepresentation:
         """
         Update realm configuration.
@@ -549,6 +554,7 @@ class KeycloakAdminClient:
         Args:
             realm_name: Name of the realm to update
             realm_config: Updated realm configuration as RealmRepresentation or dict
+            namespace: Origin namespace for rate limiting
 
         Returns:
             Updated realm configuration as RealmRepresentation
@@ -563,36 +569,37 @@ class KeycloakAdminClient:
         logger.info(f"Updating realm: {realm_name}")
 
         # Use validated request
-        response = self._make_validated_request(
-            "PUT", f"realms/{realm_name}", request_model=realm_config
+        response = await self._make_validated_request(
+            "PUT", f"realms/{realm_name}", namespace, request_model=realm_config
         )
 
-        if response.status_code == 204:  # No content on successful update
+        if response.status == 204:  # No content on successful update
             # Return the updated config
             return realm_config
         else:
             raise KeycloakAdminError(
-                f"Failed to update realm: {response.status_code}",
-                response.status_code,
+                f"Failed to update realm: {response.status}",
+                response.status,
             )
 
     # Client Management Methods
 
-    def get_client_by_name(
-        self, client_id: str, realm_name: str = "master"
+    async def get_client_by_name(
+        self, client_id: str, realm_name: str, namespace: str
     ) -> ClientRepresentation | None:
         """
         Get a client by its client ID in the specified realm.
 
         Args:
             client_id: The client ID to search for
-            realm_name: Name of the realm (defaults to "master")
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
 
         Returns:
             Client data as ClientRepresentation if found, None otherwise
 
         Example:
-            client = admin_client.get_client_by_name("my-client", "my-realm")
+            client = await admin_client.get_client_by_name("my-client", "my-realm", "default")
             if client:
                 print(f"Client UUID: {client.id}, Enabled: {client.enabled}")
         """
@@ -600,8 +607,8 @@ class KeycloakAdminClient:
 
         try:
             # Get all clients in the realm
-            response = self._make_request("GET", f"realms/{realm_name}/clients")
-            clients_data = response.json()
+            response = await self._make_request("GET", f"realms/{realm_name}/clients", namespace)
+            clients_data = await response.json()
 
             # Find client by clientId and validate
             for client_data in clients_data:
@@ -618,33 +625,36 @@ class KeycloakAdminClient:
             logger.error(f"Failed to get client '{client_id}': {e}")
             return None
 
-    def get_client_uuid(self, client_id: str, realm_name: str = "master") -> str | None:
+    async def get_client_uuid(self, client_id: str, realm_name: str, namespace: str) -> str | None:
         """
         Get client UUID by client ID in the specified realm.
 
         Args:
             client_id: The client ID to search for
-            realm_name: Name of the realm (defaults to "master")
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
 
         Returns:
             Client UUID if found, None otherwise
         """
-        client = self.get_client_by_name(client_id, realm_name)
+        client = await self.get_client_by_name(client_id, realm_name, namespace)
         if client:
             return client.id
         return None
 
-    def create_client(
+    async def create_client(
         self,
         client_config: ClientRepresentation | dict[str, Any],
-        realm_name: str = "master",
+        realm_name: str,
+        namespace: str,
     ) -> str | None:
         """
         Create a new client in the specified realm.
 
         Args:
             client_config: Client configuration as ClientRepresentation or dict
-            realm_name: Name of the realm (defaults to "master")
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
 
         Returns:
             Client UUID if successful, None otherwise
@@ -660,11 +670,11 @@ class KeycloakAdminClient:
         logger.info(f"Creating client '{client_id}' in realm '{realm_name}'")
 
         try:
-            response = self._make_validated_request(
-                "POST", f"realms/{realm_name}/clients", request_model=client_config
+            response = await self._make_validated_request(
+                "POST", f"realms/{realm_name}/clients", namespace, request_model=client_config
             )
 
-            if response.status_code == 201:
+            if response.status == 201:
                 # Get the created client UUID from Location header
                 location = response.headers.get("Location", "")
                 created_client_uuid = location.split("/")[-1] if location else None
@@ -674,7 +684,7 @@ class KeycloakAdminClient:
                 return created_client_uuid
             else:
                 logger.error(
-                    f"Failed to create client '{client_id}': {response.status_code}"
+                    f"Failed to create client '{client_id}': {response.status}"
                 )
                 return None
 
@@ -682,11 +692,12 @@ class KeycloakAdminClient:
             logger.error(f"Failed to create client '{client_id}': {e}")
             return None
 
-    def update_client(
+    async def update_client(
         self,
         client_uuid: str,
         client_config: ClientRepresentation | dict[str, Any],
-        realm_name: str = "master",
+        realm_name: str,
+        namespace: str,
     ) -> bool:
         """
         Update an existing client configuration.
@@ -694,7 +705,8 @@ class KeycloakAdminClient:
         Args:
             client_uuid: The UUID of the client to update
             client_config: Updated client configuration as ClientRepresentation or dict
-            realm_name: Name of the realm (defaults to "master")
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
 
         Returns:
             True if successful
@@ -712,19 +724,20 @@ class KeycloakAdminClient:
         )
 
         try:
-            response = self._make_validated_request(
+            response = await self._make_validated_request(
                 "PUT",
                 f"realms/{realm_name}/clients/{client_uuid}",
+                namespace,
                 request_model=client_config,
             )
 
-            if response.status_code == 204:
+            if response.status == 204:
                 logger.info(f"Successfully updated client '{client_id}'")
                 return True
             else:
-                error_msg = f"Failed to update client '{client_id}': HTTP {response.status_code}"
+                error_msg = f"Failed to update client '{client_id}': HTTP {response.status}"
                 logger.error(error_msg)
-                raise KeycloakAdminError(error_msg, response.status_code)
+                raise KeycloakAdminError(error_msg, response.status)
 
         except KeycloakAdminError:
             raise
@@ -733,8 +746,8 @@ class KeycloakAdminClient:
             logger.error(error_msg)
             raise KeycloakAdminError(error_msg) from e
 
-    def get_client_secret(
-        self, client_id: str, realm_name: str = "master"
+    async def get_client_secret(
+        self, client_id: str, realm_name: str, namespace: str
     ) -> str | None:
         """
         Get the client secret for a confidential client.
@@ -762,7 +775,7 @@ class KeycloakAdminClient:
                 "GET", f"realms/{realm_name}/clients/{client_uuid}/client-secret"
             )
 
-            if response.status_code == 200:
+            if response.status == 200:
                 secret_data = response.json()
                 secret = secret_data.get("value")
                 if secret:
@@ -775,7 +788,7 @@ class KeycloakAdminClient:
                     return None
             else:
                 logger.error(
-                    f"Failed to get client secret for '{client_id}': {response.status_code}"
+                    f"Failed to get client secret for '{client_id}': {response.status}"
                 )
                 return None
 
@@ -783,8 +796,9 @@ class KeycloakAdminClient:
             logger.error(f"Failed to get client secret for '{client_id}': {e}")
             return None
 
-    def get_service_account_user(
+    async def get_service_account_user(
         self, client_uuid: str, realm_name: str = "master"
+
     ) -> UserRepresentation:
         """Get the service account user for a client.
 
@@ -825,8 +839,9 @@ class KeycloakAdminClient:
                 ) from e
             raise
 
-    def get_realm_role(
+    async def get_realm_role(
         self, role_name: str, realm_name: str = "master"
+
     ) -> RoleRepresentation | None:
         """Get a realm role by name.
 
@@ -858,8 +873,9 @@ class KeycloakAdminClient:
                 return None
             raise
 
-    def get_client_role(
+    async def get_client_role(
         self, client_uuid: str, role_name: str, realm_name: str = "master"
+
     ) -> RoleRepresentation | None:
         """Get a client role by name.
 
@@ -894,8 +910,9 @@ class KeycloakAdminClient:
                 return None
             raise
 
-    def assign_realm_roles_to_user(
+    async def assign_realm_roles_to_user(
         self, user_id: str, role_names: list[str], realm_name: str = "master"
+
     ) -> None:
         """Assign realm-level roles to a user.
 
@@ -942,10 +959,10 @@ class KeycloakAdminClient:
                 json=roles_data,
             )
 
-            if response.status_code not in (200, 204):
+            if response.status not in (200, 204):
                 raise KeycloakAdminError(
                     f"Failed to assign realm roles to user: {response.text}",
-                    status_code=response.status_code,
+                    status_code=response.status,
                 )
 
             logger.info(
@@ -957,12 +974,13 @@ class KeycloakAdminClient:
             logger.error(f"Failed to assign realm roles to user {user_id}: {e}")
             raise KeycloakAdminError(f"Failed to assign realm roles: {e}") from e
 
-    def assign_client_roles_to_user(
+    async def assign_client_roles_to_user(
         self,
         user_id: str,
         client_uuid: str,
         role_names: list[str],
         realm_name: str = "master",
+
     ) -> None:
         """Assign client-level roles to a user.
 
@@ -1013,10 +1031,10 @@ class KeycloakAdminClient:
                 json=roles_data,
             )
 
-            if response.status_code not in (200, 204):
+            if response.status not in (200, 204):
                 raise KeycloakAdminError(
                     f"Failed to assign client roles to user: {response.text}",
-                    status_code=response.status_code,
+                    status_code=response.status,
                 )
 
             logger.info(
@@ -1028,7 +1046,7 @@ class KeycloakAdminClient:
             logger.error(f"Failed to assign client roles to user {user_id}: {e}")
             raise KeycloakAdminError(f"Failed to assign client roles: {e}") from e
 
-    def delete_client(self, client_id: str, realm_name: str = "master") -> bool:
+    async def delete_client(self, client_id: str, realm_name: str, namespace: str) -> bool:
         """
         Delete a client from the specified realm.
 
@@ -1054,12 +1072,12 @@ class KeycloakAdminClient:
                 "DELETE", f"realms/{realm_name}/clients/{client_uuid}"
             )
 
-            if response.status_code == 204:
+            if response.status == 204:
                 logger.info(f"Successfully deleted client '{client_id}'")
                 return True
             else:
                 logger.error(
-                    f"Failed to delete client '{client_id}': {response.status_code}"
+                    f"Failed to delete client '{client_id}': {response.status}"
                 )
                 return False
 
@@ -1067,8 +1085,8 @@ class KeycloakAdminClient:
             logger.error(f"Failed to delete client '{client_id}': {e}")
             return False
 
-    def regenerate_client_secret(
-        self, client_id: str, realm_name: str = "master"
+    async def regenerate_client_secret(
+        self, client_id: str, realm_name: str, namespace: str
     ) -> str | None:
         """
         Regenerate the client secret for a confidential client.
@@ -1086,21 +1104,22 @@ class KeycloakAdminClient:
 
         try:
             # First get the client UUID
-            client = self.get_client_by_name(client_id, realm_name)
+            client = await self.get_client_by_name(client_id, realm_name, namespace)
             if not client:
                 logger.error(f"Client '{client_id}' not found")
                 return None
 
-            client_uuid = client["id"]
+            client_uuid = client.id
 
             # Regenerate the client secret
-            response = self._make_request(
+            response = await self._make_request(
                 "POST",
                 f"realms/{realm_name}/clients/{client_uuid}/client-secret",
+                namespace,
             )
 
-            if response.status_code == 200:
-                secret_data = response.json()
+            if response.status == 200:
+                secret_data = await response.json()
                 new_secret = secret_data.get("value")
                 if new_secret:
                     logger.info(
@@ -1112,7 +1131,7 @@ class KeycloakAdminClient:
                     return None
             else:
                 logger.error(
-                    f"Failed to regenerate client secret for '{client_id}': {response.status_code}"
+                    f"Failed to regenerate client secret for '{client_id}': {response.status}"
                 )
                 return None
 
@@ -1122,7 +1141,8 @@ class KeycloakAdminClient:
 
     # Realm Management Methods
 
-    def delete_realm(self, realm_name: str) -> bool:
+    async def delete_realm(self, realm_name: str,
+        namespace: str) -> bool:
         """
         Delete a realm from Keycloak.
 
@@ -1141,12 +1161,12 @@ class KeycloakAdminClient:
         try:
             response = self._make_request("DELETE", f"realms/{realm_name}")
 
-            if response.status_code == 204:
+            if response.status == 204:
                 logger.info(f"Successfully deleted realm '{realm_name}'")
                 return True
             else:
                 logger.error(
-                    f"Failed to delete realm '{realm_name}': {response.status_code}"
+                    f"Failed to delete realm '{realm_name}': {response.status}"
                 )
                 return False
 
@@ -1154,7 +1174,7 @@ class KeycloakAdminClient:
             logger.error(f"Failed to delete realm '{realm_name}': {e}")
             return False
 
-    def get_realm_clients(self, realm_name: str) -> list[ClientRepresentation]:
+    async def get_realm_clients(self, realm_name: str, namespace: str) -> list[ClientRepresentation]:
         """
         Get all clients in a realm.
 
@@ -1174,7 +1194,7 @@ class KeycloakAdminClient:
         try:
             response = self._make_request("GET", f"realms/{realm_name}/clients")
 
-            if response.status_code == 200:
+            if response.status == 200:
                 clients_data = response.json()
                 logger.info(
                     f"Found {len(clients_data)} clients in realm '{realm_name}'"
@@ -1186,7 +1206,7 @@ class KeycloakAdminClient:
                 ]
             else:
                 logger.error(
-                    f"Failed to get clients for realm '{realm_name}': {response.status_code}"
+                    f"Failed to get clients for realm '{realm_name}': {response.status}"
                 )
                 return []
 
@@ -1194,7 +1214,7 @@ class KeycloakAdminClient:
             logger.error(f"Failed to get clients for realm '{realm_name}': {e}")
             return []
 
-    def update_realm_themes(self, realm_name: str, themes: dict[str, Any]) -> bool:
+    async def update_realm_themes(self, realm_name: str, themes: dict[str, Any], namespace: str) -> bool:
         """
         Update realm theme configuration.
 
@@ -1222,21 +1242,22 @@ class KeycloakAdminClient:
                 "PUT", f"realms/{realm_name}", json=realm_config
             )
 
-            if response.status_code == 204:
+            if response.status == 204:
                 logger.info(f"Successfully updated themes for realm '{realm_name}'")
                 return True
             else:
-                logger.error(f"Failed to update themes: {response.status_code}")
+                logger.error(f"Failed to update themes: {response.status}")
                 return False
 
         except Exception as e:
             logger.error(f"Failed to update realm themes: {e}")
             return False
 
-    def configure_authentication_flow(
+    async def configure_authentication_flow(
         self,
         realm_name: str,
         flow_config: AuthenticationFlowRepresentation | dict[str, Any],
+
     ) -> bool:
         """
         Configure authentication flow for a realm.
@@ -1273,14 +1294,14 @@ class KeycloakAdminClient:
                 request_model=flow_config,
             )
 
-            if response.status_code in [201, 204]:
+            if response.status in [201, 204]:
                 logger.info(
                     f"Successfully configured authentication flow '{flow_alias}'"
                 )
                 return True
             else:
                 logger.error(
-                    f"Failed to configure authentication flow: {response.status_code}"
+                    f"Failed to configure authentication flow: {response.status}"
                 )
                 return False
 
@@ -1288,10 +1309,11 @@ class KeycloakAdminClient:
             logger.error(f"Failed to configure authentication flow: {e}")
             return False
 
-    def configure_identity_provider(
+    async def configure_identity_provider(
         self,
         realm_name: str,
         provider_config: IdentityProviderRepresentation | dict[str, Any],
+
     ) -> bool:
         """
         Configure identity provider for a realm.
@@ -1331,14 +1353,14 @@ class KeycloakAdminClient:
                 request_model=provider_config,
             )
 
-            if response.status_code in [201, 204]:
+            if response.status in [201, 204]:
                 logger.info(
                     f"Successfully configured identity provider '{provider_alias}'"
                 )
                 return True
             else:
                 logger.error(
-                    f"Failed to configure identity provider: {response.status_code}"
+                    f"Failed to configure identity provider: {response.status}"
                 )
                 return False
 
@@ -1346,10 +1368,11 @@ class KeycloakAdminClient:
             logger.error(f"Failed to configure identity provider: {e}")
             return False
 
-    def configure_user_federation(
+    async def configure_user_federation(
         self,
         realm_name: str,
         federation_config: ComponentRepresentation | dict[str, Any],
+
     ) -> bool:
         """
         Configure user federation for a realm.
@@ -1388,14 +1411,14 @@ class KeycloakAdminClient:
                 request_model=federation_config,
             )
 
-            if response.status_code in [201, 204]:
+            if response.status in [201, 204]:
                 logger.info(
                     f"Successfully configured user federation '{federation_name}'"
                 )
                 return True
             else:
                 logger.error(
-                    f"Failed to configure user federation: {response.status_code}"
+                    f"Failed to configure user federation: {response.status}"
                 )
                 return False
 
@@ -1403,7 +1426,8 @@ class KeycloakAdminClient:
             logger.error(f"Failed to configure user federation: {e}")
             return False
 
-    def backup_realm(self, realm_name: str) -> dict[str, Any] | None:
+    async def backup_realm(self, realm_name: str,
+        namespace: str) -> dict[str, Any] | None:
         """
         Create a backup of realm configuration.
 
@@ -1429,14 +1453,14 @@ class KeycloakAdminClient:
             flows_response = self._make_request(
                 "GET", f"realms/{realm_name}/authentication/flows"
             )
-            flows = flows_response.json() if flows_response.status_code == 200 else []
+            flows = await flows_response.json() if flows_response.status == 200 else []
 
             # Get identity providers
             idp_response = self._make_request(
                 "GET", f"realms/{realm_name}/identity-provider/instances"
             )
             identity_providers = (
-                idp_response.json() if idp_response.status_code == 200 else []
+                await idp_response.json() if idp_response.status == 200 else []
             )
 
             # Get user federation
@@ -1445,8 +1469,8 @@ class KeycloakAdminClient:
                 f"realms/{realm_name}/components?type=org.keycloak.storage.UserStorageProvider",
             )
             user_federation = (
-                federation_response.json()
-                if federation_response.status_code == 200
+                await federation_response.json()
+                if federation_response.status == 200
                 else []
             )
 
@@ -1468,8 +1492,9 @@ class KeycloakAdminClient:
             return None
 
     # Protocol Mappers API methods
-    def get_client_protocol_mappers(
+    async def get_client_protocol_mappers(
         self, client_uuid: str, realm_name: str = "master"
+
     ) -> list[ProtocolMapperRepresentation] | None:
         """
         Get all protocol mappers for a client.
@@ -1496,28 +1521,29 @@ class KeycloakAdminClient:
                 f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models",
             )
 
-            if response.status_code == 200:
+            if response.status == 200:
                 mappers_data = response.json()
                 # Validate each mapper with Pydantic
                 return [
                     ProtocolMapperRepresentation.model_validate(mapper)
                     for mapper in mappers_data
                 ]
-            elif response.status_code == 404:
+            elif response.status == 404:
                 logger.warning(f"Client {client_uuid} not found in realm {realm_name}")
                 return []
             else:
-                logger.error(f"Failed to get protocol mappers: {response.status_code}")
+                logger.error(f"Failed to get protocol mappers: {response.status}")
                 return None
         except Exception as e:
             logger.error(f"Failed to get client protocol mappers: {e}")
             return None
 
-    def create_client_protocol_mapper(
+    async def create_client_protocol_mapper(
         self,
         client_uuid: str,
         mapper_config: ProtocolMapperRepresentation | dict[str, Any],
         realm_name: str = "master",
+
     ) -> ProtocolMapperRepresentation | None:
         """
         Create a protocol mapper for a client.
@@ -1558,24 +1584,25 @@ class KeycloakAdminClient:
                 request_model=mapper_config,
             )
 
-            if response.status_code == 201:
+            if response.status == 201:
                 logger.info(f"Successfully created protocol mapper '{mapper_name}'")
                 return mapper_config
             else:
                 logger.error(
-                    f"Failed to create protocol mapper: {response.status_code}"
+                    f"Failed to create protocol mapper: {response.status}"
                 )
                 return None
         except Exception as e:
             logger.error(f"Failed to create protocol mapper: {e}")
             return None
 
-    def update_client_protocol_mapper(
+    async def update_client_protocol_mapper(
         self,
         client_uuid: str,
         mapper_id: str,
         mapper_config: ProtocolMapperRepresentation | dict[str, Any],
         realm_name: str = "master",
+
     ) -> bool:
         """
         Update a protocol mapper for a client.
@@ -1613,20 +1640,21 @@ class KeycloakAdminClient:
                 request_model=mapper_config,
             )
 
-            if response.status_code == 204:
+            if response.status == 204:
                 logger.info(f"Successfully updated protocol mapper '{mapper_name}'")
                 return True
             else:
                 logger.error(
-                    f"Failed to update protocol mapper: {response.status_code}"
+                    f"Failed to update protocol mapper: {response.status}"
                 )
                 return False
         except Exception as e:
             logger.error(f"Failed to update protocol mapper: {e}")
             return False
 
-    def delete_client_protocol_mapper(
+    async def delete_client_protocol_mapper(
         self, client_uuid: str, mapper_id: str, realm_name: str = "master"
+
     ) -> bool:
         """
         Delete a protocol mapper from a client.
@@ -1644,12 +1672,12 @@ class KeycloakAdminClient:
 
         try:
             response = self._make_request("DELETE", endpoint)
-            if response.status_code == 204:
+            if response.status == 204:
                 logger.info(f"Successfully deleted protocol mapper {mapper_id}")
                 return True
             else:
                 logger.error(
-                    f"Failed to delete protocol mapper: {response.status_code}"
+                    f"Failed to delete protocol mapper: {response.status}"
                 )
                 return False
         except Exception as e:
@@ -1657,8 +1685,9 @@ class KeycloakAdminClient:
             return False
 
     # Client Roles API methods
-    def get_client_roles(
+    async def get_client_roles(
         self, client_uuid: str, realm_name: str = "master"
+
     ) -> list[RoleRepresentation] | None:
         """
         Get all roles for a client.
@@ -1682,25 +1711,26 @@ class KeycloakAdminClient:
                 "GET", f"realms/{realm_name}/clients/{client_uuid}/roles"
             )
 
-            if response.status_code == 200:
+            if response.status == 200:
                 roles_data = response.json()
                 # Validate each role with Pydantic
                 return [RoleRepresentation.model_validate(role) for role in roles_data]
-            elif response.status_code == 404:
+            elif response.status == 404:
                 logger.warning(f"Client {client_uuid} not found in realm {realm_name}")
                 return []
             else:
-                logger.error(f"Failed to get client roles: {response.status_code}")
+                logger.error(f"Failed to get client roles: {response.status}")
                 return None
         except Exception as e:
             logger.error(f"Failed to get client roles: {e}")
             return None
 
-    def create_client_role(
+    async def create_client_role(
         self,
         client_uuid: str,
         role_config: RoleRepresentation | dict[str, Any],
         realm_name: str = "master",
+
     ) -> bool:
         """
         Create a role for a client.
@@ -1738,22 +1768,23 @@ class KeycloakAdminClient:
                 request_model=role_config,
             )
 
-            if response.status_code == 201:
+            if response.status == 201:
                 logger.info(f"Successfully created client role '{role_name}'")
                 return True
             else:
-                logger.error(f"Failed to create client role: {response.status_code}")
+                logger.error(f"Failed to create client role: {response.status}")
                 return False
         except Exception as e:
             logger.error(f"Failed to create client role: {e}")
             return False
 
-    def update_client_role(
+    async def update_client_role(
         self,
         client_uuid: str,
         role_name: str,
         role_config: RoleRepresentation | dict[str, Any],
         realm_name: str = "master",
+
     ) -> bool:
         """
         Update a role for a client.
@@ -1789,18 +1820,19 @@ class KeycloakAdminClient:
                 request_model=role_config,
             )
 
-            if response.status_code == 204:
+            if response.status == 204:
                 logger.info(f"Successfully updated client role '{role_name}'")
                 return True
             else:
-                logger.error(f"Failed to update client role: {response.status_code}")
+                logger.error(f"Failed to update client role: {response.status}")
                 return False
         except Exception as e:
             logger.error(f"Failed to update client role: {e}")
             return False
 
-    def delete_client_role(
+    async def delete_client_role(
         self, client_uuid: str, role_name: str, realm_name: str = "master"
+
     ) -> bool:
         """
         Delete a role from a client.
@@ -1818,37 +1850,39 @@ class KeycloakAdminClient:
 
         try:
             response = self._make_request("DELETE", endpoint)
-            if response.status_code == 204:
+            if response.status == 204:
                 logger.info(f"Successfully deleted client role '{role_name}'")
                 return True
             else:
-                logger.error(f"Failed to delete client role: {response.status_code}")
+                logger.error(f"Failed to delete client role: {response.status}")
                 return False
         except Exception as e:
             logger.error(f"Failed to delete client role: {e}")
             return False
 
 
-def get_keycloak_admin_client(
-    keycloak_name: str, namespace: str, verify_ssl: bool = False
+async def get_keycloak_admin_client(
+    keycloak_name: str, 
+    namespace: str, 
+    rate_limiter: "RateLimiter | None" = None,
+    verify_ssl: bool = False
 ) -> KeycloakAdminClient:
     """
-        Factory function to create KeycloakAdminClient for a specific instance.
-
-        This function handles:
-        - Looking up Keycloak instance details from Kubernetes
-        - Retrieving admin credentials from secrets
-        - Creating configured admin client
-
-        Args:
-            keycloak_name: Name of the Keycloak instance
-            namespace: Namespace where the Keycloak instance exists
-            verify_ssl: Whether to verify SSL certificates (default: False for development)
-
-        Returns:
-            Configured KeycloakAdminClient instance
-
     Factory function to create KeycloakAdminClient for a specific instance.
+
+    This function handles:
+    - Looking up Keycloak instance details from Kubernetes
+    - Retrieving admin credentials from secrets
+    - Creating configured admin client with rate limiting
+
+    Args:
+        keycloak_name: Name of the Keycloak instance
+        namespace: Namespace where the Keycloak instance exists
+        rate_limiter: Optional rate limiter for API throttling
+        verify_ssl: Whether to verify SSL certificates (default: False for development)
+
+    Returns:
+        Configured KeycloakAdminClient instance
     """
     from kubernetes import client as k8s_client
 
@@ -1906,10 +1940,11 @@ def get_keycloak_admin_client(
             username=username,
             password=password,
             verify_ssl=verify_ssl,
+            rate_limiter=rate_limiter,
         )
 
         # Test authentication
-        admin_client.authenticate()
+        await admin_client.authenticate()
 
         logger.info(f"Successfully created admin client for {keycloak_name}")
         return admin_client
