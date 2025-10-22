@@ -176,7 +176,9 @@ class RateLimiter:
         
         # Acquire namespace token first (more restrictive)
         namespace_bucket = await self._get_namespace_bucket(namespace)
+        namespace_start = time.monotonic()
         namespace_acquired = await namespace_bucket.acquire(timeout=timeout)
+        namespace_wait = time.monotonic() - namespace_start
         
         if not namespace_acquired:
             elapsed = time.monotonic() - start_time
@@ -184,17 +186,25 @@ class RateLimiter:
                 f"Namespace rate limit timeout for '{namespace}' "
                 f"after {elapsed:.2f}s"
             )
+            # Record timeout metric
+            self._record_timeout(namespace, "namespace")
             raise TimeoutError(
                 f"Namespace rate limit timeout for '{namespace}' "
                 f"(limit: {self.namespace_rate} req/s)"
             )
+        
+        # Record namespace wait time
+        self._record_wait_time(namespace, "namespace", namespace_wait)
+        self._record_acquisition(namespace, "namespace")
         
         # Calculate remaining timeout
         elapsed = time.monotonic() - start_time
         remaining_timeout = max(0.1, timeout - elapsed)
         
         # Acquire global token
+        global_start = time.monotonic()
         global_acquired = await self.global_bucket.acquire(timeout=remaining_timeout)
+        global_wait = time.monotonic() - global_start
         
         if not global_acquired:
             elapsed = time.monotonic() - start_time
@@ -202,10 +212,16 @@ class RateLimiter:
                 f"Global rate limit timeout after {elapsed:.2f}s "
                 f"(namespace: {namespace})"
             )
+            # Record timeout metric
+            self._record_timeout(namespace, "global")
             raise TimeoutError(
                 f"Global rate limit timeout "
                 f"(limit: {self.global_bucket.rate} req/s)"
             )
+        
+        # Record global wait time
+        self._record_wait_time(namespace, "global", global_wait)
+        self._record_acquisition(namespace, "global")
         
         # Both tokens acquired successfully
         logger.debug(f"Rate limit tokens acquired for namespace '{namespace}'")
@@ -267,3 +283,27 @@ class RateLimiter:
                 )
         
         return removed
+    
+    def _record_wait_time(self, namespace: str, limit_type: str, duration: float) -> None:
+        """Record wait time metric."""
+        try:
+            from keycloak_operator.observability.metrics import RATE_LIMIT_WAIT_SECONDS
+            RATE_LIMIT_WAIT_SECONDS.labels(namespace=namespace, limit_type=limit_type).observe(duration)
+        except Exception:
+            pass  # Gracefully handle metrics errors
+    
+    def _record_acquisition(self, namespace: str, limit_type: str) -> None:
+        """Record successful token acquisition."""
+        try:
+            from keycloak_operator.observability.metrics import RATE_LIMIT_ACQUIRED_TOTAL
+            RATE_LIMIT_ACQUIRED_TOTAL.labels(namespace=namespace, limit_type=limit_type).inc()
+        except Exception:
+            pass
+    
+    def _record_timeout(self, namespace: str, limit_type: str) -> None:
+        """Record rate limit timeout."""
+        try:
+            from keycloak_operator.observability.metrics import RATE_LIMIT_TIMEOUTS_TOTAL
+            RATE_LIMIT_TIMEOUTS_TOTAL.labels(namespace=namespace, limit_type=limit_type).inc()
+        except Exception:
+            pass
