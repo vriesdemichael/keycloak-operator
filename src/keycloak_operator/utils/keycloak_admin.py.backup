@@ -9,18 +9,18 @@ The client handles:
 - Session management and token refresh
 - Error handling and retry logic
 - Type-safe API interactions
-- Rate limiting for API protection
 """
 
-import asyncio
 import logging
-import time
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urljoin
 
-import aiohttp
+import requests
+from pybreaker import CircuitBreaker, CircuitBreakerError
 from pydantic import BaseModel
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from keycloak_operator.models.keycloak_api import (
     AuthenticationFlowRepresentation,
@@ -32,12 +32,6 @@ from keycloak_operator.models.keycloak_api import (
     RoleRepresentation,
     UserRepresentation,
 )
-
-# Import RateLimiter - use TYPE_CHECKING to avoid circular import
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from keycloak_operator.utils.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +82,6 @@ class KeycloakAdminClient:
         client_id: str = "admin-cli",
         verify_ssl: bool = True,
         timeout: int = 60,
-        rate_limiter: "RateLimiter | None" = None,
     ) -> None:
         """
         Initialize Keycloak Admin client.
@@ -101,7 +94,6 @@ class KeycloakAdminClient:
             client_id: Client ID for admin API access
             verify_ssl: Whether to verify SSL certificates
             timeout: Request timeout in seconds
-            rate_limiter: Optional rate limiter for API call throttling
         """
         self.server_url = server_url.rstrip("/")
         self.username = username
@@ -110,11 +102,41 @@ class KeycloakAdminClient:
         self.client_id = client_id
         self.verify_ssl = verify_ssl
         self.timeout = timeout
-        self.rate_limiter = rate_limiter
 
-        # Set up aiohttp session (created lazily on first request)
-        self._session: aiohttp.ClientSession | None = None
-        self._session_lock = asyncio.Lock()
+        # Set up requests session with proper configuration
+        self.session = requests.Session()
+
+        # Configure retry strategy with connection error handling
+        retry_strategy = Retry(
+            total=3,
+            status_forcelist=[429, 500, 502, 503, 504],
+            backoff_factor=1,
+            allowed_methods=[
+                "HEAD",
+                "GET",
+                "PUT",
+                "DELETE",
+                "OPTIONS",
+                "TRACE",
+                "POST",
+            ],
+            raise_on_status=False,  # Don't raise on retryable errors
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("http://", adapter)
+        self.session.mount("https://", adapter)
+
+        # Set session defaults
+        self.session.verify = verify_ssl
+        self.session.timeout = timeout
+
+        # Circuit breaker to prevent hammering Keycloak when it's down
+        # Opens after 5 consecutive failures, tries again after 60 seconds
+        self.breaker = CircuitBreaker(
+            fail_max=5,
+            reset_timeout=60,
+            name=f"keycloak-{server_url}",
+        )
 
         # Authentication state
         self.access_token: str | None = None
@@ -123,40 +145,11 @@ class KeycloakAdminClient:
 
         logger.info(f"Initialized Keycloak Admin client for {server_url}")
 
-    async def _get_session(self) -> aiohttp.ClientSession:
-        """Get or create aiohttp session (lazy initialization)."""
-        if self._session is None or self._session.closed:
-            async with self._session_lock:
-                if self._session is None or self._session.closed:
-                    # Create connector with SSL settings
-                    connector = aiohttp.TCPConnector(
-                        ssl=self.verify_ssl,
-                        limit=100,  # connection pool size
-                    )
-                    
-                    # Create timeout configuration
-                    timeout = aiohttp.ClientTimeout(total=self.timeout)
-                    
-                    self._session = aiohttp.ClientSession(
-                        connector=connector,
-                        timeout=timeout,
-                        headers={
-                            "Content-Type": "application/json",
-                        },
-                    )
-        return self._session
-
-    async def close(self) -> None:
-        """Close the aiohttp session. Call this when done with the client."""
-        if self._session and not self._session.closed:
-            await self._session.close()
-            self._session = None
-
-    async def authenticate(self) -> None:
+    def authenticate(self) -> None:
         """
-        Authenticate with Keycloak and obtain access tokens.
-        
-        Uses username/password grant to obtain access and refresh tokens.
+                Authenticate with Keycloak and obtain access tokens.
+
+        Authenticate with Keycloak using username/password and obtain access tokens.
         """
         auth_url = (
             f"{self.server_url}/realms/{self.admin_realm}/protocol/openid-connect/token"
@@ -170,46 +163,58 @@ class KeycloakAdminClient:
         }
 
         try:
-            session = await self._get_session()
-            
             # Make authentication request
-            async with session.post(auth_url, data=auth_data) as response:
-                response.raise_for_status()
-                token_data = await response.json()
+            response = self.session.post(auth_url, data=auth_data)
+            response.raise_for_status()
 
-            # Store tokens
+            token_data = response.json()
+
+            # Store tokens and set session headers
             self.access_token = token_data["access_token"]
             self.refresh_token = token_data.get("refresh_token")
 
             # Calculate expiration time
+            # expires_in is in seconds, convert to timestamp
+            import time
+
             self.token_expires_at = time.time() + token_data.get("expires_in", 300)
+
+            # Set authorization header for all future requests
+            self.session.headers.update(
+                {
+                    "Authorization": f"Bearer {self.access_token}",
+                    "Content-Type": "application/json",
+                }
+            )
 
             logger.debug("Successfully authenticated with Keycloak")
 
-        except aiohttp.ClientError as e:
+        except requests.RequestException as e:
             logger.error(f"Failed to authenticate with Keycloak: {e}")
             raise KeycloakAdminError(f"Authentication failed: {e}") from e
 
-    async def _ensure_authenticated(self) -> None:
+    def _ensure_authenticated(self) -> None:
         """
         Ensure we have a valid access token, refreshing if necessary.
         """
-        # If no token or token is expired (with 30s buffer)
+        import time
+
+        # If no token or token is expired
         if not self.access_token or (
             self.token_expires_at and time.time() >= self.token_expires_at - 30
         ):
             if self.refresh_token:
                 try:
                     # Try to refresh token
-                    await self._refresh_token()
+                    self._refresh_token()
                 except KeycloakAdminError:
                     # Refresh failed, re-authenticate
-                    await self.authenticate()
+                    self.authenticate()
             else:
                 # No refresh token, re-authenticate
-                await self.authenticate()
+                self.authenticate()
 
-    async def _refresh_token(self) -> None:
+    def _refresh_token(self) -> None:
         """
         Refresh the access token using the refresh token.
         """
@@ -227,114 +232,115 @@ class KeycloakAdminClient:
         }
 
         try:
-            session = await self._get_session()
-            
-            async with session.post(auth_url, data=refresh_data) as response:
-                response.raise_for_status()
-                token_data = await response.json()
+            response = self.session.post(auth_url, data=refresh_data)
+            response.raise_for_status()
+
+            token_data = response.json()
 
             # Update tokens and expiration
             self.access_token = token_data["access_token"]
             self.refresh_token = token_data.get("refresh_token")
+
+            import time
+
             self.token_expires_at = time.time() + token_data.get("expires_in", 300)
+
+            # Update session headers
+            self.session.headers.update(
+                {"Authorization": f"Bearer {self.access_token}"}
+            )
 
             logger.debug("Successfully refreshed access token")
 
-        except aiohttp.ClientError as e:
+        except requests.RequestException as e:
             logger.error(f"Failed to refresh token: {e}")
             raise KeycloakAdminError(f"Token refresh failed: {e}") from e
 
-    async def _make_request(
+    def _make_request(
         self,
         method: str,
         endpoint: str,
-        namespace: str,
         data: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
-    ) -> aiohttp.ClientResponse:
+    ) -> requests.Response:
         """
-        Make an authenticated request to the Keycloak Admin API.
+                Make an authenticated request to the Keycloak Admin API.
 
-        Args:
-            method: HTTP method (GET, POST, PUT, DELETE)
-            endpoint: API endpoint (relative to admin base)
-            namespace: Origin namespace for rate limiting
-            data: Request body data (deprecated, use json parameter)
-            json: JSON request body data
-            params: Query parameters
+                Args:
+                    method: HTTP method (GET, POST, PUT, DELETE)
+                    endpoint: API endpoint (relative to admin base)
+                    data: Request body data (deprecated, use json parameter)
+                    json: JSON request body data
+                    params: Query parameters
 
-        Returns:
-            Response object (aiohttp.ClientResponse)
-            
-        Raises:
-            KeycloakAdminError: On API errors or rate limit timeouts
+                Returns:
+                    Response object
+
+        Make an authenticated request to the Keycloak Admin API with proper error handling.
         """
-        # Apply rate limiting before making request
-        if self.rate_limiter:
-            try:
-                await self.rate_limiter.acquire(namespace)
-            except TimeoutError as e:
-                logger.warning(f"Rate limit timeout for namespace '{namespace}': {e}")
-                raise KeycloakAdminError(
-                    f"Rate limit timeout: {e}",
-                    status_code=429,
-                ) from e
-
-        # Ensure we have valid authentication
-        await self._ensure_authenticated()
+        self._ensure_authenticated()
 
         url = urljoin(f"{self.server_url}/admin/", endpoint.lstrip("/"))
-        session = await self._get_session()
 
         try:
-            # Prepare headers with auth token
-            headers = {"Authorization": f"Bearer {self.access_token}"}
-            
-            # Make the request
-            async with session.request(
-                method=method,
-                url=url,
-                json=json if json else data if data else None,
-                params=params,
-                headers=headers,
-            ) as response:
-                
-                # Handle 401 - token might be expired
-                if response.status == 401:
+            # Wrap HTTP call with circuit breaker to prevent hammering Keycloak when down
+            def make_http_request():
+                response = self.session.request(
+                    method=method,
+                    url=url,
+                    json=json if json else data if data else None,
+                    params=params,
+                )
+
+                # Handle common HTTP errors
+                if response.status_code == 401:
+                    # Token might be expired, try re-authenticating once
                     logger.warning("Received 401, attempting re-authentication")
-                    await self.authenticate()
-                    
-                    # Retry with new token
-                    headers = {"Authorization": f"Bearer {self.access_token}"}
-                    async with session.request(
+                    self.authenticate()
+                    # Retry the request
+                    response = self.session.request(
                         method=method,
                         url=url,
-                        json=json if json else data if data else None,
+                        json=data if data else None,
                         params=params,
-                        headers=headers,
-                    ) as retry_response:
-                        retry_response.raise_for_status()
-                        return retry_response
-                
+                    )
+
                 response.raise_for_status()
                 return response
 
-        except aiohttp.ClientResponseError as e:
-            # HTTP error with response
-            status_code = e.status
-            response_body: str | None = None
-            
-            try:
-                response_body = e.message or "<no message>"
-            except Exception:  # pragma: no cover
-                response_body = "<unavailable>"
+            # Call through circuit breaker
+            return self.breaker.call(make_http_request)
 
-            body_preview = (
-                response_body[:1024] + "...<truncated>"
-                if len(response_body) > 1024
-                else response_body
+        except CircuitBreakerError as e:
+            # Circuit breaker is open - Keycloak API is unavailable
+            logger.error(
+                f"Circuit breaker open for Keycloak at {self.server_url} - "
+                f"API temporarily unavailable after repeated failures"
             )
+            raise KeycloakAdminError(
+                f"Keycloak API circuit breaker open - service temporarily unavailable. "
+                f"The circuit breaker will retry after {self.breaker.reset_timeout} seconds.",
+                status_code=503,
+            ) from e
+        except requests.HTTPError as e:
+            status_code = getattr(e.response, "status_code", None)
+            response_body: str | None = None
+
+            if e.response is not None:
+                try:
+                    response_body = e.response.text
+                except Exception:  # pragma: no cover - defensive fallback
+                    response_body = "<unavailable>"
+
+            body_preview = None
+            if response_body is not None:
+                max_len = 1024
+                body_preview = (
+                    response_body
+                    if len(response_body) <= max_len
+                    else f"{response_body[:max_len]}...<truncated>"
+                )
 
             logger.error(
                 f"Request failed: {method} {url} - {e}",
@@ -348,20 +354,17 @@ class KeycloakAdminClient:
                 status_code=status_code,
                 response_body=response_body,
             ) from e
-            
-        except aiohttp.ClientError as e:
-            # Other client errors (connection, timeout, etc.)
+        except requests.RequestException as e:
             logger.error(f"Request failed: {method} {url} - {e}")
             raise KeycloakAdminError(
                 f"API request failed: {e}",
-                status_code=None,
+                status_code=getattr(getattr(e, "response", None), "status_code", None),
             ) from e
 
-    async def _make_validated_request(
+    def _make_validated_request(
         self,
         method: str,
         endpoint: str,
-        namespace: str,
         request_model: BaseModel | None = None,
         response_model: type[BaseModel] | None = None,
         **kwargs: Any,
@@ -375,7 +378,6 @@ class KeycloakAdminClient:
         Args:
             method: HTTP method (GET, POST, PUT, DELETE)
             endpoint: API endpoint (relative to admin base)
-            namespace: Origin namespace for rate limiting
             request_model: Pydantic model instance to serialize as request body
             response_model: Pydantic model class to validate response data
             **kwargs: Additional arguments passed to _make_request
@@ -396,13 +398,12 @@ class KeycloakAdminClient:
             kwargs["json"] = request_model.model_dump(exclude_none=True, by_alias=True)
 
         # Make the HTTP request
-        response = await self._make_request(method, endpoint, namespace, **kwargs)
+        response = self._make_request(method, endpoint, **kwargs)
 
         # Validate and parse response
-        if response_model is not None and response.status < 300:
+        if response_model is not None and response.status_code < 300:
             # Parse response JSON and validate against model
-            response_data = await response.json()
-            return response_model.model_validate(response_data)
+            return response_model.model_validate(response.json())
 
         return response
 
