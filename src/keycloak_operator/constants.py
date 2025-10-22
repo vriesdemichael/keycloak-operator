@@ -8,6 +8,8 @@ This module defines all constant values used by the operator including:
 - Error messages and status constants
 """
 
+import os
+
 # Finalizer constants for cleanup coordination
 # These prevent Kubernetes from deleting resources until cleanup is complete
 KEYCLOAK_FINALIZER = "keycloak.mdvr.nl/cleanup"
@@ -88,11 +90,7 @@ DEFAULT_BACKOFF_FACTOR = 2.0
 DEFAULT_INITIAL_DELAY = 1.0
 
 # Rate limiting configuration
-import os
-
-RATE_LIMIT_GLOBAL_TPS = float(
-    os.getenv("KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS", "50")
-)
+RATE_LIMIT_GLOBAL_TPS = float(os.getenv("KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS", "50"))
 RATE_LIMIT_GLOBAL_BURST = int(os.getenv("KEYCLOAK_API_GLOBAL_BURST", "100"))
 RATE_LIMIT_NAMESPACE_TPS = float(
     os.getenv("KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS", "5")

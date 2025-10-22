@@ -14,20 +14,19 @@ ensuring that the desired state is maintained regardless of restart or failure.
 
 from __future__ import annotations
 
+import asyncio
 import logging
+import random
 from collections.abc import MutableMapping
 from datetime import UTC
 from typing import Any, Protocol, TypedDict, cast
 
 import kopf
-import random
-import asyncio
-from keycloak_operator.constants import RECONCILE_JITTER_MAX
 from kopf import Diff, Meta
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.constants import KEYCLOAK_FINALIZER
+from keycloak_operator.constants import KEYCLOAK_FINALIZER, RECONCILE_JITTER_MAX
 from keycloak_operator.services import KeycloakInstanceReconciler
 from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 from keycloak_operator.utils.kubernetes import (
@@ -154,8 +153,6 @@ async def ensure_keycloak_instance(
 
                 await asyncio.sleep(jitter)
 
-                
-
                 reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
                 await reconciler.cleanup_resources(
                     name=name, namespace=namespace, spec=spec
@@ -194,8 +191,6 @@ async def ensure_keycloak_instance(
     jitter = random.uniform(0, RECONCILE_JITTER_MAX)
 
     await asyncio.sleep(jitter)
-
-    
 
     reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
@@ -248,8 +243,6 @@ async def update_keycloak_instance(
     jitter = random.uniform(0, RECONCILE_JITTER_MAX)
 
     await asyncio.sleep(jitter)
-
-    
 
     reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
@@ -309,8 +302,6 @@ async def delete_keycloak_instance(
         jitter = random.uniform(0, RECONCILE_JITTER_MAX)
 
         await asyncio.sleep(jitter)
-
-        
 
         reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
         await reconciler.cleanup_resources(name=name, namespace=namespace, spec=spec)
@@ -518,9 +509,9 @@ def monitor_keycloak_health(
 
                 # Perform basic connectivity test
                 try:
-                    admin_client.authenticate()
+                    await admin_client.authenticate()
                     # Check if master realm is accessible
-                    master_realm = admin_client.get_realm("master")
+                    master_realm = await admin_client.get_realm("master", namespace)
                     if not master_realm:
                         logger.warning(
                             f"Master realm not accessible for Keycloak {name}"

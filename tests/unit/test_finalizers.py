@@ -198,14 +198,16 @@ class TestRealmFinalizers:
 
         async def mock_factory(*args, **kwargs):
             return mock_keycloak_admin
-        
+
         realm_reconciler.keycloak_admin_factory = mock_factory
 
         await realm_reconciler.cleanup_resources(
             "test-realm", "test-namespace", spec, status=MagicMock()
         )
 
-        mock_keycloak_admin.delete_realm.assert_called_with("test-realm", "test-namespace")
+        mock_keycloak_admin.delete_realm.assert_called_with(
+            "test-realm", "test-namespace"
+        )
 
     @pytest.mark.asyncio
     async def test_realm_cleanup_keycloak_unreachable(self, realm_reconciler):

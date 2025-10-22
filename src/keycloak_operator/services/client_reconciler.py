@@ -442,20 +442,23 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Check if client already exists in the specified realm
         existing_client = admin_client.get_client_by_name(
-            spec.client_id, actual_realm_name
-        , namespace)
+            spec.client_id, actual_realm_name, namespace
+        )
 
         if existing_client:
             self.logger.info(f"Client {spec.client_id} already exists, updating...")
             admin_client.update_client(
-                existing_client.id, spec.to_keycloak_config(), actual_realm_name
-            , namespace)
+                existing_client.id,
+                spec.to_keycloak_config(),
+                actual_realm_name,
+                namespace,
+            )
             return existing_client.id
         else:
             self.logger.info(f"Creating new client {spec.client_id}")
             client_response = admin_client.create_client(
-                spec.to_keycloak_config(), actual_realm_name
-            , namespace)
+                spec.to_keycloak_config(), actual_realm_name, namespace
+            )
             # Extract client UUID from response or get it by name again
             if client_response:
                 # create_client returns UUID string directly
@@ -463,8 +466,8 @@ class KeycloakClientReconciler(BaseReconciler):
             else:
                 # Fallback: get client by name to retrieve UUID
                 created_client = admin_client.get_client_by_name(
-                    spec.client_id, actual_realm_name
-                , namespace)
+                    spec.client_id, actual_realm_name, namespace
+                )
                 return created_client.id if created_client else "unknown"
 
     async def configure_oauth_settings(
@@ -543,8 +546,8 @@ class KeycloakClientReconciler(BaseReconciler):
 
             # Update the client with OAuth2 settings
             success = admin_client.update_client(
-                client_uuid, client_config, actual_realm_name
-            , namespace)
+                client_uuid, client_config, actual_realm_name, namespace
+            )
             if success:
                 self.logger.info(
                     f"Successfully configured OAuth settings for client {spec.client_id}"
@@ -589,8 +592,8 @@ class KeycloakClientReconciler(BaseReconciler):
                 keycloak_name, keycloak_namespace
             )
             client_secret = admin_client.get_client_secret(
-                spec.client_id, actual_realm_name
-            , namespace)
+                spec.client_id, actual_realm_name, namespace
+            )
             self.logger.info("Retrieved client secret for confidential client")
 
         # Get Keycloak instance for endpoint construction
@@ -974,8 +977,8 @@ class KeycloakClientReconciler(BaseReconciler):
                     )
 
                     target_client = admin_client.get_client_by_name(
-                        target_client_id, actual_realm_name
-                    , namespace)
+                        target_client_id, actual_realm_name, namespace
+                    )
                     if not target_client:
                         self.logger.warning(
                             f"Target client '{target_client_id}' not found in realm '{actual_realm_name}'; skipping role assignment"
@@ -1121,8 +1124,8 @@ class KeycloakClientReconciler(BaseReconciler):
                 )
                 # Get client UUID for protocol mapper configuration
                 client_uuid = admin_client.get_client_uuid(
-                    new_client_spec.client_id, actual_realm_name
-                , namespace)
+                    new_client_spec.client_id, actual_realm_name, namespace
+                )
                 if client_uuid:
                     await self.configure_protocol_mappers(
                         new_client_spec, client_uuid, name, namespace
@@ -1136,8 +1139,8 @@ class KeycloakClientReconciler(BaseReconciler):
                 self.logger.info(f"Client roles changed: {operation} at {field_path}")
                 # Get client UUID for role management
                 client_uuid = admin_client.get_client_uuid(
-                    new_client_spec.client_id, actual_realm_name
-                , namespace)
+                    new_client_spec.client_id, actual_realm_name, namespace
+                )
                 if client_uuid:
                     await self.manage_client_roles(
                         new_client_spec, client_uuid, name, namespace
@@ -1154,7 +1157,10 @@ class KeycloakClientReconciler(BaseReconciler):
             )
             try:
                 await admin_client.update_client(
-                    new_client_spec.client_id, new_client_spec.to_keycloak_config(), actual_realm_name, namespace
+                    new_client_spec.client_id,
+                    new_client_spec.to_keycloak_config(),
+                    actual_realm_name,
+                    namespace,
                 )
                 self.logger.info("Client configuration updated successfully")
             except Exception as e:
@@ -1168,8 +1174,8 @@ class KeycloakClientReconciler(BaseReconciler):
             self.logger.info("Regenerating client secret")
             # Generate new secret in Keycloak
             new_secret = admin_client.regenerate_client_secret(
-                new_client_spec.client_id, actual_realm_name
-            , namespace)
+                new_client_spec.client_id, actual_realm_name, namespace
+            )
 
             # Update Kubernetes secret
             secret_name = f"{name}-credentials"
@@ -1300,7 +1306,9 @@ class KeycloakClientReconciler(BaseReconciler):
                 keycloak_name, keycloak_namespace
             )
 
-            admin_client.delete_client(client_spec.client_id, actual_realm_name, namespace)
+            admin_client.delete_client(
+                client_spec.client_id, actual_realm_name, namespace
+            )
             self.logger.info(
                 f"Deleted client {client_spec.client_id} from Keycloak realm {actual_realm_name}"
             )

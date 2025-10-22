@@ -178,21 +178,28 @@ class TestServiceAccountRoles:
                 username=username,
                 password=password,
             )
-            admin_client.authenticate()
+            await admin_client.authenticate()
 
+            # Create realm role using async HTTP call
             role_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/roles"
-            response = admin_client.session.post(
-                role_endpoint,
-                json={
-                    "name": service_account_role,
-                    "description": "integration-test role",
-                },
-                timeout=admin_client.timeout,
-            )
-            if response.status_code not in (201, 409):
-                pytest.fail(
-                    f"Failed to ensure realm role exists: HTTP {response.status_code} {response.text}"
-                )
+            import aiohttp
+
+            async with aiohttp.ClientSession() as session:
+                headers = {"Authorization": f"Bearer {admin_client.access_token}"}
+                async with session.post(
+                    role_endpoint,
+                    json={
+                        "name": service_account_role,
+                        "description": "integration-test role",
+                    },
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=admin_client.timeout),
+                ) as response:
+                    if response.status not in (201, 409):
+                        text = await response.text()
+                        pytest.fail(
+                            f"Failed to ensure realm role exists: HTTP {response.status} {text}"
+                        )
 
             # Create client and wait until Ready
             k8s_custom_objects.create_namespaced_custom_object(
@@ -205,28 +212,35 @@ class TestServiceAccountRoles:
 
             await _wait_resource_ready("keycloakclients", client_name)
 
-            client_repr = admin_client.get_client_by_name(client_name, realm_name)
+            client_repr = await admin_client.get_client_by_name(
+                client_name, realm_name, namespace
+            )
             assert client_repr, "Client not found in Keycloak"
             assert client_repr.id, "Client missing ID"
 
-            service_account_user = admin_client.get_service_account_user(
+            service_account_user = await admin_client.get_service_account_user(
                 client_repr.id, realm_name
             )
             user_id = service_account_user.id
             assert user_id, "Service account user missing identifier"
 
+            # Check role mappings using async HTTP call
             role_mapping_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
-            mapping_response = admin_client.session.get(
-                role_mapping_endpoint,
-                timeout=admin_client.timeout,
-            )
-            mapping_response.raise_for_status()
-            assigned_roles = {role["name"] for role in mapping_response.json()}
+            async with aiohttp.ClientSession() as session:
+                headers = {"Authorization": f"Bearer {admin_client.access_token}"}
+                async with session.get(
+                    role_mapping_endpoint,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=admin_client.timeout),
+                ) as mapping_response:
+                    mapping_response.raise_for_status()
+                    assigned_roles_data = await mapping_response.json()
+                    assigned_roles = {role["name"] for role in assigned_roles_data}
 
             assert service_account_role in assigned_roles
         finally:
-            if admin_client is not None:
-                admin_client.session.close()
+            # No session to close with async client
+            pass
 
             # Cleanup resources (client and realm only - shared Keycloak persists)
             with contextlib.suppress(ApiException):

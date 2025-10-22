@@ -452,9 +452,7 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Get Keycloak admin client
         admin_client = await self.keycloak_admin_factory(
-
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
         )
 
         # Extract CR UID for ownership tracking
@@ -653,9 +651,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
         admin_client = await self.keycloak_admin_factory(
-
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
         )
 
         try:
@@ -670,7 +666,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                 theme_config["email_theme"] = spec.themes.email_theme
 
             if theme_config:
-                admin_client.update_realm_themes(spec.realm_name, theme_config, namespace)
+                admin_client.update_realm_themes(
+                    spec.realm_name, theme_config, namespace
+                )
         except Exception as e:
             self.logger.warning(f"Failed to configure themes: {e}")
 
@@ -694,9 +692,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
         admin_client = await self.keycloak_admin_factory(
-
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
         )
 
         for flow_config in spec.authentication_flows:
@@ -709,7 +705,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(flow_config, "model_dump")
                     else flow_config,
                 )
-                admin_client.configure_authentication_flow(spec.realm_name, flow_dict, namespace)
+                admin_client.configure_authentication_flow(
+                    spec.realm_name, flow_dict, namespace
+                )
             except Exception as e:
                 self.logger.warning(f"Failed to configure authentication flow: {e}")
 
@@ -733,9 +731,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
         admin_client = await self.keycloak_admin_factory(
-
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
         )
 
         for idp_config in spec.identity_providers:
@@ -748,7 +744,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(idp_config, "model_dump")
                     else idp_config,
                 )
-                admin_client.configure_identity_provider(spec.realm_name, idp_dict, namespace)
+                admin_client.configure_identity_provider(
+                    spec.realm_name, idp_dict, namespace
+                )
             except Exception as e:
                 self.logger.warning(f"Failed to configure identity provider: {e}")
 
@@ -772,9 +770,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
         admin_client = await self.keycloak_admin_factory(
-
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
         )
 
         for federation_config in spec.user_federation:
@@ -787,7 +783,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(federation_config, "model_dump")
                     else federation_config,
                 )
-                admin_client.configure_user_federation(spec.realm_name, federation_dict, namespace)
+                admin_client.configure_user_federation(
+                    spec.realm_name, federation_dict, namespace
+                )
             except Exception as e:
                 self.logger.warning(f"Failed to configure user federation: {e}")
 
@@ -853,9 +851,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             target_namespace = operator_ref.namespace
             keycloak_name = "keycloak"  # Default Keycloak instance name
             admin_client = await self.keycloak_admin_factory(
-
                 keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
             )
 
             # Create realm backup
@@ -995,9 +991,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
         admin_client = await self.keycloak_admin_factory(
-
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
         )
 
         realm_name = new_realm_spec.realm_name
@@ -1040,7 +1034,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                             )
 
                         if theme_config:
-                            admin_client.update_realm_themes(realm_name, theme_config, namespace)
+                            admin_client.update_realm_themes(
+                                realm_name, theme_config, namespace
+                            )
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update themes: {e}")
@@ -1067,8 +1063,8 @@ class KeycloakRealmReconciler(BaseReconciler):
                             else flow_config,
                         )
                         admin_client.configure_authentication_flow(
-                            realm_name, flow_dict
-                        , namespace)
+                            realm_name, flow_dict, namespace
+                        )
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update authentication flows: {e}")
@@ -1083,7 +1079,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                             if hasattr(idp_config, "model_dump")
                             else idp_config,
                         )
-                        admin_client.configure_identity_provider(realm_name, idp_dict, namespace)
+                        admin_client.configure_identity_provider(
+                            realm_name, idp_dict, namespace
+                        )
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update identity providers: {e}")
@@ -1099,8 +1097,8 @@ class KeycloakRealmReconciler(BaseReconciler):
                             else federation_config,
                         )
                         admin_client.configure_user_federation(
-                            realm_name, federation_dict
-                        , namespace)
+                            realm_name, federation_dict, namespace
+                        )
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update user federation: {e}")
@@ -1166,9 +1164,7 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         try:
             admin_client = await self.keycloak_admin_factory(
-
                 keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
             )
 
             # Try to get realm
@@ -1244,9 +1240,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         try:
             keycloak_name = "keycloak"  # Default Keycloak instance name
             admin_client = await self.keycloak_admin_factory(
-
                 keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-
             )
 
             # Backup realm data if requested (only if spec parsed successfully)

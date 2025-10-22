@@ -29,6 +29,13 @@ import kopf
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.constants import (
+    RATE_LIMIT_GLOBAL_BURST,
+    RATE_LIMIT_GLOBAL_TPS,
+    RATE_LIMIT_NAMESPACE_BURST,
+    RATE_LIMIT_NAMESPACE_TPS,
+)
+
 # Import all handler modules to register them with kopf
 # This is the standard pattern - importing modules registers their decorators
 from keycloak_operator.handlers import client as client_handler  # noqa: F401
@@ -45,12 +52,6 @@ from keycloak_operator.observability.logging import setup_structured_logging
 from keycloak_operator.observability.metrics import MetricsServer
 from keycloak_operator.utils.auth import generate_token
 from keycloak_operator.utils.rate_limiter import RateLimiter
-from keycloak_operator.constants import (
-    RATE_LIMIT_GLOBAL_TPS,
-    RATE_LIMIT_GLOBAL_BURST,
-    RATE_LIMIT_NAMESPACE_TPS,
-    RATE_LIMIT_NAMESPACE_BURST,
-)
 
 # Global reference to metrics server for cleanup
 _global_metrics_server: MetricsServer | None = None
@@ -183,7 +184,9 @@ async def initialize_operator_token() -> None:
 
 
 @kopf.on.startup()
-async def startup_handler(settings: kopf.OperatorSettings, memo: kopf.Memo, **_) -> None:
+async def startup_handler(
+    settings: kopf.OperatorSettings, memo: kopf.Memo, **_
+) -> None:
     """
     Operator startup configuration.
 

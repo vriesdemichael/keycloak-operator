@@ -18,18 +18,17 @@ The handlers support various client types including:
 - Service accounts for machine-to-machine communication
 """
 
+import asyncio
 import logging
+import random
 from datetime import UTC, datetime
 from typing import Any
 
 import kopf
-import random
-import asyncio
-from keycloak_operator.constants import RECONCILE_JITTER_MAX
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.constants import CLIENT_FINALIZER
+from keycloak_operator.constants import CLIENT_FINALIZER, RECONCILE_JITTER_MAX
 from keycloak_operator.models.client import KeycloakClientSpec
 from keycloak_operator.services import KeycloakClientReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
@@ -116,8 +115,6 @@ async def ensure_keycloak_client(
 
                 await asyncio.sleep(jitter)
 
-                
-
                 reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
                 status_wrapper = StatusWrapper(status)
                 await reconciler.cleanup_resources(
@@ -154,8 +151,6 @@ async def ensure_keycloak_client(
     jitter = random.uniform(0, RECONCILE_JITTER_MAX)
 
     await asyncio.sleep(jitter)
-
-    
 
     reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
@@ -205,8 +200,6 @@ async def update_keycloak_client(
     jitter = random.uniform(0, RECONCILE_JITTER_MAX)
 
     await asyncio.sleep(jitter)
-
-    
 
     reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
@@ -262,8 +255,6 @@ async def delete_keycloak_client(
         jitter = random.uniform(0, RECONCILE_JITTER_MAX)
 
         await asyncio.sleep(jitter)
-
-        
 
         reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
         status_wrapper = StatusWrapper(status)
@@ -357,8 +348,8 @@ def monitor_client_health(
 
         # Check if client exists in Keycloak
         realm_name = client_spec.realm or "master"
-        existing_client = admin_client.get_client_by_name(
-            client_spec.client_id, realm_name
+        existing_client = await admin_client.get_client_by_name(
+            client_spec.client_id, realm_name, namespace
         )
 
         if not existing_client:

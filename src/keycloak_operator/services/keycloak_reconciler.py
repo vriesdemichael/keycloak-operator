@@ -1147,9 +1147,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         try:
             # Get admin client for this Keycloak instance
             admin_client = await self.keycloak_admin_factory(
-
                 name, namespace, rate_limiter=self.rate_limiter
-
             )
 
             # Get list of all realms
