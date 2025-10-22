@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.8...v0.2.9) (2025-10-22)
+
+
+### Documentation
+
+* **ci:** feature requests now require less information ([93945d1](https://github.com/vriesdemichael/keycloak-operator/commit/93945d111c2a1a4d60dd9a630947306bf97e5efe))
+
 ## [0.2.8](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.7...v0.2.8) (2025-10-22)
 
 
