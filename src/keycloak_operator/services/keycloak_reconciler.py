@@ -39,6 +39,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         self,
         k8s_client: client.ApiClient | None = None,
         keycloak_admin_factory: Any = None,
+        rate_limiter: Any = None,
     ):
         """
         Initialize Keycloak instance reconciler.
@@ -46,11 +47,13 @@ class KeycloakInstanceReconciler(BaseReconciler):
         Args:
             k8s_client: Kubernetes API client
             keycloak_admin_factory: Factory function for creating Keycloak admin clients
+            rate_limiter: Rate limiter for Keycloak API calls
         """
         super().__init__(k8s_client)
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
+        self.rate_limiter = rate_limiter
 
     async def do_update(
         self,
@@ -1143,10 +1146,14 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         try:
             # Get admin client for this Keycloak instance
-            admin_client = self.keycloak_admin_factory(name, namespace)
+            admin_client = await self.keycloak_admin_factory(
+
+                name, namespace, rate_limiter=self.rate_limiter
+
+            )
 
             # Get list of all realms
-            realms = admin_client.get_realms()
+            realms = admin_client.get_realms(namespace)
             if not realms:
                 self.logger.warning("No realms found for backup")
                 return
@@ -1173,7 +1180,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     continue
 
                 self.logger.info(f"Backing up realm: {realm_name}")
-                realm_backup = admin_client.backup_realm(realm_name)
+                realm_backup = admin_client.backup_realm(realm_name, namespace)
                 if realm_backup:
                     backup_data["realms"][realm_name] = realm_backup
                 else:
