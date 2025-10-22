@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.8](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.7...v0.2.8) (2025-10-22)
+
+
+### Bug Fixes
+
+* **ci:** add Docker tag extraction for operator-v prefixed tags ([#28](https://github.com/vriesdemichael/keycloak-operator/issues/28)) ([b761052](https://github.com/vriesdemichael/keycloak-operator/commit/b76105243a369c3a29fee8da425c6aa888142007))
+
 ## [0.2.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.6...operator-v0.2.7) (2025-10-21)
 
 
