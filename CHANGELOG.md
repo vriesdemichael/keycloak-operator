@@ -1,5 +1,41 @@
 # Changelog
 
+## [Unreleased]
+
+### Features
+
+* **rate-limiting:** Implement comprehensive two-level rate limiting for Keycloak API calls
+  - Global rate limiter (50 req/s default) protects Keycloak from total overload
+  - Per-namespace rate limiter (5 req/s default) ensures fair access across teams
+  - Prevents API flooding on operator restart via jitter (0-5s random delay)
+  - Protects against DDoS via spam creation of thousands of realms/clients
+  - Addresses issue #31
+
+* **async:** Complete async/await conversion of Keycloak Admin Client
+  - Migrated from `requests` to `aiohttp` for async HTTP operations
+  - All 44 admin client methods converted to async
+  - All reconcilers updated to use async admin client
+  - All handlers updated with jitter and rate limiter integration
+
+* **metrics:** Add Prometheus metrics for rate limiting observability
+  - `keycloak_api_rate_limit_wait_seconds` - Time waiting for tokens
+  - `keycloak_api_rate_limit_acquired_total` - Successful acquisitions
+  - `keycloak_api_rate_limit_timeouts_total` - Timeout errors
+  - `keycloak_api_tokens_available` - Current available tokens
+
+### Breaking Changes
+
+* **admin-client:** KeycloakAdminClient methods now require `namespace` parameter
+  - All methods accept `namespace: str` for rate limiting
+  - Factory function `get_keycloak_admin_client` now accepts `rate_limiter` parameter
+  - Circuit breaker removed (replaced by rate limiting)
+
+### Documentation
+
+* Add comprehensive rate limiting documentation to README.md
+* Update CLAUDE.md with async patterns and rate limiting architecture
+* Add implementation plan in `docs/rate-limiting-implementation-plan.md`
+
 ## [0.2.9](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.8...v0.2.9) (2025-10-22)
 
 
@@ -103,7 +139,6 @@
 * **ci:** add complete implementation summary ([b42a0dd](https://github.com/vriesdemichael/keycloak-operator/commit/b42a0dd87beb71689f096a671da89eea2bf97699))
 * **ci:** add workflow migration documentation ([7028b35](https://github.com/vriesdemichael/keycloak-operator/commit/7028b354f4b5f0badb48bf3f3f84c457bc2f9280))
 * **ci:** update tracking to reflect Phase 2 completion ([33baaf6](https://github.com/vriesdemichael/keycloak-operator/commit/33baaf64537594e4500bc838e5baa64bd00a3b31))
-* removed outdated todos ([3f7f227](https://github.com/vriesdemichael/keycloak-operator/commit/3f7f2276767642986318633df1d9ae332daf98a5))
 * update README badges to reference unified CI/CD workflow ([03ba009](https://github.com/vriesdemichael/keycloak-operator/commit/03ba009eb0aac6e4db6ebdbc8f6315b0ccf0dd4a))
 
 ## [0.2.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-v0.2.0...operator-v0.2.1) (2025-10-16)
@@ -210,7 +245,6 @@
 * align CRD schemas with Pydantic models for GitOps compliance ([c06001b](https://github.com/vriesdemichael/keycloak-operator/commit/c06001bfbc6dfff6f09aafe65a767918e7481cc2))
 * **ci:** split deployment into clear sequential steps ([ff07e16](https://github.com/vriesdemichael/keycloak-operator/commit/ff07e16aa604dfe1076c89d59ca1d298824e907a))
 * **ci:** use operator chart for complete deployment ([5cb1f09](https://github.com/vriesdemichael/keycloak-operator/commit/5cb1f0996723ded97df9f14e3aafea7d14ce14b9))
-* consolidate TODO files and enhance Keycloak admin API ([350c88f](https://github.com/vriesdemichael/keycloak-operator/commit/350c88fb0899e166dcea1883c00b2d1c78eeeb90))
 * **keycloak_admin:** Introduce validated request method for API calls with Pydantic models ([f949506](https://github.com/vriesdemichael/keycloak-operator/commit/f94950607dde501471f39b021df37808379e9ba5))
 * remove version and enabled fields from CRDs for K8s-native design ([11cdf60](https://github.com/vriesdemichael/keycloak-operator/commit/11cdf60a1b21320154fcefe5eba3a4a20386beaf))
 * Simplify realm health monitoring logic and improve error handling in Keycloak reconciler ([2ca4a52](https://github.com/vriesdemichael/keycloak-operator/commit/2ca4a5237fd57ab2599e07ead2e41f966eef5700))
@@ -227,13 +261,6 @@
 * Add detailed planning section to CLAUDE.md for clearer implementation guidance ([badff54](https://github.com/vriesdemichael/keycloak-operator/commit/badff541695ac4b3b024eaa439ee597cf17509a3))
 * add mandatory RELEASES.md check before commits in CLAUDE.md ([a329050](https://github.com/vriesdemichael/keycloak-operator/commit/a329050c1b5ce19c012ec9a274ca417cb3e83750))
 * add SMTP configuration implementation plan ([67d2362](https://github.com/vriesdemichael/keycloak-operator/commit/67d2362fc16d58c8e0ecb65a86c4f524ca29db74))
-* Add step-by-step guide for Keycloak API model integration ([8e9e456](https://github.com/vriesdemichael/keycloak-operator/commit/8e9e4569e09fd7d43d2dc15867b986740fbfddc3))
 * **design:** add Keycloak state observability analysis ([120eb81](https://github.com/vriesdemichael/keycloak-operator/commit/120eb81c5e8bd4d28c1833f9afaa088f90ce0210))
 * Implement robust cleanup system for integration tests ([ca233c6](https://github.com/vriesdemichael/keycloak-operator/commit/ca233c64eab58b8441a746743105056a439d703b))
-* mark CRD-model schema alignment as completed ([e2124ab](https://github.com/vriesdemichael/keycloak-operator/commit/e2124ab92619d6d4a24edb63988ccda5a52e0980))
-* mark redirect URI validation bug as fixed in TODO ([2d783fa](https://github.com/vriesdemichael/keycloak-operator/commit/2d783fac49f7de9e4a1d591d40e4ac31f942edf5))
 * reorganize documentation structure and simplify README ([e0b7bef](https://github.com/vriesdemichael/keycloak-operator/commit/e0b7befc77a9f201965d39f88ef03041c4d5bd22))
-* Update CLAUDE.md and TODO/manual-todos with new GitOps support details and commit message guidelines ([279f1a8](https://github.com/vriesdemichael/keycloak-operator/commit/279f1a89334f8f26be424caf5e93ff933d1523ca))
-* Update CLAUDE.md with development setup and testing guidelines; refine Makefile targets and improve logging commands ([3deb56e](https://github.com/vriesdemichael/keycloak-operator/commit/3deb56e1819d2d541606c43217f572fc18c900b5))
-* update manual-todos to mark CRD design improvements as complete ([80420e9](https://github.com/vriesdemichael/keycloak-operator/commit/80420e925823fc5db290ef4053091d007a110542))
-* update phase 6B TODO to reflect production mode completion ([34b6b4d](https://github.com/vriesdemichael/keycloak-operator/commit/34b6b4d22c21dd5c85887e4482f21261582ed198))

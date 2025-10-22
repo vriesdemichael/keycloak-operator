@@ -61,7 +61,7 @@ class TestFinalizersE2E:
             # Shared Keycloak instance is already ready from fixture
 
             # Create realm resource
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -72,7 +72,7 @@ class TestFinalizersE2E:
             # Wait for realm finalizer to be added
             async def check_realm_finalizer():
                 try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -89,7 +89,7 @@ class TestFinalizersE2E:
             )
 
             # Delete realm resource
-            k8s_custom_objects.delete_namespaced_custom_object(
+            await k8s_custom_objects.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -100,7 +100,7 @@ class TestFinalizersE2E:
             # Wait for realm cleanup to complete
             async def check_realm_deleted():
                 try:
-                    k8s_custom_objects.get_namespaced_custom_object(
+                    await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -180,7 +180,7 @@ class TestFinalizersE2E:
         try:
             # Shared Keycloak instance is already ready from fixture
             # Create realm
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -188,7 +188,7 @@ class TestFinalizersE2E:
                 body=realm_manifest,
             )
 
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -199,7 +199,7 @@ class TestFinalizersE2E:
             # Wait for client finalizer to be added
             async def check_client_finalizer():
                 try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -216,7 +216,7 @@ class TestFinalizersE2E:
             )
 
             # Delete client resource
-            k8s_custom_objects.delete_namespaced_custom_object(
+            await k8s_custom_objects.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -227,7 +227,7 @@ class TestFinalizersE2E:
             # Wait for client cleanup to complete
             async def check_client_deleted():
                 try:
-                    k8s_custom_objects.get_namespaced_custom_object(
+                    await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -248,7 +248,7 @@ class TestFinalizersE2E:
         finally:
             # Cleanup realm only (shared Keycloak managed by fixture, client deleted by test)
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -324,7 +324,7 @@ class TestFinalizersE2E:
             # Shared Keycloak instance is already ready from fixture
 
             # Create realm and wait for it to become ready
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=test_namespace,
@@ -335,7 +335,7 @@ class TestFinalizersE2E:
             # Wait for realm to be ready before creating client
             async def check_realm_ready():
                 try:
-                    realm = k8s_custom_objects.get_namespaced_custom_object(
+                    realm = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=test_namespace,
@@ -352,7 +352,7 @@ class TestFinalizersE2E:
             )
 
             # Create client
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=test_namespace,
@@ -363,7 +363,7 @@ class TestFinalizersE2E:
             # Wait for client to have finalizer (indicates it's been reconciled)
             async def check_client_has_finalizer():
                 try:
-                    client = k8s_custom_objects.get_namespaced_custom_object(
+                    client = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=test_namespace,
@@ -381,7 +381,7 @@ class TestFinalizersE2E:
             )
 
             # Now delete the realm (should trigger cascading deletion to client)
-            k8s_custom_objects.delete_namespaced_custom_object(
+            await k8s_custom_objects.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=test_namespace,
@@ -398,7 +398,7 @@ class TestFinalizersE2E:
                         ("keycloakrealms", realm_name),
                     ]:
                         try:
-                            k8s_custom_objects.get_namespaced_custom_object(
+                            await k8s_custom_objects.get_namespaced_custom_object(
                                 group="keycloak.mdvr.nl",
                                 version="v1",
                                 namespace=test_namespace,

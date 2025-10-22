@@ -35,6 +35,7 @@ class KeycloakClientReconciler(BaseReconciler):
         self,
         k8s_client: client.ApiClient | None = None,
         keycloak_admin_factory: Any = None,
+        rate_limiter: Any = None,
     ):
         """
         Initialize Keycloak client reconciler.
@@ -42,11 +43,13 @@ class KeycloakClientReconciler(BaseReconciler):
         Args:
             k8s_client: Kubernetes API client
             keycloak_admin_factory: Factory function for creating Keycloak admin clients
+            rate_limiter: Rate limiter for Keycloak API calls
         """
         super().__init__(k8s_client)
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
+        self.rate_limiter = rate_limiter
 
     def _get_realm_info(
         self, realm_resource_name: str, realm_namespace: str
@@ -438,20 +441,23 @@ class KeycloakClientReconciler(BaseReconciler):
         admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
 
         # Check if client already exists in the specified realm
-        existing_client = admin_client.get_client_by_name(
-            spec.client_id, actual_realm_name
+        existing_client = await admin_client.get_client_by_name(
+            spec.client_id, actual_realm_name, namespace
         )
 
         if existing_client:
             self.logger.info(f"Client {spec.client_id} already exists, updating...")
-            admin_client.update_client(
-                existing_client.id, spec.to_keycloak_config(), actual_realm_name
+            await admin_client.update_client(
+                existing_client.id,
+                spec.to_keycloak_config(),
+                actual_realm_name,
+                namespace,
             )
             return existing_client.id
         else:
             self.logger.info(f"Creating new client {spec.client_id}")
-            client_response = admin_client.create_client(
-                spec.to_keycloak_config(), actual_realm_name
+            client_response = await admin_client.create_client(
+                spec.to_keycloak_config(), actual_realm_name, namespace
             )
             # Extract client UUID from response or get it by name again
             if client_response:
@@ -459,8 +465,8 @@ class KeycloakClientReconciler(BaseReconciler):
                 return client_response
             else:
                 # Fallback: get client by name to retrieve UUID
-                created_client = admin_client.get_client_by_name(
-                    spec.client_id, actual_realm_name
+                created_client = await admin_client.get_client_by_name(
+                    spec.client_id, actual_realm_name, namespace
                 )
                 return created_client.id if created_client else "unknown"
 
@@ -539,8 +545,8 @@ class KeycloakClientReconciler(BaseReconciler):
             client_config = {k: v for k, v in client_config.items() if v is not None}
 
             # Update the client with OAuth2 settings
-            success = admin_client.update_client(
-                client_uuid, client_config, actual_realm_name
+            success = await admin_client.update_client(
+                client_uuid, client_config, actual_realm_name, namespace
             )
             if success:
                 self.logger.info(
@@ -585,8 +591,8 @@ class KeycloakClientReconciler(BaseReconciler):
             admin_client = self.keycloak_admin_factory(
                 keycloak_name, keycloak_namespace
             )
-            client_secret = admin_client.get_client_secret(
-                spec.client_id, actual_realm_name
+            client_secret = await admin_client.get_client_secret(
+                spec.client_id, actual_realm_name, namespace
             )
             self.logger.info("Retrieved client secret for confidential client")
 
@@ -681,7 +687,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
         try:
             # Get existing protocol mappers from Keycloak
-            existing_mappers = admin_client.get_client_protocol_mappers(
+            existing_mappers = await admin_client.get_client_protocol_mappers(
                 client_uuid, actual_realm_name
             )
             if existing_mappers is None:
@@ -712,7 +718,7 @@ class KeycloakClientReconciler(BaseReconciler):
                     )
                     if needs_update:
                         self.logger.info(f"Updating protocol mapper '{mapper_name}'")
-                        success = admin_client.update_client_protocol_mapper(
+                        success = await admin_client.update_client_protocol_mapper(
                             client_uuid,
                             existing_mapper["id"],
                             mapper_dict,
@@ -729,7 +735,7 @@ class KeycloakClientReconciler(BaseReconciler):
                 else:
                     # Create new protocol mapper
                     self.logger.info(f"Creating protocol mapper '{mapper_name}'")
-                    created_mapper = admin_client.create_client_protocol_mapper(
+                    created_mapper = await admin_client.create_client_protocol_mapper(
                         client_uuid, mapper_dict, actual_realm_name
                     )
                     if not created_mapper:
@@ -746,7 +752,7 @@ class KeycloakClientReconciler(BaseReconciler):
                     self.logger.info(
                         f"Removing obsolete protocol mapper '{existing_mapper['name']}'"
                     )
-                    success = admin_client.delete_client_protocol_mapper(
+                    success = await admin_client.delete_client_protocol_mapper(
                         client_uuid, existing_mapper["id"], actual_realm_name
                     )
                     if not success:
@@ -813,7 +819,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
         try:
             # Get existing client roles from Keycloak
-            existing_roles = admin_client.get_client_roles(
+            existing_roles = await admin_client.get_client_roles(
                 client_uuid, actual_realm_name
             )
             if existing_roles is None:
@@ -837,7 +843,7 @@ class KeycloakClientReconciler(BaseReconciler):
                     # Create new client role
                     self.logger.info(f"Creating client role '{role_name}'")
                     role_config = {"name": role_name}
-                    success = admin_client.create_client_role(
+                    success = await admin_client.create_client_role(
                         client_uuid, role_config, actual_realm_name
                     )
                     if not success:
@@ -852,7 +858,7 @@ class KeycloakClientReconciler(BaseReconciler):
                     self.logger.info(
                         f"Removing obsolete client role '{existing_role['name']}'"
                     )
-                    success = admin_client.delete_client_role(
+                    success = await admin_client.delete_client_role(
                         client_uuid, existing_role["name"], actual_realm_name
                     )
                     if not success:
@@ -937,7 +943,7 @@ class KeycloakClientReconciler(BaseReconciler):
             self.logger.debug(
                 f"Fetching service account user for client {spec.client_id}"
             )
-            service_account_user = admin_client.get_service_account_user(
+            service_account_user = await admin_client.get_service_account_user(
                 client_uuid, actual_realm_name
             )
             user_id = service_account_user.id if service_account_user else None
@@ -970,8 +976,8 @@ class KeycloakClientReconciler(BaseReconciler):
                         f"Assigning {len(role_names)} client roles from '{target_client_id}' to service account for client {spec.client_id}"
                     )
 
-                    target_client = admin_client.get_client_by_name(
-                        target_client_id, actual_realm_name
+                    target_client = await admin_client.get_client_by_name(
+                        target_client_id, actual_realm_name, namespace
                     )
                     if not target_client:
                         self.logger.warning(
@@ -1117,8 +1123,8 @@ class KeycloakClientReconciler(BaseReconciler):
                     f"Protocol mappers changed: {operation} at {field_path}"
                 )
                 # Get client UUID for protocol mapper configuration
-                client_uuid = admin_client.get_client_uuid(
-                    new_client_spec.client_id, actual_realm_name
+                client_uuid = await admin_client.get_client_uuid(
+                    new_client_spec.client_id, actual_realm_name, namespace
                 )
                 if client_uuid:
                     await self.configure_protocol_mappers(
@@ -1132,8 +1138,8 @@ class KeycloakClientReconciler(BaseReconciler):
             elif field_path[:2] == ("spec", "client_roles"):
                 self.logger.info(f"Client roles changed: {operation} at {field_path}")
                 # Get client UUID for role management
-                client_uuid = admin_client.get_client_uuid(
-                    new_client_spec.client_id, actual_realm_name
+                client_uuid = await admin_client.get_client_uuid(
+                    new_client_spec.client_id, actual_realm_name, namespace
                 )
                 if client_uuid:
                     await self.manage_client_roles(
@@ -1150,10 +1156,11 @@ class KeycloakClientReconciler(BaseReconciler):
                 f"Applying client configuration update for {new_client_spec.client_id}"
             )
             try:
-                admin_client.update_client(
+                await admin_client.update_client(
                     new_client_spec.client_id,
                     new_client_spec.to_keycloak_config(),
                     actual_realm_name,
+                    namespace,
                 )
                 self.logger.info("Client configuration updated successfully")
             except Exception as e:
@@ -1167,7 +1174,7 @@ class KeycloakClientReconciler(BaseReconciler):
             self.logger.info("Regenerating client secret")
             # Generate new secret in Keycloak
             new_secret = admin_client.regenerate_client_secret(
-                new_client_spec.client_id, actual_realm_name
+                new_client_spec.client_id, actual_realm_name, namespace
             )
 
             # Update Kubernetes secret
@@ -1232,8 +1239,8 @@ class KeycloakClientReconciler(BaseReconciler):
             )
 
             # Try to get client by client_id
-            existing_client = admin_client.get_client_by_name(
-                client_id=client_spec.client_id, realm_name=actual_realm_name
+            existing_client = await admin_client.get_client_by_name(
+                client_spec.client_id, actual_realm_name, namespace
             )
 
             if existing_client:
@@ -1299,7 +1306,9 @@ class KeycloakClientReconciler(BaseReconciler):
                 keycloak_name, keycloak_namespace
             )
 
-            admin_client.delete_client(client_spec.client_id, actual_realm_name)
+            await admin_client.delete_client(
+                client_spec.client_id, actual_realm_name, namespace
+            )
             self.logger.info(
                 f"Deleted client {client_spec.client_id} from Keycloak realm {actual_realm_name}"
             )

@@ -78,7 +78,7 @@ async def delete_custom_resource_with_retry(
     try:
         # First, try graceful deletion
         try:
-            k8s_custom_objects.delete_namespaced_custom_object(
+            await k8s_custom_objects.delete_namespaced_custom_object(
                 group=group,
                 version=version,
                 namespace=namespace,
@@ -99,7 +99,7 @@ async def delete_custom_resource_with_retry(
 
         while asyncio.get_event_loop().time() - start_time < timeout:
             try:
-                resource = k8s_custom_objects.get_namespaced_custom_object(
+                resource = await k8s_custom_objects.get_namespaced_custom_object(
                     group=group,
                     version=version,
                     namespace=namespace,
@@ -173,7 +173,7 @@ async def force_remove_finalizers(
         # Get current resource if not provided
         if resource is None:
             try:
-                resource = k8s_custom_objects.get_namespaced_custom_object(
+                resource = await k8s_custom_objects.get_namespaced_custom_object(
                     group=group,
                     version=version,
                     namespace=namespace,
@@ -199,7 +199,7 @@ async def force_remove_finalizers(
         # Patch to remove finalizers
         patch = {"metadata": {"finalizers": []}}
 
-        k8s_custom_objects.patch_namespaced_custom_object(
+        await k8s_custom_objects.patch_namespaced_custom_object(
             group=group,
             version=version,
             namespace=namespace,
@@ -249,7 +249,7 @@ async def cleanup_namespace_resources(
     for group, version, plural in resource_types:
         try:
             # List all resources of this type
-            resources = k8s_custom_objects.list_namespaced_custom_object(
+            resources = await k8s_custom_objects.list_namespaced_custom_object(
                 group=group, version=version, namespace=namespace, plural=plural
             )
 
@@ -305,7 +305,7 @@ async def force_delete_namespace(
     try:
         # First try normal deletion
         try:
-            k8s_core_v1.delete_namespace(
+            await k8s_core_v1.delete_namespace(
                 name=namespace,
                 body=client.V1DeleteOptions(propagation_policy="Foreground"),
             )
@@ -322,7 +322,7 @@ async def force_delete_namespace(
 
         while asyncio.get_event_loop().time() - start_time < timeout:
             try:
-                ns = k8s_core_v1.read_namespace(name=namespace)
+                ns = await k8s_core_v1.read_namespace(name=namespace)
 
                 # Check if stuck in terminating
                 elapsed = asyncio.get_event_loop().time() - start_time
@@ -377,7 +377,7 @@ async def ensure_clean_test_environment(
 
     try:
         # Check for stale test namespaces
-        namespaces = k8s_core_v1.list_namespace()
+        namespaces = await k8s_core_v1.list_namespace()
         test_namespaces = [
             ns.metadata.name
             for ns in namespaces.items
@@ -400,7 +400,7 @@ async def ensure_clean_test_environment(
                 ("keycloak.mdvr.nl", "v1", "keycloakclients"),
             ]:
                 try:
-                    resources = k8s_custom_objects.list_namespaced_custom_object(
+                    resources = await k8s_custom_objects.list_namespaced_custom_object(
                         group=group, version=version, namespace=namespace, plural=plural
                     )
                     items = resources.get("items", [])

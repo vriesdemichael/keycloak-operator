@@ -70,9 +70,14 @@ Defaults to keycloak-operator-<namespace> to avoid conflicts
 
 {{/*
 Operator namespace
+Uses Release namespace if specified, otherwise falls back to configured namespace
 */}}
 {{- define "keycloak-operator.namespace" -}}
+{{- if ne .Release.Namespace "default" -}}
+{{- .Release.Namespace }}
+{{- else -}}
 {{- default "keycloak-system" .Values.namespace.name }}
+{{- end -}}
 {{- end }}
 
 {{/*

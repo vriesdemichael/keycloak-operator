@@ -12,13 +12,15 @@ Realms provide isolation between different applications or tenants
 and can be managed independently across different namespaces.
 """
 
+import asyncio
 import logging
+import random
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
 import kopf
 
-from keycloak_operator.constants import REALM_FINALIZER
+from keycloak_operator.constants import REALM_FINALIZER, RECONCILE_JITTER_MAX
 from keycloak_operator.models.realm import KeycloakRealmSpec
 from keycloak_operator.services import KeycloakRealmReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
@@ -72,6 +74,7 @@ async def ensure_keycloak_realm(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -102,7 +105,13 @@ async def ensure_keycloak_realm(
         current_finalizers = meta.get("finalizers", [])
         if REALM_FINALIZER in current_finalizers:
             try:
-                reconciler = KeycloakRealmReconciler()
+                # Add jitter to prevent thundering herd
+
+                jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+                await asyncio.sleep(jitter)
+
+                reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
                 status_wrapper = StatusWrapper(status)
                 await reconciler.cleanup_resources(
                     name=name, namespace=namespace, spec=spec, status=status_wrapper
@@ -134,7 +143,13 @@ async def ensure_keycloak_realm(
 
     # Create reconciler and delegate to service layer
     # Use patch.status instead of the read-only status dict for updates
-    reconciler = KeycloakRealmReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.reconcile(
         spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
@@ -152,6 +167,7 @@ async def update_keycloak_realm(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
     """
@@ -177,7 +193,13 @@ async def update_keycloak_realm(
 
     # Create reconciler and delegate to service layer
     # Use patch.status instead of the read-only status dict for updates
-    reconciler = KeycloakRealmReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.update(
         old_spec=old.get("spec", {}),
@@ -198,6 +220,7 @@ async def delete_keycloak_realm(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -225,7 +248,13 @@ async def delete_keycloak_realm(
 
     try:
         # Delegate cleanup to the reconciler service layer
-        reconciler = KeycloakRealmReconciler()
+        # Add jitter to prevent thundering herd
+
+        jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+        await asyncio.sleep(jitter)
+
+        reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
         status_wrapper = StatusWrapper(status)
 
         # Check if resource actually exists in Keycloak before attempting cleanup
@@ -274,7 +303,7 @@ async def delete_keycloak_realm(
 
 
 @kopf.timer("keycloakrealms", interval=600)  # Check every 10 minutes
-def monitor_realm_health(
+async def monitor_realm_health(
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -311,11 +340,13 @@ def monitor_realm_health(
         # Get admin client and verify connection
         keycloak_ref = realm_spec.keycloak_instance_ref
         target_namespace = keycloak_ref.namespace or namespace
-        admin_client = get_keycloak_admin_client(keycloak_ref.name, target_namespace)
+        admin_client = await get_keycloak_admin_client(
+            keycloak_ref.name, target_namespace
+        )
 
         # Check if realm exists in Keycloak
         realm_name = realm_spec.realm_name
-        existing_realm = admin_client.get_realm(realm_name)
+        existing_realm = await admin_client.get_realm(realm_name, namespace)
 
         if not existing_realm:
             logger.warning(f"Realm {realm_name} missing from Keycloak")
@@ -326,7 +357,7 @@ def monitor_realm_health(
 
         # Verify realm configuration matches spec
         try:
-            current_realm = admin_client.get_realm(realm_name)
+            current_realm = await admin_client.get_realm(realm_name, namespace)
             config_matches = current_realm if current_realm else False
         except Exception as e:
             logger.warning(f"Failed to verify realm configuration: {e}")

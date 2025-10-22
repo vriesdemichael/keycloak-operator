@@ -223,6 +223,70 @@ rm -rf .tmp/
 - Clean up after development sessions
 - The `.tmp/` directory is git-ignored automatically which means you cannot read it anymore after you have created it, reference your own memory for the contents.
 
+## Rate Limiting
+
+The operator implements comprehensive rate limiting to protect Keycloak from API overload.
+
+### Architecture
+
+**Two-Level Rate Limiting**:
+1. **Global Rate Limit**: Protects Keycloak from total overload across all namespaces
+2. **Per-Namespace Rate Limit**: Ensures fair access, prevents single team from monopolizing API
+
+**Implementation**:
+- **Module**: `src/keycloak_operator/utils/rate_limiter.py`
+- **Algorithm**: Token bucket with continuous refill
+- **Async**: Fully async/await compatible
+- **Metrics**: Integrated Prometheus metrics
+
+### Configuration
+
+Environment variables:
+```bash
+KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS=50      # Global requests/second
+KEYCLOAK_API_GLOBAL_BURST=100               # Global burst capacity
+KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS=5    # Per-namespace requests/second
+KEYCLOAK_API_NAMESPACE_BURST=10             # Per-namespace burst capacity
+RECONCILE_JITTER_MAX_SECONDS=5.0            # Random delay to prevent thundering herd
+```
+
+### Async Pattern
+
+All Keycloak API interactions are now fully async:
+
+```python
+# Create admin client (async factory)
+admin_client = await get_keycloak_admin_client(
+    keycloak_name, namespace, rate_limiter=memo.rate_limiter
+)
+
+# All admin client methods are async
+realm = await admin_client.get_realm(realm_name, namespace)
+await admin_client.create_client(client_config, realm_name, namespace)
+```
+
+**Key Points**:
+- All `KeycloakAdminClient` methods require `namespace` parameter
+- Rate limiter automatically throttles before each API call
+- `aiohttp` used instead of `requests` for async HTTP
+- Reconcilers pass `rate_limiter` through constructors
+- Handlers add jitter (random 0-5s delay) on startup
+
+### Protected Scenarios
+
+1. **Operator Restart**: Jitter spreads reconciliation over time window
+2. **Namespace Spam**: Single namespace limited to 5 req/s
+3. **Multi-Team Load**: Global limit enforces fair sharing at 50 req/s
+4. **Database Issues**: Rate limiting prevents API hammering on recovery
+
+### Metrics
+
+Prometheus metrics for monitoring:
+- `keycloak_api_rate_limit_wait_seconds{namespace, limit_type}`
+- `keycloak_api_rate_limit_acquired_total{namespace, limit_type}`
+- `keycloak_api_rate_limit_timeouts_total{namespace, limit_type}`
+- `keycloak_api_tokens_available{namespace}`
+
 ## Keycloak API Reference
 
 This project uses **type-safe Pydantic models** auto-generated from the official Keycloak Admin REST API specification.

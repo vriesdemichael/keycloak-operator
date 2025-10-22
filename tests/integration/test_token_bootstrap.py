@@ -81,7 +81,7 @@ class TestTokenBootstrap:
         }
 
         try:
-            k8s_core_v1.create_namespaced_secret(
+            await k8s_core_v1.create_namespaced_secret(
                 namespace=namespace, body=admission_secret
             )
 
@@ -106,13 +106,13 @@ class TestTokenBootstrap:
             # Get or create metadata ConfigMap
             configmap_name = "keycloak-operator-token-metadata"
             try:
-                cm = k8s_core_v1.read_namespaced_config_map(
+                cm = await k8s_core_v1.read_namespaced_config_map(
                     name=configmap_name, namespace=operator_namespace
                 )
                 if cm.data is None:
                     cm.data = {}
                 cm.data[token_hash] = json.dumps(token_metadata)
-                k8s_core_v1.replace_namespaced_config_map(
+                await k8s_core_v1.replace_namespaced_config_map(
                     name=configmap_name, namespace=operator_namespace, body=cm
                 )
             except ApiException as e:
@@ -131,7 +131,7 @@ class TestTokenBootstrap:
                         },
                         "data": {token_hash: json.dumps(token_metadata)},
                     }
-                    k8s_core_v1.create_namespaced_config_map(
+                    await k8s_core_v1.create_namespaced_config_map(
                         namespace=operator_namespace, body=cm_body
                     )
 
@@ -154,7 +154,7 @@ class TestTokenBootstrap:
                 "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -165,7 +165,7 @@ class TestTokenBootstrap:
             # 4. Wait for realm to reach Ready state
             async def _realm_ready() -> bool:
                 try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -191,7 +191,7 @@ class TestTokenBootstrap:
 
             async def _operational_secret_exists() -> bool:
                 try:
-                    k8s_core_v1.read_namespaced_secret(
+                    await k8s_core_v1.read_namespaced_secret(
                         name=operational_secret_name, namespace=namespace
                     )
                     return True
@@ -206,7 +206,7 @@ class TestTokenBootstrap:
             assert op_secret_exists, "Operational token secret was not created"
 
             # Verify secret has correct labels
-            op_secret = k8s_core_v1.read_namespaced_secret(
+            op_secret = await k8s_core_v1.read_namespaced_secret(
                 name=operational_secret_name, namespace=namespace
             )
             assert (
@@ -230,7 +230,7 @@ class TestTokenBootstrap:
             assert "keycloak.mdvr.nl/valid-until" in op_secret.metadata.annotations
 
             # 6. Verify token metadata stored in ConfigMap
-            cm = k8s_core_v1.read_namespaced_config_map(
+            cm = await k8s_core_v1.read_namespaced_config_map(
                 name=configmap_name, namespace=operator_namespace
             )
 
@@ -256,7 +256,7 @@ class TestTokenBootstrap:
             )
 
             # 7. Verify status.authorizationStatus updated
-            realm = k8s_custom_objects.get_namespaced_custom_object(
+            realm = await k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -280,7 +280,7 @@ class TestTokenBootstrap:
         finally:
             # Cleanup
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -289,13 +289,13 @@ class TestTokenBootstrap:
                 )
 
             with contextlib.suppress(ApiException):
-                k8s_core_v1.delete_namespaced_secret(
+                await k8s_core_v1.delete_namespaced_secret(
                     name=admission_secret_name, namespace=namespace
                 )
 
             # Clean up token metadata from ConfigMap
             try:
-                cm = k8s_core_v1.read_namespaced_config_map(
+                cm = await k8s_core_v1.read_namespaced_config_map(
                     name=configmap_name, namespace=operator_namespace
                 )
                 if cm.data:
@@ -310,7 +310,7 @@ class TestTokenBootstrap:
                         cm.data.pop(key, None)
 
                     if cm.data:
-                        k8s_core_v1.replace_namespaced_config_map(
+                        await k8s_core_v1.replace_namespaced_config_map(
                             name=configmap_name, namespace=operator_namespace, body=cm
                         )
             except ApiException:
@@ -363,7 +363,7 @@ class TestTokenBootstrap:
         }
 
         try:
-            k8s_core_v1.create_namespaced_secret(
+            await k8s_core_v1.create_namespaced_secret(
                 namespace=namespace, body=admission_secret
             )
 
@@ -384,13 +384,13 @@ class TestTokenBootstrap:
 
             configmap_name = "keycloak-operator-token-metadata"
             try:
-                cm = k8s_core_v1.read_namespaced_config_map(
+                cm = await k8s_core_v1.read_namespaced_config_map(
                     name=configmap_name, namespace=operator_namespace
                 )
                 if cm.data is None:
                     cm.data = {}
                 cm.data[token_hash] = json.dumps(token_metadata)
-                k8s_core_v1.replace_namespaced_config_map(
+                await k8s_core_v1.replace_namespaced_config_map(
                     name=configmap_name, namespace=operator_namespace, body=cm
                 )
             except ApiException as e:
@@ -404,7 +404,7 @@ class TestTokenBootstrap:
                         },
                         "data": {token_hash: json.dumps(token_metadata)},
                     }
-                    k8s_core_v1.create_namespaced_config_map(
+                    await k8s_core_v1.create_namespaced_config_map(
                         namespace=operator_namespace, body=cm_body
                     )
 
@@ -427,7 +427,7 @@ class TestTokenBootstrap:
                 "spec": realm1_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -438,7 +438,7 @@ class TestTokenBootstrap:
             # Wait for first realm to be ready
             async def _realm_ready(realm_name: str) -> bool:
                 try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -464,7 +464,7 @@ class TestTokenBootstrap:
 
             async def _operational_secret_exists() -> bool:
                 try:
-                    k8s_core_v1.read_namespaced_secret(
+                    await k8s_core_v1.read_namespaced_secret(
                         name=operational_secret_name, namespace=namespace
                     )
                     return True
@@ -497,7 +497,7 @@ class TestTokenBootstrap:
                 "spec": realm2_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -512,7 +512,7 @@ class TestTokenBootstrap:
             assert realm2_ready, f"Realm {realm2_name} did not reach Ready state"
 
             # 4. Verify only ONE operational token secret exists
-            secrets = k8s_core_v1.list_namespaced_secret(namespace=namespace)
+            secrets = await k8s_core_v1.list_namespaced_secret(namespace=namespace)
             operational_secrets = [
                 s
                 for s in secrets.items
@@ -530,7 +530,7 @@ class TestTokenBootstrap:
             # Cleanup
             for realm_name in [realm1_name, realm2_name]:
                 with contextlib.suppress(ApiException):
-                    k8s_custom_objects.delete_namespaced_custom_object(
+                    await k8s_custom_objects.delete_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -539,13 +539,13 @@ class TestTokenBootstrap:
                     )
 
             with contextlib.suppress(ApiException):
-                k8s_core_v1.delete_namespaced_secret(
+                await k8s_core_v1.delete_namespaced_secret(
                     name=admission_secret_name, namespace=namespace
                 )
 
             # Cleanup metadata
             try:
-                cm = k8s_core_v1.read_namespaced_config_map(
+                cm = await k8s_core_v1.read_namespaced_config_map(
                     name="keycloak-operator-token-metadata",
                     namespace=operator_namespace,
                 )
@@ -560,7 +560,7 @@ class TestTokenBootstrap:
                         cm.data.pop(key, None)
 
                     if cm.data:
-                        k8s_core_v1.replace_namespaced_config_map(
+                        await k8s_core_v1.replace_namespaced_config_map(
                             name="keycloak-operator-token-metadata",
                             namespace=operator_namespace,
                             body=cm,

@@ -18,7 +18,9 @@ The handlers support various client types including:
 - Service accounts for machine-to-machine communication
 """
 
+import asyncio
 import logging
+import random
 from datetime import UTC, datetime
 from typing import Any
 
@@ -26,7 +28,7 @@ import kopf
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.constants import CLIENT_FINALIZER
+from keycloak_operator.constants import CLIENT_FINALIZER, RECONCILE_JITTER_MAX
 from keycloak_operator.models.client import KeycloakClientSpec
 from keycloak_operator.services import KeycloakClientReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
@@ -76,6 +78,7 @@ async def ensure_keycloak_client(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -106,7 +109,13 @@ async def ensure_keycloak_client(
         current_finalizers = meta.get("finalizers", [])
         if CLIENT_FINALIZER in current_finalizers:
             try:
-                reconciler = KeycloakClientReconciler()
+                # Add jitter to prevent thundering herd
+
+                jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+                await asyncio.sleep(jitter)
+
+                reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
                 status_wrapper = StatusWrapper(status)
                 await reconciler.cleanup_resources(
                     name=name, namespace=namespace, spec=spec, status=status_wrapper
@@ -137,7 +146,13 @@ async def ensure_keycloak_client(
         patch.metadata.setdefault("finalizers", []).append(CLIENT_FINALIZER)
 
     # Use patch.status for updates instead of wrapping the read-only status dict
-    reconciler = KeycloakClientReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.reconcile(
         spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
@@ -155,6 +170,7 @@ async def update_keycloak_client(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> dict[str, Any] | None:
     """
@@ -179,7 +195,13 @@ async def update_keycloak_client(
     logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
 
     # Use patch.status for updates instead of wrapping the read-only status dict
-    reconciler = KeycloakClientReconciler()
+    # Add jitter to prevent thundering herd
+
+    jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+    await asyncio.sleep(jitter)
+
+    reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.update(
         old_spec=old.get("spec", {}),
@@ -200,6 +222,7 @@ async def delete_keycloak_client(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -227,7 +250,13 @@ async def delete_keycloak_client(
 
     try:
         # Delegate cleanup to the reconciler service layer
-        reconciler = KeycloakClientReconciler()
+        # Add jitter to prevent thundering herd
+
+        jitter = random.uniform(0, RECONCILE_JITTER_MAX)
+
+        await asyncio.sleep(jitter)
+
+        reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
         status_wrapper = StatusWrapper(status)
 
         # Check if resource actually exists in Keycloak before attempting cleanup
@@ -276,7 +305,7 @@ async def delete_keycloak_client(
 
 
 @kopf.timer("keycloakclients", interval=300)  # Check every 5 minutes
-def monitor_client_health(
+async def monitor_client_health(
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -315,12 +344,14 @@ def monitor_client_health(
         # Get admin client and verify connection
         keycloak_ref = client_spec.keycloak_instance_ref
         target_namespace = keycloak_ref.namespace or namespace
-        admin_client = get_keycloak_admin_client(keycloak_ref.name, target_namespace)
+        admin_client = await get_keycloak_admin_client(
+            keycloak_ref.name, target_namespace
+        )
 
         # Check if client exists in Keycloak
         realm_name = client_spec.realm or "master"
-        existing_client = admin_client.get_client_by_name(
-            client_spec.client_id, realm_name
+        existing_client = await admin_client.get_client_by_name(
+            client_spec.client_id, realm_name, namespace
         )
 
         if not existing_client:

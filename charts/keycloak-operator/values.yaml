@@ -7,6 +7,14 @@ operator:
   # Number of operator replicas (for HA)
   replicaCount: 2
   
+  # Admission token configuration
+  # The admission token is the initial token that allows the operator to bootstrap
+  # operational tokens for individual namespaces
+  createAdmissionToken: true
+  admissionTokenName: keycloak-operator-auth-token
+  # Leave empty to auto-generate a random token
+  admissionToken: ""
+  
   image:
     repository: ghcr.io/vriesdemichael/keycloak-operator
     pullPolicy: IfNotPresent

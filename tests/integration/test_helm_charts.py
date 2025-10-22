@@ -43,7 +43,7 @@ class TestHelmRealmDeployment:
         # Verify realm CR was created
         async def realm_exists():
             try:
-                realm = k8s_custom_objects.get_namespaced_custom_object(
+                realm = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=test_namespace,
@@ -59,7 +59,7 @@ class TestHelmRealmDeployment:
         # Verify realm reaches Ready phase
         async def realm_ready():
             try:
-                realm = k8s_custom_objects.get_namespaced_custom_object(
+                realm = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=test_namespace,
@@ -105,7 +105,7 @@ class TestHelmRealmDeployment:
             ),
             string_data={"password": "test-smtp-password"},
         )
-        k8s_core_v1.create_namespaced_secret(test_namespace, secret)
+        await k8s_core_v1.create_namespaced_secret(test_namespace, secret)
 
         # Deploy realm with SMTP via Helm
         await helm_realm(
@@ -126,7 +126,7 @@ class TestHelmRealmDeployment:
         # Verify realm was created with SMTP config
         async def realm_has_smtp():
             try:
-                realm = k8s_custom_objects.get_namespaced_custom_object(
+                realm = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=test_namespace,
@@ -174,7 +174,7 @@ class TestHelmClientDeployment:
         # Wait for realm to be ready and get auth secret
         async def realm_ready_with_secret():
             try:
-                realm = k8s_custom_objects.get_namespaced_custom_object(
+                realm = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=test_namespace,
@@ -193,7 +193,7 @@ class TestHelmClientDeployment:
         )
 
         # Get the realm auth secret name
-        realm = k8s_custom_objects.get_namespaced_custom_object(
+        realm = await k8s_custom_objects.get_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=test_namespace,
@@ -219,7 +219,7 @@ class TestHelmClientDeployment:
         # Verify client CR was created
         async def client_exists():
             try:
-                client = k8s_custom_objects.get_namespaced_custom_object(
+                client = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=test_namespace,
@@ -235,7 +235,7 @@ class TestHelmClientDeployment:
         # Verify client reaches Ready phase
         async def client_ready():
             try:
-                client = k8s_custom_objects.get_namespaced_custom_object(
+                client = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=test_namespace,
@@ -254,7 +254,7 @@ class TestHelmClientDeployment:
         if not result:
             # Print final state for debugging
             try:
-                client = k8s_custom_objects.get_namespaced_custom_object(
+                client = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=test_namespace,
