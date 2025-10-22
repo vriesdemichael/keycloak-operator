@@ -317,7 +317,7 @@ class TestRateLimiter:
         try:
             await limiter.acquire("test-ns", timeout=0.1)
         except TimeoutError:
-            pass
+            pass  # Expected timeout for this test
         
         # Verify warning was logged
         mock_logger.warning.assert_called()
@@ -362,7 +362,7 @@ class TestRateLimiterMetrics:
         try:
             await limiter.acquire("test-ns", timeout=0.1)
         except TimeoutError:
-            pass
+            pass  # Expected timeout for this test
         
         # Timeout metric should have been recorded
 

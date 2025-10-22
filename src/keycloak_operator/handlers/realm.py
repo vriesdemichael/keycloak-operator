@@ -114,7 +114,7 @@ async def ensure_keycloak_realm(
 
                 
 
-                reconciler = reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
+                reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
                 status_wrapper = StatusWrapper(status)
                 await reconciler.cleanup_resources(
                     name=name, namespace=namespace, spec=spec, status=status_wrapper
@@ -154,7 +154,7 @@ async def ensure_keycloak_realm(
 
     
 
-    reconciler = reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
+    reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.reconcile(
         spec=spec, name=name, namespace=namespace, status=status_wrapper, **kwargs
@@ -206,7 +206,7 @@ async def update_keycloak_realm(
 
     
 
-    reconciler = reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
+    reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.update(
         old_spec=old.get("spec", {}),
@@ -263,7 +263,7 @@ async def delete_keycloak_realm(
 
         
 
-        reconciler = reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
+        reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
         status_wrapper = StatusWrapper(status)
 
         # Check if resource actually exists in Keycloak before attempting cleanup

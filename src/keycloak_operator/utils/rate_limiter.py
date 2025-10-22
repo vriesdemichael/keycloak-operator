@@ -290,7 +290,7 @@ class RateLimiter:
             from keycloak_operator.observability.metrics import RATE_LIMIT_WAIT_SECONDS
             RATE_LIMIT_WAIT_SECONDS.labels(namespace=namespace, limit_type=limit_type).observe(duration)
         except Exception:
-            pass  # Gracefully handle metrics errors
+            pass  # Metrics are optional - gracefully handle errors  # Metrics are optional - gracefully handle import or recording errors
     
     def _record_acquisition(self, namespace: str, limit_type: str) -> None:
         """Record successful token acquisition."""
@@ -298,7 +298,7 @@ class RateLimiter:
             from keycloak_operator.observability.metrics import RATE_LIMIT_ACQUIRED_TOTAL
             RATE_LIMIT_ACQUIRED_TOTAL.labels(namespace=namespace, limit_type=limit_type).inc()
         except Exception:
-            pass
+            pass  # Metrics are optional - gracefully handle errors
     
     def _record_timeout(self, namespace: str, limit_type: str) -> None:
         """Record rate limit timeout."""
@@ -306,4 +306,4 @@ class RateLimiter:
             from keycloak_operator.observability.metrics import RATE_LIMIT_TIMEOUTS_TOTAL
             RATE_LIMIT_TIMEOUTS_TOTAL.labels(namespace=namespace, limit_type=limit_type).inc()
         except Exception:
-            pass
+            pass  # Metrics are optional - gracefully handle errors

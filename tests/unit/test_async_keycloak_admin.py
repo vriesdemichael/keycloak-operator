@@ -5,7 +5,6 @@ Tests async admin client with mocked HTTP responses,
 rate limiting integration, and error handling.
 """
 
-import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp

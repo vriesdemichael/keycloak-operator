@@ -156,7 +156,7 @@ async def ensure_keycloak_instance(
 
                 
 
-                reconciler = reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
+                reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
                 await reconciler.cleanup_resources(
                     name=name, namespace=namespace, spec=spec
                 )
@@ -197,7 +197,7 @@ async def ensure_keycloak_instance(
 
     
 
-    reconciler = reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
+    reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.reconcile(
         spec=spec,
@@ -251,7 +251,7 @@ async def update_keycloak_instance(
 
     
 
-    reconciler = reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
+    reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.update(
         old_spec=old.get("spec", {}),
@@ -312,7 +312,7 @@ async def delete_keycloak_instance(
 
         
 
-        reconciler = reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
+        reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
         await reconciler.cleanup_resources(name=name, namespace=namespace, spec=spec)
 
         # If cleanup succeeded, remove our finalizer to complete deletion

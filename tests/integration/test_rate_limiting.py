@@ -7,10 +7,10 @@ including operator restart scenarios and multi-namespace load.
 
 import asyncio
 import time
-from datetime import UTC, datetime
+
 
 import pytest
-from kubernetes import client
+
 
 from keycloak_operator.utils.rate_limiter import RateLimiter
 
@@ -207,9 +207,7 @@ class TestRateLimitingIntegration:
             global_rate=50.0,
             global_burst=100,
             namespace_rate=5.0,
-            namespace_burst=10,
-            idle_cleanup_seconds=1.0,  # Short for testing
-        )
+            namespace_burst=10)
         
         # Create many namespace buckets
         namespaces = [f"ephemeral-ns-{i}" for i in range(20)]
