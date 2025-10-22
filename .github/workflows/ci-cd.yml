@@ -446,11 +446,13 @@ jobs:
           kubectl cluster-info | tee -a test-logs/cluster-info.log
           
           echo "=== Operator Logs ===" | tee test-logs/operator-logs.log
-          kubectl logs -n keycloak-test-system -l app.kubernetes.io/name=keycloak-operator --all-containers=true --tail=1000 >> test-logs/operator-logs.log 2>&1 || echo "No operator logs found in keycloak-test-system"
+          # Search for operator in all namespaces
+          kubectl logs -l app.kubernetes.io/name=keycloak-operator --all-namespaces=true --all-containers=true --tail=1000 >> test-logs/operator-logs.log 2>&1 || echo "No operator logs found"
           
           echo "=== Operator Status ===" | tee test-logs/operator-status.log
-          kubectl get deployment -n keycloak-test-system -o wide >> test-logs/operator-status.log 2>&1 || echo "No deployments in keycloak-test-system"
-          kubectl describe deployment -n keycloak-test-system keycloak-operator >> test-logs/operator-status.log 2>&1 || echo "No operator deployment found"
+          # Get operator deployments from all namespaces
+          kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide >> test-logs/operator-status.log 2>&1 || echo "No operator deployments found"
+          kubectl describe deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces >> test-logs/operator-status.log 2>&1 || echo "No operator deployment found"
           
           echo "=== Test Resources ===" | tee test-logs/test-resources.log
           kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
@@ -460,7 +462,7 @@ jobs:
           kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
           
           echo "=== Keycloak Logs ===" | tee test-logs/keycloak-logs.log
-          kubectl logs -n keycloak-test-system -l keycloak.mdvr.nl/component=server --tail=500 >> test-logs/keycloak-logs.log 2>&1 || echo "No Keycloak logs in keycloak-test-system"
+          kubectl logs -l keycloak.mdvr.nl/component=server --all-namespaces=true --tail=500 >> test-logs/keycloak-logs.log 2>&1 || echo "No Keycloak logs found"
           
           echo "=== PostgreSQL Status ===" | tee test-logs/postgres-status.log
           kubectl get clusters.postgresql.cnpg.io --all-namespaces -o wide >> test-logs/postgres-status.log 2>&1 || true
