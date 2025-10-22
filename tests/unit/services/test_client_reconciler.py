@@ -104,7 +104,7 @@ async def test_manage_service_account_roles_assigns_client_roles(
 
     await reconciler.manage_service_account_roles(spec, "client-uuid", "resource", "ns")
 
-    admin_mock.get_client_by_name.assert_called_once_with("api-server", "master")
+    admin_mock.get_client_by_name.assert_called_once_with("api-server", "master", "ns")
     admin_mock.assign_client_roles_to_user.assert_called_once_with(
         user_id="service-user-id",
         client_uuid="target-client-uuid",

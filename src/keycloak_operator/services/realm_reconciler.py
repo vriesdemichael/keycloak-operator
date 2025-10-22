@@ -1289,7 +1289,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                 )
 
             # Delete the realm itself from Keycloak
-            admin_client.delete_realm(realm_name)
+            await admin_client.delete_realm(realm_name, namespace)
             self.logger.info(f"Deleted realm {realm_name} from Keycloak")
 
             # Now delete KeycloakClient CRs (after Keycloak cleanup to avoid deadlock)
