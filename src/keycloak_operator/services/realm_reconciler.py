@@ -35,6 +35,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         self,
         k8s_client: client.ApiClient | None = None,
         keycloak_admin_factory: Any = None,
+        rate_limiter: Any = None,
     ):
         """
         Initialize Keycloak realm reconciler.
@@ -42,11 +43,13 @@ class KeycloakRealmReconciler(BaseReconciler):
         Args:
             k8s_client: Kubernetes API client
             keycloak_admin_factory: Factory function for creating Keycloak admin clients
+            rate_limiter: Rate limiter for Keycloak API calls
         """
         super().__init__(k8s_client)
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
+        self.rate_limiter = rate_limiter
 
     async def do_reconcile(
         self,
@@ -98,7 +101,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             await self.configure_identity_providers(realm_spec, name, namespace)
 
         if realm_spec.user_federation:
-            await self.configure_user_federation(realm_spec, name, namespace)
+            await self.configure_user_federation(realm_spec, name, namespace, namespace)
 
         # Setup backup preparation
         await self.manage_realm_backup(realm_spec, name, namespace)
@@ -448,7 +451,9 @@ class KeycloakRealmReconciler(BaseReconciler):
             )
 
         # Get Keycloak admin client
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
 
         # Extract CR UID for ownership tracking
         cr_uid = kwargs.get("uid", "")
@@ -517,7 +522,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         from ..errors import PermanentError, TemporaryError
 
         try:
-            existing_realm = admin_client.get_realm(realm_name)
+            existing_realm = await admin_client.get_realm(realm_name, namespace)
         except KeycloakAdminError as exc:
             if getattr(exc, "status_code", None) == 404:
                 self.logger.info("Realm %s not found, creating new realm", realm_name)
@@ -553,7 +558,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     f"(no ownership metadata found)"
                 )
                 try:
-                    admin_client.update_realm(realm_name, realm_payload)
+                    await admin_client.update_realm(
+                        realm_name, realm_payload, namespace
+                    )
                     self.logger.info(f"Successfully adopted realm {realm_name}")
                 except KeycloakAdminError as exc:
                     self.logger.error(
@@ -568,7 +575,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                 # Owned by this CR - normal update
                 self.logger.info(f"Updating realm {realm_name} (owned by this CR)")
                 try:
-                    admin_client.update_realm(realm_name, realm_payload)
+                    await admin_client.update_realm(
+                        realm_name, realm_payload, namespace
+                    )
                 except KeycloakAdminError as exc:
                     self.logger.error(
                         "Realm update failed",
@@ -605,7 +614,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                 cr_uid=cr_uid,
             )
             try:
-                admin_client.create_realm(realm_payload)
+                await admin_client.create_realm(realm_payload, namespace)
                 self.logger.info(f"Successfully created realm {realm_name}")
             except KeycloakAdminError as exc:
                 # Handle 409 conflict (race condition - realm created between GET and CREATE)
@@ -645,7 +654,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
 
         try:
             theme_config = {}
@@ -659,7 +670,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                 theme_config["email_theme"] = spec.themes.email_theme
 
             if theme_config:
-                admin_client.update_realm_themes(spec.realm_name, theme_config)
+                await admin_client.update_realm_themes(
+                    spec.realm_name, theme_config, namespace
+                )
         except Exception as e:
             self.logger.warning(f"Failed to configure themes: {e}")
 
@@ -682,7 +695,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
 
         for flow_config in spec.authentication_flows:
             try:
@@ -694,7 +709,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(flow_config, "model_dump")
                     else flow_config,
                 )
-                admin_client.configure_authentication_flow(spec.realm_name, flow_dict)
+                admin_client.configure_authentication_flow(
+                    spec.realm_name, flow_dict, namespace
+                )
             except Exception as e:
                 self.logger.warning(f"Failed to configure authentication flow: {e}")
 
@@ -717,7 +734,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
 
         for idp_config in spec.identity_providers:
             try:
@@ -729,7 +748,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(idp_config, "model_dump")
                     else idp_config,
                 )
-                admin_client.configure_identity_provider(spec.realm_name, idp_dict)
+                admin_client.configure_identity_provider(
+                    spec.realm_name, idp_dict, namespace
+                )
             except Exception as e:
                 self.logger.warning(f"Failed to configure identity provider: {e}")
 
@@ -752,7 +773,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
 
         for federation_config in spec.user_federation:
             try:
@@ -764,7 +787,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(federation_config, "model_dump")
                     else federation_config,
                 )
-                admin_client.configure_user_federation(spec.realm_name, federation_dict)
+                admin_client.configure_user_federation(
+                    spec.realm_name, federation_dict, namespace
+                )
             except Exception as e:
                 self.logger.warning(f"Failed to configure user federation: {e}")
 
@@ -829,10 +854,12 @@ class KeycloakRealmReconciler(BaseReconciler):
             operator_ref = spec.operator_ref
             target_namespace = operator_ref.namespace
             keycloak_name = "keycloak"  # Default Keycloak instance name
-            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+            admin_client = await self.keycloak_admin_factory(
+                keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+            )
 
             # Create realm backup
-            backup_data = admin_client.backup_realm(spec.realm_name)
+            backup_data = await admin_client.backup_realm(spec.realm_name, namespace)
             if not backup_data:
                 self.logger.error(
                     f"Failed to create backup data for realm {spec.realm_name}"
@@ -967,7 +994,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         operator_ref = new_realm_spec.operator_ref
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
-        admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
 
         realm_name = new_realm_spec.realm_name
 
@@ -1009,7 +1038,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                             )
 
                         if theme_config:
-                            admin_client.update_realm_themes(realm_name, theme_config)
+                            await admin_client.update_realm_themes(
+                                realm_name, theme_config, namespace
+                            )
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update themes: {e}")
@@ -1036,7 +1067,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                             else flow_config,
                         )
                         admin_client.configure_authentication_flow(
-                            realm_name, flow_dict
+                            realm_name, flow_dict, namespace
                         )
                     configuration_changed = True
                 except Exception as e:
@@ -1052,7 +1083,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                             if hasattr(idp_config, "model_dump")
                             else idp_config,
                         )
-                        admin_client.configure_identity_provider(realm_name, idp_dict)
+                        admin_client.configure_identity_provider(
+                            realm_name, idp_dict, namespace
+                        )
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update identity providers: {e}")
@@ -1068,7 +1101,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                             else federation_config,
                         )
                         admin_client.configure_user_federation(
-                            realm_name, federation_dict
+                            realm_name, federation_dict, namespace
                         )
                     configuration_changed = True
                 except Exception as e:
@@ -1077,8 +1110,8 @@ class KeycloakRealmReconciler(BaseReconciler):
             elif field_path[:2] == ("spec", "settings"):
                 self.logger.info("Updating realm settings")
                 try:
-                    admin_client.update_realm(
-                        realm_name, new_realm_spec.to_keycloak_config()
+                    await admin_client.update_realm(
+                        realm_name, new_realm_spec.to_keycloak_config(), namespace
                     )
                     configuration_changed = True
                 except Exception as e:
@@ -1134,10 +1167,12 @@ class KeycloakRealmReconciler(BaseReconciler):
         keycloak_name = "keycloak"  # Default Keycloak instance name
 
         try:
-            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+            admin_client = await self.keycloak_admin_factory(
+                keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+            )
 
             # Try to get realm
-            existing_realm = admin_client.get_realm(realm_name=realm_name)
+            existing_realm = await admin_client.get_realm(realm_name, namespace)
 
             if existing_realm:
                 self.logger.info(f"Realm {realm_name} exists in Keycloak")
@@ -1208,7 +1243,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Delete realm from Keycloak (if instance still exists)
         try:
             keycloak_name = "keycloak"  # Default Keycloak instance name
-            admin_client = self.keycloak_admin_factory(keycloak_name, target_namespace)
+            admin_client = await self.keycloak_admin_factory(
+                keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+            )
 
             # Backup realm data if requested (only if spec parsed successfully)
             if realm_spec and getattr(realm_spec, "backup_on_delete", False):
@@ -1232,14 +1269,16 @@ class KeycloakRealmReconciler(BaseReconciler):
                 "account-console",
             }
             try:
-                realm_clients = admin_client.get_realm_clients(realm_name)
+                realm_clients = await admin_client.get_realm_clients(
+                    realm_name, namespace
+                )
                 for client_config in realm_clients:
                     client_id = client_config.client_id
                     if client_id and client_id not in BUILTIN_CLIENTS:
                         self.logger.info(
                             f"Cleaning up client {client_id} from realm {realm_name} in Keycloak"
                         )
-                        admin_client.delete_client(client_id, realm_name)
+                        await admin_client.delete_client(client_id, realm_name)
                     elif client_id in BUILTIN_CLIENTS:
                         self.logger.debug(
                             f"Skipping built-in client {client_id} (cannot be deleted)"
@@ -1250,7 +1289,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                 )
 
             # Delete the realm itself from Keycloak
-            admin_client.delete_realm(realm_name)
+            await admin_client.delete_realm(realm_name, namespace)
             self.logger.info(f"Deleted realm {realm_name} from Keycloak")
 
             # Now delete KeycloakClient CRs (after Keycloak cleanup to avoid deadlock)

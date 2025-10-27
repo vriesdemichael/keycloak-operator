@@ -10,9 +10,11 @@ This module tests the end-to-end authorization flow:
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import contextlib
 import uuid
+from typing import Any
 
 import pytest
 from kubernetes.client.rest import ApiException
@@ -20,6 +22,11 @@ from kubernetes.client.rest import ApiException
 from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
 from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+from .wait_helpers import (
+    wait_for_resource_condition,
+    wait_for_resource_ready,
+)
 
 
 @pytest.mark.integration
@@ -35,7 +42,6 @@ class TestAuthorizationDelegation:
         test_namespace,
         operator_namespace,
         shared_operator,
-        wait_for_condition,
         admission_token_setup,
     ) -> None:
         """Verify that realms validate the operator token before reconciliation.
@@ -75,31 +81,9 @@ class TestAuthorizationDelegation:
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
-        async def _wait_resource_ready(plural: str, name: str) -> bool:
-            async def _condition() -> bool:
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=namespace,
-                        plural=plural,
-                        name=name,
-                    )
-                except ApiException as exc:
-                    if exc.status == 404:
-                        return False
-                    raise
-
-                status = resource.get("status", {}) or {}
-                phase = status.get("phase")
-                # Accept Ready or Degraded (both mean resource is operational)
-                return phase in ("Ready", "Degraded")
-
-            return await wait_for_condition(_condition, timeout=90, interval=3)
-
         try:
             # Create realm with operator token reference (shared Keycloak already ready)
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -108,11 +92,19 @@ class TestAuthorizationDelegation:
             )
 
             # Wait for realm to become ready (validates operator token internally)
-            ready = await _wait_resource_ready("keycloakrealms", realm_name)
-            assert ready, f"Realm {realm_name} did not become Ready"
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=90,
+                operator_namespace=operator_namespace,
+            )
 
             # Get realm status
-            realm = k8s_custom_objects.get_namespaced_custom_object(
+            realm = await k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -122,7 +114,7 @@ class TestAuthorizationDelegation:
 
             # Verify realm bootstrapped operational token
             operational_secret_name = f"{namespace}-operator-token"
-            operational_secret = k8s_core_v1.read_namespaced_secret(
+            operational_secret = await k8s_core_v1.read_namespaced_secret(
                 name=operational_secret_name, namespace=namespace
             )
             assert operational_secret.data, "Operational token secret should have data"
@@ -155,7 +147,7 @@ class TestAuthorizationDelegation:
         finally:
             # Cleanup realm only (admission token cleaned by fixture)
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -171,7 +163,6 @@ class TestAuthorizationDelegation:
         test_namespace,
         operator_namespace,
         shared_operator,
-        wait_for_condition,
         admission_token_setup,
     ) -> None:
         """Verify that clients validate realm token before reconciliation.
@@ -211,30 +202,9 @@ class TestAuthorizationDelegation:
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
-        async def _wait_resource_ready(plural: str, name: str) -> bool:
-            async def _condition() -> bool:
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=namespace,
-                        plural=plural,
-                        name=name,
-                    )
-                except ApiException as exc:
-                    if exc.status == 404:
-                        return False
-                    raise
-
-                status = resource.get("status", {}) or {}
-                phase = status.get("phase")
-                return phase in ("Ready", "Degraded")
-
-            return await wait_for_condition(_condition, timeout=90, interval=3)
-
         try:
             # Create realm (shared Keycloak already ready)
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -242,11 +212,19 @@ class TestAuthorizationDelegation:
                 body=realm_manifest,
             )
 
-            ready = await _wait_resource_ready("keycloakrealms", realm_name)
-            assert ready, f"Realm {realm_name} did not become Ready"
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=90,
+                operator_namespace=operator_namespace,
+            )
 
             # Get realm's authorization secret name from status (camelCase in CRD)
-            realm = k8s_custom_objects.get_namespaced_custom_object(
+            realm = await k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -262,22 +240,31 @@ class TestAuthorizationDelegation:
             )
 
             # Wait for the authorization secret to actually exist before using it
-            from kubernetes import client as k8s_client
 
-            k8s_core = k8s_client.CoreV1Api()
+            # Wait for realm authorization secret to be created
+            import time
 
-            async def check_secret_exists():
+            start_time = time.time()
+            timeout = 30
+            interval = 2
+            secret_exists = False
+
+            while time.time() - start_time < timeout:
                 try:
-                    k8s_core.read_namespaced_secret(realm_auth_secret_name, namespace)
-                    return True
+                    await k8s_core_v1.read_namespaced_secret(
+                        realm_auth_secret_name, namespace
+                    )
+                    secret_exists = True
+                    break
                 except ApiException as e:
                     if e.status == 404:
-                        return False
-                    raise
+                        await asyncio.sleep(interval)
+                    else:
+                        raise
 
-            assert await wait_for_condition(
-                check_secret_exists, timeout=30, interval=2
-            ), f"Authorization secret {realm_auth_secret_name} was not created"
+            assert secret_exists, (
+                f"Authorization secret {realm_auth_secret_name} was not created"
+            )
 
             # Create client with realmRef pointing to realm's token
             client_spec = KeycloakClientSpec(
@@ -300,7 +287,7 @@ class TestAuthorizationDelegation:
                 "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -309,13 +296,21 @@ class TestAuthorizationDelegation:
             )
 
             # Wait for client to become ready (validates realm token internally)
-            ready = await _wait_resource_ready("keycloakclients", client_name)
-            assert ready, f"Client {client_name} did not become Ready"
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=90,
+                operator_namespace=operator_namespace,
+            )
 
         finally:
             # Cleanup test resources only (shared Keycloak persists)
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -324,7 +319,7 @@ class TestAuthorizationDelegation:
                 )
 
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -339,7 +334,6 @@ class TestAuthorizationDelegation:
         k8s_core_v1,
         test_namespace,
         operator_namespace,
-        wait_for_condition,
     ) -> None:
         """Verify that realms with invalid operator token are rejected.
 
@@ -391,39 +385,14 @@ class TestAuthorizationDelegation:
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
-        async def _wait_resource_failed(plural: str, name: str) -> bool:
-            async def _condition() -> bool:
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=namespace,
-                        plural=plural,
-                        name=name,
-                    )
-                except ApiException as exc:
-                    if exc.status == 404:
-                        return False
-                    raise
-
-                status = resource.get("status", {}) or {}
-                phase = status.get("phase")
-                message = status.get("message", "")
-
-                # Should be in Failed or Degraded state with authorization error message
-                return (
-                    phase in ("Failed", "Degraded")
-                    and "Authorization failed" in message
-                )
-
-            return await wait_for_condition(_condition, timeout=120, interval=3)
-
         try:
             # Create fake secret
-            k8s_core_v1.create_namespaced_secret(namespace=namespace, body=fake_secret)
+            await k8s_core_v1.create_namespaced_secret(
+                namespace=namespace, body=fake_secret
+            )
 
             # Create realm with invalid token reference
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -432,17 +401,32 @@ class TestAuthorizationDelegation:
             )
 
             # Wait for realm to fail due to authorization
-            failed = await _wait_resource_failed("keycloakrealms", realm_name)
-            assert failed, f"Realm {realm_name} should have failed authorization check"
+            def _auth_failed_condition(resource: dict[str, Any]) -> bool:
+                status = resource.get("status", {}) or {}
+                phase = status.get("phase")
+                message = status.get("message", "")
+                return (
+                    phase in ("Failed", "Degraded")
+                    and "Authorization failed" in message
+                )
 
-            # Verify the error message contains authorization failure
-            realm = k8s_custom_objects.get_namespaced_custom_object(
+            realm = await wait_for_resource_condition(
+                k8s_custom_objects=k8s_custom_objects,
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
+                condition_func=_auth_failed_condition,
+                timeout=120,
+                operator_namespace=operator_namespace,
+                expected_phases=(
+                    "Failed (with auth error)",
+                    "Degraded (with auth error)",
+                ),
             )
+
+            # Verify the error message contains authorization failure
             status = realm.get("status", {}) or {}
             message = status.get("message", "")
 
@@ -453,7 +437,7 @@ class TestAuthorizationDelegation:
         finally:
             # Cleanup
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -462,7 +446,7 @@ class TestAuthorizationDelegation:
                 )
 
             with contextlib.suppress(ApiException):
-                k8s_core_v1.delete_namespaced_secret(
+                await k8s_core_v1.delete_namespaced_secret(
                     name=fake_secret_name, namespace=namespace
                 )
 
@@ -474,7 +458,6 @@ class TestAuthorizationDelegation:
         test_namespace,
         operator_namespace,
         shared_operator,
-        wait_for_condition,
         admission_token_setup,
     ) -> None:
         """Verify that clients with invalid realm token are rejected.
@@ -515,54 +498,9 @@ class TestAuthorizationDelegation:
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
-        async def _wait_resource_ready(plural: str, name: str) -> bool:
-            async def _condition() -> bool:
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=namespace,
-                        plural=plural,
-                        name=name,
-                    )
-                except ApiException as exc:
-                    if exc.status == 404:
-                        return False
-                    raise
-
-                status = resource.get("status", {}) or {}
-                phase = status.get("phase")
-                return phase in ("Ready", "Degraded")
-
-            return await wait_for_condition(_condition, timeout=90, interval=3)
-
-        async def _wait_client_failed() -> bool:
-            async def _condition() -> bool:
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=namespace,
-                        plural="keycloakclients",
-                        name=client_name,
-                    )
-                except ApiException as exc:
-                    if exc.status == 404:
-                        return False
-                    raise
-
-                status = resource.get("status", {}) or {}
-                phase = status.get("phase")
-                message = status.get("message", "")
-
-                # Should fail with authorization error
-                return phase == "Failed" and "Authorization failed" in message
-
-            return await wait_for_condition(_condition, timeout=120, interval=3)
-
         try:
             # Create realm (shared Keycloak already ready, will generate valid token)
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -570,8 +508,16 @@ class TestAuthorizationDelegation:
                 body=realm_manifest,
             )
 
-            ready = await _wait_resource_ready("keycloakrealms", realm_name)
-            assert ready, f"Realm {realm_name} did not become Ready"
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=90,
+                operator_namespace=operator_namespace,
+            )
 
             # Create fake secret with invalid token (with required RBAC label)
             fake_token = b"invalid-fake-realm-token"
@@ -586,7 +532,9 @@ class TestAuthorizationDelegation:
                 "type": "Opaque",
                 "data": {"token": base64.b64encode(fake_token).decode("utf-8")},
             }
-            k8s_core_v1.create_namespaced_secret(namespace=namespace, body=fake_secret)
+            await k8s_core_v1.create_namespaced_secret(
+                namespace=namespace, body=fake_secret
+            )
 
             # Create client with fake token (not realm's token)
             client_spec = KeycloakClientSpec(
@@ -609,7 +557,7 @@ class TestAuthorizationDelegation:
                 "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -618,19 +566,26 @@ class TestAuthorizationDelegation:
             )
 
             # Wait for client to fail authorization
-            failed = await _wait_client_failed()
-            assert failed, (
-                f"Client {client_name} should have failed authorization check"
-            )
+            def _client_auth_failed(resource: dict[str, Any]) -> bool:
+                status = resource.get("status", {}) or {}
+                phase = status.get("phase")
+                message = status.get("message", "")
+                return phase == "Failed" and "Authorization failed" in message
 
-            # Verify error message
-            client = k8s_custom_objects.get_namespaced_custom_object(
+            client = await wait_for_resource_condition(
+                k8s_custom_objects=k8s_custom_objects,
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
                 name=client_name,
+                condition_func=_client_auth_failed,
+                timeout=120,
+                operator_namespace=operator_namespace,
+                expected_phases=("Failed (with auth error)",),
             )
+
+            # Verify error message
             status = client.get("status", {}) or {}
             message = status.get("message", "")
             assert "Authorization failed" in message
@@ -638,7 +593,7 @@ class TestAuthorizationDelegation:
         finally:
             # Cleanup test resources only (shared Keycloak persists)
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -647,12 +602,12 @@ class TestAuthorizationDelegation:
                 )
 
             with contextlib.suppress(ApiException):
-                k8s_core_v1.delete_namespaced_secret(
+                await k8s_core_v1.delete_namespaced_secret(
                     name=fake_secret_name, namespace=namespace
                 )
 
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -668,7 +623,6 @@ class TestAuthorizationDelegation:
         test_namespace,
         operator_namespace,
         shared_operator,
-        wait_for_condition,
         admission_token_setup,
     ) -> None:
         """Verify that operational token secrets are cleaned up with realm deletion.
@@ -710,44 +664,9 @@ class TestAuthorizationDelegation:
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
-        async def _wait_resource_ready(plural: str, name: str) -> bool:
-            async def _condition() -> bool:
-                try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=namespace,
-                        plural=plural,
-                        name=name,
-                    )
-                except ApiException as exc:
-                    if exc.status == 404:
-                        return False
-                    raise
-
-                status = resource.get("status", {}) or {}
-                phase = status.get("phase")
-                return phase in ("Ready", "Degraded")
-
-            return await wait_for_condition(_condition, timeout=90, interval=3)
-
-        async def _wait_secret_deleted(secret_name: str) -> bool:
-            async def _condition() -> bool:
-                try:
-                    k8s_core_v1.read_namespaced_secret(
-                        name=secret_name, namespace=namespace
-                    )
-                    return False  # Secret still exists
-                except ApiException as exc:
-                    if exc.status == 404:
-                        return True  # Secret deleted
-                    raise
-
-            return await wait_for_condition(_condition, timeout=90, interval=2)
-
         try:
             # Create realm (shared Keycloak already ready)
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -755,18 +674,26 @@ class TestAuthorizationDelegation:
                 body=realm_manifest,
             )
 
-            ready = await _wait_resource_ready("keycloakrealms", realm_name)
-            assert ready, f"Realm {realm_name} did not become Ready"
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=90,
+                operator_namespace=operator_namespace,
+            )
 
             # Verify operational token secret was bootstrapped
             operational_secret_name = f"{namespace}-operator-token"
-            operational_secret = k8s_core_v1.read_namespaced_secret(
+            operational_secret = await k8s_core_v1.read_namespaced_secret(
                 name=operational_secret_name, namespace=namespace
             )
             assert operational_secret, "Operational token secret should exist"
 
             # Delete realm
-            k8s_custom_objects.delete_namespaced_custom_object(
+            await k8s_custom_objects.delete_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -777,7 +704,7 @@ class TestAuthorizationDelegation:
             # Verify operational token persists (shared across all realms in namespace)
             # It should NOT be deleted with a single realm
             try:
-                secret_after_delete = k8s_core_v1.read_namespaced_secret(
+                secret_after_delete = await k8s_core_v1.read_namespaced_secret(
                     name=operational_secret_name, namespace=namespace
                 )
                 assert secret_after_delete, (

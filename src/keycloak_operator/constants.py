@@ -8,6 +8,8 @@ This module defines all constant values used by the operator including:
 - Error messages and status constants
 """
 
+import os
+
 # Finalizer constants for cleanup coordination
 # These prevent Kubernetes from deleting resources until cleanup is complete
 KEYCLOAK_FINALIZER = "keycloak.mdvr.nl/cleanup"
@@ -57,7 +59,7 @@ CONDITION_FALSE = "False"
 CONDITION_UNKNOWN = "Unknown"
 
 # Default configuration values
-DEFAULT_KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.4.0"
+DEFAULT_KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.4.1"
 DEFAULT_KEYCLOAK_OPTIMIZED_VERSION = "26.4.1"  # Version for optimized test image
 MINIMUM_KEYCLOAK_VERSION = "25.0.0"  # Minimum version for management port support
 DEFAULT_KEYCLOAK_PORT = 8080
@@ -86,6 +88,15 @@ DEFAULT_BACKUP_TIMEOUT = 900  # 15 minutes
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_BACKOFF_FACTOR = 2.0
 DEFAULT_INITIAL_DELAY = 1.0
+
+# Rate limiting configuration
+RATE_LIMIT_GLOBAL_TPS = float(os.getenv("KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS", "50"))
+RATE_LIMIT_GLOBAL_BURST = int(os.getenv("KEYCLOAK_API_GLOBAL_BURST", "100"))
+RATE_LIMIT_NAMESPACE_TPS = float(
+    os.getenv("KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS", "5")
+)
+RATE_LIMIT_NAMESPACE_BURST = int(os.getenv("KEYCLOAK_API_NAMESPACE_BURST", "10"))
+RECONCILE_JITTER_MAX = float(os.getenv("RECONCILE_JITTER_MAX_SECONDS", "5.0"))
 
 # Production validation constants
 SUPPORTED_DATABASES = ["postgresql", "mysql", "mariadb", "oracle", "mssql"]

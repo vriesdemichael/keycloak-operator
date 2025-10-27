@@ -186,25 +186,28 @@ class TestRealmFinalizers:
 
     @pytest.fixture
     def mock_keycloak_admin(self):
-        admin = MagicMock()
-        admin.delete_realm = MagicMock()
-        admin.export_realm = MagicMock(return_value={"realm": "test"})
-        admin.get_realm_clients = MagicMock(return_value=[])
+        admin = AsyncMock()
+        admin.delete_realm = AsyncMock()
+        admin.export_realm = AsyncMock(return_value={"realm": "test"})
+        admin.get_realm_clients = AsyncMock(return_value=[])
         return admin
 
     @pytest.mark.asyncio
     async def test_realm_cleanup_success(self, realm_reconciler, mock_keycloak_admin):
         spec = build_spec(BASE_REALM_SPEC)
 
-        realm_reconciler.keycloak_admin_factory = MagicMock(
-            return_value=mock_keycloak_admin
-        )
+        async def mock_factory(*args, **kwargs):
+            return mock_keycloak_admin
+
+        realm_reconciler.keycloak_admin_factory = mock_factory
 
         await realm_reconciler.cleanup_resources(
             "test-realm", "test-namespace", spec, status=MagicMock()
         )
 
-        mock_keycloak_admin.delete_realm.assert_called_with("test-realm")
+        mock_keycloak_admin.delete_realm.assert_called_with(
+            "test-realm", "test-namespace"
+        )
 
     @pytest.mark.asyncio
     async def test_realm_cleanup_keycloak_unreachable(self, realm_reconciler):
@@ -256,7 +259,7 @@ class TestClientFinalizers:
     ):
         spec = build_spec(BASE_CLIENT_SPEC, public_client=False)
 
-        client_reconciler.keycloak_admin_factory = MagicMock(
+        client_reconciler.keycloak_admin_factory = AsyncMock(
             return_value=mock_keycloak_admin
         )
         client_reconciler.k8s_client = MagicMock()
@@ -278,7 +281,7 @@ class TestClientFinalizers:
     ):
         spec = build_spec(BASE_CLIENT_SPEC, public_client=True)
 
-        client_reconciler.keycloak_admin_factory = MagicMock(
+        client_reconciler.keycloak_admin_factory = AsyncMock(
             return_value=mock_keycloak_admin
         )
         client_reconciler.k8s_client = MagicMock()
@@ -307,7 +310,7 @@ class TestClientFinalizers:
             items=[SimpleNamespace(metadata=SimpleNamespace(name="extra-secret"))]
         )
 
-        client_reconciler.keycloak_admin_factory = MagicMock(
+        client_reconciler.keycloak_admin_factory = AsyncMock(
             return_value=mock_keycloak_admin
         )
         client_reconciler.k8s_client = MagicMock()

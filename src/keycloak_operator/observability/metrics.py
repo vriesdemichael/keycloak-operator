@@ -105,6 +105,36 @@ OPERATIONAL_TOKENS_ACTIVE = Gauge(
     registry=None,
 )
 
+# Rate limiting metrics
+RATE_LIMIT_WAIT_SECONDS = Histogram(
+    "keycloak_api_rate_limit_wait_seconds",
+    "Time spent waiting for rate limit tokens",
+    ["namespace", "limit_type"],
+    buckets=[0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
+    registry=None,
+)
+
+RATE_LIMIT_ACQUIRED_TOTAL = Counter(
+    "keycloak_api_rate_limit_acquired_total",
+    "Total rate limit tokens successfully acquired",
+    ["namespace", "limit_type"],
+    registry=None,
+)
+
+RATE_LIMIT_TIMEOUTS_TOTAL = Counter(
+    "keycloak_api_rate_limit_timeouts_total",
+    "Total rate limit timeout errors",
+    ["namespace", "limit_type"],
+    registry=None,
+)
+
+RATE_LIMIT_TOKENS_AVAILABLE = Gauge(
+    "keycloak_api_tokens_available",
+    "Currently available rate limit tokens",
+    ["namespace"],
+    registry=None,
+)
+
 DATABASE_CONNECTION_DURATION = Histogram(
     "keycloak_operator_database_connection_duration_seconds",
     "Time spent testing database connections",
