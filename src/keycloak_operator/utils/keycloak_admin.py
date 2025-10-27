@@ -1265,7 +1265,9 @@ class KeycloakAdminClient:
         logger.info(f"Getting all clients in realm '{realm_name}'")
 
         try:
-            response = await self._make_request("GET", f"realms/{realm_name}/clients")
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/clients", namespace
+            )
 
             if response.status_code == 200:
                 clients_data = response.json()
@@ -1314,7 +1316,7 @@ class KeycloakAdminClient:
             realm_config = {k: v for k, v in realm_config.items() if v is not None}
 
             response = await self._make_request(
-                "PUT", f"realms/{realm_name}", json=realm_config
+                "PUT", f"realms/{realm_name}", namespace, json=realm_config
             )
 
             if response.status_code == 204:
@@ -1514,23 +1516,23 @@ class KeycloakAdminClient:
 
         try:
             # Get realm configuration
-            realm_config = await self.get_realm(realm_name)
+            realm_config = await self.get_realm(realm_name, namespace)
             if not realm_config:
                 logger.error("Failed to get realm configuration for backup")
                 return None
 
             # Get clients
-            clients = await self.get_realm_clients(realm_name)
+            clients = await self.get_realm_clients(realm_name, namespace)
 
             # Get authentication flows
             flows_response = await self._make_request(
-                "GET", f"realms/{realm_name}/authentication/flows"
+                "GET", f"realms/{realm_name}/authentication/flows", namespace
             )
             flows = flows_response.json() if flows_response.status_code == 200 else []
 
             # Get identity providers
             idp_response = await self._make_request(
-                "GET", f"realms/{realm_name}/identity-provider/instances"
+                "GET", f"realms/{realm_name}/identity-provider/instances", namespace
             )
             identity_providers = (
                 idp_response.json() if idp_response.status_code == 200 else []
@@ -1540,6 +1542,7 @@ class KeycloakAdminClient:
             federation_response = await self._make_request(
                 "GET",
                 f"realms/{realm_name}/components?type=org.keycloak.storage.UserStorageProvider",
+                namespace,
             )
             user_federation = (
                 federation_response.json()
@@ -1566,7 +1569,7 @@ class KeycloakAdminClient:
 
     # Protocol Mappers API methods
     async def get_client_protocol_mappers(
-        self, client_uuid: str, realm_name: str = "master"
+        self, client_uuid: str, realm_name: str = "master", namespace: str = "default"
     ) -> list[ProtocolMapperRepresentation] | None:
         """
         Get all protocol mappers for a client.
@@ -1591,6 +1594,7 @@ class KeycloakAdminClient:
             response = await self._make_request(
                 "GET",
                 f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models",
+                namespace,
             )
 
             if response.status_code == 200:
@@ -1723,7 +1727,11 @@ class KeycloakAdminClient:
             return False
 
     async def delete_client_protocol_mapper(
-        self, client_uuid: str, mapper_id: str, realm_name: str = "master"
+        self,
+        client_uuid: str,
+        mapper_id: str,
+        realm_name: str = "master",
+        namespace: str = "default",
     ) -> bool:
         """
         Delete a protocol mapper from a client.
@@ -1740,7 +1748,7 @@ class KeycloakAdminClient:
         endpoint = f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}"
 
         try:
-            response = await self._make_request("DELETE", endpoint)
+            response = await self._make_request("DELETE", endpoint, namespace)
             if response.status_code == 204:
                 logger.info(f"Successfully deleted protocol mapper {mapper_id}")
                 return True
@@ -1755,7 +1763,7 @@ class KeycloakAdminClient:
 
     # Client Roles API methods
     async def get_client_roles(
-        self, client_uuid: str, realm_name: str = "master"
+        self, client_uuid: str, realm_name: str = "master", namespace: str = "default"
     ) -> list[RoleRepresentation] | None:
         """
         Get all roles for a client.
@@ -1776,7 +1784,7 @@ class KeycloakAdminClient:
 
         try:
             response = await self._make_request(
-                "GET", f"realms/{realm_name}/clients/{client_uuid}/roles"
+                "GET", f"realms/{realm_name}/clients/{client_uuid}/roles", namespace
             )
 
             if response.status_code == 200:
@@ -1897,7 +1905,11 @@ class KeycloakAdminClient:
             return False
 
     async def delete_client_role(
-        self, client_uuid: str, role_name: str, realm_name: str = "master"
+        self,
+        client_uuid: str,
+        role_name: str,
+        realm_name: str = "master",
+        namespace: str = "default",
     ) -> bool:
         """
         Delete a role from a client.
@@ -1914,7 +1926,7 @@ class KeycloakAdminClient:
         endpoint = f"realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
 
         try:
-            response = await self._make_request("DELETE", endpoint)
+            response = await self._make_request("DELETE", endpoint, namespace)
             if response.status_code == 204:
                 logger.info(f"Successfully deleted client role '{role_name}'")
                 return True

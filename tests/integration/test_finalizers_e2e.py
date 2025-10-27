@@ -24,19 +24,6 @@ async def _simple_wait(condition_func, timeout=300, interval=3):
     return False
 
 
-async def _simple_wait(condition_func, timeout=300, interval=3):
-    """Simple wait helper for conditions."""
-    import asyncio
-    import time
-
-    start = time.time()
-    while time.time() - start < timeout:
-        if await condition_func():
-            return True
-        await asyncio.sleep(interval)
-    return False
-
-
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestFinalizersE2E:

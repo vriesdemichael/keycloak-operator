@@ -25,19 +25,6 @@ async def _simple_wait(condition_func, timeout=300, interval=3):
     return False
 
 
-async def _simple_wait(condition_func, timeout=300, interval=3):
-    """Simple wait helper for conditions."""
-    import asyncio
-    import time
-
-    start = time.time()
-    while time.time() - start < timeout:
-        if await condition_func():
-            return True
-        await asyncio.sleep(interval)
-    return False
-
-
 class TestHelmRealmDeployment:
     """Test KeycloakRealm deployment via Helm charts."""
 

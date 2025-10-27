@@ -530,9 +530,9 @@ async def cnpg_cluster(
                     core.read_namespaced_secret(f"{cluster_name}-app", test_namespace)
                     break  # Success
                 except ApiException:
-                    pass
+                    pass  # Secret not ready yet, continue waiting
         except ApiException:
-            pass
+            pass  # Cluster status not available yet, continue waiting
         await asyncio.sleep(interval)
     else:
         pytest.skip("CNPG cluster was not ready in time")
