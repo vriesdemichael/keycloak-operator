@@ -60,7 +60,7 @@ jobs:
           cache-to: type=gha,mode=max
       
       - name: Upload operator image artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: operator-image
           path: /tmp/operator-test.tar
@@ -205,7 +205,7 @@ jobs:
         uses: actions/checkout@v5
       
       - name: Download image artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: operator-image
           path: /tmp
@@ -247,7 +247,7 @@ jobs:
         uses: actions/checkout@v5
       
       - name: Download image artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: operator-image
           path: /tmp
@@ -270,7 +270,7 @@ jobs:
           severity-cutoff: high
       
       - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: always()
         with:
           name: sbom-test-image
@@ -350,7 +350,7 @@ jobs:
         run: uv sync --group test
       
       - name: Download image artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: operator-image
           path: /tmp
@@ -490,7 +490,7 @@ jobs:
       
       - name: Upload test artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-logs-k8s-${{ matrix.k8s-version }}-run-${{ github.run_id }}
           path: test-logs/
