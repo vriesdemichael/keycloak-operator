@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.11](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.10...v0.2.11) (2025-10-27)
+
+
+### Documentation
+
+* add scaling strategy documentation to architecture ([#56](https://github.com/vriesdemichael/keycloak-operator/issues/56)) ([0b496c7](https://github.com/vriesdemichael/keycloak-operator/commit/0b496c7b568a33889b8d9e7980e04b6a9e60b6b3))
+
 ## [0.2.10](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.9...v0.2.10) (2025-10-27)
 
 
