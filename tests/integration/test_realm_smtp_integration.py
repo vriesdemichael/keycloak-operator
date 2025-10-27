@@ -111,7 +111,7 @@ async def test_realm_with_smtp_secret_reference(
         )
 
         # Fetch realm configuration
-        realm_repr = admin_client.get_realm(realm_name)
+        realm_repr = await admin_client.get_realm(realm_name, namespace)
         assert realm_repr is not None
         realm_config = realm_repr.model_dump(by_alias=True, exclude_none=False)
 
@@ -229,7 +229,7 @@ async def test_realm_with_smtp_direct_password(
             password=password,
         )
 
-        realm_repr = admin_client.get_realm(realm_name)
+        realm_repr = await admin_client.get_realm(realm_name, namespace)
         assert realm_repr is not None
         realm_config = realm_repr.model_dump(by_alias=True, exclude_none=False)
 

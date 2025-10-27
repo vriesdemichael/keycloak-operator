@@ -1,0 +1,50 @@
+{{- if .Values.operator.createAdmissionToken }}
+{{- $admissionToken := .Values.operator.admissionToken | default (randAlphaNum 64) }}
+{{- $tokenHash := $admissionToken | sha256sum }}
+{{- $validUntil := now | dateModify "8760h" | date "2006-01-02T15:04:05Z07:00" }}
+{{- $issuedAt := now | date "2006-01-02T15:04:05Z07:00" }}
+---
+# Admission token secret for operator authorization
+# This is the initial token that allows the operator to bootstrap operational tokens
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.operator.admissionTokenName }}
+  namespace: {{ include "keycloak-operator.namespace" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    keycloak.mdvr.nl/allow-operator-read: "true"
+    keycloak.mdvr.nl/token-type: "admission"
+    keycloak.mdvr.nl/managed-by: "keycloak-operator"
+  annotations:
+    "helm.sh/resource-policy": "keep"
+    keycloak.mdvr.nl/token-version: "1"
+    keycloak.mdvr.nl/valid-until: "{{ $validUntil }}"
+type: Opaque
+stringData:
+  token: {{ $admissionToken | quote }}
+---
+# Token metadata ConfigMap
+# Stores metadata for the admission token used by the operator for validation
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-operator-tokens
+  namespace: {{ include "keycloak-operator.namespace" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    keycloak.mdvr.nl/managed-by: "keycloak-operator"
+  annotations:
+    "helm.sh/resource-policy": "keep"
+data:
+  # Token metadata in JSON format, key is sha256(token)
+  {{ $tokenHash }}: |
+    {
+      "version": 1,
+      "token_type": "admission",
+      "namespace": "{{ include "keycloak-operator.namespace" . }}",
+      "valid_until": "{{ $validUntil }}",
+      "issued_at": "{{ $issuedAt }}",
+      "revoked": false
+    }
+{{- end }}

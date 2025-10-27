@@ -927,7 +927,7 @@ def backup_keycloak_data(
         raise
 
 
-def check_http_health(url: str, timeout: int = 5) -> tuple[bool, str | None]:
+async def check_http_health(url: str, timeout: int = 5) -> tuple[bool, str | None]:
     """
     Perform HTTP health check against a URL.
 
@@ -939,31 +939,14 @@ def check_http_health(url: str, timeout: int = 5) -> tuple[bool, str | None]:
         Tuple of (is_healthy, error_message)
     """
     try:
-        import requests
+        import httpx
 
-        response = requests.get(url, timeout=timeout)
-        if response.status_code == 200:
-            return True, None
-        else:
-            return False, f"HTTP {response.status_code}: {response.text[:200]}"
-
-    except ImportError:
-        # requests not available, fall back to urllib
-        try:
-            import urllib.error
-            import urllib.request
-
-            request = urllib.request.Request(url)
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                if response.status == 200:
-                    return True, None
-                else:
-                    return False, f"HTTP {response.status}"
-
-        except urllib.error.URLError as e:
-            return False, str(e)
-        except Exception as e:
-            return False, str(e)
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            response = await client.get(url)
+            if response.status_code == 200:
+                return True, None
+            else:
+                return False, f"HTTP {response.status_code}: {response.text[:200]}"
 
     except Exception as e:
         return False, str(e)

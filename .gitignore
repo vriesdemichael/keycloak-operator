@@ -207,8 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 
-# TODO/*
-
 # Temporary development files
 .tmp/
 

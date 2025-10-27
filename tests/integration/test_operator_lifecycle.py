@@ -11,6 +11,19 @@ import pytest
 from kubernetes.client.rest import ApiException
 
 
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestOperatorLifecycle:
@@ -26,7 +39,7 @@ class TestOperatorLifecycle:
         """Test that the operator deployment exists and is ready."""
         # shared_operator ensures operator is deployed
         try:
-            deployment = k8s_apps_v1.read_namespaced_deployment(
+            deployment = await k8s_apps_v1.read_namespaced_deployment(
                 name="keycloak-operator", namespace=operator_namespace
             )
 
@@ -45,7 +58,7 @@ class TestOperatorLifecycle:
     ):
         """Test that operator pods are running and healthy."""
         try:
-            pods = k8s_core_v1.list_namespaced_pod(
+            pods = await k8s_core_v1.list_namespaced_pod(
                 namespace=operator_namespace,
                 label_selector="app.kubernetes.io/name=keycloak-operator",
             )
@@ -251,7 +264,7 @@ class TestBasicKeycloakDeployment:
 
         try:
             # Verify the shared resource exists
-            resource = k8s_custom_objects.get_namespaced_custom_object(
+            resource = await k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -274,7 +287,7 @@ class TestBasicKeycloakDeployment:
 
         try:
             # Verify finalizer exists on shared resource
-            resource = k8s_custom_objects.get_namespaced_custom_object(
+            resource = await k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -300,7 +313,7 @@ class TestBasicKeycloakDeployment:
 
         try:
             # Verify deployment exists
-            deployment = k8s_apps_v1.read_namespaced_deployment(
+            deployment = await k8s_apps_v1.read_namespaced_deployment(
                 name=f"{keycloak_name}-keycloak", namespace=namespace
             )
 
@@ -331,7 +344,7 @@ class TestBasicKeycloakDeployment:
 
         try:
             # Verify service exists
-            service = k8s_core_v1.read_namespaced_service(
+            service = await k8s_core_v1.read_namespaced_service(
                 name=f"{keycloak_name}-keycloak", namespace=namespace
             )
 
@@ -354,7 +367,7 @@ class TestBasicKeycloakDeployment:
 
         try:
             # Verify status is set correctly (instance is already ready from fixture)
-            resource = k8s_custom_objects.get_namespaced_custom_object(
+            resource = await k8s_custom_objects.get_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -379,7 +392,7 @@ class TestBasicKeycloakDeployment:
 
         try:
             # Verify pods are running (instance is already ready from fixture)
-            pods = k8s_core_v1.list_namespaced_pod(
+            pods = await k8s_core_v1.list_namespaced_pod(
                 namespace=namespace,
                 label_selector=f"keycloak.mdvr.nl/instance={keycloak_name}",
             )
@@ -423,7 +436,7 @@ class TestKeycloakAdminAPI:
 
         try:
             # Verify deployment exists and is ready
-            deployment = k8s_apps_v1.read_namespaced_deployment(
+            deployment = await k8s_apps_v1.read_namespaced_deployment(
                 name=f"{keycloak_name}-keycloak", namespace=namespace
             )
 
@@ -437,7 +450,7 @@ class TestKeycloakAdminAPI:
 
             # Verify admin credentials secret exists
             admin_secret_name = f"{keycloak_name}-admin-credentials"
-            secret = k8s_core_v1.read_namespaced_secret(
+            secret = await k8s_core_v1.read_namespaced_secret(
                 name=admin_secret_name, namespace=namespace
             )
             assert secret.data, "Admin credentials secret has no data"
@@ -449,7 +462,7 @@ class TestKeycloakAdminAPI:
             )
 
             # Verify service endpoint is available
-            service = k8s_core_v1.read_namespaced_service(
+            service = await k8s_core_v1.read_namespaced_service(
                 name=f"{keycloak_name}-keycloak", namespace=namespace
             )
             assert service.spec.cluster_ip, "Service has no cluster IP"
@@ -476,7 +489,6 @@ class TestRealmBasicOperations:
         shared_operator,
         operator_namespace,
         sample_realm_spec,
-        wait_for_condition,
     ):
         """Test creating a basic realm resource on the shared Keycloak instance."""
         import uuid
@@ -508,7 +520,7 @@ class TestRealmBasicOperations:
 
         try:
             # Create realm on the shared Keycloak instance
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -519,7 +531,7 @@ class TestRealmBasicOperations:
             # Wait for realm to be created
             async def check_realm_created():
                 try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -530,7 +542,7 @@ class TestRealmBasicOperations:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_realm_created, timeout=180), (
+            assert await _simple_wait(check_realm_created, timeout=180), (
                 "Realm resource was not created successfully"
             )
 
@@ -540,7 +552,7 @@ class TestRealmBasicOperations:
         finally:
             # Cleanup realm only (shared Keycloak is managed by fixture)
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -561,7 +573,6 @@ class TestClientBasicOperations:
         operator_namespace,
         sample_realm_spec,
         sample_client_spec,
-        wait_for_condition,
     ):
         """Test creating a basic client resource on the shared Keycloak instance."""
         import uuid
@@ -614,7 +625,7 @@ class TestClientBasicOperations:
 
         try:
             # Create realm on shared Keycloak instance
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -623,7 +634,7 @@ class TestClientBasicOperations:
             )
 
             # Create client
-            k8s_custom_objects.create_namespaced_custom_object(
+            await k8s_custom_objects.create_namespaced_custom_object(
                 group="keycloak.mdvr.nl",
                 version="v1",
                 namespace=namespace,
@@ -634,7 +645,7 @@ class TestClientBasicOperations:
             # Wait for client to be created
             async def check_client_created():
                 try:
-                    resource = k8s_custom_objects.get_namespaced_custom_object(
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
                         group="keycloak.mdvr.nl",
                         version="v1",
                         namespace=namespace,
@@ -645,7 +656,7 @@ class TestClientBasicOperations:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_client_created, timeout=180), (
+            assert await _simple_wait(check_client_created, timeout=180), (
                 "Client resource was not created successfully"
             )
 
@@ -655,7 +666,7 @@ class TestClientBasicOperations:
         finally:
             # Cleanup client and realm (shared Keycloak is managed by fixture)
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,
@@ -664,7 +675,7 @@ class TestClientBasicOperations:
                 )
 
             with contextlib.suppress(ApiException):
-                k8s_custom_objects.delete_namespaced_custom_object(
+                await k8s_custom_objects.delete_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
                     version="v1",
                     namespace=namespace,

@@ -39,6 +39,44 @@ quality: format lint type-check
 .PHONY: test
 test: quality test-unit test-integration ## Run complete test suite (unit + integration)
 
+.PHONY: test-pre-commit
+test-pre-commit: ## Run complete pre-commit test suite (quality + clean cluster + unit + integration)
+	@echo "====================================="
+	@echo "Pre-commit test suite"
+	@echo "====================================="
+	@echo ""
+	@echo "Step 1/4: Running quality checks..."
+	@echo "-------------------------------------"
+	@$(MAKE) quality || { echo "❌ Quality checks failed"; exit 1; }
+	@echo "✓ Quality checks passed"
+	@echo ""
+	@echo "Step 2/4: Destroying test cluster..."
+	@echo "-------------------------------------"
+	@$(MAKE) kind-teardown || { echo "⚠️  Cluster teardown had issues (might not exist)"; }
+	@echo "✓ Test cluster destroyed"
+	@echo ""
+	@echo "Step 3/4: Running unit tests..."
+	@echo "-------------------------------------"
+	@$(MAKE) test-unit || { echo "❌ Unit tests failed"; exit 1; }
+	@echo "✓ Unit tests passed"
+	@echo ""
+	@echo "Step 4/4: Running integration tests..."
+	@echo "-------------------------------------"
+	@echo "Setting up Kind cluster..."
+	@$(MAKE) kind-setup || { echo "❌ Failed to setup Kind cluster"; exit 1; }
+	@echo "Installing CNPG..."
+	@$(MAKE) install-cnpg || { echo "❌ Failed to install CNPG"; exit 1; }
+	@echo "Running integration tests..."
+	@mkdir -p .tmp
+	@bash -c "set -o pipefail; $(MAKE) test-integration 2>&1 | tee .tmp/latest-integration-test.log" || { echo "❌ Integration tests failed"; exit 1; }
+	@echo "✓ Integration tests passed"
+	@echo ""
+	@echo "====================================="
+	@echo "✓ All pre-commit tests passed!"
+	@echo "====================================="
+	@echo ""
+	@echo "Test logs saved to: .tmp/latest-integration-test.log"
+
 .PHONY: test-unit
 test-unit: ## Run unit tests only
 	uv run --group test pytest tests/unit/ -v
