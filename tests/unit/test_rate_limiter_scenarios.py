@@ -354,7 +354,6 @@ class TestRateLimitingIntegration:
 class TestRateLimitingWithRealKeycloak:
     """Integration tests with real Keycloak (requires cluster)."""
 
-    @pytest.mark.slow
     @pytest.mark.skip(
         reason="Requires running Keycloak instance and keycloak_admin_client_factory fixture"
     )

@@ -292,7 +292,7 @@ class RateLimiter:
                 namespace=namespace, limit_type=limit_type
             ).observe(duration)
         except Exception:
-            pass  # Metrics are optional - gracefully handle errors  # Metrics are optional - gracefully handle import or recording errors
+            pass  # Metrics are optional - gracefully handle import or recording errors
 
     def _record_acquisition(self, namespace: str, limit_type: str) -> None:
         """Record successful token acquisition."""
