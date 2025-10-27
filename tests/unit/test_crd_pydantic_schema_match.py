@@ -26,7 +26,7 @@ from keycloak_operator.models.keycloak import KeycloakSpec
 from keycloak_operator.models.realm import KeycloakRealmSpec
 
 # Path to CRD files
-CRD_DIR = pathlib.Path(__file__).parent.parent.parent / "k8s" / "crds"
+CRD_DIR = pathlib.Path(__file__).parent.parent.parent / "charts" / "keycloak-operator" / "crds"
 
 # Fields to ignore (CRD-only metadata or Pydantic-only computed fields)
 IGNORE_FIELDS = {
