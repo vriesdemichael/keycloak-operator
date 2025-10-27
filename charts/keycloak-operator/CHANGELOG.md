@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.1.2...chart-operator-v0.1.3) (2025-10-27)
+
+
+### Features
+
+* Two-level rate limiting with async/await conversion ([#44](https://github.com/vriesdemichael/keycloak-operator/issues/44)) ([476a6ed](https://github.com/vriesdemichael/keycloak-operator/commit/476a6ed4bbb327d38e7c55bdc1421daa3fdb2a81))
+
 ## [0.1.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.1.1...chart-operator-v0.1.2) (2025-10-20)
 
 
