@@ -438,7 +438,9 @@ class KeycloakClientReconciler(BaseReconciler):
             )
 
         # Get Keycloak admin client
-        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, keycloak_namespace
+        )
 
         # Check if client already exists in the specified realm
         existing_client = await admin_client.get_client_by_name(
@@ -491,7 +493,9 @@ class KeycloakClientReconciler(BaseReconciler):
         actual_realm_name, keycloak_namespace, keycloak_name, _ = self._get_realm_info(
             realm_resource_name, target_namespace
         )
-        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, keycloak_namespace
+        )
 
         try:
             # Build OAuth2/OIDC client configuration
@@ -588,7 +592,7 @@ class KeycloakClientReconciler(BaseReconciler):
         # Get client secret if this is a confidential client
         client_secret = None
         if not spec.public_client:
-            admin_client = self.keycloak_admin_factory(
+            admin_client = await self.keycloak_admin_factory(
                 keycloak_name, keycloak_namespace
             )
             client_secret = await admin_client.get_client_secret(
@@ -683,7 +687,9 @@ class KeycloakClientReconciler(BaseReconciler):
         actual_realm_name, keycloak_namespace, keycloak_name, _ = self._get_realm_info(
             realm_resource_name, target_namespace
         )
-        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, keycloak_namespace
+        )
 
         try:
             # Get existing protocol mappers from Keycloak
@@ -815,7 +821,9 @@ class KeycloakClientReconciler(BaseReconciler):
         actual_realm_name, keycloak_namespace, keycloak_name, _ = self._get_realm_info(
             realm_resource_name, target_namespace
         )
-        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, keycloak_namespace
+        )
 
         try:
             # Get existing client roles from Keycloak
@@ -936,7 +944,7 @@ class KeycloakClientReconciler(BaseReconciler):
         )
 
         try:
-            admin_client = self.keycloak_admin_factory(
+            admin_client = await self.keycloak_admin_factory(
                 keycloak_name, keycloak_namespace
             )
 
@@ -944,7 +952,7 @@ class KeycloakClientReconciler(BaseReconciler):
                 f"Fetching service account user for client {spec.client_id}"
             )
             service_account_user = await admin_client.get_service_account_user(
-                client_uuid, actual_realm_name
+                client_uuid, actual_realm_name, namespace
             )
             user_id = service_account_user.id if service_account_user else None
 
@@ -958,10 +966,11 @@ class KeycloakClientReconciler(BaseReconciler):
                 self.logger.info(
                     f"Assigning {len(roles_config.realm_roles)} realm roles to service account for client {spec.client_id}"
                 )
-                admin_client.assign_realm_roles_to_user(
+                await admin_client.assign_realm_roles_to_user(
                     user_id=user_id,
                     role_names=roles_config.realm_roles,
                     realm_name=actual_realm_name,
+                    namespace=namespace,
                 )
 
             if roles_config.client_roles:
@@ -992,11 +1001,12 @@ class KeycloakClientReconciler(BaseReconciler):
                         )
                         continue
 
-                    admin_client.assign_client_roles_to_user(
+                    await admin_client.assign_client_roles_to_user(
                         user_id=user_id,
                         client_uuid=target_client_uuid,
                         role_names=role_names,
                         realm_name=actual_realm_name,
+                        namespace=namespace,
                     )
 
             self.logger.info(
@@ -1096,7 +1106,9 @@ class KeycloakClientReconciler(BaseReconciler):
                 delay=30,
             )
 
-        admin_client = self.keycloak_admin_factory(keycloak_name, keycloak_namespace)
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, keycloak_namespace
+        )
 
         # Apply configuration updates based on the diff
         client_update_needed = False
@@ -1234,7 +1246,7 @@ class KeycloakClientReconciler(BaseReconciler):
         )
 
         try:
-            admin_client = self.keycloak_admin_factory(
+            admin_client = await self.keycloak_admin_factory(
                 keycloak_name, keycloak_namespace
             )
 
@@ -1302,7 +1314,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Delete client from Keycloak (if instance still exists)
         try:
-            admin_client = self.keycloak_admin_factory(
+            admin_client = await self.keycloak_admin_factory(
                 keycloak_name, keycloak_namespace
             )
 

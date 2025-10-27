@@ -428,7 +428,9 @@ async def monitor_keycloak_health(
         )
 
         # Perform actual HTTP health check against Keycloak
-        keycloak_responding, health_error = check_http_health(health_url, timeout=5)
+        keycloak_responding, health_error = await check_http_health(
+            health_url, timeout=5
+        )
 
         if not keycloak_responding:
             logger.warning(f"Keycloak health check failed: {health_error}")
@@ -501,28 +503,30 @@ async def monitor_keycloak_health(
                 )
 
                 username, password = admin_credentials
-                admin_client = KeycloakAdminClient(
-                    server_url=keycloak_url,
-                    username=username,
-                    password=password,
-                )
 
                 # Perform basic connectivity test
                 try:
-                    await admin_client.authenticate()
-                    # Check if master realm is accessible
-                    master_realm = await admin_client.get_realm("master", namespace)
-                    if not master_realm:
-                        logger.warning(
-                            f"Master realm not accessible for Keycloak {name}"
+                    async with KeycloakAdminClient(
+                        server_url=keycloak_url,
+                        username=username,
+                        password=password,
+                    ) as admin_client:
+                        await admin_client.authenticate()
+                        # Check if master realm is accessible
+                        master_realm = await admin_client.get_realm("master", namespace)
+                        if not master_realm:
+                            logger.warning(
+                                f"Master realm not accessible for Keycloak {name}"
+                            )
+                            patch.status["phase"] = "Degraded"
+                            patch.status["message"] = (
+                                "Master realm not accessible via Admin API"
+                            )
+                            patch.status["lastHealthCheck"] = current_time
+                            return
+                        logger.debug(
+                            f"Admin API connectivity verified for Keycloak {name}"
                         )
-                        patch.status["phase"] = "Degraded"
-                        patch.status["message"] = (
-                            "Master realm not accessible via Admin API"
-                        )
-                        patch.status["lastHealthCheck"] = current_time
-                        return
-                    logger.debug(f"Admin API connectivity verified for Keycloak {name}")
 
                 except Exception as api_error:
                     logger.warning(

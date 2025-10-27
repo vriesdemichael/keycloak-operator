@@ -11,6 +11,32 @@ import pytest
 from kubernetes.client.rest import ApiException
 
 
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestFinalizersE2E:
@@ -27,7 +53,6 @@ class TestFinalizersE2E:
         shared_operator,
         operator_namespace,
         sample_realm_spec,
-        wait_for_condition,
     ):
         """Test finalizer behavior for Keycloak realm resources using shared instance."""
         import uuid
@@ -84,7 +109,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_realm_finalizer, timeout=120), (
+            assert await _simple_wait(check_realm_finalizer, timeout=120), (
                 "Realm finalizer was not added"
             )
 
@@ -111,7 +136,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await wait_for_condition(check_realm_deleted, timeout=60), (
+            assert await _simple_wait(check_realm_deleted, timeout=60), (
                 "Realm finalizer cleanup did not complete"
             )
 
@@ -125,7 +150,6 @@ class TestFinalizersE2E:
         operator_namespace,
         sample_realm_spec,
         sample_client_spec,
-        wait_for_condition,
     ):
         """Test finalizer behavior for Keycloak client resources using shared instance."""
         import uuid
@@ -211,7 +235,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_client_finalizer, timeout=120), (
+            assert await _simple_wait(check_client_finalizer, timeout=120), (
                 "Client finalizer was not added"
             )
 
@@ -238,7 +262,7 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await wait_for_condition(check_client_deleted, timeout=60), (
+            assert await _simple_wait(check_client_deleted, timeout=60), (
                 "Client finalizer cleanup did not complete"
             )
 
@@ -262,7 +286,6 @@ class TestFinalizersE2E:
         test_namespace,
         operator_namespace,
         shared_operator,
-        wait_for_condition,
         admission_token_setup,
     ):
         """Test that cascading deletion happens when realm is deleted (realm→client).
@@ -347,7 +370,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_realm_ready, timeout=60), (
+            assert await _simple_wait(check_realm_ready, timeout=60), (
                 "Realm did not become ready before cascading deletion test"
             )
 
@@ -376,7 +399,7 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_client_has_finalizer, timeout=60), (
+            assert await _simple_wait(check_client_has_finalizer, timeout=60), (
                 "Client finalizer was not added (client not reconciled)"
             )
 
@@ -418,7 +441,7 @@ class TestFinalizersE2E:
                 except Exception:
                     return False
 
-            assert await wait_for_condition(check_all_deleted, timeout=120), (
+            assert await _simple_wait(check_all_deleted, timeout=120), (
                 "Cascading deletion did not complete"
             )
 

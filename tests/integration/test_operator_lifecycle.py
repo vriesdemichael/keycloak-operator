@@ -11,6 +11,32 @@ import pytest
 from kubernetes.client.rest import ApiException
 
 
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestOperatorLifecycle:
@@ -476,7 +502,6 @@ class TestRealmBasicOperations:
         shared_operator,
         operator_namespace,
         sample_realm_spec,
-        wait_for_condition,
     ):
         """Test creating a basic realm resource on the shared Keycloak instance."""
         import uuid
@@ -530,7 +555,7 @@ class TestRealmBasicOperations:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_realm_created, timeout=180), (
+            assert await _simple_wait(check_realm_created, timeout=180), (
                 "Realm resource was not created successfully"
             )
 
@@ -561,7 +586,6 @@ class TestClientBasicOperations:
         operator_namespace,
         sample_realm_spec,
         sample_client_spec,
-        wait_for_condition,
     ):
         """Test creating a basic client resource on the shared Keycloak instance."""
         import uuid
@@ -645,7 +669,7 @@ class TestClientBasicOperations:
                 except ApiException:
                     return False
 
-            assert await wait_for_condition(check_client_created, timeout=180), (
+            assert await _simple_wait(check_client_created, timeout=180), (
                 "Client resource was not created successfully"
             )
 

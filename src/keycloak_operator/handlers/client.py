@@ -344,82 +344,83 @@ async def monitor_client_health(
         # Get admin client and verify connection
         keycloak_ref = client_spec.keycloak_instance_ref
         target_namespace = keycloak_ref.namespace or namespace
-        admin_client = await get_keycloak_admin_client(
+        async with await get_keycloak_admin_client(
             keycloak_ref.name, target_namespace
-        )
-
-        # Check if client exists in Keycloak
-        realm_name = client_spec.realm or "master"
-        existing_client = await admin_client.get_client_by_name(
-            client_spec.client_id, realm_name, namespace
-        )
-
-        if not existing_client:
-            logger.warning(f"Client {client_spec.client_id} missing from Keycloak")
-            patch.status.update(
-                {
-                    "phase": "Degraded",
-                    "message": "Client missing from Keycloak, will recreate",
-                    "lastHealthCheck": datetime.now(UTC).isoformat(),
-                }
+        ) as admin_client:
+            # Check if client exists in Keycloak
+            realm_name = client_spec.realm or "master"
+            existing_client = await admin_client.get_client_by_name(
+                client_spec.client_id, realm_name, namespace
             )
-            return
 
-        # Verify client configuration matches spec
-        # Compare current Keycloak client config with desired spec
-        try:
-            desired_config = client_spec.to_keycloak_config()
-            config_matches = True
-
-            # Check critical configuration fields
-            if existing_client.enabled != desired_config.get("enabled", True):
-                config_matches = False
-                logger.warning(f"Client {client_spec.client_id} enabled state mismatch")
-
-            if existing_client.public_client != desired_config.get(
-                "publicClient", False
-            ):
-                config_matches = False
-                logger.warning(
-                    f"Client {client_spec.client_id} public client setting mismatch"
-                )
-
-            # Check redirect URIs if specified
-            if desired_config.get("redirectUris"):
-                existing_uris = set(existing_client.redirect_uris or [])
-                desired_uris = set(desired_config.get("redirectUris", []))
-                if existing_uris != desired_uris:
-                    config_matches = False
-                    logger.warning(
-                        f"Client {client_spec.client_id} redirect URIs mismatch"
-                    )
-
-            # Check web origins if specified
-            if desired_config.get("webOrigins"):
-                existing_origins = set(existing_client.web_origins or [])
-                desired_origins = set(desired_config.get("webOrigins", []))
-                if existing_origins != desired_origins:
-                    config_matches = False
-                    logger.warning(
-                        f"Client {client_spec.client_id} web origins mismatch"
-                    )
-
-            if not config_matches:
-                logger.info(
-                    f"Client {client_spec.client_id} configuration drift detected"
-                )
+            if not existing_client:
+                logger.warning(f"Client {client_spec.client_id} missing from Keycloak")
                 patch.status.update(
                     {
                         "phase": "Degraded",
-                        "message": "Configuration drift detected",
+                        "message": "Client missing from Keycloak, will recreate",
                         "lastHealthCheck": datetime.now(UTC).isoformat(),
                     }
                 )
                 return
 
-        except Exception as e:
-            logger.warning(f"Failed to verify client configuration: {e}")
-            # Don't fail health check for verification errors
+            # Verify client configuration matches spec
+            # Compare current Keycloak client config with desired spec
+            try:
+                desired_config = client_spec.to_keycloak_config()
+                config_matches = True
+
+                # Check critical configuration fields
+                if existing_client.enabled != desired_config.get("enabled", True):
+                    config_matches = False
+                    logger.warning(
+                        f"Client {client_spec.client_id} enabled state mismatch"
+                    )
+
+                if existing_client.public_client != desired_config.get(
+                    "publicClient", False
+                ):
+                    config_matches = False
+                    logger.warning(
+                        f"Client {client_spec.client_id} public client setting mismatch"
+                    )
+
+                # Check redirect URIs if specified
+                if desired_config.get("redirectUris"):
+                    existing_uris = set(existing_client.redirect_uris or [])
+                    desired_uris = set(desired_config.get("redirectUris", []))
+                    if existing_uris != desired_uris:
+                        config_matches = False
+                        logger.warning(
+                            f"Client {client_spec.client_id} redirect URIs mismatch"
+                        )
+
+                # Check web origins if specified
+                if desired_config.get("webOrigins"):
+                    existing_origins = set(existing_client.web_origins or [])
+                    desired_origins = set(desired_config.get("webOrigins", []))
+                    if existing_origins != desired_origins:
+                        config_matches = False
+                        logger.warning(
+                            f"Client {client_spec.client_id} web origins mismatch"
+                        )
+
+                if not config_matches:
+                    logger.info(
+                        f"Client {client_spec.client_id} configuration drift detected"
+                    )
+                    patch.status.update(
+                        {
+                            "phase": "Degraded",
+                            "message": "Configuration drift detected",
+                            "lastHealthCheck": datetime.now(UTC).isoformat(),
+                        }
+                    )
+                    return
+
+            except Exception as e:
+                logger.warning(f"Failed to verify client configuration: {e}")
+                # Don't fail health check for verification errors
 
         # Check credentials secret exists and is valid
         if not client_spec.public_client:

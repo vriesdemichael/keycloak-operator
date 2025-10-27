@@ -37,6 +37,11 @@ def admin_mock() -> MagicMock:
     target_client_mock = MagicMock()
     target_client_mock.id = "target-client-uuid"
     mock.get_client_by_name = AsyncMock(return_value=target_client_mock)
+
+    # Make role assignment methods async
+    mock.assign_realm_roles_to_user = AsyncMock()
+    mock.assign_client_roles_to_user = AsyncMock()
+
     return mock
 
 
@@ -44,8 +49,11 @@ def admin_mock() -> MagicMock:
 def reconciler(admin_mock: MagicMock) -> KeycloakClientReconciler:
     """KeycloakClientReconciler configured with mock admin factory."""
 
+    async def mock_factory(name, namespace):
+        return admin_mock
+
     reconciler_instance = KeycloakClientReconciler(
-        keycloak_admin_factory=lambda name, namespace: admin_mock,
+        keycloak_admin_factory=mock_factory,
     )
     reconciler_instance.logger = MagicMock()
 
@@ -77,11 +85,14 @@ async def test_manage_service_account_roles_assigns_realm_roles(
 
     await reconciler.manage_service_account_roles(spec, "client-uuid", "resource", "ns")
 
-    admin_mock.get_service_account_user.assert_called_once_with("client-uuid", "master")
+    admin_mock.get_service_account_user.assert_called_once_with(
+        "client-uuid", "master", "ns"
+    )
     admin_mock.assign_realm_roles_to_user.assert_called_once_with(
         user_id="service-user-id",
         role_names=["offline_access"],
         realm_name="master",
+        namespace="ns",
     )
 
 
@@ -110,6 +121,7 @@ async def test_manage_service_account_roles_assigns_client_roles(
         client_uuid="target-client-uuid",
         role_names=["read:data", "write:data"],
         realm_name="master",
+        namespace="ns",
     )
 
 

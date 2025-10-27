@@ -714,13 +714,12 @@ name = "keycloak-operator"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aiohttp" },
+    { name = "httpx" },
     { name = "kopf" },
     { name = "kubernetes" },
     { name = "prometheus-client" },
     { name = "pybreaker" },
     { name = "pydantic" },
-    { name = "requests" },
 ]
 
 [package.dev-dependencies]
@@ -769,13 +768,12 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", specifier = ">=3.9.0" },
+    { name = "httpx", specifier = ">=0.27.0" },
     { name = "kopf", specifier = ">=1.37.0" },
     { name = "kubernetes", specifier = ">=28.0.0" },
     { name = "prometheus-client", specifier = ">=0.20.0" },
     { name = "pybreaker", specifier = ">=1.2.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "requests", specifier = ">=2.31.0" },
 ]
 
 [package.metadata.requires-dev]

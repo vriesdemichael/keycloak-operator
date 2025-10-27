@@ -162,7 +162,172 @@ async def test_something(shared_operator):
     admin_client.update_realm("master", {...})
 ```
 
-### 4. Status Phase Expectations
+### 4. Wait Helpers - Automatic Debugging
+
+**Use the consolidated wait helpers from `wait_helpers.py` instead of custom wait functions.**
+
+These helpers automatically collect operator logs and Kubernetes events when timeouts occur, making debugging much easier.
+
+#### Available Helpers
+
+```python
+from .wait_helpers import (
+    wait_for_resource_ready,
+    wait_for_resource_failed,
+    wait_for_resource_condition,
+    wait_for_resource_deleted,
+)
+```
+
+#### wait_for_resource_ready()
+
+Wait for a resource to reach Ready (or Degraded) phase. **Raises `ResourceNotReadyError` with full debugging info on timeout.**
+
+```python
+async def test_something(
+    k8s_custom_objects,
+    test_namespace,
+    operator_namespace,
+):
+    # Create resource
+    await k8s_custom_objects.create_namespaced_custom_object(...)
+    
+    # Wait for ready - automatically gets logs/events on failure
+    await wait_for_resource_ready(
+        k8s_custom_objects=k8s_custom_objects,
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name="my-realm",
+        timeout=120,
+        operator_namespace=operator_namespace,  # Enables log collection
+        allow_degraded=True,  # Accept Degraded as ready (default: True)
+    )
+```
+
+**On timeout, automatically shows:**
+- Last resource status
+- Kubernetes events for the resource  
+- Operator logs (last 100 lines)
+- Any exceptions encountered
+
+#### wait_for_resource_condition()
+
+Wait for custom condition with automatic debugging:
+
+```python
+async def test_something(k8s_custom_objects, test_namespace, operator_namespace):
+    # Custom condition
+    def _auth_failed(resource: dict) -> bool:
+        status = resource.get("status", {})
+        phase = status.get("phase")
+        message = status.get("message", "")
+        return phase == "Failed" and "Authorization" in message
+    
+    resource = await wait_for_resource_condition(
+        k8s_custom_objects=k8s_custom_objects,
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name="my-realm",
+        condition_func=_auth_failed,
+        timeout=120,
+        operator_namespace=operator_namespace,
+        expected_phases=("Failed with auth error",),  # For error messages
+    )
+    # Returns the resource dict when condition is met
+```
+
+#### wait_for_resource_failed()
+
+Wait for Failed phase:
+
+```python
+await wait_for_resource_failed(
+    k8s_custom_objects=k8s_custom_objects,
+    group="keycloak.mdvr.nl",
+    version="v1",
+    namespace=test_namespace,
+    plural="keycloakrealms",
+    name="my-realm",
+    timeout=120,
+    operator_namespace=operator_namespace,
+)
+```
+
+#### wait_for_resource_deleted()
+
+Wait for resource deletion (404):
+
+```python
+await wait_for_resource_deleted(
+    k8s_custom_objects=k8s_custom_objects,
+    group="keycloak.mdvr.nl",
+    version="v1",
+    namespace=test_namespace,
+    plural="keycloakrealms",
+    name="my-realm",
+    timeout=120,
+)
+```
+
+#### ❌ DON'T: Create local wait functions
+
+```python
+# WRONG - Duplicates code and loses debugging
+async def _wait_resource_ready(plural: str, name: str) -> bool:
+    async def _condition() -> bool:
+        resource = await k8s_custom_objects.get_namespaced_custom_object(...)
+        status = resource.get("status", {}) or {}
+        phase = status.get("phase")
+        return phase == "Ready"
+    return await wait_for_condition(_condition, timeout=90)
+
+ready = await _wait_resource_ready("keycloakrealms", "my-realm")
+assert ready, "Resource did not become ready"  # Unhelpful error message
+```
+
+#### ✅ DO: Use consolidated helpers
+
+```python
+# CORRECT - Automatic debugging on failure
+await wait_for_resource_ready(
+    k8s_custom_objects=k8s_custom_objects,
+    group="keycloak.mdvr.nl",
+    version="v1",
+    namespace=test_namespace,
+    plural="keycloakrealms",
+    name="my-realm",
+    timeout=90,
+    operator_namespace=operator_namespace,
+)
+# If this times out, you automatically get:
+# - Last resource status
+# - K8s events
+# - Operator logs
+```
+
+#### Legacy wait_for_condition Fixture
+
+The generic `wait_for_condition` fixture is deprecated for custom resource waits. Only use it for non-resource waits (Secrets, etc):
+
+```python
+# OK - Waiting for a Secret (not a custom resource)
+async def check_secret_exists() -> bool:
+    try:
+        await k8s_core_v1.read_namespaced_secret(name, namespace)
+        return True
+    except ApiException as e:
+        if e.status == 404:
+            return False
+        raise
+
+assert await wait_for_condition(check_secret_exists, timeout=30)
+```
+
+### 5. Status Phase Expectations
 
 The operator uses these status phases:
 
@@ -205,7 +370,7 @@ async def _wait_for_ready(plural: str, name: str) -> None:
     )
 ```
 
-### 5. Timeouts
+### 6. Timeouts
 
 Use appropriate timeouts based on resource type:
 
@@ -224,7 +389,7 @@ await wait_for_keycloak_ready(name, namespace, timeout=600)  # Keycloak startup
 await wait_for_condition(check_ready, timeout=420)  # Other resources
 ```
 
-### 6. Resource Cleanup
+### 7. Resource Cleanup
 
 **ALWAYS cleanup resources in `finally` blocks for dedicated instances:**
 
@@ -270,7 +435,7 @@ finally:
 
 **Shared instances are cleaned up automatically** - don't delete them!
 
-### 7. Common Fixtures
+### 8. Common Fixtures
 
 ```python
 # Unique namespace per test

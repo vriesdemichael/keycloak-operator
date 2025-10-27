@@ -12,6 +12,32 @@ from kubernetes.client.rest import ApiException
 
 
 @pytest.mark.asyncio
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
 class TestHelmRealmDeployment:
     """Test KeycloakRealm deployment via Helm charts."""
 
@@ -21,7 +47,6 @@ class TestHelmRealmDeployment:
         test_namespace,
         k8s_custom_objects,
         operator_namespace,
-        wait_for_condition,
         admission_token_setup,
     ):
         """Test deploying a KeycloakRealm using Helm chart."""
@@ -54,7 +79,7 @@ class TestHelmRealmDeployment:
             except ApiException:
                 return False
 
-        assert await wait_for_condition(realm_exists, timeout=30, interval=2)
+        assert await _simple_wait(realm_exists, timeout=30, interval=2)
 
         # Verify realm reaches Ready phase
         async def realm_ready():
@@ -68,13 +93,31 @@ class TestHelmRealmDeployment:
                 )
                 status = realm.get("status", {})
                 phase = status.get("phase")
+                message = status.get("message", "")
+                # Add debug logging
+                print(f"DEBUG: Realm phase={phase}, message={message}")
                 return phase == "Ready"
-            except ApiException:
+            except ApiException as e:
+                print(f"DEBUG: ApiException getting realm: {e.status}")
                 return False
 
-        assert await wait_for_condition(realm_ready, timeout=120, interval=5), (
-            "Realm did not reach Ready phase"
-        )
+        result = await _simple_wait(realm_ready, timeout=120, interval=5)
+
+        # If failed, print final status for debugging
+        if not result:
+            try:
+                realm = await k8s_custom_objects.get_namespaced_custom_object(
+                    group="keycloak.mdvr.nl",
+                    version="v1",
+                    namespace=test_namespace,
+                    plural="keycloakrealms",
+                    name=f"{release_name}-keycloak-realm",
+                )
+                print(f"DEBUG: Final realm status: {realm.get('status', {})}")
+            except Exception as e:
+                print(f"DEBUG: Could not get final status: {e}")
+
+        assert result, "Realm did not reach Ready phase"
 
     async def test_helm_realm_with_smtp_config(
         self,
@@ -83,7 +126,6 @@ class TestHelmRealmDeployment:
         k8s_core_v1,
         k8s_custom_objects,
         operator_namespace,
-        wait_for_condition,
         admission_token_setup,
     ):
         """Test deploying a realm with SMTP configuration via Helm."""
@@ -139,7 +181,7 @@ class TestHelmRealmDeployment:
             except ApiException:
                 return False
 
-        assert await wait_for_condition(realm_has_smtp, timeout=30, interval=2)
+        assert await _simple_wait(realm_has_smtp, timeout=30, interval=2)
 
 
 @pytest.mark.asyncio
@@ -153,7 +195,6 @@ class TestHelmClientDeployment:
         test_namespace,
         k8s_custom_objects,
         operator_namespace,
-        wait_for_condition,
         admission_token_setup,
     ):
         """Test deploying a KeycloakClient using Helm chart."""
@@ -188,9 +229,7 @@ class TestHelmClientDeployment:
             except ApiException:
                 return False
 
-        assert await wait_for_condition(
-            realm_ready_with_secret, timeout=120, interval=5
-        )
+        assert await _simple_wait(realm_ready_with_secret, timeout=120, interval=5)
 
         # Get the realm auth secret name
         realm = await k8s_custom_objects.get_namespaced_custom_object(
@@ -230,7 +269,7 @@ class TestHelmClientDeployment:
             except ApiException:
                 return False
 
-        assert await wait_for_condition(client_exists, timeout=30, interval=2)
+        assert await _simple_wait(client_exists, timeout=30, interval=2)
 
         # Verify client reaches Ready phase
         async def client_ready():
@@ -250,7 +289,7 @@ class TestHelmClientDeployment:
                 print(f"Client check failed: {e}")
                 return False
 
-        result = await wait_for_condition(client_ready, timeout=120, interval=5)
+        result = await _simple_wait(client_ready, timeout=120, interval=5)
         if not result:
             # Print final state for debugging
             try:

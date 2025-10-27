@@ -28,6 +28,32 @@ from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
 
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
+async def _simple_wait(condition_func, timeout=300, interval=3):
+    """Simple wait helper for conditions."""
+    import asyncio
+    import time
+
+    start = time.time()
+    while time.time() - start < timeout:
+        if await condition_func():
+            return True
+        await asyncio.sleep(interval)
+    return False
+
+
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestTokenBootstrap:
@@ -41,7 +67,6 @@ class TestTokenBootstrap:
         test_namespace,
         operator_namespace,
         shared_operator,
-        wait_for_condition,
     ) -> None:
         """
         Verify first realm creation bootstraps operational token.
@@ -181,9 +206,7 @@ class TestTokenBootstrap:
                 phase = status.get("phase")
                 return phase in ("Ready", "Degraded")
 
-            realm_ready = await wait_for_condition(
-                _realm_ready, timeout=120, interval=3
-            )
+            realm_ready = await _simple_wait(_realm_ready, timeout=120, interval=3)
             assert realm_ready, f"Realm {realm_name} did not reach Ready state"
 
             # 5. Verify operational token secret created
@@ -200,7 +223,7 @@ class TestTokenBootstrap:
                         return False
                     raise
 
-            op_secret_exists = await wait_for_condition(
+            op_secret_exists = await _simple_wait(
                 _operational_secret_exists, timeout=30, interval=2
             )
             assert op_secret_exists, "Operational token secret was not created"
@@ -325,7 +348,6 @@ class TestTokenBootstrap:
         test_namespace,
         operator_namespace,
         shared_operator,
-        wait_for_condition,
     ) -> None:
         """
         Verify subsequent realms use existing operational token.
@@ -454,7 +476,7 @@ class TestTokenBootstrap:
                 phase = status.get("phase")
                 return phase in ("Ready", "Degraded")
 
-            realm1_ready = await wait_for_condition(
+            realm1_ready = await _simple_wait(
                 lambda: _realm_ready(realm1_name), timeout=120, interval=3
             )
             assert realm1_ready, f"Realm {realm1_name} did not reach Ready state"
@@ -473,7 +495,7 @@ class TestTokenBootstrap:
                         return False
                     raise
 
-            op_secret_exists = await wait_for_condition(
+            op_secret_exists = await _simple_wait(
                 _operational_secret_exists, timeout=30, interval=2
             )
             assert op_secret_exists, "Operational token secret was not created"
@@ -506,7 +528,7 @@ class TestTokenBootstrap:
             )
 
             # 3. Wait for second realm to be ready
-            realm2_ready = await wait_for_condition(
+            realm2_ready = await _simple_wait(
                 lambda: _realm_ready(realm2_name), timeout=120, interval=3
             )
             assert realm2_ready, f"Realm {realm2_name} did not reach Ready state"

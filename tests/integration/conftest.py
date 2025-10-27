@@ -46,6 +46,8 @@ from .cleanup_utils import (
     force_delete_namespace,
 )
 
+# wait_helpers are imported directly in tests, not used in conftest
+
 logger = logging.getLogger(__name__)
 
 
@@ -460,7 +462,7 @@ def cnpg_installed(k8s_client) -> bool:
 
 @pytest.fixture
 async def cnpg_cluster(
-    k8s_client, test_namespace, cnpg_installed, wait_for_condition
+    k8s_client, test_namespace, cnpg_installed
 ) -> dict[str, Any] | None:
     """Create a minimal CloudNativePG Cluster and return standard PostgreSQL connection details.
 
@@ -511,24 +513,28 @@ async def cnpg_cluster(
             raise
 
     # Wait for cluster to report healthy phase & application secret present
-    async def cluster_ready():
+    import time
+
+    start_time = time.time()
+    timeout = 420
+    interval = 5
+
+    while time.time() - start_time < timeout:
         try:
             obj = cluster_api.get(name=cluster_name, namespace=test_namespace)
             phase = obj.to_dict().get("status", {}).get("phase")
-            if phase != "Cluster in healthy state":
-                return False
-            # Confirm app secret existence
-            core = client.CoreV1Api(k8s_client)
-            try:
-                core.read_namespaced_secret(f"{cluster_name}-app", test_namespace)
-                return True
-            except ApiException:
-                return False
+            if phase == "Cluster in healthy state":
+                # Confirm app secret existence
+                core = client.CoreV1Api(k8s_client)
+                try:
+                    core.read_namespaced_secret(f"{cluster_name}-app", test_namespace)
+                    break  # Success
+                except ApiException:
+                    pass
         except ApiException:
-            return False
-
-    ready = await wait_for_condition(cluster_ready, timeout=420, interval=5)
-    if not ready:
+            pass
+        await asyncio.sleep(interval)
+    else:
         pytest.skip("CNPG cluster was not ready in time")
 
     # Return standard PostgreSQL connection details
@@ -651,35 +657,10 @@ def build_client_manifest(
 
 
 @pytest.fixture(scope="session")
-async def wait_for_condition():
-    """Utility fixture for waiting for conditions with timeout (session-scoped for reuse)."""
-
-    async def _wait(condition_func, timeout: int = 300, interval: int = 3):
-        """Wait for a condition to be true."""
-        import time
-
-        start_time = time.time()
-
-        while time.time() - start_time < timeout:
-            try:
-                if await condition_func():
-                    return True
-            except Exception as e:
-                print(f"Condition check failed: {e}")
-
-            await asyncio.sleep(interval)
-
-        return False
-
-    return _wait
-
-
-@pytest.fixture(scope="session")
 def wait_for_keycloak_ready(
     k8s_custom_objects,
     k8s_apps_v1,
     k8s_core_v1,  # kept for potential future pod-level checks
-    wait_for_condition,
 ):
     """Wait until a Keycloak instance is actually runnable.
 
@@ -693,9 +674,13 @@ def wait_for_keycloak_ready(
     async def _wait(
         name: str, namespace: str, timeout: int = 420, interval: int = 5
     ) -> bool:
-        async def _condition():
-            from kubernetes.client.rest import ApiException
+        import time
 
+        from kubernetes.client.rest import ApiException
+
+        start_time = time.time()
+
+        while time.time() - start_time < timeout:
             deployment_name = f"{name}-keycloak"
             deployment_ready = False
 
@@ -724,7 +709,8 @@ def wait_for_keycloak_ready(
                 if not status:
                     # Status has not been populated yet; keep waiting even if the
                     # deployment looks healthy so tests can validate status fields.
-                    return False
+                    await asyncio.sleep(interval)
+                    continue
 
                 phase = status.get("phase")
                 # Look for condition-based readiness too
@@ -741,9 +727,9 @@ def wait_for_keycloak_ready(
                 # CR not yet readable or transient error
                 pass
 
-            return False
+            await asyncio.sleep(interval)
 
-        return await wait_for_condition(_condition, timeout=timeout, interval=interval)
+        return False
 
     return _wait
 
@@ -905,7 +891,6 @@ async def shared_operator(
     k8s_core_v1,
     operator_namespace,
     helm_operator_chart_path,
-    wait_for_condition,
     cnpg_installed,
 ) -> AsyncGenerator[dict[str, str]]:
     """Deploy Keycloak operator and instance via Helm for all tests.
@@ -1095,18 +1080,27 @@ async def shared_operator(
 
     try:
         # Wait for operator deployment to be ready
-        async def operator_ready():
+        import time
+
+        start_time = time.time()
+        timeout = 120
+        interval = 3
+        ready = False
+
+        while time.time() - start_time < timeout:
             try:
                 deployment = await k8s_apps_v1.read_namespaced_deployment(
                     name="keycloak-operator", namespace=operator_namespace
                 )
                 desired = deployment.spec.replicas or 1
-                ready = deployment.status.ready_replicas or 0
-                return ready >= desired
+                current_ready = deployment.status.ready_replicas or 0
+                if current_ready >= desired:
+                    ready = True
+                    break
             except ApiException:
-                return False
+                pass
+            await asyncio.sleep(interval)
 
-        ready = await wait_for_condition(operator_ready, timeout=120, interval=3)
         if not ready:
             pytest.fail(
                 "Operator deployment not ready in time (timeout: 120s). "
@@ -1202,10 +1196,19 @@ async def shared_operator(
                         "data": {token_hash: json.dumps(token_metadata)},
                     }
 
-                    await k8s_core_v1.create_namespaced_config_map(
-                        namespace=operator_namespace, body=cm_body
-                    )
-                    logger.info("✓ Created token metadata ConfigMap")
+                    try:
+                        await k8s_core_v1.create_namespaced_config_map(
+                            namespace=operator_namespace, body=cm_body
+                        )
+                        logger.info("✓ Created token metadata ConfigMap")
+                    except ApiException as create_err:
+                        if create_err.status == 409:
+                            # Another worker created it between our check and create - that's fine
+                            logger.info(
+                                "✓ Token metadata ConfigMap created by another worker"
+                            )
+                        else:
+                            raise
                 else:
                     raise
         except Exception as setup_error:
@@ -1213,7 +1216,12 @@ async def shared_operator(
             pytest.fail(f"Failed to setup token infrastructure: {setup_error}")
 
         # Wait for Keycloak instance to be ready (deployed by operator chart)
-        async def keycloak_ready():
+        start_time = time.time()
+        timeout = 200
+        interval = 5
+        ready = False
+
+        while time.time() - start_time < timeout:
             try:
                 kc = await k8s_custom_objects.get_namespaced_custom_object(
                     group="keycloak.mdvr.nl",
@@ -1225,31 +1233,29 @@ async def shared_operator(
                 status = kc.get("status", {}) or {}
                 phase = status.get("phase")
 
-                if phase not in ("Ready", "Degraded"):
-                    return False
-
-                # Check deployment AND that pods are actually ready
-                try:
-                    deployment = await k8s_apps_v1.read_namespaced_deployment(
-                        name=f"{keycloak_name}-keycloak", namespace=operator_namespace
-                    )
-                    desired = deployment.spec.replicas or 1
-                    ready = deployment.status.ready_replicas or 0
-
-                    if ready < desired:
-                        logger.debug(
-                            f"Keycloak deployment {keycloak_name}-keycloak: {ready}/{desired} pods ready"
+                if phase in ("Ready", "Degraded"):
+                    # Check deployment AND that pods are actually ready
+                    try:
+                        deployment = await k8s_apps_v1.read_namespaced_deployment(
+                            name=f"{keycloak_name}-keycloak",
+                            namespace=operator_namespace,
                         )
-                        return False
+                        desired = deployment.spec.replicas or 1
+                        current_ready = deployment.status.ready_replicas or 0
 
-                    return True
-                except ApiException as deploy_error:
-                    logger.debug(f"Deployment not found or error: {deploy_error}")
-                    return False
+                        if current_ready >= desired:
+                            ready = True
+                            break
+                        else:
+                            logger.debug(
+                                f"Keycloak deployment {keycloak_name}-keycloak: {current_ready}/{desired} pods ready"
+                            )
+                    except ApiException as deploy_error:
+                        logger.debug(f"Deployment not found or error: {deploy_error}")
             except ApiException:
-                return False
+                pass
+            await asyncio.sleep(interval)
 
-        ready = await wait_for_condition(keycloak_ready, timeout=200, interval=5)
         if not ready:
             # Check Keycloak CR status for error details
             try:
@@ -2011,12 +2017,17 @@ async def admission_token_setup(
     k8s_core_v1: client.CoreV1Api,
     test_namespace: str,
     operator_namespace: str,
+    shared_operator: dict[
+        str, str
+    ],  # Ensure operator is deployed before creating tokens
 ) -> AsyncGenerator[tuple[str, str]]:
     """
     Create admission token for testing new auth system.
 
     Returns tuple of (secret_name, token_value) for use in tests.
     Creates the secret and metadata, yields for test, then cleans up.
+
+    Depends on shared_operator to ensure the operator namespace exists.
     """
     import base64
     import hashlib
@@ -2064,32 +2075,54 @@ async def admission_token_setup(
     }
 
     configmap_name = "keycloak-operator-token-metadata"
-    try:
-        cm = await k8s_core_v1.read_namespaced_config_map(
-            name=configmap_name, namespace=operator_namespace
-        )
-        if not cm.data:
-            cm.data = {}
-        cm.data[token_hash] = json.dumps(token_metadata)
-        await k8s_core_v1.patch_namespaced_config_map(
-            name=configmap_name, namespace=operator_namespace, body=cm
-        )
-    except ApiException as e:
-        if e.status == 404:
-            cm_body = {
-                "apiVersion": "v1",
-                "kind": "ConfigMap",
-                "metadata": {
-                    "name": configmap_name,
-                    "namespace": operator_namespace,
-                },
-                "data": {token_hash: json.dumps(token_metadata)},
-            }
-            await k8s_core_v1.create_namespaced_config_map(
-                namespace=operator_namespace, body=cm_body
+
+    # Retry loop to handle concurrent updates (409 conflicts)
+    max_retries = 5
+    for attempt in range(max_retries):
+        try:
+            cm = await k8s_core_v1.read_namespaced_config_map(
+                name=configmap_name, namespace=operator_namespace
             )
-        else:
-            raise
+            if not cm.data:
+                cm.data = {}
+            cm.data[token_hash] = json.dumps(token_metadata)
+            await k8s_core_v1.patch_namespaced_config_map(
+                name=configmap_name, namespace=operator_namespace, body=cm
+            )
+            break  # Success - exit retry loop
+        except ApiException as e:
+            if e.status == 404:
+                # ConfigMap doesn't exist - create it
+                cm_body = {
+                    "apiVersion": "v1",
+                    "kind": "ConfigMap",
+                    "metadata": {
+                        "name": configmap_name,
+                        "namespace": operator_namespace,
+                    },
+                    "data": {token_hash: json.dumps(token_metadata)},
+                }
+                try:
+                    await k8s_core_v1.create_namespaced_config_map(
+                        namespace=operator_namespace, body=cm_body
+                    )
+                    break  # Success - exit retry loop
+                except ApiException as create_err:
+                    if create_err.status == 409:
+                        # Another worker created it - retry the patch
+                        continue
+                    else:
+                        raise
+            elif e.status == 409:
+                # Conflict during patch - another worker modified it
+                # Retry with fresh read
+                if attempt < max_retries - 1:
+                    await asyncio.sleep(0.1 * (attempt + 1))  # Exponential backoff
+                    continue
+                else:
+                    raise  # Max retries exceeded
+            else:
+                raise  # Other error
 
     # Yield for test to use
     yield (secret_name, token_value)

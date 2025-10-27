@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import uuid
 
 import pytest
 from kubernetes.client.rest import ApiException
+
+from .wait_helpers import wait_for_resource_ready
 
 
 @pytest.mark.integration
@@ -20,10 +23,10 @@ class TestServiceAccountRoles:
     async def test_service_account_realm_roles_assigned(
         self,
         k8s_custom_objects,
+        k8s_core_v1,
         test_namespace,
         operator_namespace,
         shared_operator,
-        wait_for_condition,
         keycloak_port_forward,
         admission_token_setup,
     ) -> None:
@@ -105,29 +108,6 @@ class TestServiceAccountRoles:
             "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
-        async def _wait_resource_ready(plural: str, name: str) -> None:
-            async def _condition() -> bool:
-                try:
-                    resource = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
-                        version="v1",
-                        namespace=namespace,
-                        plural=plural,
-                        name=name,
-                    )
-                except ApiException as exc:  # pragma: no cover - integration path
-                    if exc.status == 404:
-                        return False
-                    raise
-
-                status = resource.get("status", {}) or {}
-                phase = status.get("phase")
-                return phase == "Ready"
-
-            assert await wait_for_condition(_condition, timeout=90, interval=3), (
-                f"Resource {plural}/{name} did not become Ready"
-            )
-
         admin_client = None
 
         try:
@@ -140,28 +120,46 @@ class TestServiceAccountRoles:
                 body=realm_manifest,
             )
 
-            await _wait_resource_ready("keycloakrealms", realm_name)
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=90,
+                operator_namespace=operator_namespace,
+                allow_degraded=False,
+            )
 
             # Wait for realm authorization secret to be created before creating client
             # The secret name pattern is: {realm_name}-realm-auth
             realm_auth_secret_name = f"{realm_name}-realm-auth"
 
-            from kubernetes import client as k8s_client
+            # Wait for realm authorization secret to be created
+            import time
 
-            k8s_core = k8s_client.CoreV1Api()
+            start_time = time.time()
+            timeout = 30
+            interval = 2
+            secret_exists = False
 
-            async def check_secret_exists():
+            while time.time() - start_time < timeout:
                 try:
-                    k8s_core.read_namespaced_secret(realm_auth_secret_name, namespace)
-                    return True
+                    await k8s_core_v1.read_namespaced_secret(
+                        realm_auth_secret_name, namespace
+                    )
+                    secret_exists = True
+                    break
                 except ApiException as e:
                     if e.status == 404:
-                        return False
-                    raise
+                        await asyncio.sleep(interval)
+                    else:
+                        raise
 
-            assert await wait_for_condition(
-                check_secret_exists, timeout=30, interval=2
-            ), f"Realm authorization secret {realm_auth_secret_name} was not created"
+            assert secret_exists, (
+                f"Realm authorization secret {realm_auth_secret_name} was not created"
+            )
 
             # Set up port-forward to shared Keycloak instance
             local_port = await keycloak_port_forward(keycloak_name, keycloak_namespace)
@@ -182,24 +180,22 @@ class TestServiceAccountRoles:
 
             # Create realm role using async HTTP call
             role_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/roles"
-            import aiohttp
+            import httpx
 
-            async with aiohttp.ClientSession() as session:
+            async with httpx.AsyncClient(timeout=admin_client.timeout) as session:
                 headers = {"Authorization": f"Bearer {admin_client.access_token}"}
-                async with session.post(
+                response = await session.post(
                     role_endpoint,
                     json={
                         "name": service_account_role,
                         "description": "integration-test role",
                     },
                     headers=headers,
-                    timeout=aiohttp.ClientTimeout(total=admin_client.timeout),
-                ) as response:
-                    if response.status not in (201, 409):
-                        text = await response.text()
-                        pytest.fail(
-                            f"Failed to ensure realm role exists: HTTP {response.status} {text}"
-                        )
+                )
+                if response.status_code not in (201, 409):
+                    pytest.fail(
+                        f"Failed to ensure realm role exists: HTTP {response.status_code} {response.text}"
+                    )
 
             # Create client and wait until Ready
             await k8s_custom_objects.create_namespaced_custom_object(
@@ -210,7 +206,17 @@ class TestServiceAccountRoles:
                 body=client_manifest,
             )
 
-            await _wait_resource_ready("keycloakclients", client_name)
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="keycloak.mdvr.nl",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=90,
+                operator_namespace=operator_namespace,
+                allow_degraded=False,
+            )
 
             client_repr = await admin_client.get_client_by_name(
                 client_name, realm_name, namespace
@@ -219,23 +225,22 @@ class TestServiceAccountRoles:
             assert client_repr.id, "Client missing ID"
 
             service_account_user = await admin_client.get_service_account_user(
-                client_repr.id, realm_name
+                client_repr.id, realm_name, namespace
             )
             user_id = service_account_user.id
             assert user_id, "Service account user missing identifier"
 
             # Check role mappings using async HTTP call
             role_mapping_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
-            async with aiohttp.ClientSession() as session:
+            async with httpx.AsyncClient(timeout=admin_client.timeout) as session:
                 headers = {"Authorization": f"Bearer {admin_client.access_token}"}
-                async with session.get(
+                mapping_response = await session.get(
                     role_mapping_endpoint,
                     headers=headers,
-                    timeout=aiohttp.ClientTimeout(total=admin_client.timeout),
-                ) as mapping_response:
-                    mapping_response.raise_for_status()
-                    assigned_roles_data = await mapping_response.json()
-                    assigned_roles = {role["name"] for role in assigned_roles_data}
+                )
+                mapping_response.raise_for_status()
+                assigned_roles_data = mapping_response.json()
+                assigned_roles = {role["name"] for role in assigned_roles_data}
 
             assert service_account_role in assigned_roles
         finally:

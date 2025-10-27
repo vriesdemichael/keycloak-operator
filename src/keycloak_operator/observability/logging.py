@@ -182,7 +182,7 @@ def setup_structured_logging(
 
     # Set specific logger levels
     logging.getLogger("kopf").setLevel(logging.WARNING)
-    logging.getLogger("aiohttp").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("kubernetes").setLevel(logging.WARNING)
 
 

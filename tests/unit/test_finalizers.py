@@ -259,7 +259,7 @@ class TestClientFinalizers:
     ):
         spec = build_spec(BASE_CLIENT_SPEC, public_client=False)
 
-        client_reconciler.keycloak_admin_factory = MagicMock(
+        client_reconciler.keycloak_admin_factory = AsyncMock(
             return_value=mock_keycloak_admin
         )
         client_reconciler.k8s_client = MagicMock()
@@ -281,7 +281,7 @@ class TestClientFinalizers:
     ):
         spec = build_spec(BASE_CLIENT_SPEC, public_client=True)
 
-        client_reconciler.keycloak_admin_factory = MagicMock(
+        client_reconciler.keycloak_admin_factory = AsyncMock(
             return_value=mock_keycloak_admin
         )
         client_reconciler.k8s_client = MagicMock()
@@ -310,7 +310,7 @@ class TestClientFinalizers:
             items=[SimpleNamespace(metadata=SimpleNamespace(name="extra-secret"))]
         )
 
-        client_reconciler.keycloak_admin_factory = MagicMock(
+        client_reconciler.keycloak_admin_factory = AsyncMock(
             return_value=mock_keycloak_admin
         )
         client_reconciler.k8s_client = MagicMock()
