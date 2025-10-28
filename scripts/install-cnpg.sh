@@ -57,7 +57,7 @@ check_already_installed() {
     done
 
     if $already_complete && kubectl get deployment -n "$CNPG_NAMESPACE" cnpg-controller-manager >/dev/null 2>&1; then
-        ok "CloudNativePG already installed and CRDs present"
+        echo "✅ CloudNativePG already installed and CRDs present"
         exit 0
     fi
 }
@@ -80,7 +80,7 @@ install_cnpg() {
         --version "$CNPG_CHART_VERSION_PRIMARY" \
         --namespace "$CNPG_NAMESPACE" \
         --create-namespace -f -; then
-        warn "Primary version failed; attempting fallback ${CNPG_CHART_VERSION_FALLBACK}"
+        echo "⚠️  Primary version failed; attempting fallback ${CNPG_CHART_VERSION_FALLBACK}"
         if ! printf "%s" "$CNPG_VALUES" | helm upgrade --install "$CNPG_HELM_RELEASE" "$CNPG_HELM_CHART" \
             --version "$CNPG_CHART_VERSION_FALLBACK" \
             --namespace "$CNPG_NAMESPACE" \
@@ -96,9 +96,9 @@ wait_for_crds() {
     local CRDS=(clusters.postgresql.cnpg.io backups.postgresql.cnpg.io poolers.postgresql.cnpg.io)
     for crd in "${CRDS[@]}"; do
         if ! kubectl wait --for=condition=Established "crd/${crd}" --timeout=180s 2>/dev/null; then
-            warn "CRD ${crd} not established yet (continuing)"
+            echo "⚠️  CRD ${crd} not established yet (continuing)"
         else
-            ok "CRD ${crd} established"
+            echo "✅ CRD ${crd} established"
         fi
     done
 }
@@ -114,7 +114,7 @@ wait_for_operator() {
     elif kubectl get deployment cnpg-cloudnative-pg -n "$CNPG_NAMESPACE" >/dev/null 2>&1; then
         target_dep=cnpg-cloudnative-pg        
     else
-        warn "Could not find CNPG operator deployment yet; listing resources"
+        echo "⚠️  Could not find CNPG operator deployment yet; listing resources"
         kubectl get all -n "$CNPG_NAMESPACE" || true
         target_dep=cloudnative-pg
     fi
@@ -134,7 +134,7 @@ main() {
     wait_for_crds
     wait_for_operator
 
-    ok "CloudNativePG operator installed successfully"
+    echo "✅ CloudNativePG operator installed successfully"
 }
 
 main "$@"
