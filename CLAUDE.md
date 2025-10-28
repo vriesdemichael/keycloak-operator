@@ -9,6 +9,92 @@ Since you have quite a reputation from your career you are diligent about your o
 You have gracefully accepted to become a developer and advisor for this project. You value this product and wish to make it the best it can be.
 Since you have loads of free time now you also work tirelessly on the discussed features for this project.
 
+## GitHub Workflow & Pull Request Process
+
+### Branch and Commit Strategy
+All changes must be done through a Pull Request on a separate branch. Never commit directly to `main`.
+
+**Commit Guidelines:**
+- Use conventional commit messages (e.g., `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`)
+- Create a new commit when adding something new or significantly different
+- Amend the previous commit for small fixes or refinements to the same feature
+- Only commit when ALL tests (unit + integration) succeed locally
+
+**Example commit flow:**
+```bash
+# New feature
+git commit -m "feat: add realm reconciliation logic"
+
+# Fix in same feature (amend)
+git commit --amend -m "feat: add realm reconciliation logic with validation"
+
+# Different feature
+git commit -m "feat: add client secret rotation"
+```
+
+### Opening Pull Requests
+**DO NOT** open a PR before you are at a functioning state that makes sense to be reviewed.
+
+When you think the moment is right to open a PR:
+1. Ensure all tests pass locally
+2. Ensure code is in a reviewable state
+3. **Ask the user** if it's ready to open the PR
+4. User will open the PR (or confirm you should)
+
+Opening or pushing to a PR branch triggers automated Copilot review comments - only do this when ready for actual review.
+
+### Handling Review Comments
+When you see review comments on the PR (check with `gh pr view <number> --comments`):
+
+**For each comment, you must:**
+1. **Implement the suggestion** - Make the change and mark conversation as resolved:
+   ```bash
+   # After implementing changes
+   gh pr comment <number> --body "Implemented this suggestion" 
+   # Then resolve via GitHub UI or gh CLI if available
+   ```
+
+2. **Explain why not to implement** - If suggestion is incorrect/unnecessary:
+   ```bash
+   gh pr comment <number> --body "This suggestion should not be implemented because [reason]"
+   # Then mark as resolved
+   ```
+
+3. **Ask the user** - When unsure:
+   ```bash
+   # Ask user in chat, don't guess
+   ```
+
+**Address ALL review comments** before suggesting merge.
+
+### Review Process Flow
+1. User reviews code manually + you check for PR comments
+2. Address all review comments (implement, explain, or ask)
+3. Ensure all local tests pass (unit + integration) OR verify required CI checks are passing/will pass
+4. Ensure all conversations are resolved
+5. **Enable automerge** if all required checks will pass
+
+### Merging Pull Requests
+
+**You can enable automerge when:**
+- ✅ All review comments addressed and resolved
+- ✅ All local tests pass (unit + integration) OR required CI checks are passing
+- ✅ User has reviewed or approved the changes
+
+**Do NOT wait for all optional CI checks to complete** - the automerge will handle that.
+
+**How to enable automerge:**
+```bash
+gh pr merge <number> --auto --squash  # or --merge, --rebase depending on preference
+```
+
+The PR will automatically merge once all required status checks pass. Optional checks (like security scans, SBOM generation) don't block the merge.
+
+**Merge criteria:**
+- ✅ All review comments addressed and resolved
+- ✅ Required CI checks passing (unit tests, integration tests, code quality)
+- ✅ User has reviewed the code
+
 ## Project Status
 
 This is an alternative Keycloak operator project built to replace the existing realm operator with a fully GitOps-compatible solution.
@@ -95,9 +181,22 @@ After you are done with changes to the code, run the unit tests first.
 Only after these succeed will you run the integration test suite. This takes a LONG time, as it spins up a kind cluster to do so.
 
 For testing use `make test-unit` and `make test-integration`
-Before commiting your work you will run `make test-pre-commit`, which is a flow that does:
-code quality -> cluster teardown -> unit tests -> cluster setup -> integration tests
 
+**Fast iteration workflow (cluster reuse):**
+```bash
+# First run - creates fresh cluster
+make test-integration
+
+# Subsequent runs - reuses cluster (much faster)
+make clean-integration-state && make test-integration
+```
+
+Before commiting your work you will run `make test-pre-commit`, which is a complete flow that:
+1. Runs code quality checks
+2. Tears down any existing cluster  
+3. Creates fresh cluster
+4. Runs unit tests
+5. Runs integration tests
 
 **Important**: Always use `uv run <command>` when running Python commands directly, or use the Makefile targets which handle dependencies automatically. When you try to run scripts with python directly you will run into issues with dependencies.
 
@@ -126,26 +225,23 @@ make quality                     # Linting and formatting
 The operator uses a **cluster reuse strategy** for fast iteration. Clusters are only recreated when explicitly requested.
 
 ```bash
-# One-command setup and deployment
-make dev-setup                   # Install deps + setup cluster
-make deploy                      # Deploy operator (auto-creates cluster if needed)
+# Available Make targets (run 'make help' for full list)
+make test-unit                    # Run unit tests  
+make test-integration             # Run integration tests (builds images, deploys via Helm)
+make test-pre-commit              # Complete pre-commit flow (quality + fresh cluster + all tests)
 
 # Cluster management
-make kind-setup                  # Create bare Kind cluster (namespaces only)
-make setup-cluster               # Idempotent - creates cluster only if missing
-make kind-teardown              # Complete cleanup of cluster and resources
-
-# Operator monitoring
-make operator-status             # Check operator deployment status
-make operator-logs              # Show the most recent 200 log lines of the operator
-make operator-logs-tail         # Follow the operator logs (DO NOT USE THIS AS LLM, YOU WILL GET STUCK! ONLY FOR HUMANS)
+make kind-setup                   # Create fresh Kind cluster
+make kind-teardown                # Destroy Kind cluster completely
+make ensure-test-cluster          # Ensure clean test cluster ready for integration tests (idempotent)
+make clean-integration-state      # Reset Keycloak/DB state for cluster reuse (fast iteration)
 ```
 
-**Deployment Flow:**
-1. `make deploy` → `build-test` → `setup-cluster` → `install-cnpg` → deploy operator → deploy test Keycloak
-2. All steps are idempotent and safe to re-run
-3. `setup-cluster` reuses existing clusters (fast iteration)
-4. Use `make kind-teardown && make deploy` for a fresh start
+**Testing Flow:**
+1. `make test-integration` → Ensures cluster exists → Resets state → Builds images → Runs tests
+2. Tests deploy operator themselves via Helm (production-like setup)
+3. For fast iteration: `make clean-integration-state && make test-integration`
+4. For fresh start: `make kind-teardown && make test-integration`
 
 **Script Architecture:**
 
@@ -484,25 +580,23 @@ Before finishing your task, run through this mental checklist:
 - Implemented new reconciler → Update CLAUDE.md architecture, update docs/ if user-facing
 - Fixed bug in existing feature → Usually no docs update needed (unless behavior changed)
 
-### Using MkDocs for Documentation
+### Documentation
 
-After updating documentation in `docs/`, preview and verify your changes:
+Documentation is built with MkDocs. To build documentation locally:
 
 ```bash
-# Serve documentation locally (opens in browser)
-# DO NOT USE THIS IF YOU ARE A LLM, HUMANS ONLY!! It will create an endless process
-make docs-serve
-# View at: http://127.0.0.1:8000 
+# Install documentation dependencies
+uv sync --group docs
 
+# Build documentation (generates static site in site/)
+uv run --group docs mkdocs build
 
-# Build documentation (generates static site)
-make docs-build
-# Output in: site/
-
-# Stop the server: Ctrl+C
+# Serve documentation locally (DO NOT USE AS LLM - creates endless process, HUMANS ONLY)
+uv run --group docs mkdocs serve
+# View at: http://127.0.0.1:8000
 ```
 
-**When to use MkDocs:**
+**When to update documentation:**
 - After adding/editing any `.md` files in `docs/`
 - To verify links work correctly
 - To check formatting and appearance
