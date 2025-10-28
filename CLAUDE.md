@@ -95,9 +95,22 @@ After you are done with changes to the code, run the unit tests first.
 Only after these succeed will you run the integration test suite. This takes a LONG time, as it spins up a kind cluster to do so.
 
 For testing use `make test-unit` and `make test-integration`
-Before commiting your work you will run `make test-pre-commit`, which is a flow that does:
-code quality -> cluster teardown -> unit tests -> cluster setup -> integration tests
 
+**Fast iteration workflow (cluster reuse):**
+```bash
+# First run - creates fresh cluster
+make test-integration
+
+# Subsequent runs - reuses cluster (much faster)
+make clean-integration-state && make test-integration
+```
+
+Before commiting your work you will run `make test-pre-commit`, which is a complete flow that:
+1. Runs code quality checks
+2. Tears down any existing cluster  
+3. Creates fresh cluster
+4. Runs unit tests
+5. Runs integration tests
 
 **Important**: Always use `uv run <command>` when running Python commands directly, or use the Makefile targets which handle dependencies automatically. When you try to run scripts with python directly you will run into issues with dependencies.
 
