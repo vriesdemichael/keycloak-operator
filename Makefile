@@ -95,6 +95,9 @@ test-integration-clean: kind-teardown test-integration ## Tear down cluster, the
 # ============================================================================
 # Complete Test Suite
 # ============================================================================
+# NOTE: Matches GitHub Actions CI/CD workflow (.github/workflows/ci-cd.yml)
+# CI workflow: build-test-image -> code-quality + unit-tests (parallel) -> integration-tests
+# Local workflow: quality -> fresh cluster -> unit tests -> integration tests
 
 .PHONY: test
 test: quality test-unit test-integration ## Run complete test suite (quality + unit + integration)
