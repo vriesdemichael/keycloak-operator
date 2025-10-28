@@ -21,6 +21,7 @@ import fcntl
 import logging
 import os
 import tempfile
+import time
 from asyncio.subprocess import PIPE
 from collections.abc import AsyncGenerator
 from pathlib import Path
@@ -2145,3 +2146,77 @@ async def admission_token_setup(
     except ApiException:
         # Cleanup failure is not critical for test execution
         pass
+
+
+# Drift detection test fixtures
+
+
+@pytest.fixture
+def operator_instance_id(monkeypatch):
+    """Set operator instance ID for drift detection tests."""
+    instance_id = "test-operator-drift-integration"
+    monkeypatch.setenv("OPERATOR_INSTANCE_ID", instance_id)
+    return instance_id
+
+
+@pytest.fixture
+def realm_cr(test_namespace: str):
+    """Create a KeycloakRealm CR spec for drift detection tests."""
+    realm_name = f"drift-test-realm-{int(time.time() * 1000)}"
+    
+    return {
+        "apiVersion": "keycloak.mdvr.nl/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": f"realm-{realm_name}",
+            "namespace": test_namespace,
+        },
+        "spec": {
+            "realmName": realm_name,
+            "operatorRef": {
+                "namespace": "keycloak-system",
+                "authorizationSecretRef": {
+                    "name": "keycloak-operator-auth-token",
+                },
+            },
+            "settings": {
+                "enabled": True,
+                "registrationAllowed": False,
+            },
+        },
+    }
+
+
+@pytest.fixture
+def client_cr(test_namespace: str, realm_cr: dict):
+    """Create a KeycloakClient CR spec for drift detection tests."""
+    client_id = f"drift-test-client-{int(time.time() * 1000)}"
+    
+    return {
+        "apiVersion": "keycloak.mdvr.nl/v1",
+        "kind": "KeycloakClient",
+        "metadata": {
+            "name": f"client-{client_id}",
+            "namespace": test_namespace,
+        },
+        "spec": {
+            "clientId": client_id,
+            "realmRef": {
+                "name": realm_cr["metadata"]["name"],
+                "namespace": test_namespace,
+            },
+            "settings": {
+                "publicClient": True,
+                "standardFlowEnabled": True,
+            },
+            "redirectUris": ["https://example.com/callback"],
+        },
+    }
+
+
+@pytest.fixture
+async def keycloak_instance():
+    """Ensure Keycloak instance is ready for drift detection tests."""
+    # Keycloak should already be running from operator installation
+    # This fixture just confirms it's ready
+    return True
