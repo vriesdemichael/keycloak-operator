@@ -56,10 +56,10 @@ check_already_installed() {
 }
 
 install_cnpg() {
-    log "Creating CNPG namespace..."
+    echo "📦 Creating CNPG namespace..."
     kubectl create namespace "$CNPG_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
-    log "Adding CloudNativePG Helm repository..."
+    echo "📦 Adding CloudNativePG Helm repository..."
     if ! helm repo list | grep -q cloudnative-pg; then
         helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts >/dev/null 2>&1 || {
             error "Failed adding cloudnative-pg repo"
@@ -68,7 +68,7 @@ install_cnpg() {
     fi
     helm repo update >/dev/null 2>&1 || true
 
-    log "Installing CloudNativePG helm chart version ${CNPG_CHART_VERSION_PRIMARY}"
+    echo "📦 Installing CloudNativePG helm chart version ${CNPG_CHART_VERSION_PRIMARY}"
     if ! printf "%s" "$CNPG_VALUES" | helm upgrade --install "$CNPG_HELM_RELEASE" "$CNPG_HELM_CHART" \
         --version "$CNPG_CHART_VERSION_PRIMARY" \
         --namespace "$CNPG_NAMESPACE" \
@@ -85,7 +85,7 @@ install_cnpg() {
 }
 
 wait_for_crds() {
-    log "Waiting for CNPG CRDs to become available..."
+    echo "📦 Waiting for CNPG CRDs to become available..."
     local CRDS=(clusters.postgresql.cnpg.io backups.postgresql.cnpg.io poolers.postgresql.cnpg.io)
     for crd in "${CRDS[@]}"; do
         if ! kubectl wait --for=condition=Established "crd/${crd}" --timeout=180s 2>/dev/null; then
@@ -97,7 +97,7 @@ wait_for_crds() {
 }
 
 wait_for_operator() {
-    log "Waiting for CNPG operator deployment to be ready..."
+    echo "📦 Waiting for CNPG operator deployment to be ready..."
     # Deployment name differs between helm (cnpg) and manifest (cloudnative-pg); check both
     local target_dep
     if kubectl get deployment cnpg -n "$CNPG_NAMESPACE" >/dev/null 2>&1; then
@@ -119,7 +119,7 @@ wait_for_operator() {
 }
 
 main() {
-    log "Installing CloudNativePG operator..."
+    echo "📦 Installing CloudNativePG operator..."
 
     check_prerequisites
     check_already_installed
