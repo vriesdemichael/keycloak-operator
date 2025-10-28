@@ -43,7 +43,7 @@ echo ""
 # 3. Delete CNPG cluster to ensure clean database
 # Note: Tests recreate this via Helm (idempotent)
 echo "Step 3/5: Deleting CNPG database cluster..."
-if kubectl get cluster -n "$OPERATOR_NS" &>/dev/null 2>&1; then
+if kubectl get cluster -n "$OPERATOR_NS" &>/dev/null; then
     kubectl delete cluster --all -n "$OPERATOR_NS" --wait=false
     echo "  CNPG cluster deletion initiated"
 else

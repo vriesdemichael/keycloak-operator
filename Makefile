@@ -159,11 +159,11 @@ ensure-test-cluster: ## Ensure clean test cluster ready for integration tests (i
 		$(MAKE) kind-setup; \
 	else \
 		echo "  ✓ Cluster exists"; \
+		echo "  Resetting integration test state..."; \
+		$(MAKE) clean-integration-state; \
 	fi
 	@echo "  Ensuring CNPG operator is installed..."
 	@$(MAKE) install-cnpg
-	@echo "  Resetting integration test state..."
-	@$(MAKE) clean-integration-state
 	@echo "✓ Test cluster ready for integration tests"
 
 .PHONY: ensure-kind-cluster
