@@ -449,13 +449,13 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Prepare client config with ownership attributes
         from ..utils.ownership import create_ownership_attributes
-        
+
         client_config = spec.to_keycloak_config()
-        
+
         # Add ownership attributes for drift detection
         if "attributes" not in client_config:
             client_config["attributes"] = {}
-        
+
         ownership_attrs = create_ownership_attributes(namespace, name)
         client_config["attributes"].update(ownership_attrs)
 

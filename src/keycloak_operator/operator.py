@@ -318,7 +318,7 @@ async def cleanup_handler(settings: kopf.OperatorSettings, **_) -> None:
 async def drift_detection_timer(**kwargs) -> None:
     """
     Periodic drift detection task.
-    
+
     This task runs on a timer to check for drift between Keycloak state
     and Kubernetes CRs. It detects:
     - Orphaned resources (created by operator but CR deleted)
