@@ -1,46 +1,109 @@
-# Makefile for Keycloak Operator development and testing
+# Makefile for Keycloak Operator Development and Testing
 
-# Docker registry configuration
+# Configuration
 VERSION ?= $(shell grep '^version = ' pyproject.toml | cut -d'"' -f2)
 KEYCLOAK_VERSION ?= 26.4.1
+
+# ============================================================================
+# Help
+# ============================================================================
 
 .PHONY: help
 help: ## Show this help message
 	@echo "Keycloak Operator Development Commands"
 	@echo "====================================="
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-35s\033[0m %s\n", $$1, $$2}'
 
-# Development setup
+# ============================================================================
+# Development Setup
+# ============================================================================
+
 .PHONY: install
 install: ## Install development dependencies
 	uv sync --group dev
 
-# Code quality
-.PHONY: lint
-lint: ## Run linting checks
-	uv run --group quality ruff check --fix
+# ============================================================================
+# Code Quality
+# ============================================================================
 
 .PHONY: format
-format: ## Format code
+format: ## Format code with ruff
 	uv run --group quality ruff format
 
+.PHONY: lint
+lint: ## Lint code with ruff
+	uv run --group quality ruff check --fix
+
 .PHONY: type-check
-type-check: ## Run type checking
+type-check: ## Run type checking with ty
 	uv run --group quality ty check
 
 .PHONY: quality
-quality: format lint type-check
+quality: format lint type-check ## Run all quality checks
 
-# Testing
-# ========
-# NEW: Tests deploy operator themselves via Helm (no pre-deployment needed)
-# Prerequisites: Kind cluster + operator image built and loaded
+# ============================================================================
+# Unit Testing
+# ============================================================================
+
+.PHONY: test-unit
+test-unit: ## Run unit tests
+	uv run --group test pytest tests/unit/ -v
+
+# ============================================================================
+# Integration Testing - Test Images
+# ============================================================================
+
+.PHONY: build-test
+build-test: ## Build operator test image and load into Kind
+	@echo "Building operator test image..."
+	docker build -f images/operator/Dockerfile -t keycloak-operator:test .
+	@echo "✓ Operator image built"
+	@echo "Loading operator image into Kind cluster..."
+	kind load docker-image keycloak-operator:test --name keycloak-operator-test
+	@echo "✓ Operator image loaded into Kind"
+
+.PHONY: build-keycloak-optimized
+build-keycloak-optimized: ## Build optimized Keycloak image
+	@echo "Building optimized Keycloak image for faster startup..."
+	docker build -f images/keycloak-optimized/Dockerfile \
+		--build-arg KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) \
+		-t keycloak-optimized:$(KEYCLOAK_VERSION) \
+		.
+	@echo "✓ Optimized Keycloak image built successfully"
+
+.PHONY: kind-load-keycloak-optimized
+kind-load-keycloak-optimized: build-keycloak-optimized ## Build and load optimized Keycloak into Kind
+	@echo "Loading optimized Keycloak image into Kind cluster..."
+	kind load docker-image keycloak-optimized:$(KEYCLOAK_VERSION) --name keycloak-operator-test
+	@echo "✓ Optimized Keycloak image loaded into Kind"
+
+.PHONY: build-all-test
+build-all-test: build-test kind-load-keycloak-optimized ## Build and load all test images
+
+# ============================================================================
+# Integration Testing - Execution
+# ============================================================================
+
+.PHONY: test-integration
+test-integration: ensure-test-cluster build-all-test ## Run integration tests (builds images, deploys via Helm)
+	@echo "Running integration tests (tests deploy operator via Helm)..."
+	uv run pytest tests/integration/ -v -n auto --dist=loadscope
+
+.PHONY: test-integration-clean
+test-integration-clean: kind-teardown test-integration ## Tear down cluster, then run integration tests
+
+# ============================================================================
+# Complete Test Suite
+# ============================================================================
+# NOTE: Matches GitHub Actions CI/CD workflow (.github/workflows/ci-cd.yml)
+# CI workflow: build-test-image -> code-quality + unit-tests (parallel) -> integration-tests
+# Local workflow: quality -> fresh cluster -> unit tests -> integration tests
 
 .PHONY: test
-test: quality test-unit test-integration ## Run complete test suite (unit + integration)
+test: quality test-unit test-integration ## Run complete test suite (quality + unit + integration)
 
 .PHONY: test-pre-commit
-test-pre-commit: ## Run complete pre-commit test suite (quality + clean cluster + unit + integration)
+test-pre-commit: ## Complete pre-commit flow (quality + fresh cluster + unit + integration)
 	@echo "====================================="
 	@echo "Pre-commit test suite"
 	@echo "====================================="
@@ -50,10 +113,11 @@ test-pre-commit: ## Run complete pre-commit test suite (quality + clean cluster 
 	@$(MAKE) quality || { echo "❌ Quality checks failed"; exit 1; }
 	@echo "✓ Quality checks passed"
 	@echo ""
-	@echo "Step 2/4: Destroying test cluster..."
+	@echo "Step 2/4: Setting up fresh cluster..."
 	@echo "-------------------------------------"
-	@$(MAKE) kind-teardown || { echo "⚠️  Cluster teardown had issues (might not exist)"; }
-	@echo "✓ Test cluster destroyed"
+	@$(MAKE) kind-teardown || true
+	@$(MAKE) kind-setup || { echo "❌ Failed to setup Kind cluster"; exit 1; }
+	@echo "✓ Fresh cluster ready"
 	@echo ""
 	@echo "Step 3/4: Running unit tests..."
 	@echo "-------------------------------------"
@@ -62,11 +126,7 @@ test-pre-commit: ## Run complete pre-commit test suite (quality + clean cluster 
 	@echo ""
 	@echo "Step 4/4: Running integration tests..."
 	@echo "-------------------------------------"
-	@echo "Setting up Kind cluster..."
-	@$(MAKE) kind-setup || { echo "❌ Failed to setup Kind cluster"; exit 1; }
-	@echo "Installing CNPG..."
 	@$(MAKE) install-cnpg || { echo "❌ Failed to install CNPG"; exit 1; }
-	@echo "Running integration tests..."
 	@mkdir -p .tmp
 	@bash -c "set -o pipefail; $(MAKE) test-integration 2>&1 | tee .tmp/latest-integration-test.log" || { echo "❌ Integration tests failed"; exit 1; }
 	@echo "✓ Integration tests passed"
@@ -74,186 +134,69 @@ test-pre-commit: ## Run complete pre-commit test suite (quality + clean cluster 
 	@echo "====================================="
 	@echo "✓ All pre-commit tests passed!"
 	@echo "====================================="
-	@echo ""
-	@echo "Test logs saved to: .tmp/latest-integration-test.log"
 
-.PHONY: test-unit
-test-unit: ## Run unit tests only
-	uv run --group test pytest tests/unit/ -v
-
-.PHONY: test-integration
-test-integration: ensure-kind-cluster build-all-test ## Run integration tests (builds images, tests deploy via Helm)
-	@echo "Running integration tests (tests will deploy operator via Helm)..."
-	uv run pytest tests/integration/ -v -n auto --dist=loadscope
-
-.PHONY: test-integration-clean
-test-integration-clean: kind-teardown test-integration ## Clean cluster first, then run integration tests
-
-
-# Kind cluster management
-# ========================
-# kind-setup: Creates bare cluster with namespaces (no operator/CRDs)
-# ensure-kind-cluster: Idempotent - creates cluster only if it doesn't exist
-# kind-teardown: Complete cleanup of cluster and resources
+# ============================================================================
+# Test Cluster Management
+# ============================================================================
 
 .PHONY: kind-setup
-kind-setup: ## Set up Kind cluster for integration testing
-	./scripts/kind-setup.sh
+kind-setup: ## Create fresh Kind cluster
+	@./scripts/kind-setup.sh
 
 .PHONY: kind-teardown
-kind-teardown: ## Tear down Kind cluster
-	./scripts/kind-teardown.sh
-
-
-# Operator operations
-.PHONY: build
-build: ## Build operator Docker image
-	docker build -f images/operator/Dockerfile -t keycloak-operator:latest .
-
-.PHONY: build-test
-build-test: ## Build operator Docker image for testing and load it into kind cluster
-	docker build -f images/operator/Dockerfile -t keycloak-operator:test .
-	@echo "Loading operator image into Kind cluster..."
-	kind load docker-image keycloak-operator:test --name keycloak-operator-test
-
-# Optimized Keycloak image operations
-.PHONY: build-keycloak-optimized
-build-keycloak-optimized: ## Build optimized Keycloak image for faster test startup
-	@echo "Building optimized Keycloak image (version: $(KEYCLOAK_VERSION))..."
-	@echo "This may take 2-3 minutes on first build (downloads and optimizes Keycloak)..."
-	docker build -f images/keycloak-optimized/Dockerfile \
-		--build-arg KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) \
-		-t keycloak-optimized:$(KEYCLOAK_VERSION) \
-		images/keycloak-optimized/
-	@echo "✓ Optimized Keycloak image built successfully"
-
-.PHONY: kind-load-keycloak-optimized
-kind-load-keycloak-optimized: build-keycloak-optimized ## Build and load optimized Keycloak image into Kind
-	@echo "Loading optimized Keycloak image into Kind cluster..."
-	kind load docker-image keycloak-optimized:$(KEYCLOAK_VERSION) --name keycloak-operator-test
-	@echo "✓ Optimized Keycloak image loaded into Kind"
-
-.PHONY: build-all-test
-build-all-test: build-test kind-load-keycloak-optimized ## Build operator and optimized Keycloak, load both into Kind
-
-
-# Deployment
-# ===========
-# Deployment flow:
-#   1. build-test: Build operator image tagged as 'test'
-#   2. ensure-kind-cluster: Ensure Kind cluster exists (idempotent)
-#   3. install-cnpg: Install CNPG operator (idempotent)
-#   4. helm-deploy-operator: Deploy operator + Keycloak using Helm chart
-
-.PHONY: deploy
-deploy: deploy-local ## Deploy operator (standard target name)
-
-.PHONY: deploy-local
-deploy-local: build-test ensure-kind-cluster install-cnpg ## Deploy operator + test Keycloak instance to local Kind cluster
-	@echo "Deploying operator and Keycloak using Helm chart..."
-	@$(MAKE) helm-deploy-operator
-	@echo "Waiting for operator to be ready..."
-	kubectl rollout status deployment keycloak-operator -n keycloak-system --timeout=60s
-	@echo "Waiting for keycloak instance to be ready..."
-	kubectl wait --for=jsonpath='{.status.phase}'=Ready keycloak/keycloak -n keycloak-system --timeout=120s
-	@echo "✓ Operator and Keycloak deployed successfully!"
-
-.PHONY: helm-deploy-operator
-helm-deploy-operator: ## Deploy operator using Helm chart (with Keycloak for testing)
-	@echo "Deploying operator with Helm (admin password will be auto-generated)..."
-	helm upgrade --install keycloak-operator ./charts/keycloak-operator \
-		--namespace keycloak-system \
-		--create-namespace \
-		--set namespace.create=false \
-		--set operator.image.repository=keycloak-operator \
-		--set operator.image.tag=test \
-		--set operator.image.pullPolicy=Never \
-		--set operator.replicaCount=2 \
-		--set keycloak.enabled=true \
-		--set keycloak.replicas=1 \
-		--set keycloak.version=26.0.0 \
-		--set keycloak.database.type=postgresql \
-		--set keycloak.database.cnpg.enabled=true \
-		--set keycloak.database.cnpg.clusterName=keycloak-postgres \
-		--wait \
-		--timeout=300s
-	@echo "✓ Operator deployed successfully"
-	@echo "Admin credentials auto-generated in secret: keycloak-admin-credentials"
-
-.PHONY: helm-uninstall-operator
-helm-uninstall-operator: ## Uninstall operator Helm release
-	@echo "Uninstalling operator Helm release..."
-	helm uninstall keycloak-operator -n keycloak-system || echo "Release not found"
-
+kind-teardown: ## Destroy Kind cluster
+	@./scripts/kind-teardown.sh
 
 .PHONY: install-cnpg
-install-cnpg: ## Install CloudNativePG operator (idempotent)
-	@./scripts/install-cnpg.sh || echo "CNPG install script exited with code $$? (already installed?)"
+install-cnpg: ## Install CNPG operator (idempotent)
+	@./scripts/install-cnpg.sh
+
+.PHONY: ensure-test-cluster
+ensure-test-cluster: ## Ensure clean test cluster ready for integration tests (idempotent)
+	@echo "Ensuring test cluster is ready..."
+	@if ! kind get clusters 2>/dev/null | grep -qx 'keycloak-operator-test'; then \
+		echo "  Cluster doesn't exist - creating..."; \
+		$(MAKE) kind-setup; \
+	else \
+		echo "  ✓ Cluster exists"; \
+		echo "  Resetting integration test state..."; \
+		$(MAKE) clean-integration-state; \
+	fi
+	@echo "  Ensuring CNPG operator is installed..."
+	@$(MAKE) install-cnpg
+	@echo "✓ Test cluster ready for integration tests"
 
 .PHONY: ensure-kind-cluster
-ensure-kind-cluster: ## Ensure Kind cluster is running
-	@if ! kind get clusters | grep -q keycloak-operator-test; then \
-		echo "Setting up Kind cluster..."; \
-		make kind-setup; \
-	else \
-		echo "Kind cluster 'keycloak-operator-test' already exists - reusing"; \
-	fi
+ensure-kind-cluster: ensure-test-cluster ## Alias for ensure-test-cluster (for backwards compatibility)
 
-.PHONY: operator-logs
-operator-logs: ## Show recent operator logs (last 200 lines)
-	kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=200
+# ============================================================================
+# Cleanup & Maintenance
+# ============================================================================
 
-.PHONY: operator-logs-tail
-operator-logs-tail: ## Tail operator logs (follow mode)
-	kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=100 -f
+.PHONY: clean-integration-state
+clean-integration-state: ## Reset Keycloak/DB state for cluster reuse (fast iteration)
+	@./scripts/clean-integration-state.sh
 
-.PHONY: operator-status
-operator-status: ## Show operator status
-	@echo "Operator deployment:"
-	@kubectl get deployment keycloak-operator -n keycloak-system || echo "Operator not deployed"
-	@echo ""
-	@echo "Operator pods:"
-	@kubectl get pods -n keycloak-system -l app.kubernetes.io/name=keycloak-operator || echo "No operator pods"
-	@echo ""
-	@echo "CRDs:"
-	@kubectl get crd | grep keycloak || echo "No Keycloak CRDs found"
-
-.PHONY: dev-setup
-dev-setup: install ensure-kind-cluster ## Full development environment setup
-	@echo "Development environment ready!"
-	@echo "Run 'make deploy' to deploy the operator"
-	@echo "Run 'make test' to run complete test suite"
-
-
+.PHONY: clean-test-resources
+clean-test-resources: ## Clean up stuck test namespaces
+	@./scripts/clean-test-resources.sh --force
 
 .PHONY: clean
-clean: ## Clean up development artifacts
+clean: ## Clean development artifacts
 	rm -rf .pytest_cache/
 	rm -rf htmlcov/
 	rm -rf .coverage
+	rm -rf .coverage.*
 	rm -rf test-logs/
 	rm -rf .tmp/
 	docker image prune -f
 
-.PHONY: clean-test-resources
-clean-test-resources: ## Clean up stuck test resources from Kubernetes
-	@echo "Cleaning up test resources..."
-	@./scripts/clean-test-resources.sh --force
-
 .PHONY: clean-all
-clean-all: clean kind-teardown ## Clean up everything including Kind cluster
+clean-all: clean kind-teardown ## Clean everything including Kind cluster
 	docker system prune -f
 
+# ============================================================================
+# Default
+# ============================================================================
 
-
-# Documentation
-.PHONY: docs-serve
-docs-serve: ## Serve documentation locally
-	uv run --group docs mkdocs serve
-
-.PHONY: docs-build
-docs-build: ## Build documentation
-	uv run --group docs mkdocs build
-
-# Default target
 .DEFAULT_GOAL := help

@@ -196,16 +196,16 @@ git clone https://github.com/vriesdemichael/keycloak-operator.git
 cd keycloak-operator
 
 # Install dependencies
-make setup
+make install
 
-# Run tests
+# Run quality checks
+make quality
+
+# Run unit tests
 make test-unit
-
-# Run operator locally
-make run
 ```
 
-See [Development Guide](docs/development.md) for more details.
+See [Development Guide](docs/development.md) and [CLAUDE.md](CLAUDE.md) for more details.
 
 ## 📝 License
 

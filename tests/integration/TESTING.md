@@ -592,7 +592,7 @@ uv run pytest tests/integration/ -v -s
 
 1. **Check operator logs:**
    ```bash
-   make operator-logs
+   kubectl logs -n keycloak-test-system -l app.kubernetes.io/name=keycloak-operator --tail=200
    ```
 
 2. **Check resource status:**
