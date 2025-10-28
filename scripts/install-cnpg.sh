@@ -29,12 +29,12 @@ EOF
 
 check_prerequisites() {
     if ! command -v kubectl >/dev/null 2>&1; then
-        error "kubectl not found"
+        echo "❌ ERROR: kubectl not found"
         exit 1
     fi
 
     if ! command -v helm >/dev/null 2>&1; then
-        error "Helm not available; please install Helm for CNPG installation"
+        echo "❌ ERROR: Helm not available; please install Helm for CNPG installation"
         exit 1
     fi
 }
@@ -62,7 +62,7 @@ install_cnpg() {
     echo "📦 Adding CloudNativePG Helm repository..."
     if ! helm repo list | grep -q cloudnative-pg; then
         helm repo add cloudnative-pg https://cloudnative-pg.github.io/charts >/dev/null 2>&1 || {
-            error "Failed adding cloudnative-pg repo"
+            echo "❌ ERROR: Failed adding cloudnative-pg repo"
             exit 1
         }
     fi
@@ -78,7 +78,7 @@ install_cnpg() {
             --version "$CNPG_CHART_VERSION_FALLBACK" \
             --namespace "$CNPG_NAMESPACE" \
             --create-namespace -f -; then
-            error "Helm installation failed for both primary and fallback versions"
+            echo "❌ ERROR: Helm installation failed for both primary and fallback versions"
             exit 1
         fi
     fi
@@ -113,7 +113,7 @@ wait_for_operator() {
     fi
 
     if ! kubectl rollout status "deployment/${target_dep}" -n "$CNPG_NAMESPACE" --timeout=240s; then
-        error "CNPG operator deployment ${target_dep} not ready"
+        echo "❌ ERROR: CNPG operator deployment ${target_dep} not ready"
         exit 1
     fi
 }
