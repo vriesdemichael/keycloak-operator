@@ -11,7 +11,6 @@ import logging
 import os
 import time
 from dataclasses import dataclass
-from datetime import UTC, datetime
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -74,9 +73,7 @@ class DriftDetectionConfig:
             interval_seconds=int(os.getenv("DRIFT_DETECTION_INTERVAL_SECONDS", "300")),
             auto_remediate=os.getenv("DRIFT_DETECTION_AUTO_REMEDIATE", "false").lower()
             == "true",
-            minimum_age_hours=int(
-                os.getenv("DRIFT_DETECTION_MINIMUM_AGE_HOURS", "24")
-            ),
+            minimum_age_hours=int(os.getenv("DRIFT_DETECTION_MINIMUM_AGE_HOURS", "24")),
             scope_realms=os.getenv("DRIFT_DETECTION_SCOPE_REALMS", "true").lower()
             == "true",
             scope_clients=os.getenv("DRIFT_DETECTION_SCOPE_CLIENTS", "true").lower()
@@ -109,7 +106,9 @@ class DriftDetector:
         """
         self.config = config or DriftDetectionConfig.from_env()
         self.k8s_client = k8s_client or client.ApiClient()
-        self.keycloak_admin_factory = keycloak_admin_factory or get_keycloak_admin_client
+        self.keycloak_admin_factory = (
+            keycloak_admin_factory or get_keycloak_admin_client
+        )
         self.custom_objects_api = client.CustomObjectsApi(self.k8s_client)
         self.core_v1_api = client.CoreV1Api(self.k8s_client)
 
@@ -232,18 +231,18 @@ class DriftDetector:
                     admin_client = await self.keycloak_admin_factory(
                         kc_name, kc_namespace
                     )
-                    
+
                     # Get all realms first
                     realms = await admin_client.get_realms()
-                    
+
                     for realm in realms:
                         # Skip master realm
                         if realm.realm == "master":
                             continue
-                        
+
                         # Get all clients in this realm
                         clients = await admin_client.get_clients(realm.realm)
-                        
+
                         for kc_client in clients:
                             drift = await self._check_client_resource_drift(
                                 kc_client, realm.realm, admin_client
@@ -298,7 +297,9 @@ class DriftDetector:
                     resource_type="realm",
                     resource_name=realm.realm,
                     drift_type="orphaned",
-                    keycloak_resource=realm.model_dump() if hasattr(realm, "model_dump") else vars(realm),
+                    keycloak_resource=realm.model_dump()
+                    if hasattr(realm, "model_dump")
+                    else vars(realm),
                     age_hours=get_resource_age_hours(attributes),
                 )
 
@@ -314,7 +315,9 @@ class DriftDetector:
                     resource_type="realm",
                     resource_name=realm.realm,
                     drift_type="orphaned",
-                    keycloak_resource=realm.model_dump() if hasattr(realm, "model_dump") else vars(realm),
+                    keycloak_resource=realm.model_dump()
+                    if hasattr(realm, "model_dump")
+                    else vars(realm),
                     cr_namespace=cr_namespace,
                     cr_name=cr_name,
                     age_hours=get_resource_age_hours(attributes),
@@ -336,7 +339,9 @@ class DriftDetector:
                 resource_type="realm",
                 resource_name=realm.realm,
                 drift_type="unmanaged",
-                keycloak_resource=realm.model_dump() if hasattr(realm, "model_dump") else vars(realm),
+                keycloak_resource=realm.model_dump()
+                if hasattr(realm, "model_dump")
+                else vars(realm),
             )
 
         return None
@@ -356,7 +361,11 @@ class DriftDetector:
             DriftResult if drift detected, None otherwise
         """
         # Clients have attributes too
-        client_dict = kc_client.model_dump() if hasattr(kc_client, "model_dump") else vars(kc_client)
+        client_dict = (
+            kc_client.model_dump()
+            if hasattr(kc_client, "model_dump")
+            else vars(kc_client)
+        )
         attributes = client_dict.get("attributes", {})
 
         # Check if owned by this operator
@@ -559,7 +568,9 @@ class DriftDetector:
 
         # Re-check that CR still doesn't exist (safety check)
         if drift.cr_namespace and drift.cr_name:
-            cr_kind = "KeycloakRealm" if drift.resource_type == "realm" else "KeycloakClient"
+            cr_kind = (
+                "KeycloakRealm" if drift.resource_type == "realm" else "KeycloakClient"
+            )
             if await self._cr_exists(cr_kind, drift.cr_namespace, drift.cr_name):
                 logger.warning(
                     f"CR {drift.cr_namespace}/{drift.cr_name} now exists, skipping orphan deletion"

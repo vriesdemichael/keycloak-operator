@@ -496,7 +496,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Add new ownership attributes for drift detection
         ownership_attrs = create_ownership_attributes(namespace, name)
         realm_payload["attributes"].update(ownership_attrs)
-        
+
         # Keep legacy attributes for backward compatibility (can be removed in future version)
         realm_payload["attributes"].update(
             {
