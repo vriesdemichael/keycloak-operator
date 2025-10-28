@@ -582,15 +582,105 @@ class DriftDetector:
             f"(age: {drift.age_hours:.1f}h)"
         )
 
-        # TODO: Implement actual deletion via Keycloak Admin API
-        # For now, just log and update metrics
-        logger.info(f"Would delete {drift.resource_type} {drift.resource_name}")
+        # Get Keycloak admin client
+        keycloak_instances = await self._discover_keycloak_instances()
+        if not keycloak_instances:
+            logger.error("No Keycloak instances found for remediation")
+            REMEDIATION_ERRORS_TOTAL.labels(
+                resource_type=drift.resource_type,
+                action="deleted",
+            ).inc()
+            return
 
-        REMEDIATION_TOTAL.labels(
-            resource_type=drift.resource_type,
-            action="deleted",
-            reason="orphaned",
-        ).inc()
+        # Use the first Keycloak instance (TODO: track which instance owns which resource)
+        kc_namespace, kc_name = keycloak_instances[0]
+
+        try:
+            admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
+
+            # Delete based on resource type
+            if drift.resource_type == "realm":
+                success = await admin_client.delete_realm(
+                    drift.resource_name, kc_namespace
+                )
+                if success:
+                    logger.info(
+                        f"Successfully deleted orphaned realm {drift.resource_name}"
+                    )
+                    REMEDIATION_TOTAL.labels(
+                        resource_type=drift.resource_type,
+                        action="deleted",
+                        reason="orphaned",
+                    ).inc()
+                else:
+                    logger.error(
+                        f"Failed to delete orphaned realm {drift.resource_name}"
+                    )
+                    REMEDIATION_ERRORS_TOTAL.labels(
+                        resource_type=drift.resource_type,
+                        action="deleted",
+                    ).inc()
+
+            elif drift.resource_type == "client":
+                # For clients, we need the client UUID and realm name
+                # Extract from keycloak_resource
+                client_id = drift.keycloak_resource.get("id")
+                # Find which realm this client belongs to
+                # We stored the client data, so we can try to extract realm from attributes
+                # or search through all realms
+                realms = await admin_client.get_realms()
+                client_deleted = False
+
+                for realm in realms:
+                    if realm.realm == "master":
+                        continue
+
+                    try:
+                        # Get client in this realm by clientId
+                        kc_client = await admin_client.get_client_by_name(
+                            drift.resource_name, realm.realm, kc_namespace
+                        )
+                        if kc_client and kc_client.id == client_id:
+                            # Found it! Delete it
+                            success = await admin_client.delete_client(
+                                kc_client.id, realm.realm, kc_namespace
+                            )
+                            if success:
+                                logger.info(
+                                    f"Successfully deleted orphaned client {drift.resource_name} "
+                                    f"from realm {realm.realm}"
+                                )
+                                REMEDIATION_TOTAL.labels(
+                                    resource_type=drift.resource_type,
+                                    action="deleted",
+                                    reason="orphaned",
+                                ).inc()
+                                client_deleted = True
+                                break
+                    except Exception as e:
+                        logger.debug(
+                            f"Client {drift.resource_name} not in realm {realm.realm}: {e}"
+                        )
+                        continue
+
+                if not client_deleted:
+                    logger.error(
+                        f"Failed to find and delete orphaned client {drift.resource_name}"
+                    )
+                    REMEDIATION_ERRORS_TOTAL.labels(
+                        resource_type=drift.resource_type,
+                        action="deleted",
+                    ).inc()
+
+        except Exception as e:
+            logger.error(
+                f"Error deleting orphaned {drift.resource_type} {drift.resource_name}: {e}",
+                exc_info=True,
+            )
+            REMEDIATION_ERRORS_TOTAL.labels(
+                resource_type=drift.resource_type,
+                action="deleted",
+            ).inc()
 
     async def _remediate_config_drift(self, drift: DriftResult) -> None:
         """
