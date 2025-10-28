@@ -70,16 +70,30 @@ When you see review comments on the PR (check with `gh pr view <number> --commen
 ### Review Process Flow
 1. User reviews code manually + you check for PR comments
 2. Address all review comments (implement, explain, or ask)
-3. Ensure all tests still pass
-4. Ensure all CI checks pass (green checkmarks)
-5. Ensure all conversations are resolved
-6. **Only then** suggest the user to merge the PR
+3. Ensure all local tests pass (unit + integration) OR verify required CI checks are passing/will pass
+4. Ensure all conversations are resolved
+5. **Enable automerge** if all required checks will pass
 
-**Do not suggest merge until:**
-- ✅ All local tests pass (unit + integration)
-- ✅ All CI checks pass
+### Merging Pull Requests
+
+**You can enable automerge when:**
 - ✅ All review comments addressed and resolved
-- ✅ User has manually reviewed the code
+- ✅ All local tests pass (unit + integration) OR required CI checks are passing
+- ✅ User has reviewed or approved the changes
+
+**Do NOT wait for all optional CI checks to complete** - the automerge will handle that.
+
+**How to enable automerge:**
+```bash
+gh pr merge <number> --auto --squash  # or --merge, --rebase depending on preference
+```
+
+The PR will automatically merge once all required status checks pass. Optional checks (like security scans, SBOM generation) don't block the merge.
+
+**Merge criteria:**
+- ✅ All review comments addressed and resolved
+- ✅ Required CI checks passing (unit tests, integration tests, code quality)
+- ✅ User has reviewed the code
 
 ## Project Status
 
