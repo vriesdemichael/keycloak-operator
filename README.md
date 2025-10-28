@@ -32,6 +32,7 @@ kubectl apply -f examples/03-client-example.yaml
 
 - **Declarative Configuration** - Manage Keycloak entirely through Kubernetes resources
 - **GitOps Ready** - Full observability with status conditions and `observedGeneration` tracking
+- **Drift Detection** - Automatic detection of orphaned resources and configuration drift ([docs](docs/drift-detection.md))
 - **Cross-Namespace Support** - Secure delegation model for multi-tenant environments
 - **Production Ready** - Rate limiting, exponential backoff, and comprehensive monitoring
 - **Rate Limiting** - Two-level throttling (global + per-namespace) protects Keycloak from overload
@@ -44,6 +45,7 @@ kubectl apply -f examples/03-client-example.yaml
 - **[Quick Start Guide](docs/quickstart/README.md)** - Get started in 10 minutes
 - **[Architecture](docs/architecture.md)** - How the operator works
 - **[Security Model](docs/security.md)** - Secret-based authorization explained
+- **[Drift Detection](docs/drift-detection.md)** - Orphan detection and auto-remediation
 - **[Observability](docs/observability.md)** - Metrics, logs, and status conditions
 - **[Development Guide](docs/development.md)** - Contributing to the project
 

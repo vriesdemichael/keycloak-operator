@@ -7,6 +7,59 @@
 
 * clean up Makefile and add cluster reuse workflow ([#59](https://github.com/vriesdemichael/keycloak-operator/issues/59)) ([be3bcd4](https://github.com/vriesdemichael/keycloak-operator/commit/be3bcd4ab1f09413fc23da36aa79f5e00c9df91a))
 
+## [Unreleased]
+
+### Features
+
+* **drift-detection:** Add comprehensive drift detection and auto-remediation ([#43](https://github.com/vriesdemichael/keycloak-operator/issues/43))
+  - Ownership tracking via Keycloak resource attributes
+  - Periodic background scans for orphaned resources (created by operator, CR deleted)
+  - Detection of unmanaged resources (not created by any operator)
+  - Configurable auto-remediation with 24h minimum age safety check
+  - Multi-operator support via unique instance IDs
+  - Prometheus metrics for monitoring drift and remediation
+  - Comprehensive documentation in `docs/drift-detection.md`
+
+* **rate-limiting:** Implement comprehensive two-level rate limiting for Keycloak API calls
+  - Global rate limiter (50 req/s default) protects Keycloak from total overload
+  - Per-namespace rate limiter (5 req/s default) ensures fair access across teams
+  - Prevents API flooding on operator restart via jitter (0-5s random delay)
+  - Protects against DDoS via spam creation of thousands of realms/clients
+  - Addresses issue #31
+
+* **async:** Complete async/await conversion of Keycloak Admin Client
+  - Migrated from `requests` to `aiohttp` for async HTTP operations
+  - All 44 admin client methods converted to async
+  - All reconcilers updated to use async admin client
+  - All handlers updated with jitter and rate limiter integration
+
+* **metrics:** Add Prometheus metrics for drift detection
+  - `keycloak_operator_orphaned_resources` - Orphaned resource count
+  - `keycloak_operator_config_drift` - Configuration drift count
+  - `keycloak_unmanaged_resources` - Unmanaged resource count
+  - `keycloak_operator_remediation_total` - Remediation actions performed
+  - `keycloak_operator_drift_check_duration_seconds` - Drift scan duration
+
+### Breaking Changes
+
+* **drift-detection:** Resources created before this version will not have ownership attributes
+  - Existing realms/clients will be treated as "unmanaged" resources
+  - They will NOT be affected by drift detection or auto-remediation
+  - See `docs/drift-detection.md` for migration options
+
+* **admin-client:** KeycloakAdminClient methods now require `namespace` parameter
+  - All methods accept `namespace: str` for rate limiting
+  - Factory function `get_keycloak_admin_client` now accepts `rate_limiter` parameter
+  - Circuit breaker removed (replaced by rate limiting)
+
+### Documentation
+
+* Add comprehensive drift detection documentation
+* Add example Prometheus alerts for drift detection
+* Update README.md with drift detection feature
+* Update CLAUDE.md with async patterns and rate limiting architecture
+
+
 ## [0.2.11](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.10...v0.2.11) (2025-10-27)
 
 
