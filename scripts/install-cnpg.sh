@@ -10,6 +10,13 @@
 
 set -euo pipefail
 
+# Configuration
+CNPG_NAMESPACE="cnpg-system"
+CNPG_HELM_RELEASE="cnpg"
+CNPG_HELM_CHART="cloudnative-pg/cloudnative-pg"
+CNPG_CHART_VERSION_PRIMARY="0.22.1"
+CNPG_CHART_VERSION_FALLBACK="0.21.6"
+
 # CNPG values for Helm
 CNPG_VALUES=$(cat <<'EOF'
 metrics:
