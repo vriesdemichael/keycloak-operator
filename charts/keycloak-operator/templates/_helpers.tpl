@@ -96,3 +96,15 @@ Common annotations
 {{ toYaml . }}
 {{- end }}
 {{- end }}
+
+{{/*
+Operator instance ID for resource ownership tracking
+Auto-generates: <release-name>-<namespace> if not explicitly set
+*/}}
+{{- define "keycloak-operator.instanceId" -}}
+{{- if .Values.operator.instanceId }}
+{{- .Values.operator.instanceId }}
+{{- else }}
+{{- printf "%s-%s" .Release.Name (include "keycloak-operator.namespace" .) | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}

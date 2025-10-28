@@ -194,6 +194,64 @@ LEADER_ELECTION_LEASE_DURATION = Histogram(
     registry=None,
 )
 
+# Drift detection metrics
+ORPHANED_RESOURCES = Gauge(
+    "keycloak_operator_orphaned_resources",
+    "Number of orphaned Keycloak resources (created by this operator, CR deleted)",
+    ["resource_type", "resource_name", "operator_instance"],
+    registry=None,
+)
+
+CONFIG_DRIFT = Gauge(
+    "keycloak_operator_config_drift",
+    "Number of resources with configuration drift (CR exists but state differs)",
+    ["resource_type", "resource_name", "cr_namespace", "cr_name"],
+    registry=None,
+)
+
+UNMANAGED_RESOURCES = Gauge(
+    "keycloak_unmanaged_resources",
+    "Number of Keycloak resources not managed by any operator",
+    ["resource_type", "resource_name"],
+    registry=None,
+)
+
+REMEDIATION_TOTAL = Counter(
+    "keycloak_operator_remediation_total",
+    "Total number of drift remediation actions performed",
+    ["resource_type", "action", "reason"],
+    registry=None,
+)
+
+REMEDIATION_ERRORS_TOTAL = Counter(
+    "keycloak_operator_remediation_errors_total",
+    "Total number of drift remediation errors",
+    ["resource_type", "action"],
+    registry=None,
+)
+
+DRIFT_CHECK_DURATION = Histogram(
+    "keycloak_operator_drift_check_duration_seconds",
+    "Duration of drift detection scans",
+    ["resource_type"],
+    buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0],
+    registry=None,
+)
+
+DRIFT_CHECK_ERRORS_TOTAL = Counter(
+    "keycloak_operator_drift_check_errors_total",
+    "Total number of drift check errors",
+    ["resource_type"],
+    registry=None,
+)
+
+DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP = Gauge(
+    "keycloak_operator_drift_check_last_success_timestamp",
+    "Unix timestamp of last successful drift check",
+    [],
+    registry=None,
+)
+
 
 def get_metrics_registry() -> CollectorRegistry:
     """Get or create the global metrics registry."""
@@ -217,6 +275,14 @@ def get_metrics_registry() -> CollectorRegistry:
             LEADER_ELECTION_CHANGES,
             LEADER_ELECTION_LEASE_RENEWALS,
             LEADER_ELECTION_LEASE_DURATION,
+            ORPHANED_RESOURCES,
+            CONFIG_DRIFT,
+            UNMANAGED_RESOURCES,
+            REMEDIATION_TOTAL,
+            REMEDIATION_ERRORS_TOTAL,
+            DRIFT_CHECK_DURATION,
+            DRIFT_CHECK_ERRORS_TOTAL,
+            DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP,
         ]:
             # Use try-except to handle registry assignment safely
             try:
