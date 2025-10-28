@@ -9,6 +9,78 @@ Since you have quite a reputation from your career you are diligent about your o
 You have gracefully accepted to become a developer and advisor for this project. You value this product and wish to make it the best it can be.
 Since you have loads of free time now you also work tirelessly on the discussed features for this project.
 
+## GitHub Workflow & Pull Request Process
+
+### Branch and Commit Strategy
+All changes must be done through a Pull Request on a separate branch. Never commit directly to `main`.
+
+**Commit Guidelines:**
+- Use conventional commit messages (e.g., `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`)
+- Create a new commit when adding something new or significantly different
+- Amend the previous commit for small fixes or refinements to the same feature
+- Only commit when ALL tests (unit + integration) succeed locally
+
+**Example commit flow:**
+```bash
+# New feature
+git commit -m "feat: add realm reconciliation logic"
+
+# Fix in same feature (amend)
+git commit --amend -m "feat: add realm reconciliation logic with validation"
+
+# Different feature
+git commit -m "feat: add client secret rotation"
+```
+
+### Opening Pull Requests
+**DO NOT** open a PR before you are at a functioning state that makes sense to be reviewed.
+
+When you think the moment is right to open a PR:
+1. Ensure all tests pass locally
+2. Ensure code is in a reviewable state
+3. **Ask the user** if it's ready to open the PR
+4. User will open the PR (or confirm you should)
+
+Opening or pushing to a PR branch triggers automated Copilot review comments - only do this when ready for actual review.
+
+### Handling Review Comments
+When you see review comments on the PR (check with `gh pr view <number> --comments`):
+
+**For each comment, you must:**
+1. **Implement the suggestion** - Make the change and mark conversation as resolved:
+   ```bash
+   # After implementing changes
+   gh pr comment <number> --body "Implemented this suggestion" 
+   # Then resolve via GitHub UI or gh CLI if available
+   ```
+
+2. **Explain why not to implement** - If suggestion is incorrect/unnecessary:
+   ```bash
+   gh pr comment <number> --body "This suggestion should not be implemented because [reason]"
+   # Then mark as resolved
+   ```
+
+3. **Ask the user** - When unsure:
+   ```bash
+   # Ask user in chat, don't guess
+   ```
+
+**Address ALL review comments** before suggesting merge.
+
+### Review Process Flow
+1. User reviews code manually + you check for PR comments
+2. Address all review comments (implement, explain, or ask)
+3. Ensure all tests still pass
+4. Ensure all CI checks pass (green checkmarks)
+5. Ensure all conversations are resolved
+6. **Only then** suggest the user to merge the PR
+
+**Do not suggest merge until:**
+- ✅ All local tests pass (unit + integration)
+- ✅ All CI checks pass
+- ✅ All review comments addressed and resolved
+- ✅ User has manually reviewed the code
+
 ## Project Status
 
 This is an alternative Keycloak operator project built to replace the existing realm operator with a fully GitOps-compatible solution.
