@@ -27,7 +27,7 @@ echo ""
 
 # 1. Clean test namespaces
 echo "Step 1/5: Cleaning test namespaces..."
-./scripts/clean-test-resources.sh --force 2>&1 | grep -v "^$" || true
+./scripts/clean-test-resources.sh --force || true
 echo ""
 
 # 2. Delete Keycloak instance (if exists)

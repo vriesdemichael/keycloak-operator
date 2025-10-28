@@ -154,7 +154,7 @@ install-cnpg: ## Install CNPG operator (idempotent)
 .PHONY: ensure-test-cluster
 ensure-test-cluster: ## Ensure clean test cluster ready for integration tests (idempotent)
 	@echo "Ensuring test cluster is ready..."
-	@if ! kind get clusters 2>/dev/null | grep -q "^keycloak-operator-test$$"; then \
+	@if ! kind get clusters 2>/dev/null | grep -qx 'keycloak-operator-test'; then \
 		echo "  Cluster doesn't exist - creating..."; \
 		$(MAKE) kind-setup; \
 	else \
