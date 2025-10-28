@@ -85,7 +85,7 @@ build-all-test: build-test kind-load-keycloak-optimized ## Build and load all te
 # ============================================================================
 
 .PHONY: test-integration
-test-integration: ensure-kind-cluster build-all-test ## Run integration tests (builds images, deploys via Helm)
+test-integration: ensure-test-cluster build-all-test ## Run integration tests (builds images, deploys via Helm)
 	@echo "Running integration tests (tests deploy operator via Helm)..."
 	uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
@@ -147,22 +147,27 @@ kind-setup: ## Create fresh Kind cluster
 kind-teardown: ## Destroy Kind cluster
 	@./scripts/kind-teardown.sh
 
-.PHONY: ensure-kind-cluster
-ensure-kind-cluster: ## Ensure Kind cluster exists (idempotent with clean state)
-	@if kind get clusters 2>/dev/null | grep -q "^keycloak-operator-test$$"; then \
-		echo "Kind cluster exists - ensuring clean state..."; \
-		$(MAKE) clean-integration-state; \
-		echo "✓ Cluster state reset"; \
-	else \
-		echo "Creating Kind cluster..."; \
-		$(MAKE) kind-setup; \
-		$(MAKE) install-cnpg; \
-		echo "✓ Fresh cluster created"; \
-	fi
-
 .PHONY: install-cnpg
 install-cnpg: ## Install CNPG operator (idempotent)
 	@./scripts/install-cnpg.sh
+
+.PHONY: ensure-test-cluster
+ensure-test-cluster: ## Ensure clean test cluster ready for integration tests (idempotent)
+	@echo "Ensuring test cluster is ready..."
+	@if ! kind get clusters 2>/dev/null | grep -q "^keycloak-operator-test$$"; then \
+		echo "  Cluster doesn't exist - creating..."; \
+		$(MAKE) kind-setup; \
+	else \
+		echo "  ✓ Cluster exists"; \
+	fi
+	@echo "  Ensuring CNPG operator is installed..."
+	@$(MAKE) install-cnpg
+	@echo "  Resetting integration test state..."
+	@$(MAKE) clean-integration-state
+	@echo "✓ Test cluster ready for integration tests"
+
+.PHONY: ensure-kind-cluster
+ensure-kind-cluster: ensure-test-cluster ## Alias for ensure-test-cluster (for backwards compatibility)
 
 # ============================================================================
 # Cleanup & Maintenance
