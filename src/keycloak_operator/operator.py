@@ -243,6 +243,17 @@ async def startup_handler(
     # Initialize operator authorization token
     await initialize_operator_token()
 
+    # Validate operator instance ID is configured
+    operator_instance_id = os.getenv("OPERATOR_INSTANCE_ID")
+    if not operator_instance_id:
+        logging.error(
+            "OPERATOR_INSTANCE_ID environment variable is not set. "
+            "This is required for drift detection and resource ownership tracking."
+        )
+        raise ValueError("OPERATOR_INSTANCE_ID is required but not configured")
+
+    logging.info(f"Operator instance ID: {operator_instance_id}")
+
     # Start metrics server for Prometheus scraping and health checks
     metrics_port = int(os.getenv("METRICS_PORT", "8081"))
     metrics_host = os.getenv("METRICS_HOST", "0.0.0.0")
