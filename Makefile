@@ -56,7 +56,7 @@ test-unit: ## Run unit tests
 .PHONY: build-test
 build-test: ## Build operator test image and load into Kind
 	@echo "Building operator test image..."
-	docker build -t keycloak-operator:test .
+	docker build -f images/operator/Dockerfile -t keycloak-operator:test .
 	@echo "✓ Operator image built"
 	@echo "Loading operator image into Kind cluster..."
 	kind load docker-image keycloak-operator:test --name keycloak-operator-test
@@ -65,7 +65,7 @@ build-test: ## Build operator test image and load into Kind
 .PHONY: build-keycloak-optimized
 build-keycloak-optimized: ## Build optimized Keycloak image
 	@echo "Building optimized Keycloak image for faster startup..."
-	docker build -f Dockerfile.keycloak-optimized \
+	docker build -f images/keycloak-optimized/Dockerfile \
 		--build-arg KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) \
 		-t keycloak-optimized:$(KEYCLOAK_VERSION) \
 		.
