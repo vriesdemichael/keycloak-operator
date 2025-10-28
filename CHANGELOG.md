@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.12](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.11...v0.2.12) (2025-10-28)
+
+
+### Code Refactoring
+
+* clean up Makefile and add cluster reuse workflow ([#59](https://github.com/vriesdemichael/keycloak-operator/issues/59)) ([be3bcd4](https://github.com/vriesdemichael/keycloak-operator/commit/be3bcd4ab1f09413fc23da36aa79f5e00c9df91a))
+
 ## [0.2.11](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.10...v0.2.11) (2025-10-27)
 
 
