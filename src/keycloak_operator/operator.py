@@ -308,6 +308,61 @@ async def cleanup_handler(settings: kopf.OperatorSettings, **_) -> None:
             logging.error(f"Error stopping metrics server: {e}")
 
 
+# Drift detection background task
+@kopf.timer(
+    "keycloakrealms",  # Run as timer on any realm resource (just to trigger periodic execution)
+    interval=float(os.getenv("DRIFT_DETECTION_INTERVAL_SECONDS", "300")),
+    initial_delay=60.0,  # Wait 1 minute after startup before first run
+    idle=10.0,  # Run every interval even if there are no realm resources
+)
+async def drift_detection_timer(**kwargs) -> None:
+    """
+    Periodic drift detection task.
+    
+    This task runs on a timer to check for drift between Keycloak state
+    and Kubernetes CRs. It detects:
+    - Orphaned resources (created by operator but CR deleted)
+    - Configuration drift (CR exists but state differs)
+    - Unmanaged resources (exist in Keycloak without operator ownership)
+    """
+    from keycloak_operator.services.drift_detection_service import (
+        DriftDetectionConfig,
+        DriftDetector,
+    )
+
+    # Check if drift detection is enabled
+    config = DriftDetectionConfig.from_env()
+    if not config.enabled:
+        return  # Silently skip if disabled
+
+    logger = logging.getLogger(__name__)
+    logger.info("Starting periodic drift detection scan")
+
+    try:
+        # Create drift detector
+        detector = DriftDetector(config=config)
+
+        # Scan for drift
+        drift_results = await detector.scan_for_drift()
+
+        # Log summary
+        orphaned = [d for d in drift_results if d.drift_type == "orphaned"]
+        config_drift = [d for d in drift_results if d.drift_type == "config_drift"]
+        unmanaged = [d for d in drift_results if d.drift_type == "unmanaged"]
+
+        logger.info(
+            f"Drift scan completed: {len(orphaned)} orphaned, "
+            f"{len(config_drift)} config drift, {len(unmanaged)} unmanaged"
+        )
+
+        # Remediate if enabled
+        if config.auto_remediate and drift_results:
+            await detector.remediate_drift(drift_results)
+
+    except Exception as e:
+        logger.error(f"Drift detection failed: {e}", exc_info=True)
+
+
 @kopf.on.probe(id="healthz")
 async def health_check(**_) -> dict[str, str]:
     """
