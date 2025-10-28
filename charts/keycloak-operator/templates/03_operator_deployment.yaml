@@ -63,6 +63,24 @@ spec:
           value: {{ include "keycloak-operator.fullname" . }}
         - name: OPERATOR_NAMESPACE
           value: {{ include "keycloak-operator.namespace" . }}
+        - name: OPERATOR_INSTANCE_ID
+          value: {{ include "keycloak-operator.instanceId" . }}
+        - name: DRIFT_DETECTION_ENABLED
+          value: {{ .Values.monitoring.driftDetection.enabled | quote }}
+        - name: DRIFT_DETECTION_INTERVAL_SECONDS
+          value: {{ .Values.monitoring.driftDetection.intervalSeconds | quote }}
+        - name: DRIFT_DETECTION_AUTO_REMEDIATE
+          value: {{ .Values.monitoring.driftDetection.autoRemediate | quote }}
+        - name: DRIFT_DETECTION_MINIMUM_AGE_HOURS
+          value: {{ .Values.monitoring.driftDetection.minimumAgeHours | quote }}
+        - name: DRIFT_DETECTION_SCOPE_REALMS
+          value: {{ .Values.monitoring.driftDetection.scope.realms | quote }}
+        - name: DRIFT_DETECTION_SCOPE_CLIENTS
+          value: {{ .Values.monitoring.driftDetection.scope.clients | quote }}
+        - name: DRIFT_DETECTION_SCOPE_IDENTITY_PROVIDERS
+          value: {{ .Values.monitoring.driftDetection.scope.identityProviders | quote }}
+        - name: DRIFT_DETECTION_SCOPE_ROLES
+          value: {{ .Values.monitoring.driftDetection.scope.roles | quote }}
         {{- with .Values.operator.env }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

@@ -488,17 +488,21 @@ class KeycloakRealmReconciler(BaseReconciler):
                 )
 
         # Add ownership metadata to realm attributes
-        from datetime import UTC, datetime
+        from ..utils.ownership import create_ownership_attributes
 
         if "attributes" not in realm_payload:
             realm_payload["attributes"] = {}
 
+        # Add new ownership attributes for drift detection
+        ownership_attrs = create_ownership_attributes(namespace, name)
+        realm_payload["attributes"].update(ownership_attrs)
+        
+        # Keep legacy attributes for backward compatibility (can be removed in future version)
         realm_payload["attributes"].update(
             {
                 "kubernetes.operator.uid": cr_uid,
                 "kubernetes.operator.namespace": namespace,
                 "kubernetes.operator.name": name,
-                "kubernetes.operator.timestamp": datetime.now(UTC).isoformat(),
             }
         )
 

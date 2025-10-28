@@ -447,11 +447,23 @@ class KeycloakClientReconciler(BaseReconciler):
             spec.client_id, actual_realm_name, namespace
         )
 
+        # Prepare client config with ownership attributes
+        from ..utils.ownership import create_ownership_attributes
+        
+        client_config = spec.to_keycloak_config()
+        
+        # Add ownership attributes for drift detection
+        if "attributes" not in client_config:
+            client_config["attributes"] = {}
+        
+        ownership_attrs = create_ownership_attributes(namespace, name)
+        client_config["attributes"].update(ownership_attrs)
+
         if existing_client:
             self.logger.info(f"Client {spec.client_id} already exists, updating...")
             await admin_client.update_client(
                 existing_client.id,
-                spec.to_keycloak_config(),
+                client_config,
                 actual_realm_name,
                 namespace,
             )
@@ -459,7 +471,7 @@ class KeycloakClientReconciler(BaseReconciler):
         else:
             self.logger.info(f"Creating new client {spec.client_id}")
             client_response = await admin_client.create_client(
-                spec.to_keycloak_config(), actual_realm_name, namespace
+                client_config, actual_realm_name, namespace
             )
             # Extract client UUID from response or get it by name again
             if client_response:
