@@ -23,13 +23,13 @@ MANAGED_BY_VALUE = "keycloak-operator"
 def get_operator_instance_id() -> str:
     """
     Get the current operator instance ID from environment.
-    
+
     The instance ID uniquely identifies this operator deployment and is used
     to track ownership of Keycloak resources.
-    
+
     Returns:
         Operator instance ID (e.g., "keycloak-operator-production")
-        
+
     Raises:
         RuntimeError: If OPERATOR_INSTANCE_ID environment variable is not set
     """
@@ -45,17 +45,17 @@ def get_operator_instance_id() -> str:
 def create_ownership_attributes(cr_namespace: str, cr_name: str) -> dict[str, str]:
     """
     Create ownership attributes for a Keycloak resource.
-    
+
     These attributes are added to Keycloak resources (realms, clients, etc.)
     to track which operator instance created them and which CR they correspond to.
-    
+
     Args:
         cr_namespace: Kubernetes namespace of the CR
         cr_name: Name of the CR
-        
+
     Returns:
         Dictionary of ownership attributes to add to Keycloak resource
-        
+
     Example:
         >>> attrs = create_ownership_attributes("production", "my-realm")
         >>> # Add to realm creation:
@@ -77,13 +77,13 @@ def create_ownership_attributes(cr_namespace: str, cr_name: str) -> dict[str, st
 def is_owned_by_this_operator(attributes: dict[str, str | list[str]] | None) -> bool:
     """
     Check if a Keycloak resource is owned by this operator instance.
-    
+
     Args:
         attributes: Keycloak resource attributes (may be None or empty)
-        
+
     Returns:
         True if the resource was created by this operator instance
-        
+
     Example:
         >>> realm = keycloak_admin.get_realm("my-realm")
         >>> if is_owned_by_this_operator(realm.get("attributes")):
@@ -91,28 +91,28 @@ def is_owned_by_this_operator(attributes: dict[str, str | list[str]] | None) -> 
     """
     if not attributes:
         return False
-    
+
     # Keycloak attributes can be either strings or lists of strings
     # We need to handle both cases
     operator_instance = attributes.get(ATTR_OPERATOR_INSTANCE)
-    
+
     # Convert to string if it's a list
     if isinstance(operator_instance, list):
         operator_instance = operator_instance[0] if operator_instance else None
-    
+
     return operator_instance == get_operator_instance_id()
 
 
 def is_managed_by_operator(attributes: dict[str, str | list[str]] | None) -> bool:
     """
     Check if a Keycloak resource is managed by any operator instance.
-    
+
     Args:
         attributes: Keycloak resource attributes (may be None or empty)
-        
+
     Returns:
         True if the resource has operator ownership attributes
-        
+
     Example:
         >>> realm = keycloak_admin.get_realm("my-realm")
         >>> if not is_managed_by_operator(realm.get("attributes")):
@@ -120,28 +120,28 @@ def is_managed_by_operator(attributes: dict[str, str | list[str]] | None) -> boo
     """
     if not attributes:
         return False
-    
+
     managed_by = attributes.get(ATTR_MANAGED_BY)
-    
+
     # Convert to string if it's a list
     if isinstance(managed_by, list):
         managed_by = managed_by[0] if managed_by else None
-    
+
     return managed_by == MANAGED_BY_VALUE
 
 
 def get_cr_reference(
-    attributes: dict[str, str | list[str]] | None
+    attributes: dict[str, str | list[str]] | None,
 ) -> tuple[str, str] | None:
     """
     Extract CR namespace and name from Keycloak resource attributes.
-    
+
     Args:
         attributes: Keycloak resource attributes
-        
+
     Returns:
         Tuple of (namespace, name) or None if attributes are missing
-        
+
     Example:
         >>> realm = keycloak_admin.get_realm("my-realm")
         >>> ref = get_cr_reference(realm.get("attributes"))
@@ -151,32 +151,34 @@ def get_cr_reference(
     """
     if not attributes:
         return None
-    
+
     # Extract namespace and name, handling both string and list values
     namespace = attributes.get(ATTR_CR_NAMESPACE)
     name = attributes.get(ATTR_CR_NAME)
-    
+
     if isinstance(namespace, list):
         namespace = namespace[0] if namespace else None
     if isinstance(name, list):
         name = name[0] if name else None
-    
+
     if not namespace or not name:
         return None
-    
+
     return (namespace, name)
 
 
-def get_resource_age_hours(attributes: dict[str, str | list[str]] | None) -> float | None:
+def get_resource_age_hours(
+    attributes: dict[str, str | list[str]] | None,
+) -> float | None:
     """
     Calculate how old a Keycloak resource is based on creation timestamp.
-    
+
     Args:
         attributes: Keycloak resource attributes
-        
+
     Returns:
         Age in hours, or None if creation timestamp is missing/invalid
-        
+
     Example:
         >>> realm = keycloak_admin.get_realm("orphaned-realm")
         >>> age = get_resource_age_hours(realm.get("attributes"))
@@ -185,16 +187,16 @@ def get_resource_age_hours(attributes: dict[str, str | list[str]] | None) -> flo
     """
     if not attributes:
         return None
-    
+
     created_at = attributes.get(ATTR_CREATED_AT)
-    
+
     # Convert to string if it's a list
     if isinstance(created_at, list):
         created_at = created_at[0] if created_at else None
-    
+
     if not created_at:
         return None
-    
+
     try:
         created_time = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
         age_seconds = (datetime.now(UTC) - created_time).total_seconds()
