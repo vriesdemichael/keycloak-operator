@@ -21,8 +21,8 @@ The main operator image that runs the Keycloak Operator controller.
 
 **Build:**
 ```bash
-make build          # Build operator:latest
-make build-test     # Build and load into Kind as operator:test
+# Build and load test image into Kind
+make build-test
 ```
 
 ### Optimized Keycloak Image (`images/keycloak-optimized/`)
@@ -31,8 +31,8 @@ A pre-optimized Keycloak image designed for faster startup in test and developme
 
 **Build:**
 ```bash
-make build-keycloak-optimized      # Build keycloak-optimized:test
-make kind-load-keycloak-optimized  # Load into Kind cluster
+make build-keycloak-optimized      # Build keycloak-optimized image
+make kind-load-keycloak-optimized  # Build and load into Kind cluster
 ```
 
 **Performance:**

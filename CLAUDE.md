@@ -139,26 +139,23 @@ make quality                     # Linting and formatting
 The operator uses a **cluster reuse strategy** for fast iteration. Clusters are only recreated when explicitly requested.
 
 ```bash
-# One-command setup and deployment
-make dev-setup                   # Install deps + setup cluster
-make deploy                      # Deploy operator (auto-creates cluster if needed)
+# Available Make targets (run 'make help' for full list)
+make test-unit                    # Run unit tests  
+make test-integration             # Run integration tests (builds images, deploys via Helm)
+make test-pre-commit              # Complete pre-commit flow (quality + fresh cluster + all tests)
 
 # Cluster management
-make kind-setup                  # Create bare Kind cluster (namespaces only)
-make setup-cluster               # Idempotent - creates cluster only if missing
-make kind-teardown              # Complete cleanup of cluster and resources
-
-# Operator monitoring
-make operator-status             # Check operator deployment status
-make operator-logs              # Show the most recent 200 log lines of the operator
-make operator-logs-tail         # Follow the operator logs (DO NOT USE THIS AS LLM, YOU WILL GET STUCK! ONLY FOR HUMANS)
+make kind-setup                   # Create fresh Kind cluster
+make kind-teardown                # Destroy Kind cluster completely
+make ensure-test-cluster          # Ensure clean test cluster ready for integration tests (idempotent)
+make clean-integration-state      # Reset Keycloak/DB state for cluster reuse (fast iteration)
 ```
 
-**Deployment Flow:**
-1. `make deploy` → `build-test` → `setup-cluster` → `install-cnpg` → deploy operator → deploy test Keycloak
-2. All steps are idempotent and safe to re-run
-3. `setup-cluster` reuses existing clusters (fast iteration)
-4. Use `make kind-teardown && make deploy` for a fresh start
+**Testing Flow:**
+1. `make test-integration` → Ensures cluster exists → Resets state → Builds images → Runs tests
+2. Tests deploy operator themselves via Helm (production-like setup)
+3. For fast iteration: `make clean-integration-state && make test-integration`
+4. For fresh start: `make kind-teardown && make test-integration`
 
 **Script Architecture:**
 
@@ -497,25 +494,23 @@ Before finishing your task, run through this mental checklist:
 - Implemented new reconciler → Update CLAUDE.md architecture, update docs/ if user-facing
 - Fixed bug in existing feature → Usually no docs update needed (unless behavior changed)
 
-### Using MkDocs for Documentation
+### Documentation
 
-After updating documentation in `docs/`, preview and verify your changes:
+Documentation is built with MkDocs. To build documentation locally:
 
 ```bash
-# Serve documentation locally (opens in browser)
-# DO NOT USE THIS IF YOU ARE A LLM, HUMANS ONLY!! It will create an endless process
-make docs-serve
-# View at: http://127.0.0.1:8000 
+# Install documentation dependencies
+uv sync --group docs
 
+# Build documentation (generates static site in site/)
+uv run --group docs mkdocs build
 
-# Build documentation (generates static site)
-make docs-build
-# Output in: site/
-
-# Stop the server: Ctrl+C
+# Serve documentation locally (DO NOT USE AS LLM - creates endless process, HUMANS ONLY)
+uv run --group docs mkdocs serve
+# View at: http://127.0.0.1:8000
 ```
 
-**When to use MkDocs:**
+**When to update documentation:**
 - After adding/editing any `.md` files in `docs/`
 - To verify links work correctly
 - To check formatting and appearance
