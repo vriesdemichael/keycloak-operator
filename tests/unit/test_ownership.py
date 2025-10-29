@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from keycloak_operator.utils import ownership
 from keycloak_operator.utils.ownership import (
     ATTR_CR_NAME,
     ATTR_CR_NAMESPACE,
@@ -20,6 +21,14 @@ from keycloak_operator.utils.ownership import (
     is_managed_by_operator,
     is_owned_by_this_operator,
 )
+
+
+@pytest.fixture(autouse=True)
+def clear_instance_id_cache():
+    """Clear the operator instance ID cache before each test."""
+    ownership._operator_instance_id_cache = None
+    yield
+    ownership._operator_instance_id_cache = None
 
 
 class TestGetOperatorInstanceId:
