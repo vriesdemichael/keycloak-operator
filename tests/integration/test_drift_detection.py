@@ -70,6 +70,7 @@ class TestDriftDetectionIntegration:
                     return
                     
             except Exception:
+                # Ignore errors while waiting for Keycloak - it may not exist yet
                 pass
                 
             await asyncio.sleep(5)
@@ -80,7 +81,7 @@ class TestDriftDetectionIntegration:
         """Test that ownership attributes are added when creating a realm."""
         # Create realm CR
         custom_api = client.CustomObjectsApi()
-        realm = custom_api.create_namespaced_custom_object(
+        custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=self.namespace,
@@ -122,7 +123,7 @@ class TestDriftDetectionIntegration:
         custom_api = client.CustomObjectsApi()
 
         # Create realm first
-        realm = custom_api.create_namespaced_custom_object(
+        custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=self.namespace,
@@ -134,7 +135,7 @@ class TestDriftDetectionIntegration:
         await asyncio.sleep(10)
 
         # Create client
-        client_obj = custom_api.create_namespaced_custom_object(
+        custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=self.namespace,
@@ -177,7 +178,7 @@ class TestDriftDetectionIntegration:
         custom_api = client.CustomObjectsApi()
 
         # Create realm
-        realm = custom_api.create_namespaced_custom_object(
+        custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=self.namespace,
@@ -247,7 +248,7 @@ class TestDriftDetectionIntegration:
         custom_api = client.CustomObjectsApi()
 
         # Create realm and client
-        realm = custom_api.create_namespaced_custom_object(
+        custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=self.namespace,
@@ -256,7 +257,7 @@ class TestDriftDetectionIntegration:
         )
         await asyncio.sleep(10)
 
-        client_obj = custom_api.create_namespaced_custom_object(
+        custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=self.namespace,
@@ -368,7 +369,7 @@ class TestDriftDetectionIntegration:
         custom_api = client.CustomObjectsApi()
 
         # Create realm
-        realm = custom_api.create_namespaced_custom_object(
+        custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=self.namespace,
@@ -428,7 +429,7 @@ class TestDriftDetectionIntegration:
         custom_api = client.CustomObjectsApi()
 
         # Create realm
-        realm = custom_api.create_namespaced_custom_object(
+        custom_api.create_namespaced_custom_object(
             group="keycloak.mdvr.nl",
             version="v1",
             namespace=self.namespace,
