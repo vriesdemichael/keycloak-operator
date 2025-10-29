@@ -19,13 +19,17 @@ ATTR_CREATED_AT = "io.kubernetes.created-at"
 # Constant value for managed-by attribute
 MANAGED_BY_VALUE = "keycloak-operator"
 
+# Cache for operator instance ID to avoid repeated environment lookups
+_operator_instance_id_cache: str | None = None
+
 
 def get_operator_instance_id() -> str:
     """
     Get the current operator instance ID from environment.
 
     The instance ID uniquely identifies this operator deployment and is used
-    to track ownership of Keycloak resources.
+    to track ownership of Keycloak resources. The value is cached after first
+    retrieval to avoid repeated environment variable lookups.
 
     Returns:
         Operator instance ID (e.g., "keycloak-operator-production")
@@ -33,12 +37,19 @@ def get_operator_instance_id() -> str:
     Raises:
         RuntimeError: If OPERATOR_INSTANCE_ID environment variable is not set
     """
+    global _operator_instance_id_cache
+
+    if _operator_instance_id_cache is not None:
+        return _operator_instance_id_cache
+
     instance_id = os.getenv("OPERATOR_INSTANCE_ID")
     if not instance_id:
         raise RuntimeError(
             "OPERATOR_INSTANCE_ID environment variable is not set. "
             "This should be configured in the Helm chart deployment."
         )
+
+    _operator_instance_id_cache = instance_id
     return instance_id
 
 
@@ -198,7 +209,12 @@ def get_resource_age_hours(
         return None
 
     try:
-        created_time = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+        # Handle ISO 8601 timestamps with Z suffix (Python 3.11+ handles this natively)
+        # For older Python: manually replace Z with +00:00
+        if created_at.endswith("Z"):
+            created_at = created_at[:-1] + "+00:00"
+
+        created_time = datetime.fromisoformat(created_at)
         age_seconds = (datetime.now(UTC) - created_time).total_seconds()
         return age_seconds / 3600.0  # Convert to hours
     except (ValueError, AttributeError):
