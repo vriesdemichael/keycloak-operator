@@ -67,11 +67,21 @@ jobs:
         if: steps.release.outputs.pr != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_NUMBER: ${{ fromJSON(steps.release.outputs.pr).number }}
-          VERSION: ${{ steps.release.outputs.version || fromJSON(steps.release.outputs.pr).title }}
+          PR_DATA: ${{ steps.release.outputs.pr }}
+          VERSION_OUTPUT: ${{ steps.release.outputs.version }}
         run: |
+          # Parse PR JSON to get PR number and version
+          PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
+          PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+          
+          # Use version output if available, otherwise extract from PR title
+          if [ -n "$VERSION_OUTPUT" ]; then
+            VERSION_STRING="$VERSION_OUTPUT"
+          else
+            VERSION_STRING="$PR_TITLE"
+          fi
+          
           # Extract version from PR title or version output
-          VERSION_STRING="${VERSION}"
           if [[ "$VERSION_STRING" =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
