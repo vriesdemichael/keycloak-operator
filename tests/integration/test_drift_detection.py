@@ -39,9 +39,15 @@ class TestDriftDetectionIntegration:
     ):
         """Set up test environment."""
         self.namespace = test_namespace
-        self.keycloak_namespace = operator_namespace  # Use actual operator namespace
+        self.keycloak_namespace = shared_operator[
+            "namespace"
+        ]  # Use from shared_operator
         self.keycloak_name = shared_operator["name"]  # Use actual Keycloak name
         self.operator_instance_id = operator_instance_id
+
+        # Verify shared_operator fixture provided valid data
+        assert self.keycloak_namespace, "Keycloak namespace not set by shared_operator"
+        assert self.keycloak_name, "Keycloak name not set by shared_operator"
 
         # Wait for Keycloak to be ready (shared_operator already does this, but double-check)
         await self._wait_for_keycloak_ready()
