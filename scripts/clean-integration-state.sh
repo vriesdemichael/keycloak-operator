@@ -69,4 +69,3 @@ kubectl wait --for=delete cluster --all -n "$OPERATOR_NS" --timeout=60s 2>/dev/n
 echo ""
 echo "✅ State reset complete. Cluster ready for next test run."
 echo "   Note: Tests will recreate CNPG cluster via Helm (ensures clean database)."
-

@@ -327,9 +327,11 @@ async def test_realm_with_missing_smtp_secret(
         status = realm.get("status", {})
         phase = status.get("phase", "Unknown")
         # Phase should have transitioned from Unknown to an error state
-        assert phase in ["Failed", "Degraded", "Pending"], (
-            f"Expected error phase, got: {phase}"
-        )
+        assert phase in [
+            "Failed",
+            "Degraded",
+            "Pending",
+        ], f"Expected error phase, got: {phase}"
 
         # At minimum, it should not be Ready
         assert phase != "Ready"
@@ -439,9 +441,11 @@ async def test_realm_with_missing_secret_key(
         status = realm.get("status", {})
         phase = status.get("phase", "Unknown")
         # Phase should have transitioned from Unknown to an error state
-        assert phase in ["Failed", "Degraded", "Pending"], (
-            f"Expected error phase, got: {phase}"
-        )
+        assert phase in [
+            "Failed",
+            "Degraded",
+            "Pending",
+        ], f"Expected error phase, got: {phase}"
         assert phase != "Ready"
 
     finally:

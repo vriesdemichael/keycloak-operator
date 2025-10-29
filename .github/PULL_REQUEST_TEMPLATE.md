@@ -8,7 +8,7 @@
 
 ## Changes
 <!-- Bullet list or short paragraph. -->
-- 
+-
 
 ## Notes
 <!-- Optional extra context / follow-up ideas. -->

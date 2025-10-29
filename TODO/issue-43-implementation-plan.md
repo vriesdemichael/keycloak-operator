@@ -1,8 +1,8 @@
 # Issue #43: Keycloak State Drift Detection - Implementation Plan
 
-**Issue**: [#43 - Keycloak state drift detection](https://github.com/vriesdemichael/keycloak-operator/issues/43)  
-**Branch**: `feature/issue-43-keycloak-state-drift-detection`  
-**Started**: 2025-10-28  
+**Issue**: [#43 - Keycloak state drift detection](https://github.com/vriesdemichael/keycloak-operator/issues/43)
+**Branch**: `feature/issue-43-keycloak-state-drift-detection`
+**Started**: 2025-10-28
 **Status**: In Progress
 
 ## Overview
@@ -359,6 +359,6 @@ _None currently_
 **Deferred Items** (future enhancements):
 - Config drift detection (compare CR spec with actual Keycloak state)
 - Identity provider drift detection
-- Role drift detection  
+- Role drift detection
 - Unit tests for drift detection logic (covered by integration tests)
 - Grafana dashboard JSON

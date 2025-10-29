@@ -107,9 +107,9 @@ spec:
         # High memory usage
         - alert: KeycloakOperatorHighMemory
           expr: |
-            container_memory_working_set_bytes{namespace="{{ include "keycloak-operator.namespace" . }}", pod=~"keycloak-operator-.*"} 
-            / 
-            container_spec_memory_limit_bytes{namespace="{{ include "keycloak-operator.namespace" . }}", pod=~"keycloak-operator-.*"} 
+            container_memory_working_set_bytes{namespace="{{ include "keycloak-operator.namespace" . }}", pod=~"keycloak-operator-.*"}
+            /
+            container_spec_memory_limit_bytes{namespace="{{ include "keycloak-operator.namespace" . }}", pod=~"keycloak-operator-.*"}
             > 0.9
           for: 5m
           labels:

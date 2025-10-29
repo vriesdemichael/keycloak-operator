@@ -101,7 +101,9 @@ class TestDriftDetectionIntegration:
         kc_realm = await admin_client.get_realm(realm_name, self.namespace)
 
         # Verify ownership attributes
-        attributes: dict[str, str | list[str]] = kc_realm.attributes or {}
+        from typing import cast
+
+        attributes = cast(dict[str, str | list[str]], kc_realm.attributes or {})
 
         assert ATTR_MANAGED_BY in attributes, "Missing managed-by attribute"
         assert (

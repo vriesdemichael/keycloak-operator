@@ -71,10 +71,10 @@ async def test_realm_feature(managed_realm, test_namespace):
         realm_name="test-realm",
         operator_namespace="keycloak-system",
     )
-    
+
     # Use realm in test
     # ...
-    
+
     # Cleanup happens automatically, even on test failure
 ```
 
@@ -90,17 +90,17 @@ async def test_client_feature(managed_client, managed_realm):
         realm_name="test-realm",
         operator_namespace="keycloak-system",
     )
-    
+
     # Create client
     client_name, client_manifest = await managed_client(
         client_name="test-client",
         realm_name=realm_name,
         client_id="test-client-id",
     )
-    
+
     # Use client in test
     # ...
-    
+
     # Both realm and client are cleaned up automatically
 ```
 
@@ -116,7 +116,7 @@ async def test_custom_resource(k8s_custom_objects, test_namespace, cleanup_track
     # Create resource manually
     resource_name = "my-resource"
     # ...
-    
+
     try:
         # Test code
         pass
@@ -132,7 +132,7 @@ async def test_custom_resource(k8s_custom_objects, test_namespace, cleanup_track
             timeout=120,
             force_after=60,
         )
-        
+
         if not success:
             cleanup_tracker.record_failure(
                 resource_type="keycloakrealm",

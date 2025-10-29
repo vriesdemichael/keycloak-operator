@@ -1,7 +1,7 @@
 # Keycloak State Observability - Design Analysis
 
-**Date**: 2025-10-16  
-**Status**: Design Discussion  
+**Date**: 2025-10-16
+**Status**: Design Discussion
 **Priority**: To be determined
 
 ## Context
@@ -63,7 +63,7 @@ keycloak_active_sessions{realm="my-app"} 45
 keycloak_identity_providers_total{realm="my-app"} 3
 
 # Usage patterns (for capacity planning)
-keycloak_login_attempts_total{realm="my-app", status="success|failure"} 
+keycloak_login_attempts_total{realm="my-app", status="success|failure"}
 keycloak_token_grants_total{realm="my-app", client="my-client"}
 keycloak_user_registrations_total{realm="my-app"}
 
@@ -150,16 +150,16 @@ keycloak_login_attempts_total{realm="...", status="..."}
 **These should NEVER be exposed as metrics:**
 
 ```
-❌ keycloak_users{realm="...", username="..."} 
+❌ keycloak_users{realm="...", username="..."}
    → PII, individual user enumeration
 
-❌ keycloak_client_secrets_rotated{client="..."} 
+❌ keycloak_client_secrets_rotated{client="..."}
    → Security event timing could aid attacks
 
-❌ keycloak_realm_admins{realm="...", user="..."} 
+❌ keycloak_realm_admins{realm="...", user="..."}
    → Privilege escalation target list
 
-❌ keycloak_user_attributes{realm="...", attribute="..."} 
+❌ keycloak_user_attributes{realm="...", attribute="..."}
    → PII leak, attribute enumeration
 
 ❌ keycloak_sessions{realm="...", user="...", ip="..."}
@@ -186,36 +186,36 @@ class RealmReconciler:
     async def check_drift(self, realm_name: str, expected_spec: dict) -> bool:
         """Compare CR spec with actual Keycloak state."""
         actual = await self.admin.get_realm(realm_name)
-        
+
         # Compare critical fields
         drift_fields = []
-        
+
         # Check theme drift
         if actual.get("loginTheme") != expected_spec.get("themes", {}).get("loginTheme"):
             drift_fields.append("loginTheme")
-        
+
         # Check security settings drift
         if actual.get("registrationAllowed") != expected_spec.get("security", {}).get("registrationAllowed"):
             drift_fields.append("registrationAllowed")
-        
+
         # Check SMTP configuration drift
         expected_smtp = expected_spec.get("smtpServer", {}).get("host")
         actual_smtp = actual.get("smtpServer", {}).get("host")
         if expected_smtp != actual_smtp:
             drift_fields.append("smtpServer")
-        
+
         if drift_fields:
             logger.warning(
                 f"Drift detected in realm {realm_name}: {drift_fields}",
                 extra={"realm": realm_name, "drift_fields": drift_fields}
             )
             metrics.config_drift_detected.labels(
-                type="realm", 
+                type="realm",
                 name=realm_name,
                 fields=",".join(drift_fields)
             ).set(1)
             return True
-        
+
         # No drift detected
         metrics.config_drift_detected.labels(
             type="realm",
@@ -256,16 +256,16 @@ class BaseReconciler:
     async def update_inventory_metrics(self):
         """Update inventory metrics during reconciliation."""
         # These are already fetched during reconciliation - no extra cost
-        
+
         # Realm count
         realms = await self.admin.get_realms()
         metrics.realms_total.set(len(realms))
-        
+
         # Clients per realm
         for realm in realms:
             clients = await self.admin.get_realm_clients(realm.name)
             metrics.clients_per_realm.labels(realm=realm.name).set(len(clients))
-            
+
             # Identity providers per realm
             idps = await self.admin.get_identity_providers(realm.name)
             metrics.identity_providers_per_realm.labels(realm=realm.name).set(len(idps))
@@ -280,26 +280,26 @@ class BaseReconciler:
 ```python
 class KeycloakMetricsCollector:
     """Optional metrics collector for usage patterns."""
-    
+
     def __init__(self, admin_client, config):
         self.admin = admin_client
         self.enabled = config.monitoring.keycloak_metrics.enabled
         self.include_users = config.monitoring.keycloak_metrics.include_user_counts
         self.include_sessions = config.monitoring.keycloak_metrics.include_session_metrics
-    
+
     async def collect(self):
         """Collect optional metrics if enabled."""
         if not self.enabled:
             return
-        
+
         realms = await self.admin.get_realms()
-        
+
         for realm in realms:
             if self.include_users:
                 # User count (aggregated only)
                 user_count = await self.admin.get_user_count(realm.name)
                 metrics.users_total.labels(realm=realm.name).set(user_count)
-            
+
             if self.include_sessions:
                 # Active sessions (aggregated only)
                 sessions = await self.admin.get_active_sessions(realm.name)

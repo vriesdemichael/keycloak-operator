@@ -11,11 +11,11 @@ metadata:
   {{- end }}
 spec:
   clientId: {{ include "keycloak-client.clientId" . }}
-  
+
   {{- with .Values.description }}
   description: {{ . }}
   {{- end }}
-  
+
   # Realm reference for authorization
   realmRef:
     name: {{ required "realmRef.name is required" .Values.realmRef.name }}
@@ -23,39 +23,39 @@ spec:
     authorizationSecretRef:
       name: {{ required "realmRef.authorizationSecretRef.name is required" .Values.realmRef.authorizationSecretRef.name }}
       key: {{ .Values.realmRef.authorizationSecretRef.key | default "token" }}
-  
+
   # Client type
   publicClient: {{ .Values.publicClient }}
   bearerOnly: {{ .Values.bearerOnly }}
   protocol: {{ .Values.protocol }}
-  
+
   {{- with .Values.redirectUris }}
   redirectUris:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- with .Values.webOrigins }}
   webOrigins:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- with .Values.postLogoutRedirectUris }}
   postLogoutRedirectUris:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- with .Values.baseUrl }}
   baseUrl: {{ . }}
   {{- end }}
-  
+
   {{- with .Values.rootUrl }}
   rootUrl: {{ . }}
   {{- end }}
-  
+
   {{- with .Values.adminUrl }}
   adminUrl: {{ . }}
   {{- end }}
-  
+
   {{- with .Values.settings }}
   settings:
     enabled: {{ .enabled }}
@@ -70,34 +70,34 @@ spec:
     frontchannelLogout: {{ $.Values.frontchannelLogout }}
     alwaysDisplayInConsole: {{ $.Values.alwaysDisplayInConsole }}
     fullScopeAllowed: {{ $.Values.fullScopeAllowed }}
-    
+
     {{- with .pkceCodeChallengeMethod }}
     pkceCodeChallengeMethod: {{ . }}
     {{- end }}
-    
+
     {{- if .accessTokenLifespan }}
     accessTokenLifespan: {{ .accessTokenLifespan }}
     {{- end }}
-    
+
     {{- if .clientSessionIdleTimeout }}
     clientSessionIdleTimeout: {{ .clientSessionIdleTimeout }}
     {{- end }}
-    
+
     {{- if .clientSessionMaxLifespan }}
     clientSessionMaxLifespan: {{ .clientSessionMaxLifespan }}
     {{- end }}
   {{- end }}
-  
+
   {{- with .Values.defaultClientScopes }}
   defaultClientScopes:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- with .Values.optionalClientScopes }}
   optionalClientScopes:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- if or .Values.serviceAccountRoles.realmRoles .Values.serviceAccountRoles.clientRoles }}
   serviceAccountRoles:
     {{- with .Values.serviceAccountRoles.realmRoles }}
@@ -109,12 +109,12 @@ spec:
       {{- toYaml . | nindent 6 }}
     {{- end }}
   {{- end }}
-  
+
   {{- with .Values.protocolMappers }}
   protocolMappers:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- if or .Values.authenticationFlow.browserFlow .Values.authenticationFlow.directGrantFlow .Values.authenticationFlow.clientAuthenticationFlow }}
   authenticationFlow:
     {{- with .Values.authenticationFlow.browserFlow }}
@@ -127,7 +127,7 @@ spec:
     clientAuthenticationFlow: {{ . }}
     {{- end }}
   {{- end }}
-  
+
   {{- if not .Values.publicClient }}
   # Secret management (for confidential clients)
   manageSecret: {{ .Values.manageSecret }}

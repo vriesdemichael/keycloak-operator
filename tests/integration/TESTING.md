@@ -191,7 +191,7 @@ async def test_something(
 ):
     # Create resource
     await k8s_custom_objects.create_namespaced_custom_object(...)
-    
+
     # Wait for ready - automatically gets logs/events on failure
     await wait_for_resource_ready(
         k8s_custom_objects=k8s_custom_objects,
@@ -208,7 +208,7 @@ async def test_something(
 
 **On timeout, automatically shows:**
 - Last resource status
-- Kubernetes events for the resource  
+- Kubernetes events for the resource
 - Operator logs (last 100 lines)
 - Any exceptions encountered
 
@@ -224,7 +224,7 @@ async def test_something(k8s_custom_objects, test_namespace, operator_namespace)
         phase = status.get("phase")
         message = status.get("message", "")
         return phase == "Failed" and "Authorization" in message
-    
+
     resource = await wait_for_resource_condition(
         k8s_custom_objects=k8s_custom_objects,
         group="keycloak.mdvr.nl",

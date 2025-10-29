@@ -73,26 +73,26 @@ jobs:
           # Parse PR JSON to get PR number and version
           PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
-          
+
           # Use version output if available, otherwise extract from PR title
           if [ -n "$VERSION_OUTPUT" ]; then
             VERSION_STRING="$VERSION_OUTPUT"
           else
             VERSION_STRING="$PR_TITLE"
           fi
-          
+
           # Extract version from PR title or version output
           if [[ "$VERSION_STRING" =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
-            
+
             echo "Detected version: ${MAJOR}.${MINOR}.${PATCH}"
-            
+
             # Auto-merge for non-major versions (minor or patch releases)
             if [[ "$MAJOR" == "0" ]] || [[ "$MINOR" != "0" ]] || [[ "$PATCH" != "0" ]]; then
               echo "Non-major release detected - enabling auto-merge for PR #${PR_NUMBER}"
-              
+
               # Enable auto-merge (will merge automatically when CI passes)
               if gh pr merge $PR_NUMBER --auto --squash --repo ${{ github.repository }}; then
                 echo "### :white_check_mark: Auto-merge enabled for non-major release" >> $GITHUB_STEP_SUMMARY

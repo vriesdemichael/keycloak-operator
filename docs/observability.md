@@ -339,7 +339,7 @@ kubectl logs -l app=keycloak-operator | grep "resource_name=my-keycloak"
 
 ```bash
 # Query Prometheus for slow reconciliations
-histogram_quantile(0.95, 
+histogram_quantile(0.95,
   rate(kopf_reconciliation_duration_seconds_bucket[5m])
 ) by (resource_type)
 

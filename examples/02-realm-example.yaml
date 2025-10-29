@@ -15,7 +15,7 @@ metadata:
 spec:
   # The actual name of the realm in Keycloak
   realmName: my-app
-  
+
   # Reference to the Keycloak instance
   operatorRef:
     namespace: keycloak-system
@@ -25,29 +25,29 @@ spec:
       # kubectl get secret keycloak-operator-auth-token -n keycloak-system -o yaml | \
       #   kubectl apply -n my-app -f -
       name: keycloak-operator-auth-token
-  
+
   # Display name shown in Keycloak UI
   displayName: "My Application Realm"
-  
+
   # Security settings
   security:
     # Allow users to self-register
     registrationAllowed: false
-    
+
     # Allow password reset via email
     resetPasswordAllowed: true
-    
+
     # Enable remember me functionality
     rememberMe: true
-  
+
   # Session settings
   sessions:
     # SSO session timeout (30 minutes)
     ssoSessionIdleTimeout: 1800
-    
+
     # SSO session max lifespan (10 hours)
     ssoSessionMaxLifespan: 36000
-  
+
   # Optional: SMTP server for email notifications
   # Uncomment and configure for password reset, email verification, etc.
   # smtpServer:
@@ -62,13 +62,13 @@ spec:
   #   passwordSecret:
   #     name: smtp-password
   #     key: password
-  
+
   # Optional: Custom themes
   # themes:
   #   loginTheme: my-custom-theme
   #   accountTheme: my-custom-theme
   #   emailTheme: my-custom-theme
-  
+
   # Optional: Localization
   # localization:
   #   defaultLocale: en

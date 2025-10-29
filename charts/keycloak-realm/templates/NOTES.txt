@@ -51,7 +51,7 @@ Example - create a secret with the label:
     kubectl create secret generic my-smtp-password \
       --from-literal=password='mypassword' \
       -n {{ .Release.Namespace }}
-    
+
     kubectl label secret my-smtp-password \
       keycloak.mdvr.nl/allow-operator-read=true \
       -n {{ .Release.Namespace }}
