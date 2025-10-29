@@ -2163,7 +2163,7 @@ def operator_instance_id(monkeypatch):
 def realm_cr(test_namespace: str):
     """Create a KeycloakRealm CR spec for drift detection tests."""
     realm_name = f"drift-test-realm-{int(time.time() * 1000)}"
-    
+
     return {
         "apiVersion": "keycloak.mdvr.nl/v1",
         "kind": "KeycloakRealm",
@@ -2191,7 +2191,7 @@ def realm_cr(test_namespace: str):
 def client_cr(test_namespace: str, realm_cr: dict):
     """Create a KeycloakClient CR spec for drift detection tests."""
     client_id = f"drift-test-client-{int(time.time() * 1000)}"
-    
+
     return {
         "apiVersion": "keycloak.mdvr.nl/v1",
         "kind": "KeycloakClient",

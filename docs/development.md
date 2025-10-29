@@ -5,14 +5,44 @@
 Install dependencies with [uv](https://github.com/astral-sh/uv):
 
 ```bash
+# Install all dependencies and pre-commit hooks
+make setup
+
+# Or manually:
 uv sync --group dev --group docs
+make install-hooks
 ```
+
+### Pre-commit Hooks
+
+Pre-commit hooks automatically run code quality checks before each commit:
+
+```bash
+# Install hooks (done automatically with 'make setup')
+make install-hooks
+
+# Run hooks manually on all files
+uv run --group quality pre-commit run --all-files
+
+# Skip hooks for a specific commit (not recommended)
+git commit --no-verify
+```
+
+The hooks will:
+- Format code with Ruff
+- Lint code with Ruff (with auto-fix)
+- Run type checking with Basedpyright
+- Check YAML, Markdown, and other file formats
+- Validate conventional commit messages
 
 ## Coding Standards
 
-- Formatting & lint: `ruff check .` and `ruff format .`
-- Type checking (ty): `uv run ty check`
-- Tests: `uv run pytest`
+- Formatting & lint: `make format` and `make lint`
+- Type checking: `make type-check`
+- All quality checks: `make quality`
+- Tests: `make test-unit`
+
+**Note:** Pre-commit hooks enforce these standards automatically, but you can also run them manually.
 
 ## Running the Operator Locally
 

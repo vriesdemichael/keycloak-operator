@@ -2,15 +2,14 @@
 Unit tests for ownership tracking utilities.
 """
 
-import os
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from keycloak_operator.utils.ownership import (
-    ATTR_CREATED_AT,
     ATTR_CR_NAME,
     ATTR_CR_NAMESPACE,
+    ATTR_CREATED_AT,
     ATTR_MANAGED_BY,
     ATTR_OPERATOR_INSTANCE,
     MANAGED_BY_VALUE,
@@ -148,7 +147,9 @@ class TestGetCrReference:
             ATTR_CR_NAME: "my-resource",
         }
 
-        namespace, name = get_cr_reference(attributes)
+        result = get_cr_reference(attributes)
+        assert result is not None
+        namespace, name = result
         assert namespace == "my-namespace"
         assert name == "my-resource"
 
@@ -159,7 +160,9 @@ class TestGetCrReference:
             ATTR_CR_NAME: ["my-resource"],
         }
 
-        namespace, name = get_cr_reference(attributes)
+        result = get_cr_reference(attributes)
+        assert result is not None
+        namespace, name = result
         assert namespace == "my-namespace"
         assert name == "my-resource"
 

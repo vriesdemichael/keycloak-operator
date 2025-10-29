@@ -22,6 +22,14 @@ help: ## Show this help message
 install: ## Install development dependencies
 	uv sync --group dev
 
+.PHONY: install-hooks
+install-hooks: ## Install pre-commit hooks
+	uv run --group quality pre-commit install
+	uv run --group quality pre-commit install --hook-type commit-msg
+
+.PHONY: setup
+setup: install install-hooks ## Complete development setup (install deps + hooks)
+
 # ============================================================================
 # Code Quality
 # ============================================================================
