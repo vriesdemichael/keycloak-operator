@@ -1,6 +1,6 @@
 # Token Management Operations Guide
 
-**Audience**: Platform teams, SREs, operators  
+**Audience**: Platform teams, SREs, operators
 **Last Updated**: 2025-01-21
 
 ---
@@ -118,7 +118,7 @@ kubectl get configmap keycloak-operator-token-metadata \
    # Generate token audit report
    kubectl get secret --all-namespaces \
      -l keycloak.mdvr.nl/token-type=operational \
-     -o json | jq -r '.items[] | 
+     -o json | jq -r '.items[] |
        "\(.metadata.namespace)|\(.metadata.name)|\(.metadata.annotations["keycloak.mdvr.nl/version"])|\(.metadata.annotations["keycloak.mdvr.nl/valid-until"])"' | \
      column -t -s '|'
    ```
@@ -295,12 +295,12 @@ Create dashboards to visualize token health:
    # Generate token
    TEAM_NAME="team-alpha"
    ADMISSION_TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
-   
+
    # Create secret in team namespace
    kubectl create secret generic admission-token-${TEAM_NAME} \
      --from-literal=token="$ADMISSION_TOKEN" \
      --namespace=${TEAM_NAME}
-   
+
    # Add required labels
    kubectl label secret admission-token-${TEAM_NAME} \
      keycloak.mdvr.nl/token-type=admission \
@@ -312,7 +312,7 @@ Create dashboards to visualize token health:
    ```bash
    # Calculate token hash
    TOKEN_HASH=$(echo -n "$ADMISSION_TOKEN" | sha256sum | cut -d' ' -f1)
-   
+
    # Store in ConfigMap
    kubectl get configmap keycloak-operator-token-metadata \
      -n keycloak-operator-system -o json | \
@@ -381,7 +381,7 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
    kubectl get secret ${NAMESPACE}-operator-token \
      -n ${NAMESPACE} \
      -o jsonpath='{.metadata.annotations.keycloak\.mdvr\.nl/version}'
-   
+
    # Check both tokens present (grace period)
    kubectl get secret ${NAMESPACE}-operator-token \
      -n ${NAMESPACE} -o jsonpath='{.data}' | jq 'keys'
@@ -413,7 +413,7 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
    TOKEN=$(kubectl get secret ${TOKEN_SECRET} -n ${NAMESPACE} \
      -o jsonpath='{.data.token}' | base64 -d)
    TOKEN_HASH=$(echo -n "$TOKEN" | sha256sum | cut -d' ' -f1)
-   
+
    # Mark as revoked in ConfigMap
    kubectl get configmap keycloak-operator-token-metadata \
      -n keycloak-operator-system -o json | \
@@ -465,7 +465,7 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
      -n keycloak-operator-system -o json | \
    jq -r --arg ns "$DELETED_NS" \
      '.data | to_entries[] | select(.value | fromjson | .namespace == $ns) | .key'
-   
+
    # Remove each token hash
    for hash in $(above command); do
      kubectl get configmap keycloak-operator-token-metadata \
@@ -609,8 +609,8 @@ kubectl get configmap keycloak-operator-token-metadata \
 # Identify old/stale tokens
 kubectl get configmap keycloak-operator-token-metadata \
   -n keycloak-operator-system -o json | \
-  jq -r '.data | to_entries[] | 
-    select(.value | fromjson | .issued_at < (now - 365*86400 | strftime("%Y-%m-%dT%H:%M:%SZ"))) | 
+  jq -r '.data | to_entries[] |
+    select(.value | fromjson | .issued_at < (now - 365*86400 | strftime("%Y-%m-%dT%H:%M:%SZ"))) |
     .key + ": " + (.value | fromjson | .namespace)'
 ```
 
@@ -705,7 +705,7 @@ kubectl rollout restart deployment keycloak-operator \
    # Backup ConfigMap
    kubectl get configmap keycloak-operator-token-metadata \
      -n keycloak-operator-system -o yaml > token-metadata-backup.yaml
-   
+
    # Backup all operational tokens
    kubectl get secret --all-namespaces \
      -l keycloak.mdvr.nl/token-type=operational \
@@ -756,8 +756,8 @@ kubectl rollout restart deployment keycloak-operator \
    kubectl get secret --all-namespaces \
      -l keycloak.mdvr.nl/token-type=operational \
      -o json | \
-   jq -r '.items[] | 
-     select(.metadata.annotations["keycloak.mdvr.nl/grace-period-ends"] != null) | 
+   jq -r '.items[] |
+     select(.metadata.annotations["keycloak.mdvr.nl/grace-period-ends"] != null) |
      .metadata.namespace + "/" + .metadata.name + ": " + .metadata.annotations["keycloak.mdvr.nl/grace-period-ends"]'
    ```
 
@@ -765,7 +765,7 @@ kubectl rollout restart deployment keycloak-operator \
    ```bash
    # Check operator is healthy
    kubectl get pods -n keycloak-operator-system -l app=keycloak-operator
-   
+
    # Check rotation handler restarted
    kubectl logs -n keycloak-operator-system \
      deployment/keycloak-operator --since=5m | \
@@ -793,7 +793,7 @@ kubectl rollout restart deployment keycloak-operator \
    GRACE_PERIOD_END=$(kubectl get secret team-alpha-operator-token -n team-alpha \
      -o jsonpath='{.metadata.annotations.keycloak\.mdvr\.nl/grace-period-ends}')
    GRACE_PERIOD_END_TS=$(date -d "$GRACE_PERIOD_END" +%s)
-   
+
    if [ $NOW -gt $GRACE_PERIOD_END_TS ]; then
      # Remove previous token
      kubectl patch secret team-alpha-operator-token -n team-alpha \
@@ -818,11 +818,11 @@ kubectl rollout restart deployment keycloak-operator \
 1. **Isolate affected namespace**:
    ```bash
    COMPROMISED_NS="team-suspected"
-   
+
    # Revoke token immediately
    kubectl delete secret ${COMPROMISED_NS}-operator-token \
      -n ${COMPROMISED_NS}
-   
+
    # Mark as revoked in metadata
    # Follow "Revoke Token (Emergency)" procedure
    ```
@@ -832,7 +832,7 @@ kubectl rollout restart deployment keycloak-operator \
    # Check Kubernetes audit logs
    kubectl logs -n kube-system kube-apiserver-* | \
      grep "secrets.*${COMPROMISED_NS}-operator-token"
-   
+
    # Check realm creation events
    kubectl get events --all-namespaces \
      --field-selector involvedObject.kind=KeycloakRealm | \
@@ -845,8 +845,8 @@ kubectl rollout restart deployment keycloak-operator \
    kubectl get keycloakrealm --all-namespaces \
      -o json | \
    jq -r --arg ns "$COMPROMISED_NS" \
-     '.items[] | 
-     select(.spec.operatorRef.authorizationSecretRef.name | contains($ns)) | 
+     '.items[] |
+     select(.spec.operatorRef.authorizationSecretRef.name | contains($ns)) |
      .metadata.namespace + "/" + .metadata.name'
    ```
 
@@ -860,7 +860,7 @@ kubectl rollout restart deployment keycloak-operator \
          --overwrite \
          -n $ns
    done
-   
+
    # Restart operator to trigger immediate rotation
    kubectl rollout restart deployment keycloak-operator \
      -n keycloak-operator-system
@@ -987,6 +987,6 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
 
 ---
 
-**Document Version**: 1.0  
-**Last Reviewed**: 2025-01-21  
+**Document Version**: 1.0
+**Last Reviewed**: 2025-01-21
 **Next Review**: 2025-04-21

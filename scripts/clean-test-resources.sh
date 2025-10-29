@@ -69,7 +69,7 @@ CLIENTS_FOUND=false
 for ns in $TEST_NAMESPACES; do
     REALMS=$(kubectl get keycloakrealms -n "$ns" --no-headers 2>/dev/null | wc -l || echo "0")
     CLIENTS=$(kubectl get keycloakclients -n "$ns" --no-headers 2>/dev/null | wc -l || echo "0")
-    
+
     if [ "$REALMS" -gt 0 ]; then
         echo "  - $ns: $REALMS realm(s)"
         REALMS_FOUND=true
@@ -106,7 +106,7 @@ remove_finalizers() {
     local resource_type=$1
     local namespace=$2
     local name=$3
-    
+
     echo "  Removing finalizers from $resource_type/$name in $namespace..."
     kubectl patch "$resource_type" "$name" -n "$namespace" \
         --type json -p='[{"op": "remove", "path": "/metadata/finalizers"}]' \
@@ -116,7 +116,7 @@ remove_finalizers() {
 # Clean up resources in each namespace
 for ns in $TEST_NAMESPACES; do
     echo "Cleaning namespace: $ns"
-    
+
     # Try to remove finalizers from clients
     CLIENTS=$(kubectl get keycloakclients -n "$ns" -o name 2>/dev/null || true)
     if [ -n "$CLIENTS" ]; then
@@ -126,7 +126,7 @@ for ns in $TEST_NAMESPACES; do
             remove_finalizers "keycloakclient" "$ns" "$CLIENT_NAME"
         done
     fi
-    
+
     # Try to remove finalizers from realms
     REALMS=$(kubectl get keycloakrealms -n "$ns" -o name 2>/dev/null || true)
     if [ -n "$REALMS" ]; then
@@ -136,11 +136,11 @@ for ns in $TEST_NAMESPACES; do
             remove_finalizers "keycloakrealm" "$ns" "$REALM_NAME"
         done
     fi
-    
+
     # Force delete namespace
     echo "  Deleting namespace..."
     kubectl delete namespace "$ns" --force --grace-period=0 2>/dev/null || true
-    
+
     echo "  ✓ Namespace $ns cleanup initiated"
 done
 

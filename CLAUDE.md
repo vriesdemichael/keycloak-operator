@@ -50,7 +50,7 @@ When you see review comments on the PR (check with `gh pr view <number> --commen
 1. **Implement the suggestion** - Make the change and mark conversation as resolved:
    ```bash
    # After implementing changes
-   gh pr comment <number> --body "Implemented this suggestion" 
+   gh pr comment <number> --body "Implemented this suggestion"
    # Then resolve via GitHub UI or gh CLI if available
    ```
 
@@ -193,7 +193,7 @@ make clean-integration-state && make test-integration
 
 Before commiting your work you will run `make test-pre-commit`, which is a complete flow that:
 1. Runs code quality checks
-2. Tears down any existing cluster  
+2. Tears down any existing cluster
 3. Creates fresh cluster
 4. Runs unit tests
 5. Runs integration tests
@@ -226,7 +226,7 @@ The operator uses a **cluster reuse strategy** for fast iteration. Clusters are 
 
 ```bash
 # Available Make targets (run 'make help' for full list)
-make test-unit                    # Run unit tests  
+make test-unit                    # Run unit tests
 make test-integration             # Run integration tests (builds images, deploys via Helm)
 make test-pre-commit              # Complete pre-commit flow (quality + fresh cluster + all tests)
 

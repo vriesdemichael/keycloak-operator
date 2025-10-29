@@ -84,7 +84,7 @@ Your client secret will be stored in a Kubernetes secret.
     {{- else }}
     SECRET_NAME="{{ include "keycloak-client.fullname" . }}-credentials"
     {{- end }}
-    
+
     kubectl get secret $SECRET_NAME \
       -n {{ .Release.Namespace }} \
       -o jsonpath='{.data.client-secret}' | base64 -d

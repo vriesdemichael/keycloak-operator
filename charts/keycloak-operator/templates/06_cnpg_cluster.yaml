@@ -8,17 +8,17 @@ metadata:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
 spec:
   instances: 1
-  
+
   postgresql:
     parameters:
       max_connections: "200"
       shared_buffers: "256MB"
-  
+
   bootstrap:
     initdb:
       database: app
       owner: app
-  
+
   storage:
     size: 1Gi
     storageClass: standard

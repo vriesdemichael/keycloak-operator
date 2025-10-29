@@ -130,7 +130,7 @@ extraManifests:
       nfs:
         server: nfs.example.com
         path: /backups/keycloak
-  
+
   # 2. Create a NetworkPolicy to restrict access
   - apiVersion: networking.k8s.io/v1
     kind: NetworkPolicy
@@ -151,7 +151,7 @@ extraManifests:
           ports:
             - protocol: TCP
               port: 8080
-  
+
   # 3. External Secret for admin credentials
   - apiVersion: external-secrets.io/v1beta1
     kind: ExternalSecret

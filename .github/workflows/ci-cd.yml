@@ -32,22 +32,22 @@ jobs:
   # STAGE 1: BUILD TEST IMAGES
   # Build operator and check/build optimized Keycloak image
   # ==========================================================================
-  
+
   build-test-image:
     name: Build Test Image
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     permissions:
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Build operator test image
         uses: docker/build-push-action@v6
         with:
@@ -58,7 +58,7 @@ jobs:
           outputs: type=docker,dest=/tmp/operator-test.tar
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      
+
       - name: Upload operator image artifact
         uses: actions/upload-artifact@v5
         with:
@@ -70,149 +70,149 @@ jobs:
   # STAGE 2: FAST FEEDBACK (parallel execution)
   # Run quick checks in parallel to fail fast
   # ==========================================================================
-  
+
   unit-tests:
     name: Unit Tests & Coverage
     needs: [build-test-image]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      
+
       - name: Install dependencies
         run: uv sync --group test
-      
+
       - name: Run unit tests
         run: uv run pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
-      
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         if: success() || failure()
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
-  
+
   code-quality:
     name: Code Quality
     needs: [build-test-image]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      
+
       - name: Install dependencies
         run: uv sync --group quality
-      
+
       - name: Run quality checks (lint, format, type check)
         run: make quality
-  
+
   security-sast:
     name: Security - CodeQL SAST
     needs: [build-test-image]
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     permissions:
       security-events: write
       actions: read
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
         with:
           languages: python
           config-file: .github/codeql-config.yml
-      
+
       - name: Autobuild
         uses: github/codeql-action/autobuild@v4
-      
+
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v4
         with:
           category: "/language:python"
-  
+
   security-dependencies:
     name: Security - Dependency Scan
     needs: [build-test-image]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-      
+
       - name: Install dependencies
         run: uv sync --group security
-      
+
       - name: Run pip-audit
         run: |
           uv run pip-audit --desc || true
-      
+
       - name: Run safety check
         run: |
           uv run safety check --json || true
-  
+
   security-image-scan:
     name: Security - Container Image Scan
     needs: [build-test-image]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     permissions:
       security-events: write
       contents: read
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Download image artifact
         uses: actions/download-artifact@v6
         with:
           name: operator-image
           path: /tmp
-      
+
       - name: Load image
         run: docker load --input /tmp/operator-test.tar
-      
+
       - name: Run Trivy scanner (SARIF output)
         uses: aquasecurity/trivy-action@master
         with:
@@ -220,14 +220,14 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
-      
+
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-test-image'
-      
+
       - name: Run Trivy scanner (table output, fail on critical)
         uses: aquasecurity/trivy-action@master
         with:
@@ -235,40 +235,40 @@ jobs:
           format: 'table'
           severity: 'CRITICAL,HIGH'
           exit-code: '1'
-  
+
   security-sbom:
     name: Security - SBOM Generation & Validation
     needs: [build-test-image]
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-      
+
       - name: Download image artifact
         uses: actions/download-artifact@v6
         with:
           name: operator-image
           path: /tmp
-      
+
       - name: Load image
         run: docker load --input /tmp/operator-test.tar
-      
+
       - name: Generate SBOM with Syft
         uses: anchore/sbom-action@v0
         with:
           image: keycloak-operator:test
           format: spdx-json
           output-file: sbom.spdx.json
-      
+
       - name: Scan SBOM for vulnerabilities with Grype
         uses: anchore/scan-action@v7
         with:
           sbom: sbom.spdx.json
           fail-build: false
           severity-cutoff: high
-      
+
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v5
         if: always()
@@ -276,19 +276,19 @@ jobs:
           name: sbom-test-image
           path: sbom.spdx.json
           retention-days: 90
-  
+
   security-secrets:
     name: Security - Secret Scanning
     needs: [build-test-image]
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      
+
       - name: TruffleHog Secret Scan
         uses: trufflesecurity/trufflehog@main
         with:
@@ -302,10 +302,10 @@ jobs:
   # Run comprehensive integration tests on multiple K8s versions
   # Only runs if all fast feedback checks pass
   # ==========================================================================
-  
+
   integration-tests:
     name: Integration Tests (K8s ${{ matrix.k8s-version }})
-    needs: 
+    needs:
       - build-test-image
       - unit-tests
       - code-quality
@@ -316,11 +316,11 @@ jobs:
       - security-secrets
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    
+
     permissions:
       contents: read
       packages: read
-    
+
     strategy:
       fail-fast: false
       matrix:
@@ -328,39 +328,39 @@ jobs:
           # - v1.28.0
           # - v1.29.0
           - v1.30.0
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.13'
-      
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
-      
+
       - name: Install dependencies
         run: uv sync --group test
-      
+
       - name: Download image artifact
         uses: actions/download-artifact@v6
         with:
           name: operator-image
           path: /tmp
-      
+
       - name: Load operator image
         run: docker load --input /tmp/operator-test.tar
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      
+
       - name: Set up Kind
         uses: helm/kind-action@v1.12.0
         with:
@@ -370,31 +370,31 @@ jobs:
           config: tests/kind/kind-config.yaml
           node_image: kindest/node:${{ matrix.k8s-version }}
           wait: 300s
-      
+
       - name: Verify Kind cluster and export kubeconfig
         run: |
           kubectl cluster-info
           kubectl get nodes
           kubectl get pods -A
-          
+
           export KUBECONFIG="${HOME}/.kube/config"
           echo "KUBECONFIG=${KUBECONFIG}" >> $GITHUB_ENV
           ls -la ${KUBECONFIG}
           echo "Kubeconfig configured at: ${KUBECONFIG}"
-      
+
       - name: Load operator image into Kind
         run: |
           echo "Loading operator image into Kind cluster..."
           kind load docker-image keycloak-operator:test --name keycloak-operator-test-${{ github.run_id }}
           echo "Image loaded successfully"
-      
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Pull optimized Keycloak image from registry
         env:
           KEYCLOAK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
@@ -403,13 +403,13 @@ jobs:
           docker pull "${KEYCLOAK_IMAGE}"
           docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
           echo "Optimized Keycloak image pulled and tagged successfully"
-      
+
       - name: Load optimized Keycloak image into Kind
         run: |
           echo "Loading optimized Keycloak image into Kind cluster..."
           kind load docker-image keycloak-optimized:${{ env.KEYCLOAK_VERSION }} --name keycloak-operator-test-${{ github.run_id }}
           echo "Optimized Keycloak image loaded successfully"
-      
+
       - name: Install CloudNativePG operator
         run: |
           echo "Installing CloudNativePG operator..."
@@ -420,15 +420,15 @@ jobs:
             --create-namespace \
             --wait \
             --timeout=300s
-          
+
           echo "Waiting for CNPG operator to be ready..."
           kubectl wait -n cnpg-system \
             --for=condition=available deployment/cnpg-cloudnative-pg \
             --timeout=300s
-          
+
           echo "CNPG operator is ready!"
           kubectl get pods -n cnpg-system
-      
+
       - name: Run integration tests
         env:
           KUBERNETES_VERSION: ${{ matrix.k8s-version }}
@@ -436,15 +436,15 @@ jobs:
           echo "Using KUBECONFIG: $KUBECONFIG"
           echo "Running integration tests (tests will deploy operator and Keycloak via Helm)..."
           uv run pytest tests/integration/ -v -n auto --dist=loadscope
-      
+
       - name: Collect logs and diagnostics
         if: always()
         run: |
           mkdir -p test-logs
-          
+
           echo "=== Cluster Info ===" | tee test-logs/cluster-info.log
           kubectl cluster-info | tee -a test-logs/cluster-info.log
-          
+
           echo "=== Operator Logs ===" | tee test-logs/operator-logs.log
           # Find operator pods and collect their logs
           for pod in $(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
@@ -456,20 +456,20 @@ jobs:
           if [ ! -s test-logs/operator-logs.log ]; then
             echo "No operator pods found" > test-logs/operator-logs.log
           fi
-          
+
           echo "=== Operator Status ===" | tee test-logs/operator-status.log
           # Get operator deployments from all namespaces
           kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide >> test-logs/operator-status.log 2>&1 || echo "No operator deployments found"
           kubectl describe deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces >> test-logs/operator-status.log 2>&1 || echo "No operator deployment found"
-          
+
           echo "=== Test Resources ===" | tee test-logs/test-resources.log
           kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
           kubectl describe keycloaks --all-namespaces >> test-logs/test-resources-describe.log 2>&1 || true
           kubectl describe keycloakrealms --all-namespaces >> test-logs/test-resources-describe.log 2>&1 || true
-          
+
           echo "=== Events ===" | tee test-logs/events.log
           kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
-          
+
           echo "=== Keycloak Logs ===" | tee test-logs/keycloak-logs.log
           # Find Keycloak pods and collect their logs
           for pod in $(kubectl get pods --all-namespaces -l keycloak.mdvr.nl/component=server -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
@@ -481,13 +481,13 @@ jobs:
           if [ ! -s test-logs/keycloak-logs.log ]; then
             echo "No Keycloak pods found" > test-logs/keycloak-logs.log
           fi
-          
+
           echo "=== PostgreSQL Status ===" | tee test-logs/postgres-status.log
           kubectl get clusters.postgresql.cnpg.io --all-namespaces -o wide >> test-logs/postgres-status.log 2>&1 || true
-          
+
           echo "=== All Pods ===" | tee test-logs/all-pods.log
           kubectl get pods --all-namespaces -o wide >> test-logs/all-pods.log 2>&1 || true
-      
+
       - name: Upload test artifacts
         if: always()
         uses: actions/upload-artifact@v5
@@ -501,7 +501,7 @@ jobs:
   # Build production images and publish to registry
   # Only runs on main branch after all tests pass
   # ==========================================================================
-  
+
   publish:
     name: Build & Publish Production Images
     needs: [integration-tests]
@@ -512,32 +512,32 @@ jobs:
       startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    
+
     permissions:
       contents: read
       packages: write
       id-token: write
       security-events: write
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
             image=moby/buildkit:latest
-      
+
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -557,7 +557,7 @@ jobs:
             org.opencontainers.image.description=GitOps-compatible Kubernetes operator for Keycloak
             org.opencontainers.image.vendor=Michaël de Vries
             org.opencontainers.image.licenses=MIT
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -571,7 +571,7 @@ jobs:
           cache-to: type=gha,mode=max
           build-args: |
             BUILDKIT_INLINE_CACHE=1
-      
+
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
@@ -579,7 +579,7 @@ jobs:
           format: spdx-json
           output-file: sbom.spdx.json
           upload-artifact: true
-      
+
       - name: Scan published image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
@@ -587,21 +587,21 @@ jobs:
           format: 'sarif'
           output: 'trivy-published-results.sarif'
           severity: 'CRITICAL,HIGH'
-      
+
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: 'trivy-published-results.sarif'
           category: 'trivy-published-image'
-      
+
       - name: Scan SBOM for vulnerabilities
         uses: anchore/scan-action@v7
         with:
           sbom: sbom.spdx.json
           fail-build: true
           severity-cutoff: critical
-      
+
       - name: Summary
         run: |
           echo "### :whale: Docker Image Published" >> $GITHUB_STEP_SUMMARY

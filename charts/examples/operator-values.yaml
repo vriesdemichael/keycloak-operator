@@ -3,12 +3,12 @@
 
 operator:
   replicaCount: 2
-  
+
   image:
     repository: keycloak-operator
     tag: "1.0.0"
     pullPolicy: IfNotPresent
-  
+
   resources:
     limits:
       cpu: 500m
@@ -16,7 +16,7 @@ operator:
     requests:
       cpu: 100m
       memory: 128Mi
-  
+
   env:
     - name: KEYCLOAK_OPERATOR_LOG_LEVEL
       value: "INFO"
@@ -51,19 +51,19 @@ keycloak:
   replicas: 3
   version: "26.0.0"
   image: quay.io/keycloak/keycloak
-  
+
   database:
     type: postgresql
     cnpg:
       enabled: true
       clusterName: keycloak-postgres
-  
+
   admin:
     username: admin
     passwordSecret:
       name: keycloak-admin-password
       key: password
-  
+
   ingress:
     enabled: true
     className: nginx
@@ -78,7 +78,7 @@ keycloak:
       - secretName: keycloak-tls
         hosts:
           - keycloak.example.com
-  
+
   resources:
     limits:
       cpu: 2000m

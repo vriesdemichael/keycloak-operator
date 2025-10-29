@@ -11,11 +11,11 @@ metadata:
   {{- end }}
 spec:
   realmName: {{ include "keycloak-realm.realmName" . }}
-  
+
   {{- with .Values.displayName }}
   displayName: {{ . }}
   {{- end }}
-  
+
   # Operator reference for authorization
   operatorRef:
     namespace: {{ required "operatorRef.namespace is required" .Values.operatorRef.namespace }}
@@ -24,12 +24,12 @@ spec:
       name: {{ .Values.operatorRef.authorizationSecretRef.name }}
       key: {{ .Values.operatorRef.authorizationSecretRef.key | default "token" }}
     {{- end }}
-  
+
   {{- with .Values.security }}
   security:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- if or .Values.themes.login .Values.themes.admin .Values.themes.account .Values.themes.email }}
   themes:
     {{- with .Values.themes.login }}
@@ -45,17 +45,17 @@ spec:
     email: {{ . }}
     {{- end }}
   {{- end }}
-  
+
   {{- with .Values.localization }}
   localization:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- with .Values.tokenSettings }}
   tokenSettings:
     {{- toYaml . | nindent 4 }}
   {{- end }}
-  
+
   {{- if .Values.smtpServer.enabled }}
   smtpServer:
     host: {{ required "smtpServer.host is required when smtpServer.enabled=true" .Values.smtpServer.host }}
@@ -84,7 +84,7 @@ spec:
       key: {{ .Values.smtpServer.passwordSecret.key | default "password" }}
     {{- end }}
   {{- end }}
-  
+
   {{- with .Values.attributes }}
   attributes:
     {{- toYaml . | nindent 4 }}

@@ -13,7 +13,7 @@ metadata:
 spec:
   replicas: {{ .Values.keycloak.replicas }}
   image: {{ .Values.keycloak.image }}:{{ .Values.keycloak.version }}
-  
+
   {{- if .Values.keycloak.database.cnpg.enabled }}
   database:
     type: {{ .Values.keycloak.database.type }}
@@ -35,7 +35,7 @@ spec:
       name: {{ .Values.keycloak.database.passwordSecret.name }}
       key: {{ .Values.keycloak.database.passwordSecret.key }}
   {{- end }}
-  
+
   {{- if .Values.keycloak.ingress.enabled }}
   ingress:
     enabled: true
@@ -55,7 +55,7 @@ spec:
       {{- toYaml . | nindent 6 }}
     {{- end }}
   {{- end }}
-  
+
   {{- with .Values.keycloak.resources }}
   resources:
     {{- toYaml . | nindent 4 }}

@@ -13,7 +13,7 @@ displayName: ""
 operatorRef:
   # Namespace where the operator is running
   namespace: keycloak-system
-  
+
   # Authorization secret containing the operator token (optional for now)
   # This feature is not yet implemented - leave empty
   authorizationSecretRef:
@@ -27,10 +27,10 @@ operatorRef:
 rbac:
   # Create RoleBinding (required for operator to read secrets in this namespace)
   create: true
-  
+
   # Name of the operator's ClusterRole for namespace access
   operatorClusterRoleName: keycloak-operator-namespace-access
-  
+
   # Name of the operator's ServiceAccount
   # Default format: keycloak-operator-<namespace>
   # Override if your operator uses a different service account name
@@ -41,7 +41,7 @@ security:
   # Registration settings
   registrationAllowed: false
   registrationEmailAsUsername: false
-  
+
   # Login settings
   editUsernameAllowed: false
   resetPasswordAllowed: true
@@ -49,7 +49,7 @@ security:
   verifyEmail: false
   loginWithEmailAllowed: true
   duplicateEmailsAllowed: false
-  
+
   # Brute force protection
   bruteForceProtected: true
   permanentLockout: false
@@ -79,16 +79,16 @@ tokenSettings:
   # Access token lifespan in seconds
   accessTokenLifespan: 300
   accessTokenLifespanForImplicitFlow: 900
-  
+
   # SSO session settings
   ssoSessionIdleTimeout: 1800
   ssoSessionMaxLifespan: 36000
-  
+
   # Offline session settings
   offlineSessionIdleTimeout: 2592000
   offlineSessionMaxLifespanEnabled: false
   offlineSessionMaxLifespan: 5184000
-  
+
   # Client session settings (omit or set to positive values)
   # clientSessionIdleTimeout: 1800
   # clientSessionMaxLifespan: 3600
