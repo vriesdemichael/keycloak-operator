@@ -61,7 +61,7 @@ The operator manages three custom resources:
 ```
 
 - **Keycloak**: The identity server instance with database and networking
-- **KeycloakRealm**: Identity domain with users, roles, and authentication settings  
+- **KeycloakRealm**: Identity domain with users, roles, and authentication settings
 - **KeycloakClient**: OAuth2/OIDC applications with automated credential management
 
 ## 📊 Example
@@ -183,7 +183,7 @@ env:
 Prometheus metrics available at `:8081/metrics`:
 - `keycloak_api_rate_limit_wait_seconds` - Time waiting for tokens
 - `keycloak_api_rate_limit_acquired_total` - Successful token acquisitions
-- `keycloak_api_rate_limit_timeouts_total` - Rate limit timeout errors  
+- `keycloak_api_rate_limit_timeouts_total` - Rate limit timeout errors
 - `keycloak_api_tokens_available` - Current available tokens per namespace
 
 ## 🤝 Contributing

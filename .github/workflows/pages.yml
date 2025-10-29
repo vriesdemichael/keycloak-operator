@@ -63,7 +63,7 @@ jobs:
       - name: Package Helm charts
         run: |
           mkdir -p _site/charts
-          
+
           # Package each chart in the charts directory
           for chart_dir in charts/*/; do
             if [ -f "${chart_dir}Chart.yaml" ]; then
@@ -71,7 +71,7 @@ jobs:
               helm package "${chart_dir}" --destination _site/charts
             fi
           done
-          
+
           # Create Helm repository index
           helm repo index _site/charts --url https://vriesdemichael.github.io/keycloak-operator/charts
 

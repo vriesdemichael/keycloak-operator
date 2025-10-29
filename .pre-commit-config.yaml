@@ -12,16 +12,18 @@ repos:
         args: [--fix]
       # Run the formatter
       - id: ruff-format
-  # Type checking with Basedpyright (using ty which wraps it)
+
+  # Type checking with ty (wraps Basedpyright) - MUST pass, not optional
   - repo: local
     hooks:
       - id: type-check
         name: type-check (ty)
-        entry: bash -c 'uv run --group quality ty check || true' # Allow to pass for now
+        entry: uv run --group quality ty check
         language: system
         types: [python]
         pass_filenames: false
-        always_run: false # Skip for now - too slow for pre-commit
+        always_run: true
+
   # Basic file checks
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -29,19 +31,25 @@ repos:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
-        args: [--unsafe] # Allow custom YAML tags (e.g., CloudFormation)
+        args: [--unsafe]  # Allow custom YAML tags (e.g., CloudFormation)
+        exclude: ^charts/.*/(crds|templates)/.*\.yaml$  # Exclude Helm templates
       - id: check-added-large-files
         args: [--maxkb=1000]
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: mixed-line-ending
         args: [--fix=lf]
-  # YAML formatting
-  - repo: https://github.com/google/yamlfmt
-    rev: v0.14.0
+
+  # Helm chart linting
+  - repo: local
     hooks:
-      - id: yamlfmt
-        exclude: ^charts/.*/(crds|templates)/.*\.yaml$ # Exclude Helm templates
+      - id: helm-lint
+        name: helm lint
+        entry: bash -c 'helm lint charts/keycloak-operator'
+        language: system
+        files: ^charts/keycloak-operator/
+        pass_filenames: false
+
   # Commit message format checking
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.6.0

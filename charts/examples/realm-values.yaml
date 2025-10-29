@@ -16,7 +16,7 @@ security:
   # Registration
   registrationAllowed: false
   registrationEmailAsUsername: false
-  
+
   # Login
   editUsernameAllowed: false
   resetPasswordAllowed: true
@@ -24,7 +24,7 @@ security:
   verifyEmail: true
   loginWithEmailAllowed: true
   duplicateEmailsAllowed: false
-  
+
   # Brute force protection
   bruteForceProtected: true
   permanentLockout: false

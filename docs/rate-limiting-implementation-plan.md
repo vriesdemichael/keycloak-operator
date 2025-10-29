@@ -74,7 +74,7 @@ The Keycloak operator is susceptible to:
    # OLD: requests.Session (sync)
    import requests
    self.session = requests.Session()
-   
+
    # NEW: aiohttp.ClientSession (async)
    import aiohttp
    self.session = aiohttp.ClientSession()
@@ -91,7 +91,7 @@ The Keycloak operator is susceptible to:
    # OLD
    def authenticate(self) -> None:
        response = self.session.post(auth_url, data=auth_data)
-   
+
    # NEW
    async def authenticate(self) -> None:
        async with self.session.post(auth_url, data=auth_data) as response:
@@ -104,21 +104,21 @@ The Keycloak operator is susceptible to:
    def _make_request(self, method: str, endpoint: str, ...) -> requests.Response:
        self._ensure_authenticated()
        response = self.session.request(method=method, url=url, ...)
-   
+
    # NEW
    async def _make_request(
-       self, 
-       method: str, 
-       endpoint: str, 
+       self,
+       method: str,
+       endpoint: str,
        namespace: str,  # NEW: for rate limiting
        ...
    ) -> aiohttp.ClientResponse:
        await self._ensure_authenticated()
-       
+
        # Apply rate limiting
        if self.rate_limiter:
            await self.rate_limiter.acquire(namespace)
-       
+
        async with self.session.request(method=method, url=url, ...) as response:
            return response
    ```
@@ -140,7 +140,7 @@ The Keycloak operator is susceptible to:
    # OLD
    except requests.HTTPError as e:
        status_code = e.response.status_code
-   
+
    # NEW
    except aiohttp.ClientResponseError as e:
        status_code = e.status
@@ -156,7 +156,7 @@ The Keycloak operator is susceptible to:
 
 ### Phase 3: Update Reconciler Classes
 
-**Files**: 
+**Files**:
 - `src/keycloak_operator/services/keycloak_instance_reconciler.py`
 - `src/keycloak_operator/services/keycloak_realm_reconciler.py`
 - `src/keycloak_operator/services/keycloak_client_reconciler.py`
@@ -176,7 +176,7 @@ The Keycloak operator is susceptible to:
    ```python
    # OLD
    def reconcile(self, name: str, namespace: str, ...) -> dict:
-   
+
    # NEW
    async def reconcile(self, name: str, namespace: str, ...) -> dict:
    ```
@@ -186,7 +186,7 @@ The Keycloak operator is susceptible to:
    # OLD
    admin_client = get_keycloak_admin_client(...)
    realm = admin_client.get_realm(realm_name)
-   
+
    # NEW
    admin_client = await get_keycloak_admin_client(
        ...,
@@ -225,13 +225,13 @@ The Keycloak operator is susceptible to:
    async def ensure_keycloak_realm(
        spec: dict, name: str, namespace: str, **kwargs
    ):
-   
+
    # NEW
    @kopf.on.create("keycloakrealms", ...)
    async def ensure_keycloak_realm(
-       spec: dict, 
-       name: str, 
-       namespace: str, 
+       spec: dict,
+       name: str,
+       namespace: str,
        memo: kopf.Memo,  # NEW
        **kwargs
    ):
@@ -242,12 +242,12 @@ The Keycloak operator is susceptible to:
    import random
    import asyncio
    from keycloak_operator.constants import RECONCILE_JITTER_MAX
-   
+
    async def ensure_keycloak_realm(...):
        # Add jitter to prevent thundering herd
        jitter = random.uniform(0, RECONCILE_JITTER_MAX)
        await asyncio.sleep(jitter)
-       
+
        # Continue with reconciliation...
    ```
 
@@ -369,16 +369,16 @@ Update `rate_limiter.py` to record metrics:
 ```python
 async def acquire(self, namespace: str, timeout: float = 30.0) -> None:
     start_time = time.monotonic()
-    
+
     # Acquire tokens...
-    
+
     # Record metrics
     wait_time = time.monotonic() - start_time
     rate_limit_wait_seconds.labels(
-        namespace=namespace, 
+        namespace=namespace,
         limit_type='namespace'
     ).observe(wait_time)
-    
+
     rate_limit_acquired_total.labels(
         namespace=namespace,
         limit_type='namespace'
@@ -423,15 +423,15 @@ Test scenarios:
 - ✅ **Single namespace spam**: Create 100 realms in one namespace
   - Expected: Rate limited to ~5 req/s (namespace limit)
   - Duration: ~20 seconds minimum
-  
+
 - ✅ **Multi-namespace load**: 10 namespaces creating 10 realms each
   - Expected: Rate limited to 50 req/s (global limit)
   - Fair distribution across namespaces
-  
+
 - ✅ **Operator restart simulation**: 50 existing resources reconcile
   - Expected: Jitter spreads reconciliation over 0-5s
   - Rate limiting prevents API flood
-  
+
 - ✅ **Circuit breaker interaction**: Simulate Keycloak downtime
   - Expected: Rate limiter timeouts, not infinite retries
 
@@ -617,13 +617,13 @@ env:
 
 1. **Circuit breaker removal**: Remove `pybreaker` dependency?
    - Recommendation: Yes, rate limiting provides sufficient protection
-   
+
 2. **Rate limit for timers**: Apply rate limiting to timer-based reconciliation?
    - Recommendation: Yes, timers should also be rate limited
-   
+
 3. **Per-resource type limits**: Different limits for realms vs clients?
    - Recommendation: Start with uniform limits, add later if needed
-   
+
 4. **Metrics cardinality**: Expose per-namespace metrics?
    - Recommendation: Yes, but add cardinality limit (top 100 namespaces)
 

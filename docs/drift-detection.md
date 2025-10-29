@@ -60,18 +60,18 @@ monitoring:
   driftDetection:
     # Enable drift detection
     enabled: true
-    
+
     # Scan interval in seconds (default: 300 = 5 minutes)
     intervalSeconds: 300
-    
+
     # Auto-remediate detected drift (default: false)
     # WARNING: When enabled, orphaned resources will be automatically deleted
     autoRemediate: false
-    
+
     # Minimum age in hours before deleting orphaned resources (default: 24)
     # Safety mechanism to prevent accidental deletion
     minimumAgeHours: 24
-    
+
     # Scope of drift detection
     scope:
       realms: true
@@ -162,7 +162,7 @@ spec:
               {{ $value }} orphaned {{ $labels.resource_type }} resource(s) detected.
               Resource: {{ $labels.resource_name }}
               Operator: {{ $labels.operator_instance }}
-              
+
         # Alert on configuration drift
         - alert: KeycloakConfigurationDrift
           expr: keycloak_operator_config_drift > 0
@@ -175,7 +175,7 @@ spec:
             description: |
               Configuration drift detected for {{ $labels.resource_type }}: {{ $labels.resource_name }}
               CR: {{ $labels.cr_namespace }}/{{ $labels.cr_name }}
-              
+
         # Alert on drift check failures
         - alert: KeycloakDriftCheckFailure
           expr: increase(keycloak_operator_drift_check_errors_total[5m]) > 3
@@ -187,7 +187,7 @@ spec:
             summary: "Drift detection checks are failing"
             description: |
               Drift detection for {{ $labels.resource_type }} has failed {{ $value }} times in the last 5 minutes.
-              
+
         # Alert if drift checks haven't run recently
         - alert: KeycloakDriftCheckStale
           expr: (time() - keycloak_operator_drift_check_last_success_timestamp) > 900
@@ -243,7 +243,7 @@ When running multiple operator instances:
 operator:
   instanceId: "keycloak-operator-production"
 
-# Operator 2 in staging namespace  
+# Operator 2 in staging namespace
 operator:
   instanceId: "keycloak-operator-staging"
 ```

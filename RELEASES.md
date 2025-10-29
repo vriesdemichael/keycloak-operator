@@ -19,7 +19,7 @@ This project uses [release-please](https://github.com/googleapis/release-please)
    ```bash
    # Run quality checks before committing
    make quality
-   
+
    # If checks pass, commit your changes IF THEY DONT YOU FIX THE ISSUES FIRST!!!
    git add .
    git commit -m "feat: add new feature"

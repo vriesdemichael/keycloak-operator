@@ -82,7 +82,7 @@ protocolMappers:
       included.client.audience: "myapp-api"
       id.token.claim: "false"
       access.token.claim: "true"
-  
+
   - name: group-membership
     protocol: openid-connect
     protocolMapper: oidc-group-membership-mapper

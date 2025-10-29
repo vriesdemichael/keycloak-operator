@@ -227,7 +227,7 @@ kubectl get secret my-app-operator-token -n my-app -o yaml | grep -A5 annotation
 
 The realm is now available at: `http://localhost:8080/realms/my-app` (via port-forward)
 
-**🎉 Bootstrap Complete!** 
+**🎉 Bootstrap Complete!**
 - ✅ Admission token used (one-time)
 - ✅ Operational token generated
 - ✅ Automatic rotation enabled (90-day cycle)

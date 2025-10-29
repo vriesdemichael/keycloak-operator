@@ -56,7 +56,7 @@ make clean-test-resources
 
 ## Benefits
 
-✅ **Fast iterations** - No cluster rebuild (saves 2-3 minutes)  
-✅ **Clean state** - Database truly reset, not just Keycloak restart  
-✅ **Clear workflow** - Explicit targets for fresh vs reuse  
+✅ **Fast iterations** - No cluster rebuild (saves 2-3 minutes)
+✅ **Clean state** - Database truly reset, not just Keycloak restart
+✅ **Clear workflow** - Explicit targets for fresh vs reuse
 ✅ **Better organized** - Makefile sections by purpose

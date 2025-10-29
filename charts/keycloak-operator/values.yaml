@@ -6,12 +6,12 @@
 operator:
   # Number of operator replicas (for HA)
   replicaCount: 2
-  
+
   # Operator instance ID for resource ownership tracking
   # If empty, auto-generates: <release-name>-<namespace>
   # Used to track which operator instance created resources in Keycloak
   instanceId: ""
-  
+
   # Admission token configuration
   # The admission token is the initial token that allows the operator to bootstrap
   # operational tokens for individual namespaces
@@ -19,15 +19,15 @@ operator:
   admissionTokenName: keycloak-operator-auth-token
   # Leave empty to auto-generate a random token
   admissionToken: ""
-  
+
   image:
     repository: ghcr.io/vriesdemichael/keycloak-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
     tag: ""
-  
+
   imagePullSecrets: []
-  
+
   # Resource limits and requests
   resources:
     limits:
@@ -36,11 +36,11 @@ operator:
     requests:
       cpu: 100m
       memory: 128Mi
-  
+
   # Node selector for operator pods
   nodeSelector:
     kubernetes.io/os: linux
-  
+
   # Tolerations for operator pods
   tolerations:
     - effect: NoSchedule
@@ -49,7 +49,7 @@ operator:
     - effect: NoSchedule
       key: node-role.kubernetes.io/master
       operator: Exists
-  
+
   # Pod anti-affinity for HA
   affinity:
     podAntiAffinity:
@@ -61,7 +61,7 @@ operator:
                 app.kubernetes.io/name: keycloak-operator
                 app.kubernetes.io/component: operator
             topologyKey: kubernetes.io/hostname
-  
+
   # Security context
   securityContext:
     runAsNonRoot: true
@@ -70,7 +70,7 @@ operator:
     fsGroup: 2000
     seccompProfile:
       type: RuntimeDefault
-  
+
   containerSecurityContext:
     allowPrivilegeEscalation: false
     readOnlyRootFilesystem: true
@@ -81,7 +81,7 @@ operator:
     capabilities:
       drop:
         - ALL
-  
+
   # Liveness probe configuration
   livenessProbe:
     httpGet:
@@ -91,7 +91,7 @@ operator:
     periodSeconds: 30
     timeoutSeconds: 5
     failureThreshold: 3
-  
+
   # Readiness probe configuration
   readinessProbe:
     httpGet:
@@ -101,7 +101,7 @@ operator:
     periodSeconds: 10
     timeoutSeconds: 3
     failureThreshold: 3
-  
+
   # Environment variables
   env: []
     # - name: KEYCLOAK_OPERATOR_LOG_LEVEL
@@ -113,10 +113,10 @@ operator:
 namespace:
   # Name of the namespace to create
   name: keycloak-system
-  
+
   # Create the namespace (disable if it already exists)
   create: true
-  
+
   # Pod Security Standards labels
   podSecurityStandards:
     enforce: restricted
@@ -127,12 +127,12 @@ namespace:
 serviceAccount:
   # Specifies whether a service account should be created
   create: true
-  
+
   # The name of the service account to use
   # If not set, defaults to: keycloak-operator-<namespace>
   # This prevents conflicts when multiple operators are deployed
   name: ""
-  
+
   # Annotations to add to the service account
   annotations: {}
 
@@ -140,7 +140,7 @@ serviceAccount:
 rbac:
   # Create ClusterRole and ClusterRoleBinding
   create: true
-  
+
   # Create namespace-scoped Role and RoleBinding for leader election
   createLeaderElectionRole: true
 
@@ -148,7 +148,7 @@ rbac:
 crds:
   # Install CRDs as part of this chart
   install: true
-  
+
   # Keep CRDs on chart uninstall (recommended to prevent data loss)
   keep: true
 
@@ -156,60 +156,60 @@ crds:
 monitoring:
   # Enable Prometheus ServiceMonitor
   enabled: false
-  
+
   # Namespace for monitoring resources (if different from operator namespace)
   namespace: ""
-  
+
   # Additional labels for ServiceMonitor
   labels: {}
-  
+
   # Scrape interval
   interval: 30s
-  
+
   # Scrape timeout
   scrapeTimeout: 10s
-  
+
   # Drift detection configuration
   driftDetection:
     # Enable drift detection between Keycloak state and CRs
     enabled: true
-    
+
     # Interval in seconds between drift checks
     intervalSeconds: 300
-    
+
     # Auto-remediate detected drift (delete orphans, fix config mismatches)
     # WARNING: When enabled, orphaned resources will be automatically deleted
     autoRemediate: false
-    
+
     # Minimum age in hours before deleting orphaned resources
     # Safety mechanism: don't delete resources created less than this time ago
     minimumAgeHours: 24
-    
+
     # Scope of drift detection
     scope:
       realms: true
       clients: true
       identityProviders: true
       roles: true
-  
+
   # Prometheus alert rules
   prometheusRules:
     # Enable PrometheusRule resource
     enabled: false
-    
+
     # Namespace for PrometheusRule (if different from operator namespace)
     namespace: ""
-    
+
     # Additional labels for PrometheusRule (required for Prometheus discovery)
     # Example: prometheus: kube-prometheus
     labels: {}
-    
+
     # Evaluation interval for rules
     interval: 30s
-    
+
     # Threshold for slow reconciliation alert (seconds)
     slowReconciliationThreshold: 30
-    
+
     # Additional custom rules to include
     additionalRules: []
       # - alert: CustomAlert
@@ -219,15 +219,15 @@ monitoring:
       #     severity: warning
       #   annotations:
       #     summary: "Custom alert triggered"
-  
+
   # Grafana dashboard
   grafanaDashboard:
     # Enable Grafana dashboard ConfigMap
     enabled: false
-    
+
     # Namespace for dashboard ConfigMap (typically the Grafana namespace)
     namespace: ""
-    
+
     # Labels for dashboard discovery by Grafana sidecar
     # Example for grafana-operator: grafana_dashboard: "1"
     labels: {}
@@ -237,56 +237,56 @@ monitoring:
 # Set enabled: true to deploy a Keycloak instance managed by the operator
 keycloak:
   enabled: false
-  
+
   # Name of the Keycloak instance
   name: keycloak
-  
+
   # Number of Keycloak replicas
   replicas: 1
-  
+
   # Keycloak version (image tag)
   version: "26.4.1"
-  
+
   # Keycloak image
   image: quay.io/keycloak/keycloak
-  
+
   # Database configuration
   database:
     # Database type: postgresql, mysql, mariadb, oracle, mssql
     type: postgresql
-    
+
     # Database host
     host: ""
-    
+
     # Database port
     port: 5432
-    
+
     # Database name
     database: keycloak
-    
+
     # Database username
     username: keycloak
-    
+
     # Secret containing database password
     passwordSecret:
       name: keycloak-db-password
       key: password
-    
+
     # Use CloudNativePG cluster (alternative to external database)
     cnpg:
       enabled: false
       clusterName: keycloak-postgres
-  
+
   # Admin user configuration
   admin:
     # Admin username
     username: admin
-    
+
     # Secret containing admin password
     passwordSecret:
       name: keycloak-admin-password
       key: password
-  
+
   # Ingress configuration
   ingress:
     enabled: false
@@ -298,7 +298,7 @@ keycloak:
           - path: /
             pathType: Prefix
     tls: []
-  
+
   # Resource limits
   resources:
     limits:
