@@ -10,6 +10,7 @@ import asyncio
 import logging
 import os
 import time
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
 from kubernetes import client
@@ -94,7 +95,9 @@ class DriftDetector:
         self,
         config: DriftDetectionConfig | None = None,
         k8s_client: client.ApiClient | None = None,
-        keycloak_admin_factory=None,
+        keycloak_admin_factory: (
+            Callable[[str, str], Awaitable[KeycloakAdminClient]] | None
+        ) = None,
     ):
         """
         Initialize drift detector.
@@ -102,7 +105,8 @@ class DriftDetector:
         Args:
             config: Drift detection configuration
             k8s_client: Kubernetes API client
-            keycloak_admin_factory: Factory for creating Keycloak admin clients
+            keycloak_admin_factory: Factory function for creating Keycloak admin clients.
+                Signature: async (keycloak_name: str, namespace: str) -> KeycloakAdminClient
         """
         self.config = config or DriftDetectionConfig.from_env()
         self.k8s_client = k8s_client or client.ApiClient()
@@ -588,7 +592,7 @@ class DriftDetector:
             logger.error("No Keycloak instances found for remediation")
             REMEDIATION_ERRORS_TOTAL.labels(
                 resource_type=drift.resource_type,
-                action="deleted",
+                action="delete",
             ).inc()
             return
 
