@@ -198,6 +198,9 @@ Before commiting your work you will run `make test-pre-commit`, which is a compl
 4. Runs unit tests
 5. Runs integration tests
 
+IMPORTANT!! It is imperative that you DO NOT separate these steps to speed up the process. You MUST always run `make test-pre-commit` before committing any changes to the operator code, the test code or the charts.
+Without running this pre-commit directive you are prohibited to make commits. Any attempt to do so will be a severe blow to your reputation and you will be caught!
+
 **Important**: Always use `uv run <command>` when running Python commands directly, or use the Makefile targets which handle dependencies automatically. When you try to run scripts with python directly you will run into issues with dependencies.
 
 ### Testing Infrastructure
