@@ -34,14 +34,16 @@ class TestDriftDetectionIntegration:
     """Integration tests for drift detection."""
 
     @pytest.fixture(autouse=True)
-    async def setup(self, test_namespace, keycloak_instance, operator_instance_id):
+    async def setup(
+        self, test_namespace, shared_operator, operator_instance_id, operator_namespace
+    ):
         """Set up test environment."""
         self.namespace = test_namespace
-        self.keycloak_namespace = "keycloak-system"
-        self.keycloak_name = "keycloak"
+        self.keycloak_namespace = operator_namespace  # Use actual operator namespace
+        self.keycloak_name = shared_operator["name"]  # Use actual Keycloak name
         self.operator_instance_id = operator_instance_id
 
-        # Wait for Keycloak to be ready
+        # Wait for Keycloak to be ready (shared_operator already does this, but double-check)
         await self._wait_for_keycloak_ready()
 
         yield
