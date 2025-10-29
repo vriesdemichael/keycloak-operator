@@ -62,17 +62,17 @@ class TestDriftDetectionIntegration:
                     plural="keycloaks",
                     name=self.keycloak_name,
                 )
-                
+
                 status = keycloak.get("status", {})
                 phase = status.get("phase")
-                
+
                 if phase == "Ready":
                     return
-                    
+
             except Exception:
                 # Ignore errors while waiting for Keycloak - it may not exist yet
                 pass
-                
+
             await asyncio.sleep(5)
 
         raise TimeoutError("Keycloak instance did not become ready")
@@ -96,15 +96,17 @@ class TestDriftDetectionIntegration:
         admin_client = await get_keycloak_admin_client(
             self.keycloak_name, self.keycloak_namespace
         )
-        
+
         realm_name = realm_cr["spec"]["realmName"]
         kc_realm = await admin_client.get_realm(realm_name, self.namespace)
 
         # Verify ownership attributes
-        attributes = kc_realm.attributes or {}
-        
+        attributes: dict[str, str | list[str]] = kc_realm.attributes or {}
+
         assert ATTR_MANAGED_BY in attributes, "Missing managed-by attribute"
-        assert ATTR_OPERATOR_INSTANCE in attributes, "Missing operator-instance attribute"
+        assert (
+            ATTR_OPERATOR_INSTANCE in attributes
+        ), "Missing operator-instance attribute"
         assert ATTR_CR_NAMESPACE in attributes, "Missing CR namespace attribute"
         assert ATTR_CR_NAME in attributes, "Missing CR name attribute"
 
@@ -150,22 +152,28 @@ class TestDriftDetectionIntegration:
         admin_client = await get_keycloak_admin_client(
             self.keycloak_name, self.keycloak_namespace
         )
-        
+
         realm_name = realm_cr["spec"]["realmName"]
         client_id = client_cr["spec"]["clientId"]
-        
+
         kc_client = await admin_client.get_client_by_name(
             client_id, realm_name, self.namespace
         )
 
         # Verify ownership attributes
         assert kc_client is not None
-        client_dict = kc_client.model_dump() if hasattr(kc_client, "model_dump") else vars(kc_client)
+        client_dict = (
+            kc_client.model_dump()
+            if hasattr(kc_client, "model_dump")
+            else vars(kc_client)
+        )
         attributes = client_dict.get("attributes", {})
-        
+
         assert ATTR_MANAGED_BY in attributes, "Missing managed-by attribute"
-        assert ATTR_OPERATOR_INSTANCE in attributes, "Missing operator-instance attribute"
-        
+        assert (
+            ATTR_OPERATOR_INSTANCE in attributes
+        ), "Missing operator-instance attribute"
+
         # Verify CR reference
         cr_ref = get_cr_reference(attributes)
         assert cr_ref is not None
@@ -231,14 +239,17 @@ class TestDriftDetectionIntegration:
 
         # Verify orphan was detected
         orphaned_realms = [
-            d for d in drift_results 
-            if d.resource_type == "realm" 
+            d
+            for d in drift_results
+            if d.resource_type == "realm"
             and d.drift_type == "orphaned"
             and d.resource_name == realm_name
         ]
 
-        assert len(orphaned_realms) == 1, f"Expected 1 orphaned realm, found {len(orphaned_realms)}"
-        
+        assert (
+            len(orphaned_realms) == 1
+        ), f"Expected 1 orphaned realm, found {len(orphaned_realms)}"
+
         orphan = orphaned_realms[0]
         assert orphan.cr_namespace == self.namespace
         assert orphan.cr_name == realm_cr["metadata"]["name"]
@@ -311,13 +322,16 @@ class TestDriftDetectionIntegration:
 
         # Verify orphaned client was detected
         orphaned_clients = [
-            d for d in drift_results 
-            if d.resource_type == "client" 
+            d
+            for d in drift_results
+            if d.resource_type == "client"
             and d.drift_type == "orphaned"
             and d.resource_name == client_id
         ]
 
-        assert len(orphaned_clients) == 1, f"Expected 1 orphaned client, found {len(orphaned_clients)}"
+        assert (
+            len(orphaned_clients) == 1
+        ), f"Expected 1 orphaned client, found {len(orphaned_clients)}"
 
     async def test_unmanaged_resources_detected(self):
         """Test that unmanaged resources (created without operator) are detected."""
@@ -353,13 +367,16 @@ class TestDriftDetectionIntegration:
 
         # Verify unmanaged realm was detected
         unmanaged_realms = [
-            d for d in drift_results 
-            if d.resource_type == "realm" 
+            d
+            for d in drift_results
+            if d.resource_type == "realm"
             and d.drift_type == "unmanaged"
             and d.resource_name == unmanaged_realm_name
         ]
 
-        assert len(unmanaged_realms) == 1, f"Expected 1 unmanaged realm, found {len(unmanaged_realms)}"
+        assert (
+            len(unmanaged_realms) == 1
+        ), f"Expected 1 unmanaged realm, found {len(unmanaged_realms)}"
 
         # Cleanup
         await admin_client.delete_realm(unmanaged_realm_name, self.namespace)
@@ -418,11 +435,13 @@ class TestDriftDetectionIntegration:
 
         # Verify realm was deleted from Keycloak
         from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
-        
+
         with pytest.raises(KeycloakAdminError) as exc_info:
             await admin_client.get_realm(realm_name, self.namespace)
-        
-        assert exc_info.value.status_code == 404, "Realm should have been deleted"
+
+        error = exc_info.value
+        assert isinstance(error, KeycloakAdminError)
+        assert error.status_code == 404, "Realm should have been deleted"
 
     async def test_minimum_age_prevents_deletion(self, realm_cr):
         """Test that minimum age check prevents deletion of recent orphans."""
