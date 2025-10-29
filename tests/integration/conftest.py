@@ -2204,11 +2204,12 @@ def client_cr(test_namespace: str, realm_cr: dict):
             "realmRef": {
                 "name": realm_cr["metadata"]["name"],
                 "namespace": test_namespace,
+                "authorizationSecretRef": {
+                    "name": "keycloak-operator-auth-token",
+                    "key": "token",
+                },
             },
-            "settings": {
-                "publicClient": True,
-                "standardFlowEnabled": True,
-            },
+            "publicClient": True,
             "redirectUris": ["https://example.com/callback"],
         },
     }
