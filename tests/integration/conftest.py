@@ -2202,8 +2202,114 @@ def operator_instance_id(monkeypatch):
 
 
 @pytest.fixture
-def realm_cr(test_namespace: str):
+async def drift_test_auth_token(
+    k8s_core_v1: client.CoreV1Api,
+    test_namespace: str,
+    operator_namespace: str,
+    shared_operator: dict[
+        str, str
+    ],  # Ensure operator is deployed before creating tokens
+) -> AsyncGenerator[tuple[str, str]]:
+    """
+    Create admission token for drift detection tests.
+
+    Returns tuple of (secret_name, token_value) for use in tests.
+    Creates the secret in the test namespace, yields for test, then cleans up.
+
+    Depends on shared_operator to ensure the operator namespace exists.
+    """
+    import base64
+    import hashlib
+    import json
+    import uuid
+    from datetime import UTC, datetime, timedelta
+
+    suffix = uuid.uuid4().hex[:8]
+    secret_name = "keycloak-operator-auth-token"  # Use standard name
+    token_value = f"test-drift-token-{suffix}"
+
+    # Create admission token secret in test namespace
+    secret_body = {
+        "apiVersion": "v1",
+        "kind": "Secret",
+        "metadata": {
+            "name": secret_name,
+            "namespace": test_namespace,
+            "labels": {
+                "keycloak.mdvr.nl/allow-operator-read": "true",
+                "keycloak.mdvr.nl/token-type": "admission",
+            },
+        },
+        "type": "Opaque",
+        "data": {
+            "token": base64.b64encode(token_value.encode()).decode(),
+        },
+    }
+
+    await k8s_core_v1.create_namespaced_secret(test_namespace, secret_body)
+
+    # Store admission token metadata in operator namespace ConfigMap
+    token_hash = hashlib.sha256(token_value.encode()).hexdigest()
+    valid_until = datetime.now(UTC) + timedelta(days=365)
+
+    token_metadata = {
+        "namespace": test_namespace,
+        "token_type": "admission",
+        "issued_at": datetime.now(UTC).isoformat(),
+        "valid_until": valid_until.isoformat(),
+        "version": 1,
+        "created_by_realm": None,
+        "revoked": False,
+        "revoked_at": None,
+    }
+
+    configmap_name = "keycloak-operator-token-metadata"
+
+    # Update or create token metadata ConfigMap
+    try:
+        cm = await k8s_core_v1.read_namespaced_config_map(
+            name=configmap_name, namespace=operator_namespace
+        )
+        cm.data[token_hash] = json.dumps(token_metadata)
+        await k8s_core_v1.replace_namespaced_config_map(
+            name=configmap_name, namespace=operator_namespace, body=cm
+        )
+    except ApiException as e:
+        if e.status == 404:
+            cm_body = {
+                "apiVersion": "v1",
+                "kind": "ConfigMap",
+                "metadata": {
+                    "name": configmap_name,
+                    "namespace": operator_namespace,
+                    "labels": {
+                        "app.kubernetes.io/name": "keycloak-operator",
+                        "app.kubernetes.io/component": "token-metadata",
+                    },
+                },
+                "data": {token_hash: json.dumps(token_metadata)},
+            }
+            await k8s_core_v1.create_namespaced_config_map(
+                namespace=operator_namespace, body=cm_body
+            )
+        else:
+            raise
+
+    yield secret_name, token_value
+
+    # Cleanup: delete secret
+    with contextlib.suppress(ApiException):
+        await k8s_core_v1.delete_namespaced_secret(
+            name=secret_name, namespace=test_namespace
+        )
+
+
+@pytest.fixture
+def realm_cr(
+    test_namespace: str, shared_operator: dict, drift_test_auth_token: tuple[str, str]
+):
     """Create a KeycloakRealm CR spec for drift detection tests."""
+    secret_name, _ = drift_test_auth_token
     realm_name = f"drift-test-realm-{int(time.time() * 1000)}"
 
     return {
@@ -2216,9 +2322,10 @@ def realm_cr(test_namespace: str):
         "spec": {
             "realmName": realm_name,
             "operatorRef": {
-                "namespace": "keycloak-system",
+                "namespace": shared_operator["namespace"],
                 "authorizationSecretRef": {
-                    "name": "keycloak-operator-auth-token",
+                    "name": secret_name,
+                    "key": "token",
                 },
             },
             "settings": {
@@ -2230,8 +2337,11 @@ def realm_cr(test_namespace: str):
 
 
 @pytest.fixture
-def client_cr(test_namespace: str, realm_cr: dict):
+def client_cr(
+    test_namespace: str, realm_cr: dict, drift_test_auth_token: tuple[str, str]
+):
     """Create a KeycloakClient CR spec for drift detection tests."""
+    secret_name, _ = drift_test_auth_token
     client_id = f"drift-test-client-{int(time.time() * 1000)}"
 
     return {
@@ -2247,7 +2357,7 @@ def client_cr(test_namespace: str, realm_cr: dict):
                 "name": realm_cr["metadata"]["name"],
                 "namespace": test_namespace,
                 "authorizationSecretRef": {
-                    "name": "keycloak-operator-auth-token",
+                    "name": secret_name,
                     "key": "token",
                 },
             },

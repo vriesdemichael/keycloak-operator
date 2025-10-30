@@ -10,6 +10,7 @@ These tests verify that:
 
 import asyncio
 import os
+import time
 
 import pytest
 
@@ -38,11 +39,35 @@ async def test_realm_ownership_attributes_are_added(
     keycloak_admin_client,
     k8s_custom_objects,
     test_namespace,
+    operator_namespace,
     operator_instance_id,
-    realm_cr,
+    admission_token_setup,
 ):
     """Test that ownership attributes are added when creating a realm."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    admission_secret_name, _ = admission_token_setup
+
+    from keycloak_operator.models.common import AuthorizationSecretRef
+    from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+    realm_cr = {
+        "apiVersion": "keycloak.mdvr.nl/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": f"realm-drift-test-{int(time.time() * 1000)}",
+            "namespace": test_namespace,
+        },
+        "spec": KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name=admission_secret_name,
+                    key="token",
+                ),
+            ),
+            realm_name=f"drift-test-realm-{int(time.time() * 1000)}",
+        ).model_dump(by_alias=True, exclude_unset=True),
+    }
 
     # Use k8s_custom_objects fixture instead of creating new API client
     await k8s_custom_objects.create_namespaced_custom_object(
@@ -102,12 +127,65 @@ async def test_client_ownership_attributes_are_added(
     keycloak_admin_client,
     k8s_custom_objects,
     test_namespace,
+    operator_namespace,
     operator_instance_id,
-    realm_cr,
-    client_cr,
+    admission_token_setup,
 ):
     """Test that ownership attributes are added when creating a client."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    admission_secret_name, _ = admission_token_setup
+
+    from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
+    from keycloak_operator.models.common import AuthorizationSecretRef
+    from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+    realm_name = f"drift-test-realm-{int(time.time() * 1000)}"
+    client_id = f"drift-test-client-{int(time.time() * 1000)}"
+
+    realm_cr = {
+        "apiVersion": "keycloak.mdvr.nl/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": f"realm-{realm_name}",
+            "namespace": test_namespace,
+        },
+        "spec": KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name=admission_secret_name,
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+        ).model_dump(by_alias=True, exclude_unset=True),
+    }
+
+    client_cr = {
+        "apiVersion": "keycloak.mdvr.nl/v1",
+        "kind": "KeycloakClient",
+        "metadata": {
+            "name": f"client-{client_id}",
+            "namespace": test_namespace,
+        },
+        "spec": KeycloakClientSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name=admission_secret_name,
+                    key="token",
+                ),
+            ),
+            realm_ref=RealmRef(
+                namespace=test_namespace,
+                name=realm_cr["metadata"]["name"],
+            ),
+            client_id=client_id,
+            name=f"Test Client {client_id}",
+            enabled=True,
+            public_client=True,
+        ).model_dump(by_alias=True, exclude_unset=True),
+    }
 
     # Use k8s_custom_objects fixture instead of creating new API client
 
@@ -147,8 +225,6 @@ async def test_client_ownership_attributes_are_added(
         timeout=120,
     )
 
-    realm_name = realm_cr["spec"]["realmName"]
-    client_id = client_cr["spec"]["clientId"]
     kc_client = await keycloak_admin_client.get_client_by_name(
         client_id, realm_name, test_namespace
     )
@@ -186,11 +262,36 @@ async def test_orphan_detection_after_realm_deletion(
     keycloak_admin_client,
     k8s_custom_objects,
     test_namespace,
+    operator_namespace,
     operator_instance_id,
-    realm_cr,
+    admission_token_setup,
 ):
     """Test that orphaned realms are detected after CR deletion."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    admission_secret_name, _ = admission_token_setup
+
+    from keycloak_operator.models.common import AuthorizationSecretRef
+    from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+    realm_name = f"drift-test-realm-{int(time.time() * 1000)}"
+    realm_cr = {
+        "apiVersion": "keycloak.mdvr.nl/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": f"realm-{realm_name}",
+            "namespace": test_namespace,
+        },
+        "spec": KeycloakRealmSpec(
+            operator_ref=OperatorRef(
+                namespace=operator_namespace,
+                authorization_secret_ref=AuthorizationSecretRef(
+                    name=admission_secret_name,
+                    key="token",
+                ),
+            ),
+            realm_name=realm_name,
+        ).model_dump(by_alias=True, exclude_unset=True),
+    }
 
     # Use k8s_custom_objects fixture instead of creating new API client
 
