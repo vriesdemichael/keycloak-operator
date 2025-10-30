@@ -2305,7 +2305,7 @@ async def drift_test_auth_token(
 
 
 @pytest.fixture
-def realm_cr(
+async def realm_cr(
     test_namespace: str, shared_operator: dict, drift_test_auth_token: tuple[str, str]
 ):
     """Create a KeycloakRealm CR spec for drift detection tests."""
@@ -2337,7 +2337,7 @@ def realm_cr(
 
 
 @pytest.fixture
-def client_cr(
+async def client_cr(
     test_namespace: str, realm_cr: dict, drift_test_auth_token: tuple[str, str]
 ):
     """Create a KeycloakClient CR spec for drift detection tests."""
