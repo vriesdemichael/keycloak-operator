@@ -27,7 +27,7 @@ class TestServiceAccountRoles:
         test_namespace,
         operator_namespace,
         shared_operator,
-        keycloak_port_forward,
+        keycloak_admin_client,
         admission_token_setup,
     ) -> None:
         """End-to-end verification that realm roles are assigned to service accounts.
@@ -40,8 +40,6 @@ class TestServiceAccountRoles:
         """
 
         # Use shared Keycloak instance in operator namespace
-        keycloak_name = shared_operator["name"]
-        keycloak_namespace = shared_operator["namespace"]
 
         # Create realm and client in test namespace for isolation
         namespace = test_namespace
@@ -108,8 +106,6 @@ class TestServiceAccountRoles:
             "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
-        admin_client = None
-
         try:
             # Create realm and wait until Ready
             await k8s_custom_objects.create_namespaced_custom_object(
@@ -157,33 +153,22 @@ class TestServiceAccountRoles:
                     else:
                         raise
 
-            assert secret_exists, (
-                f"Realm authorization secret {realm_auth_secret_name} was not created"
-            )
-
-            # Set up port-forward to shared Keycloak instance
-            local_port = await keycloak_port_forward(keycloak_name, keycloak_namespace)
-
-            # Create admin client using localhost (via port-forward)
-            from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
-            from keycloak_operator.utils.kubernetes import get_admin_credentials
-
-            username, password = get_admin_credentials(
-                keycloak_name, keycloak_namespace
-            )
-            admin_client = KeycloakAdminClient(
-                server_url=f"http://localhost:{local_port}",
-                username=username,
-                password=password,
-            )
-            await admin_client.authenticate()
+            assert (
+                secret_exists
+            ), f"Realm authorization secret {realm_auth_secret_name} was not created"
 
             # Create realm role using async HTTP call
-            role_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/roles"
+            role_endpoint = (
+                f"{keycloak_admin_client.server_url}/admin/realms/{realm_name}/roles"
+            )
             import httpx
 
-            async with httpx.AsyncClient(timeout=admin_client.timeout) as session:
-                headers = {"Authorization": f"Bearer {admin_client.access_token}"}
+            async with httpx.AsyncClient(
+                timeout=keycloak_admin_client.timeout
+            ) as session:
+                headers = {
+                    "Authorization": f"Bearer {keycloak_admin_client.access_token}"
+                }
                 response = await session.post(
                     role_endpoint,
                     json={
@@ -218,22 +203,26 @@ class TestServiceAccountRoles:
                 allow_degraded=False,
             )
 
-            client_repr = await admin_client.get_client_by_name(
+            client_repr = await keycloak_admin_client.get_client_by_name(
                 client_name, realm_name, namespace
             )
             assert client_repr, "Client not found in Keycloak"
             assert client_repr.id, "Client missing ID"
 
-            service_account_user = await admin_client.get_service_account_user(
+            service_account_user = await keycloak_admin_client.get_service_account_user(
                 client_repr.id, realm_name, namespace
             )
             user_id = service_account_user.id
             assert user_id, "Service account user missing identifier"
 
             # Check role mappings using async HTTP call
-            role_mapping_endpoint = f"{admin_client.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
-            async with httpx.AsyncClient(timeout=admin_client.timeout) as session:
-                headers = {"Authorization": f"Bearer {admin_client.access_token}"}
+            role_mapping_endpoint = f"{keycloak_admin_client.server_url}/admin/realms/{realm_name}/users/{user_id}/role-mappings/realm"
+            async with httpx.AsyncClient(
+                timeout=keycloak_admin_client.timeout
+            ) as session:
+                headers = {
+                    "Authorization": f"Bearer {keycloak_admin_client.access_token}"
+                }
                 mapping_response = await session.get(
                     role_mapping_endpoint,
                     headers=headers,
