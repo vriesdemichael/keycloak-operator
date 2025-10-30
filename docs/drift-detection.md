@@ -281,8 +281,7 @@ These are resources that existed before the operator or were created manually.
 
 **Causes:**
 1. Drift detection is disabled in Helm values
-2. No KeycloakRealm CRs exist (timer trigger requires at least one resource)
-3. Operator is not running or crashing
+2. Operator is not running or crashing
 
 **Solutions:**
 ```bash
