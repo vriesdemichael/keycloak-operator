@@ -2194,11 +2194,20 @@ async def admission_token_setup(
 
 
 @pytest.fixture
-def operator_instance_id(monkeypatch):
-    """Set operator instance ID for drift detection tests."""
-    instance_id = "test-operator-drift-integration"
-    monkeypatch.setenv("OPERATOR_INSTANCE_ID", instance_id)
-    return instance_id
+async def operator_instance_id(k8s_apps_v1, shared_operator):
+    """Get the actual operator instance ID from running deployment."""
+    deployment = await k8s_apps_v1.read_namespaced_deployment(
+        name="keycloak-operator", namespace=shared_operator["namespace"]
+    )
+
+    # Extract from environment variable
+    for container in deployment.spec.template.spec.containers:
+        for env in container.env or []:
+            if env.name == "OPERATOR_INSTANCE_ID":
+                return env.value
+
+    # Fallback to Helm chart default pattern
+    return f"keycloak-operator-{shared_operator['namespace']}"
 
 
 @pytest.fixture
@@ -2337,12 +2346,15 @@ async def realm_cr(
 
 
 @pytest.fixture
-async def client_cr(
-    test_namespace: str, realm_cr: dict, drift_test_auth_token: tuple[str, str]
-):
-    """Create a KeycloakClient CR spec for drift detection tests."""
-    secret_name, _ = drift_test_auth_token
+async def client_cr(test_namespace: str, realm_cr: dict):
+    """Create a KeycloakClient CR spec for drift detection tests.
+
+    Uses the realm's operational token secret (not admission token).
+    """
     client_id = f"drift-test-client-{int(time.time() * 1000)}"
+
+    # Use realm's operational token, not admission token
+    realm_token_secret = f"{test_namespace}-operator-token"
 
     return {
         "apiVersion": "keycloak.mdvr.nl/v1",
@@ -2357,7 +2369,7 @@ async def client_cr(
                 "name": realm_cr["metadata"]["name"],
                 "namespace": test_namespace,
                 "authorizationSecretRef": {
-                    "name": secret_name,
+                    "name": realm_token_secret,
                     "key": "token",
                 },
             },
@@ -2365,6 +2377,50 @@ async def client_cr(
             "redirectUris": ["https://example.com/callback"],
         },
     }
+
+
+@pytest.fixture
+async def drift_detector(
+    shared_operator,
+    keycloak_port_forward,
+    operator_instance_id,
+    k8s_client,
+):
+    """Create DriftDetector with port-forwarded admin client.
+
+    This fixture provides a factory function that creates DriftDetector instances
+    with proper port-forwarding setup for host-to-cluster communication.
+
+    Returns:
+        Callable that takes DriftDetectionConfig and returns configured DriftDetector
+    """
+    from keycloak_operator.services.drift_detection_service import DriftDetector
+    from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+    from keycloak_operator.utils.kubernetes import get_admin_credentials
+
+    # Set up port-forward once for this test
+    local_port = await keycloak_port_forward(
+        shared_operator["name"], shared_operator["namespace"]
+    )
+
+    # Create custom admin client factory that uses port-forwarding
+    async def admin_factory(kc_name: str, namespace: str):
+        username, password = get_admin_credentials(kc_name, namespace)
+        client = KeycloakAdminClient(
+            server_url=f"http://localhost:{local_port}",
+            username=username,
+            password=password,
+        )
+        await client.authenticate()
+        return client
+
+    # Return factory function for tests to configure detector
+    def create_detector(config):
+        return DriftDetector(
+            config=config, k8s_client=k8s_client, keycloak_admin_factory=admin_factory
+        )
+
+    return create_detector
 
 
 @pytest.fixture
