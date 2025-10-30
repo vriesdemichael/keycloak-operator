@@ -15,10 +15,6 @@ import pytest
 
 from keycloak_operator.services.drift_detection_service import (
     DriftDetectionConfig,
-    DriftDetector,
-)
-from keycloak_operator.utils.keycloak_admin import (
-    KeycloakAdminError,
 )
 from keycloak_operator.utils.ownership import (
     ATTR_CR_NAME,
@@ -43,6 +39,7 @@ async def test_realm_ownership_attributes_are_added(
 ):
     """Test that ownership attributes are added when creating a realm."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    os.environ["OPERATOR_INSTANCE_ID"] = operator_instance_id
 
     # Use k8s_custom_objects fixture instead of creating new API client
     await k8s_custom_objects.create_namespaced_custom_object(
@@ -101,6 +98,7 @@ async def test_client_ownership_attributes_are_added(
     shared_operator,
     keycloak_admin_client,
     k8s_custom_objects,
+    k8s_core_v1,
     test_namespace,
     operator_instance_id,
     realm_cr,
@@ -127,6 +125,26 @@ async def test_client_ownership_attributes_are_added(
         plural="keycloakrealms",
         name=realm_cr["metadata"]["name"],
         timeout=120,
+    )
+
+    # Get realm's authorization secret name from status
+    realm = await k8s_custom_objects.get_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+    status = realm.get("status", {}) or {}
+    realm_auth_secret_name = status.get("authorizationSecretName")
+    assert realm_auth_secret_name, (
+        f"Realm should have authorizationSecretName in status. "
+        f"Status keys: {list(status.keys())}"
+    )
+
+    # Update client_cr to use the correct authorization secret
+    client_cr["spec"]["realmRef"]["authorizationSecretRef"]["name"] = (
+        realm_auth_secret_name
     )
 
     await k8s_custom_objects.create_namespaced_custom_object(
@@ -188,6 +206,7 @@ async def test_orphan_detection_after_realm_deletion(
     test_namespace,
     operator_instance_id,
     realm_cr,
+    drift_detector,
 ):
     """Test that orphaned realms are detected after CR deletion."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
@@ -217,6 +236,24 @@ async def test_orphan_detection_after_realm_deletion(
     kc_realm = await keycloak_admin_client.get_realm(realm_name, test_namespace)
     assert kc_realm is not None
 
+    # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
+    realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+    realm_obj["metadata"]["finalizers"] = []
+    await k8s_custom_objects.patch_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+        body=realm_obj,
+    )
+
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="keycloak.mdvr.nl",
         version="v1",
@@ -237,7 +274,7 @@ async def test_orphan_detection_after_realm_deletion(
         scope_roles=False,
     )
 
-    detector = DriftDetector(config=config)
+    detector = drift_detector(config)
     drift_results = await detector.scan_for_drift()
 
     orphaned_realms = [
@@ -259,10 +296,12 @@ async def test_orphan_detection_after_client_deletion(
     shared_operator,
     keycloak_admin_client,
     k8s_custom_objects,
+    k8s_core_v1,
     test_namespace,
     operator_instance_id,
     realm_cr,
     client_cr,
+    drift_detector,
 ):
     """Test that orphaned clients are detected after CR deletion."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
@@ -285,6 +324,26 @@ async def test_orphan_detection_after_client_deletion(
         plural="keycloakrealms",
         name=realm_cr["metadata"]["name"],
         timeout=120,
+    )
+
+    # Get realm's authorization secret name from status
+    realm = await k8s_custom_objects.get_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+    status = realm.get("status", {}) or {}
+    realm_auth_secret_name = status.get("authorizationSecretName")
+    assert realm_auth_secret_name, (
+        f"Realm should have authorizationSecretName in status. "
+        f"Status keys: {list(status.keys())}"
+    )
+
+    # Update client_cr to use the correct authorization secret
+    client_cr["spec"]["realmRef"]["authorizationSecretRef"]["name"] = (
+        realm_auth_secret_name
     )
 
     await k8s_custom_objects.create_namespaced_custom_object(
@@ -313,6 +372,24 @@ async def test_orphan_detection_after_client_deletion(
     )
     assert kc_client is not None
 
+    # Remove finalizer so client won't be deleted from Keycloak when CR is deleted
+    client_obj = await k8s_custom_objects.get_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakclients",
+        name=client_cr["metadata"]["name"],
+    )
+    client_obj["metadata"]["finalizers"] = []
+    await k8s_custom_objects.patch_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakclients",
+        name=client_cr["metadata"]["name"],
+        body=client_obj,
+    )
+
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="keycloak.mdvr.nl",
         version="v1",
@@ -333,7 +410,7 @@ async def test_orphan_detection_after_client_deletion(
         scope_roles=False,
     )
 
-    detector = DriftDetector(config=config)
+    detector = drift_detector(config)
     drift_results = await detector.scan_for_drift()
 
     orphaned_clients = [
@@ -364,6 +441,7 @@ async def test_unmanaged_resources_detected(
     k8s_custom_objects,
     test_namespace,
     operator_instance_id,
+    drift_detector,
 ):
     """Test that unmanaged resources (created without operator) are detected."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
@@ -392,7 +470,7 @@ async def test_unmanaged_resources_detected(
         scope_roles=False,
     )
 
-    detector = DriftDetector(config=config)
+    detector = drift_detector(config)
     drift_results = await detector.scan_for_drift()
 
     unmanaged_realms = [
@@ -417,6 +495,7 @@ async def test_auto_remediation_deletes_orphans(
     test_namespace,
     operator_instance_id,
     realm_cr,
+    drift_detector,
 ):
     """Test that auto-remediation deletes orphaned resources when enabled."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
@@ -446,6 +525,24 @@ async def test_auto_remediation_deletes_orphans(
     kc_realm = await keycloak_admin_client.get_realm(realm_name, test_namespace)
     assert kc_realm is not None
 
+    # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
+    realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+    realm_obj["metadata"]["finalizers"] = []
+    await k8s_custom_objects.patch_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+        body=realm_obj,
+    )
+
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="keycloak.mdvr.nl",
         version="v1",
@@ -466,17 +563,14 @@ async def test_auto_remediation_deletes_orphans(
         scope_roles=False,
     )
 
-    detector = DriftDetector(config=config)
+    detector = drift_detector(config)
     drift_results = await detector.scan_for_drift()
     await detector.remediate_drift(drift_results)
     await asyncio.sleep(2)
 
-    with pytest.raises(KeycloakAdminError) as exc_info:
-        await keycloak_admin_client.get_realm(realm_name, test_namespace)
-
-    error = exc_info.value
-    assert isinstance(error, KeycloakAdminError)
-    assert error.status_code == 404
+    # Verify realm was deleted by remediation
+    kc_realm = await keycloak_admin_client.get_realm(realm_name, test_namespace)
+    assert kc_realm is None, "Remediation should have deleted the orphaned realm"
 
 
 @pytest.mark.integration
@@ -488,6 +582,7 @@ async def test_minimum_age_prevents_deletion(
     test_namespace,
     operator_instance_id,
     realm_cr,
+    drift_detector,
 ):
     """Test that minimum age check prevents deletion of recent orphans."""
     os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
@@ -514,6 +609,24 @@ async def test_minimum_age_prevents_deletion(
 
     realm_name = realm_cr["spec"]["realmName"]
 
+    # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
+    realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+    realm_obj["metadata"]["finalizers"] = []
+    await k8s_custom_objects.patch_namespaced_custom_object(
+        group="keycloak.mdvr.nl",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+        body=realm_obj,
+    )
+
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="keycloak.mdvr.nl",
         version="v1",
@@ -534,7 +647,7 @@ async def test_minimum_age_prevents_deletion(
         scope_roles=False,
     )
 
-    detector = DriftDetector(config=config)
+    detector = drift_detector(config)
     drift_results = await detector.scan_for_drift()
     await detector.remediate_drift(drift_results)
     await asyncio.sleep(2)
