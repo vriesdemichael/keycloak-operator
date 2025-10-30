@@ -6,14 +6,12 @@ import uuid
 import pytest
 from kubernetes import client
 
-from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
-
 
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_smtp_secret_reference(
     shared_operator,
-    keycloak_port_forward,
+    keycloak_admin_client,
     operator_namespace,
     test_namespace,
     admission_token_setup,
@@ -92,26 +90,9 @@ async def test_realm_with_smtp_secret_reference(
         await wait_for_realm_ready(custom_api, realm_name, namespace, timeout=120)
 
         # Verify SMTP configuration in Keycloak
-        keycloak_namespace = shared_operator["namespace"]
-        local_port = await keycloak_port_forward(
-            shared_operator["name"], keycloak_namespace
-        )
-
-        # Get admin credentials from operator-generated secret
-        from keycloak_operator.utils.kubernetes import get_admin_credentials
-
-        username, password = get_admin_credentials(
-            shared_operator["name"], keycloak_namespace
-        )
-
-        admin_client = KeycloakAdminClient(
-            server_url=f"http://localhost:{local_port}",
-            username=username,
-            password=password,
-        )
 
         # Fetch realm configuration
-        realm_repr = await admin_client.get_realm(realm_name, namespace)
+        realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
         assert realm_repr is not None
         realm_config = realm_repr.model_dump(by_alias=True, exclude_none=False)
 
@@ -150,7 +131,7 @@ async def test_realm_with_smtp_secret_reference(
 @pytest.mark.asyncio
 async def test_realm_with_smtp_direct_password(
     shared_operator,
-    keycloak_port_forward,
+    keycloak_admin_client,
     operator_namespace,
     test_namespace,
     admission_token_setup,
@@ -211,25 +192,8 @@ async def test_realm_with_smtp_direct_password(
         await wait_for_realm_ready(custom_api, realm_name, namespace, timeout=120)
 
         # Verify realm was created
-        keycloak_namespace = shared_operator["namespace"]
-        local_port = await keycloak_port_forward(
-            shared_operator["name"], keycloak_namespace
-        )
 
-        # Get admin credentials from operator-generated secret
-        from keycloak_operator.utils.kubernetes import get_admin_credentials
-
-        username, password = get_admin_credentials(
-            shared_operator["name"], keycloak_namespace
-        )
-
-        admin_client = KeycloakAdminClient(
-            server_url=f"http://localhost:{local_port}",
-            username=username,
-            password=password,
-        )
-
-        realm_repr = await admin_client.get_realm(realm_name, namespace)
+        realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
         assert realm_repr is not None
         realm_config = realm_repr.model_dump(by_alias=True, exclude_none=False)
 
