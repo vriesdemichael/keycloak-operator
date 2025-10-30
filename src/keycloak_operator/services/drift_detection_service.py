@@ -478,7 +478,8 @@ class DriftDetector:
             List of (namespace, name) tuples for Keycloak instances
         """
         # For now, return a hardcoded list
-        # TODO: Discover Keycloak instances dynamically via CRDs
+        # TODO(#66): Discover Keycloak instances dynamically via CRDs for multi-instance deployments
+        # This limitation impacts scalability in production environments with multiple Keycloak instances
         operator_namespace = os.getenv("OPERATOR_NAMESPACE", "keycloak-system")
         return [(operator_namespace, "keycloak")]
 
@@ -615,7 +616,7 @@ class DriftDetector:
                     )
                     REMEDIATION_TOTAL.labels(
                         resource_type=drift.resource_type,
-                        action="deleted",
+                        action="delete",
                         reason="orphaned",
                     ).inc()
                 else:
@@ -624,7 +625,7 @@ class DriftDetector:
                     )
                     REMEDIATION_ERRORS_TOTAL.labels(
                         resource_type=drift.resource_type,
-                        action="deleted",
+                        action="delete",
                     ).inc()
 
             elif drift.resource_type == "client":
@@ -658,7 +659,7 @@ class DriftDetector:
                                 )
                                 REMEDIATION_TOTAL.labels(
                                     resource_type=drift.resource_type,
-                                    action="deleted",
+                                    action="delete",
                                     reason="orphaned",
                                 ).inc()
                                 client_deleted = True
@@ -675,7 +676,7 @@ class DriftDetector:
                     )
                     REMEDIATION_ERRORS_TOTAL.labels(
                         resource_type=drift.resource_type,
-                        action="deleted",
+                        action="delete",
                     ).inc()
 
         except Exception as e:
@@ -685,7 +686,7 @@ class DriftDetector:
             )
             REMEDIATION_ERRORS_TOTAL.labels(
                 resource_type=drift.resource_type,
-                action="deleted",
+                action="delete",
             ).inc()
 
     async def _remediate_config_drift(self, drift: DriftResult) -> None:

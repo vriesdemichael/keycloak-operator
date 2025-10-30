@@ -209,12 +209,17 @@ def get_resource_age_hours(
         return None
 
     try:
-        # Handle ISO 8601 timestamps with Z suffix (Python 3.11+ handles this natively)
-        # For older Python: manually replace Z with +00:00
-        if created_at.endswith("Z"):
-            created_at = created_at[:-1] + "+00:00"
+        # Python 3.11+ handles 'Z' suffix in fromisoformat()
+        # For Python 3.10 and earlier, manually replace Z with +00:00
+        try:
+            created_time = datetime.fromisoformat(created_at)
+        except ValueError:
+            # Fallback for Python <3.11: replace 'Z' with '+00:00'
+            if created_at.endswith("Z"):
+                created_time = datetime.fromisoformat(created_at[:-1] + "+00:00")
+            else:
+                raise
 
-        created_time = datetime.fromisoformat(created_at)
         age_seconds = (datetime.now(UTC) - created_time).total_seconds()
         return age_seconds / 3600.0  # Convert to hours
     except (ValueError, AttributeError):
