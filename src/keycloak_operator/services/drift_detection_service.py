@@ -184,7 +184,7 @@ class DriftDetector:
                     admin_client = await self.keycloak_admin_factory(
                         kc_name, kc_namespace
                     )
-                    realms = await admin_client.get_realms()
+                    realms = await admin_client.get_realms(kc_namespace)
 
                     for realm in realms:
                         # Skip master realm (system realm)
@@ -237,7 +237,7 @@ class DriftDetector:
                     )
 
                     # Get all realms first
-                    realms = await admin_client.get_realms()
+                    realms = await admin_client.get_realms(kc_namespace)
 
                     for realm in realms:
                         # Skip master realm
@@ -245,7 +245,9 @@ class DriftDetector:
                             continue
 
                         # Get all clients in this realm
-                        clients = await admin_client.get_clients(realm.realm)
+                        clients = await admin_client.get_realm_clients(
+                            realm.realm, kc_namespace
+                        )
 
                         for kc_client in clients:
                             drift = await self._check_client_resource_drift(
@@ -379,11 +381,11 @@ class DriftDetector:
             if not cr_ref:
                 # Missing CR reference - treat as orphaned
                 logger.warning(
-                    f"Client {kc_client.clientId} owned by this operator but missing CR reference"
+                    f"Client {kc_client.client_id} owned by this operator but missing CR reference"
                 )
                 return DriftResult(
                     resource_type="client",
-                    resource_name=kc_client.clientId,
+                    resource_name=kc_client.client_id,
                     drift_type="orphaned",
                     keycloak_resource=client_dict,
                     age_hours=get_resource_age_hours(attributes),
@@ -395,12 +397,12 @@ class DriftDetector:
             if not await self._cr_exists("KeycloakClient", cr_namespace, cr_name):
                 # CR deleted - this is an orphan
                 logger.info(
-                    f"Found orphaned client {kc_client.clientId} in realm {realm_name} "
+                    f"Found orphaned client {kc_client.client_id} in realm {realm_name} "
                     f"(CR {cr_namespace}/{cr_name} not found)"
                 )
                 return DriftResult(
                     resource_type="client",
-                    resource_name=kc_client.clientId,
+                    resource_name=kc_client.client_id,
                     drift_type="orphaned",
                     keycloak_resource=client_dict,
                     cr_namespace=cr_namespace,
@@ -414,16 +416,16 @@ class DriftDetector:
         elif is_managed_by_operator(attributes):
             # Owned by a different operator instance - ignore
             logger.debug(
-                f"Client {kc_client.clientId} owned by different operator, skipping"
+                f"Client {kc_client.client_id} owned by different operator, skipping"
             )
             return None
 
         else:
             # Not managed by any operator - unmanaged resource
-            logger.debug(f"Found unmanaged client {kc_client.clientId}")
+            logger.debug(f"Found unmanaged client {kc_client.client_id}")
             return DriftResult(
                 resource_type="client",
-                resource_name=kc_client.clientId,
+                resource_name=kc_client.client_id,
                 drift_type="unmanaged",
                 keycloak_resource=client_dict,
             )
@@ -632,7 +634,7 @@ class DriftDetector:
                 # Find which realm this client belongs to
                 # We stored the client data, so we can try to extract realm from attributes
                 # or search through all realms
-                realms = await admin_client.get_realms()
+                realms = await admin_client.get_realms(kc_namespace)
                 client_deleted = False
 
                 for realm in realms:
