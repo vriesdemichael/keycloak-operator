@@ -884,7 +884,7 @@ def helm_operator_chart_path() -> Path:
     return Path(__file__).parent.parent.parent / "charts" / "keycloak-operator"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 async def shared_operator(
     k8s_client,
     k8s_custom_objects,
