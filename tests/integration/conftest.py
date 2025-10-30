@@ -1508,6 +1508,48 @@ async def keycloak_port_forward():
             proc.kill()
 
 
+@pytest.fixture
+async def keycloak_admin_client(shared_operator, keycloak_port_forward):
+    """
+    Provide a KeycloakAdminClient connected via port-forward for testing.
+
+    This fixture automatically sets up port-forwarding to the Keycloak instance
+    deployed by shared_operator, retrieves admin credentials, and creates an
+    authenticated admin client that tests can use to interact with Keycloak.
+
+    Dependencies:
+        - shared_operator: Ensures Keycloak is deployed and ready
+        - keycloak_port_forward: Provides port-forwarding capability
+
+    Returns:
+        KeycloakAdminClient: Authenticated admin client connected to localhost
+
+    Usage:
+        async def test_something(keycloak_admin_client):
+            realm = await keycloak_admin_client.get_realm("my-realm", "my-namespace")
+    """
+    from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+    from keycloak_operator.utils.kubernetes import get_admin_credentials
+
+    local_port = await keycloak_port_forward(
+        shared_operator["name"], shared_operator["namespace"]
+    )
+
+    username, password = get_admin_credentials(
+        shared_operator["name"], shared_operator["namespace"]
+    )
+
+    admin_client = KeycloakAdminClient(
+        server_url=f"http://localhost:{local_port}",
+        username=username,
+        password=password,
+    )
+
+    await admin_client.authenticate()
+
+    yield admin_client
+
+
 # ============================================================================
 # Managed Resource Fixtures (with robust cleanup)
 # ============================================================================
