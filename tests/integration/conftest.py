@@ -75,6 +75,83 @@ from .models import KeycloakReadySetup, SharedOperatorInfo
 
 # wait_helpers are imported directly in tests, not used in conftest
 
+
+# ============================================================================
+# Test Helper Functions
+# ============================================================================
+
+
+def get_recommended_fixtures(scenario: str) -> list[str]:
+    """Get recommended fixtures for common test scenarios.
+
+    This helper function provides guidance on which fixtures to use for different
+    types of tests, helping new test writers get started quickly.
+
+    Args:
+        scenario: The type of test being written. Options:
+            - "basic": Simple operator functionality tests
+            - "realm": Realm CRUD and management tests
+            - "client": Client management tests
+            - "drift": Drift detection tests
+            - "auth": Authorization/token system tests
+            - "helm": Helm chart deployment tests
+
+    Returns:
+        List of recommended fixture names for that scenario
+
+    Example:
+        >>> fixtures = get_recommended_fixtures("realm")
+        >>> print(fixtures)
+        ['keycloak_ready', 'test_namespace', 'auth_token_factory', 'realm_cr_factory']
+    """
+    recommendations = {
+        "basic": [
+            "shared_operator",  # Operator deployment info
+            "test_namespace",  # Unique test namespace
+        ],
+        "realm": [
+            "keycloak_ready",  # Complete Keycloak setup (operator + port + admin)
+            "test_namespace",  # Unique test namespace
+            "auth_token_factory",  # For creating auth tokens
+            "realm_cr_factory",  # For creating realm manifests
+        ],
+        "client": [
+            "keycloak_ready",  # Complete Keycloak setup
+            "test_namespace",  # Unique test namespace
+            "auth_token_factory",  # For creating auth tokens
+            "realm_cr_factory",  # Need realm first
+            "client_cr_factory",  # For creating client manifests
+        ],
+        "drift": [
+            "keycloak_ready",  # Complete Keycloak setup
+            "test_namespace",  # Unique test namespace
+            "drift_detector",  # Drift detection service
+            "realm_cr_factory",  # For creating test realms
+        ],
+        "auth": [
+            "shared_operator",  # Operator info
+            "test_namespace",  # Unique test namespace
+            "auth_token_factory",  # For creating/testing tokens
+            "k8s_core_v1",  # For secret operations
+        ],
+        "helm": [
+            "test_namespace",  # Unique test namespace
+            "helm_realm",  # Helm realm deployment helper
+            "helm_client",  # Helm client deployment helper
+            "cleanup_tracker",  # Track cleanup operations
+        ],
+    }
+
+    return recommendations.get(
+        scenario,
+        ["shared_operator", "test_namespace"],  # Safe default
+    )
+
+
+# ============================================================================
+# Logging Configuration
+# ============================================================================
+
 logger = logging.getLogger(__name__)
 
 
