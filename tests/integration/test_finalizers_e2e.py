@@ -47,7 +47,7 @@ class TestFinalizersE2E:
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
-        namespace = shared_operator["namespace"]
+        namespace = shared_operator.namespace
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"test-realm-finalizer-{suffix}"
 
@@ -96,9 +96,9 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await _simple_wait(check_realm_finalizer, timeout=120), (
-                "Realm finalizer was not added"
-            )
+            assert await _simple_wait(
+                check_realm_finalizer, timeout=120
+            ), "Realm finalizer was not added"
 
             # Delete realm resource
             await k8s_custom_objects.delete_namespaced_custom_object(
@@ -123,9 +123,9 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await _simple_wait(check_realm_deleted, timeout=60), (
-                "Realm finalizer cleanup did not complete"
-            )
+            assert await _simple_wait(
+                check_realm_deleted, timeout=60
+            ), "Realm finalizer cleanup did not complete"
 
         except ApiException as e:
             pytest.fail(f"Failed to test realm finalizer: {e}")
@@ -145,7 +145,7 @@ class TestFinalizersE2E:
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
-        namespace = shared_operator["namespace"]
+        namespace = shared_operator.namespace
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"test-client-finalizer-realm-{suffix}"
         client_name = f"test-client-finalizer-{suffix}"
@@ -222,9 +222,9 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await _simple_wait(check_client_finalizer, timeout=120), (
-                "Client finalizer was not added"
-            )
+            assert await _simple_wait(
+                check_client_finalizer, timeout=120
+            ), "Client finalizer was not added"
 
             # Delete client resource
             await k8s_custom_objects.delete_namespaced_custom_object(
@@ -249,9 +249,9 @@ class TestFinalizersE2E:
                 except ApiException as e:
                     return e.status == 404
 
-            assert await _simple_wait(check_client_deleted, timeout=60), (
-                "Client finalizer cleanup did not complete"
-            )
+            assert await _simple_wait(
+                check_client_deleted, timeout=60
+            ), "Client finalizer cleanup did not complete"
 
         except ApiException as e:
             pytest.fail(f"Failed to test client finalizer: {e}")
@@ -357,9 +357,9 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await _simple_wait(check_realm_ready, timeout=60), (
-                "Realm did not become ready before cascading deletion test"
-            )
+            assert await _simple_wait(
+                check_realm_ready, timeout=60
+            ), "Realm did not become ready before cascading deletion test"
 
             # Create client
             await k8s_custom_objects.create_namespaced_custom_object(
@@ -386,9 +386,9 @@ class TestFinalizersE2E:
                 except ApiException:
                     return False
 
-            assert await _simple_wait(check_client_has_finalizer, timeout=60), (
-                "Client finalizer was not added (client not reconciled)"
-            )
+            assert await _simple_wait(
+                check_client_has_finalizer, timeout=60
+            ), "Client finalizer was not added (client not reconciled)"
 
             # Now delete the realm (should trigger cascading deletion to client)
             await k8s_custom_objects.delete_namespaced_custom_object(
@@ -428,9 +428,9 @@ class TestFinalizersE2E:
                 except Exception:
                     return False
 
-            assert await _simple_wait(check_all_deleted, timeout=120), (
-                "Cascading deletion did not complete"
-            )
+            assert await _simple_wait(
+                check_all_deleted, timeout=120
+            ), "Cascading deletion did not complete"
 
         except ApiException as e:
             pytest.fail(f"Failed to test cascading deletion: {e}")

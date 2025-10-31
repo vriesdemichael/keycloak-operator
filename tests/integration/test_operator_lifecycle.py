@@ -43,12 +43,12 @@ class TestOperatorLifecycle:
                 name="keycloak-operator", namespace=operator_namespace
             )
 
-            assert deployment.status.ready_replicas > 0, (
-                "Operator has no ready replicas"
-            )
-            assert deployment.status.replicas == deployment.status.ready_replicas, (
-                "Not all operator replicas are ready"
-            )
+            assert (
+                deployment.status.ready_replicas > 0
+            ), "Operator has no ready replicas"
+            assert (
+                deployment.status.replicas == deployment.status.ready_replicas
+            ), "Not all operator replicas are ready"
 
         except ApiException as e:
             pytest.fail(f"Failed to read operator deployment: {e}")
@@ -66,16 +66,16 @@ class TestOperatorLifecycle:
             assert len(pods.items) > 0, "No operator pods found"
 
             for pod in pods.items:
-                assert pod.status.phase == "Running", (
-                    f"Pod {pod.metadata.name} is not running"
-                )
+                assert (
+                    pod.status.phase == "Running"
+                ), f"Pod {pod.metadata.name} is not running"
 
                 # Check container readiness
                 if pod.status.container_statuses:
                     for container in pod.status.container_statuses:
-                        assert container.ready, (
-                            f"Container {container.name} is not ready"
-                        )
+                        assert (
+                            container.ready
+                        ), f"Container {container.name} is not ready"
 
         except ApiException as e:
             pytest.fail(f"Failed to list operator pods: {e}")
@@ -168,9 +168,9 @@ class TestOperatorLifecycle:
             namespace_access_role = rbac_api.read_cluster_role(
                 name=namespace_access_role_name
             )
-            assert namespace_access_role.rules, (
-                "Namespace access ClusterRole has no rules"
-            )
+            assert (
+                namespace_access_role.rules
+            ), "Namespace access ClusterRole has no rules"
 
             # Verify namespace-access role has status/finalizers permissions
             namespace_permissions = [
@@ -236,9 +236,7 @@ class TestOperatorLifecycle:
                     ):
                         found = True
                         break
-                assert found, (
-                    f"Missing full CRUD permissions for {api_group} resources: {resources}"
-                )
+                assert found, f"Missing full CRUD permissions for {api_group} resources: {resources}"
 
         except ApiException as e:
             if e.status == 404:
@@ -259,8 +257,8 @@ class TestBasicKeycloakDeployment:
         shared_operator,
     ):
         """Test that the shared Keycloak resource was created successfully."""
-        keycloak_name = shared_operator["name"]
-        namespace = shared_operator["namespace"]
+        keycloak_name = shared_operator.name
+        namespace = shared_operator.namespace
 
         try:
             # Verify the shared resource exists
@@ -282,8 +280,8 @@ class TestBasicKeycloakDeployment:
         shared_operator,
     ):
         """Test that finalizers are properly added to the shared Keycloak resource."""
-        keycloak_name = shared_operator["name"]
-        namespace = shared_operator["namespace"]
+        keycloak_name = shared_operator.name
+        namespace = shared_operator.namespace
 
         try:
             # Verify finalizer exists on shared resource
@@ -295,9 +293,9 @@ class TestBasicKeycloakDeployment:
                 name=keycloak_name,
             )
             finalizers = resource.get("metadata", {}).get("finalizers", [])
-            assert "keycloak.mdvr.nl/cleanup" in finalizers, (
-                "Finalizer was not added to Keycloak resource"
-            )
+            assert (
+                "keycloak.mdvr.nl/cleanup" in finalizers
+            ), "Finalizer was not added to Keycloak resource"
 
         except ApiException as e:
             pytest.fail(f"Failed to verify finalizer: {e}")
@@ -308,8 +306,8 @@ class TestBasicKeycloakDeployment:
         shared_operator,
     ):
         """Test that Keycloak deployment is created for the shared resource."""
-        keycloak_name = shared_operator["name"]
-        namespace = shared_operator["namespace"]
+        keycloak_name = shared_operator.name
+        namespace = shared_operator.namespace
 
         try:
             # Verify deployment exists
@@ -318,17 +316,17 @@ class TestBasicKeycloakDeployment:
             )
 
             # Verify deployment has correct configuration
-            assert deployment.spec.replicas == 1, (
-                "Deployment has incorrect replica count"
-            )
-            assert len(deployment.spec.template.spec.containers) > 0, (
-                "Deployment has no containers"
-            )
+            assert (
+                deployment.spec.replicas == 1
+            ), "Deployment has incorrect replica count"
+            assert (
+                len(deployment.spec.template.spec.containers) > 0
+            ), "Deployment has no containers"
 
             container = deployment.spec.template.spec.containers[0]
-            assert "keycloak" in container.image.lower(), (
-                "Container is not using Keycloak image"
-            )
+            assert (
+                "keycloak" in container.image.lower()
+            ), "Container is not using Keycloak image"
 
         except ApiException as e:
             pytest.fail(f"Failed to verify deployment: {e}")
@@ -339,8 +337,8 @@ class TestBasicKeycloakDeployment:
         shared_operator,
     ):
         """Test that Keycloak service is created for the shared resource."""
-        keycloak_name = shared_operator["name"]
-        namespace = shared_operator["namespace"]
+        keycloak_name = shared_operator.name
+        namespace = shared_operator.namespace
 
         try:
             # Verify service exists
@@ -362,8 +360,8 @@ class TestBasicKeycloakDeployment:
         shared_operator,
     ):
         """Test that the shared Keycloak instance is ready and operational."""
-        keycloak_name = shared_operator["name"]
-        namespace = shared_operator["namespace"]
+        keycloak_name = shared_operator.name
+        namespace = shared_operator.namespace
 
         try:
             # Verify status is set correctly (instance is already ready from fixture)
@@ -387,8 +385,8 @@ class TestBasicKeycloakDeployment:
         shared_operator,
     ):
         """Test that Keycloak pods are running and healthy for the shared instance."""
-        keycloak_name = shared_operator["name"]
-        namespace = shared_operator["namespace"]
+        keycloak_name = shared_operator.name
+        namespace = shared_operator.namespace
 
         try:
             # Verify pods are running (instance is already ready from fixture)
@@ -400,16 +398,16 @@ class TestBasicKeycloakDeployment:
             assert pods.items, "No Keycloak pods found"
 
             for pod in pods.items:
-                assert pod.status.phase == "Running", (
-                    f"Pod {pod.metadata.name} is not running"
-                )
+                assert (
+                    pod.status.phase == "Running"
+                ), f"Pod {pod.metadata.name} is not running"
 
                 # Check container readiness
                 if pod.status.container_statuses:
                     for container in pod.status.container_statuses:
-                        assert container.ready, (
-                            f"Container {container.name} is not ready"
-                        )
+                        assert (
+                            container.ready
+                        ), f"Container {container.name} is not ready"
 
         except ApiException as e:
             pytest.fail(f"Failed to verify Keycloak pods: {e}")
@@ -431,8 +429,8 @@ class TestKeycloakAdminAPI:
         Uses the pre-installed shared Keycloak instance (1-1 operator-Keycloak coupling).
         Verifies deployment, service, and admin credentials are properly configured.
         """
-        keycloak_name = shared_operator["name"]
-        namespace = shared_operator["namespace"]
+        keycloak_name = shared_operator.name
+        namespace = shared_operator.namespace
 
         try:
             # Verify deployment exists and is ready
@@ -440,9 +438,9 @@ class TestKeycloakAdminAPI:
                 name=f"{keycloak_name}-keycloak", namespace=namespace
             )
 
-            assert deployment.status.ready_replicas, (
-                "Keycloak deployment has no ready replicas"
-            )
+            assert (
+                deployment.status.ready_replicas
+            ), "Keycloak deployment has no ready replicas"
             assert deployment.status.ready_replicas >= deployment.spec.replicas, (
                 f"Keycloak deployment not fully ready: "
                 f"{deployment.status.ready_replicas}/{deployment.spec.replicas}"
@@ -454,12 +452,12 @@ class TestKeycloakAdminAPI:
                 name=admin_secret_name, namespace=namespace
             )
             assert secret.data, "Admin credentials secret has no data"
-            assert "password" in secret.data, (
-                "Admin credentials secret missing 'password' key"
-            )
-            assert "username" in secret.data, (
-                "Admin credentials secret missing 'username' key"
-            )
+            assert (
+                "password" in secret.data
+            ), "Admin credentials secret missing 'password' key"
+            assert (
+                "username" in secret.data
+            ), "Admin credentials secret missing 'username' key"
 
             # Verify service endpoint is available
             service = await k8s_core_v1.read_namespaced_service(
@@ -496,7 +494,7 @@ class TestRealmBasicOperations:
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
-        namespace = shared_operator["namespace"]
+        namespace = shared_operator.namespace
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"test-realm-basic-{suffix}"
 
@@ -542,9 +540,9 @@ class TestRealmBasicOperations:
                 except ApiException:
                     return False
 
-            assert await _simple_wait(check_realm_created, timeout=180), (
-                "Realm resource was not created successfully"
-            )
+            assert await _simple_wait(
+                check_realm_created, timeout=180
+            ), "Realm resource was not created successfully"
 
         except ApiException as e:
             pytest.fail(f"Failed to create realm resource: {e}")
@@ -581,7 +579,7 @@ class TestClientBasicOperations:
         from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
-        namespace = shared_operator["namespace"]
+        namespace = shared_operator.namespace
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"test-client-realm-{suffix}"
         client_name = f"test-client-basic-{suffix}"
@@ -656,9 +654,9 @@ class TestClientBasicOperations:
                 except ApiException:
                     return False
 
-            assert await _simple_wait(check_client_created, timeout=180), (
-                "Client resource was not created successfully"
-            )
+            assert await _simple_wait(
+                check_client_created, timeout=180
+            ), "Client resource was not created successfully"
 
         except ApiException as e:
             pytest.fail(f"Failed to create client resource: {e}")

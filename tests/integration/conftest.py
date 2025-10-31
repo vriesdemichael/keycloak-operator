@@ -13,6 +13,31 @@ This document contains critical rules about:
 - Timeouts and cleanup patterns
 
 Violating these rules will cause test failures, especially in parallel execution.
+
+FIXTURE HIERARCHY
+=================
+
+Session-scoped (shared across all tests):
+├── shared_operator → SharedOperatorInfo (operator + Keycloak via Helm)
+├── operator_namespace → str (namespace where operator runs)
+└── k8s_* clients → Async-wrapped Kubernetes API clients
+
+Function-scoped (per test):
+├── test_namespace → str (unique per test with RBAC)
+├── auth_token_factory → Creates admission/operational tokens
+├── keycloak_ready → KeycloakReadySetup (operator + port + admin client)
+└── managed_* → Auto-cleanup resource creators
+
+Internal fixtures (prefixed with _):
+├── _k8s_*_sync → Synchronous K8s clients (wrapped by async versions)
+├── _helm_*_chart_path → Paths to Helm charts
+└── Other implementation details
+
+Recommended Usage:
+- Simple operator tests: shared_operator + test_namespace
+- Realm tests: keycloak_ready + test_namespace + auth_token_factory
+- Client tests: keycloak_ready + test_namespace + managed_realm
+- Drift tests: keycloak_ready + drift_detector
 """
 
 import asyncio
@@ -46,6 +71,7 @@ from .cleanup_utils import (
     ensure_clean_test_environment,
     force_delete_namespace,
 )
+from .models import SharedOperatorInfo
 
 # wait_helpers are imported directly in tests, not used in conftest
 
@@ -234,51 +260,51 @@ def k8s_client(kube_config):
 
 
 @pytest.fixture(scope="session")
-def k8s_core_v1_sync(k8s_client):
+def _k8s_core_v1_sync(k8s_client):
     """Create Core V1 API client (synchronous, for use in non-async fixtures)."""
     return client.CoreV1Api(k8s_client)
 
 
 @pytest.fixture(scope="session")
-def k8s_core_v1(k8s_core_v1_sync):
+def k8s_core_v1(_k8s_core_v1_sync):
     """Create Core V1 API client (async-safe wrapper for async tests)."""
-    return AsyncK8sClientWrapper(k8s_core_v1_sync)
+    return AsyncK8sClientWrapper(_k8s_core_v1_sync)
 
 
 @pytest.fixture(scope="session")
-def k8s_apps_v1_sync(k8s_client):
+def _k8s_apps_v1_sync(k8s_client):
     """Create Apps V1 API client (synchronous, for use in non-async fixtures)."""
     return client.AppsV1Api(k8s_client)
 
 
 @pytest.fixture(scope="session")
-def k8s_apps_v1(k8s_apps_v1_sync):
+def k8s_apps_v1(_k8s_apps_v1_sync):
     """Create Apps V1 API client (async-safe wrapper for async tests)."""
-    return AsyncK8sClientWrapper(k8s_apps_v1_sync)
+    return AsyncK8sClientWrapper(_k8s_apps_v1_sync)
 
 
 @pytest.fixture(scope="session")
-def k8s_custom_objects_sync(k8s_client):
+def _k8s_custom_objects_sync(k8s_client):
     """Create Custom Objects API client (synchronous, for use in non-async fixtures)."""
     return client.CustomObjectsApi(k8s_client)
 
 
 @pytest.fixture(scope="session")
-def k8s_custom_objects(k8s_custom_objects_sync):
+def k8s_custom_objects(_k8s_custom_objects_sync):
     """Create Custom Objects API client (async-safe wrapper for async tests)."""
-    return AsyncK8sClientWrapper(k8s_custom_objects_sync)
+    return AsyncK8sClientWrapper(_k8s_custom_objects_sync)
 
 
 @pytest.fixture(scope="session")
-def k8s_rbac_v1_sync(k8s_client):
+def _k8s_rbac_v1_sync(k8s_client):
     """Create RBAC Authorization V1 API client (synchronous, for use in non-async fixtures)."""
     return client.RbacAuthorizationV1Api(k8s_client)
 
 
 @pytest.fixture(scope="session")
-def k8s_rbac_v1(k8s_rbac_v1_sync):
+def k8s_rbac_v1(_k8s_rbac_v1_sync):
     """Create RBAC Authorization V1 API client (async-safe wrapper for async tests)."""
-    return AsyncK8sClientWrapper(k8s_rbac_v1_sync)
+    return AsyncK8sClientWrapper(_k8s_rbac_v1_sync)
 
 
 @pytest.fixture(scope="session")
@@ -741,7 +767,7 @@ def wait_for_keycloak_ready(
 
 
 @pytest.fixture(scope="class")
-def class_scoped_namespace(k8s_core_v1_sync, request) -> str:
+def class_scoped_namespace(_k8s_core_v1_sync, request) -> str:
     """Create a test namespace that lives for entire test class.
 
     This allows tests within a class to share resources like Keycloak instances,
@@ -756,12 +782,12 @@ def class_scoped_namespace(k8s_core_v1_sync, request) -> str:
         )
     )
 
-    k8s_core_v1_sync.create_namespace(namespace)
+    _k8s_core_v1_sync.create_namespace(namespace)
 
     # Register cleanup finalizer
     def cleanup():
         try:
-            k8s_core_v1_sync.delete_namespace(
+            _k8s_core_v1_sync.delete_namespace(
                 name=namespace_name,
                 body=client.V1DeleteOptions(propagation_policy="Foreground"),
             )
@@ -775,7 +801,7 @@ def class_scoped_namespace(k8s_core_v1_sync, request) -> str:
 
 @pytest.fixture(scope="class")
 def class_scoped_test_secrets(
-    k8s_core_v1_sync, class_scoped_namespace
+    _k8s_core_v1_sync, class_scoped_namespace
 ) -> dict[str, str]:
     """Create test secrets for class-scoped Keycloak instances with required RBAC label.
 
@@ -792,7 +818,7 @@ def class_scoped_test_secrets(
         ),
         string_data={"password": "test-db-password", "username": "keycloak"},
     )
-    k8s_core_v1_sync.create_namespaced_secret(class_scoped_namespace, db_secret)
+    _k8s_core_v1_sync.create_namespaced_secret(class_scoped_namespace, db_secret)
     secrets["database"] = "shared-db-secret"
 
     # Admin secret
@@ -804,7 +830,7 @@ def class_scoped_test_secrets(
         ),
         string_data={"password": "admin-password", "username": "admin"},
     )
-    k8s_core_v1_sync.create_namespaced_secret(class_scoped_namespace, admin_secret)
+    _k8s_core_v1_sync.create_namespaced_secret(class_scoped_namespace, admin_secret)
     secrets["admin"] = "shared-admin-secret"
 
     return secrets
@@ -879,7 +905,7 @@ def class_scoped_cnpg_cluster(
 
 
 @pytest.fixture(scope="session")
-def helm_operator_chart_path() -> Path:
+def _helm_operator_chart_path() -> Path:
     """Return the path to the keycloak-operator Helm chart."""
     return Path(__file__).parent.parent.parent / "charts" / "keycloak-operator"
 
@@ -891,9 +917,9 @@ async def shared_operator(
     k8s_apps_v1,
     k8s_core_v1,
     operator_namespace,
-    helm_operator_chart_path,
+    _helm_operator_chart_path,
     cnpg_installed,
-) -> AsyncGenerator[dict[str, str]]:
+) -> AsyncGenerator[SharedOperatorInfo]:
     """Deploy Keycloak operator and instance via Helm for all tests.
 
     Prerequisites (validated by check_prerequisites fixture):
@@ -1052,7 +1078,7 @@ async def shared_operator(
                 "upgrade",
                 "--install",
                 "keycloak-operator",
-                str(helm_operator_chart_path),
+                str(_helm_operator_chart_path),
                 "-n",
                 operator_namespace,
                 "-f",
@@ -1278,7 +1304,7 @@ async def shared_operator(
 
         logger.info("✓ Keycloak instance ready")
 
-        yield {"name": keycloak_name, "namespace": operator_namespace}
+        yield SharedOperatorInfo(name=keycloak_name, namespace=operator_namespace)
 
     except Exception as e:
         logger.error(f"Error during operator deployment: {e}")
@@ -1532,11 +1558,11 @@ async def keycloak_admin_client(shared_operator, keycloak_port_forward):
     from keycloak_operator.utils.kubernetes import get_admin_credentials
 
     local_port = await keycloak_port_forward(
-        shared_operator["name"], shared_operator["namespace"]
+        shared_operator.name, shared_operator.namespace
     )
 
     username, password = get_admin_credentials(
-        shared_operator["name"], shared_operator["namespace"]
+        shared_operator.name, shared_operator.namespace
     )
 
     admin_client = KeycloakAdminClient(
@@ -1758,20 +1784,20 @@ async def managed_client(
 
 
 @pytest.fixture
-def helm_realm_chart_path() -> Path:
+def _helm_realm_chart_path() -> Path:
     """Return the path to the keycloak-realm Helm chart."""
     return Path(__file__).parent.parent.parent / "charts" / "keycloak-realm"
 
 
 @pytest.fixture
-def helm_client_chart_path() -> Path:
+def _helm_client_chart_path() -> Path:
     """Return the path to the keycloak-client Helm chart."""
     return Path(__file__).parent.parent.parent / "charts" / "keycloak-client"
 
 
 @pytest.fixture
 async def helm_realm(
-    helm_realm_chart_path: Path,
+    _helm_realm_chart_path: Path,
     test_namespace: str,
     cleanup_tracker: CleanupTracker,
 ):
@@ -1831,7 +1857,7 @@ async def helm_realm(
                 "helm",
                 "install",
                 release_name,
-                str(helm_realm_chart_path),
+                str(_helm_realm_chart_path),
                 "-n",
                 test_namespace,
                 "-f",
@@ -1911,7 +1937,7 @@ async def helm_realm(
 
 @pytest.fixture
 async def helm_client(
-    helm_client_chart_path: Path,
+    _helm_client_chart_path: Path,
     test_namespace: str,
     cleanup_tracker: CleanupTracker,
 ):
@@ -1977,7 +2003,7 @@ async def helm_client(
                 "helm",
                 "install",
                 release_name,
-                str(helm_client_chart_path),
+                str(_helm_client_chart_path),
                 "-n",
                 test_namespace,
                 "-f",
@@ -2197,7 +2223,7 @@ async def admission_token_setup(
 async def operator_instance_id(k8s_apps_v1, shared_operator):
     """Get the actual operator instance ID from running deployment."""
     deployment = await k8s_apps_v1.read_namespaced_deployment(
-        name="keycloak-operator", namespace=shared_operator["namespace"]
+        name="keycloak-operator", namespace=shared_operator.namespace
     )
 
     # Extract from environment variable
@@ -2207,7 +2233,7 @@ async def operator_instance_id(k8s_apps_v1, shared_operator):
                 return env.value
 
     # Fallback to Helm chart default pattern
-    return f"keycloak-operator-{shared_operator['namespace']}"
+    return f"keycloak-operator-{shared_operator.namespace}"
 
 
 @pytest.fixture
@@ -2315,7 +2341,9 @@ async def drift_test_auth_token(
 
 @pytest.fixture
 async def realm_cr(
-    test_namespace: str, shared_operator: dict, drift_test_auth_token: tuple[str, str]
+    test_namespace: str,
+    shared_operator: SharedOperatorInfo,
+    drift_test_auth_token: tuple[str, str],
 ):
     """Create a KeycloakRealm CR spec for drift detection tests."""
     secret_name, _ = drift_test_auth_token
@@ -2331,7 +2359,7 @@ async def realm_cr(
         "spec": {
             "realmName": realm_name,
             "operatorRef": {
-                "namespace": shared_operator["namespace"],
+                "namespace": shared_operator.namespace,
                 "authorizationSecretRef": {
                     "name": secret_name,
                     "key": "token",
@@ -2400,7 +2428,7 @@ async def drift_detector(
 
     # Set up port-forward once for this test
     local_port = await keycloak_port_forward(
-        shared_operator["name"], shared_operator["namespace"]
+        shared_operator.name, shared_operator.namespace
     )
 
     # Create custom admin client factory that uses port-forwarding
@@ -2421,11 +2449,3 @@ async def drift_detector(
         )
 
     return create_detector
-
-
-@pytest.fixture
-async def keycloak_instance():
-    """Ensure Keycloak instance is ready for drift detection tests."""
-    # Keycloak should already be running from operator installation
-    # This fixture just confirms it's ready
-    return True
