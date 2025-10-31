@@ -2440,12 +2440,29 @@ def realm_cr_factory(
     This replaces the realm_cr fixture to allow customization without modifying
     shared state.
 
+    NOTE: This factory depends on drift_test_auth_token for backward compatibility
+    with existing tests. For new tests, consider using auth_token_factory directly
+    and passing the secret name to your realm manifest.
+
     Usage:
         def test_something(realm_cr_factory):
+            # Simple usage (uses drift_test_auth_token for compatibility)
             realm_manifest = realm_cr_factory(
                 realm_name="custom-realm",
                 settings={"enabled": False},
             )
+
+        async def test_with_custom_token(realm_cr_factory, auth_token_factory, test_namespace):
+            # For more control, create your own token
+            secret_name, _ = await auth_token_factory(namespace=test_namespace)
+            realm_manifest = realm_cr_factory(realm_name="custom-realm")
+            # Then modify the auth secret reference
+            realm_manifest["spec"]["operatorRef"]["authorizationSecretRef"]["name"] = secret_name
+
+    Args:
+        realm_name: Optional custom realm name
+        settings: Optional realm settings dict to merge
+        **overrides: Any other spec fields to override
     """
     secret_name, _ = drift_test_auth_token
 
@@ -2503,11 +2520,28 @@ def client_cr_factory(
                 realm_cr=realm_cr,
                 client_id="my-client",
                 public_client=False,
+                # Optionally override the realm_token_secret
+                # realm_token_secret="custom-secret-name",
             )
+
+    Args:
+        realm_cr: The realm CR dict (from realm_cr_factory)
+        client_id: Optional custom client ID
+        realm_token_secret: Optional secret name containing realm's operational token.
+                           Defaults to "{test_namespace}-operator-token"
+        **overrides: Any other spec fields to override
     """
 
     def _create_client_cr(realm_cr: dict, **overrides) -> dict[str, Any]:
-        """Create a KeycloakClient CR manifest with optional overrides."""
+        """Create a KeycloakClient CR manifest with optional overrides.
+
+        Args:
+            realm_cr: The realm manifest dict
+            client_id: Custom client ID (optional)
+            realm_token_secret: Custom token secret name (optional,
+                               defaults to "{test_namespace}-operator-token")
+            **overrides: Additional spec fields to override
+        """
         client_id = overrides.pop(
             "client_id", f"drift-test-client-{int(time.time() * 1000)}"
         )
