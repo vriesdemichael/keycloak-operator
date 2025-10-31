@@ -47,17 +47,63 @@ Opening or pushing to a PR branch triggers automated Copilot review comments - o
 When you see review comments on the PR (check with `gh pr view <number> --comments`):
 
 **For each comment, you must:**
-1. **Implement the suggestion** - Make the change and mark conversation as resolved:
+1. **Implement the suggestion** - Make the change, commit, push, reply to the comment, and mark as resolved:
    ```bash
-   # After implementing changes
-   gh pr comment <number> --body "Implemented this suggestion"
-   # Then resolve via GitHub UI or gh CLI if available
+   # After implementing changes, commit and push
+   git add -A
+   git commit -m "fix: address review comment - <brief description>"
+   git push
+
+   # Reply to the specific comment explaining what you did
+   gh api \
+     --method POST \
+     -H "Accept: application/vnd.github+json" \
+     repos/<owner>/<repo>/pulls/<pr_number>/comments/<comment_id>/replies \
+     -f body="Fixed: <explanation of changes>"
+
+   # Then resolve the thread using GraphQL API
+   # First, get thread IDs:
+   gh api graphql -f query='
+   query {
+     repository(owner: "<owner>", name: "<repo>") {
+       pullRequest(number: <pr_number>) {
+         reviewThreads(first: 10) {
+           nodes {
+             id
+             isResolved
+             comments(first: 1) {
+               nodes {
+                 body
+               }
+             }
+           }
+         }
+       }
+     }
+   }'
+
+   # Then resolve each thread:
+   gh api graphql -f query='
+   mutation {
+     resolveReviewThread(input: {threadId: "<thread_id>"}) {
+       thread {
+         id
+         isResolved
+       }
+     }
+   }'
    ```
 
 2. **Explain why not to implement** - If suggestion is incorrect/unnecessary:
    ```bash
-   gh pr comment <number> --body "This suggestion should not be implemented because [reason]"
-   # Then mark as resolved
+   # Reply to the comment with explanation
+   gh api \
+     --method POST \
+     -H "Accept: application/vnd.github+json" \
+     repos/<owner>/<repo>/pulls/<pr_number>/comments/<comment_id>/replies \
+     -f body="This should not be implemented because [detailed reason]"
+
+   # Then resolve the thread (see mutation above)
    ```
 
 3. **Ask the user** - When unsure:
@@ -66,6 +112,8 @@ When you see review comments on the PR (check with `gh pr view <number> --commen
    ```
 
 **Address ALL review comments** before suggesting merge.
+
+**Important:** Always use the GraphQL API to resolve review threads, not just replying to comments.
 
 ### Review Process Flow
 1. User reviews code manually + you check for PR comments
