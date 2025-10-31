@@ -38,7 +38,7 @@ async def test_realm_ownership_attributes_are_added(
     realm_cr,
 ):
     """Test that ownership attributes are added when creating a realm."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
     os.environ["OPERATOR_INSTANCE_ID"] = operator_instance_id
 
     # Use k8s_custom_objects fixture instead of creating new API client
@@ -105,7 +105,7 @@ async def test_client_ownership_attributes_are_added(
     client_cr,
 ):
     """Test that ownership attributes are added when creating a client."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
 
     # Use k8s_custom_objects fixture instead of creating new API client
 
@@ -209,7 +209,7 @@ async def test_orphan_detection_after_realm_deletion(
     drift_detector,
 ):
     """Test that orphaned realms are detected after CR deletion."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
 
     # Use k8s_custom_objects fixture instead of creating new API client
 
@@ -304,7 +304,7 @@ async def test_orphan_detection_after_client_deletion(
     drift_detector,
 ):
     """Test that orphaned clients are detected after CR deletion."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
 
     # Use k8s_custom_objects fixture instead of creating new API client
 
@@ -444,7 +444,7 @@ async def test_unmanaged_resources_detected(
     drift_detector,
 ):
     """Test that unmanaged resources (created without operator) are detected."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
 
     import uuid
 
@@ -498,7 +498,7 @@ async def test_auto_remediation_deletes_orphans(
     drift_detector,
 ):
     """Test that auto-remediation deletes orphaned resources when enabled."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
 
     # Use k8s_custom_objects fixture instead of creating new API client
 
@@ -585,7 +585,7 @@ async def test_minimum_age_prevents_deletion(
     drift_detector,
 ):
     """Test that minimum age check prevents deletion of recent orphans."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator["namespace"]
+    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
 
     # Use k8s_custom_objects fixture instead of creating new API client
 
