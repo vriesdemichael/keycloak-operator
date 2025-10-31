@@ -71,7 +71,7 @@ from .cleanup_utils import (
     ensure_clean_test_environment,
     force_delete_namespace,
 )
-from .models import SharedOperatorInfo
+from .models import KeycloakReadySetup, SharedOperatorInfo
 
 # wait_helpers are imported directly in tests, not used in conftest
 
@@ -1574,6 +1574,45 @@ async def keycloak_admin_client(shared_operator, keycloak_port_forward):
     await admin_client.authenticate()
 
     yield admin_client
+
+
+@pytest.fixture
+async def keycloak_ready(
+    shared_operator: SharedOperatorInfo,
+    keycloak_port_forward,
+    keycloak_admin_client,
+) -> KeycloakReadySetup:
+    """Composite fixture providing complete Keycloak setup.
+
+    This fixture combines shared_operator, port-forward, and admin_client into
+    a single Pydantic model for convenience and type safety.
+
+    Usage:
+        async def test_something(keycloak_ready: KeycloakReadySetup):
+            # Access operator info
+            operator_ns = keycloak_ready.operator.namespace
+
+            # Access port-forwarded Keycloak
+            port = keycloak_ready.local_port
+
+            # Use admin client
+            realm = await keycloak_ready.admin_client.get_realm("test", "ns")
+
+    Returns:
+        KeycloakReadySetup with operator info, local port, and authenticated admin client
+    """
+    # Port-forward is already set up by keycloak_admin_client dependency
+    # Extract the port from the admin client's server_url
+    from urllib.parse import urlparse
+
+    parsed_url = urlparse(keycloak_admin_client.server_url)
+    local_port = parsed_url.port or 80
+
+    return KeycloakReadySetup(
+        operator=shared_operator,
+        local_port=local_port,
+        admin_client=keycloak_admin_client,
+    )
 
 
 # ============================================================================
