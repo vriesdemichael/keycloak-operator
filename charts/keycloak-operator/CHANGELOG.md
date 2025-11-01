@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.1.3...chart-operator-v0.1.4) (2025-11-01)
+
+
+### Features
+
+* add drift detection foundation (Phase 1-3) ([80cf043](https://github.com/vriesdemichael/keycloak-operator/commit/80cf0438ef7b0e7568fa9d033e15be305f24ba55))
+* publish JSON schemas for CRDs to enable IDE autocomplete ([72485af](https://github.com/vriesdemichael/keycloak-operator/commit/72485afb83822db7e427e1b876fd2700a91489a5))
+
+
+### Bug Fixes
+
+* enable mandatory type checking and add Helm linting to pre-commit ([97dc9d7](https://github.com/vriesdemichael/keycloak-operator/commit/97dc9d7062695a9e3999c5554d774ac9c79e6c3d))
+
 ## [0.1.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.1.2...chart-operator-v0.1.3) (2025-10-27)
 
 
