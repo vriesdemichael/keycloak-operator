@@ -1,0 +1,46 @@
+name: Auto-Rebase PRs
+
+# Only rebase when explicitly requested via label or comment
+# Prevents rebase storms and unnecessary CI runs
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-rebase:
+    name: Rebase PR
+    if: |
+      (github.event_name == 'issue_comment' &&
+       github.event.issue.pull_request != '' &&
+       contains(github.event.comment.body, '/rebase')) ||
+      (github.event_name == 'pull_request' &&
+       github.event.label.name == 'autorebase')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Automatic Rebase
+        uses: cirrus-actions/rebase@1.8
+        with:
+          autosquash: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Add reaction to comment
+        if: github.event_name == 'issue_comment'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ github.event.comment.id }}
+          reactions: '+1'
