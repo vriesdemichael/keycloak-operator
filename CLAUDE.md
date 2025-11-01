@@ -133,7 +133,7 @@ When you see review comments on the PR (check with `gh pr view <number> --commen
 
 **How to enable automerge:**
 ```bash
-gh pr merge <number> --auto --squash  # or --merge, --rebase depending on preference
+gh pr merge <number> --auto --rebase
 ```
 
 The PR will automatically merge once all required status checks pass. Optional checks (like security scans, SBOM generation) don't block the merge.
