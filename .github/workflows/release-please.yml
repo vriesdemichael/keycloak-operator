@@ -94,7 +94,7 @@ jobs:
               echo "Non-major release detected - enabling auto-merge for PR #${PR_NUMBER}"
 
               # Enable auto-merge (will merge automatically when CI passes)
-              if gh pr merge $PR_NUMBER --auto --squash --repo ${{ github.repository }}; then
+              if gh pr merge $PR_NUMBER --auto --rebase --repo ${{ github.repository }}; then
                 echo "### :white_check_mark: Auto-merge enabled for non-major release" >> $GITHUB_STEP_SUMMARY
                 echo "" >> $GITHUB_STEP_SUMMARY
                 echo "PR #${PR_NUMBER} will merge automatically when all checks pass." >> $GITHUB_STEP_SUMMARY
