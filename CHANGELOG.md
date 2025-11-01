@@ -1,5 +1,49 @@
 # Changelog
 
+## [0.2.13](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.12...v0.2.13) (2025-11-01)
+
+
+### Features
+
+* add drift detection foundation (Phase 1-3) ([80cf043](https://github.com/vriesdemichael/keycloak-operator/commit/80cf0438ef7b0e7568fa9d033e15be305f24ba55))
+* add keycloak_admin_client fixture for test isolation ([ea46f21](https://github.com/vriesdemichael/keycloak-operator/commit/ea46f21f8029643e4a31584830793b64f9c8402b))
+* implement orphan remediation (Phase 5) ([d225065](https://github.com/vriesdemichael/keycloak-operator/commit/d2250654f217dece764edabf4e9a17d8909a125e))
+
+
+### Bug Fixes
+
+* add missing common.sh and config.sh scripts, update documentation ([59a644f](https://github.com/vriesdemichael/keycloak-operator/commit/59a644f580ec57eb8f297789949fe0105a7c8bc6))
+* address Copilot review comments (resolved conflicts) ([76f6256](https://github.com/vriesdemichael/keycloak-operator/commit/76f6256cccb554ec418fd9195b9de72fbeaf3ad4))
+* address Copilot review comments for integration tests ([fc09ef6](https://github.com/vriesdemichael/keycloak-operator/commit/fc09ef6d2c709d2f4b602e6bad3a3e6545b38b32))
+* address PR review comments ([568d934](https://github.com/vriesdemichael/keycloak-operator/commit/568d9342dbbb582ae6c3544656de290735298b00))
+* **ci:** use PAT for release-please to trigger CI workflows ([4091bed](https://github.com/vriesdemichael/keycloak-operator/commit/4091bed6c30d0f37bc2377b2ff5444506c8aa1c7))
+* clear operator instance ID cache between unit tests ([49d1db7](https://github.com/vriesdemichael/keycloak-operator/commit/49d1db7b1dcdbbb6898ae0110379210af33b23ac))
+* correct client_cr fixture schema for drift detection tests ([fba3c5d](https://github.com/vriesdemichael/keycloak-operator/commit/fba3c5d243251d02e202e06d3c682f20bb7fcf70))
+* correct fixture name in drift detection integration tests ([4694b16](https://github.com/vriesdemichael/keycloak-operator/commit/4694b16e62308399e15125c1cf580dfc9ae6b1f0))
+* drift detection tests auth token namespace ([763ebd1](https://github.com/vriesdemichael/keycloak-operator/commit/763ebd1b0d451b085a9f9877f429e73d3694b358))
+* enable mandatory type checking and add Helm linting to pre-commit ([97dc9d7](https://github.com/vriesdemichael/keycloak-operator/commit/97dc9d7062695a9e3999c5554d774ac9c79e6c3d))
+* GitHub Actions release-please workflow JSON parsing error ([60081f4](https://github.com/vriesdemichael/keycloak-operator/commit/60081f4f5ea954892fc0f87db3b516d26250a042))
+* make realm_cr and client_cr async fixtures ([3d46d6f](https://github.com/vriesdemichael/keycloak-operator/commit/3d46d6fcc22837130b4ee26b2bf4cc100f2c3ed3))
+* **tests:** fix all 7 drift detection integration tests ([fd5e76f](https://github.com/vriesdemichael/keycloak-operator/commit/fd5e76f4dab5294372d06205b4a4eb12cf3d35a8))
+* use correct operator namespace and shared_operator fixture in drift tests ([581a2db](https://github.com/vriesdemichael/keycloak-operator/commit/581a2dbb881b3f0679ef83cfcad1e5f7c365c2c0))
+* use shared_operator namespace directly in drift tests ([e70d3d3](https://github.com/vriesdemichael/keycloak-operator/commit/e70d3d30e06daaf6271237000578ae2424d3ce28))
+
+
+### Code Refactoring
+
+* convert drift tests to function-based structure ([f576d14](https://github.com/vriesdemichael/keycloak-operator/commit/f576d143db4d048a6e0c3f53c32a5b75922e52be))
+* **test:** add fixture recommendation helper function ([bab3bfd](https://github.com/vriesdemichael/keycloak-operator/commit/bab3bfdad3e4320c4b9f4b7e12ac8ee77812d3c0))
+* **test:** add keycloak_ready composite fixture with Pydantic model ([f6a0878](https://github.com/vriesdemichael/keycloak-operator/commit/f6a087895b40496a19daf9c6bf070dca3344df2d))
+* **test:** add type safety with Pydantic models and prefix internal fixtures ([c6cc015](https://github.com/vriesdemichael/keycloak-operator/commit/c6cc01589345ba3fd5a2f482249d449dfe1312f8))
+* **test:** consolidate token fixtures and add CR factory functions ([0de7519](https://github.com/vriesdemichael/keycloak-operator/commit/0de75197748dc8e1cef8fcdbeaf59e2a25fbbfae))
+
+
+### Documentation
+
+* add comprehensive drift detection documentation (Phase 6) ([c09439d](https://github.com/vriesdemichael/keycloak-operator/commit/c09439d39f7e2147a25bb0a9956e987ba6350835))
+* add proper procedure for resolving PR review threads ([c4e5735](https://github.com/vriesdemichael/keycloak-operator/commit/c4e57354d0ca66b46743af860cf13f58afeeec63))
+* **test:** improve factory fixture documentation ([b6db340](https://github.com/vriesdemichael/keycloak-operator/commit/b6db340fdbb2cbccab377f776d235af319400456))
+
 ## [0.2.12](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.11...v0.2.12) (2025-10-28)
 
 
