@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.14](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.13...v0.2.14) (2025-11-01)
+
+
+### Features
+
+* publish JSON schemas for CRDs to enable IDE autocomplete ([72485af](https://github.com/vriesdemichael/keycloak-operator/commit/72485afb83822db7e427e1b876fd2700a91489a5))
+
+
+### Bug Fixes
+
+* address review comments ([14007df](https://github.com/vriesdemichael/keycloak-operator/commit/14007df5fb013d9d43fdbe0b9732c447baca43f5))
+
+
+### Documentation
+
+* change default merge strategy to rebase ([442c6b9](https://github.com/vriesdemichael/keycloak-operator/commit/442c6b9787787a597010405e822ac468d2b17d66))
+
 ## [0.2.13](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.12...v0.2.13) (2025-11-01)
 
 
