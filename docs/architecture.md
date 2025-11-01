@@ -97,12 +97,17 @@ Each realm can target a specific operator instance using the `operatorRef` field
 **Example configuration:**
 
 ```yaml
-apiVersion: k8s.keycloak.org/v2alpha1
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
+apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
 spec:
-  operatorRef: operator-2  # Target specific operator instance
+  realmName: my-realm
+  operatorRef:
+    namespace: keycloak-system
+    authorizationSecretRef:
+      name: keycloak-operator-auth-token
   # ... rest of realm config
 ```
 
