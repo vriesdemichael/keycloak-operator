@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.1.2...chart-realm-v0.1.3) (2025-11-01)
+
+
+### Features
+
+* publish JSON schemas for CRDs to enable IDE autocomplete ([72485af](https://github.com/vriesdemichael/keycloak-operator/commit/72485afb83822db7e427e1b876fd2700a91489a5))
+
+
+### Bug Fixes
+
+* enable mandatory type checking and add Helm linting to pre-commit ([97dc9d7](https://github.com/vriesdemichael/keycloak-operator/commit/97dc9d7062695a9e3999c5554d774ac9c79e6c3d))
+
 ## [0.1.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.1.1...chart-realm-v0.1.2) (2025-10-20)
 
 
