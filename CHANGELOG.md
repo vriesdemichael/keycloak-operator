@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.15](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.14...v0.2.15) (2025-11-01)
+
+
+### Features
+
+* update release-please configuration and add auto-rebase workflow ([92981a7](https://github.com/vriesdemichael/keycloak-operator/commit/92981a7525a14f8ae7cd97d4228e0547b8c3d09e))
+
 ## [0.2.14](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.13...v0.2.14) (2025-11-01)
 
 
