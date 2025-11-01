@@ -212,3 +212,7 @@ __marimo__/
 
 # Test operator logs (for debugging)
 .tmp/operator-logs/
+
+# Generated JSON schemas (published via GitHub Pages)
+_schemas/
+_site/

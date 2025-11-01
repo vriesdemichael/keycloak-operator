@@ -11,6 +11,7 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
       - 'charts/**'
+      - 'scripts/generate-crd-schemas.py'
       - '.github/workflows/pages.yml'
   release:
     types: [published]
@@ -51,6 +52,12 @@ jobs:
 
       - name: Install Python dependencies
         run: uv sync --frozen --group docs
+
+      - name: Generate JSON schemas from CRDs
+        run: |
+          uv run python scripts/generate-crd-schemas.py
+          mkdir -p _site/schemas
+          cp -r _schemas/* _site/schemas/
 
       - name: Build MkDocs documentation
         run: uv run --group docs mkdocs build --strict
@@ -103,6 +110,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Documentation:** ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
           echo "**Helm Repository:** ${{ steps.deployment.outputs.page_url }}charts/" >> $GITHUB_STEP_SUMMARY
+          echo "**JSON Schemas:** ${{ steps.deployment.outputs.page_url }}schemas/" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Add Helm repository:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY

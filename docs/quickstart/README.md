@@ -170,6 +170,7 @@ Create your first realm:
 
 ```bash
 kubectl apply -f - <<EOF
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:
@@ -239,6 +240,7 @@ After bootstrap, create additional realms using the operational token:
 
 ```bash
 kubectl apply -f - <<EOF
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:
