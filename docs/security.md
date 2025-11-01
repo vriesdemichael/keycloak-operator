@@ -122,6 +122,7 @@ When a resource references another resource cross-namespace, the operator:
 Example for KeycloakRealm → Keycloak:
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:
@@ -164,6 +165,7 @@ Leverages existing Kubernetes security primitives:
 The token system enforces namespace boundaries:
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 # This works (token in same namespace as realm)
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
@@ -171,6 +173,7 @@ metadata:
   name: my-realm
   namespace: team-a
 spec:
+  realmName: my-realm
   operatorRef:
     namespace: platform
     authorizationSecretRef:
@@ -178,6 +181,7 @@ spec:
 ```
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 # This fails (token not present in team-b namespace)
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
@@ -185,6 +189,7 @@ metadata:
   name: malicious-realm
   namespace: team-b
 spec:
+  realmName: malicious-realm
   operatorRef:
     namespace: platform
     authorizationSecretRef:
@@ -198,6 +203,7 @@ spec:
 1. **Create Keycloak instance** in platform namespace:
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: Keycloak
 metadata:
@@ -230,6 +236,7 @@ kubectl apply -f operator-token.yaml -n app-team
 2. **Create realm** referencing the operator token:
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:
@@ -251,6 +258,7 @@ spec:
 4. **Create clients** using the realm token (no additional secrets needed):
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakClient
 metadata:
@@ -354,6 +362,7 @@ Day 90:  Grace period ends
 When the **first** realm is created in a namespace:
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:
@@ -380,6 +389,7 @@ spec:
 All subsequent realms in the same namespace use the operational token:
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:
@@ -787,6 +797,7 @@ kubectl label secret admission-token-team-a \
 
 ```yaml
 # Update the first realm in namespace to use admission token
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:

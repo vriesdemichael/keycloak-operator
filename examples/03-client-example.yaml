@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
 # KeycloakClient - OAuth2/OIDC client application
 #
 # This creates an OAuth2/OIDC client for your application to authenticate users.

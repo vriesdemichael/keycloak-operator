@@ -69,6 +69,7 @@ The operator manages three custom resources:
 Create a complete OAuth2 setup:
 
 ```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
 # Keycloak instance
 apiVersion: keycloak.mdvr.nl/v1
 kind: Keycloak
@@ -82,6 +83,7 @@ spec:
     type: cnpg
     cluster: keycloak-postgres
 ---
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 # Identity realm
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
@@ -95,6 +97,7 @@ spec:
     authorizationSecretRef:
       name: keycloak-operator-auth-token
 ---
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
 # OAuth2 client
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakClient
@@ -113,6 +116,35 @@ spec:
 ```
 
 See [examples/](examples/) for complete manifests with detailed configuration options.
+
+## 🎯 IDE Integration
+
+Get autocompletion, validation, and inline documentation in your IDE using published JSON schemas:
+
+```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
+apiVersion: keycloak.mdvr.nl/v1
+kind: KeycloakRealm
+# ... IDE will autocomplete fields with descriptions!
+```
+
+**Features:**
+- ✅ Autocomplete for all CRD fields
+- ✅ Inline validation with error messages
+- ✅ Field descriptions from CRD schema
+- ✅ Enum value suggestions
+
+**Supported IDEs:**
+- VS Code (with [YAML extension](https://marketplace.visualstudio.com/items?itemName=redhat.vscode-yaml))
+- IntelliJ IDEA / PyCharm (built-in)
+- Neovim (with yaml-language-server)
+
+**Available schemas:**
+- `https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json`
+- `https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json`
+- `https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json`
+
+Add the schema annotation as the first line of your YAML files to enable IDE features.
 
 ## 🔐 Security
 

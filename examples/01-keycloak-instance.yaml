@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
 # Basic Keycloak instance with CloudNativePG database
 #
 # This creates a production-ready Keycloak instance with:
