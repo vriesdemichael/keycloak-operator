@@ -27,14 +27,14 @@ jobs:
         id: release
         uses: googleapis/release-please-action@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 
       - name: Dispatch CI/CD workflow for release
         if: steps.release.outputs.release_created == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
         run: |
           echo "Dispatching CI/CD workflow for tag ${{ steps.release.outputs.tag_name }}"
           gh api repos/${{ github.repository }}/dispatches \
@@ -66,7 +66,7 @@ jobs:
       - name: Enable auto-merge for non-major release PRs
         if: steps.release.outputs.pr != ''
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           PR_DATA: ${{ steps.release.outputs.pr }}
           VERSION_OUTPUT: ${{ steps.release.outputs.version }}
         run: |
