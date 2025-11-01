@@ -168,9 +168,11 @@ A realm is an identity domain that contains users, roles, and clients.
 
 Create your first realm:
 
+> **Note:** The schema annotation in the following heredoc block will *not* be recognized by IDE language servers.
+> For IDE features like validation and autocompletion, copy the YAML into a separate `.yaml` file with the schema annotation at the top.
+
 ```bash
 kubectl apply -f - <<EOF
-# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:
@@ -238,9 +240,11 @@ The realm is now available at: `http://localhost:8080/realms/my-app` (via port-f
 
 After bootstrap, create additional realms using the operational token:
 
+> **Note:** The schema annotation in heredoc blocks will *not* be recognized by IDE language servers.
+> For IDE features, copy the YAML into a separate `.yaml` file with the schema annotation at the top.
+
 ```bash
 kubectl apply -f - <<EOF
-# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: keycloak.mdvr.nl/v1
 kind: KeycloakRealm
 metadata:

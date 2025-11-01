@@ -20,6 +20,7 @@ Output structure:
 import json
 import shutil
 import sys
+from collections import defaultdict
 from pathlib import Path
 
 import yaml
@@ -109,7 +110,8 @@ def write_schema(output_dir: Path, version: str, kind: str, schema: dict) -> Pat
 
     schema_path = version_dir / f"{kind}.json"
     with schema_path.open("w") as f:
-        json.dump(schema, f, indent=2)
+        json.dump(schema, f, indent=2, ensure_ascii=False)
+        f.write("\n")
 
     return schema_path
 
@@ -187,7 +189,17 @@ def main() -> None:
     # Determine latest stable version (assume all use the same version)
     versions = {version for version, _, _ in all_schemas}
     if len(versions) > 1:
-        error(f"Multiple versions detected: {versions}. Manual intervention needed.")
+        # Group kinds by version for a clearer error message
+        version_kinds: dict[str, list[str]] = defaultdict(list)
+        for v, k, _ in all_schemas:
+            version_kinds[v].append(k)
+        formatted = ", ".join(
+            f"{v} ({', '.join(sorted(set(version_kinds[v])))})"
+            for v in sorted(version_kinds)
+        )
+        error(
+            f"Multiple versions detected across CRDs: {formatted}. Manual intervention needed."
+        )
 
     latest_version = versions.pop()
 
