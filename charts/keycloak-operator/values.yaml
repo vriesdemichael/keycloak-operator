@@ -24,7 +24,8 @@ operator:
     repository: ghcr.io/vriesdemichael/keycloak-operator
     pullPolicy: IfNotPresent
     # Overrides the image tag whose default is the chart appVersion.
-    tag: ""
+    # This is automatically updated by the update-chart-versions workflow on new releases
+    tag: "v0.2.14"
 
   imagePullSecrets: []
 
