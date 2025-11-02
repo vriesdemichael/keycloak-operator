@@ -1,0 +1,52 @@
+name: Issue
+description: Report a bug, request a feature, or ask a question
+title: "<short summary>"
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What's the issue? What do you need? Be clear and concise.
+      placeholder: |
+        Describe the problem, feature request, or question.
+
+        For bugs: What's broken? What did you expect?
+        For features: What capability do you need? Why?
+        For questions: What are you trying to accomplish?
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Optional. Logs, screenshots, YAML manifests, environment details, etc.
+      placeholder: |
+        Paste relevant logs, configuration, or other supporting information here.
+
+        Example:
+        ```yaml
+        apiVersion: keycloak.mdvr.nl/v1
+        kind: KeycloakClient
+        metadata:
+          name: my-client
+        spec:
+          ...
+        ```
+
+        Or operator logs:
+        ```
+        2025-11-02T10:15:30Z ERROR Failed to reconcile client
+        ```
+
+  - type: textarea
+    id: ai_instructions
+    attributes:
+      label: AI Instructions
+      description: Optional. Specific hints or constraints for AI agents working on this issue.
+      placeholder: |
+        Example:
+        - Focus on the client reconciler module
+        - This is a regression since v0.2.14
+        - Prefer solution that doesn't break existing CRDs
+        - Check rate limiter interaction
