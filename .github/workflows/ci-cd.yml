@@ -538,6 +538,35 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Determine version tag
+        id: version
+        env:
+          GITHUB_REF: ${{ github.ref }}
+        run: |
+          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
+            # Extract tag from repository_dispatch payload
+            TAG="${{ github.event.client_payload.tag }}"
+            if [ -n "$TAG" ]; then
+              echo "version_tag=${TAG}" >> $GITHUB_OUTPUT
+              echo "is_release=true" >> $GITHUB_OUTPUT
+              echo "Using tag from dispatch payload: ${TAG}"
+            else
+              echo "version_tag=" >> $GITHUB_OUTPUT
+              echo "is_release=false" >> $GITHUB_OUTPUT
+              echo "No tag in payload"
+            fi
+          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            # Extract tag from git ref
+            TAG="${GITHUB_REF#refs/tags/}"
+            echo "version_tag=${TAG}" >> $GITHUB_OUTPUT
+            echo "is_release=true" >> $GITHUB_OUTPUT
+            echo "Using tag from git ref: ${TAG}"
+          else
+            echo "version_tag=" >> $GITHUB_OUTPUT
+            echo "is_release=false" >> $GITHUB_OUTPUT
+            echo "Not a release build"
+          fi
+
       - name: Extract metadata (tags, labels)
         id: meta
         uses: docker/metadata-action@v5
@@ -546,17 +575,17 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=sha,prefix=sha-,format=short,enable={{is_default_branch}}
-            type=match,pattern=operator-v(.*),group=1
-            type=match,pattern=operator-v(\d+\.\d+),group=1
-            type=match,pattern=operator-v(\d+),group=1,enable=${{ !startsWith(github.ref, 'refs/tags/operator-v0.') }}
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
+            type=raw,value=${{ steps.version.outputs.version_tag }},enable=${{ steps.version.outputs.is_release == 'true' }}
           labels: |
             org.opencontainers.image.title=Keycloak Operator
             org.opencontainers.image.description=GitOps-compatible Kubernetes operator for Keycloak
             org.opencontainers.image.vendor=Michaël de Vries
             org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=${{ steps.version.outputs.version_tag }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
