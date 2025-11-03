@@ -62,8 +62,11 @@ async def dex_ready(shared_operator, operator_namespace):
         logger.info(f"Applied Dex manifests: {result.stdout}")
 
         # Wait for Dex deployment to be ready using the apps API
+        # Timeout: 50 iterations × 5 seconds = 250 seconds (under pytest 300s timeout)
+        TIMEOUT_SECONDS = 250
+        MAX_ITERATIONS = TIMEOUT_SECONDS // 5
         apps_api = client.AppsV1Api()
-        for i in range(50):  # 50 * 5 = 250 seconds (under pytest 300s timeout)
+        for i in range(MAX_ITERATIONS):
             try:
                 deployment = apps_api.read_namespaced_deployment(
                     "dex", operator_namespace
@@ -74,15 +77,16 @@ async def dex_ready(shared_operator, operator_namespace):
                 ):
                     logger.info("Dex deployment is ready")
                     break
-                elif i % 10 == 0:  # Log every 50 seconds
+                elif i % 10 == 0:  # Log every 10 iterations (50 seconds)
                     logger.info(
                         f"Waiting for Dex... ({i * 5}s elapsed, "
                         f"ready: {deployment.status.ready_replicas or 0}/"
                         f"{deployment.status.replicas or 0})"
                     )
-            except Exception as e:
+            except Exception:
+                # Ignore exception if deployment is not yet available; will retry in next loop iteration
                 if i % 10 == 0:
-                    logger.debug(f"Waiting for Dex deployment: {e}")
+                    logger.debug("Waiting for Dex deployment to be created")
             await asyncio.sleep(5)
         else:
             # Get pod logs for debugging
@@ -141,7 +145,7 @@ async def dex_ready(shared_operator, operator_namespace):
                 logger.error(f"Failed to get Dex debug info: {e}")
 
             raise TimeoutError(
-                f"Dex deployment did not become ready within 250s in {operator_namespace}"
+                f"Dex deployment did not become ready within {TIMEOUT_SECONDS}s in {operator_namespace}"
             )
 
         yield {
@@ -301,6 +305,7 @@ async def test_realm_with_github_identity_provider_example(
     operator_namespace,
     test_namespace,
     admission_token_setup,
+    async_k8s_custom_objects,  # Need async client for wait helper
 ):
     """
     Test creating a realm with GitHub identity provider configuration.
@@ -366,8 +371,16 @@ async def test_realm_with_github_identity_provider_example(
 
         logger.info(f"Created realm CR with GitHub IDP: {realm_name}")
 
-        # Wait a bit for processing
-        await asyncio.sleep(10)
+        # Use wait helper instead of fixed sleep for faster and more reliable testing
+        await wait_for_resource_ready(
+            async_k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            timeout=30,
+        )
 
         # Get the CR status to verify it was accepted
         cr = custom_api.get_namespaced_custom_object(
