@@ -34,21 +34,22 @@ Working branch: `docs/documentation-review-improvements`
   - [x] Upgrade procedures
   - [x] Configuration examples
   - [x] Troubleshooting section
-- [ ] Commit: `docs(chart-operator): add comprehensive README`
+- [x] Commit: `docs(chart-operator): add comprehensive README`
 
 **Notes/Questions:**
 - Created comprehensive README with full values documentation, installation steps, upgrade procedures, examples, and troubleshooting
+- Commit: 2126814
 
 #### Realm Chart README
-- [ ] Create `charts/keycloak-realm/README.md`
-  - [ ] Purpose and use cases
-  - [ ] Complete values.yaml field documentation
-  - [ ] Examples (basic, SMTP, themes, localization)
-  - [ ] Integration with operator chart
+- [x] Create `charts/keycloak-realm/README.md`
+  - [x] Purpose and use cases
+  - [x] Complete values.yaml field documentation
+  - [x] Examples (basic, SMTP, themes, localization, security)
+  - [x] Integration with operator chart
 - [ ] Commit: `docs(chart-realm): add comprehensive README`
 
 **Notes/Questions:**
--
+- Created comprehensive README with all values documented, multiple usage examples, troubleshooting guide
 
 #### Client Chart README
 - [ ] Create `charts/keycloak-client/README.md`
