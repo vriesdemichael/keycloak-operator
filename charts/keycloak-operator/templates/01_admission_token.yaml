@@ -13,13 +13,13 @@ metadata:
   namespace: {{ include "keycloak-operator.namespace" . }}
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
-    keycloak.mdvr.nl/allow-operator-read: "true"
-    keycloak.mdvr.nl/token-type: "admission"
-    keycloak.mdvr.nl/managed-by: "keycloak-operator"
+    vriesdemichael.github.io/keycloak-allow-operator-read: "true"
+    vriesdemichael.github.io/keycloak-token-type: "admission"
+    vriesdemichael.github.io/keycloak-managed-by: "keycloak-operator"
   annotations:
     "helm.sh/resource-policy": "keep"
-    keycloak.mdvr.nl/token-version: "1"
-    keycloak.mdvr.nl/valid-until: "{{ $validUntil }}"
+    vriesdemichael.github.io/keycloak-token-version: "1"
+    vriesdemichael.github.io/keycloak-valid-until: "{{ $validUntil }}"
 type: Opaque
 stringData:
   token: {{ $admissionToken | quote }}
@@ -33,7 +33,7 @@ metadata:
   namespace: {{ include "keycloak-operator.namespace" . }}
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
-    keycloak.mdvr.nl/managed-by: "keycloak-operator"
+    vriesdemichael.github.io/keycloak-managed-by: "keycloak-operator"
   annotations:
     "helm.sh/resource-policy": "keep"
 data:

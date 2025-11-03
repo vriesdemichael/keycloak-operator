@@ -63,7 +63,7 @@ class TestFinalizersE2E:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -74,7 +74,7 @@ class TestFinalizersE2E:
 
             # Create realm resource
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -85,14 +85,14 @@ class TestFinalizersE2E:
             async def check_realm_finalizer():
                 try:
                     resource = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakrealms",
                         name=realm_name,
                     )
                     finalizers = resource.get("metadata", {}).get("finalizers", [])
-                    return "keycloak.mdvr.nl/realm-cleanup" in finalizers
+                    return "vriesdemichael.github.io/realm-cleanup" in finalizers
                 except ApiException:
                     return False
 
@@ -102,7 +102,7 @@ class TestFinalizersE2E:
 
             # Delete realm resource
             await k8s_custom_objects.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -113,7 +113,7 @@ class TestFinalizersE2E:
             async def check_realm_deleted():
                 try:
                     await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakrealms",
@@ -163,7 +163,7 @@ class TestFinalizersE2E:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -182,7 +182,7 @@ class TestFinalizersE2E:
         )
 
         client_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": namespace},
             "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -192,7 +192,7 @@ class TestFinalizersE2E:
             # Shared Keycloak instance is already ready from fixture
             # Create realm
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -200,7 +200,7 @@ class TestFinalizersE2E:
             )
 
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -211,14 +211,14 @@ class TestFinalizersE2E:
             async def check_client_finalizer():
                 try:
                     resource = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakclients",
                         name=client_name,
                     )
                     finalizers = resource.get("metadata", {}).get("finalizers", [])
-                    return "keycloak.mdvr.nl/client-cleanup" in finalizers
+                    return "vriesdemichael.github.io/client-cleanup" in finalizers
                 except ApiException:
                     return False
 
@@ -228,7 +228,7 @@ class TestFinalizersE2E:
 
             # Delete client resource
             await k8s_custom_objects.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -239,7 +239,7 @@ class TestFinalizersE2E:
             async def check_client_deleted():
                 try:
                     await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakclients",
@@ -260,7 +260,7 @@ class TestFinalizersE2E:
             # Cleanup realm only (shared Keycloak managed by fixture, client deleted by test)
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",
@@ -305,7 +305,7 @@ class TestFinalizersE2E:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": test_namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -324,7 +324,7 @@ class TestFinalizersE2E:
         )
 
         client_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": test_namespace},
             "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -335,7 +335,7 @@ class TestFinalizersE2E:
 
             # Create realm and wait for it to become ready
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=test_namespace,
                 plural="keycloakrealms",
@@ -346,7 +346,7 @@ class TestFinalizersE2E:
             async def check_realm_ready():
                 try:
                     realm = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=test_namespace,
                         plural="keycloakrealms",
@@ -363,7 +363,7 @@ class TestFinalizersE2E:
 
             # Create client
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=test_namespace,
                 plural="keycloakclients",
@@ -374,7 +374,7 @@ class TestFinalizersE2E:
             async def check_client_has_finalizer():
                 try:
                     client = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=test_namespace,
                         plural="keycloakclients",
@@ -382,7 +382,7 @@ class TestFinalizersE2E:
                     )
                     meta = client.get("metadata", {})
                     finalizers = meta.get("finalizers", [])
-                    return "keycloak.mdvr.nl/client-cleanup" in finalizers
+                    return "vriesdemichael.github.io/client-cleanup" in finalizers
                 except ApiException:
                     return False
 
@@ -392,7 +392,7 @@ class TestFinalizersE2E:
 
             # Now delete the realm (should trigger cascading deletion to client)
             await k8s_custom_objects.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=test_namespace,
                 plural="keycloakrealms",
@@ -409,7 +409,7 @@ class TestFinalizersE2E:
                     ]:
                         try:
                             await k8s_custom_objects.get_namespaced_custom_object(
-                                group="keycloak.mdvr.nl",
+                                group="vriesdemichael.github.io",
                                 version="v1",
                                 namespace=test_namespace,
                                 plural=plural,

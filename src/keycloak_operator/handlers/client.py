@@ -70,8 +70,12 @@ class StatusWrapper:
             self._patch_status[k] = v
 
 
-@kopf.on.create("keycloakclients", backoff=1.5, group="keycloak.mdvr.nl", version="v1")
-@kopf.on.resume("keycloakclients", backoff=1.5, group="keycloak.mdvr.nl", version="v1")
+@kopf.on.create(
+    "keycloakclients", backoff=1.5, group="vriesdemichael.github.io", version="v1"
+)
+@kopf.on.resume(
+    "keycloakclients", backoff=1.5, group="vriesdemichael.github.io", version="v1"
+)
 async def ensure_keycloak_client(
     spec: dict[str, Any],
     name: str,
@@ -161,7 +165,9 @@ async def ensure_keycloak_client(
     return
 
 
-@kopf.on.update("keycloakclients", backoff=1.5, group="keycloak.mdvr.nl", version="v1")
+@kopf.on.update(
+    "keycloakclients", backoff=1.5, group="vriesdemichael.github.io", version="v1"
+)
 async def update_keycloak_client(
     old: dict[str, Any],
     new: dict[str, Any],
@@ -215,7 +221,9 @@ async def update_keycloak_client(
     return
 
 
-@kopf.on.delete("keycloakclients", backoff=1.5, group="keycloak.mdvr.nl", version="v1")
+@kopf.on.delete(
+    "keycloakclients", backoff=1.5, group="vriesdemichael.github.io", version="v1"
+)
 async def delete_keycloak_client(
     spec: dict[str, Any],
     name: str,

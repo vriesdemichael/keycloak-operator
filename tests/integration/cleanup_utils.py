@@ -64,7 +64,7 @@ async def delete_custom_resource_with_retry(
 
     Args:
         k8s_custom_objects: Kubernetes custom objects API client
-        group: API group (e.g., 'keycloak.mdvr.nl')
+        group: API group (e.g., 'vriesdemichael.github.io')
         version: API version (e.g., 'v1')
         namespace: Resource namespace
         plural: Resource plural name (e.g., 'keycloakrealms')
@@ -242,8 +242,8 @@ async def cleanup_namespace_resources(
     """
     failed_resources = []
     resource_types = [
-        ("keycloak.mdvr.nl", "v1", "keycloakclients"),
-        ("keycloak.mdvr.nl", "v1", "keycloakrealms"),
+        ("vriesdemichael.github.io", "v1", "keycloakclients"),
+        ("vriesdemichael.github.io", "v1", "keycloakrealms"),
     ]
 
     for group, version, plural in resource_types:
@@ -396,8 +396,8 @@ async def ensure_clean_test_environment(
 
             namespace = namespace_obj.metadata.name
             for group, version, plural in [
-                ("keycloak.mdvr.nl", "v1", "keycloakrealms"),
-                ("keycloak.mdvr.nl", "v1", "keycloakclients"),
+                ("vriesdemichael.github.io", "v1", "keycloakrealms"),
+                ("vriesdemichael.github.io", "v1", "keycloakclients"),
             ]:
                 try:
                     resources = await k8s_custom_objects.list_namespaced_custom_object(

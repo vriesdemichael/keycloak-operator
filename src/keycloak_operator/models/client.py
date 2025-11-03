@@ -564,7 +564,7 @@ class KeycloakClient(BaseModel):
     client provisioning with cross-namespace support.
     """
 
-    api_version: str = Field("keycloak.mdvr.nl/v1", alias="apiVersion")
+    api_version: str = Field("vriesdemichael.github.io/v1", alias="apiVersion")
     kind: str = Field("KeycloakClient")
     metadata: dict[str, Any] = Field(..., description="Kubernetes metadata")
     spec: KeycloakClientSpec = Field(..., description="Client specification")

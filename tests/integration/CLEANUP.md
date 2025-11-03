@@ -124,7 +124,7 @@ async def test_custom_resource(k8s_custom_objects, test_namespace, cleanup_track
         # Ensure cleanup
         success = await delete_custom_resource_with_retry(
             k8s_custom_objects=k8s_custom_objects,
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=test_namespace,
             plural="keycloakrealms",

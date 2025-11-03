@@ -56,7 +56,7 @@ class TestHelmRealmDeployment:
         async def realm_exists():
             try:
                 realm = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakrealms",
@@ -72,7 +72,7 @@ class TestHelmRealmDeployment:
         async def realm_ready():
             try:
                 realm = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakrealms",
@@ -94,7 +94,7 @@ class TestHelmRealmDeployment:
         if not result:
             try:
                 realm = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakrealms",
@@ -130,7 +130,9 @@ class TestHelmRealmDeployment:
             metadata=client.V1ObjectMeta(
                 name=smtp_secret_name,
                 namespace=test_namespace,
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             string_data={"password": "test-smtp-password"},
         )
@@ -156,7 +158,7 @@ class TestHelmRealmDeployment:
         async def realm_has_smtp():
             try:
                 realm = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakrealms",
@@ -203,7 +205,7 @@ class TestHelmClientDeployment:
         async def realm_ready_with_secret():
             try:
                 realm = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakrealms",
@@ -220,7 +222,7 @@ class TestHelmClientDeployment:
 
         # Get the realm auth secret name
         realm = await k8s_custom_objects.get_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=test_namespace,
             plural="keycloakrealms",
@@ -246,7 +248,7 @@ class TestHelmClientDeployment:
         async def client_exists():
             try:
                 client = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakclients",
@@ -262,7 +264,7 @@ class TestHelmClientDeployment:
         async def client_ready():
             try:
                 client = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakclients",
@@ -281,7 +283,7 @@ class TestHelmClientDeployment:
             # Print final state for debugging
             try:
                 client = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakclients",

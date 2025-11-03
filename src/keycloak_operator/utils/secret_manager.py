@@ -99,14 +99,16 @@ class SecretManager:
                 "name": secret_name,
                 "namespace": namespace,
                 "labels": {
-                    "keycloak.mdvr.nl/token-type": "operational",
-                    "keycloak.mdvr.nl/managed-by": "keycloak-operator",
-                    "keycloak.mdvr.nl/allow-operator-read": "true",
+                    "vriesdemichael.github.io/keycloak-token-type": "operational",
+                    "vriesdemichael.github.io/keycloak-managed-by": "keycloak-operator",
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
                 },
                 "annotations": {
-                    "keycloak.mdvr.nl/version": str(token_version),
-                    "keycloak.mdvr.nl/issued-at": datetime.now(UTC).isoformat(),
-                    "keycloak.mdvr.nl/valid-until": valid_until.isoformat(),
+                    "vriesdemichael.github.io/keycloak-version": str(token_version),
+                    "vriesdemichael.github.io/keycloak-issued-at": datetime.now(
+                        UTC
+                    ).isoformat(),
+                    "vriesdemichael.github.io/keycloak-valid-until": valid_until.isoformat(),
                 },
             },
             "type": "Opaque",
@@ -117,7 +119,7 @@ class SecretManager:
         if owner_realm_name and owner_realm_uid:
             secret_body["metadata"]["ownerReferences"] = [
                 {
-                    "apiVersion": "keycloak.mdvr.nl/v1",
+                    "apiVersion": "vriesdemichael.github.io/v1",
                     "kind": "KeycloakRealm",
                     "name": owner_realm_name,
                     "uid": owner_realm_uid,
@@ -125,7 +127,7 @@ class SecretManager:
                 }
             ]
             secret_body["metadata"]["annotations"][
-                "keycloak.mdvr.nl/created-by-realm"
+                "vriesdemichael.github.io/keycloak-created-by-realm"
             ] = owner_realm_name
 
         try:
@@ -195,10 +197,12 @@ class SecretManager:
         grace_period_end = datetime.now(UTC) + timedelta(days=GRACE_PERIOD_DAYS)
         secret.metadata.annotations.update(
             {
-                "keycloak.mdvr.nl/version": str(new_version),
-                "keycloak.mdvr.nl/rotated-at": datetime.now(UTC).isoformat(),
-                "keycloak.mdvr.nl/valid-until": new_valid_until.isoformat(),
-                "keycloak.mdvr.nl/grace-period-ends": grace_period_end.isoformat(),
+                "vriesdemichael.github.io/keycloak-version": str(new_version),
+                "vriesdemichael.github.io/keycloak-rotated-at": datetime.now(
+                    UTC
+                ).isoformat(),
+                "vriesdemichael.github.io/keycloak-valid-until": new_valid_until.isoformat(),
+                "vriesdemichael.github.io/keycloak-grace-period-ends": grace_period_end.isoformat(),
             }
         )
 
@@ -241,7 +245,9 @@ class SecretManager:
 
         # Remove grace period annotation
         if secret.metadata.annotations:
-            secret.metadata.annotations.pop("keycloak.mdvr.nl/grace-period-ends", None)
+            secret.metadata.annotations.pop(
+                "vriesdemichael.github.io/keycloak-grace-period-ends", None
+            )
 
         try:
             updated = self.v1.replace_namespaced_secret(
@@ -311,4 +317,6 @@ class SecretManager:
         if not secret.metadata or not secret.metadata.labels:
             return "unknown"
 
-        return secret.metadata.labels.get("keycloak.mdvr.nl/token-type", "unknown")
+        return secret.metadata.labels.get(
+            "vriesdemichael.github.io/keycloak-token-type", "unknown"
+        )

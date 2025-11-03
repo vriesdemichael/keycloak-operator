@@ -73,7 +73,9 @@ class TestValidateAuthorization:
         mock_secret = V1Secret(
             metadata=V1ObjectMeta(
                 name="test-secret",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"token": encoded_token},
         )
@@ -101,7 +103,9 @@ class TestValidateAuthorization:
         mock_secret = V1Secret(
             metadata=V1ObjectMeta(
                 name="test-secret",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"token": encoded_token},
         )
@@ -149,7 +153,9 @@ class TestValidateAuthorization:
         mock_secret = V1Secret(
             metadata=V1ObjectMeta(
                 name="test-secret",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"wrong-key": base64.b64encode(b"token").decode("utf-8")},
         )
@@ -169,7 +175,9 @@ class TestValidateAuthorization:
         mock_secret = V1Secret(
             metadata=V1ObjectMeta(
                 name="test-secret",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"token": base64.b64encode(b"").decode("utf-8")},
         )
@@ -194,7 +202,9 @@ class TestValidateAuthorization:
         mock_secret = V1Secret(
             metadata=V1ObjectMeta(
                 name="test-secret",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"custom-key": encoded_token},
         )
@@ -228,7 +238,9 @@ class TestValidateAuthorization:
         mock_secret_short = V1Secret(
             metadata=V1ObjectMeta(
                 name="test-secret",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"token": encoded_short},
         )
@@ -237,7 +249,9 @@ class TestValidateAuthorization:
         mock_secret_long = V1Secret(
             metadata=V1ObjectMeta(
                 name="test-secret",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"token": encoded_long},
         )
@@ -270,7 +284,9 @@ class TestValidateAuthorization:
         mock_secret = V1Secret(
             metadata=V1ObjectMeta(
                 name="test-secret",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"token": "not-base64-encoded!!!"},
         )
@@ -311,7 +327,9 @@ class TestValidateAuthorization:
         mock_secret = V1Secret(
             metadata=V1ObjectMeta(
                 name="keycloak-operator-auth-token",
-                labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             ),
             data={"token": encoded_correct_token},
         )

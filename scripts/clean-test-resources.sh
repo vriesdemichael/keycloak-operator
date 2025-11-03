@@ -122,7 +122,7 @@ for ns in $TEST_NAMESPACES; do
     if [ -n "$CLIENTS" ]; then
         echo "  Removing finalizers from clients..."
         for client in $CLIENTS; do
-            CLIENT_NAME=$(echo "$client" | sed 's|keycloakclient.keycloak.mdvr.nl/||')
+            CLIENT_NAME=$(echo "$client" | sed 's|keycloakclient.vriesdemichael.github.io/||')
             remove_finalizers "keycloakclient" "$ns" "$CLIENT_NAME"
         done
     fi
@@ -132,7 +132,7 @@ for ns in $TEST_NAMESPACES; do
     if [ -n "$REALMS" ]; then
         echo "  Removing finalizers from realms..."
         for realm in $REALMS; do
-            REALM_NAME=$(echo "$realm" | sed 's|keycloakrealm.keycloak.mdvr.nl/||')
+            REALM_NAME=$(echo "$realm" | sed 's|keycloakrealm.vriesdemichael.github.io/||')
             remove_finalizers "keycloakrealm" "$ns" "$REALM_NAME"
         done
     fi

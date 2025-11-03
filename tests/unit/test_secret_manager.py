@@ -199,7 +199,7 @@ class TestUpdateSecretWithRotation:
             metadata=client.V1ObjectMeta(
                 name="token-secret",
                 namespace="test-ns",
-                annotations={"keycloak.mdvr.nl/version": "1"},
+                annotations={"vriesdemichael.github.io/keycloak-version": "1"},
             ),
             data={"token": old_token},
         )
@@ -236,7 +236,8 @@ class TestUpdateSecretWithRotation:
 
         # Should have grace period annotation
         assert (
-            "keycloak.mdvr.nl/grace-period-ends" in updated_secret.metadata.annotations
+            "vriesdemichael.github.io/keycloak-grace-period-ends"
+            in updated_secret.metadata.annotations
         )
 
     @pytest.mark.asyncio
@@ -246,7 +247,7 @@ class TestUpdateSecretWithRotation:
             metadata=client.V1ObjectMeta(
                 name="token-secret",
                 namespace="test-ns",
-                annotations={"keycloak.mdvr.nl/version": "1"},
+                annotations={"vriesdemichael.github.io/keycloak-version": "1"},
             ),
             data={"token": base64.b64encode(b"old").decode()},
         )
@@ -267,7 +268,12 @@ class TestUpdateSecretWithRotation:
         call_args = mock_v1.replace_namespaced_secret.call_args
         updated_secret = call_args[1]["body"]
 
-        assert updated_secret.metadata.annotations["keycloak.mdvr.nl/version"] == "5"
+        assert (
+            updated_secret.metadata.annotations[
+                "vriesdemichael.github.io/keycloak-version"
+            ]
+            == "5"
+        )
 
 
 class TestCleanupPreviousToken:
@@ -284,8 +290,8 @@ class TestCleanupPreviousToken:
                 name="token-secret",
                 namespace="test-ns",
                 annotations={
-                    "keycloak.mdvr.nl/version": "2",
-                    "keycloak.mdvr.nl/grace-period-ends": "2025-01-01T00:00:00Z",
+                    "vriesdemichael.github.io/keycloak-version": "2",
+                    "vriesdemichael.github.io/keycloak-grace-period-ends": "2025-01-01T00:00:00Z",
                 },
             ),
             data={
@@ -314,7 +320,7 @@ class TestCleanupPreviousToken:
 
         # Grace period annotation should be removed
         assert (
-            "keycloak.mdvr.nl/grace-period-ends"
+            "vriesdemichael.github.io/keycloak-grace-period-ends"
             not in updated_secret.metadata.annotations
         )
 
@@ -327,7 +333,7 @@ class TestCleanupPreviousToken:
             metadata=client.V1ObjectMeta(
                 name="token-secret",
                 namespace="test-ns",
-                annotations={"keycloak.mdvr.nl/version": "1"},
+                annotations={"vriesdemichael.github.io/keycloak-version": "1"},
             ),
             data={"token": current_token},
         )

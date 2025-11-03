@@ -38,7 +38,7 @@ async def test_realm_with_smtp_secret_reference(
         metadata=client.V1ObjectMeta(
             name=secret_name,
             namespace=namespace,
-            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
         ),
         string_data={"password": "test-smtp-password"},
     )
@@ -72,14 +72,14 @@ async def test_realm_with_smtp_secret_reference(
         )
 
         realm_resource = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         custom_api.create_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloakrealms",
@@ -114,7 +114,7 @@ async def test_realm_with_smtp_secret_reference(
         # Cleanup - wait for realm to be fully deleted
         with contextlib.suppress(Exception):
             custom_api.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -174,14 +174,14 @@ async def test_realm_with_smtp_direct_password(
         )
 
         realm_resource = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         custom_api.create_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloakrealms",
@@ -205,7 +205,7 @@ async def test_realm_with_smtp_direct_password(
         # Cleanup - wait for realm to be fully deleted
         with contextlib.suppress(Exception):
             custom_api.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -260,14 +260,14 @@ async def test_realm_with_missing_smtp_secret(
         )
 
         realm_resource = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         custom_api.create_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloakrealms",
@@ -280,7 +280,7 @@ async def test_realm_with_missing_smtp_secret(
 
         # Check realm status - should show error
         realm = custom_api.get_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloakrealms",
@@ -304,7 +304,7 @@ async def test_realm_with_missing_smtp_secret(
         # Cleanup - wait for realm to be fully deleted
         with contextlib.suppress(Exception):
             custom_api.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -342,7 +342,7 @@ async def test_realm_with_missing_secret_key(
         metadata=client.V1ObjectMeta(
             name=secret_name,
             namespace=namespace,
-            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
         ),
         string_data={"wrong-key": "some-password"},
     )
@@ -375,14 +375,14 @@ async def test_realm_with_missing_secret_key(
         )
 
         realm_resource = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         custom_api.create_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloakrealms",
@@ -395,7 +395,7 @@ async def test_realm_with_missing_secret_key(
 
         # Check realm status
         realm = custom_api.get_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloakrealms",
@@ -416,7 +416,7 @@ async def test_realm_with_missing_secret_key(
         # Cleanup - wait for realm to be fully deleted
         with contextlib.suppress(Exception):
             custom_api.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -462,7 +462,7 @@ async def wait_for_realm_ready(
 
         try:
             realm = custom_api.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -512,7 +512,7 @@ async def wait_for_realm_not_ready(
 
         try:
             realm = custom_api.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -551,7 +551,7 @@ async def wait_for_realm_deleted(
 
         try:
             custom_api.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",

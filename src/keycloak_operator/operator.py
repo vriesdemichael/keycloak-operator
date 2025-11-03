@@ -166,7 +166,7 @@ async def initialize_operator_token() -> None:
                     "app.kubernetes.io/name": "keycloak-operator",
                     "app.kubernetes.io/component": "authorization",
                     # RBAC label required for realms to read this secret
-                    "keycloak.mdvr.nl/allow-operator-read": "true",
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
                 },
             ),
             data=secret_data,

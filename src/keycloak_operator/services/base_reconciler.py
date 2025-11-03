@@ -790,12 +790,14 @@ class BaseReconciler(ABC):
 
             # Check for isolation annotations
             annotations = target_ns.metadata.annotations or {}
-            isolation_mode = annotations.get("keycloak.mdvr.nl/isolation", "")
+            isolation_mode = annotations.get(
+                "vriesdemichael.github.io/keycloak-isolation", ""
+            )
 
             if isolation_mode == "strict":
                 # Strict isolation - only allow access from explicitly allowed namespaces
                 allowed_namespaces = annotations.get(
-                    "keycloak.mdvr.nl/allowed-namespaces", ""
+                    "vriesdemichael.github.io/keycloak-allowed-namespaces", ""
                 ).split(",")
                 allowed_namespaces = [
                     ns.strip() for ns in allowed_namespaces if ns.strip()

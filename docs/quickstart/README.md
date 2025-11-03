@@ -129,8 +129,8 @@ kubectl create secret generic admission-token-my-app \
 
 # Add required labels
 kubectl label secret admission-token-my-app \
-  keycloak.mdvr.nl/token-type=admission \
-  keycloak.mdvr.nl/allow-operator-read=true \
+  vriesdemichael.github.io/token-type=admission \
+  vriesdemichael.github.io/allow-operator-read=true \
   --namespace=my-app
 
 # Store token metadata in operator ConfigMap
@@ -173,7 +173,7 @@ Create your first realm:
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-app-realm
@@ -223,9 +223,9 @@ kubectl get secret my-app-operator-token -n my-app
 # Check token metadata
 kubectl get secret my-app-operator-token -n my-app -o yaml | grep -A5 annotations:
 # You should see:
-#   keycloak.mdvr.nl/version: "1"
-#   keycloak.mdvr.nl/valid-until: "<90 days from now>"
-#   keycloak.mdvr.nl/created-by-realm: "my-app-realm"
+#   vriesdemichael.github.io/version: "1"
+#   vriesdemichael.github.io/valid-until: "<90 days from now>"
+#   vriesdemichael.github.io/created-by-realm: "my-app-realm"
 ```
 
 The realm is now available at: `http://localhost:8080/realms/my-app` (via port-forward)
@@ -245,7 +245,7 @@ After bootstrap, create additional realms using the operational token:
 
 ```bash
 kubectl apply -f - <<EOF
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-second-realm
@@ -520,8 +520,8 @@ kubectl get secret admission-token-my-app -n my-app
 # Check if admission token has correct labels
 kubectl get secret admission-token-my-app -n my-app -o yaml | grep -A3 labels:
 # Should include:
-#   keycloak.mdvr.nl/token-type: admission
-#   keycloak.mdvr.nl/allow-operator-read: "true"
+#   vriesdemichael.github.io/token-type: admission
+#   vriesdemichael.github.io/allow-operator-read: "true"
 
 # Check if token is in metadata ConfigMap
 TOKEN_HASH=$(kubectl get secret admission-token-my-app -n my-app -o jsonpath='{.data.token}' | base64 -d | sha256sum | cut -d' ' -f1)
@@ -542,7 +542,7 @@ kubectl get secret my-app-operator-token -n my-app -o yaml | grep -A10 annotatio
 
 # Check if token is past expiry
 VALID_UNTIL=$(kubectl get secret my-app-operator-token -n my-app \
-  -o jsonpath='{.metadata.annotations.keycloak\.mdvr\.nl/valid-until}')
+  -o jsonpath='{.metadata.annotations.vriesdemichael.github.io/keycloak-valid-until}')
 echo "Token expires: $VALID_UNTIL"
 echo "Current time:  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
 

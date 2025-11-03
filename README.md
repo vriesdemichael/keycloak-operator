@@ -12,17 +12,25 @@ A Kubernetes operator for managing Keycloak instances, realms, and OAuth2/OIDC c
 Get a complete Keycloak setup running in under 10 minutes:
 
 ```bash
-# 1. Install the operator
-helm install keycloak-operator ./charts/keycloak-operator \
+# 1. Add the Helm repository
+helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operator
+helm repo update
+
+# 2. Install the operator
+helm install keycloak-operator keycloak-operator/keycloak-operator \
   --namespace keycloak-system --create-namespace
 
-# 2. Deploy Keycloak with database
+# Or install from local charts:
+# helm install keycloak-operator ./charts/keycloak-operator \
+#   --namespace keycloak-system --create-namespace
+
+# 3. Deploy Keycloak with database
 kubectl apply -f examples/01-keycloak-instance.yaml
 
-# 3. Create an identity realm
+# 4. Create an identity realm
 kubectl apply -f examples/02-realm-example.yaml
 
-# 4. Create an OAuth2 client
+# 5. Create an OAuth2 client
 kubectl apply -f examples/03-client-example.yaml
 ```
 
@@ -71,7 +79,7 @@ Create a complete OAuth2 setup:
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
 # Keycloak instance
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
 metadata:
   name: keycloak
@@ -85,7 +93,7 @@ spec:
 ---
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 # Identity realm
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-app-realm
@@ -99,7 +107,7 @@ spec:
 ---
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
 # OAuth2 client
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
   name: my-app-client
@@ -123,7 +131,7 @@ Get autocompletion, validation, and inline documentation in your IDE using publi
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 # ... IDE will autocomplete fields with descriptions!
 ```

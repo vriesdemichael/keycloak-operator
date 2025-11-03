@@ -12,7 +12,7 @@
 # - CloudNativePG Cluster created (see CNPG documentation)
 # - Or modify to use external database
 
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
 metadata:
   name: keycloak

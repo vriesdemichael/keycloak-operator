@@ -107,7 +107,7 @@ async def validate_secret_label(
     Validate that a secret has the required label for operator access.
 
     The operator requires secrets to have the label:
-    keycloak.mdvr.nl/allow-operator-read=true
+    vriesdemichael.github.io/keycloak-allow-operator-read=true
 
     This provides an explicit opt-in mechanism where users must label
     secrets before the operator can read them.

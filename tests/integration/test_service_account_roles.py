@@ -73,7 +73,7 @@ class TestServiceAccountRoles:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -100,7 +100,7 @@ class TestServiceAccountRoles:
         )
 
         client_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": namespace},
             "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -109,7 +109,7 @@ class TestServiceAccountRoles:
         try:
             # Create realm and wait until Ready
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -118,7 +118,7 @@ class TestServiceAccountRoles:
 
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -184,7 +184,7 @@ class TestServiceAccountRoles:
 
             # Create client and wait until Ready
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -193,7 +193,7 @@ class TestServiceAccountRoles:
 
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -239,7 +239,7 @@ class TestServiceAccountRoles:
             # Cleanup resources (client and realm only - shared Keycloak persists)
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakclients",
@@ -247,7 +247,7 @@ class TestServiceAccountRoles:
                 )
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",
