@@ -45,26 +45,47 @@ This directory contains three Helm charts for deploying and managing Keycloak in
 │    helm install keycloak-operator ./keycloak-operator       │
 └─────────────────────────────────────────────────────────────┘
                               ↓
-                    Get operator token
+                 Create admission token
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 2. Dev Team: Create Realm                                   │
+│ 2. Dev Team: Create First Realm (uses admission token)      │
 │    helm install my-realm ./keycloak-realm                   │
-│         --set realmName=myteam                              │
-│         --set operatorRef.namespace=keycloak-system         │
+│         --set operatorRef.authorizationSecretRef.name=      │
+│              admission-token-my-team                        │
 └─────────────────────────────────────────────────────────────┘
                               ↓
-                    Get realm token
+          Operator generates operational token
                               ↓
 ┌─────────────────────────────────────────────────────────────┐
-│ 3. Dev Team: Create Client                                  │
+│ 3. Dev Team: Create Additional Realms (auto-use op token)   │
+│    helm install another-realm ./keycloak-realm              │
+│         --set realmName=another                             │
+└─────────────────────────────────────────────────────────────┘
+                              ↓
+┌─────────────────────────────────────────────────────────────┐
+│ 4. Dev Team: Create Client                                  │
 │    helm install my-client ./keycloak-client                 │
-│         --set clientId=myapp                                │
 │         --set realmRef.name=my-realm                        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Quick Start
+
+### Understanding the Token System
+
+The operator uses a **two-phase token system** for enhanced security:
+
+1. **Admission Tokens** (one-time, platform team creates)
+   - Used to bootstrap a namespace
+   - Creates the first realm
+   - Triggers automatic generation of operational tokens
+
+2. **Operational Tokens** (auto-rotating, operator manages)
+   - Generated automatically after first realm
+   - Used by all subsequent realms
+   - Rotate every 90 days with zero downtime
+
+See [Security Model](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/security.md#token-rotation) for details.
 
 ### Step 1: Install the Operator
 
@@ -78,42 +99,93 @@ helm install keycloak-operator ./charts/keycloak-operator \
 kubectl wait --for=condition=available deployment/keycloak-operator \
   -n keycloak-system --timeout=300s
 
-# Get the operator authorization token
-OPERATOR_TOKEN=$(kubectl get secret keycloak-operator-auth-token \
-  -n keycloak-system \
-  -o jsonpath='{.data.token}' | base64 -d)
-
-echo "Operator token: $OPERATOR_TOKEN"
+# The operator automatically creates an admission token
+# This token is used by platform teams to bootstrap namespaces
 ```
 
-### Step 2: Create a Realm
+### Step 2: Create Admission Token for Application Team
+
+Platform teams create admission tokens for application teams:
 
 ```bash
-# Create a realm
+# Generate admission token
+ADMISSION_TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
+
+# Create admission token secret in team namespace
+kubectl create namespace my-team
+
+kubectl create secret generic admission-token-my-team \
+  --from-literal=token="$ADMISSION_TOKEN" \
+  --namespace=my-team
+
+# Add required labels
+kubectl label secret admission-token-my-team \
+  vriesdemichael.github.io/token-type=admission \
+  vriesdemichael.github.io/allow-operator-read=true \
+  --namespace=my-team
+
+# Store token metadata
+TOKEN_HASH=$(echo -n "$ADMISSION_TOKEN" | sha256sum | cut -d' ' -f1)
+kubectl patch configmap keycloak-operator-token-metadata \
+  --namespace=keycloak-system \
+  --type=merge \
+  --patch "{
+    \"data\": {
+      \"$TOKEN_HASH\": \"{\\\"namespace\\\": \\\"my-team\\\", \\\"token_type\\\": \\\"admission\\\", \\\"token_hash\\\": \\\"$TOKEN_HASH\\\", \\\"issued_at\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"valid_until\\\": \\\"$(date -u -d '+1 year' +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"version\\\": 1, \\\"created_by_realm\\\": null, \\\"revoked\\\": false}\"
+    }
+  }"
+```
+
+### Step 3: Create First Realm (Bootstrap)
+
+Application teams create their first realm using the admission token:
+
+```bash
+# Create the first realm (bootstraps operational token)
 helm install my-realm ./charts/keycloak-realm \
   --namespace my-team \
-  --create-namespace \
   --set realmName=myteam \
   --set displayName="My Team Realm" \
   --set operatorRef.namespace=keycloak-system \
-  --set operatorRef.authorizationSecretRef.name=keycloak-operator-auth-token
+  --set operatorRef.authorizationSecretRef.name=admission-token-my-team
 
 # Wait for realm to be ready
 kubectl wait --for=jsonpath='{.status.phase}'=Ready \
   keycloakrealm/my-realm \
   -n my-team --timeout=300s
 
+# After the first realm is created, the operator automatically generates
+# an operational token for this namespace. Additional realms will
+# automatically use this operational token.
+```
+
+### Step 4: Create Additional Realms (Optional)
+
+After the first realm, subsequent realms automatically use the operational token:
+
+```bash
+# Create additional realms without specifying a token
+# The operator automatically uses the operational token
+helm install another-realm ./charts/keycloak-realm \
+  --namespace my-team \
+  --set realmName=another \
+  --set displayName="Another Realm" \
+  --set operatorRef.namespace=keycloak-system
+
+# The operator will automatically find and use the operational token
+# that was generated after the first realm creation
+```
+
+### Step 5: Create a Client
+
+Create clients within a realm:
+
+```bash
 # Get the realm authorization secret name
 REALM_SECRET=$(kubectl get keycloakrealm my-realm \
   -n my-team \
   -o jsonpath='{.status.authorizationSecretName}')
 
-echo "Realm secret: $REALM_SECRET"
-```
-
-### Step 3: Create a Client
-
-```bash
 # Create a client
 helm install my-client ./charts/keycloak-client \
   --namespace my-team \
@@ -139,7 +211,9 @@ kubectl get secret my-client-client-secret \
 
 All charts are designed for GitOps workflows. Create values files in your Git repository:
 
-### Example: ArgoCD Application
+### Example: ArgoCD Application (First Realm)
+
+For the **first realm** in a namespace, use an admission token:
 
 ```yaml
 apiVersion: argoproj.io/v1alpha1
@@ -160,7 +234,7 @@ spec:
         operatorRef:
           namespace: keycloak-system
           authorizationSecretRef:
-            name: keycloak-operator-auth-token
+            name: admission-token-my-team  # Created by platform team
         security:
           registrationAllowed: false
           resetPasswordAllowed: true
@@ -178,6 +252,77 @@ spec:
       prune: true
       selfHeal: true
 ```
+
+### Example: ArgoCD Application (Additional Realms)
+
+For **additional realms** in the same namespace, omit the authorization secret (auto-discovers operational token):
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: another-realm
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/your-repo
+    targetRevision: main
+    path: charts/keycloak-realm
+    helm:
+      values: |
+        realmName: another
+        displayName: "Another Realm"
+        operatorRef:
+          namespace: keycloak-system
+          # No authorizationSecretRef needed - operator finds operational token
+        security:
+          registrationAllowed: false
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: my-team
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+## Helm Repository
+
+The charts are published to a Helm repository hosted on GitHub Pages.
+
+### Add the Helm Repository
+
+```bash
+# Add the Keycloak Operator Helm repository
+helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operator/charts
+
+# Update your local Helm chart repository cache
+helm repo update
+```
+
+### Install from Helm Repository
+
+```bash
+# Install operator chart
+helm install keycloak-operator keycloak-operator/keycloak-operator \
+  --namespace keycloak-system \
+  --create-namespace
+
+# Install realm chart
+helm install my-realm keycloak-operator/keycloak-realm \
+  --namespace my-team \
+  --set realmName=myteam \
+  --set operatorRef.namespace=keycloak-system
+
+# Install client chart
+helm install my-client keycloak-operator/keycloak-client \
+  --namespace my-team \
+  --set clientId=myapp \
+  --set realmRef.name=my-realm
+```
+
+**Note:** The examples in this README use local chart paths (`./charts/...`) for development and testing. In production, use the Helm repository as shown above.
 
 ## Chart Documentation
 
