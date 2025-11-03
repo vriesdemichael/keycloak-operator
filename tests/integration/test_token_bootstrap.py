@@ -82,8 +82,8 @@ class TestTokenBootstrap:
                 "name": admission_secret_name,
                 "namespace": namespace,
                 "labels": {
-                    "keycloak.mdvr.nl/allow-operator-read": "true",
-                    "keycloak.mdvr.nl/token-type": "admission",
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
+                    "vriesdemichael.github.io/keycloak-token-type": "admission",
                 },
             },
             "type": "Opaque",
@@ -160,14 +160,14 @@ class TestTokenBootstrap:
             )
 
             realm_manifest = {
-                "apiVersion": "keycloak.mdvr.nl/v1",
+                "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakRealm",
                 "metadata": {"name": realm_name, "namespace": namespace},
                 "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -178,7 +178,7 @@ class TestTokenBootstrap:
             async def _realm_ready() -> bool:
                 try:
                     resource = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakrealms",
@@ -220,11 +220,15 @@ class TestTokenBootstrap:
                 name=operational_secret_name, namespace=namespace
             )
             assert (
-                op_secret.metadata.labels.get("keycloak.mdvr.nl/token-type")
+                op_secret.metadata.labels.get(
+                    "vriesdemichael.github.io/keycloak-token-type"
+                )
                 == "operational"
             )
             assert (
-                op_secret.metadata.labels.get("keycloak.mdvr.nl/managed-by")
+                op_secret.metadata.labels.get(
+                    "vriesdemichael.github.io/keycloak-managed-by"
+                )
                 == "keycloak-operator"
             )
 
@@ -236,8 +240,10 @@ class TestTokenBootstrap:
             assert owner_ref.name == realm_name
 
             # Verify annotations
-            assert "keycloak.mdvr.nl/version" in op_secret.metadata.annotations
-            assert "keycloak.mdvr.nl/valid-until" in op_secret.metadata.annotations
+            assert "vriesdemichael.github.io/version" in op_secret.metadata.annotations
+            assert (
+                "vriesdemichael.github.io/valid-until" in op_secret.metadata.annotations
+            )
 
             # 6. Verify token metadata stored in ConfigMap
             cm = await k8s_core_v1.read_namespaced_config_map(
@@ -261,13 +267,13 @@ class TestTokenBootstrap:
                     assert metadata.get("created_by_realm") == realm_name
                     break
 
-            assert operational_metadata_found, (
-                "Operational token metadata not found in ConfigMap"
-            )
+            assert (
+                operational_metadata_found
+            ), "Operational token metadata not found in ConfigMap"
 
             # 7. Verify status.authorizationStatus updated
             realm = await k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -291,7 +297,7 @@ class TestTokenBootstrap:
             # Cleanup
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",
@@ -361,8 +367,8 @@ class TestTokenBootstrap:
                 "name": admission_secret_name,
                 "namespace": namespace,
                 "labels": {
-                    "keycloak.mdvr.nl/allow-operator-read": "true",
-                    "keycloak.mdvr.nl/token-type": "admission",
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
+                    "vriesdemichael.github.io/keycloak-token-type": "admission",
                 },
             },
             "type": "Opaque",
@@ -430,14 +436,14 @@ class TestTokenBootstrap:
             )
 
             realm1_manifest = {
-                "apiVersion": "keycloak.mdvr.nl/v1",
+                "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakRealm",
                 "metadata": {"name": realm1_name, "namespace": namespace},
                 "spec": realm1_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -448,7 +454,7 @@ class TestTokenBootstrap:
             async def _realm_ready(realm_name: str) -> bool:
                 try:
                     resource = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakrealms",
@@ -500,14 +506,14 @@ class TestTokenBootstrap:
             )
 
             realm2_manifest = {
-                "apiVersion": "keycloak.mdvr.nl/v1",
+                "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakRealm",
                 "metadata": {"name": realm2_name, "namespace": namespace},
                 "spec": realm2_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -526,13 +532,15 @@ class TestTokenBootstrap:
                 s
                 for s in secrets.items
                 if s.metadata.labels
-                and s.metadata.labels.get("keycloak.mdvr.nl/token-type")
+                and s.metadata.labels.get(
+                    "vriesdemichael.github.io/keycloak-token-type"
+                )
                 == "operational"
             ]
 
-            assert len(operational_secrets) == 1, (
-                f"Expected 1 operational token, found {len(operational_secrets)}"
-            )
+            assert (
+                len(operational_secrets) == 1
+            ), f"Expected 1 operational token, found {len(operational_secrets)}"
             assert operational_secrets[0].metadata.name == operational_secret_name
 
         finally:
@@ -540,7 +548,7 @@ class TestTokenBootstrap:
             for realm_name in [realm1_name, realm2_name]:
                 with contextlib.suppress(ApiException):
                     await k8s_custom_objects.delete_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakrealms",

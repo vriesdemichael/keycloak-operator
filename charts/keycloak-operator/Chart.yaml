@@ -15,6 +15,5 @@ sources:
   - https://github.com/vriesdemichael/keycloak-operator
 maintainers:
   - name: Michael de Vries
-    email: michael@mdvr.nl
 icon: https://www.keycloak.org/resources/images/icon.svg
 kubeVersion: ">=1.27.0"

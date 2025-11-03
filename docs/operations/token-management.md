@@ -93,8 +93,8 @@ kubectl logs -n keycloak-operator-system \
 # Verify all operational tokens are healthy
 for ns in $(kubectl get ns -l team=enabled -o jsonpath='{.items[*].metadata.name}'); do
   echo "Namespace: $ns"
-  kubectl get secret -n $ns -l keycloak.mdvr.nl/token-type=operational \
-    -o jsonpath='{range .items[*]}{.metadata.name}: version={.metadata.annotations.keycloak\.mdvr\.nl/version}, valid-until={.metadata.annotations.keycloak\.mdvr\.nl/valid-until}{"\n"}{end}'
+  kubectl get secret -n $ns -l vriesdemichael.github.io/token-type=operational \
+    -o jsonpath='{range .items[*]}{.metadata.name}: version={.metadata.annotations.vriesdemichael.github.io/keycloak-version}, valid-until={.metadata.annotations.vriesdemichael.github.io/keycloak-valid-until}{"\n"}{end}'
 done
 
 # Check ConfigMap size (should grow slowly over time)
@@ -109,7 +109,7 @@ kubectl get configmap keycloak-operator-token-metadata \
    ```bash
    # List all admission tokens
    kubectl get secret --all-namespaces \
-     -l keycloak.mdvr.nl/token-type=admission \
+     -l vriesdemichael.github.io/token-type=admission \
      -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name,AGE:.metadata.creationTimestamp
    ```
 
@@ -117,9 +117,9 @@ kubectl get configmap keycloak-operator-token-metadata \
    ```bash
    # Generate token audit report
    kubectl get secret --all-namespaces \
-     -l keycloak.mdvr.nl/token-type=operational \
+     -l vriesdemichael.github.io/token-type=operational \
      -o json | jq -r '.items[] |
-       "\(.metadata.namespace)|\(.metadata.name)|\(.metadata.annotations["keycloak.mdvr.nl/version"])|\(.metadata.annotations["keycloak.mdvr.nl/valid-until"])"' | \
+       "\(.metadata.namespace)|\(.metadata.name)|\(.metadata.annotations["vriesdemichael.github.io/version"])|\(.metadata.annotations["vriesdemichael.github.io/valid-until"])"' | \
      column -t -s '|'
    ```
 
@@ -219,7 +219,7 @@ spec:
           expr: |
             count(
               label_replace(
-                kube_secret_annotations{annotation_keycloak_mdvr_nl_grace_period_ends!=""},
+                kube_secret_annotations{annotation_vriesdemichael_github_io_keycloak_grace_period_ends!=""},
                 "has_grace_period", "1", "", ""
               )
             ) > 5
@@ -303,8 +303,8 @@ Create dashboards to visualize token health:
 
    # Add required labels
    kubectl label secret admission-token-${TEAM_NAME} \
-     keycloak.mdvr.nl/token-type=admission \
-     keycloak.mdvr.nl/allow-operator-read=true \
+     vriesdemichael.github.io/token-type=admission \
+     vriesdemichael.github.io/allow-operator-read=true \
      --namespace=${TEAM_NAME}
    ```
 
@@ -339,7 +339,7 @@ Create dashboards to visualize token health:
 **Verification**:
 ```bash
 # After team creates first realm, verify operational token created
-kubectl get secret -n ${TEAM_NAME} -l keycloak.mdvr.nl/token-type=operational
+kubectl get secret -n ${TEAM_NAME} -l vriesdemichael.github.io/token-type=operational
 
 # Check bootstrap recorded in metrics
 kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
@@ -355,14 +355,14 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
 1. **Identify token to rotate**:
    ```bash
    NAMESPACE="team-alpha"
-   kubectl get secret -n ${NAMESPACE} -l keycloak.mdvr.nl/token-type=operational
+   kubectl get secret -n ${NAMESPACE} -l vriesdemichael.github.io/token-type=operational
    ```
 
 2. **Trigger rotation by updating valid-until annotation**:
    ```bash
    # Set expiry to now (triggers rotation on next check)
    kubectl annotate secret ${NAMESPACE}-operator-token \
-     keycloak.mdvr.nl/valid-until="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+     vriesdemichael.github.io/valid-until="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
      --overwrite \
      -n ${NAMESPACE}
    ```
@@ -380,7 +380,7 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
    # Check version incremented
    kubectl get secret ${NAMESPACE}-operator-token \
      -n ${NAMESPACE} \
-     -o jsonpath='{.metadata.annotations.keycloak\.mdvr\.nl/version}'
+     -o jsonpath='{.metadata.annotations.vriesdemichael.github.io/keycloak-version}'
 
    # Check both tokens present (grace period)
    kubectl get secret ${NAMESPACE}-operator-token \
@@ -451,7 +451,7 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
    ```bash
    # Get all namespaces with operational tokens
    for ns in $(kubectl get secret --all-namespaces \
-     -l keycloak.mdvr.nl/token-type=operational \
+     -l vriesdemichael.github.io/token-type=operational \
      -o jsonpath='{.items[*].metadata.namespace}' | tr ' ' '\n' | sort -u); do
      kubectl get ns $ns &>/dev/null || echo "Stale: $ns"
    done
@@ -553,11 +553,11 @@ kubectl get keycloakrealm -n team-alpha my-realm -o yaml | \
   grep -A3 authorizationSecretRef
 
 # 2. Check if operational token exists
-kubectl get secret -n team-alpha -l keycloak.mdvr.nl/token-type=operational
+kubectl get secret -n team-alpha -l vriesdemichael.github.io/token-type=operational
 
 # 3. Check token version
 kubectl get secret team-alpha-operator-token -n team-alpha \
-  -o jsonpath='{.metadata.annotations.keycloak\.mdvr\.nl/version}'
+  -o jsonpath='{.metadata.annotations.vriesdemichael.github.io/keycloak-version}'
 
 # 4. Check if grace period ended
 kubectl get secret team-alpha-operator-token -n team-alpha \
@@ -670,8 +670,8 @@ kubectl get secret admission-token-${NAMESPACE} -n ${NAMESPACE} \
 ```bash
 # Solution 1: Add missing labels
 kubectl label secret admission-token-${NAMESPACE} \
-  keycloak.mdvr.nl/token-type=admission \
-  keycloak.mdvr.nl/allow-operator-read=true \
+  vriesdemichael.github.io/token-type=admission \
+  vriesdemichael.github.io/allow-operator-read=true \
   --overwrite \
   -n ${NAMESPACE}
 
@@ -681,7 +681,7 @@ kubectl label secret admission-token-${NAMESPACE} \
 # Solution 3: Check if token already used
 # Admission tokens are one-time use per namespace
 # If operational token already exists, don't use admission token
-kubectl get secret -n ${NAMESPACE} -l keycloak.mdvr.nl/token-type=operational
+kubectl get secret -n ${NAMESPACE} -l vriesdemichael.github.io/token-type=operational
 
 # Solution 4: Restart operator
 kubectl rollout restart deployment keycloak-operator \
@@ -708,14 +708,14 @@ kubectl rollout restart deployment keycloak-operator \
 
    # Backup all operational tokens
    kubectl get secret --all-namespaces \
-     -l keycloak.mdvr.nl/token-type=operational \
+     -l vriesdemichael.github.io/token-type=operational \
      -o yaml > operational-tokens-backup.yaml
    ```
 
 2. **Delete all operational tokens**:
    ```bash
    kubectl delete secret --all-namespaces \
-     -l keycloak.mdvr.nl/token-type=operational
+     -l vriesdemichael.github.io/token-type=operational
    ```
 
 3. **Clear ConfigMap**:
@@ -754,11 +754,11 @@ kubectl rollout restart deployment keycloak-operator \
    ```bash
    # Check for tokens in grace period
    kubectl get secret --all-namespaces \
-     -l keycloak.mdvr.nl/token-type=operational \
+     -l vriesdemichael.github.io/token-type=operational \
      -o json | \
    jq -r '.items[] |
-     select(.metadata.annotations["keycloak.mdvr.nl/grace-period-ends"] != null) |
-     .metadata.namespace + "/" + .metadata.name + ": " + .metadata.annotations["keycloak.mdvr.nl/grace-period-ends"]'
+     select(.metadata.annotations["vriesdemichael.github.io/grace-period-ends"] != null) |
+     .metadata.namespace + "/" + .metadata.name + ": " + .metadata.annotations["vriesdemichael.github.io/grace-period-ends"]'
    ```
 
 2. **Verify operator recovery**:
@@ -776,7 +776,7 @@ kubectl rollout restart deployment keycloak-operator \
    ```bash
    # Check tokens still have both current and previous
    for secret in $(kubectl get secret --all-namespaces \
-     -l keycloak.mdvr.nl/token-type=operational \
+     -l vriesdemichael.github.io/token-type=operational \
      -o jsonpath='{.items[*].metadata.namespace}/{.items[*].metadata.name}'); do
      NS=$(echo $secret | cut -d/ -f1)
      NAME=$(echo $secret | cut -d/ -f2)
@@ -791,7 +791,7 @@ kubectl rollout restart deployment keycloak-operator \
    # Check grace period ended
    NOW=$(date -u +%s)
    GRACE_PERIOD_END=$(kubectl get secret team-alpha-operator-token -n team-alpha \
-     -o jsonpath='{.metadata.annotations.keycloak\.mdvr\.nl/grace-period-ends}')
+     -o jsonpath='{.metadata.annotations.vriesdemichael.github.io/keycloak-grace-period-ends}')
    GRACE_PERIOD_END_TS=$(date -d "$GRACE_PERIOD_END" +%s)
 
    if [ $NOW -gt $GRACE_PERIOD_END_TS ]; then
@@ -854,9 +854,9 @@ kubectl rollout restart deployment keycloak-operator \
    ```bash
    # Force rotation on all namespaces
    for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
-     kubectl get secret -n $ns -l keycloak.mdvr.nl/token-type=operational &>/dev/null && \
+     kubectl get secret -n $ns -l vriesdemichael.github.io/token-type=operational &>/dev/null && \
        kubectl annotate secret ${ns}-operator-token \
-         keycloak.mdvr.nl/valid-until="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+         vriesdemichael.github.io/valid-until="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
          --overwrite \
          -n $ns
    done

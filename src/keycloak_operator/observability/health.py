@@ -135,9 +135,9 @@ class HealthChecker:
 
             # Define required CRDs
             required_crds = [
-                "keycloaks.keycloak.mdvr.nl",
-                "keycloakrealms.keycloak.mdvr.nl",
-                "keycloakclients.keycloak.mdvr.nl",
+                "keycloaks.vriesdemichael.github.io",
+                "keycloakrealms.vriesdemichael.github.io",
+                "keycloakclients.vriesdemichael.github.io",
             ]
 
             installed_crds = []
@@ -203,16 +203,20 @@ class HealthChecker:
 
             # Define required permissions to test (focus on core create/update + read; include CNPG read-only)
             permission_tests = [
-                {"resource": "keycloaks", "verb": "get", "group": "keycloak.mdvr.nl"},
+                {
+                    "resource": "keycloaks",
+                    "verb": "get",
+                    "group": "vriesdemichael.github.io",
+                },
                 {
                     "resource": "keycloaks",
                     "verb": "create",
-                    "group": "keycloak.mdvr.nl",
+                    "group": "vriesdemichael.github.io",
                 },
                 {
                     "resource": "keycloaks",
                     "verb": "update",
-                    "group": "keycloak.mdvr.nl",
+                    "group": "vriesdemichael.github.io",
                 },
                 {"resource": "secrets", "verb": "get", "group": ""},
                 {"resource": "secrets", "verb": "create", "group": ""},

@@ -12,24 +12,24 @@ import os
 
 # Finalizer constants for cleanup coordination
 # These prevent Kubernetes from deleting resources until cleanup is complete
-KEYCLOAK_FINALIZER = "keycloak.mdvr.nl/cleanup"
-REALM_FINALIZER = "keycloak.mdvr.nl/realm-cleanup"
-CLIENT_FINALIZER = "keycloak.mdvr.nl/client-cleanup"
+KEYCLOAK_FINALIZER = "vriesdemichael.github.io/keycloak-cleanup"
+REALM_FINALIZER = "vriesdemichael.github.io/keycloak-realm-cleanup"
+CLIENT_FINALIZER = "vriesdemichael.github.io/keycloak-client-cleanup"
 
 # Label constants for resource identification and management
-OPERATOR_LABEL_KEY = "keycloak.mdvr.nl/managed-by"
+OPERATOR_LABEL_KEY = "vriesdemichael.github.io/keycloak-managed-by"
 OPERATOR_LABEL_VALUE = "keycloak-operator"
-INSTANCE_LABEL_KEY = "keycloak.mdvr.nl/instance"
-COMPONENT_LABEL_KEY = "keycloak.mdvr.nl/component"
+INSTANCE_LABEL_KEY = "vriesdemichael.github.io/keycloak-instance"
+COMPONENT_LABEL_KEY = "vriesdemichael.github.io/keycloak-component"
 
 # RBAC security labels
-ALLOW_OPERATOR_READ_LABEL = "keycloak.mdvr.nl/allow-operator-read"
+ALLOW_OPERATOR_READ_LABEL = "vriesdemichael.github.io/keycloak-allow-operator-read"
 
 # Annotation constants for configuration and metadata
-PRESERVE_DATA_ANNOTATION = "keycloak.mdvr.nl/preserve-data"
-BACKUP_ANNOTATION = "keycloak.mdvr.nl/backup-before-delete"
-ISOLATION_ANNOTATION = "keycloak.mdvr.nl/isolation"
-ALLOWED_NAMESPACES_ANNOTATION = "keycloak.mdvr.nl/allowed-namespaces"
+PRESERVE_DATA_ANNOTATION = "vriesdemichael.github.io/keycloak-preserve-data"
+BACKUP_ANNOTATION = "vriesdemichael.github.io/keycloak-backup-before-delete"
+ISOLATION_ANNOTATION = "vriesdemichael.github.io/keycloak-isolation"
+ALLOWED_NAMESPACES_ANNOTATION = "vriesdemichael.github.io/keycloak-allowed-namespaces"
 
 # Component type constants
 COMPONENT_KEYCLOAK = "keycloak"

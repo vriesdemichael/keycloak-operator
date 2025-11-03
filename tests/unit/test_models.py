@@ -103,7 +103,7 @@ class TestKeycloakModels:
     def test_complete_keycloak_resource(self):
         """Test complete Keycloak resource validation."""
         keycloak_resource = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
             "metadata": {"name": "test-keycloak", "namespace": "default"},
             "spec": {
@@ -179,7 +179,7 @@ class TestKeycloakClientModels:
     def test_complete_keycloak_client_resource(self):
         """Test complete KeycloakClient resource validation."""
         client_resource = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakClient",
             "metadata": {"name": "test-client", "namespace": "default"},
             "spec": {
@@ -350,7 +350,7 @@ class TestKeycloakRealmModels:
     def test_complete_keycloak_realm_resource(self):
         """Test complete KeycloakRealm resource validation."""
         realm_resource = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": "demo-realm", "namespace": "default"},
             "spec": {

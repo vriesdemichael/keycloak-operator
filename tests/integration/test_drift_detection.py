@@ -43,7 +43,7 @@ async def test_realm_ownership_attributes_are_added(
 
     # Use k8s_custom_objects fixture instead of creating new API client
     await k8s_custom_objects.create_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -52,7 +52,7 @@ async def test_realm_ownership_attributes_are_added(
 
     await wait_for_resource_ready(
         k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -84,7 +84,7 @@ async def test_realm_ownership_attributes_are_added(
     assert name == realm_cr["metadata"]["name"]
 
     await k8s_custom_objects.delete_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -110,7 +110,7 @@ async def test_client_ownership_attributes_are_added(
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -119,7 +119,7 @@ async def test_client_ownership_attributes_are_added(
 
     await wait_for_resource_ready(
         k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -129,7 +129,7 @@ async def test_client_ownership_attributes_are_added(
 
     # Get realm's authorization secret name from status
     realm = await k8s_custom_objects.get_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -148,7 +148,7 @@ async def test_client_ownership_attributes_are_added(
     )
 
     await k8s_custom_objects.create_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakclients",
@@ -157,7 +157,7 @@ async def test_client_ownership_attributes_are_added(
 
     await wait_for_resource_ready(
         k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakclients",
@@ -182,14 +182,14 @@ async def test_client_ownership_attributes_are_added(
     assert is_owned_by_this_operator(attributes)
 
     await k8s_custom_objects.delete_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakclients",
         name=client_cr["metadata"]["name"],
     )
     await k8s_custom_objects.delete_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -214,7 +214,7 @@ async def test_orphan_detection_after_realm_deletion(
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -223,7 +223,7 @@ async def test_orphan_detection_after_realm_deletion(
 
     await wait_for_resource_ready(
         k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -238,7 +238,7 @@ async def test_orphan_detection_after_realm_deletion(
 
     # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
     realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -246,7 +246,7 @@ async def test_orphan_detection_after_realm_deletion(
     )
     realm_obj["metadata"]["finalizers"] = []
     await k8s_custom_objects.patch_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -255,7 +255,7 @@ async def test_orphan_detection_after_realm_deletion(
     )
 
     await k8s_custom_objects.delete_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -309,7 +309,7 @@ async def test_orphan_detection_after_client_deletion(
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -318,7 +318,7 @@ async def test_orphan_detection_after_client_deletion(
 
     await wait_for_resource_ready(
         k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -328,7 +328,7 @@ async def test_orphan_detection_after_client_deletion(
 
     # Get realm's authorization secret name from status
     realm = await k8s_custom_objects.get_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -347,7 +347,7 @@ async def test_orphan_detection_after_client_deletion(
     )
 
     await k8s_custom_objects.create_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakclients",
@@ -356,7 +356,7 @@ async def test_orphan_detection_after_client_deletion(
 
     await wait_for_resource_ready(
         k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakclients",
@@ -374,7 +374,7 @@ async def test_orphan_detection_after_client_deletion(
 
     # Remove finalizer so client won't be deleted from Keycloak when CR is deleted
     client_obj = await k8s_custom_objects.get_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakclients",
@@ -382,7 +382,7 @@ async def test_orphan_detection_after_client_deletion(
     )
     client_obj["metadata"]["finalizers"] = []
     await k8s_custom_objects.patch_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakclients",
@@ -391,7 +391,7 @@ async def test_orphan_detection_after_client_deletion(
     )
 
     await k8s_custom_objects.delete_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakclients",
@@ -425,7 +425,7 @@ async def test_orphan_detection_after_client_deletion(
 
     await keycloak_admin_client.delete_client(client_id, realm_name, test_namespace)
     await k8s_custom_objects.delete_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -503,7 +503,7 @@ async def test_auto_remediation_deletes_orphans(
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -512,7 +512,7 @@ async def test_auto_remediation_deletes_orphans(
 
     await wait_for_resource_ready(
         k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -527,7 +527,7 @@ async def test_auto_remediation_deletes_orphans(
 
     # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
     realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -535,7 +535,7 @@ async def test_auto_remediation_deletes_orphans(
     )
     realm_obj["metadata"]["finalizers"] = []
     await k8s_custom_objects.patch_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -544,7 +544,7 @@ async def test_auto_remediation_deletes_orphans(
     )
 
     await k8s_custom_objects.delete_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -590,7 +590,7 @@ async def test_minimum_age_prevents_deletion(
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -599,7 +599,7 @@ async def test_minimum_age_prevents_deletion(
 
     await wait_for_resource_ready(
         k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -611,7 +611,7 @@ async def test_minimum_age_prevents_deletion(
 
     # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
     realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -619,7 +619,7 @@ async def test_minimum_age_prevents_deletion(
     )
     realm_obj["metadata"]["finalizers"] = []
     await k8s_custom_objects.patch_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -628,7 +628,7 @@ async def test_minimum_age_prevents_deletion(
     )
 
     await k8s_custom_objects.delete_namespaced_custom_object(
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",

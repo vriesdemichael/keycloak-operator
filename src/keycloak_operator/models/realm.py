@@ -763,7 +763,7 @@ class KeycloakRealm(BaseModel):
     realm management with authentication flows and identity providers.
     """
 
-    api_version: str = Field("keycloak.mdvr.nl/v1", alias="apiVersion")
+    api_version: str = Field("vriesdemichael.github.io/v1", alias="apiVersion")
     kind: str = Field("KeycloakRealm")
     metadata: dict[str, Any] = Field(..., description="Kubernetes metadata")
     spec: KeycloakRealmSpec = Field(..., description="Realm specification")

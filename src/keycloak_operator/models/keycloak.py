@@ -482,7 +482,7 @@ class Keycloak(BaseModel):
     metadata, spec, and status sections.
     """
 
-    api_version: str = Field("keycloak.mdvr.nl/v1", alias="apiVersion")
+    api_version: str = Field("vriesdemichael.github.io/v1", alias="apiVersion")
     kind: str = Field("Keycloak")
     metadata: dict[str, Any] = Field(..., description="Kubernetes metadata")
     spec: KeycloakSpec = Field(..., description="Keycloak specification")

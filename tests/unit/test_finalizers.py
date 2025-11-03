@@ -332,9 +332,9 @@ class TestFinalizerConstants:
     """Ensure finalizer constants remain stable."""
 
     def test_finalizer_constants_exist(self):
-        assert KEYCLOAK_FINALIZER == "keycloak.mdvr.nl/cleanup"
-        assert REALM_FINALIZER == "keycloak.mdvr.nl/realm-cleanup"
-        assert CLIENT_FINALIZER == "keycloak.mdvr.nl/client-cleanup"
+        assert KEYCLOAK_FINALIZER == "vriesdemichael.github.io/keycloak-cleanup"
+        assert REALM_FINALIZER == "vriesdemichael.github.io/keycloak-realm-cleanup"
+        assert CLIENT_FINALIZER == "vriesdemichael.github.io/keycloak-client-cleanup"
 
     def test_finalizer_constants_unique(self):
         finalizers = {KEYCLOAK_FINALIZER, REALM_FINALIZER, CLIENT_FINALIZER}

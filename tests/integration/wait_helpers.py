@@ -161,7 +161,7 @@ async def wait_for_resource_condition(
 
     Args:
         k8s_custom_objects: Kubernetes CustomObjectsApi client
-        group: API group (e.g., "keycloak.mdvr.nl")
+        group: API group (e.g., "vriesdemichael.github.io")
         version: API version (e.g., "v1")
         namespace: Resource namespace
         plural: Resource plural name (e.g., "keycloakrealms")
@@ -292,7 +292,7 @@ async def wait_for_resource_ready(
 
     Args:
         k8s_custom_objects: Kubernetes CustomObjectsApi client
-        group: API group (e.g., "keycloak.mdvr.nl")
+        group: API group (e.g., "vriesdemichael.github.io")
         version: API version (e.g., "v1")
         namespace: Resource namespace
         plural: Resource plural name (e.g., "keycloakrealms")
@@ -345,7 +345,7 @@ async def wait_for_resource_failed(
 
     Args:
         k8s_custom_objects: Kubernetes CustomObjectsApi client
-        group: API group (e.g., "keycloak.mdvr.nl")
+        group: API group (e.g., "vriesdemichael.github.io")
         version: API version (e.g., "v1")
         namespace: Resource namespace
         plural: Resource plural name (e.g., "keycloakrealms")
@@ -395,7 +395,7 @@ async def wait_for_resource_deleted(
 
     Args:
         k8s_custom_objects: Kubernetes CustomObjectsApi client
-        group: API group (e.g., "keycloak.mdvr.nl")
+        group: API group (e.g., "vriesdemichael.github.io")
         version: API version (e.g., "v1")
         namespace: Resource namespace
         plural: Resource plural name (e.g., "keycloakrealms")

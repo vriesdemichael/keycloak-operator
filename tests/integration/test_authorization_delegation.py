@@ -75,7 +75,7 @@ class TestAuthorizationDelegation:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -84,7 +84,7 @@ class TestAuthorizationDelegation:
         try:
             # Create realm with operator token reference (shared Keycloak already ready)
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -94,7 +94,7 @@ class TestAuthorizationDelegation:
             # Wait for realm to become ready (validates operator token internally)
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -105,7 +105,7 @@ class TestAuthorizationDelegation:
 
             # Get realm status
             realm = await k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -118,18 +118,22 @@ class TestAuthorizationDelegation:
                 name=operational_secret_name, namespace=namespace
             )
             assert operational_secret.data, "Operational token secret should have data"
-            assert "token" in operational_secret.data, (
-                "Operational token secret should have 'token' key"
-            )
+            assert (
+                "token" in operational_secret.data
+            ), "Operational token secret should have 'token' key"
 
             # Verify operational token has proper labels
             assert operational_secret.metadata.labels, "Secret should have labels"
             assert (
-                operational_secret.metadata.labels.get("keycloak.mdvr.nl/managed-by")
+                operational_secret.metadata.labels.get(
+                    "vriesdemichael.github.io/keycloak-managed-by"
+                )
                 == "keycloak-operator"
             )
             assert (
-                operational_secret.metadata.labels.get("keycloak.mdvr.nl/token-type")
+                operational_secret.metadata.labels.get(
+                    "vriesdemichael.github.io/keycloak-token-type"
+                )
                 == "operational"
             )
 
@@ -148,7 +152,7 @@ class TestAuthorizationDelegation:
             # Cleanup realm only (admission token cleaned by fixture)
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",
@@ -196,7 +200,7 @@ class TestAuthorizationDelegation:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -205,7 +209,7 @@ class TestAuthorizationDelegation:
         try:
             # Create realm (shared Keycloak already ready)
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -214,7 +218,7 @@ class TestAuthorizationDelegation:
 
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -225,7 +229,7 @@ class TestAuthorizationDelegation:
 
             # Get realm's authorization secret name from status (camelCase in CRD)
             realm = await k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -262,9 +266,9 @@ class TestAuthorizationDelegation:
                     else:
                         raise
 
-            assert secret_exists, (
-                f"Authorization secret {realm_auth_secret_name} was not created"
-            )
+            assert (
+                secret_exists
+            ), f"Authorization secret {realm_auth_secret_name} was not created"
 
             # Create client with realmRef pointing to realm's token
             client_spec = KeycloakClientSpec(
@@ -281,14 +285,14 @@ class TestAuthorizationDelegation:
             )
 
             client_manifest = {
-                "apiVersion": "keycloak.mdvr.nl/v1",
+                "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakClient",
                 "metadata": {"name": client_name, "namespace": namespace},
                 "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -298,7 +302,7 @@ class TestAuthorizationDelegation:
             # Wait for client to become ready (validates realm token internally)
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -311,7 +315,7 @@ class TestAuthorizationDelegation:
             # Cleanup test resources only (shared Keycloak persists)
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakclients",
@@ -320,7 +324,7 @@ class TestAuthorizationDelegation:
 
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",
@@ -361,7 +365,9 @@ class TestAuthorizationDelegation:
             "metadata": {
                 "name": fake_secret_name,
                 "namespace": namespace,
-                "labels": {"keycloak.mdvr.nl/allow-operator-read": "true"},
+                "labels": {
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
             },
             "type": "Opaque",
             "data": {"token": base64.b64encode(fake_token).decode("utf-8")},
@@ -379,7 +385,7 @@ class TestAuthorizationDelegation:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -393,7 +399,7 @@ class TestAuthorizationDelegation:
 
             # Create realm with invalid token reference
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -412,7 +418,7 @@ class TestAuthorizationDelegation:
 
             realm = await wait_for_resource_condition(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -430,15 +436,15 @@ class TestAuthorizationDelegation:
             status = realm.get("status", {}) or {}
             message = status.get("message", "")
 
-            assert "Authorization failed" in message, (
-                f"Realm should report authorization failure, got: {message}"
-            )
+            assert (
+                "Authorization failed" in message
+            ), f"Realm should report authorization failure, got: {message}"
 
         finally:
             # Cleanup
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",
@@ -492,7 +498,7 @@ class TestAuthorizationDelegation:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -501,7 +507,7 @@ class TestAuthorizationDelegation:
         try:
             # Create realm (shared Keycloak already ready, will generate valid token)
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -510,7 +516,7 @@ class TestAuthorizationDelegation:
 
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -527,7 +533,9 @@ class TestAuthorizationDelegation:
                 "metadata": {
                     "name": fake_secret_name,
                     "namespace": namespace,
-                    "labels": {"keycloak.mdvr.nl/allow-operator-read": "true"},
+                    "labels": {
+                        "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                    },
                 },
                 "type": "Opaque",
                 "data": {"token": base64.b64encode(fake_token).decode("utf-8")},
@@ -551,14 +559,14 @@ class TestAuthorizationDelegation:
             )
 
             client_manifest = {
-                "apiVersion": "keycloak.mdvr.nl/v1",
+                "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakClient",
                 "metadata": {"name": client_name, "namespace": namespace},
                 "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -574,7 +582,7 @@ class TestAuthorizationDelegation:
 
             client = await wait_for_resource_condition(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -594,7 +602,7 @@ class TestAuthorizationDelegation:
             # Cleanup test resources only (shared Keycloak persists)
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakclients",
@@ -608,7 +616,7 @@ class TestAuthorizationDelegation:
 
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",
@@ -658,7 +666,7 @@ class TestAuthorizationDelegation:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -667,7 +675,7 @@ class TestAuthorizationDelegation:
         try:
             # Create realm (shared Keycloak already ready)
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -676,7 +684,7 @@ class TestAuthorizationDelegation:
 
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -694,7 +702,7 @@ class TestAuthorizationDelegation:
 
             # Delete realm
             await k8s_custom_objects.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",

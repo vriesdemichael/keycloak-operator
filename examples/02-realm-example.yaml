@@ -8,7 +8,7 @@
 # - Keycloak instance must be Ready
 # - Operator authorization secret must be copied to this namespace
 
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-app-realm

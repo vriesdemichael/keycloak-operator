@@ -36,14 +36,14 @@ You need to manually create a RoleBinding to grant operator access:
 
 All secrets used by this realm MUST have the following label:
 
-    keycloak.mdvr.nl/allow-operator-read=true
+    vriesdemichael.github.io/keycloak-allow-operator-read=true
 
 Without this label, the operator will refuse to read the secret.
 
 Example - label an existing secret:
 
     kubectl label secret my-smtp-password \
-      keycloak.mdvr.nl/allow-operator-read=true \
+      vriesdemichael.github.io/keycloak-allow-operator-read=true \
       -n {{ .Release.Namespace }}
 
 Example - create a secret with the label:
@@ -53,7 +53,7 @@ Example - create a secret with the label:
       -n {{ .Release.Namespace }}
 
     kubectl label secret my-smtp-password \
-      keycloak.mdvr.nl/allow-operator-read=true \
+      vriesdemichael.github.io/keycloak-allow-operator-read=true \
       -n {{ .Release.Namespace }}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

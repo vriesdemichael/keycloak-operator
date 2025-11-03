@@ -284,7 +284,7 @@ metadata:
   name: keycloak-resources
 spec:
   healthChecks:
-    - apiVersion: keycloak.mdvr.nl/v1
+    - apiVersion: vriesdemichael.github.io/v1
       kind: Keycloak
       name: my-keycloak
       namespace: default

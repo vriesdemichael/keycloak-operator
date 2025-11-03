@@ -8,7 +8,7 @@
 # - KeycloakRealm must be Ready
 # - Realm authorization secret exists in this namespace
 
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
   name: my-app-client
