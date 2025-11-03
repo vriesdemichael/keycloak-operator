@@ -1389,6 +1389,7 @@ class KeycloakAdminClient:
         self,
         realm_name: str,
         provider_config: IdentityProviderRepresentation | dict[str, Any],
+        namespace: str,
     ) -> bool:
         """
         Configure identity provider for a realm.
@@ -1396,6 +1397,7 @@ class KeycloakAdminClient:
         Args:
             realm_name: Name of the realm
             provider_config: Identity provider configuration as IdentityProviderRepresentation or dict
+            namespace: Origin namespace for rate limiting
 
         Returns:
             True if successful, False otherwise
@@ -1408,7 +1410,7 @@ class KeycloakAdminClient:
                 provider_id="google",
                 enabled=True
             )
-            success = admin_client.configure_identity_provider("my-realm", provider)
+            success = await admin_client.configure_identity_provider("my-realm", provider, "my-namespace")
         """
         # Convert dict to model if needed
         if isinstance(provider_config, dict):
@@ -1425,6 +1427,7 @@ class KeycloakAdminClient:
             response = await self._make_validated_request(
                 "POST",
                 f"realms/{realm_name}/identity-provider/instances",
+                namespace,
                 request_model=provider_config,
             )
 
