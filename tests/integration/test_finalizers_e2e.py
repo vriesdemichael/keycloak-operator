@@ -92,7 +92,9 @@ class TestFinalizersE2E:
                         name=realm_name,
                     )
                     finalizers = resource.get("metadata", {}).get("finalizers", [])
-                    return "vriesdemichael.github.io/realm-cleanup" in finalizers
+                    return (
+                        "vriesdemichael.github.io/keycloak-realm-cleanup" in finalizers
+                    )
                 except ApiException:
                     return False
 
@@ -218,7 +220,9 @@ class TestFinalizersE2E:
                         name=client_name,
                     )
                     finalizers = resource.get("metadata", {}).get("finalizers", [])
-                    return "vriesdemichael.github.io/client-cleanup" in finalizers
+                    return (
+                        "vriesdemichael.github.io/keycloak-client-cleanup" in finalizers
+                    )
                 except ApiException:
                     return False
 
@@ -382,7 +386,9 @@ class TestFinalizersE2E:
                     )
                     meta = client.get("metadata", {})
                     finalizers = meta.get("finalizers", [])
-                    return "vriesdemichael.github.io/client-cleanup" in finalizers
+                    return (
+                        "vriesdemichael.github.io/keycloak-client-cleanup" in finalizers
+                    )
                 except ApiException:
                     return False
 
