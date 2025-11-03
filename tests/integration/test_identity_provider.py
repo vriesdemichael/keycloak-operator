@@ -152,9 +152,6 @@ async def dex_ready(shared_operator, operator_namespace):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@pytest.mark.skip(
-    reason="Dex image pull can exceed pytest timeout - IDP functionality validated by GitHub test"
-)
 async def test_realm_with_oidc_identity_provider(
     shared_operator,
     keycloak_admin_client,
