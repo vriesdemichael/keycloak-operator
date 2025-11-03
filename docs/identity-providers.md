@@ -44,7 +44,7 @@ GitHub OAuth allows users to sign in with their GitHub accounts.
 **Example:**
 
 ```yaml
-apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
@@ -93,7 +93,7 @@ Google OAuth allows users to sign in with their Google accounts.
 **Example:**
 
 ```yaml
-apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
@@ -142,7 +142,7 @@ Azure AD integration allows users to sign in with their Microsoft work or school
 **Example:**
 
 ```yaml
-apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
@@ -183,7 +183,7 @@ For any OpenID Connect-compliant identity provider.
 **Example:**
 
 ```yaml
-apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
@@ -229,7 +229,7 @@ For SAML 2.0 identity providers.
 **Example:**
 
 ```yaml
-apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
@@ -265,7 +265,7 @@ spec:
 Protocol mappers allow you to customize the claims/attributes in tokens. Here's an example of protocol mappers on a client scope:
 
 ```yaml
-apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
@@ -300,7 +300,7 @@ For IDP attribute mappers (to import user attributes from the IDP), this functio
 A realm with multiple identity providers:
 
 ```yaml
-apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: multi-idp-realm
