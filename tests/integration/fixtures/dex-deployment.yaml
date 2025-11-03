@@ -3,6 +3,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: dex-config
+  namespace: keycloak-test-system  # Will be overridden by test code
 data:
   config.yaml: |
     issuer: http://dex.default.svc.cluster.local:5556/dex
@@ -28,6 +29,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: dex
+  namespace: keycloak-test-system  # Will be overridden by test code
   labels:
     app: dex
 spec:
@@ -75,6 +77,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: dex
+  namespace: keycloak-test-system  # Will be overridden by test code
   labels:
     app: dex
 spec:
