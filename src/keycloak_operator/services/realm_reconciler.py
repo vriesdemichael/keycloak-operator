@@ -744,7 +744,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                     else idp_config,
                 )
                 await admin_client.configure_identity_provider(
-                    spec.realm_name, idp_dict
+                    spec.realm_name, idp_dict, namespace
                 )
             except Exception as e:
                 self.logger.warning(f"Failed to configure identity provider: {e}")
@@ -1079,7 +1079,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                             else idp_config,
                         )
                         await admin_client.configure_identity_provider(
-                            realm_name, idp_dict
+                            realm_name, idp_dict, namespace
                         )
                     configuration_changed = True
                 except Exception as e:
