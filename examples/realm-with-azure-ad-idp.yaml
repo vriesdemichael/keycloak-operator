@@ -1,6 +1,6 @@
-# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/keycloakrealm-keycloak-v1alpha1.json
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/keycloakrealm-vriesdemichael-v1.json
 ---
-apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: realm-with-azure-ad-idp
@@ -8,9 +8,9 @@ metadata:
 spec:
   realmName: my-realm
   operatorRef:
-    name: keycloak-operator
     namespace: keycloak-operator
-  authorizationSecretRef: my-realm-token
+    authorizationSecretRef:
+      name: my-realm-token
 
   # Azure AD (Microsoft Entra ID) OIDC Identity Provider
   identityProviders:
