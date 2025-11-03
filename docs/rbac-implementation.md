@@ -84,7 +84,7 @@ The operator now implements a **least-privilege RBAC model** where:
 All secrets used by the operator **MUST** have the following label:
 
 ```yaml
-keycloak.mdvr.nl/allow-operator-read: "true"
+vriesdemichael.github.io/allow-operator-read: "true"
 ```
 
 ### Why This Matters
@@ -105,7 +105,7 @@ kubectl create secret generic smtp-password \
 
 # Label it for operator access
 kubectl label secret smtp-password \
-  keycloak.mdvr.nl/allow-operator-read=true \
+  vriesdemichael.github.io/allow-operator-read=true \
   -n my-team
 ```
 
@@ -147,7 +147,7 @@ kubectl create secret generic smtp-password \
   -n my-team
 
 kubectl label secret smtp-password \
-  keycloak.mdvr.nl/allow-operator-read=true \
+  vriesdemichael.github.io/allow-operator-read=true \
   -n my-team
 
 # Deploy realm (creates RoleBinding automatically)
@@ -236,13 +236,13 @@ kubectl create rolebinding keycloak-operator-access \
 
 ### Missing Secret Label
 
-**Error**: `Secret 'smtp-password' in namespace 'my-team' is missing required label 'keycloak.mdvr.nl/allow-operator-read=true'`
+**Error**: `Secret 'smtp-password' in namespace 'my-team' is missing required label 'vriesdemichael.github.io/allow-operator-read=true'`
 
 **Solution**: Label the secret:
 
 ```bash
 kubectl label secret smtp-password \
-  keycloak.mdvr.nl/allow-operator-read=true \
+  vriesdemichael.github.io/allow-operator-read=true \
   -n my-team
 ```
 
@@ -258,7 +258,7 @@ kubectl create secret generic smtp-password \
   -n my-team
 
 kubectl label secret smtp-password \
-  keycloak.mdvr.nl/allow-operator-read=true \
+  vriesdemichael.github.io/allow-operator-read=true \
   -n my-team
 ```
 
@@ -285,7 +285,7 @@ kubectl get rolebindings -A \
 
 ```bash
 kubectl get secrets -A \
-  -l keycloak.mdvr.nl/allow-operator-read=true \
+  -l vriesdemichael.github.io/allow-operator-read=true \
   -o custom-columns=NAMESPACE:.metadata.namespace,NAME:.metadata.name
 ```
 

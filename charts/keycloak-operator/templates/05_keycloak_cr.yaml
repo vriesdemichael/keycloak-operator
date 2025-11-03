@@ -1,6 +1,6 @@
 {{- if .Values.keycloak.enabled }}
 {{/* yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json */}}
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
 metadata:
   name: {{ .Values.keycloak.name }}

@@ -514,7 +514,7 @@ async def test_namespace(
 async def test_secrets(k8s_core_v1, test_namespace) -> dict[str, str]:
     """Create test secrets for Keycloak instances with required RBAC label.
 
-    All secrets now require the label: keycloak.mdvr.nl/allow-operator-read=true
+    All secrets now require the label: vriesdemichael.github.io/keycloak-allow-operator-read=true
     This is enforced by the new RBAC model.
     """
     secrets = {}
@@ -524,7 +524,7 @@ async def test_secrets(k8s_core_v1, test_namespace) -> dict[str, str]:
         metadata=client.V1ObjectMeta(
             name="test-db-secret",
             namespace=test_namespace,
-            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
         ),
         string_data={"password": "test-db-password", "username": "keycloak"},
     )
@@ -536,7 +536,7 @@ async def test_secrets(k8s_core_v1, test_namespace) -> dict[str, str]:
         metadata=client.V1ObjectMeta(
             name="test-admin-secret",
             namespace=test_namespace,
-            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
         ),
         string_data={"password": "admin-password", "username": "admin"},
     )
@@ -679,7 +679,7 @@ def sample_keycloak_spec(test_secrets, cnpg_cluster) -> dict[str, Any]:
         }
 
     return {
-        "apiVersion": "keycloak.mdvr.nl/v1",
+        "apiVersion": "vriesdemichael.github.io/v1",
         "kind": "Keycloak",
         "spec": {
             "image": DEFAULT_KEYCLOAK_IMAGE,
@@ -737,7 +737,7 @@ def build_realm_manifest(
     Uses model_dump(by_alias=True) to convert camelCase for Kubernetes API.
     """
     return {
-        "apiVersion": "keycloak.mdvr.nl/v1",
+        "apiVersion": "vriesdemichael.github.io/v1",
         "kind": "KeycloakRealm",
         "metadata": {"name": name, "namespace": namespace},
         "spec": spec.model_dump(by_alias=True, exclude_unset=True),
@@ -753,7 +753,7 @@ def build_client_manifest(
     Uses model_dump(by_alias=True) to convert camelCase for Kubernetes API.
     """
     return {
-        "apiVersion": "keycloak.mdvr.nl/v1",
+        "apiVersion": "vriesdemichael.github.io/v1",
         "kind": "KeycloakClient",
         "metadata": {"name": name, "namespace": namespace},
         "spec": spec.model_dump(by_alias=True, exclude_unset=True),
@@ -803,7 +803,7 @@ def wait_for_keycloak_ready(
             # Try to read CR status for phase/conditions
             try:
                 kc = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloaks",
@@ -891,7 +891,7 @@ def class_scoped_test_secrets(
         metadata=client.V1ObjectMeta(
             name="shared-db-secret",
             namespace=class_scoped_namespace,
-            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
         ),
         string_data={"password": "test-db-password", "username": "keycloak"},
     )
@@ -903,7 +903,7 @@ def class_scoped_test_secrets(
         metadata=client.V1ObjectMeta(
             name="shared-admin-secret",
             namespace=class_scoped_namespace,
-            labels={"keycloak.mdvr.nl/allow-operator-read": "true"},
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
         ),
         string_data={"password": "admin-password", "username": "admin"},
     )
@@ -1010,7 +1010,7 @@ async def shared_operator(
     - Single operator deployment in operator namespace (default: keycloak-test-system)
     - Single Keycloak instance co-located with operator (1-1 coupling)
     - RBAC model: Minimal cluster-wide permissions + namespace Role
-    - All secrets properly labeled with keycloak.mdvr.nl/allow-operator-read=true
+    - All secrets properly labeled with vriesdemichael.github.io/keycloak-allow-operator-read=true
 
     Session-scoped for:
     - Performance (one operator for all tests)
@@ -1241,8 +1241,8 @@ async def shared_operator(
                             "name": operator_secret_name,
                             "namespace": operator_namespace,
                             "labels": {
-                                "keycloak.mdvr.nl/allow-operator-read": "true",
-                                "keycloak.mdvr.nl/token-type": "admission",
+                                "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
+                                "vriesdemichael.github.io/keycloak-token-type": "admission",
                                 "app.kubernetes.io/name": "keycloak-operator",
                             },
                         },
@@ -1328,7 +1328,7 @@ async def shared_operator(
         while time.time() - start_time < timeout:
             try:
                 kc = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=operator_namespace,
                     plural="keycloaks",
@@ -1364,7 +1364,7 @@ async def shared_operator(
             # Check Keycloak CR status for error details
             try:
                 kc = await k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=operator_namespace,
                     plural="keycloaks",
@@ -1730,7 +1730,7 @@ async def managed_realm(
             Tuple of (realm_name, realm_manifest)
         """
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": test_namespace},
             "spec": {
@@ -1744,7 +1744,7 @@ async def managed_realm(
         }
 
         await k8s_custom_objects.create_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=test_namespace,
             plural="keycloakrealms",
@@ -1763,7 +1763,7 @@ async def managed_realm(
         try:
             success = await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=test_namespace,
                 plural="keycloakrealms",
@@ -1831,7 +1831,7 @@ async def managed_client(
             realm_namespace = test_namespace
 
         client_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": test_namespace},
             "spec": {
@@ -1846,7 +1846,7 @@ async def managed_client(
         }
 
         await k8s_custom_objects.create_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=test_namespace,
             plural="keycloakclients",
@@ -1865,7 +1865,7 @@ async def managed_client(
         try:
             success = await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=test_namespace,
                 plural="keycloakclients",
@@ -2259,8 +2259,8 @@ async def auth_token_factory(
                 "name": secret_name,
                 "namespace": namespace,
                 "labels": {
-                    "keycloak.mdvr.nl/allow-operator-read": "true",
-                    "keycloak.mdvr.nl/token-type": token_type,
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
+                    "vriesdemichael.github.io/keycloak-token-type": token_type,
                 },
             },
             "type": "Opaque",
@@ -2473,7 +2473,7 @@ def realm_cr_factory(
         )
 
         base_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {
                 "name": f"realm-{realm_name}",
@@ -2552,7 +2552,7 @@ def client_cr_factory(
         )
 
         base_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakClient",
             "metadata": {
                 "name": f"client-{client_id}",

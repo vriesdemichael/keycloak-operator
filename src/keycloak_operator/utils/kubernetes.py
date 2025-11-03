@@ -74,7 +74,7 @@ def validate_keycloak_reference(
 
         # Get Keycloak instance
         keycloak_instance = custom_api.get_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloaks",
@@ -320,8 +320,8 @@ def create_keycloak_deployment(
         metadata=client.V1ObjectMeta(
             labels={
                 "app": "keycloak",
-                "keycloak.mdvr.nl/instance": name,
-                "keycloak.mdvr.nl/component": "server",
+                "vriesdemichael.github.io/keycloak-instance": name,
+                "vriesdemichael.github.io/keycloak-component": "server",
             }
         ),
         spec=client.V1PodSpec(
@@ -340,7 +340,7 @@ def create_keycloak_deployment(
         selector=client.V1LabelSelector(
             match_labels={
                 "app": "keycloak",
-                "keycloak.mdvr.nl/instance": name,
+                "vriesdemichael.github.io/keycloak-instance": name,
             }
         ),
         template=pod_template,
@@ -362,8 +362,8 @@ def create_keycloak_deployment(
             namespace=namespace,
             labels={
                 "app": "keycloak",
-                "keycloak.mdvr.nl/instance": name,
-                "keycloak.mdvr.nl/component": "server",
+                "vriesdemichael.github.io/keycloak-instance": name,
+                "vriesdemichael.github.io/keycloak-component": "server",
             },
             # Owner reference can be set by calling code
         ),
@@ -413,7 +413,7 @@ def create_keycloak_service(
     service_spec = client.V1ServiceSpec(
         selector={
             "app": "keycloak",
-            "keycloak.mdvr.nl/instance": name,
+            "vriesdemichael.github.io/keycloak-instance": name,
         },
         ports=[
             client.V1ServicePort(
@@ -443,8 +443,8 @@ def create_keycloak_service(
             namespace=namespace,
             labels={
                 "app": "keycloak",
-                "keycloak.mdvr.nl/instance": name,
-                "keycloak.mdvr.nl/component": "service",
+                "vriesdemichael.github.io/keycloak-instance": name,
+                "vriesdemichael.github.io/keycloak-component": "service",
             },
             # Owner reference can be set by calling code
         ),
@@ -534,12 +534,12 @@ def create_client_secret(
             name=secret_name,
             namespace=namespace,
             labels={
-                "keycloak.mdvr.nl/client": client_id,
-                "keycloak.mdvr.nl/realm": realm,
-                "keycloak.mdvr.nl/component": "client-credentials",
+                "vriesdemichael.github.io/keycloak-client": client_id,
+                "vriesdemichael.github.io/keycloak-realm": realm,
+                "vriesdemichael.github.io/keycloak-component": "client-credentials",
             },
             annotations={
-                "keycloak.mdvr.nl/client-type": "confidential"
+                "vriesdemichael.github.io/keycloak-client-type": "confidential"
                 if client_secret
                 else "public",
             },
@@ -602,7 +602,7 @@ def find_keycloak_instances(namespace: str | None = None) -> list[dict[str, Any]
         if namespace:
             # Search in specific namespace
             response = custom_api.list_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloaks",
@@ -610,7 +610,7 @@ def find_keycloak_instances(namespace: str | None = None) -> list[dict[str, Any]
         else:
             # Search cluster-wide
             response = custom_api.list_cluster_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 plural="keycloaks",
             )
@@ -629,7 +629,7 @@ def set_owner_reference(
     owner_name: str,
     owner_uid: str,
     owner_kind: str = "Keycloak",
-    api_version: str = "keycloak.mdvr.nl/v1",
+    api_version: str = "vriesdemichael.github.io/v1",
 ) -> None:
     """
     Set owner reference for garbage collection.
@@ -694,8 +694,8 @@ def create_persistent_volume_claim(
             name=pvc_name,
             namespace=namespace,
             labels={
-                "keycloak.mdvr.nl/instance": name,
-                "keycloak.mdvr.nl/component": "data-storage",
+                "vriesdemichael.github.io/keycloak-instance": name,
+                "vriesdemichael.github.io/keycloak-component": "data-storage",
             },
         ),
         spec=pvc_spec,
@@ -781,8 +781,8 @@ def create_keycloak_ingress(
             name=ingress_name,
             namespace=namespace,
             labels={
-                "keycloak.mdvr.nl/instance": name,
-                "keycloak.mdvr.nl/component": "ingress",
+                "vriesdemichael.github.io/keycloak-instance": name,
+                "vriesdemichael.github.io/keycloak-component": "ingress",
             },
             annotations=getattr(spec.ingress, "annotations", {}),
         ),
@@ -874,8 +874,8 @@ def backup_keycloak_data(
         template=client.V1PodTemplateSpec(
             metadata=client.V1ObjectMeta(
                 labels={
-                    "keycloak.mdvr.nl/instance": name,
-                    "keycloak.mdvr.nl/component": "backup",
+                    "vriesdemichael.github.io/keycloak-instance": name,
+                    "vriesdemichael.github.io/keycloak-component": "backup",
                 }
             ),
             spec=client.V1PodSpec(
@@ -908,8 +908,8 @@ def backup_keycloak_data(
             name=job_name,
             namespace=namespace,
             labels={
-                "keycloak.mdvr.nl/instance": name,
-                "keycloak.mdvr.nl/component": "backup",
+                "vriesdemichael.github.io/keycloak-instance": name,
+                "vriesdemichael.github.io/keycloak-component": "backup",
             },
         ),
         spec=job_spec,
@@ -970,7 +970,7 @@ def get_pod_resource_usage(
         core_api = client.CoreV1Api(k8s_client)
 
         # Get pods for this Keycloak instance
-        label_selector = f"keycloak.mdvr.nl/instance={name}"
+        label_selector = f"vriesdemichael.github.io/keycloak-instance={name}"
         pods = core_api.list_namespaced_pod(
             namespace=namespace, label_selector=label_selector
         )
@@ -1058,8 +1058,8 @@ def create_admin_secret(
             name=secret_name,
             namespace=namespace,
             labels={
-                "keycloak.mdvr.nl/instance": name,
-                "keycloak.mdvr.nl/component": "admin-credentials",
+                "vriesdemichael.github.io/keycloak-instance": name,
+                "vriesdemichael.github.io/keycloak-component": "admin-credentials",
             },
         ),
         type="Opaque",
@@ -1163,7 +1163,7 @@ def check_rbac_permissions(
 
         # Auto-detect API group if not specified
         if api_group is None:
-            # Core resources use empty string, custom resources use keycloak.mdvr.nl
+            # Core resources use empty string, custom resources use vriesdemichael.github.io
             core_resources = {
                 "secrets",
                 "configmaps",
@@ -1172,7 +1172,7 @@ def check_rbac_permissions(
                 "serviceaccounts",
                 "persistentvolumeclaims",
             }
-            api_group = "" if resource in core_resources else "keycloak.mdvr.nl"
+            api_group = "" if resource in core_resources else "vriesdemichael.github.io"
 
         # Get service account information
         sa_info = get_current_service_account_info()

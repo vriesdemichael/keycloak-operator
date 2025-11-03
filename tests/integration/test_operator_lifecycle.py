@@ -88,9 +88,9 @@ class TestOperatorLifecycle:
         api = client.ApiextensionsV1Api(k8s_client)
 
         required_crds = [
-            "keycloaks.keycloak.mdvr.nl",
-            "keycloakrealms.keycloak.mdvr.nl",
-            "keycloakclients.keycloak.mdvr.nl",
+            "keycloaks.vriesdemichael.github.io",
+            "keycloakrealms.vriesdemichael.github.io",
+            "keycloakclients.vriesdemichael.github.io",
         ]
 
         for crd_name in required_crds:
@@ -128,12 +128,12 @@ class TestOperatorLifecycle:
             # Check if essential cluster-wide permissions are present
             required_cluster_permissions = [
                 (
-                    "keycloak.mdvr.nl",
+                    "vriesdemichael.github.io",
                     ["keycloaks", "keycloakrealms", "keycloakclients"],
                     ["list", "watch"],  # Only list/watch at cluster level
                 ),
                 (
-                    "keycloak.mdvr.nl",
+                    "vriesdemichael.github.io",
                     [
                         "keycloaks/status",
                         "keycloakrealms/status",
@@ -175,12 +175,12 @@ class TestOperatorLifecycle:
             # Verify namespace-access role has status/finalizers permissions
             namespace_permissions = [
                 (
-                    "keycloak.mdvr.nl",
+                    "vriesdemichael.github.io",
                     ["keycloakrealms/status", "keycloakclients/status"],
                     ["get", "update", "patch"],
                 ),
                 (
-                    "keycloak.mdvr.nl",
+                    "vriesdemichael.github.io",
                     ["keycloakrealms/finalizers", "keycloakclients/finalizers"],
                     ["update"],
                 ),
@@ -263,7 +263,7 @@ class TestBasicKeycloakDeployment:
         try:
             # Verify the shared resource exists
             resource = await k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloaks",
@@ -286,7 +286,7 @@ class TestBasicKeycloakDeployment:
         try:
             # Verify finalizer exists on shared resource
             resource = await k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloaks",
@@ -294,7 +294,7 @@ class TestBasicKeycloakDeployment:
             )
             finalizers = resource.get("metadata", {}).get("finalizers", [])
             assert (
-                "keycloak.mdvr.nl/cleanup" in finalizers
+                "vriesdemichael.github.io/keycloak-cleanup" in finalizers
             ), "Finalizer was not added to Keycloak resource"
 
         except ApiException as e:
@@ -366,7 +366,7 @@ class TestBasicKeycloakDeployment:
         try:
             # Verify status is set correctly (instance is already ready from fixture)
             resource = await k8s_custom_objects.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloaks",
@@ -392,7 +392,7 @@ class TestBasicKeycloakDeployment:
             # Verify pods are running (instance is already ready from fixture)
             pods = await k8s_core_v1.list_namespaced_pod(
                 namespace=namespace,
-                label_selector=f"keycloak.mdvr.nl/instance={keycloak_name}",
+                label_selector=f"vriesdemichael.github.io/keycloak-instance={keycloak_name}",
             )
 
             assert pods.items, "No Keycloak pods found"
@@ -510,7 +510,7 @@ class TestRealmBasicOperations:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -519,7 +519,7 @@ class TestRealmBasicOperations:
         try:
             # Create realm on the shared Keycloak instance
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -530,7 +530,7 @@ class TestRealmBasicOperations:
             async def check_realm_created():
                 try:
                     resource = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakrealms",
@@ -551,7 +551,7 @@ class TestRealmBasicOperations:
             # Cleanup realm only (shared Keycloak is managed by fixture)
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",
@@ -596,7 +596,7 @@ class TestClientBasicOperations:
         )
 
         realm_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
             "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -615,7 +615,7 @@ class TestClientBasicOperations:
         )
 
         client_manifest = {
-            "apiVersion": "keycloak.mdvr.nl/v1",
+            "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakClient",
             "metadata": {"name": client_name, "namespace": namespace},
             "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
@@ -624,7 +624,7 @@ class TestClientBasicOperations:
         try:
             # Create realm on shared Keycloak instance
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
@@ -633,7 +633,7 @@ class TestClientBasicOperations:
 
             # Create client
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -644,7 +644,7 @@ class TestClientBasicOperations:
             async def check_client_created():
                 try:
                     resource = await k8s_custom_objects.get_namespaced_custom_object(
-                        group="keycloak.mdvr.nl",
+                        group="vriesdemichael.github.io",
                         version="v1",
                         namespace=namespace,
                         plural="keycloakclients",
@@ -665,7 +665,7 @@ class TestClientBasicOperations:
             # Cleanup client and realm (shared Keycloak is managed by fixture)
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakclients",
@@ -674,7 +674,7 @@ class TestClientBasicOperations:
 
             with contextlib.suppress(ApiException):
                 await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakrealms",

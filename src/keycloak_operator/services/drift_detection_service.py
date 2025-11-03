@@ -454,7 +454,7 @@ class DriftDetector:
 
             await asyncio.to_thread(
                 self.custom_objects_api.get_namespaced_custom_object,
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural=plural,

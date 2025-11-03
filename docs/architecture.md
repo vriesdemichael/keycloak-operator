@@ -98,7 +98,7 @@ Each realm can target a specific operator instance using the `operatorRef` field
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm

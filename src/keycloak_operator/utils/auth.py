@@ -156,7 +156,7 @@ async def validate_and_bootstrap_authorization(
             f"Invalid token type '{token_type}' for secret "
             f"{context.namespace}/{context.secret_ref.name}. "
             f"Expected 'admission' or 'operational'.\n"
-            "Action required: Ensure secret has correct keycloak.mdvr.nl/token-type label"
+            "Action required: Ensure secret has correct vriesdemichael.github.io/keycloak-token-type label"
         )
 
 

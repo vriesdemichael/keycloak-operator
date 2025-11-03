@@ -939,7 +939,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         # Delete dependent KeycloakClients first (they depend on realms)
         try:
             clients = custom_api.list_cluster_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 plural="keycloakclients",
             )
@@ -961,7 +961,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     )
                     try:
                         custom_api.delete_namespaced_custom_object(
-                            group="keycloak.mdvr.nl",
+                            group="vriesdemichael.github.io",
                             version="v1",
                             namespace=client_ns,
                             plural="keycloakclients",
@@ -980,7 +980,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         # Delete dependent KeycloakRealms
         try:
             realms = custom_api.list_cluster_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 plural="keycloakrealms",
             )
@@ -1002,7 +1002,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     )
                     try:
                         custom_api.delete_namespaced_custom_object(
-                            group="keycloak.mdvr.nl",
+                            group="vriesdemichael.github.io",
                             version="v1",
                             namespace=realm_ns,
                             plural="keycloakrealms",
@@ -1225,9 +1225,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     name=backup_name,
                     namespace=namespace,
                     labels={
-                        "keycloak.mdvr.nl/backup": "true",
-                        "keycloak.mdvr.nl/backup-type": "full_instance",
-                        "keycloak.mdvr.nl/keycloak-instance": backup_data[
+                        "vriesdemichael.github.io/keycloak-backup": "true",
+                        "vriesdemichael.github.io/keycloak-backup-type": "full_instance",
+                        "vriesdemichael.github.io/keycloak-instance": backup_data[
                             "keycloak_instance"
                         ]["name"],
                     },

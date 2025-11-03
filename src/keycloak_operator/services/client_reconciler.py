@@ -71,7 +71,7 @@ class KeycloakClientReconciler(BaseReconciler):
         try:
             custom_api = client.CustomObjectsApi()
             realm_resource = custom_api.get_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=realm_namespace,
                 plural="keycloakrealms",
@@ -655,9 +655,9 @@ class KeycloakClientReconciler(BaseReconciler):
                 # Add labels for RBAC policies
                 secret.metadata.labels.update(
                     {
-                        "keycloak.mdvr.nl/client": name,
-                        "keycloak.mdvr.nl/realm": actual_realm_name,
-                        "keycloak.mdvr.nl/secret-type": "client-credentials",
+                        "vriesdemichael.github.io/keycloak-client": name,
+                        "vriesdemichael.github.io/keycloak-realm": actual_realm_name,
+                        "vriesdemichael.github.io/keycloak-secret-type": "client-credentials",
                     }
                 )
 
@@ -1371,7 +1371,7 @@ class KeycloakClientReconciler(BaseReconciler):
         try:
             configmaps = core_api.list_namespaced_config_map(
                 namespace=namespace,
-                label_selector=f"keycloak.mdvr.nl/client={name}",
+                label_selector=f"vriesdemichael.github.io/keycloak-client={name}",
             )
             for cm in configmaps.items:
                 try:
@@ -1392,7 +1392,7 @@ class KeycloakClientReconciler(BaseReconciler):
         try:
             secrets = core_api.list_namespaced_secret(
                 namespace=namespace,
-                label_selector=f"keycloak.mdvr.nl/client={name},keycloak.mdvr.nl/secret-type!=credentials",
+                label_selector=f"vriesdemichael.github.io/keycloak-client={name},vriesdemichael.github.io/keycloak-secret-type!=credentials",
             )
             for secret in secrets.items:
                 try:

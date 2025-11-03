@@ -134,10 +134,10 @@ class KeycloakRealmReconciler(BaseReconciler):
             # Operational token exists, update status
 
             token_version = operational_secret.metadata.annotations.get(
-                "keycloak.mdvr.nl/version", "1"
+                "vriesdemichael.github.io/keycloak-version", "1"
             )
             valid_until_str = operational_secret.metadata.annotations.get(
-                "keycloak.mdvr.nl/valid-until"
+                "vriesdemichael.github.io/keycloak-valid-until"
             )
 
             if valid_until_str:
@@ -237,7 +237,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         This method enforces namespace access control and secret labeling requirements.
         The secret must:
         1. Be accessible via RoleBinding granting operator access to the namespace
-        2. Have the label: keycloak.mdvr.nl/allow-operator-read=true
+        2. Have the label: vriesdemichael.github.io/keycloak-allow-operator-read=true
 
         Args:
             namespace: Namespace containing the secret
@@ -347,11 +347,11 @@ class KeycloakRealmReconciler(BaseReconciler):
                     "app.kubernetes.io/component": "realm-authorization",
                     "keycloak.k8s.intility.io/realm": realm_name,
                     # RBAC label required for operator to read this secret
-                    "keycloak.mdvr.nl/allow-operator-read": "true",
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
                 },
                 owner_references=[
                     client.V1OwnerReference(
-                        api_version="keycloak.mdvr.nl/v1",
+                        api_version="vriesdemichael.github.io/v1",
                         kind="KeycloakRealm",
                         name=realm_cr_name,
                         uid=owner_uid,
@@ -913,11 +913,11 @@ class KeycloakRealmReconciler(BaseReconciler):
                     name=backup_name,
                     namespace=namespace,
                     labels={
-                        "keycloak.mdvr.nl/backup": "true",
-                        "keycloak.mdvr.nl/backup-type": backup_type,
-                        "keycloak.mdvr.nl/realm": backup_data.get("realm", {}).get(
-                            "realm", "unknown"
-                        ),
+                        "vriesdemichael.github.io/keycloak-backup": "true",
+                        "vriesdemichael.github.io/keycloak-backup-type": backup_type,
+                        "vriesdemichael.github.io/keycloak-realm": backup_data.get(
+                            "realm", {}
+                        ).get("realm", "unknown"),
                     },
                 ),
                 string_data=secret_data,
@@ -1292,7 +1292,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             try:
                 custom_api = client.CustomObjectsApi(self.k8s_client)
                 clients = custom_api.list_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
                     plural="keycloakclients",
@@ -1314,7 +1314,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                             # Remove finalizers first to prevent deadlock
                             client_cr["metadata"]["finalizers"] = []
                             custom_api.patch_namespaced_custom_object(
-                                group="keycloak.mdvr.nl",
+                                group="vriesdemichael.github.io",
                                 version="v1",
                                 namespace=namespace,
                                 plural="keycloakclients",
@@ -1323,7 +1323,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                             )
                             # Then delete the CR
                             custom_api.delete_namespaced_custom_object(
-                                group="keycloak.mdvr.nl",
+                                group="vriesdemichael.github.io",
                                 version="v1",
                                 namespace=namespace,
                                 plural="keycloakclients",
@@ -1380,9 +1380,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     name=backup_name,
                     namespace=namespace,
                     labels={
-                        "keycloak.mdvr.nl/realm": realm_spec.realm_name,
-                        "keycloak.mdvr.nl/backup": "true",
-                        "keycloak.mdvr.nl/resource": name,
+                        "vriesdemichael.github.io/keycloak-realm": realm_spec.realm_name,
+                        "vriesdemichael.github.io/keycloak-backup": "true",
+                        "vriesdemichael.github.io/keycloak-resource": name,
                     },
                 ),
                 data={
@@ -1410,7 +1410,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         try:
             configmaps = core_api.list_namespaced_config_map(
                 namespace=namespace,
-                label_selector=f"keycloak.mdvr.nl/realm={realm_name},keycloak.mdvr.nl/backup!=true",
+                label_selector=f"vriesdemichael.github.io/keycloak-realm={realm_name},vriesdemichael.github.io/keycloak-backup!=true",
             )
             for cm in configmaps.items:
                 try:
@@ -1430,7 +1430,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         try:
             secrets = core_api.list_namespaced_secret(
                 namespace=namespace,
-                label_selector=f"keycloak.mdvr.nl/realm={realm_name},keycloak.mdvr.nl/secret-type!=client-credentials",
+                label_selector=f"vriesdemichael.github.io/keycloak-realm={realm_name},vriesdemichael.github.io/keycloak-secret-type!=client-credentials",
             )
             for secret in secrets.items:
                 try:

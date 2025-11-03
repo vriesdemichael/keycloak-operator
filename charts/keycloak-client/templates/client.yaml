@@ -1,5 +1,5 @@
 {{/* yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json */}}
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
   name: {{ include "keycloak-client.fullname" . }}

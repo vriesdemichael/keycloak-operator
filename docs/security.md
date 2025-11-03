@@ -73,7 +73,7 @@ metadata:
   name: my-realm-realm-auth
   namespace: app-team-namespace
   ownerReferences:
-    - apiVersion: keycloak.mdvr.nl/v1
+    - apiVersion: vriesdemichael.github.io/v1
       kind: KeycloakRealm
       name: my-realm
 type: Opaque
@@ -123,7 +123,7 @@ Example for KeycloakRealm → Keycloak:
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
@@ -167,7 +167,7 @@ The token system enforces namespace boundaries:
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 # This works (token in same namespace as realm)
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
@@ -183,7 +183,7 @@ spec:
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 # This fails (token not present in team-b namespace)
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: malicious-realm
@@ -204,7 +204,7 @@ spec:
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
 metadata:
   name: keycloak
@@ -237,7 +237,7 @@ kubectl apply -f operator-token.yaml -n app-team
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-app-realm
@@ -259,7 +259,7 @@ spec:
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
   name: my-app-client
@@ -363,7 +363,7 @@ When the **first** realm is created in a namespace:
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: first-realm
@@ -390,7 +390,7 @@ All subsequent realms in the same namespace use the operational token:
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: second-realm
@@ -441,16 +441,16 @@ metadata:
   name: team-a-operator-token
   namespace: team-a
   labels:
-    keycloak.mdvr.nl/token-type: operational
-    keycloak.mdvr.nl/managed-by: keycloak-operator
-    keycloak.mdvr.nl/allow-operator-read: "true"
+    vriesdemichael.github.io/token-type: operational
+    vriesdemichael.github.io/managed-by: keycloak-operator
+    vriesdemichael.github.io/allow-operator-read: "true"
   annotations:
-    keycloak.mdvr.nl/version: "2"
-    keycloak.mdvr.nl/valid-until: "2025-04-15T00:00:00Z"
-    keycloak.mdvr.nl/created-by-realm: "first-realm"
-    keycloak.mdvr.nl/grace-period-ends: "2025-04-22T00:00:00Z"  # During rotation
+    vriesdemichael.github.io/version: "2"
+    vriesdemichael.github.io/valid-until: "2025-04-15T00:00:00Z"
+    vriesdemichael.github.io/created-by-realm: "first-realm"
+    vriesdemichael.github.io/grace-period-ends: "2025-04-22T00:00:00Z"  # During rotation
   ownerReferences:
-    - apiVersion: keycloak.mdvr.nl/v1
+    - apiVersion: vriesdemichael.github.io/v1
       kind: KeycloakRealm
       name: first-realm
       uid: <realm-uid>
@@ -499,8 +499,8 @@ kubectl create secret generic admission-token-team-a \
 
 # Add required labels
 kubectl label secret admission-token-team-a \
-  keycloak.mdvr.nl/token-type=admission \
-  keycloak.mdvr.nl/allow-operator-read=true \
+  vriesdemichael.github.io/token-type=admission \
+  vriesdemichael.github.io/allow-operator-read=true \
   --namespace=team-a
 
 # Store token metadata
@@ -759,7 +759,7 @@ metadata:
   name: keycloak-realm-manager
   namespace: team-a
 rules:
-  - apiGroups: ["keycloak.mdvr.nl"]
+  - apiGroups: ["vriesdemichael.github.io"]
     resources: ["keycloakrealms", "keycloakclients"]
     verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
   - apiGroups: [""]
@@ -785,8 +785,8 @@ kubectl create secret generic admission-token-team-a \
 
 # Add required labels
 kubectl label secret admission-token-team-a \
-  keycloak.mdvr.nl/token-type=admission \
-  keycloak.mdvr.nl/allow-operator-read=true \
+  vriesdemichael.github.io/token-type=admission \
+  vriesdemichael.github.io/allow-operator-read=true \
   --namespace=team-a
 
 # Store metadata
@@ -798,7 +798,7 @@ kubectl label secret admission-token-team-a \
 ```yaml
 # Update the first realm in namespace to use admission token
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
-apiVersion: keycloak.mdvr.nl/v1
+apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: first-realm
@@ -928,7 +928,7 @@ metadata:
   namespace: app-team
 rules:
   # Create and manage own Keycloak resources
-  - apiGroups: ["keycloak.mdvr.nl"]
+  - apiGroups: ["vriesdemichael.github.io"]
     resources: ["keycloakrealms", "keycloakclients"]
     verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
   # Read authorization secrets
@@ -951,7 +951,7 @@ kind: ClusterRole
 metadata:
   name: keycloak-realm-creator
 rules:
-  - apiGroups: ["keycloak.mdvr.nl"]
+  - apiGroups: ["vriesdemichael.github.io"]
     resources: ["keycloaks"]
     verbs: ["get"]
     resourceNames: ["keycloak"]  # Must list every Keycloak!

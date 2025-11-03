@@ -103,7 +103,7 @@ async def test_complex_feature(
     try:
         # Create dedicated instance
         k8s_custom_objects.create_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=test_namespace,
             plural="keycloaks",
@@ -119,7 +119,7 @@ async def test_complex_feature(
         # ALWAYS cleanup dedicated resources
         with contextlib.suppress(ApiException):
             k8s_custom_objects.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=test_namespace,
                 plural="keycloaks",
@@ -195,7 +195,7 @@ async def test_something(
     # Wait for ready - automatically gets logs/events on failure
     await wait_for_resource_ready(
         k8s_custom_objects=k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -227,7 +227,7 @@ async def test_something(k8s_custom_objects, test_namespace, operator_namespace)
 
     resource = await wait_for_resource_condition(
         k8s_custom_objects=k8s_custom_objects,
-        group="keycloak.mdvr.nl",
+        group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
         plural="keycloakrealms",
@@ -247,7 +247,7 @@ Wait for Failed phase:
 ```python
 await wait_for_resource_failed(
     k8s_custom_objects=k8s_custom_objects,
-    group="keycloak.mdvr.nl",
+    group="vriesdemichael.github.io",
     version="v1",
     namespace=test_namespace,
     plural="keycloakrealms",
@@ -264,7 +264,7 @@ Wait for resource deletion (404):
 ```python
 await wait_for_resource_deleted(
     k8s_custom_objects=k8s_custom_objects,
-    group="keycloak.mdvr.nl",
+    group="vriesdemichael.github.io",
     version="v1",
     namespace=test_namespace,
     plural="keycloakrealms",
@@ -295,7 +295,7 @@ assert ready, "Resource did not become ready"  # Unhelpful error message
 # CORRECT - Automatic debugging on failure
 await wait_for_resource_ready(
     k8s_custom_objects=k8s_custom_objects,
-    group="keycloak.mdvr.nl",
+    group="vriesdemichael.github.io",
     version="v1",
     namespace=test_namespace,
     plural="keycloakrealms",
@@ -352,7 +352,7 @@ async def _wait_for_ready(plural: str, name: str) -> None:
     """Wait for resource to reach Ready phase."""
     async def _condition() -> bool:
         resource = k8s_custom_objects.get_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural=plural,
@@ -405,7 +405,7 @@ finally:
     with contextlib.suppress(ApiException):
         # Delete clients first
         k8s_custom_objects.delete_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloakclients",
@@ -415,7 +415,7 @@ finally:
     with contextlib.suppress(ApiException):
         # Then realms
         k8s_custom_objects.delete_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloakrealms",
@@ -425,7 +425,7 @@ finally:
     with contextlib.suppress(ApiException):
         # Finally Keycloak instance
         k8s_custom_objects.delete_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=namespace,
             plural="keycloaks",
@@ -511,7 +511,7 @@ async def test_feature_name(
         }
 
         k8s_custom_objects.create_namespaced_custom_object(
-            group="keycloak.mdvr.nl",
+            group="vriesdemichael.github.io",
             version="v1",
             namespace=test_namespace,
             plural="keycloakclients",
@@ -522,7 +522,7 @@ async def test_feature_name(
         async def check_ready() -> bool:
             try:
                 resource = k8s_custom_objects.get_namespaced_custom_object(
-                    group="keycloak.mdvr.nl",
+                    group="vriesdemichael.github.io",
                     version="v1",
                     namespace=test_namespace,
                     plural="keycloakclients",
@@ -561,7 +561,7 @@ async def test_feature_name(
         # Cleanup (only for resources created in this test)
         with contextlib.suppress(ApiException):
             k8s_custom_objects.delete_namespaced_custom_object(
-                group="keycloak.mdvr.nl",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=test_namespace,
                 plural="keycloakclients",

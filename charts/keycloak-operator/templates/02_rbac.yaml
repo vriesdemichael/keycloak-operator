@@ -29,7 +29,7 @@ metadata:
   {{- end }}
 rules:
 # Watch CRDs cluster-wide (read-only metadata)
-- apiGroups: ["keycloak.mdvr.nl"]
+- apiGroups: ["vriesdemichael.github.io"]
   resources:
   - keycloaks
   - keycloakclients
@@ -37,14 +37,14 @@ rules:
   verbs: ["list", "watch"]
 
 # Update CRD status and finalizers (required by Kopf)
-- apiGroups: ["keycloak.mdvr.nl"]
+- apiGroups: ["vriesdemichael.github.io"]
   resources:
   - keycloaks/status
   - keycloakclients/status
   - keycloakrealms/status
   verbs: ["get", "update", "patch"]
 
-- apiGroups: ["keycloak.mdvr.nl"]
+- apiGroups: ["vriesdemichael.github.io"]
   resources:
   - keycloaks/finalizers
   - keycloakclients/finalizers
@@ -91,7 +91,7 @@ metadata:
   {{- end }}
 rules:
 # CRDs in operator namespace (Keycloak instances live here)
-- apiGroups: ["keycloak.mdvr.nl"]
+- apiGroups: ["vriesdemichael.github.io"]
   resources:
   - keycloaks
   - keycloakclients
@@ -168,27 +168,27 @@ rules:
 # Read, patch, and delete CRDs in delegated namespaces (realms and clients)
 # Note: patch is required for Kopf to update status via strategic merge patch
 # Note: delete is required for cascading deletion (realm deletes dependent clients)
-- apiGroups: ["keycloak.mdvr.nl"]
+- apiGroups: ["vriesdemichael.github.io"]
   resources:
   - keycloakclients
   - keycloakrealms
   verbs: ["get", "list", "watch", "patch", "delete"]
 
 # Update CRD status and finalizers in delegated namespaces
-- apiGroups: ["keycloak.mdvr.nl"]
+- apiGroups: ["vriesdemichael.github.io"]
   resources:
   - keycloakclients/status
   - keycloakrealms/status
   verbs: ["get", "update", "patch"]
 
-- apiGroups: ["keycloak.mdvr.nl"]
+- apiGroups: ["vriesdemichael.github.io"]
   resources:
   - keycloakclients/finalizers
   - keycloakrealms/finalizers
   verbs: ["update"]
 
 # Read and create labeled secrets only (validation enforced in code)
-# Label required: keycloak.mdvr.nl/allow-operator-read=true
+# Label required: vriesdemichael.github.io/keycloak-allow-operator-read=true
 # Create permission needed for realm authorization secrets
 # Update/patch permission needed for client credentials
 - apiGroups: [""]

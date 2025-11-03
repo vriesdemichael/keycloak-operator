@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @kopf.timer(
     "v1",
     "secrets",
-    field='metadata.labels["keycloak.mdvr.nl/token-type"]=="operational"',
+    field='metadata.labels["vriesdemichael.github.io/keycloak-token-type"]=="operational"',
     interval=86400,  # Daily check
     idle=300,  # Wait 5 minutes before first check
 )
@@ -54,7 +54,7 @@ async def rotate_operational_tokens_before_expiry(
 
     # Check valid-until annotation
     annotations = meta.get("annotations", {})
-    valid_until_str = annotations.get("keycloak.mdvr.nl/valid-until")
+    valid_until_str = annotations.get("vriesdemichael.github.io/keycloak-valid-until")
 
     if not valid_until_str:
         logger.warning(
@@ -138,7 +138,7 @@ async def rotate_operational_tokens_before_expiry(
 @kopf.timer(
     "v1",
     "secrets",
-    field='metadata.labels["keycloak.mdvr.nl/token-type"]=="operational"',
+    field='metadata.labels["vriesdemichael.github.io/keycloak-token-type"]=="operational"',
     interval=3600,  # Hourly check
     idle=600,  # Wait 10 minutes before first check
 )
@@ -168,7 +168,9 @@ async def cleanup_expired_grace_periods(spec, meta, namespace, **kwargs) -> None
 
     # Check grace-period-ends annotation
     annotations = meta.get("annotations", {})
-    grace_period_end_str = annotations.get("keycloak.mdvr.nl/grace-period-ends")
+    grace_period_end_str = annotations.get(
+        "vriesdemichael.github.io/keycloak-grace-period-ends"
+    )
 
     if not grace_period_end_str:
         return  # No grace period set
@@ -214,7 +216,7 @@ async def cleanup_expired_grace_periods(spec, meta, namespace, **kwargs) -> None
 @kopf.daemon(
     "v1",
     "secrets",
-    field='metadata.labels["keycloak.mdvr.nl/token-type"]=="operational"',
+    field='metadata.labels["vriesdemichael.github.io/keycloak-token-type"]=="operational"',
 )
 async def detect_orphaned_tokens(spec, meta, namespace, stopped, **kwargs) -> None:
     """
