@@ -63,7 +63,7 @@ async def dex_ready(shared_operator, operator_namespace):
 
         # Wait for Dex deployment to be ready using the apps API
         apps_api = client.AppsV1Api()
-        for _ in range(40):  # 40 * 3 = 120 seconds
+        for i in range(60):  # 60 * 5 = 300 seconds (5 min for image pull)
             try:
                 deployment = apps_api.read_namespaced_deployment(
                     "dex", operator_namespace
@@ -74,9 +74,16 @@ async def dex_ready(shared_operator, operator_namespace):
                 ):
                     logger.info("Dex deployment is ready")
                     break
+                elif i % 10 == 0:  # Log every 50 seconds
+                    logger.info(
+                        f"Waiting for Dex... ({i*5}s elapsed, "
+                        f"ready: {deployment.status.ready_replicas or 0}/"
+                        f"{deployment.status.replicas or 0})"
+                    )
             except Exception as e:
-                logger.debug(f"Waiting for Dex deployment: {e}")
-            await asyncio.sleep(3)
+                if i % 10 == 0:
+                    logger.debug(f"Waiting for Dex deployment: {e}")
+            await asyncio.sleep(5)
         else:
             # Get pod logs for debugging
             try:
