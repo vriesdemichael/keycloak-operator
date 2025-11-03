@@ -8,11 +8,16 @@ These tests verify that the operator correctly:
 """
 
 import asyncio
+import contextlib
 import logging
+import subprocess
+import tempfile
+import uuid
+from pathlib import Path
 
 import pytest
+import yaml
 from kubernetes import client
-from kubernetes.client.rest import ApiException
 
 from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import (
@@ -27,151 +32,133 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
-async def dex_ready(k8s_core_v1, k8s_apps_v1, operator_namespace):
-    """Deploy Dex OIDC provider for testing IDP integration."""
-    dex_namespace = operator_namespace
+async def dex_ready(shared_operator, operator_namespace):
+    """Deploy Dex OIDC provider for testing IDP integration.
 
-    # Load Dex manifests
-    from pathlib import Path
-
-    import yaml
-
+    Uses kubectl apply for simplicity and waits for deployment to be ready.
+    Deploys to operator_namespace alongside the operator and Keycloak.
+    """
     dex_manifest_path = Path(__file__).parent / "fixtures" / "dex-deployment.yaml"
     with open(dex_manifest_path) as f:
         manifests = list(yaml.safe_load_all(f))
 
-    deployed_resources = []
+    # Update namespace in all manifests
+    for manifest in manifests:
+        manifest["metadata"]["namespace"] = operator_namespace
+
+    # Write updated manifests to temp file
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.safe_dump_all(manifests, f)
+        temp_manifest = f.name
 
     try:
-        # Deploy ConfigMap
-        config_map = manifests[0]
-        config_map["metadata"]["namespace"] = dex_namespace
-        cm_obj = client.V1ConfigMap(
-            metadata=client.V1ObjectMeta(
-                name=config_map["metadata"]["name"],
-                namespace=dex_namespace,
-            ),
-            data=config_map["data"],
+        # Apply manifests using kubectl
+        result = subprocess.run(
+            ["kubectl", "apply", "-f", temp_manifest],
+            check=True,
+            capture_output=True,
+            text=True,
         )
+        logger.info(f"Applied Dex manifests: {result.stdout}")
 
-        try:
-            await k8s_core_v1.create_namespaced_config_map(dex_namespace, cm_obj)
-            deployed_resources.append(("configmap", config_map["metadata"]["name"]))
-            logger.info("Created Dex ConfigMap")
-        except ApiException as e:
-            if e.status != 409:
-                raise
-            logger.info("Dex ConfigMap already exists")
-
-        # Deploy Deployment (use kubectl apply for easier YAML handling)
-        deployment_manifest = manifests[1]
-        deployment_manifest["metadata"]["namespace"] = dex_namespace
-
-        try:
-            # Use body parameter which accepts dict directly
-            await k8s_apps_v1.create_namespaced_deployment(
-                namespace=dex_namespace,
-                body=deployment_manifest,
-            )
-            deployed_resources.append(
-                ("deployment", deployment_manifest["metadata"]["name"])
-            )
-            logger.info("Created Dex Deployment")
-        except ApiException as e:
-            if e.status != 409:
-                raise
-            logger.info("Dex Deployment already exists")
-
-        # Deploy Service (use body parameter for dict)
-        service_manifest = manifests[2]
-        service_manifest["metadata"]["namespace"] = dex_namespace
-
-        try:
-            await k8s_core_v1.create_namespaced_service(
-                namespace=dex_namespace,
-                body=service_manifest,
-            )
-            deployed_resources.append(("service", service_manifest["metadata"]["name"]))
-            logger.info("Created Dex Service")
-        except ApiException as e:
-            if e.status != 409:
-                raise
-            logger.info("Dex Service already exists")
-
-        # Wait for Dex to be ready
+        # Wait for Dex deployment to be ready using the apps API
+        apps_api = client.AppsV1Api()
         for _ in range(40):  # 40 * 3 = 120 seconds
             try:
-                deployment = await k8s_apps_v1.read_namespaced_deployment(
-                    "dex", dex_namespace
+                deployment = apps_api.read_namespaced_deployment(
+                    "dex", operator_namespace
                 )
                 if (
                     deployment.status.ready_replicas
                     and deployment.status.ready_replicas > 0
                 ):
+                    logger.info("Dex deployment is ready")
                     break
-            except ApiException:
-                pass
+            except Exception as e:
+                logger.debug(f"Waiting for Dex deployment: {e}")
             await asyncio.sleep(3)
         else:
-            raise TimeoutError("Dex deployment did not become ready")
+            # Get pod logs for debugging
+            try:
+                result = subprocess.run(
+                    [
+                        "kubectl",
+                        "get",
+                        "pods",
+                        "-n",
+                        operator_namespace,
+                        "-l",
+                        "app=dex",
+                        "-o",
+                        "wide",
+                    ],
+                    capture_output=True,
+                    text=True,
+                )
+                logger.error(f"Dex pods status:\n{result.stdout}")
 
-        logger.info("Dex is ready")
+                # Try to get logs
+                result = subprocess.run(
+                    [
+                        "kubectl",
+                        "logs",
+                        "-n",
+                        operator_namespace,
+                        "-l",
+                        "app=dex",
+                        "--tail=50",
+                    ],
+                    capture_output=True,
+                    text=True,
+                )
+                logger.error(f"Dex logs:\n{result.stdout}\n{result.stderr}")
+            except Exception as e:
+                logger.error(f"Failed to get Dex debug info: {e}")
+
+            raise TimeoutError("Dex deployment did not become ready within 120s")
 
         yield {
-            "namespace": dex_namespace,
+            "namespace": operator_namespace,
             "service_name": "dex",
-            "issuer_url": f"http://dex.{dex_namespace}.svc.cluster.local:5556/dex",
+            "issuer_url": f"http://dex.{operator_namespace}.svc.cluster.local:5556/dex",
             "client_id": "keycloak",
             "client_secret": "keycloak-secret",
         }
 
     finally:
-        # Cleanup in reverse order
-        for resource_type, resource_name in reversed(deployed_resources):
-            try:
-                if resource_type == "service":
-                    await k8s_core_v1.delete_namespaced_service(
-                        resource_name, dex_namespace
-                    )
-                elif resource_type == "deployment":
-                    await k8s_apps_v1.delete_namespaced_deployment(
-                        resource_name,
-                        dex_namespace,
-                        body=client.V1DeleteOptions(propagation_policy="Foreground"),
-                    )
-                elif resource_type == "configmap":
-                    await k8s_core_v1.delete_namespaced_config_map(
-                        resource_name, dex_namespace
-                    )
-                logger.info(f"Deleted Dex {resource_type}: {resource_name}")
-            except ApiException as e:
-                if e.status != 404:
-                    logger.warning(
-                        f"Failed to delete Dex {resource_type} {resource_name}: {e}"
-                    )
+        # Cleanup
+        try:
+            subprocess.run(
+                ["kubectl", "delete", "-f", temp_manifest, "--ignore-not-found=true"],
+                check=False,
+                capture_output=True,
+                timeout=30,
+            )
+            logger.info("Deleted Dex resources")
+        except Exception as e:
+            logger.warning(f"Failed to delete Dex resources: {e}")
+        finally:
+            # Remove temp file
+            with contextlib.suppress(Exception):
+                Path(temp_manifest).unlink()
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@pytest.mark.skip(
-    reason="TODO: Dex image pull/startup issues - needs investigation in separate issue"
-)
 async def test_realm_with_oidc_identity_provider(
-    keycloak_ready,
+    shared_operator,
+    keycloak_admin_client,
+    operator_namespace,
     test_namespace,
-    auth_token_factory,
+    admission_token_setup,
     k8s_custom_objects,
     dex_ready,
 ):
     """Test creating a realm with an OIDC identity provider (Dex)."""
-    realm_name = "test-idp-realm"
-    cr_name = f"{realm_name}-cr"
+    # Get admission token from fixture
+    admission_secret_name, _ = admission_token_setup
 
-    # Create authorization token
-    token_name, _ = await auth_token_factory(
-        namespace=test_namespace,
-        secret_name=f"{cr_name}-token",
-    )
+    realm_name = f"test-idp-{uuid.uuid4().hex[:8]}"
 
     # Create realm with Dex IDP
     idp_config = KeycloakIdentityProvider(
@@ -196,64 +183,62 @@ async def test_realm_with_oidc_identity_provider(
     realm_spec = KeycloakRealmSpec(
         realm_name=realm_name,
         operator_ref=OperatorRef(
-            namespace=keycloak_ready.operator.namespace,
-            authorization_secret_ref=AuthorizationSecretRef(name=token_name),
+            namespace=operator_namespace,
+            authorization_secret_ref=AuthorizationSecretRef(
+                name=admission_secret_name, key="token"
+            ),
         ),
         identity_providers=[idp_config],
     )
 
+    # Use sync K8s client like other tests
+    custom_api = client.CustomObjectsApi()
+
     realm_cr = {
-        "apiVersion": "keycloak.vriesdemichael.github.io/v1alpha1",
+        "apiVersion": "vriesdemichael.github.io/v1",
         "kind": "KeycloakRealm",
         "metadata": {
-            "name": cr_name,
+            "name": realm_name,
             "namespace": test_namespace,
         },
-        "spec": realm_spec.model_dump(mode="json", exclude_none=True),
+        "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
     }
 
     try:
         # Create the realm CR
-        await k8s_custom_objects.create_namespaced_custom_object(
-            group="keycloak.vriesdemichael.github.io",
-            version="v1alpha1",
+        custom_api.create_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
             namespace=test_namespace,
             plural="keycloakrealms",
             body=realm_cr,
         )
 
-        logger.info(f"Created realm CR: {cr_name}")
+        logger.info(f"Created realm CR: {realm_name}")
 
-        # Wait for realm to be ready
+        # Wait for realm to be ready using async client
         await wait_for_resource_ready(
             k8s_custom_objects,
-            group="keycloak.vriesdemichael.github.io",
-            version="v1alpha1",
+            group="vriesdemichael.github.io",
+            version="v1",
             namespace=test_namespace,
             plural="keycloakrealms",
-            name=cr_name,
+            name=realm_name,
             timeout=180,
         )
 
         # Verify IDP was created in Keycloak
-        # We'll use the admin client from keycloak_ready
-        from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
+        realm_repr = await keycloak_admin_client.get_realm(realm_name, test_namespace)
+        assert realm_repr is not None
 
-        admin_client = await get_keycloak_admin_client(
-            "keycloak",
-            keycloak_ready.operator_namespace,
-        )
-
-        # Get IDP list from Keycloak
-        response = await admin_client._make_request(
+        # Get IDP list from Keycloak using admin client
+        response = await keycloak_admin_client._make_request(
             "GET",
             f"admin/realms/{realm_name}/identity-provider/instances",
             namespace=test_namespace,
         )
 
-        assert (
-            response.status_code == 200
-        ), f"Failed to get IDPs: {response.status_code}"
+        assert response.status_code == 200, f"Failed to get IDPs: {response.text}"
 
         idps = response.json()
         assert len(idps) == 1, f"Expected 1 IDP, got {len(idps)}"
@@ -265,39 +250,41 @@ async def test_realm_with_oidc_identity_provider(
         assert dex_idp["config"]["clientId"] == dex_ready["client_id"]
         assert dex_idp["config"]["issuer"] == dex_ready["issuer_url"]
 
-        logger.info("Successfully verified Dex IDP in Keycloak")
+        logger.info("✓ Successfully verified Dex IDP in Keycloak")
 
     finally:
-        # Cleanup is handled by test_namespace fixture
-        pass
+        # Cleanup realm
+        try:
+            custom_api.delete_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete realm {realm_name}: {e}")
 
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@pytest.mark.skip(
-    reason="TODO: CRD not available when test runs - needs fixture ordering fix"
-)
 async def test_realm_with_github_identity_provider_example(
-    keycloak_ready,
+    shared_operator,
+    operator_namespace,
     test_namespace,
-    auth_token_factory,
-    k8s_custom_objects,
+    admission_token_setup,
 ):
     """
     Test creating a realm with GitHub identity provider configuration.
 
-    Note: This test only validates the CR creation and reconciliation.
-    It does NOT test actual authentication as that would require real GitHub OAuth credentials.
+    Note: This test validates the CR structure and reconciliation.
+    It does NOT test actual authentication as that requires real GitHub OAuth credentials.
     This serves as a documentation example for users.
     """
-    realm_name = "test-github-idp-realm"
-    cr_name = f"{realm_name}-cr"
+    # Get admission token from fixture
+    admission_secret_name, _ = admission_token_setup
 
-    # Create authorization token
-    token_name, _ = await auth_token_factory(
-        namespace=test_namespace,
-        secret_name=f"{cr_name}-token",
-    )
+    realm_name = f"test-github-idp-{uuid.uuid4().hex[:8]}"
 
     # Example GitHub IDP configuration
     # In production, clientSecret would come from a Kubernetes Secret
@@ -318,51 +305,67 @@ async def test_realm_with_github_identity_provider_example(
     realm_spec = KeycloakRealmSpec(
         realm_name=realm_name,
         operator_ref=OperatorRef(
-            namespace=keycloak_ready.operator.namespace,
-            authorization_secret_ref=AuthorizationSecretRef(name=token_name),
+            namespace=operator_namespace,
+            authorization_secret_ref=AuthorizationSecretRef(
+                name=admission_secret_name, key="token"
+            ),
         ),
         identity_providers=[github_idp],
     )
 
+    # Use sync K8s client
+    custom_api = client.CustomObjectsApi()
+
     realm_cr = {
-        "apiVersion": "keycloak.vriesdemichael.github.io/v1alpha1",
+        "apiVersion": "vriesdemichael.github.io/v1",
         "kind": "KeycloakRealm",
         "metadata": {
-            "name": cr_name,
+            "name": realm_name,
             "namespace": test_namespace,
         },
-        "spec": realm_spec.model_dump(mode="json", exclude_none=True),
+        "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
     }
 
     try:
         # Create the realm CR
-        await k8s_custom_objects.create_namespaced_custom_object(
-            group="keycloak.vriesdemichael.github.io",
-            version="v1alpha1",
+        custom_api.create_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
             namespace=test_namespace,
             plural="keycloakrealms",
             body=realm_cr,
         )
 
-        logger.info(f"Created realm CR with GitHub IDP: {cr_name}")
+        logger.info(f"Created realm CR with GitHub IDP: {realm_name}")
 
-        # Wait for realm to be ready (will fail at IDP creation due to invalid credentials)
-        # We just verify the CR is accepted and processed
+        # Wait a bit for processing
         await asyncio.sleep(10)
 
-        # Get the CR status
-        cr = await k8s_custom_objects.get_namespaced_custom_object(
-            group="keycloak.vriesdemichael.github.io",
-            version="v1alpha1",
+        # Get the CR status to verify it was accepted
+        cr = custom_api.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
             namespace=test_namespace,
             plural="keycloakrealms",
-            name=cr_name,
+            name=realm_name,
         )
 
-        # The CR should exist and be processed (realm created even if IDP fails)
+        # The CR should exist and be processed
+        # (realm creation will succeed, IDP creation will fail with invalid creds)
         assert cr is not None
-        logger.info("GitHub IDP example CR created successfully")
+        assert cr["metadata"]["name"] == realm_name
+
+        logger.info("✓ GitHub IDP example CR created successfully")
 
     finally:
-        # Cleanup is handled by test_namespace fixture
-        pass
+        # Cleanup realm
+        try:
+            custom_api.delete_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete realm {realm_name}: {e}")
