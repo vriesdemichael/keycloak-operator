@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/keycloakrealm-keycloak-v1alpha1.json
+---
+apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+kind: KeycloakRealm
+metadata:
+  name: realm-with-custom-oidc-idp
+  namespace: my-app
+spec:
+  realmName: my-realm
+  operatorRef:
+    name: keycloak-operator
+    namespace: keycloak-operator
+  authorizationSecretRef: my-realm-token
+
+  # Generic OIDC Identity Provider (works with any OIDC-compliant provider)
+  identityProviders:
+    - alias: custom-oidc
+      providerId: oidc
+      enabled: true
+      trustEmail: false
+      firstBrokerLoginFlowAlias: first broker login
+      config:
+        clientId: your-client-id
+        clientSecret: your-client-secret
+        authorizationUrl: https://idp.example.com/oauth2/authorize
+        tokenUrl: https://idp.example.com/oauth2/token
+        userInfoUrl: https://idp.example.com/oauth2/userinfo
+        jwksUrl: https://idp.example.com/oauth2/keys
+        issuer: https://idp.example.com
+        defaultScope: "openid profile email"
+        syncMode: IMPORT
+        validateSignature: "true"
+        useJwksUrl: "true"
