@@ -52,9 +52,10 @@ metadata:
 spec:
   realmName: my-realm
   operatorRef:
-    name: keycloak-operator
     namespace: keycloak-operator
-  authorizationSecretRef: my-realm-token
+    authorizationSecretRef:
+      name: my-realm-token
+      key: token
 
   identityProviders:
     - alias: github
@@ -101,9 +102,10 @@ metadata:
 spec:
   realmName: my-realm
   operatorRef:
-    name: keycloak-operator
     namespace: keycloak-operator
-  authorizationSecretRef: my-realm-token
+    authorizationSecretRef:
+      name: my-realm-token
+      key: token
 
   identityProviders:
     - alias: google
@@ -150,9 +152,10 @@ metadata:
 spec:
   realmName: my-realm
   operatorRef:
-    name: keycloak-operator
     namespace: keycloak-operator
-  authorizationSecretRef: my-realm-token
+    authorizationSecretRef:
+      name: my-realm-token
+      key: token
 
   identityProviders:
     - alias: azure-ad
@@ -191,9 +194,10 @@ metadata:
 spec:
   realmName: my-realm
   operatorRef:
-    name: keycloak-operator
     namespace: keycloak-operator
-  authorizationSecretRef: my-realm-token
+    authorizationSecretRef:
+      name: my-realm-token
+      key: token
 
   identityProviders:
     - alias: custom-oidc
@@ -237,9 +241,10 @@ metadata:
 spec:
   realmName: my-realm
   operatorRef:
-    name: keycloak-operator
     namespace: keycloak-operator
-  authorizationSecretRef: my-realm-token
+    authorizationSecretRef:
+      name: my-realm-token
+      key: token
 
   identityProviders:
     - alias: saml-idp
@@ -272,9 +277,10 @@ metadata:
 spec:
   realmName: my-realm
   operatorRef:
-    name: keycloak-operator
     namespace: keycloak-operator
-  authorizationSecretRef: my-realm-token
+    authorizationSecretRef:
+      name: my-realm-token
+      key: token
 
   clientScopes:
     - name: custom-claims
@@ -308,9 +314,10 @@ metadata:
 spec:
   realmName: multi-idp
   operatorRef:
-    name: keycloak-operator
     namespace: keycloak-operator
-  authorizationSecretRef: multi-idp-token
+    authorizationSecretRef:
+      name: multi-idp-token
+      key: token
 
   identityProviders:
     # GitHub for developers
