@@ -46,22 +46,25 @@ Working branch: `docs/documentation-review-improvements`
   - [x] Complete values.yaml field documentation
   - [x] Examples (basic, SMTP, themes, localization, security)
   - [x] Integration with operator chart
-- [ ] Commit: `docs(chart-realm): add comprehensive README`
+- [x] Commit: `docs(chart-realm): add comprehensive README`
 
 **Notes/Questions:**
 - Created comprehensive README with all values documented, multiple usage examples, troubleshooting guide
+- Commit: 2d70fc1
 
 #### Client Chart README
-- [ ] Create `charts/keycloak-client/README.md`
-  - [ ] Purpose and use cases
-  - [ ] Complete values.yaml field documentation
-  - [ ] OAuth2/OIDC configuration examples
-  - [ ] Service account configuration examples
-  - [ ] Protocol mapper examples
+- [x] Create `charts/keycloak-client/README.md`
+  - [x] Purpose and use cases
+  - [x] Complete values.yaml field documentation
+  - [x] OAuth2/OIDC configuration examples
+  - [x] Service account configuration examples
+  - [x] Protocol mapper examples
 - [ ] Commit: `docs(chart-client): add comprehensive README`
 
 **Notes/Questions:**
--
+- Created very comprehensive README with detailed OAuth2/OIDC explanations
+- Multiple client type examples (web app, SPA, mobile, API, service account)
+- Protocol mapper examples and integration code snippets
 
 ### 1.2 Update charts/README.md
 - [ ] Update token system documentation (admission/operational tokens)
