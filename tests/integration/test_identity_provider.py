@@ -63,7 +63,7 @@ async def dex_ready(shared_operator, operator_namespace):
 
         # Wait for Dex deployment to be ready using the apps API
         apps_api = client.AppsV1Api()
-        for i in range(60):  # 60 * 5 = 300 seconds (5 min for image pull)
+        for i in range(50):  # 50 * 5 = 250 seconds (under pytest 300s timeout)
             try:
                 deployment = apps_api.read_namespaced_deployment(
                     "dex", operator_namespace
@@ -101,6 +101,7 @@ async def dex_ready(shared_operator, operator_namespace):
                     ],
                     capture_output=True,
                     text=True,
+                    timeout=10,
                 )
                 logger.error(f"Dex pods status:\n{result.stdout}")
 
@@ -117,12 +118,31 @@ async def dex_ready(shared_operator, operator_namespace):
                     ],
                     capture_output=True,
                     text=True,
+                    timeout=10,
                 )
                 logger.error(f"Dex logs:\n{result.stdout}\n{result.stderr}")
+
+                # Get deployment describe
+                result = subprocess.run(
+                    [
+                        "kubectl",
+                        "describe",
+                        "deployment",
+                        "dex",
+                        "-n",
+                        operator_namespace,
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                logger.error(f"Dex deployment describe:\n{result.stdout}")
             except Exception as e:
                 logger.error(f"Failed to get Dex debug info: {e}")
 
-            raise TimeoutError("Dex deployment did not become ready within 120s")
+            raise TimeoutError(
+                f"Dex deployment did not become ready within 250s in {operator_namespace}"
+            )
 
         yield {
             "namespace": operator_namespace,
