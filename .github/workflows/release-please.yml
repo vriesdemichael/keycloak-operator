@@ -31,17 +31,6 @@ jobs:
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 
-      - name: Dispatch CI/CD workflow for release
-        if: steps.release.outputs.release_created == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-        run: |
-          echo "Dispatching CI/CD workflow for tag ${{ steps.release.outputs.tag_name }}"
-          gh api repos/${{ github.repository }}/dispatches \
-            --method POST \
-            --field event_type='release-published' \
-            --field client_payload[tag]='${{ steps.release.outputs.tag_name }}'
-
       - name: Release summary
         if: steps.release.outputs.release_created == 'true'
         run: |
@@ -50,7 +39,11 @@ jobs:
           echo "**Tag:** \`${{ steps.release.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Release URL:** ${{ steps.release.outputs.html_url }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "CI/CD workflow will publish Docker images with semver tags." >> $GITHUB_STEP_SUMMARY
+          if [[ "${{ steps.release.outputs.tag_name }}" == v* && "${{ steps.release.outputs.tag_name }}" != *chart-* ]]; then
+            echo "Promote-operator workflow will tag the tested image with version tags." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Helm chart release - GitHub Pages workflow will publish charts." >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: PR summary
         if: steps.release.outputs.pr != ''

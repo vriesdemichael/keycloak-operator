@@ -50,9 +50,12 @@ repos:
         files: ^charts/keycloak-operator/
         pass_filenames: false
 
-  # Commit message format checking
-  - repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.6.0
+  # Commit message format checking with scope validation
+  - repo: local
     hooks:
-      - id: conventional-pre-commit
+      - id: validate-commit-message
+        name: validate commit message
+        entry: uv run python scripts/validate-commit-message.py
+        language: system
         stages: [commit-msg]
+        always_run: true

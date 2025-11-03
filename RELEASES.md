@@ -78,6 +78,20 @@ The repository contains four independently versioned components:
 
 ## Conventional Commits & Scoping
 
+### Valid Scopes
+
+The pre-commit hook **enforces** the following scopes:
+- `operator` - Operator code changes
+- `chart-operator` - Keycloak Operator Helm chart
+- `chart-realm` - Keycloak Realm Helm chart
+- `chart-client` - Keycloak Client Helm chart
+
+**Scope validation rules:**
+- Scopes can be combined using `+` (e.g., `feat(chart-client+chart-realm): ...`)
+- Combined scopes must be in **alphabetical order**
+- No duplicate components allowed
+- Scope is optional for `chore`, `docs`, `ci`, and `test` commits
+
 ### Operator Releases (Docker Image)
 Use standard conventional commits **without** scope, or use `(operator)` explicitly:
 ```bash
@@ -109,9 +123,33 @@ feat(chart-client): add protocol mapper configuration
 fix(chart-client): handle missing redirect URIs
 ```
 
+### Multi-Component Changes
+When changes affect multiple components, combine scopes with `+` in alphabetical order:
+
+```bash
+# Update both client and realm charts
+feat(chart-client+chart-realm): add identity provider support
+
+# Update operator and its chart
+feat(chart-operator+operator): add new configuration option
+
+# Update all three charts
+feat(chart-client+chart-operator+chart-realm): update to Keycloak 27
+
+# WRONG - not alphabetical
+feat(operator+chart-client): ...  # ❌ Should be chart-client+operator
+
+# WRONG - duplicate components
+feat(operator+operator): ...  # ❌ No duplicates allowed
+```
+
+**Note:** The pre-commit hook validates scope format automatically. Invalid scopes will be rejected with helpful error messages.
+
 ## Release Workflow
 
 ### Automatic Process
+
+The project follows a **build-once, promote-on-release** workflow to ensure released artifacts are identical to tested ones.
 
 1. **Create Feature Branch & Push Commits**
    ```bash
@@ -123,11 +161,16 @@ fix(chart-client): handle missing redirect URIs
 2. **Create Pull Request**
    - Open PR to `main` branch
    - CI/CD runs all checks (tests, linting, security scans)
+   - **No images published** on PRs
    - Review and get approval
 
 3. **Merge to Main**
    - Merge the approved PR
-   - Integration tests run on `main`
+   - CI/CD pipeline runs:
+     - Builds operator image (once)
+     - Runs all tests (unit, integration, security)
+     - Publishes image with `sha-{commit}` tag only
+   - **No `latest` tag** yet (only on release)
 
 4. **Release-Please Creates PRs**
    - Scans commits since last release
@@ -136,32 +179,44 @@ fix(chart-client): handle missing redirect URIs
    - Generates CHANGELOG
    - **Auto-merges** when all checks pass
 
-5. **Docker Images Published** (only if tests passed)
-   - Build workflow waits for integration tests to succeed
-   - On main push: publishes `latest` and `sha-<commit>` tags
-   - Publishes versioned images to ghcr.io
-
-6. **Releases Created**
+5. **GitHub Release Created**
    - Release-please creates GitHub release automatically
-   - Triggers build workflow to publish versioned images (v1.2.3)
+   - For operator releases (tags like `v0.2.16`):
+     - Promote-operator workflow triggers
+     - **Pulls existing `sha-{commit}` image** (no rebuild!)
+     - Re-tags with version tags: `v0.2.16`, `v0.2`, `v0`, `latest`
+     - Pushes new tags to GHCR
+   - For chart releases (tags like `chart-operator-v0.1.5`):
+     - GitHub Pages workflow publishes Helm charts
+
+6. **Artifacts Published**
+   - **Operator:** Docker images at `ghcr.io/vriesdemichael/keycloak-operator`
+   - **Charts:** Helm repository at https://vriesdemichael.github.io/keycloak-operator/charts
 
 ### Example: Operator Release
 
 ```bash
-# Conventional commits
+# 1. Push commits to main (via PR)
 git commit -m "feat: add SMTP configuration"
 git commit -m "fix: handle missing secrets gracefully"
-git push origin main
+# → CI/CD builds and tests
+# → Publishes: ghcr.io/vriesdemichael/keycloak-operator:sha-abc123
 
-# → Release-please creates PR: "chore: release operator 0.2.0"
-# → Merge PR
-# → Release v0.2.0 created
-# → Docker images published:
+# 2. Release-please creates and merges PR
+# → Release-please creates PR: "chore: release Operator Image 0.2.0"
+# → Auto-merges when checks pass
+# → Creates GitHub Release with tag v0.2.0
+
+# 3. Promote-operator workflow runs
+# → Pulls: ghcr.io/vriesdemichael/keycloak-operator:sha-abc123
+# → Re-tags and pushes:
 #    - ghcr.io/vriesdemichael/keycloak-operator:v0.2.0
 #    - ghcr.io/vriesdemichael/keycloak-operator:v0.2
 #    - ghcr.io/vriesdemichael/keycloak-operator:v0
 #    - ghcr.io/vriesdemichael/keycloak-operator:latest
 ```
+
+**Key benefit:** The image tagged as `v0.2.0` is byte-for-byte identical to `sha-abc123` that passed all tests.
 
 ### Example: Operator Chart Release
 
@@ -236,8 +291,10 @@ gh release create v0.2.0 --title "v0.2.0" --notes "Emergency release"
 
 - `.github/release-please-config.json` - Release strategy per component
 - `.github/.release-please-manifest.json` - Current versions
-- `.github/workflows/release-please.yml` - Automation workflow
-- `.github/workflows/build-and-publish.yml` - Image publishing
+- `.github/workflows/release-please.yml` - Release automation workflow
+- `.github/workflows/ci-cd.yml` - Build, test, and publish SHA-tagged images
+- `.github/workflows/promote-operator.yml` - Promote tested images with version tags on release
+- `.github/workflows/pages.yml` - Publish Helm charts to GitHub Pages
 
 ## Troubleshooting
 
@@ -263,8 +320,14 @@ gh release create v0.2.0 --title "v0.2.0" --notes "Emergency release"
 - Merge only the PRs for components you want to release
 - Each chart has independent versioning
 
-**Q: Image published despite test failures?**
-- This should NEVER happen - build workflow requires tests to pass
-- Check workflow dependencies in `.github/workflows/build-and-publish.yml`
-- Workflow uses `workflow_run` trigger to wait for integration tests
-- Only runs if `conclusion == 'success'` or manual trigger/release
+**Q: Image promotion failed?**
+- Check that the `sha-{commit}` image exists in GHCR for the release commit
+- Verify the release tag matches an operator release (starts with `v`, no `chart-` prefix)
+- Check promote-operator workflow logs in GitHub Actions
+- The SHA image must be built from main before release can be promoted
+
+**Q: Why does `latest` tag not update on main push?**
+- This is intentional! `latest` only updates on operator releases
+- Main branch pushes only create `sha-{commit}` tags
+- This ensures `latest` always points to a stable, released version
+- For bleeding-edge builds, use the `sha-{commit}` tag
