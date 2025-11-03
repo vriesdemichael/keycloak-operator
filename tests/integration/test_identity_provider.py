@@ -305,7 +305,7 @@ async def test_realm_with_github_identity_provider_example(
     operator_namespace,
     test_namespace,
     admission_token_setup,
-    async_k8s_custom_objects,  # Need async client for wait helper
+    k8s_custom_objects,  # Need async client for wait helper
 ):
     """
     Test creating a realm with GitHub identity provider configuration.
@@ -373,7 +373,7 @@ async def test_realm_with_github_identity_provider_example(
 
         # Use wait helper instead of fixed sleep for faster and more reliable testing
         await wait_for_resource_ready(
-            async_k8s_custom_objects,
+            k8s_custom_objects,
             group="vriesdemichael.github.io",
             version="v1",
             namespace=test_namespace,
