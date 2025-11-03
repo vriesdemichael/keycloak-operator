@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/keycloakrealm-keycloak-v1alpha1.json
+---
+apiVersion: keycloak.vriesdemichael.github.io/v1alpha1
+kind: KeycloakRealm
+metadata:
+  name: realm-with-github-idp
+  namespace: my-app
+spec:
+  realmName: my-realm
+  operatorRef:
+    name: keycloak-operator
+    namespace: keycloak-operator
+  authorizationSecretRef: my-realm-token
+
+  # GitHub OAuth Identity Provider
+  identityProviders:
+    - alias: github
+      providerId: github
+      enabled: true
+      trustEmail: false
+      firstBrokerLoginFlowAlias: first broker login
+      config:
+        clientId: your-github-oauth-app-client-id
+        clientSecret: your-github-oauth-app-client-secret
+        defaultScope: "user:email"
+        syncMode: IMPORT

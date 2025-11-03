@@ -79,6 +79,9 @@ nav:
   - Quick Start: quickstart/README.md
   - Architecture: architecture.md
   - Security Model: security.md
+  - Configuration:
+      - Identity Providers: identity-providers.md
+      - Drift Detection: drift-detection.md
   - Operations:
       - Token Management: operations/token-management.md
   - Observability: observability.md
