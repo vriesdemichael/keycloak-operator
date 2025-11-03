@@ -259,9 +259,10 @@ async def test_realm_with_oidc_identity_provider(
         assert realm_repr is not None
 
         # Get IDP list from Keycloak using admin client
+        # Note: Must not include /admin in the path - it's added by the client
         response = await keycloak_admin_client._make_request(
             "GET",
-            f"admin/realms/{realm_name}/identity-provider/instances",
+            f"realms/{realm_name}/identity-provider/instances",
             namespace=test_namespace,
         )
 
