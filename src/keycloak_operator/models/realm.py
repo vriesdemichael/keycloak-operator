@@ -116,9 +116,13 @@ class KeycloakRealmTokenSettings(BaseModel):
 class KeycloakIdentityProvider(BaseModel):
     """Identity provider configuration."""
 
+    model_config = {"populate_by_name": True}
+
     alias: str = Field(..., description="Identity provider alias")
-    provider_id: str = Field(..., description="Provider type ID")
-    display_name: str | None = Field(None, description="Display name")
+    provider_id: str = Field(..., alias="providerId", description="Provider type ID")
+    display_name: str | None = Field(
+        None, alias="displayName", description="Display name"
+    )
     enabled: bool = Field(True, description="Whether the provider is enabled")
 
     # Provider-specific configuration
@@ -128,14 +132,20 @@ class KeycloakIdentityProvider(BaseModel):
 
     # UI settings
     first_broker_login_flow_alias: str | None = Field(
-        None, description="First broker login flow"
+        None, alias="firstBrokerLoginFlowAlias", description="First broker login flow"
     )
     post_broker_login_flow_alias: str | None = Field(
-        None, description="Post broker login flow"
+        None, alias="postBrokerLoginFlowAlias", description="Post broker login flow"
     )
-    link_only: bool = Field(False, description="Link existing users only")
-    store_token: bool = Field(False, description="Store identity provider tokens")
-    trust_email: bool = Field(False, description="Trust email from identity provider")
+    link_only: bool = Field(
+        False, alias="linkOnly", description="Link existing users only"
+    )
+    store_token: bool = Field(
+        False, alias="storeToken", description="Store identity provider tokens"
+    )
+    trust_email: bool = Field(
+        False, alias="trustEmail", description="Trust email from identity provider"
+    )
 
     @field_validator("alias")
     @classmethod
