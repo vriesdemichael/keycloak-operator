@@ -240,9 +240,13 @@ class TestTokenBootstrap:
             assert owner_ref.name == realm_name
 
             # Verify annotations
-            assert "vriesdemichael.github.io/version" in op_secret.metadata.annotations
             assert (
-                "vriesdemichael.github.io/valid-until" in op_secret.metadata.annotations
+                "vriesdemichael.github.io/keycloak-version"
+                in op_secret.metadata.annotations
+            )
+            assert (
+                "vriesdemichael.github.io/keycloak-valid-until"
+                in op_secret.metadata.annotations
             )
 
             # 6. Verify token metadata stored in ConfigMap

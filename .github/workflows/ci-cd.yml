@@ -10,17 +10,9 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main, develop]
-    tags:
-      - 'v*'
-      - 'operator-v*'  # Legacy format for backward compatibility
-      - 'chart-*-v*'
   pull_request:
     branches: [main, develop]
-  release:
-    types: [published]
   workflow_dispatch:
-  repository_dispatch:
-    types: [release-published]
 
 env:
   REGISTRY: ghcr.io
@@ -497,39 +489,30 @@ jobs:
           retention-days: 7
 
   # ==========================================================================
-  # STAGE 4: BUILD & PUBLISH
-  # Build production images and publish to registry
+  # STAGE 4: PUBLISH SHA IMAGE
+  # Push tested operator image with sha-{commit} tag to registry
   # Only runs on main branch after all tests pass
+  # Version tags (v0.2.16, latest) are added by promote-operator workflow
   # ==========================================================================
 
-  publish:
-    name: Build & Publish Production Images
+  push-sha-image:
+    name: Push SHA-Tagged Image
     needs: [integration-tests]
-    if: |
-      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
-      github.event_name == 'release' ||
-      github.event_name == 'repository_dispatch' ||
-      startsWith(github.ref, 'refs/tags/')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
 
     permissions:
       contents: read
       packages: write
-      id-token: write
       security-events: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver-opts: |
-            image=moby/buildkit:latest
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -538,54 +521,18 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine version tag
-        id: version
-        env:
-          GITHUB_REF: ${{ github.ref }}
-        run: |
-          if [[ "${{ github.event_name }}" == "repository_dispatch" ]]; then
-            # Extract tag from repository_dispatch payload
-            TAG="${{ github.event.client_payload.tag }}"
-            if [ -n "$TAG" ]; then
-              echo "version_tag=${TAG}" >> $GITHUB_OUTPUT
-              echo "is_release=true" >> $GITHUB_OUTPUT
-              echo "Using tag from dispatch payload: ${TAG}"
-            else
-              echo "version_tag=" >> $GITHUB_OUTPUT
-              echo "is_release=false" >> $GITHUB_OUTPUT
-              echo "No tag in payload"
-            fi
-          elif [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            # Extract tag from git ref
-            TAG="${GITHUB_REF#refs/tags/}"
-            echo "version_tag=${TAG}" >> $GITHUB_OUTPUT
-            echo "is_release=true" >> $GITHUB_OUTPUT
-            echo "Using tag from git ref: ${TAG}"
-          else
-            echo "version_tag=" >> $GITHUB_OUTPUT
-            echo "is_release=false" >> $GITHUB_OUTPUT
-            echo "Not a release build"
-          fi
-
-      - name: Extract metadata (tags, labels)
+      - name: Extract metadata for SHA tag
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=sha,prefix=sha-,format=short,enable={{is_default_branch}}
-            type=ref,event=tag
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=semver,pattern={{major}},enable=${{ !startsWith(github.ref, 'refs/tags/v0.') }}
-            type=raw,value=${{ steps.version.outputs.version_tag }},enable=${{ steps.version.outputs.is_release == 'true' }}
+            type=sha,prefix=sha-,format=short
           labels: |
             org.opencontainers.image.title=Keycloak Operator
             org.opencontainers.image.description=GitOps-compatible Kubernetes operator for Keycloak
             org.opencontainers.image.vendor=Michaël de Vries
             org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.version=${{ steps.version.outputs.version_tag }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -601,18 +548,24 @@ jobs:
           build-args: |
             BUILDKIT_INLINE_CACHE=1
 
+      - name: Get image reference
+        id: image
+        run: |
+          IMAGE_TAG="${{ steps.meta.outputs.tags }}"
+          echo "ref=${IMAGE_TAG}" >> $GITHUB_OUTPUT
+          echo "Published image: ${IMAGE_TAG}"
+
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          image: ${{ steps.image.outputs.ref }}
           format: spdx-json
           output-file: sbom.spdx.json
-          upload-artifact: true
 
       - name: Scan published image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          image-ref: ${{ steps.image.outputs.ref }}
           format: 'sarif'
           output: 'trivy-published-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -622,7 +575,7 @@ jobs:
         if: always()
         with:
           sarif_file: 'trivy-published-results.sarif'
-          category: 'trivy-published-image'
+          category: 'trivy-sha-image'
 
       - name: Scan SBOM for vulnerabilities
         uses: anchore/scan-action@v7
@@ -631,19 +584,25 @@ jobs:
           fail-build: true
           severity-cutoff: critical
 
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: sbom-sha-image
+          path: sbom.spdx.json
+          retention-days: 90
+
       - name: Summary
         run: |
-          echo "### :whale: Docker Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "### :whale: SHA-Tagged Image Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Registry:** \`${{ env.REGISTRY }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Repository:** \`${{ env.IMAGE_NAME }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ steps.image.outputs.ref }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "This image has been tested and is ready for promotion." >> $GITHUB_STEP_SUMMARY
+          echo "Version tags will be added when a release is created." >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Pull command:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_STEP_SUMMARY
+          echo "docker pull ${{ steps.image.outputs.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
