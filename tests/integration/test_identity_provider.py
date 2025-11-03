@@ -153,7 +153,6 @@ async def dex_ready(k8s_core_v1, k8s_apps_v1, operator_namespace):
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@pytest.mark.skip(reason="Dex deployment timeout issue - needs investigation")
 async def test_realm_with_oidc_identity_provider(
     keycloak_ready,
     test_namespace,
@@ -272,7 +271,6 @@ async def test_realm_with_oidc_identity_provider(
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@pytest.mark.skip(reason="Documentation example - requires manual verification")
 async def test_realm_with_github_identity_provider_example(
     keycloak_ready,
     test_namespace,
