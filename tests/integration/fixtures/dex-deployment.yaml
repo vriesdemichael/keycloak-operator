@@ -43,6 +43,7 @@ spec:
       containers:
       - name: dex
         image: ghcr.io/dexidp/dex:v2.38.0
+        imagePullPolicy: IfNotPresent
         args:
         - dex
         - serve
