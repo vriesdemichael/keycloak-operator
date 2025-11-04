@@ -102,6 +102,7 @@ docs = [
     "mkdocs-section-index>=0.3.8",
     "mkdocs-literate-nav>=0.6.1",
     "markdown-exec>=1.9.0",
+    "mike>=2.0.0",
 ]
 test = [
     "pytest>=8.4.2",

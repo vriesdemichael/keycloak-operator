@@ -50,12 +50,21 @@ kubectl apply -f examples/03-client-example.yaml
 
 ## 📚 Documentation
 
-- **[Quick Start Guide](docs/quickstart/README.md)** - Get started in 10 minutes
-- **[Architecture](docs/architecture.md)** - How the operator works
-- **[Security Model](docs/security.md)** - Secret-based authorization explained
-- **[Drift Detection](docs/drift-detection.md)** - Orphan detection and auto-remediation
-- **[Observability](docs/observability.md)** - Metrics, logs, and status conditions
-- **[Development Guide](docs/development.md)** - Contributing to the project
+**🌐 [Full Documentation](https://vriesdemichael.github.io/keycloak-operator/)** - Versioned documentation with version selector
+
+### Quick Links
+
+- **[Quick Start Guide](https://vriesdemichael.github.io/keycloak-operator/latest/quickstart/README/)** - Get started in 10 minutes
+- **[Architecture](https://vriesdemichael.github.io/keycloak-operator/latest/architecture/)** - How the operator works
+- **[Security Model](https://vriesdemichael.github.io/keycloak-operator/latest/security/)** - Secret-based authorization explained
+- **[Drift Detection](https://vriesdemichael.github.io/keycloak-operator/latest/drift-detection/)** - Orphan detection and auto-remediation
+- **[Observability](https://vriesdemichael.github.io/keycloak-operator/latest/observability/)** - Metrics, logs, and status conditions
+- **[Versioning](https://vriesdemichael.github.io/keycloak-operator/latest/versioning/)** - How to access older documentation and chart versions
+- **[Development Guide](https://vriesdemichael.github.io/keycloak-operator/latest/development/)** - Contributing to the project
+
+!!! note "Version-Specific Documentation"
+    Use the version selector in the documentation to view docs for your installed version.
+    See the [Versioning Guide](https://vriesdemichael.github.io/keycloak-operator/latest/versioning/) for details.
 
 ## 🏗️ Architecture
 

@@ -1,8 +1,16 @@
 name: Deploy to GitHub Pages
 
-# Deploy documentation and Helm charts to GitHub Pages
-# - Documentation built with MkDocs (served at root)
-# - Helm charts packaged and indexed (served at /charts)
+# Deploy versioned documentation and Helm charts to GitHub Pages
+# - Documentation built with MkDocs + mike for versioning (served at root)
+# - Helm charts packaged and indexed with version history (served at /charts)
+#
+# Versioning Strategy:
+# - Documentation versions follow operator chart releases (chart-operator-v0.1.x)
+# - Operator chart releases: Create new versioned docs (v0.1.4) and set as latest
+# - Realm/Client chart releases: Update latest docs in-place (no new version)
+# - Operator image releases: Skip docs (chart release will handle versioning)
+# - Main branch pushes: Update 'dev' documentation only
+# - All chart versions are preserved in the Helm repository
 
 on:
   push:
@@ -37,7 +45,28 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
         with:
-          fetch-depth: 0  # Full history for git info in docs
+          fetch-depth: 0  # Full history for git info and version detection
+
+      - name: Configure Git for mike
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Checkout gh-pages branch (preserve existing content)
+        run: |
+          # Fetch gh-pages branch to preserve existing versions
+          git fetch origin gh-pages --depth=1 || echo "No gh-pages branch yet"
+
+          # Create worktree for gh-pages
+          if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
+            echo "Checking out existing gh-pages branch..."
+            git worktree add /tmp/gh-pages gh-pages
+          else
+            echo "Creating new orphan gh-pages branch..."
+            git worktree add --orphan /tmp/gh-pages gh-pages
+            cd /tmp/gh-pages
+            git rm -rf . 2>/dev/null || true
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -53,44 +82,158 @@ jobs:
       - name: Install Python dependencies
         run: uv sync --frozen --group docs
 
-      - name: Generate JSON schemas from CRDs
+      - name: Determine documentation version
+        id: doc-version
         run: |
-          uv run python scripts/generate-crd-schemas.py
-          mkdir -p _site/schemas
-          cp -r _schemas/* _site/schemas/
+          if [[ "${{ github.event_name }}" == "release" ]]; then
+            # On release, use the release tag
+            VERSION="${GITHUB_REF#refs/tags/}"
 
-      - name: Build MkDocs documentation
-        run: uv run --group docs mkdocs build --strict
+            # Operator chart releases drive documentation versioning
+            if [[ "$VERSION" =~ ^chart-operator-v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+              # Operator chart release - create new versioned docs
+              CHART_VERSION="${BASH_REMATCH[1]}"
+              DOC_VERSION="v$CHART_VERSION"
+              IS_LATEST="true"
+              SKIP_DOCS="false"
+              echo "Operator chart release detected: Creating documentation version $DOC_VERSION"
+
+            elif [[ "$VERSION" =~ ^chart-(realm|client)-v ]]; then
+              # Realm/Client chart release - update latest docs in-place
+              DOC_VERSION="latest"
+              IS_LATEST="true"
+              SKIP_DOCS="false"
+              echo "Realm/Client chart release detected: Updating latest documentation"
+
+            elif [[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              # Operator image release - skip docs (chart release will handle it)
+              DOC_VERSION=""
+              IS_LATEST="false"
+              SKIP_DOCS="true"
+              echo "Operator image release detected: Skipping docs (operator chart release will create versioned docs)"
+
+            else
+              # Unknown release format, update dev as fallback
+              DOC_VERSION="dev"
+              IS_LATEST="false"
+              SKIP_DOCS="false"
+              echo "Unknown release format: Updating dev documentation"
+            fi
+          else
+            # On main branch push, update 'dev' version
+            DOC_VERSION="dev"
+            IS_LATEST="false"
+            SKIP_DOCS="false"
+            echo "Main branch push: Updating dev documentation"
+          fi
+
+          echo "version=$DOC_VERSION" >> $GITHUB_OUTPUT
+          echo "is_latest=$IS_LATEST" >> $GITHUB_OUTPUT
+          echo "skip_docs=$SKIP_DOCS" >> $GITHUB_OUTPUT
+
+      - name: Build versioned documentation with mike
+        if: steps.doc-version.outputs.skip_docs != 'true'
+        run: |
+          VERSION="${{ steps.doc-version.outputs.version }}"
+          IS_LATEST="${{ steps.doc-version.outputs.is_latest }}"
+
+          if [[ -z "$VERSION" ]]; then
+            echo "No documentation version specified, skipping docs build"
+            exit 0
+          fi
+
+          echo "Building documentation version: $VERSION (is_latest=$IS_LATEST)"
+
+          # Build documentation with mike (in the gh-pages worktree, no push yet)
+          cd /tmp/gh-pages
+
+          # Configure git for mike
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Deploy documentation version with mike (local only, we'll push later)
+          if [[ "$IS_LATEST" == "true" ]]; then
+            if [[ "$VERSION" == "latest" ]]; then
+              # Update latest in-place (realm/client chart releases)
+              MIKE_DEPLOY_PREFIX=/tmp/gh-pages mike deploy --update-aliases latest
+              echo "Updated latest documentation in-place"
+            else
+              # Deploy as new version and set as latest (operator chart releases)
+              MIKE_DEPLOY_PREFIX=/tmp/gh-pages mike deploy --update-aliases "$VERSION" latest
+              MIKE_DEPLOY_PREFIX=/tmp/gh-pages mike set-default latest
+              echo "Created new version $VERSION and set as latest"
+            fi
+          else
+            # Deploy/update without changing latest (dev updates)
+            MIKE_DEPLOY_PREFIX=/tmp/gh-pages mike deploy --update-aliases "$VERSION"
+            echo "Updated version $VERSION"
+          fi
+
+          # Return to main repo
+          cd -
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
         with:
           version: 'v3.16.2'
 
-      - name: Package Helm charts
+      - name: Package and merge Helm charts
         run: |
-          mkdir -p _site/charts
+          CHARTS_DIR="/tmp/gh-pages/charts"
+          TEMP_DIR="/tmp/new-charts"
+
+          # Ensure charts directory exists in gh-pages
+          mkdir -p "$CHARTS_DIR"
+          mkdir -p "$TEMP_DIR"
 
           # Package each chart in the charts directory
           for chart_dir in charts/*/; do
             if [ -f "${chart_dir}Chart.yaml" ]; then
-              echo "Packaging chart: ${chart_dir}"
-              helm package "${chart_dir}" --destination _site/charts
+              chart_name=$(basename "$chart_dir")
+              echo "Packaging chart: ${chart_name}"
+              helm package "${chart_dir}" --destination "$TEMP_DIR"
             fi
           done
 
-          # Create Helm repository index
-          helm repo index _site/charts --url https://vriesdemichael.github.io/keycloak-operator/charts
+          # Copy new chart packages to gh-pages charts directory
+          # This preserves existing charts and adds new versions
+          if ls "$TEMP_DIR"/*.tgz 1> /dev/null 2>&1; then
+            cp "$TEMP_DIR"/*.tgz "$CHARTS_DIR/"
+            echo "Added new charts to repository"
+          else
+            echo "No new charts to add"
+          fi
 
-      - name: Copy documentation to _site
+          # Regenerate index.yaml with ALL charts (old + new)
+          helm repo index "$CHARTS_DIR" --url https://vriesdemichael.github.io/keycloak-operator/charts
+
+          echo "Chart repository contents:"
+          ls -lh "$CHARTS_DIR"
+
+      - name: Generate and add JSON schemas
         run: |
-          # MkDocs builds to 'site' by default, move it to _site root
-          cp -r site/* _site/
+          uv run python scripts/generate-crd-schemas.py
+          mkdir -p /tmp/gh-pages/schemas
+          cp -r _schemas/* /tmp/gh-pages/schemas/
 
-      - name: Upload artifact
+      - name: Commit and push all changes to gh-pages
+        run: |
+          cd /tmp/gh-pages
+
+          git add -A
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update documentation and charts from ${{ github.sha }}"
+            git push origin gh-pages
+            echo "Successfully pushed documentation and charts to gh-pages"
+          fi
+
+      - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v4
         with:
-          path: _site
+          path: /tmp/gh-pages
 
   deploy:
     name: Deploy to GitHub Pages
@@ -112,8 +255,16 @@ jobs:
           echo "**Helm Repository:** ${{ steps.deployment.outputs.page_url }}charts/" >> $GITHUB_STEP_SUMMARY
           echo "**JSON Schemas:** ${{ steps.deployment.outputs.page_url }}schemas/" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version Selector:** Use the version dropdown in the documentation header to view older versions" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Add Helm repository:**" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
           echo "helm repo add keycloak-operator ${{ steps.deployment.outputs.page_url }}charts" >> $GITHUB_STEP_SUMMARY
           echo "helm repo update" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Install specific chart version:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "helm search repo keycloak-operator --versions" >> $GITHUB_STEP_SUMMARY
+          echo "helm install my-keycloak keycloak-operator/keycloak-operator --version 0.1.4" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
