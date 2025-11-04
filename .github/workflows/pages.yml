@@ -171,20 +171,10 @@ jobs:
 
       - name: Package and merge Helm charts
         run: |
-          # Switch to gh-pages branch
-          git checkout gh-pages
-
-          CHARTS_DIR="charts"
           TEMP_DIR="/tmp/new-charts"
-
-          # Ensure charts directory exists
-          mkdir -p "$CHARTS_DIR"
           mkdir -p "$TEMP_DIR"
 
-          # Switch back to main to access chart sources
-          git checkout main
-
-          # Package each chart in the charts directory
+          # Package each chart from main branch
           for chart_dir in charts/*/; do
             if [ -f "${chart_dir}Chart.yaml" ]; then
               chart_name=$(basename "$chart_dir")
@@ -193,8 +183,12 @@ jobs:
             fi
           done
 
-          # Switch back to gh-pages
+          # Switch to gh-pages
           git checkout gh-pages
+
+          # Ensure charts directory exists in gh-pages
+          CHARTS_DIR="charts"
+          mkdir -p "$CHARTS_DIR"
 
           # Copy new chart packages to gh-pages charts directory
           # This preserves existing charts and adds new versions
