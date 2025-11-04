@@ -63,9 +63,10 @@ jobs:
             git worktree add /tmp/gh-pages gh-pages
           else
             echo "Creating new orphan gh-pages branch..."
-            git worktree add --orphan /tmp/gh-pages gh-pages
+            git worktree add --orphan /tmp/gh-pages
             cd /tmp/gh-pages
             git rm -rf . 2>/dev/null || true
+            git checkout --orphan gh-pages
           fi
 
       - name: Set up Python
