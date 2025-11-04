@@ -161,6 +161,13 @@ jobs:
           else
             # Deploy/update without changing latest (dev updates)
             uv run --group docs mike deploy --update-aliases "$VERSION"
+
+            # For dev builds, set as default if no default exists yet
+            if ! git show origin/gh-pages:index.html >/dev/null 2>&1; then
+              uv run --group docs mike set-default "$VERSION"
+              echo "Set $VERSION as initial default"
+            fi
+
             echo "Updated version $VERSION"
           fi
 
@@ -221,7 +228,12 @@ jobs:
           # Ensure we're on gh-pages branch
           git checkout gh-pages
 
-          git add -A
+          # Add only the directories we want (exclude site/ build artifacts)
+          git add charts/ schemas/ dev/ versions.json index.html .nojekyll 2>/dev/null || true
+
+          # Add any version directories that might exist
+          git add v*.* 2>/dev/null || true
+          git add latest/ 2>/dev/null || true
 
           if git diff --staged --quiet; then
             echo "No changes to commit"
