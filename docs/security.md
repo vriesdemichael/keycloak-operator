@@ -1161,14 +1161,14 @@ The operator will reject the operation with an authorization error. Check operat
 **Operational Guides:**
 
 - [How to set up a production multi-tenant environment](how-to/multi-tenant.md)
-- [How to rotate operational tokens](operations/token-management.md#operational-token-rotation)
-- [How to recover from token compromise](operations/token-management.md#token-compromise-recovery)
+- [How to rotate tokens](operations/token-management.md#force-token-rotation)
+- [How to recover from token compromise](operations/token-management.md#suspected-token-compromise)
 
 **For Platform Teams:**
 
-- [Creating admission tokens for new teams](operations/token-management.md#creating-admission-tokens)
-- [Auditing token usage](operations/token-management.md#token-audit-procedures)
-- [Revoking access for departing teams](operations/token-management.md#token-revocation)
+- [Creating admission tokens for new teams](operations/token-management.md#onboard-new-team)
+- [Auditing token usage](operations/token-management.md#monitoring)
+- [Revoking access](operations/token-management.md#revoke-token-emergency)
 
 ## References
 
