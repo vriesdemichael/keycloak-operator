@@ -40,6 +40,10 @@ plugins:
             docstring_style: google
             merge_init_into_class: true
             filters: []
+          inventories:
+            - https://docs.python.org/3/objects.inv
+      enable_inventory: true
+      default_handler: python
   - section-index
   - literate-nav
   - gen-files:
