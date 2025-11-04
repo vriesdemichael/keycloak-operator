@@ -62,9 +62,9 @@ kubectl apply -f examples/03-client-example.yaml
 - **[Versioning](https://vriesdemichael.github.io/keycloak-operator/latest/versioning/)** - How to access older documentation and chart versions
 - **[Development Guide](https://vriesdemichael.github.io/keycloak-operator/latest/development/)** - Contributing to the project
 
-!!! note "Version-Specific Documentation"
-    Use the version selector in the documentation to view docs for your installed version.
-    See the [Versioning Guide](https://vriesdemichael.github.io/keycloak-operator/latest/versioning/) for details.
+> **Note: Version-Specific Documentation**
+> Use the version selector in the documentation to view docs for your installed version.
+> See the [Versioning Guide](https://vriesdemichael.github.io/keycloak-operator/latest/versioning/) for details.
 
 ## 🏗️ Architecture
 
