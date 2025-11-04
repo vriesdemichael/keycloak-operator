@@ -84,6 +84,10 @@ nav:
       - Drift Detection: drift-detection.md
   - Operations:
       - Token Management: operations/token-management.md
+  - Reference:
+      - Keycloak CRD: reference/keycloak-crd.md
+      - KeycloakRealm CRD: reference/keycloak-realm-crd.md
+      - KeycloakClient CRD: reference/keycloak-client-crd.md
   - Observability: observability.md
   - Development: development.md
   - API Reference:
