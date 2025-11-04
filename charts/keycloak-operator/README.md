@@ -419,16 +419,22 @@ helm install keycloak-staging keycloak-operator/keycloak-operator \
 
 ## Post-Installation
 
-### 1. Retrieve the Operator Token
+### Quick Start (Single-Tenant / Dev Mode)
 
-After installation, get the admission token for creating realms:
+> **⚠️ Note:** This quick start is designed for **single-tenant environments, evaluation, and development**.
+>
+> For **production multi-tenant setups**, see the [Multi-Tenant Production Setup](../README.md#understanding-the-token-system) guide which uses the two-phase token system (admission tokens → operational tokens) for proper namespace isolation and token rotation.
+
+#### 1. Retrieve the Operator Token
+
+After installation, the operator automatically creates a token for quick evaluation:
 
 ```bash
 # Wait for operator to be ready
 kubectl wait --for=condition=available deployment/keycloak-operator \
   -n keycloak-system --timeout=300s
 
-# Get the admission token
+# Get the operator token (single-tenant mode only)
 kubectl get secret keycloak-operator-auth-token \
   -n keycloak-system \
   -o jsonpath='{.data.token}' | base64 -d
@@ -441,7 +447,60 @@ OPERATOR_TOKEN=$(kubectl get secret keycloak-operator-auth-token \
 echo $OPERATOR_TOKEN
 ```
 
-### 2. Create Your First Realm
+#### 2. Deploy a Keycloak Instance
+
+Before creating realms, you need a Keycloak instance. You have two options:
+
+**Option A: Using the chart's built-in Keycloak (Quick Evaluation)**
+
+Set `keycloak.enabled: true` during installation:
+
+```yaml
+# values-with-keycloak.yaml
+keycloak:
+  enabled: true
+  replicas: 1
+  version: "26.4.1"
+  database:
+    type: postgresql
+    host: postgres-postgresql.default.svc.cluster.local
+    database: keycloak
+    username: keycloak
+    passwordSecret:
+      name: postgres-password
+```
+
+**Option B: Using the Keycloak CRD (Production)**
+
+Deploy Keycloak using the CRD for more control:
+
+```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
+apiVersion: vriesdemichael.github.io/v1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak-system
+spec:
+  replicas: 3
+  database:
+    type: postgresql
+    host: postgres-rw
+    database: keycloak
+    username: keycloak
+    passwordSecret:
+      name: postgres-password
+  ingress:
+    enabled: true
+    host: keycloak.example.com
+    className: nginx
+```
+
+See the [Keycloak CRD Reference](../../docs/reference/keycloak-crd.md) for complete configuration options.
+
+> **Database Setup:** You'll need a PostgreSQL database. For production, we recommend [CloudNativePG](https://cloudnative-pg.io/). For evaluation, you can use any PostgreSQL instance.
+
+#### 3. Create Your First Realm
 
 Use the operator token to create a realm:
 
@@ -469,7 +528,7 @@ spec:
   operatorRef:
     namespace: keycloak-system
     authorizationSecretRef:
-      name: admission-token-my-team  # First realm uses admission token
+      name: keycloak-operator-auth-token  # Single-tenant mode
       key: token
   security:
     registrationAllowed: false
