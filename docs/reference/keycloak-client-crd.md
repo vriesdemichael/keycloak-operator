@@ -651,7 +651,27 @@ kubectl get secret webapp-client-secret \
 
 ## See Also
 
-- [Keycloak CRD Reference](keycloak-crd.md)
-- [KeycloakRealm CRD Reference](keycloak-realm-crd.md)
-- See charts/keycloak-client/README.md in the repository root
-- [Quick Start Guide](../quickstart/README.md)
+**Related CRD References:**
+
+- [Keycloak CRD Reference](keycloak-crd.md) - Configure Keycloak instances
+- [KeycloakRealm CRD Reference](keycloak-realm-crd.md) - Configure realms
+
+**Configuration Guides:**
+
+- [End-to-End Setup](../how-to/end-to-end-setup.md) - Complete client configuration with OAuth2 testing
+- [Chart README](../../charts/keycloak-client/README.md) - Helm chart configuration options
+- [Quick Start Guide](../quickstart/README.md) - Create your first client
+
+**Examples:**
+
+- [Client Examples](../../examples/clients/) - Production-ready client configurations
+- Web Applications - Authorization Code Flow with PKCE
+- Single Page Applications - Implicit/Authorization Code Flow
+- Service Accounts - Client Credentials Flow
+- Mobile Apps - Authorization Code Flow with PKCE
+
+**Architecture & Operations:**
+
+- [Architecture](../architecture.md) - How client reconciliation works
+- [Security Model](../security.md#realm-authorization-tokens) - How clients authenticate
+- [Troubleshooting: Client Issues](../operations/troubleshooting.md#client-issues) - Common client problems
