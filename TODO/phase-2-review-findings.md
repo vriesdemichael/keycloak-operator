@@ -325,10 +325,86 @@ No issues found. Documentation is accurate, comprehensive, and significantly imp
 
 ---
 
-## Post-Phase-2 Additional Work (2025-11-04)
+## Phase 3: User Guides and Operations Documentation (2025-11-04)
 
-### Pre-Commit Hook and Documentation Quality Assurance
+**Commit**: `04b9e2f docs: add comprehensive user guides and operations documentation`
+**Status**: ✅ **COMPLETE**
 
+**Lines Added**: 6,274 lines across 11 files
+
+### Phase 3 Deliverables
+
+#### Operations Documentation
+- ✅ **Troubleshooting Guide** (`docs/operations/troubleshooting.md`, 1,340 lines)
+  - Symptom-based organization for faster problem resolution
+  - Complete diagnostic commands and solutions
+  - Common pitfalls section (6 pitfalls documented)
+  - Covers operator, Keycloak, realm, client, token, database, networking issues
+
+- ✅ **Migration & Upgrade Guide** (`docs/operations/migration.md`, 684 lines)
+  - Operator upgrade procedures with rollback
+  - Keycloak version upgrade (rolling update, blue-green)
+  - Manual to automatic token rotation migration
+  - Comparison with official Keycloak operator
+  - Backup and rollback procedures
+
+#### How-To Guides
+- ✅ **End-to-End Setup** (`docs/how-to/end-to-end-setup.md`, 1,034 lines)
+  - 9-part production deployment guide (infrastructure, operator, database, Keycloak, multi-tenant, realm, client, verification, checklist)
+  - Complete with TLS, ingress, cert-manager, CloudNativePG
+  - Production checklists (security, HA, backup, monitoring, tokens, testing)
+
+- ✅ **Multi-Tenant Configuration** (`docs/how-to/multi-tenant.md`, 496 lines)
+  - Platform team setup procedures
+  - Admission token creation and distribution
+  - Namespace bootstrap process
+  - RBAC configuration examples
+
+- ✅ **Database Setup** (`docs/how-to/database-setup.md`, 738 lines)
+  - CloudNativePG configuration
+  - High availability setup (streaming replication)
+  - Backup strategies (S3, Azure, GCS)
+  - Performance tuning and monitoring
+
+- ✅ **SMTP Configuration** (`docs/how-to/smtp-configuration.md`, 281 lines)
+  - Provider-specific examples (SendGrid, Gmail, AWS SES, Mailgun, Office 365)
+  - Testing procedures
+  - Troubleshooting common issues
+
+- ✅ **High Availability** (`docs/how-to/ha-deployment.md`, 458 lines)
+  - Multi-replica deployment strategies
+  - Load balancing and session management
+  - Pod disruption budgets
+  - Anti-affinity rules
+
+- ✅ **Backup & Restore** (`docs/how-to/backup-restore.md`, 515 lines)
+  - Complete backup strategies (database, Kubernetes resources, token metadata)
+  - Point-in-time recovery procedures
+  - Disaster recovery scenarios
+
+#### User Documentation
+- ✅ **FAQ** (`docs/faq.md`, 391 lines)
+  - Token system explanations (operator vs operational)
+  - Scaling and performance questions
+  - Access and administration philosophy
+  - Compatibility and requirements
+  - Deployment scenarios
+  - Security questions
+  - Troubleshooting quick answers
+
+#### Navigation Updates
+- ✅ Updated `mkdocs.yml` with new sections:
+  - How-To Guides section (6 guides)
+  - Operations section (troubleshooting, migration)
+  - FAQ as standalone section
+
+**Assessment**: Phase 3 successfully delivered comprehensive user-facing and operations documentation. Total 6,274 lines of practical, production-ready documentation.
+
+---
+
+## Phase 3 Validation and Refinement (2025-11-04)
+
+**Commits**: `05e7e1c`, `f3bb3e3`
 **Status**: ✅ **COMPLETE**
 
 **Changes Made**:
@@ -393,9 +469,22 @@ This operator enforces least privilege through GitOps-only configuration:
 **Status**: ✅ **READY FOR REVIEW/MERGE**
 
 **All Work Complete**:
-1. ✅ Phase 2 objectives (navigation, diagrams, guides, glossary)
-2. ✅ Pre-commit hook for documentation quality
-3. ✅ Broken links fixed
-4. ✅ Least privilege enforcement throughout documentation
+1. ✅ **Phase 2**: Navigation, diagrams, development guides, testing guide, glossary (1,100 lines)
+2. ✅ **Phase 3**: User guides, operations docs, FAQ, troubleshooting (6,274 lines)
+3. ✅ **Phase 3 Validation**: Pre-commit hook, link fixes, least privilege enforcement (277 lines changed)
+
+**Total Impact**: 7,374+ lines of new documentation plus validation improvements
 
 **Recommendation**: **APPROVE FOR MERGE** - Documentation is now production-ready with automated quality checks.
+
+---
+
+## Summary by Phase
+
+| Phase | Scope | Lines Added | Status |
+|-------|-------|-------------|--------|
+| **Phase 1** | Critical gaps (CRDs, identity providers, charts) | 4,436 | ✅ Complete (merged earlier) |
+| **Phase 2** | Navigation, diagrams, development guides | 1,100 | ✅ Complete |
+| **Phase 3** | User guides, operations, FAQ | 6,274 | ✅ Complete |
+| **Validation** | Quality assurance, least privilege | 277 changes | ✅ Complete |
+| **Total (Phase 2-3)** | | **7,374+** | ✅ Ready for merge |
