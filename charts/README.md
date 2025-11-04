@@ -289,7 +289,7 @@ spec:
 
 ## Helm Repository
 
-The charts are published to a Helm repository hosted on GitHub Pages.
+The charts are published to a Helm repository hosted on GitHub Pages with **full version history**.
 
 ### Add the Helm Repository
 
@@ -301,21 +301,62 @@ helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operat
 helm repo update
 ```
 
-### Install from Helm Repository
+### List Available Versions
+
+All chart versions are preserved and available for installation:
 
 ```bash
-# Install operator chart
+# List all available versions for operator chart
+helm search repo keycloak-operator/keycloak-operator --versions
+
+# List all available versions for realm chart
+helm search repo keycloak-operator/keycloak-realm --versions
+
+# List all available versions for client chart
+helm search repo keycloak-operator/keycloak-client --versions
+```
+
+### Install Specific Version
+
+You can install any version of a chart:
+
+```bash
+# Install specific operator chart version
+helm install keycloak-operator keycloak-operator/keycloak-operator \
+  --version 0.1.4 \
+  --namespace keycloak-system \
+  --create-namespace
+
+# Install specific realm chart version
+helm install my-realm keycloak-operator/keycloak-realm \
+  --version 0.1.2 \
+  --namespace my-team \
+  --set realmName=myteam
+
+# Install specific client chart version
+helm install my-client keycloak-operator/keycloak-client \
+  --version 0.1.1 \
+  --namespace my-team \
+  --set clientId=myapp
+```
+
+### Install from Helm Repository
+
+Install the latest version (recommended for new deployments):
+
+```bash
+# Install operator chart (latest)
 helm install keycloak-operator keycloak-operator/keycloak-operator \
   --namespace keycloak-system \
   --create-namespace
 
-# Install realm chart
+# Install realm chart (latest)
 helm install my-realm keycloak-operator/keycloak-realm \
   --namespace my-team \
   --set realmName=myteam \
   --set operatorRef.namespace=keycloak-system
 
-# Install client chart
+# Install client chart (latest)
 helm install my-client keycloak-operator/keycloak-client \
   --namespace my-team \
   --set clientId=myapp \
@@ -323,6 +364,18 @@ helm install my-client keycloak-operator/keycloak-client \
 ```
 
 **Note:** The examples in this README use local chart paths (`./charts/...`) for development and testing. In production, use the Helm repository as shown above.
+
+### Version Compatibility
+
+Each chart version indicates which operator version it's compatible with via the `appVersion` field:
+
+```bash
+# Check which operator version a chart deploys
+helm show chart keycloak-operator/keycloak-operator --version 0.1.4 | grep appVersion
+# Output: appVersion: "v0.2.14"
+```
+
+For more details on versioning, see the [Versioning Documentation](https://vriesdemichael.github.io/keycloak-operator/latest/versioning/).
 
 ## Chart Documentation
 
