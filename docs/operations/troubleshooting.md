@@ -1319,7 +1319,7 @@ If you've tried the solutions above and still have issues:
 
 - [Token Management Operations](token-management.md) - Detailed token rotation, revocation, and troubleshooting
 - [Migration Guide](migration.md) - Troubleshooting migration from official Keycloak operator
-- [FAQ: Common Issues](../faq.md#troubleshooting-quick-answers) - Quick answers to frequent problems
+- [FAQ: Troubleshooting](../faq.md#troubleshooting) - Quick answers to frequent problems
 
 **Configuration Reference:**
 

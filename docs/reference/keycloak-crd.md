@@ -541,10 +541,6 @@ spec:
 - [High Availability Deployment](../how-to/ha-deployment.md) - Multi-replica Keycloak setup
 - [Quick Start Guide](../quickstart/README.md) - Basic Keycloak instance deployment
 
-**Chart Configuration:**
-
-- [Operator Chart README](../../charts/keycloak-operator/README.md) - Helm chart options and examples
-
 **Architecture & Operations:**
 
 - [Architecture](../architecture.md) - Operator design and reconciliation flow
