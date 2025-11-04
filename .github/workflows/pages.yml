@@ -145,33 +145,30 @@ jobs:
 
           echo "Building documentation version: $VERSION (is_latest=$IS_LATEST)"
 
-          # Build documentation with mike (in the gh-pages worktree, no push yet)
+          # Configure git in gh-pages worktree
           cd /tmp/gh-pages
-
-          # Configure git for mike
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          cd -
 
-          # Deploy documentation version with mike (local only, we'll push later)
+          # Deploy documentation version with mike from main repo
+          # (mike needs to run from repo root to access mkdocs.yml and docs/)
           if [[ "$IS_LATEST" == "true" ]]; then
             if [[ "$VERSION" == "latest" ]]; then
               # Update latest in-place (realm/client chart releases)
-              mike --deploy-prefix /tmp/gh-pages deploy --update-aliases latest
+              uv run --group docs mike deploy --deploy-prefix /tmp/gh-pages --update-aliases latest
               echo "Updated latest documentation in-place"
             else
               # Deploy as new version and set as latest (operator chart releases)
-              mike --deploy-prefix /tmp/gh-pages deploy --update-aliases "$VERSION" latest
-              mike --deploy-prefix /tmp/gh-pages set-default latest
+              uv run --group docs mike deploy --deploy-prefix /tmp/gh-pages --update-aliases "$VERSION" latest
+              uv run --group docs mike set-default --deploy-prefix /tmp/gh-pages latest
               echo "Created new version $VERSION and set as latest"
             fi
           else
             # Deploy/update without changing latest (dev updates)
-            mike --deploy-prefix /tmp/gh-pages deploy --update-aliases "$VERSION"
+            uv run --group docs mike deploy --deploy-prefix /tmp/gh-pages --update-aliases "$VERSION"
             echo "Updated version $VERSION"
           fi
-
-          # Return to main repo
-          cd -
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
