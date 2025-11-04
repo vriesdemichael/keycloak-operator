@@ -155,17 +155,17 @@ jobs:
           if [[ "$IS_LATEST" == "true" ]]; then
             if [[ "$VERSION" == "latest" ]]; then
               # Update latest in-place (realm/client chart releases)
-              MIKE_DEPLOY_PREFIX=/tmp/gh-pages mike deploy --update-aliases latest
+              mike --deploy-prefix /tmp/gh-pages deploy --update-aliases latest
               echo "Updated latest documentation in-place"
             else
               # Deploy as new version and set as latest (operator chart releases)
-              MIKE_DEPLOY_PREFIX=/tmp/gh-pages mike deploy --update-aliases "$VERSION" latest
-              MIKE_DEPLOY_PREFIX=/tmp/gh-pages mike set-default latest
+              mike --deploy-prefix /tmp/gh-pages deploy --update-aliases "$VERSION" latest
+              mike --deploy-prefix /tmp/gh-pages set-default latest
               echo "Created new version $VERSION and set as latest"
             fi
           else
             # Deploy/update without changing latest (dev updates)
-            MIKE_DEPLOY_PREFIX=/tmp/gh-pages mike deploy --update-aliases "$VERSION"
+            mike --deploy-prefix /tmp/gh-pages deploy --update-aliases "$VERSION"
             echo "Updated version $VERSION"
           fi
 
