@@ -24,9 +24,9 @@ kubectl get events --all-namespaces --sort-by='.lastTimestamp' | tail -20
 2. [Keycloak Instance Issues](#keycloak-instance-issues)
 3. [Realm Issues](#realm-issues)
 4. [Client Issues](#client-issues)
-5. [Token & Authorization Issues](#token--authorization-issues)
+5. [Token & Authorization Issues](#token-authorization-issues)
 6. [Database Issues](#database-issues)
-7. [Networking & Ingress Issues](#networking--ingress-issues)
+7. [Networking & Ingress Issues](#networking-ingress-issues)
 8. [Performance Issues](#performance-issues)
 9. [Common Pitfalls](#common-pitfalls)
 
@@ -336,74 +336,55 @@ spec:
 
 ---
 
-### Symptom: Cannot Access Keycloak Admin Console
+### Symptom: Need to Verify Keycloak Internal State
 
-**Possible Causes:**
-- Service not created
-- Ingress not configured
-- TLS certificate issues
-- Admin credentials incorrect
-- Port-forward not working
+**Important:** You should **never** need to access the Keycloak admin console. All configuration and verification should be done through CRDs and Kubernetes-native tools.
 
-**Diagnosis:**
+**Preferred Verification Methods:**
 
 ```bash
-# Check Keycloak is Ready
+# Check Keycloak instance status
 kubectl get keycloak <name> -n <namespace>
+kubectl describe keycloak <name> -n <namespace>
 
-# Check service exists
-kubectl get svc -n <namespace> -l app=keycloak
+# Check all managed resources
+kubectl get keycloakrealm,keycloakclient -n <namespace>
 
-# Check ingress
-kubectl get ingress -n <namespace>
+# View detailed realm configuration
+kubectl get keycloakrealm <name> -n <namespace> -o yaml
 
-# Check admin credentials secret
-kubectl get secret <name>-admin-credentials -n <namespace>
+# Check operator reconciliation logs
+kubectl logs -n keycloak-operator-system -l app=keycloak-operator --tail=100
 ```
 
-**Solutions:**
+**Advanced Debugging (Operator Developers Only):**
 
-**Access via Port-Forward:**
+If CRD status fields are insufficient and you need to query Keycloak's internal state directly:
+
 ```bash
-# Port-forward to Keycloak service
-kubectl port-forward svc/<keycloak-service> -n <namespace> 8080:8080
+# Port-forward to management API (port 9000, NOT UI)
+kubectl port-forward svc/<keycloak-service> -n <namespace> 9000:9000
 
-# Open browser to http://localhost:8080
-# Get admin credentials:
-kubectl get secret <name>-admin-credentials -n <namespace> \
-  -o jsonpath='{.data.username}' | base64 -d && echo
-kubectl get secret <name>-admin-credentials -n <namespace> \
-  -o jsonpath='{.data.password}' | base64 -d && echo
+# Get admin credentials
+ADMIN_USER=$(kubectl get secret <name>-admin-credentials -n <namespace> \
+  -o jsonpath='{.data.username}' | base64 -d)
+ADMIN_PASS=$(kubectl get secret <name>-admin-credentials -n <namespace> \
+  -o jsonpath='{.data.password}' | base64 -d)
+
+# Get access token
+TOKEN=$(curl -s -X POST http://localhost:9000/realms/master/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=$ADMIN_USER" \
+  -d "password=$ADMIN_PASS" \
+  -d "grant_type=password" \
+  -d "client_id=admin-cli" | jq -r '.access_token')
+
+# Query Keycloak API (example: get realm)
+curl -s http://localhost:9000/admin/realms/<realm-name> \
+  -H "Authorization: Bearer $TOKEN" | jq .
 ```
 
-**Ingress Not Working:**
-```bash
-# Check ingress configuration
-kubectl describe ingress <name>-ingress -n <namespace>
-
-# Check ingress controller logs
-kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller
-
-# Verify DNS points to ingress
-nslookup keycloak.example.com
-
-# Check TLS certificate
-kubectl get certificate -n <namespace>
-kubectl describe certificate <name>-tls -n <namespace>
-```
-
-**TLS Certificate Issues:**
-```bash
-# Check cert-manager logs
-kubectl logs -n cert-manager -l app=cert-manager
-
-# Force certificate renewal
-kubectl delete certificate <name>-tls -n <namespace>
-# Will be recreated automatically
-
-# Check certificate status
-kubectl get certificaterequest -n <namespace>
-```
+**Note:** The admin console UI (port 8080) is intentionally not exposed. This operator enforces least privilege - all configuration must be done through GitOps/CRDs.
 
 ---
 

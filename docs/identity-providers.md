@@ -297,7 +297,7 @@ spec:
             userinfo.token.claim: "true"
 ```
 
-For IDP attribute mappers (to import user attributes from the IDP), this functionality is planned for a future release. Meanwhile, you can configure them manually in the Keycloak admin console.
+For IDP attribute mappers (to import user attributes from the IDP), this functionality is planned for a future release.
 
 ## Complete Examples
 
@@ -409,19 +409,18 @@ identityProviders:
 
 ### Checking IDP Status
 
-You can verify IDP configuration in Keycloak:
+Verify IDP configuration through the CRD status:
 
 ```bash
-# Port-forward to Keycloak
-kubectl port-forward -n keycloak-operator svc/keycloak 8080:8080
+# Check realm status includes IDP configuration
+kubectl get keycloakrealm <name> -n <namespace> -o yaml
 
-# Access admin console at http://localhost:8080
-# Navigate to: Realm Settings → Identity Providers
+# Check operator logs for IDP reconciliation
+kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
+  | grep "identity.*provider"
 ```
 
 ## See Also
 
-- [Keycloak Realm Configuration](realms.md)
-- [Client Scopes](client-scopes.md)
-- [Authentication Flows](authentication-flows.md)
-- [Examples](../examples/)
+- [KeycloakRealm CRD Reference](reference/keycloak-realm-crd.md)
+- [Quick Start Guide](quickstart/README.md)

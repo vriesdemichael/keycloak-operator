@@ -70,7 +70,7 @@ See: [Multi-Tenant Guide](how-to/multi-tenant.md)
 - Per-namespace: 5 req/s (default)
 - Configurable via environment variables
 
-See: [Rate Limiting](architecture.md#rate-limiting)
+See: [Architecture](architecture.md)
 
 ---
 
@@ -98,55 +98,64 @@ keycloak_api_rate_limit_acquired_total
 
 ## Access & Administration
 
-### Why can't I access the Keycloak admin interface?
+### Why can't I access the Keycloak admin console?
 
-**Common causes:**
+**By design.** This operator enforces least privilege through the following principles:
 
-1. **Wrong Port:** Admin console is on port **8080**, not 9000
-   ```bash
-   kubectl port-forward svc/keycloak-keycloak -n keycloak-system 8080:8080
-   # Access: http://localhost:8080
-   ```
+1. **GitOps-Only Configuration**: All configuration is done through CRDs (`KeycloakRealm`, `KeycloakClient`), never through manual UI changes
+2. **No Admin Access Needed**: The operator manages Keycloak on your behalf - you never need to log into Keycloak directly
+3. **Reduced Attack Surface**: No admin credentials exposed = no credential theft, no unauthorized access, no manual mistakes
+4. **Prevents Configuration Drift**: Drift detection would revert manual changes anyway, so UI access serves no purpose
+5. **Audit Trail**: All changes tracked through Git and Kubernetes API, not Keycloak's internal audit log
 
-2. **Ingress Not Configured:**
-   ```yaml
-   spec:
-     ingress:
-       enabled: true
-       hostname: keycloak.example.com
-   ```
-
-3. **TLS Certificate Not Ready:**
-   ```bash
-   kubectl get certificate -n keycloak-system
-   kubectl describe certificate keycloak-tls -n keycloak-system
-   ```
-
-4. **Pod Not Ready:**
-   ```bash
-   kubectl get pods -n keycloak-system
-   kubectl logs -n keycloak-system <pod-name>
-   ```
-
-See: [Troubleshooting Guide](operations/troubleshooting.md#cannot-access-keycloak-admin-console)
+**The admin console is not exposed because you should never need it.**
 
 ---
 
-### Can I use the Keycloak admin console to configure realms?
+### How do I verify my Keycloak configuration without the admin console?
 
-**Yes, but not recommended.**
-
-Manual changes in admin console are **reverted** by drift detection on next reconciliation. Always use CRDs:
+**Use Kubernetes-native tools** to inspect and verify your configuration:
 
 ```bash
-# ❌ Wrong: manual change in admin console
-# → Changes lost on next reconciliation
+# Check realm configuration and status
+kubectl describe keycloakrealm <name> -n <namespace>
 
-# ✅ Correct: update CRD
-kubectl edit keycloakrealm my-realm -n my-app
+# View full realm spec and status
+kubectl get keycloakrealm <name> -n <namespace> -o yaml
+
+# Check client configuration
+kubectl get keycloakclient <name> -n <namespace> -o yaml
+
+# Check operator reconciliation logs
+kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep keycloakrealm/<name>
 ```
 
-**Exception:** Initial exploration/testing is fine, but convert to CRDs for production.
+**For advanced debugging** (operator developers only), query Keycloak's management API directly:
+
+```bash
+# Port-forward to management API (port 9000, NOT UI on port 8080)
+kubectl port-forward svc/<keycloak-service> -n <namespace> 9000:9000
+
+# Get admin token from operator-managed secret
+ADMIN_USER=$(kubectl get secret <keycloak-name>-admin-credentials -n <namespace> \
+  -o jsonpath='{.data.username}' | base64 -d)
+ADMIN_PASS=$(kubectl get secret <keycloak-name>-admin-credentials -n <namespace> \
+  -o jsonpath='{.data.password}' | base64 -d)
+
+# Authenticate to get access token
+TOKEN=$(curl -s -X POST http://localhost:9000/realms/master/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=$ADMIN_USER" \
+  -d "password=$ADMIN_PASS" \
+  -d "grant_type=password" \
+  -d "client_id=admin-cli" | jq -r '.access_token')
+
+# Query Keycloak API
+curl -s http://localhost:9000/admin/realms/<realm-name> \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+**Note:** Even for debugging, prefer CRD status fields over direct API access. The API should only be used when diagnosing operator bugs, never for configuration.
 
 ---
 
@@ -277,7 +286,7 @@ spec:
 - Separate repos per team
 - Health checks via `status.phase`
 
-See: [charts/README.md](../charts/README.md#gitops-deployment)
+See charts/README.md in the repository root for GitOps examples.
 
 ---
 
@@ -343,7 +352,7 @@ kubectl get secret <token-name> -n <namespace>
 kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep <realm-name>
 ```
 
-See: [Troubleshooting Guide](operations/troubleshooting.md#realm-stuck-in-pendingprovisioning)
+See: [Troubleshooting Guide](operations/troubleshooting.md#symptom-realm-stuck-in-pendingprovisioning)
 
 ---
 
@@ -369,7 +378,7 @@ See: [Troubleshooting Guide](operations/troubleshooting.md#realm-stuck-in-pendin
    # Re-add to ConfigMap (see Multi-Tenant Guide)
    ```
 
-See: [Troubleshooting Guide](operations/troubleshooting.md#bootstrap-not-working)
+See: [Troubleshooting Guide](operations/troubleshooting.md#symptom-bootstrap-not-working-no-operational-token-created)
 
 ---
 
