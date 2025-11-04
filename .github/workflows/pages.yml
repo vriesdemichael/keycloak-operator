@@ -214,12 +214,19 @@ jobs:
 
       - name: Generate and add JSON schemas
         run: |
+          # Stash any uncommitted changes in gh-pages
+          git stash push -m "temporary charts" || true
+
           # Generate schemas on main branch
           git checkout main
           uv run python scripts/generate-crd-schemas.py
 
           # Switch to gh-pages and add schemas
           git checkout gh-pages
+
+          # Restore stashed changes
+          git stash pop || true
+
           mkdir -p schemas
           cp -r _schemas/* schemas/
 
