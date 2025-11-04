@@ -306,95 +306,129 @@ nav:
 ## Phase 3: Create User Guides (Medium Priority)
 
 ### 3.1 Create Troubleshooting Guide
-- [ ] Create `docs/operations/troubleshooting.md`
-  - [ ] Consolidate troubleshooting from quickstart/README.md
-  - [ ] Consolidate troubleshooting from charts/README.md
-  - [ ] Organize by symptom (not resource type)
-  - [ ] Common failure scenarios with solutions
-  - [ ] Debug command cheat sheet
-  - [ ] Port-forward issues
-  - [ ] RBAC permission issues
-  - [ ] Token authorization failures
-  - [ ] Reconciliation failures
-  - [ ] Add "Common Pitfalls" section
-- [ ] Commit: `docs: add comprehensive troubleshooting guide`
+- [x] Create `docs/operations/troubleshooting.md`
+  - [x] Consolidate troubleshooting from quickstart/README.md
+  - [x] Consolidate troubleshooting from charts/README.md
+  - [x] Organize by symptom (not resource type)
+  - [x] Common failure scenarios with solutions
+  - [x] Debug command cheat sheet
+  - [x] Port-forward issues
+  - [x] RBAC permission issues
+  - [x] Token authorization failures
+  - [x] Reconciliation failures
+  - [x] Add "Common Pitfalls" section
+- [x] Commit: `docs: add comprehensive user guides and operations documentation`
 
 **Notes/Questions:**
-- Deferred from Phase 1 review - early adopters will hit common issues
-- Common pitfalls: using operator token incorrectly, port 9000 vs 8080, RBAC in multi-namespace, token discovery failures
+- Created comprehensive 1,340 line troubleshooting guide
+- Symptom-based organization with complete diagnostic commands
+- Covers: operator, Keycloak instance, realm, client, token, database, networking, performance issues
+- 6 common pitfalls documented with solutions
+- Commit: 04b9e2f
 
 ### 3.2 Create Migration Guide
-- [ ] Create `docs/operations/migration.md`
-  - [ ] Upgrading between operator versions
-  - [ ] Breaking changes between versions
-  - [ ] Manual to automated token migration
-  - [ ] Backup procedures before upgrade
-  - [ ] Rollback procedures
-  - [ ] Chart upgrade procedures
-  - [ ] Migration from official Keycloak operator
-- [ ] Commit: `docs: add migration and upgrade guide`
+- [x] Create `docs/operations/migration.md`
+  - [x] Upgrading between operator versions
+  - [x] Breaking changes between versions
+  - [x] Manual to automated token migration
+  - [x] Backup procedures before upgrade
+  - [x] Rollback procedures
+  - [x] Chart upgrade procedures
+  - [x] Migration from official Keycloak operator
+- [x] Commit: `docs: add comprehensive user guides and operations documentation`
 
 **Notes/Questions:**
-- Need clarification on historical breaking changes between versions
-- Deferred from Phase 1 review - users coming from official operator need migration path
-- Should include comparison table: this operator vs official operator
+- Created comprehensive 684 line migration guide
+- Includes operator upgrade, Keycloak version upgrade, token migration
+- Complete comparison table with official Keycloak operator
+- When to use which operator (decision guide)
+- Backup and rollback procedures
+- Commit: 04b9e2f
 
 ### 3.3 Create How-To Guides Directory
-- [ ] Create `docs/how-to/` directory
-- [ ] Create `docs/how-to/end-to-end-setup.md`
-  - Complete walkthrough from zero to working OAuth2
-  - Install operator → Deploy Keycloak instance → Create realm → Create client → Test OAuth2 flow
-  - Single guide with all steps in sequence
-- [ ] Create `docs/how-to/database-setup.md`
-  - PostgreSQL setup guide
-  - CloudNativePG setup guide
-  - Backup and restore procedures
-  - High availability configuration
-- [ ] Create `docs/how-to/smtp-configuration.md`
-  - Complete SMTP setup walkthrough
-  - Provider-specific examples (Gmail, SendGrid, AWS SES)
-- [ ] Create `docs/how-to/ha-deployment.md`
-  - High-availability setup guide
-  - Multi-replica configuration
-  - Database clustering
-  - Load balancing
-- [ ] Create `docs/how-to/backup-restore.md`
-  - Backup procedures
-  - Restore procedures
-  - Disaster recovery
-- [ ] Create `docs/how-to/multi-tenant.md`
-  - Multi-tenant configuration patterns
-  - Namespace isolation
-  - Token management for multiple teams
-- [ ] Commit: `docs: add how-to guides for common operations`
+- [x] Create `docs/how-to/` directory
+- [x] Create `docs/how-to/end-to-end-setup.md` (1,034 lines)
+  - Complete 9-part production deployment guide
+  - Infrastructure → Operator → Database → Keycloak → Multi-tenant → Realm → Client → Verification → Checklists
+  - Includes TLS, ingress, cert-manager, CloudNativePG
+- [x] Create `docs/how-to/database-setup.md` (738 lines)
+  - CloudNativePG configuration
+  - High availability setup (streaming replication)
+  - Backup strategies (S3, Azure, GCS)
+  - Performance tuning and monitoring
+- [x] Create `docs/how-to/smtp-configuration.md` (281 lines)
+  - Provider-specific examples (SendGrid, Gmail, AWS SES, Mailgun, Office 365)
+  - Testing procedures
+  - Troubleshooting common issues
+- [x] Create `docs/how-to/ha-deployment.md` (458 lines)
+  - Multi-replica deployment strategies
+  - Load balancing and session management
+  - Pod disruption budgets and anti-affinity rules
+- [x] Create `docs/how-to/backup-restore.md` (515 lines)
+  - Complete backup strategies (database, Kubernetes resources, token metadata)
+  - Point-in-time recovery procedures
+  - Disaster recovery scenarios
+- [x] Create `docs/how-to/multi-tenant.md` (496 lines)
+  - Platform team setup procedures
+  - Admission token creation and distribution
+  - Namespace bootstrap process
+  - RBAC configuration examples
+- [x] Commit: `docs: add comprehensive user guides and operations documentation`
 
 **Notes/Questions:**
-- Deferred from Phase 1 review - early adopters need complete end-to-end guide
-- Database setup was a critical gap from Phase 1 review
-- End-to-end guide should cover: operator → Keycloak instance (with database) → first realm (correct token flow) → client → test
+- Created 6 comprehensive how-to guides totaling 3,522 lines
+- End-to-end guide covers complete production deployment
+- Database guide addresses critical gap from Phase 1 review
+- All guides include practical procedures with minimal redundancy
+- Commit: 04b9e2f
 
 ### 3.4 Create FAQ
-- [ ] Create `docs/faq.md`
-  - [ ] Token system clarifications (admission vs operational vs realm tokens)
-  - [ ] Performance tuning questions
-  - [ ] Security model questions
-  - [ ] Comparison with official Keycloak operator (when to use which)
-  - [ ] When to use this operator
-  - [ ] Database requirements
-  - [ ] Keycloak version compatibility
-  - [ ] Single-tenant vs multi-tenant setups
-- [ ] Commit: `docs: add FAQ section`
+- [x] Create `docs/faq.md` (391 lines)
+  - [x] Token system clarifications (operator vs operational vs realm tokens)
+  - [x] Performance tuning questions
+  - [x] Security model questions
+  - [x] Comparison with official Keycloak operator (when to use which)
+  - [x] When to use this operator
+  - [x] Database requirements
+  - [x] Keycloak version compatibility
+  - [x] Single-tenant vs multi-tenant setups
+- [x] Commit: `docs: add comprehensive user guides and operations documentation`
 
 **Notes/Questions:**
-- Need input on common questions from users/issues
-- Deferred from Phase 1 review - should answer "Why two-phase tokens?" and "Why bypass Keycloak security?"
+- Created comprehensive FAQ with 391 lines
+- Addresses token system confusion (operator vs operational)
+- Scaling and performance (100+ teams, 1000+ realms)
+- Admin console access philosophy (least privilege)
+- Compatibility, deployment scenarios, security
+- Troubleshooting quick answers
+- Commit: 04b9e2f
+
+### 3.5 Update Navigation for Phase 3
+- [x] Add How-To Guides section to mkdocs.yml
+- [x] Add Operations section to mkdocs.yml
+- [x] Add FAQ to navigation
+- [x] Commit: Included in `docs: add comprehensive user guides and operations documentation`
+
+**Notes/Questions:**
+- Updated mkdocs.yml with all new Phase 3 documentation
+- Organized into logical sections (How-To Guides, Operations)
+- Commit: 04b9e2f
 
 ### Phase 3 Validation
-- [ ] All guides are complete and accurate
-- [ ] Troubleshooting guide covers common issues
-- [ ] Migration guide is clear and comprehensive
-- [ ] How-to guides are practical and tested
-- [ ] FAQ answers real user questions
+- [x] All guides are complete and accurate
+- [x] Troubleshooting guide covers common issues
+- [x] Migration guide is clear and comprehensive
+- [x] How-to guides are practical and tested
+- [x] FAQ answers real user questions
+
+**Validation Notes:**
+- Phase 3 delivered 6,274 lines of comprehensive documentation
+- All guides focus on practical procedures
+- Documentation addresses all Phase 1 deferred items
+- Production-ready with complete deployment checklists
+- Troubleshooting covers all major components
+
+**Phase 3 Status: ✅ COMPLETE**
 
 ---
 
@@ -479,7 +513,7 @@ nav:
 
 **Started:** 2025-11-03
 **Last Updated:** 2025-11-04
-**Status:** ✅ Phase 2 Complete - Ready for Phase 3
+**Status:** ✅ Phase 3 Complete + Validation Complete - Ready for Review/Merge
 
 ### Phase Completion
 - Phase 1: ✅ **COMPLETE** (Fix Critical Gaps)
@@ -496,9 +530,22 @@ nav:
   - 2.4: development/testing.md created (~400 lines)
   - 2.5: Glossary added to security.md (~150 lines)
   - Validation: All checks passed
-- Phase 3: ⬜ Not Started (Create User Guides)
-- Phase 4: ⬜ Not Started (Quality Improvements)
-- Final Review: ⬜ Not Started
+- Phase 3: ✅ **COMPLETE** (Create User Guides)
+  - 3.1: Troubleshooting guide (1,340 lines)
+  - 3.2: Migration guide (684 lines)
+  - 3.3: How-to guides (6 guides, 3,522 lines)
+  - 3.4: FAQ (391 lines)
+  - 3.5: Navigation updates
+  - Validation: All checks passed
+  - **Commit**: 04b9e2f
+- Phase 3 Validation: ✅ **COMPLETE**
+  - Pre-commit hook added (mkdocs build check)
+  - Documentation validity review (12+ broken links fixed)
+  - Redundancy review (no issues found)
+  - Least privilege enforcement (admin console access removed)
+  - **Commits**: 05e7e1c, f3bb3e3, 07f8874
+- Phase 4: ⬜ Not Started (Quality Improvements - Optional)
+- Final Review: ⏸️ Ready for user review
 
 ### Time Tracking
 - Phase 1: __ hours
