@@ -1,0 +1,321 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/fluxcd/kustomization-controller/main/docs/spec/v1/kustomizations.json
+# Flux Kustomization - Keycloak Operator Resources
+#
+# This Flux Kustomization manages Keycloak realms and clients using GitOps principles.
+# It demonstrates best practices for deploying Keycloak resources with Flux CD.
+#
+# Features:
+# - Automatic sync from Git repository
+# - Health checks for custom resources
+# - Dependencies for proper ordering (realms before clients)
+# - Automatic reconciliation and drift detection
+#
+# Prerequisites:
+# - Flux CD installed and configured
+# - Keycloak operator installed in cluster
+# - Keycloak instance ready
+# - Git repository bootstrapped with Flux
+#
+# Usage:
+# 1. Update spec.sourceRef to your GitRepository
+# 2. Update path to your manifests directory
+# 3. Apply this Kustomization: kubectl apply -f flux-kustomization.yaml
+#
+# Operator Compatibility: v1+
+# Flux Version: 2.0+
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: keycloak-resources
+  namespace: flux-system
+spec:
+  interval: 5m
+  url: https://github.com/your-org/your-repo
+  ref:
+    branch: main
+  # Optional: Use SSH for private repositories
+  # secretRef:
+  #   name: git-credentials
+
+---
+# Kustomization for Keycloak Realms
+# Realms must be applied first as they create auth secrets for clients
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak-realms
+  namespace: flux-system
+spec:
+  # Source reference
+  sourceRef:
+    kind: GitRepository
+    name: keycloak-resources
+
+  # Path to realm manifests
+  path: ./k8s/keycloak/realms
+
+  # Reconciliation interval
+  interval: 10m
+
+  # Retry configuration
+  retryInterval: 1m
+
+  # Timeout for operations
+  timeout: 5m
+
+  # Prune resources removed from Git
+  prune: true
+
+  # Wait for resources to be ready
+  wait: true
+
+  # Health checks
+  healthChecks:
+    - apiVersion: vriesdemichael.github.io/v1
+      kind: KeycloakRealm
+      name: '*'
+      namespace: production
+
+  # Post-build variable substitution (if needed)
+  # postBuild:
+  #   substitute:
+  #     REALM_NAME: "production"
+  #     SMTP_HOST: "smtp.example.com"
+
+  # Target namespace
+  targetNamespace: production
+
+  # Service account for applying resources
+  # serviceAccountName: flux-reconciler
+
+---
+# Kustomization for Keycloak Clients
+# Clients depend on realms being ready (for auth secrets)
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak-clients
+  namespace: flux-system
+spec:
+  sourceRef:
+    kind: GitRepository
+    name: keycloak-resources
+
+  path: ./k8s/keycloak/clients
+
+  interval: 10m
+  retryInterval: 1m
+  timeout: 5m
+  prune: true
+  wait: true
+
+  # Dependency: wait for realms to be ready first
+  dependsOn:
+    - name: keycloak-realms
+
+  healthChecks:
+    - apiVersion: vriesdemichael.github.io/v1
+      kind: KeycloakClient
+      name: '*'
+      namespace: production
+
+  targetNamespace: production
+
+---
+# Alternative: Single Kustomization with ordering
+#
+# If realms and clients are in the same directory, use this approach
+# with sync waves to control ordering
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak-all
+  namespace: flux-system
+spec:
+  sourceRef:
+    kind: GitRepository
+    name: keycloak-resources
+
+  path: ./k8s/keycloak
+
+  interval: 10m
+  retryInterval: 1m
+  timeout: 10m
+  prune: true
+  wait: true
+
+  # Apply resources in order using Kustomize transformers
+  # Add this to your kustomization.yaml in the repo:
+  #
+  # commonAnnotations:
+  #   kustomize.toolkit.fluxcd.io/sync-wave: "0"  # for realms
+  #   kustomize.toolkit.fluxcd.io/sync-wave: "1"  # for clients
+
+  targetNamespace: production
+
+---
+# Production Kustomization with conservative settings
+apiVersion: kustomize.toolkit.fluxcd.io/v1
+kind: Kustomization
+metadata:
+  name: keycloak-production
+  namespace: flux-system
+spec:
+  sourceRef:
+    kind: GitRepository
+    name: keycloak-resources
+
+  path: ./k8s/keycloak/overlays/production
+
+  # Less frequent reconciliation for production
+  interval: 30m
+  retryInterval: 5m
+  timeout: 10m
+
+  # Require manual approval for changes
+  # Use flux reconcile to approve: flux reconcile kustomization keycloak-production
+  suspend: false
+
+  # Conservative pruning
+  prune: true
+
+  # Wait for all resources to be ready
+  wait: true
+
+  # Force apply if needed (use with caution)
+  force: false
+
+  healthChecks:
+    - apiVersion: vriesdemichael.github.io/v1
+      kind: KeycloakRealm
+      name: '*'
+      namespace: production
+    - apiVersion: vriesdemichael.github.io/v1
+      kind: KeycloakClient
+      name: '*'
+      namespace: production
+
+  targetNamespace: production
+
+  # Post-build substitutions for environment-specific values
+  postBuild:
+    substitute:
+      ENVIRONMENT: "production"
+      KEYCLOAK_HOST: "keycloak.example.com"
+    substituteFrom:
+      - kind: ConfigMap
+        name: keycloak-config
+      - kind: Secret
+        name: keycloak-secrets
+
+---
+# ConfigMap for Flux variable substitution
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  namespace: flux-system
+data:
+  SMTP_HOST: "smtp.example.com"
+  SMTP_PORT: "587"
+  REALM_DISPLAY_NAME: "Production Realm"
+
+---
+# HelmRelease for Keycloak Operator (if using Helm)
+#
+# Install the operator itself using Flux HelmRelease
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: keycloak-operator
+  namespace: flux-system
+spec:
+  interval: 24h
+  url: https://vriesdemichael.github.io/keycloak-operator
+
+---
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: keycloak-operator
+  namespace: flux-system
+spec:
+  interval: 30m
+  chart:
+    spec:
+      chart: keycloak-operator
+      version: '>=1.0.0'
+      sourceRef:
+        kind: HelmRepository
+        name: keycloak-operator
+      interval: 12h
+
+  install:
+    crds: Create
+    remediation:
+      retries: 3
+
+  upgrade:
+    crds: CreateReplace
+    remediation:
+      retries: 3
+
+  values:
+    # Operator configuration
+    replicas: 2
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+
+    # RBAC
+    rbac:
+      create: true
+
+    # Service account
+    serviceAccount:
+      create: true
+      name: keycloak-operator
+
+  # Health checks for the operator
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: keycloak-operator
+      namespace: keycloak-operator-system
+
+---
+# Notification Provider (optional)
+#
+# Send alerts when Kustomizations fail
+apiVersion: notification.toolkit.fluxcd.io/v1beta1
+kind: Provider
+metadata:
+  name: slack
+  namespace: flux-system
+spec:
+  type: slack
+  channel: alerts-keycloak
+  secretRef:
+    name: slack-webhook
+
+---
+apiVersion: notification.toolkit.fluxcd.io/v1beta1
+kind: Alert
+metadata:
+  name: keycloak-resources
+  namespace: flux-system
+spec:
+  providerRef:
+    name: slack
+  eventSeverity: error
+  eventSources:
+    - kind: Kustomization
+      name: keycloak-realms
+    - kind: Kustomization
+      name: keycloak-clients
+  summary: "Keycloak resource reconciliation failed"
