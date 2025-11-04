@@ -659,7 +659,6 @@ kubectl get secret webapp-client-secret \
 **Configuration Guides:**
 
 - [End-to-End Setup](../how-to/end-to-end-setup.md) - Complete client configuration with OAuth2 testing
-- [Chart README](../../charts/keycloak-client/README.md) - Helm chart configuration options
 - [Quick Start Guide](../quickstart/README.md) - Create your first client
 
 **Examples:**
@@ -673,5 +672,5 @@ kubectl get secret webapp-client-secret \
 **Architecture & Operations:**
 
 - [Architecture](../architecture.md) - How client reconciliation works
-- [Security Model](../security.md#realm-authorization-tokens) - How clients authenticate
+- [Security Model](../security.md#2-realm-authorization-token) - How clients authenticate
 - [Troubleshooting: Client Issues](../operations/troubleshooting.md#client-issues) - Common client problems

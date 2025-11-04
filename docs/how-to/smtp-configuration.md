@@ -199,7 +199,7 @@ kubectl apply -f realm-with-smtp.yaml
 4. Click link to verify account
 
 **Option B: Password Reset Flow**
-1. Create a test user via CRD (see [Users documentation](../users.md))
+1. Create a test user via Keycloak admin console or realm import
 2. Navigate to password reset page:
    ```
    https://keycloak.example.com/realms/my-realm/login-actions/reset-credentials
