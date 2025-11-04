@@ -1,4 +1,23 @@
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
+# KeycloakRealm with Google Identity Provider
+#
+# This example shows how to configure a realm with Google OAuth as an identity provider.
+# Users will be able to sign in using their Google accounts.
+#
+# Prerequisites:
+# - Google OAuth 2.0 Client ID and Secret (from Google Cloud Console)
+# - Keycloak instance must be Ready
+# - Configure authorized redirect URIs in Google:
+#   https://<keycloak-host>/realms/<realm-name>/broker/google/endpoint
+#
+# Setup Instructions:
+# 1. Create OAuth 2.0 credentials in Google Cloud Console
+# 2. Add authorized redirect URI (see above)
+# 3. Store client secret in Kubernetes secret (optional, or use plain text)
+# 4. Apply this manifest
+#
+# Operator Compatibility: v1+
+# Keycloak Version: 22.0+
 ---
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm

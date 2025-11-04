@@ -1,4 +1,27 @@
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
+# KeycloakRealm with Azure AD (Microsoft Entra ID) Identity Provider
+#
+# This example shows how to configure a realm with Azure AD / Microsoft Entra ID
+# as an OIDC identity provider. Users will be able to sign in using their
+# Microsoft work or school accounts.
+#
+# Prerequisites:
+# - Azure AD Application Registration (from Azure Portal)
+# - Azure Tenant ID
+# - Keycloak instance must be Ready
+# - Configure redirect URI in Azure AD:
+#   https://<keycloak-host>/realms/<realm-name>/broker/azure-ad/endpoint
+#
+# Setup Instructions:
+# 1. Create App Registration in Azure AD
+# 2. Add redirect URI (see above)
+# 3. Create client secret in Azure AD
+# 4. Replace YOUR_TENANT_ID with your Azure AD tenant ID
+# 5. Store client secret in Kubernetes secret (optional, or use plain text)
+# 6. Apply this manifest
+#
+# Operator Compatibility: v1+
+# Keycloak Version: 22.0+
 ---
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm

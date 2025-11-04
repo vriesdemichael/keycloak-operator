@@ -1,4 +1,25 @@
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
+# KeycloakRealm with Custom OIDC Identity Provider
+#
+# This example shows how to configure a realm with a generic OIDC-compliant
+# identity provider. This works with any OpenID Connect provider including
+# Okta, Auth0, Keycloak, custom OIDC implementations, etc.
+#
+# Prerequisites:
+# - OIDC Provider configuration (client ID, secret, endpoints)
+# - Keycloak instance must be Ready
+# - Configure redirect URI in your OIDC provider:
+#   https://<keycloak-host>/realms/<realm-name>/broker/custom-oidc/endpoint
+#
+# Setup Instructions:
+# 1. Create OAuth/OIDC application in your identity provider
+# 2. Configure redirect URI (see above)
+# 3. Obtain client ID, secret, and OIDC discovery endpoints
+# 4. Update config section with your provider's endpoints
+# 5. Apply this manifest
+#
+# Operator Compatibility: v1+
+# Keycloak Version: 22.0+
 ---
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm

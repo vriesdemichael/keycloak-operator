@@ -11,6 +11,9 @@
 # - CloudNativePG operator installed (for database)
 # - CloudNativePG Cluster created (see CNPG documentation)
 # - Or modify to use external database
+#
+# Operator Compatibility: v1+
+# Keycloak Version: 22.0+
 
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
