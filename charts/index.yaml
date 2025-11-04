@@ -1,0 +1,73 @@
+apiVersion: v1
+entries:
+  keycloak-client:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-11-04T23:02:46.10241158Z"
+    description: A Helm chart for deploying Keycloak clients with authorization
+    digest: 55117a34c62a8598753d6231a2057c2667d630df0b6835758464202f55dd202f
+    home: https://github.com/vriesdemichael/keycloak-operator
+    keywords:
+    - keycloak
+    - client
+    - oauth2
+    - oidc
+    - authentication
+    kubeVersion: '>=1.27.0'
+    maintainers:
+    - name: Michael de Vries
+    name: keycloak-client
+    sources:
+    - https://github.com/vriesdemichael/keycloak-operator
+    type: application
+    urls:
+    - https://vriesdemichael.github.io/keycloak-operator/charts/keycloak-client-0.1.3.tgz
+    version: 0.1.3
+  keycloak-operator:
+  - apiVersion: v2
+    appVersion: v0.2.14
+    created: "2025-11-04T23:02:46.103799481Z"
+    description: A Helm chart for deploying the Keycloak Operator with GitOps compatibility
+    digest: 0507f4258ac85b670b5b3ddcc738d7fec7b505f550ec52212af9bfafb975eaa1
+    home: https://github.com/vriesdemichael/keycloak-operator
+    icon: https://www.keycloak.org/resources/images/icon.svg
+    keywords:
+    - keycloak
+    - operator
+    - authentication
+    - sso
+    - identity
+    kubeVersion: '>=1.27.0'
+    maintainers:
+    - name: Michael de Vries
+    name: keycloak-operator
+    sources:
+    - https://github.com/vriesdemichael/keycloak-operator
+    type: application
+    urls:
+    - https://vriesdemichael.github.io/keycloak-operator/charts/keycloak-operator-0.1.4.tgz
+    version: 0.1.4
+  keycloak-realm:
+  - apiVersion: v2
+    appVersion: 1.0.0
+    created: "2025-11-04T23:02:46.104370517Z"
+    description: A Helm chart for deploying Keycloak realms with authorization
+    digest: a5bb02fe49987a949a98222668797e8fcbb0fbd14ead2d1c9467f08296b5de01
+    home: https://github.com/vriesdemichael/keycloak-operator
+    keywords:
+    - keycloak
+    - realm
+    - authentication
+    - sso
+    - identity
+    kubeVersion: '>=1.27.0'
+    maintainers:
+    - name: Michael de Vries
+    name: keycloak-realm
+    sources:
+    - https://github.com/vriesdemichael/keycloak-operator
+    type: application
+    urls:
+    - https://vriesdemichael.github.io/keycloak-operator/charts/keycloak-realm-0.1.3.tgz
+    version: 0.1.3
+generated: "2025-11-04T23:02:46.101711543Z"
