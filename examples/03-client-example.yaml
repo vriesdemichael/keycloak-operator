@@ -7,6 +7,9 @@
 # Prerequisites:
 # - KeycloakRealm must be Ready
 # - Realm authorization secret exists in this namespace
+#
+# Operator Compatibility: v1+
+# Keycloak Version: 22.0+
 
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient

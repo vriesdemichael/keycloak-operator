@@ -1,4 +1,23 @@
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
+# KeycloakRealm with GitHub Identity Provider
+#
+# This example shows how to configure a realm with GitHub OAuth as an identity provider.
+# Users will be able to sign in using their GitHub accounts.
+#
+# Prerequisites:
+# - GitHub OAuth App Client ID and Secret (from GitHub Developer Settings)
+# - Keycloak instance must be Ready
+# - Configure authorization callback URL in GitHub:
+#   https://<keycloak-host>/realms/<realm-name>/broker/github/endpoint
+#
+# Setup Instructions:
+# 1. Create OAuth App in GitHub Developer Settings
+# 2. Set authorization callback URL (see above)
+# 3. Store client secret in Kubernetes secret (optional, or use plain text)
+# 4. Apply this manifest
+#
+# Operator Compatibility: v1+
+# Keycloak Version: 22.0+
 ---
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
