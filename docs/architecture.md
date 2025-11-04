@@ -140,17 +140,121 @@ When creating a realm, the operator:
 
 See [Security Model](security.md) for detailed security architecture and [Token Management](operations/token-management.md) for operational procedures.
 
+### Token Rotation Lifecycle
+
+Operational tokens automatically rotate every 90 days with zero downtime:
+
+```mermaid
+sequenceDiagram
+    participant Timer as Timer Handler<br/>(checks every hour)
+    participant Operator as Operator
+    participant ConfigMap as Token Metadata<br/>ConfigMap
+    participant Secret as Operational Token<br/>Secret
+    participant Realm as KeycloakRealm<br/>Resources
+
+    Timer->>ConfigMap: Check token expiry dates
+    ConfigMap-->>Timer: Token expires in <7 days
+
+    Note over Timer,Operator: Rotation Begins
+
+    Timer->>Operator: Trigger rotation for namespace
+    Operator->>Operator: Generate new token
+    Operator->>Secret: Add "token-previous" key<br/>(keep old token)
+    Operator->>Secret: Update "token" key<br/>(new token)
+    Operator->>ConfigMap: Update metadata<br/>(new expiry, version++)
+
+    Note over Secret,Realm: Grace Period (7 days)<br/>Both tokens valid
+
+    Realm->>Secret: Read "token" key<br/>(uses new token)
+    Realm->>Secret: OR read "token-previous"<br/>(old token still works)
+
+    Note over Timer,Realm: After 7 days
+
+    Timer->>Secret: Remove "token-previous" key
+    Realm->>Secret: Read "token" key only<br/>(old token no longer available)
+
+    Note over Operator,Realm: Zero-Downtime Rotation Complete
+```
+
+**Key Points:**
+
+1. **Automatic**: Timer handler checks hourly for tokens expiring in <7 days
+2. **Dual-Token Period**: Both old and new tokens valid for 7 days (grace period)
+3. **Zero Downtime**: Realms can use either token during grace period
+4. **Version Tracking**: Token metadata tracks version and expiry in ConfigMap
+5. **Cleanup**: Old token removed after grace period expires
+
 ## Reconciliation Flow
 
-1. Kubernetes emits an event for a custom resource (e.g. `KeycloakRealm`).
-2. Kopf invokes the registered handler in `handlers/realm.py`.
-3. Handler validates input and delegates to a reconciler in `services/realm_reconciler.py`.
-4. Reconciler:
-   - Loads current state from Keycloak & cluster
-   - Computes diff against desired spec
-   - Applies required create/update/delete operations
-   - Emits metrics & logs
-5. Status field may be updated in the CR to reflect success or error.
+The operator follows a consistent reconciliation pattern for all custom resources:
+
+```mermaid
+flowchart TD
+    A[Kubernetes Event<br/>create/update/delete] --> B[Kopf Handler<br/>handlers/*.py]
+    B --> C{Validate Input}
+    C -->|Invalid| D[Update Status: Failed<br/>Emit Event]
+    C -->|Valid| E[Reconciler Service<br/>services/*_reconciler.py]
+
+    E --> F[Load Current State]
+    F --> G[From Keycloak API]
+    F --> H[From Kubernetes API]
+
+    G --> I{Compute Diff}
+    H --> I
+
+    I --> J{Changes Needed?}
+    J -->|No| K[Update Status: Ready<br/>No action needed]
+    J -->|Yes| L[Apply Changes]
+
+    L --> M{Create}
+    L --> N{Update}
+    L --> O{Delete}
+
+    M --> P[Keycloak Admin API<br/>POST /realms]
+    N --> Q[Keycloak Admin API<br/>PUT /realms/name]
+    O --> R[Keycloak Admin API<br/>DELETE /realms/name]
+
+    P --> S[Update CR Status]
+    Q --> S
+    R --> S
+
+    S --> T{Success?}
+    T -->|Yes| U[Status: Ready<br/>Emit Success Event<br/>Record Metrics]
+    T -->|No| V[Status: Failed<br/>Emit Error Event<br/>Record Metrics<br/>Retry with backoff]
+
+    D --> W[End]
+    K --> W
+    U --> W
+    V --> W
+
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style E fill:#e8f5e9
+    style I fill:#f3e5f5
+    style S fill:#fff3e0
+    style U fill:#c8e6c9
+    style V fill:#ffcdd2
+```
+
+**Reconciliation Steps:**
+
+1. **Event Reception**: Kubernetes emits event for custom resource (create/update/delete)
+2. **Handler Invocation**: Kopf invokes registered handler (`handlers/realm.py`, etc.)
+3. **Input Validation**: Handler validates spec fields and authorization
+4. **Delegation**: Handler delegates to reconciler service (`services/realm_reconciler.py`)
+5. **State Loading**: Reconciler loads current state from Keycloak and Kubernetes APIs
+6. **Diff Computation**: Compare desired spec with actual state
+7. **Change Application**: Apply required create/update/delete operations via Keycloak Admin API
+8. **Status Update**: Update custom resource status field (Ready/Failed)
+9. **Observability**: Emit metrics, logs, and Kubernetes events
+
+**Key Principles:**
+
+- **Idempotent**: Reconciler can be called multiple times with same input
+- **Thin Handlers**: Handlers contain minimal logic, delegate to services
+- **Thick Services**: Reconcilers contain all business logic
+- **State-Based**: Always compare current state vs desired state (not event-based)
+- **Error Recovery**: Failed reconciliations retry with exponential backoff
 
 ## Key Modules
 
@@ -222,6 +326,66 @@ Each realm can target a specific operator instance using the `operatorRef` field
 - Isolate different teams or environments to different operators
 - Scale operator capacity horizontally when needed
 
+```mermaid
+graph TB
+    subgraph Cluster["Kubernetes Cluster"]
+        subgraph OpNS1["keycloak-system-prod"]
+            Op1[Operator Instance: prod]
+            KC1[Keycloak Instance: prod]
+        end
+
+        subgraph OpNS2["keycloak-system-dev"]
+            Op2[Operator Instance: dev]
+            KC2[Keycloak Instance: dev]
+        end
+
+        subgraph TeamA["Namespace: team-a"]
+            RealmA1[Realm: team-a-prod]
+            RealmA2[Realm: team-a-dev]
+            TokenA1[Token: prod-admission]
+            TokenA2[Token: dev-admission]
+        end
+
+        subgraph TeamB["Namespace: team-b"]
+            RealmB1[Realm: team-b-prod]
+            RealmB2[Realm: team-b-dev]
+            TokenB1[Token: prod-admission]
+            TokenB2[Token: dev-admission]
+        end
+    end
+
+    RealmA1 -->|operatorRef: keycloak-system-prod| Op1
+    RealmA1 -->|authRef: prod-admission| TokenA1
+    Op1 -->|Reconcile| KC1
+
+    RealmA2 -->|operatorRef: keycloak-system-dev| Op2
+    RealmA2 -->|authRef: dev-admission| TokenA2
+    Op2 -->|Reconcile| KC2
+
+    RealmB1 -->|operatorRef: keycloak-system-prod| Op1
+    RealmB1 -->|authRef: prod-admission| TokenB1
+
+    RealmB2 -->|operatorRef: keycloak-system-dev| Op2
+    RealmB2 -->|authRef: dev-admission| TokenB2
+
+    style Op1 fill:#e3f2fd
+    style Op2 fill:#f3e5f5
+    style KC1 fill:#e1f5fe
+    style KC2 fill:#f8bbd0
+    style RealmA1 fill:#c8e6c9
+    style RealmA2 fill:#fff9c4
+    style RealmB1 fill:#c8e6c9
+    style RealmB2 fill:#fff9c4
+```
+
+**Key Benefits of Multi-Operator Pattern:**
+
+- **Workload Isolation**: Production and development operators are completely independent
+- **Blast Radius Reduction**: Issues with dev operator don't affect production realms
+- **Independent Scaling**: Each operator can be sized according to its workload
+- **Team Autonomy**: Teams can target different operators based on environment
+- **Upgrade Safety**: Test operator upgrades in dev before rolling to production
+
 **Example configuration:**
 
 ```yaml
@@ -268,6 +432,135 @@ For most use cases:
 **Reality:** For this workload, the language choice has minimal impact. The operator spends most of its time waiting for Kubernetes API responses and Keycloak Admin API calls, not doing CPU-intensive work. A single Python-based operator can easily manage dozens of realms without performance degradation.
 
 The scaling strategy should be driven by **actual performance metrics and requirements**, not by assumptions about implementation language.
+
+## Rate Limiting Architecture
+
+The operator implements a three-layer rate limiting strategy to protect Keycloak instances from API overload, particularly during mass reconciliation events (operator restarts, database reconnections, or intentional/malicious resource spam).
+
+```mermaid
+flowchart TB
+    subgraph Reconciliation["Reconciliation Request Flow"]
+        Event[Kubernetes Event<br/>create/update/delete]
+        Jitter[Layer 3: Jitter<br/>Random delay 0-5s<br/>Prevents thundering herd]
+        NSLimit[Layer 2: Namespace Limiter<br/>5 req/s per namespace<br/>Fair allocation]
+        GlobalLimit[Layer 1: Global Limiter<br/>50 req/s cluster-wide<br/>Total protection]
+        API[Keycloak Admin API]
+    end
+
+    subgraph Limits["Token Bucket Rate Limiters"]
+        subgraph Global["Global Bucket"]
+            GT[Tokens: 50/sec<br/>Burst: 100]
+        end
+
+        subgraph NS1["Namespace: team-a"]
+            NS1T[Tokens: 5/sec<br/>Burst: 10]
+        end
+
+        subgraph NS2["Namespace: team-b"]
+            NS2T[Tokens: 5/sec<br/>Burst: 10]
+        end
+
+        subgraph NS3["Namespace: team-c"]
+            NS3T[Tokens: 5/sec<br/>Burst: 10]
+        end
+    end
+
+    Event --> Jitter
+    Jitter --> NSLimit
+    NSLimit --> NS1T
+    NSLimit --> NS2T
+    NSLimit --> NS3T
+
+    NS1T --> GlobalLimit
+    NS2T --> GlobalLimit
+    NS3T --> GlobalLimit
+
+    GlobalLimit --> GT
+    GT --> API
+
+    style Event fill:#e1f5ff
+    style Jitter fill:#fff9c4
+    style NSLimit fill:#f3e5f5
+    style GlobalLimit fill:#ffccbc
+    style API fill:#c8e6c9
+    style GT fill:#ffab91
+    style NS1T fill:#ce93d8
+    style NS2T fill:#ce93d8
+    style NS3T fill:#ce93d8
+```
+
+### Rate Limiting Layers Explained
+
+#### Layer 3: Jitter (Reconciliation Start)
+- **Purpose**: Prevent "thundering herd" when operator restarts with 100+ resources
+- **Implementation**: Random delay (0-5 seconds) before reconciliation starts
+- **Configuration**: `RECONCILE_JITTER_MAX_SECONDS` (default: 5.0)
+- **Effect**: Spreads reconciliation across time window instead of all at once
+
+#### Layer 2: Per-Namespace Rate Limiting
+- **Purpose**: Fair resource allocation across teams/namespaces
+- **Implementation**: Token bucket algorithm, one bucket per namespace
+- **Configuration**: `KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS` (default: 5 req/s)
+- **Burst Capacity**: `KEYCLOAK_API_NAMESPACE_BURST` (default: 10)
+- **Effect**: Prevents one team from monopolizing API capacity
+
+**Example**: If `team-a` creates 1000 realms:
+- Rate limited to 5 req/s = 200 seconds minimum
+- Other teams' realms still reconcile at their namespace rate limits
+- No team can starve others of API capacity
+
+#### Layer 1: Global Rate Limiting
+- **Purpose**: Absolute protection of Keycloak instance from overload
+- **Implementation**: Token bucket algorithm, shared across all namespaces
+- **Configuration**: `KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS` (default: 50 req/s)
+- **Burst Capacity**: `KEYCLOAK_API_GLOBAL_BURST` (default: 100)
+- **Effect**: Hard cap on total API requests across entire cluster
+
+**Example**: With 20 teams each creating 100 realms:
+- Namespace limits allow each team 5 req/s (total theoretical: 100 req/s)
+- Global limit enforces actual maximum of 50 req/s
+- Teams fairly share the 50 req/s capacity
+
+### Protection Scenarios
+
+| Scenario | Protection Mechanism | Result |
+|----------|---------------------|--------|
+| Operator restart (50 resources) | Jitter spreads starts over 5s | Smooth reconciliation, not instant spike |
+| Database reconnection (100 resources) | Jitter + namespace limits | Controlled recovery, API not overwhelmed |
+| Malicious spam (1000 realms in one namespace) | Namespace limit (5 req/s) | 200 seconds minimum, other teams unaffected |
+| 20 teams creating resources simultaneously | Global limit (50 req/s) | Fair sharing, no single team monopolizes |
+
+### Configuration Example
+
+```yaml
+# Operator deployment configuration
+env:
+  # Layer 1: Global limit (protect Keycloak)
+  - name: KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS
+    value: "50"
+  - name: KEYCLOAK_API_GLOBAL_BURST
+    value: "100"
+
+  # Layer 2: Namespace limits (fair allocation)
+  - name: KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS
+    value: "5"
+  - name: KEYCLOAK_API_NAMESPACE_BURST
+    value: "10"
+
+  # Layer 3: Jitter (thundering herd prevention)
+  - name: RECONCILE_JITTER_MAX_SECONDS
+    value: "5.0"
+```
+
+### Monitoring Rate Limiting
+
+The operator exposes Prometheus metrics for rate limiting (when implemented):
+
+- `keycloak_operator_rate_limit_wait_seconds`: Time spent waiting for rate limit tokens
+- `keycloak_operator_rate_limit_denied_total`: Number of requests denied (should be 0)
+- `keycloak_operator_rate_limit_tokens_available`: Current token bucket levels
+
+See [Observability](observability.md) for complete metrics documentation.
 
 ## Future Enhancements
 
