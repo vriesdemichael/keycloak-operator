@@ -8,7 +8,7 @@ This guide covers upgrading the Keycloak operator, migrating between token syste
 2. [Upgrading Keycloak Version](#upgrading-keycloak-version)
 3. [Migrating from Manual to Automatic Token Rotation](#migrating-from-manual-to-automatic-token-rotation)
 4. [Comparison with Official Keycloak Operator](#comparison-with-official-keycloak-operator)
-5. [Backup & Rollback](#backup--rollback)
+5. [Backup & Rollback](#backup-rollback)
 
 ---
 
@@ -183,10 +183,6 @@ kubectl rollout status statefulset/<keycloak-name> -n <namespace>
 # Verify all pods running new version
 kubectl get pods -n <namespace> -l app=keycloak \
   -o jsonpath='{range .items[*]}{.metadata.name}{"\t"}{.spec.containers[0].image}{"\n"}{end}'
-
-# Test admin console access
-kubectl port-forward svc/<keycloak-service> -n <namespace> 8080:8080
-# Open http://localhost:8080
 ```
 
 ### Verify Upgrade

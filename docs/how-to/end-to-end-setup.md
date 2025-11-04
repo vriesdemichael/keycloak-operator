@@ -446,14 +446,7 @@ export KEYCLOAK_ADMIN_USER=$(kubectl get secret keycloak-admin-credentials -n ke
 export KEYCLOAK_ADMIN_PASS=$(kubectl get secret keycloak-admin-credentials -n keycloak-system -o jsonpath='{.data.password}' | base64 -d)
 ```
 
-### 4.5 Access Keycloak Admin Console
-
-```bash
-# Access via ingress (production)
-echo "Open: https://keycloak.example.com"
-echo "Username: $KEYCLOAK_ADMIN_USER"
-echo "Password: $KEYCLOAK_ADMIN_PASS"
-```
+**Note:** Admin credentials are managed by the operator and stored in secrets. You should never need direct access to the Keycloak admin console - all configuration is done through CRDs.
 
 ---
 
@@ -822,21 +815,7 @@ kubectl get keycloakclient -n team-alpha
 
 All resources should show `PHASE=Ready` or `STATUS=Cluster in healthy state`.
 
-### 8.2 Test Admin Console Access
-
-```bash
-# Access admin console
-echo "Open: https://keycloak.example.com"
-echo "Username: $KEYCLOAK_ADMIN_USER"
-echo "Password: $KEYCLOAK_ADMIN_PASS"
-```
-
-Navigate to:
-1. Realm: Select **"team-alpha-prod"** from dropdown
-2. Clients: Verify **"team-alpha-webapp"** exists
-3. Clients → team-alpha-webapp → Credentials: View client secret
-
-### 8.3 Test OIDC Discovery
+### 8.2 Test OIDC Discovery
 
 ```bash
 # Get discovery URL from secret
@@ -998,9 +977,8 @@ kubectl get ingress -n keycloak-system
 # Check ingress controller logs
 kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller
 
-# Test directly to service
-kubectl port-forward svc/keycloak-keycloak -n keycloak-system 8080:8080
-# Open: http://localhost:8080
+# Verify service endpoints
+kubectl get endpoints keycloak-keycloak -n keycloak-system
 ```
 
 ---

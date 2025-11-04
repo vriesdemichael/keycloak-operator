@@ -150,35 +150,62 @@ smtp:
 
 ## Testing SMTP Configuration
 
-### 1. Create Test User
+### 1. Enable Email Verification
 
-Access Keycloak admin console:
-```bash
-kubectl port-forward svc/keycloak-keycloak -n keycloak-system 8080:8080
-# Open http://localhost:8080
+Update your realm to enable email verification:
+
+```yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakRealm
+metadata:
+  name: my-realm
+  namespace: my-app
+spec:
+  realmName: my-realm
+  operatorRef:
+    namespace: keycloak-system
+    authorizationSecretRef:
+      name: my-app-operator-token
+      key: token
+
+  security:
+    verifyEmail: true
+    registrationAllowed: true  # For testing only
+
+  smtp:
+    host: smtp.sendgrid.net
+    port: 587
+    from: noreply@example.com
+    fromDisplayName: My Application
+    auth: true
+    starttls: true
+    credentialsSecret: my-realm-smtp
 ```
 
-1. Select your realm
-2. Go to **Users** → **Add user**
-3. Set username and email
-4. Save
+Apply the changes:
+```bash
+kubectl apply -f realm-with-smtp.yaml
+```
 
-### 2. Send Test Email
+### 2. Test Email Delivery
 
-**Password Reset Email**:
-1. Go to **Users** → Select user
-2. **Credentials** tab → **Reset password**
-3. Enable "Temporary" and click **Reset password**
-4. User receives email with reset link
-
-**Verification Email**:
-1. Enable email verification in realm:
-   ```yaml
-   spec:
-     security:
-       verifyEmail: true
+**Option A: Self-Registration Flow** (recommended for testing)
+1. Navigate to your realm's account registration page:
    ```
-2. User registration triggers verification email
+   https://keycloak.example.com/realms/my-realm/protocol/openid-connect/registrations?client_id=account&response_type=code
+   ```
+2. Fill out registration form with valid email
+3. Check email for verification link
+4. Click link to verify account
+
+**Option B: Password Reset Flow**
+1. Create a test user via CRD (see [Users documentation](../users.md))
+2. Navigate to password reset page:
+   ```
+   https://keycloak.example.com/realms/my-realm/login-actions/reset-credentials
+   ```
+3. Enter test user's email
+4. Check email for password reset link
 
 ### 3. Check Keycloak Logs
 
