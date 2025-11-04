@@ -82,13 +82,25 @@ nav:
   - Configuration:
       - Identity Providers: identity-providers.md
       - Drift Detection: drift-detection.md
+  - How-To Guides:
+      - End-to-End Setup: how-to/end-to-end-setup.md
+      - Multi-Tenant Configuration: how-to/multi-tenant.md
+      - Database Setup: how-to/database-setup.md
+      - SMTP Configuration: how-to/smtp-configuration.md
+      - High Availability: how-to/ha-deployment.md
+      - Backup & Restore: how-to/backup-restore.md
   - Operations:
       - Token Management: operations/token-management.md
+      - Troubleshooting: operations/troubleshooting.md
+      - Migration & Upgrade: operations/migration.md
   - Reference:
       - Keycloak CRD: reference/keycloak-crd.md
       - KeycloakRealm CRD: reference/keycloak-realm-crd.md
       - KeycloakClient CRD: reference/keycloak-client-crd.md
   - Observability: observability.md
-  - Development: development.md
+  - Development:
+      - Getting Started: development.md
+      - Testing: development/testing.md
+  - FAQ: faq.md
   - API Reference:
       - Overview: api/keycloak_operator.md
