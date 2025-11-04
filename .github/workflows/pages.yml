@@ -57,17 +57,18 @@ jobs:
           # Fetch gh-pages branch to preserve existing versions
           git fetch origin gh-pages --depth=1 || echo "No gh-pages branch yet"
 
-          # Create worktree for gh-pages
+          # Check out gh-pages branch
           if git rev-parse --verify origin/gh-pages >/dev/null 2>&1; then
             echo "Checking out existing gh-pages branch..."
-            git worktree add /tmp/gh-pages gh-pages
+            git checkout gh-pages
           else
             echo "Creating new orphan gh-pages branch..."
-            git worktree add --orphan /tmp/gh-pages
-            cd /tmp/gh-pages
-            git rm -rf . 2>/dev/null || true
             git checkout --orphan gh-pages
+            git rm -rf . 2>/dev/null || true
           fi
+
+          # Return to main branch but keep gh-pages in history
+          git checkout main
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -145,28 +146,21 @@ jobs:
 
           echo "Building documentation version: $VERSION (is_latest=$IS_LATEST)"
 
-          # Configure git in gh-pages worktree
-          cd /tmp/gh-pages
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          cd -
-
-          # Deploy documentation version with mike from main repo
-          # (mike needs to run from repo root to access mkdocs.yml and docs/)
+          # Deploy documentation version with mike (NO --push, we'll push at the end)
           if [[ "$IS_LATEST" == "true" ]]; then
             if [[ "$VERSION" == "latest" ]]; then
               # Update latest in-place (realm/client chart releases)
-              uv run --group docs mike deploy --deploy-prefix /tmp/gh-pages --update-aliases latest
+              uv run --group docs mike deploy --update-aliases latest
               echo "Updated latest documentation in-place"
             else
               # Deploy as new version and set as latest (operator chart releases)
-              uv run --group docs mike deploy --deploy-prefix /tmp/gh-pages --update-aliases "$VERSION" latest
-              uv run --group docs mike set-default --deploy-prefix /tmp/gh-pages latest
+              uv run --group docs mike deploy --update-aliases "$VERSION" latest
+              uv run --group docs mike set-default latest
               echo "Created new version $VERSION and set as latest"
             fi
           else
             # Deploy/update without changing latest (dev updates)
-            uv run --group docs mike deploy --deploy-prefix /tmp/gh-pages --update-aliases "$VERSION"
+            uv run --group docs mike deploy --update-aliases "$VERSION"
             echo "Updated version $VERSION"
           fi
 
@@ -177,12 +171,18 @@ jobs:
 
       - name: Package and merge Helm charts
         run: |
-          CHARTS_DIR="/tmp/gh-pages/charts"
+          # Switch to gh-pages branch
+          git checkout gh-pages
+
+          CHARTS_DIR="charts"
           TEMP_DIR="/tmp/new-charts"
 
-          # Ensure charts directory exists in gh-pages
+          # Ensure charts directory exists
           mkdir -p "$CHARTS_DIR"
           mkdir -p "$TEMP_DIR"
+
+          # Switch back to main to access chart sources
+          git checkout main
 
           # Package each chart in the charts directory
           for chart_dir in charts/*/; do
@@ -192,6 +192,9 @@ jobs:
               helm package "${chart_dir}" --destination "$TEMP_DIR"
             fi
           done
+
+          # Switch back to gh-pages
+          git checkout gh-pages
 
           # Copy new chart packages to gh-pages charts directory
           # This preserves existing charts and adds new versions
@@ -210,13 +213,19 @@ jobs:
 
       - name: Generate and add JSON schemas
         run: |
+          # Generate schemas on main branch
+          git checkout main
           uv run python scripts/generate-crd-schemas.py
-          mkdir -p /tmp/gh-pages/schemas
-          cp -r _schemas/* /tmp/gh-pages/schemas/
+
+          # Switch to gh-pages and add schemas
+          git checkout gh-pages
+          mkdir -p schemas
+          cp -r _schemas/* schemas/
 
       - name: Commit and push all changes to gh-pages
         run: |
-          cd /tmp/gh-pages
+          # Ensure we're on gh-pages branch
+          git checkout gh-pages
 
           git add -A
 
@@ -231,7 +240,7 @@ jobs:
       - name: Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v4
         with:
-          path: /tmp/gh-pages
+          path: .
 
   deploy:
     name: Deploy to GitHub Pages
