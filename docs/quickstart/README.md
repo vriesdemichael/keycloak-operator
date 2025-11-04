@@ -570,6 +570,36 @@ kubectl get keycloakrealm -n my-app
 kubectl get secret my-app-realm-realm-auth -n my-app
 ```
 
+## Next Steps
+
+Now that you have a working Keycloak realm and client, explore these guides:
+
+**Production Deployment:**
+
+- [End-to-End Production Setup](../how-to/end-to-end-setup.md) - Complete production deployment with HA, TLS, and monitoring
+- [Multi-Tenant Setup](../how-to/multi-tenant.md) - Set up multi-team environment with operational tokens
+- [Database Setup](../how-to/database-setup.md) - Configure production-grade PostgreSQL database
+- [High Availability](../how-to/ha-deployment.md) - Deploy Keycloak with redundancy and failover
+
+**Configuration:**
+
+- [SMTP Configuration](../how-to/smtp-configuration.md) - Enable email notifications for password reset, verification, etc.
+- [Identity Providers](../identity-providers.md) - Integrate with Google, GitHub, Azure AD, and other SSO providers
+- [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md) - Complete realm configuration options
+- [KeycloakClient CRD Reference](../reference/keycloak-client-crd.md) - Complete client configuration options
+
+**Operations:**
+
+- [Troubleshooting Guide](../operations/troubleshooting.md) - Diagnose and resolve common issues
+- [Token Management](../operations/token-management.md) - Manage authorization tokens
+- [Backup & Restore](../how-to/backup-restore.md) - Protect your Keycloak data
+
+**Understanding the System:**
+
+- [Architecture](../architecture.md) - How the operator works (token system, reconciliation, scaling)
+- [Security Model](../security.md) - Authorization model and security best practices
+- [FAQ](../faq.md) - Answers to common questions
+
 ## Support
 
 - 📚 [Full Documentation](../index.md)
