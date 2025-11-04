@@ -171,6 +171,17 @@ Working branch: `docs/documentation-review-improvements`
 - [ ] Organize development section
 - [ ] Commit: `docs: update mkdocs navigation with new documentation structure`
 
+### 2.1.1 Add Token System Overview Diagram
+- [ ] Create token system overview diagram (Mermaid)
+- [ ] Show admission token → operational token flow
+- [ ] Explain relationship between operator, admission, and operational tokens
+- [ ] Add diagram to charts/README.md or docs/architecture.md
+- [ ] Commit: `docs: add token system overview diagram`
+
+**Notes/Questions:**
+- Deferred from Phase 1 review - helps clarify the three token types
+- Should visualize: operator token (internal) vs admission token (bootstrap) vs operational token (daily ops)
+
 **Proposed Navigation Structure:**
 ```yaml
 nav:
@@ -229,6 +240,17 @@ nav:
 **Notes/Questions:**
 -
 
+### 2.5 Standardize Token Terminology
+- [ ] Create glossary of token-related terms
+- [ ] Standardize terminology across all documentation
+- [ ] Document: operator token, admission token, operational token, realm token
+- [ ] Clarify when to use each token type
+- [ ] Commit: `docs: standardize token terminology and add glossary`
+
+**Notes/Questions:**
+- Deferred from Phase 1 review - inconsistent terminology across docs
+- Terms need clarification: "operator token" vs "admission token" vs "operational token" vs "authorization secret"
+
 ### Phase 2 Validation
 - [ ] All documentation is in correct locations
 - [ ] Navigation is logical and complete
@@ -250,10 +272,12 @@ nav:
   - [ ] RBAC permission issues
   - [ ] Token authorization failures
   - [ ] Reconciliation failures
+  - [ ] Add "Common Pitfalls" section
 - [ ] Commit: `docs: add comprehensive troubleshooting guide`
 
 **Notes/Questions:**
--
+- Deferred from Phase 1 review - early adopters will hit common issues
+- Common pitfalls: using operator token incorrectly, port 9000 vs 8080, RBAC in multi-namespace, token discovery failures
 
 ### 3.2 Create Migration Guide
 - [ ] Create `docs/operations/migration.md`
@@ -263,13 +287,25 @@ nav:
   - [ ] Backup procedures before upgrade
   - [ ] Rollback procedures
   - [ ] Chart upgrade procedures
+  - [ ] Migration from official Keycloak operator
 - [ ] Commit: `docs: add migration and upgrade guide`
 
 **Notes/Questions:**
 - Need clarification on historical breaking changes between versions
+- Deferred from Phase 1 review - users coming from official operator need migration path
+- Should include comparison table: this operator vs official operator
 
 ### 3.3 Create How-To Guides Directory
 - [ ] Create `docs/how-to/` directory
+- [ ] Create `docs/how-to/end-to-end-setup.md`
+  - Complete walkthrough from zero to working OAuth2
+  - Install operator → Deploy Keycloak instance → Create realm → Create client → Test OAuth2 flow
+  - Single guide with all steps in sequence
+- [ ] Create `docs/how-to/database-setup.md`
+  - PostgreSQL setup guide
+  - CloudNativePG setup guide
+  - Backup and restore procedures
+  - High availability configuration
 - [ ] Create `docs/how-to/smtp-configuration.md`
   - Complete SMTP setup walkthrough
   - Provider-specific examples (Gmail, SendGrid, AWS SES)
@@ -289,21 +325,25 @@ nav:
 - [ ] Commit: `docs: add how-to guides for common operations`
 
 **Notes/Questions:**
--
+- Deferred from Phase 1 review - early adopters need complete end-to-end guide
+- Database setup was a critical gap from Phase 1 review
+- End-to-end guide should cover: operator → Keycloak instance (with database) → first realm (correct token flow) → client → test
 
 ### 3.4 Create FAQ
 - [ ] Create `docs/faq.md`
-  - [ ] Token system clarifications
+  - [ ] Token system clarifications (admission vs operational vs realm tokens)
   - [ ] Performance tuning questions
   - [ ] Security model questions
-  - [ ] Comparison with official Keycloak operator
+  - [ ] Comparison with official Keycloak operator (when to use which)
   - [ ] When to use this operator
   - [ ] Database requirements
   - [ ] Keycloak version compatibility
+  - [ ] Single-tenant vs multi-tenant setups
 - [ ] Commit: `docs: add FAQ section`
 
 **Notes/Questions:**
 - Need input on common questions from users/issues
+- Deferred from Phase 1 review - should answer "Why two-phase tokens?" and "Why bypass Keycloak security?"
 
 ### Phase 3 Validation
 - [ ] All guides are complete and accurate
@@ -441,13 +481,17 @@ nav:
 ### During Implementation
 - 2025-11-03: Pulled latest from main - identity-providers.md was added, mkdocs navigation updated. This is good progress on documentation structure.
 - 2025-11-03: Started Phase 1.1 - Creating operator chart README
--
--
+- 2025-11-04: Completed Phase 1 comprehensive review - found 4,436 lines of documentation added
+- 2025-11-04: Fixed operator chart README to clarify single-tenant dev mode vs multi-tenant production
+- 2025-11-04: Added Keycloak deployment guidance (chart's keycloak.enabled vs Keycloak CRD)
 
 ### Issues Found
--
--
+- **Resolved:** Token flow documentation in operator chart README was labeled confusing - fixed by adding clear dev mode context and link to production setup
+- **Identified:** Missing Keycloak instance deployment guide - partially addressed with brief section, full guide deferred to Phase 3
 
 ### Improvements Beyond Scope
--
--
+- **Architecture Decision Records (ADR):** Has open GitHub issue, out of scope for this documentation PR
+- **Token system diagram:** Deferred to Phase 2 (helps visualize token relationships)
+- **Complete end-to-end guide:** Deferred to Phase 3 (operator → Keycloak → realm → client → test OAuth2)
+- **Database setup guides:** Deferred to Phase 3 (PostgreSQL, CNPG, backup/restore, HA)
+- **Migration from official operator:** Deferred to Phase 3 (comparison table, migration steps)
