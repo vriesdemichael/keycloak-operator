@@ -7,6 +7,9 @@
 # Prerequisites:
 # - Keycloak instance must be Ready
 # - Operator authorization secret must be copied to this namespace
+#
+# Operator Compatibility: v1+
+# Keycloak Version: 22.0+
 
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
