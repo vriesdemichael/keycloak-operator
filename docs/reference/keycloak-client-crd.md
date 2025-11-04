@@ -36,9 +36,9 @@ spec:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `clientId` | string | **Yes** | - | Unique client identifier (1-255 characters) |
-| `clientName` | string | No | - | Human-readable client name |
-| `description` | string | No | - | Client description |
+| `clientId` | `string` | **Yes** | - | Unique client identifier (1-255 characters) |
+| `clientName` | `string` | No | - | Human-readable client name |
+| `description` | `string` | No | - | Client description |
 
 **Example:**
 ```yaml
@@ -54,10 +54,10 @@ Reference to the parent KeycloakRealm and authorization token.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `realmRef.name` | string | **Yes** | - | Name of the KeycloakRealm CR |
-| `realmRef.namespace` | string | **Yes** | - | Namespace of the KeycloakRealm CR |
-| `realmRef.authorizationSecretRef.name` | string | **Yes** | - | Name of the realm's authorization secret |
-| `realmRef.authorizationSecretRef.key` | string | No | `token` | Key within the secret containing the token |
+| `realmRef.name` | `string` | **Yes** | - | Name of the KeycloakRealm CR |
+| `realmRef.namespace` | `string` | **Yes** | - | Namespace of the KeycloakRealm CR |
+| `realmRef.authorizationSecretRef.name` | `string` | **Yes** | - | Name of the realm's authorization secret |
+| `realmRef.authorizationSecretRef.key` | `string` | No | `token` | Key within the secret containing the token |
 
 **Example:**
 ```yaml
@@ -77,7 +77,7 @@ Configure the basic client type and protocol.
 |-------|------|----------|---------|-------------|
 | `publicClient` | boolean | No | `false` | Whether this is a public client (no client secret). Use `true` for SPAs and mobile apps. |
 | `bearerOnly` | boolean | No | `false` | Bearer-only client (for APIs that only verify tokens, don't initiate login) |
-| `protocol` | string | No | `openid-connect` | Client protocol. Options: `openid-connect`, `saml`, `docker-v2` |
+| `protocol` | `string` | No | `openid-connect` | Client protocol. Options: `openid-connect`, `saml`, `docker-v2` |
 
 **Client Types:**
 
@@ -110,9 +110,9 @@ Configure redirect URIs and web origins for OAuth2/OIDC flows.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `redirectUris` | []string | No | `[]` | Valid redirect URIs (callback URLs). Use `*` for local development only. |
-| `webOrigins` | []string | No | `[]` | Valid web origins for CORS. Use `*` for local development only. |
-| `postLogoutRedirectUris` | []string | No | `[]` | Valid post-logout redirect URIs |
+| `redirectUris` | []`string` | No | `[]` | Valid redirect URIs (callback URLs). Use `*` for local development only. |
+| `webOrigins` | []`string` | No | `[]` | Valid web origins for CORS. Use `*` for local development only. |
+| `postLogoutRedirectUris` | []`string` | No | `[]` | Valid post-logout redirect URIs |
 
 **Example - Web Application:**
 ```yaml
@@ -145,7 +145,7 @@ Advanced client configuration options.
 |-------|------|----------|---------|-------------|
 | `settings.enabled` | boolean | No | `true` | Enable/disable the client |
 | `settings.alwaysDisplayInConsole` | boolean | No | `false` | Always display in admin console |
-| `settings.clientAuthenticatorType` | string | No | `client-secret` | Client authentication type. Options: `client-secret`, `client-jwt`, `client-secret-jwt`, `client-x509` |
+| `settings.clientAuthenticatorType` | `string` | No | `client-secret` | Client authentication type. Options: `client-secret`, `client-jwt`, `client-secret-jwt`, `client-x509` |
 
 #### OAuth2 Flow Configuration
 
@@ -219,9 +219,9 @@ Override default authentication flows for this client.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `authenticationFlows.browserFlow` | string | No | - | Browser authentication flow override |
-| `authenticationFlows.directGrantFlow` | string | No | - | Direct grant authentication flow override |
-| `authenticationFlows.clientAuthenticationFlow` | string | No | - | Client authentication flow override |
+| `authenticationFlows.browserFlow` | `string` | No | - | Browser authentication flow override |
+| `authenticationFlows.directGrantFlow` | `string` | No | - | Direct grant authentication flow override |
+| `authenticationFlows.clientAuthenticationFlow` | `string` | No | - | Client authentication flow override |
 
 **Example:**
 ```yaml
@@ -237,13 +237,13 @@ Configure client scopes and protocol mappers for claims customization.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `defaultClientScopes` | []string | No | `[]` | Default client scopes (always included) |
-| `optionalClientScopes` | []string | No | `[]` | Optional client scopes (user can opt-in) |
+| `defaultClientScopes` | []`string` | No | `[]` | Default client scopes (always included) |
+| `optionalClientScopes` | []`string` | No | `[]` | Optional client scopes (user can opt-in) |
 | `protocolMappers` | []object | No | `[]` | Protocol mappers for custom claims |
-| `protocolMappers[].name` | string | **Yes** | - | Mapper name |
-| `protocolMappers[].protocol` | string | No | `openid-connect` | Protocol (e.g., `openid-connect`, `saml`) |
-| `protocolMappers[].protocolMapper` | string | **Yes** | - | Mapper type |
-| `protocolMappers[].config` | map[string]string | No | `{}` | Mapper configuration |
+| `protocolMappers[].name` | `string` | **Yes** | - | Mapper name |
+| `protocolMappers[].protocol` | `string` | No | `openid-connect` | Protocol (e.g., `openid-connect`, `saml`) |
+| `protocolMappers[].protocolMapper` | `string` | **Yes** | - | Mapper type |
+| `protocolMappers[].config` | map[`string`]`string` | No | `{}` | Mapper configuration |
 
 **Common Protocol Mappers:**
 
@@ -300,9 +300,9 @@ Configure client-specific roles and service account permissions.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `clientRoles` | []string | No | `[]` | Client-specific roles to create |
-| `serviceAccountRoles.realmRoles` | []string | No | `[]` | Realm roles to assign to service account |
-| `serviceAccountRoles.clientRoles` | map[string][]string | No | `{}` | Client roles to assign to service account (by client ID) |
+| `clientRoles` | []`string` | No | `[]` | Client-specific roles to create |
+| `serviceAccountRoles.realmRoles` | []`string` | No | `[]` | Realm roles to assign to service account |
+| `serviceAccountRoles.clientRoles` | map[`string`][]`string` | No | `{}` | Client roles to assign to service account (by client ID) |
 
 **Example - Client Roles:**
 ```yaml
@@ -334,7 +334,7 @@ spec:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `attributes` | map[string]string | No | `{}` | Additional client attributes |
+| `attributes` | map[`string`]`string` | No | `{}` | Additional client attributes |
 
 **Example:**
 ```yaml
@@ -351,7 +351,7 @@ Configure how client credentials are managed.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `regenerateSecret` | boolean | No | `false` | Regenerate client secret on update |
-| `secretName` | string | No | `<client-name>-client-secret` | Name of Kubernetes secret for client credentials |
+| `secretName` | `string` | No | `<client-name>-client-secret` | Name of Kubernetes secret for client credentials |
 | `manageSecret` | boolean | No | `true` | Create and manage Kubernetes secret for credentials |
 
 **Example:**
@@ -373,26 +373,26 @@ The operator creates a secret with the following keys:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `phase` | string | Current phase: `Pending`, `Provisioning`, `Ready`, `Failed`, `Updating`, `Degraded` |
-| `message` | string | Human-readable status message |
-| `reason` | string | Reason for current phase |
+| `phase` | `string` | Current phase: `Pending`, `Provisioning`, `Ready`, `Failed`, `Updating`, `Degraded` |
+| `message` | `string` | Human-readable status message |
+| `reason` | `string` | Reason for current phase |
 | `observedGeneration` | integer | Generation of spec that was last processed |
-| `clientId` | string | Client ID in Keycloak |
-| `internalId` | string | Internal Keycloak client ID (UUID) |
-| `realm` | string | Realm name |
+| `clientId` | `string` | Client ID in Keycloak |
+| `internalId` | `string` | Internal Keycloak client ID (UUID) |
+| `realm` | `string` | Realm name |
 | `publicClient` | boolean | Whether this is a public client |
-| `keycloakInstance` | string | Keycloak instance managing this client |
-| `credentialsSecret` | string | Name of secret containing client credentials |
-| `endpoints.auth` | string | OIDC authorization endpoint |
-| `endpoints.token` | string | OIDC token endpoint |
-| `endpoints.userinfo` | string | OIDC userinfo endpoint |
-| `endpoints.jwks` | string | OIDC JWKS endpoint |
-| `endpoints.issuer` | string | OIDC issuer |
-| `endpoints.endSession` | string | OIDC end session endpoint |
-| `createdRoles` | []string | List of created client roles |
-| `appliedMappers` | []string | List of applied protocol mappers |
-| `lastHealthCheck` | string (datetime) | Last health check timestamp |
-| `lastUpdated` | string (datetime) | Last update timestamp |
+| `keycloakInstance` | `string` | Keycloak instance managing this client |
+| `credentialsSecret` | `string` | Name of secret containing client credentials |
+| `endpoints.auth` | `string` | OIDC authorization endpoint |
+| `endpoints.token` | `string` | OIDC token endpoint |
+| `endpoints.userinfo` | `string` | OIDC userinfo endpoint |
+| `endpoints.jwks` | `string` | OIDC JWKS endpoint |
+| `endpoints.issuer` | `string` | OIDC issuer |
+| `endpoints.endSession` | `string` | OIDC end session endpoint |
+| `createdRoles` | []`string` | List of created client roles |
+| `appliedMappers` | []`string` | List of applied protocol mappers |
+| `lastHealthCheck` | `string` (datetime) | Last health check timestamp |
+| `lastUpdated` | `string` (datetime) | Last update timestamp |
 
 ## Complete Examples
 
@@ -653,5 +653,5 @@ kubectl get secret webapp-client-secret \
 
 - [Keycloak CRD Reference](keycloak-crd.md)
 - [KeycloakRealm CRD Reference](keycloak-realm-crd.md)
-- [Client Chart README](../../charts/keycloak-client/README.md)
+- See charts/keycloak-client/README.md in the repository root
 - [Quick Start Guide](../quickstart/README.md)

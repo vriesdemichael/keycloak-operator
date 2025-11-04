@@ -631,11 +631,11 @@ assert realm.enabled is True
 
 ## Advanced Topics
 
-For advanced testing patterns and detailed guidelines, see:
+For advanced testing patterns and detailed guidelines, see the following in the repository:
 
-- **[Integration Testing Guidelines](../../tests/integration/TESTING.md)** - Comprehensive rules and patterns
-- **[Wait Helpers](../../tests/integration/wait_helpers.py)** - Auto-debugging wait utilities
-- **[Conftest](../../tests/integration/conftest.py)** - Fixture implementations
+- **tests/integration/TESTING.md** - Comprehensive rules and patterns
+- **tests/integration/wait_helpers.py** - Auto-debugging wait utilities
+- **tests/integration/conftest.py** - Fixture implementations
 
 ## Contributing Tests
 

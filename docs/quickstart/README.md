@@ -76,21 +76,14 @@ kubectl get keycloak -n keycloak-system
 # keycloak   Ready   3m
 ```
 
-View endpoints and credentials:
+Verify the Keycloak instance is running:
 
 ```bash
-# Get Keycloak admin credentials
-kubectl get secret keycloak-admin-credentials \
-  -n keycloak-system \
-  -o jsonpath='{.data.username}' | base64 -d && echo
-kubectl get secret keycloak-admin-credentials \
-  -n keycloak-system \
-  -o jsonpath='{.data.password}' | base64 -d && echo
-
-# Get Keycloak URL (if using port-forward)
-kubectl port-forward svc/keycloak-keycloak -n keycloak-system 8080:8080
-# Access: http://localhost:8080
+# Check Keycloak endpoints in status
+kubectl get keycloak keycloak -n keycloak-system -o yaml | grep -A10 status:
 ```
+
+**Note:** Admin credentials are managed by the operator. You should never need direct access to the Keycloak admin console - all configuration is done through CRDs.
 
 ## Step 3: Create Application Namespace and Bootstrap Token
 
@@ -329,21 +322,6 @@ cat .env
 ```
 
 ## Step 7: Test OAuth2 Flow
-
-Access the Keycloak admin console:
-
-```bash
-# If using port-forward
-kubectl port-forward svc/keycloak-keycloak -n keycloak-system 8080:8080
-
-# Open in browser: http://localhost:8080
-# Login with admin credentials from Step 2
-```
-
-Navigate to your realm:
-1. Click **"my-app"** in the realm dropdown (top-left)
-2. Go to **Clients** → **my-app**
-3. Verify the client configuration
 
 Test the OAuth2 authorization flow:
 ```bash

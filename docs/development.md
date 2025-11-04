@@ -587,7 +587,7 @@ To add a new explicit page:
 
 6. **Address review comments** and update PR
 
-See [CLAUDE.md](../CLAUDE.md) for detailed development workflow and Git practices.
+See CLAUDE.md in the repository root for detailed development workflow and Git practices.
 
 ### Getting Help
 

@@ -36,10 +36,10 @@ spec:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `realmName` | string | **Yes** | - | Realm name (must be unique in Keycloak, 1-255 characters) |
-| `displayName` | string | No | - | Human-readable realm name |
-| `description` | string | No | - | Realm description |
-| `loginPageTitle` | string | No | - | HTML title for login pages |
+| `realmName` | `string` | **Yes** | - | Realm name (must be unique in Keycloak, 1-255 characters) |
+| `displayName` | `string` | No | - | Human-readable realm name |
+| `description` | `string` | No | - | Realm description |
+| `loginPageTitle` | `string` | No | - | HTML title for login pages |
 
 **Example:**
 ```yaml
@@ -56,9 +56,9 @@ Reference to the Keycloak operator and authorization token.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `operatorRef.namespace` | string | **Yes** | - | Namespace where the operator is running (e.g., `keycloak-system`) |
-| `operatorRef.authorizationSecretRef.name` | string | **Yes** | - | Name of the authorization secret (admission token for first realm, or leave empty for auto-discovery) |
-| `operatorRef.authorizationSecretRef.key` | string | No | `token` | Key within the secret containing the token |
+| `operatorRef.namespace` | `string` | **Yes** | - | Namespace where the operator is running (e.g., `keycloak-system`) |
+| `operatorRef.authorizationSecretRef.name` | `string` | **Yes** | - | Name of the authorization secret (admission token for first realm, or leave empty for auto-discovery) |
+| `operatorRef.authorizationSecretRef.key` | `string` | No | `token` | Key within the secret containing the token |
 
 **Example - First realm (admission token):**
 ```yaml
@@ -109,7 +109,7 @@ spec:
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `security.sslRequired` | string | No | `external` | SSL requirement level. Options: `all`, `external`, `none` |
+| `security.sslRequired` | `string` | No | `external` | SSL requirement level. Options: `all`, `external`, `none` |
 
 - `all`: HTTPS required for all connections
 - `external`: HTTPS required for external connections only
@@ -183,10 +183,10 @@ Customize the appearance of Keycloak pages.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `themes.login` | string | No | - | Login page theme |
-| `themes.admin` | string | No | - | Admin console theme |
-| `themes.account` | string | No | - | Account management theme |
-| `themes.email` | string | No | - | Email template theme |
+| `themes.login` | `string` | No | - | Login page theme |
+| `themes.admin` | `string` | No | - | Admin console theme |
+| `themes.account` | `string` | No | - | Account management theme |
+| `themes.email` | `string` | No | - | Email template theme |
 
 **Example:**
 ```yaml
@@ -204,19 +204,19 @@ Configure email sending for registration, password reset, and notifications.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `smtpServer.host` | string | No | - | SMTP server hostname |
+| `smtpServer.host` | `string` | No | - | SMTP server hostname |
 | `smtpServer.port` | integer | No | - | SMTP server port (1-65535) |
-| `smtpServer.from` | string | No | - | From email address |
-| `smtpServer.fromDisplayName` | string | No | - | From display name |
-| `smtpServer.replyTo` | string | No | - | Reply-to email address |
-| `smtpServer.envelopeFrom` | string | No | - | Envelope from address |
+| `smtpServer.from` | `string` | No | - | From email address |
+| `smtpServer.fromDisplayName` | `string` | No | - | From display name |
+| `smtpServer.replyTo` | `string` | No | - | Reply-to email address |
+| `smtpServer.envelopeFrom` | `string` | No | - | Envelope from address |
 | `smtpServer.ssl` | boolean | No | `false` | Use SSL |
 | `smtpServer.starttls` | boolean | No | `false` | Use STARTTLS |
 | `smtpServer.auth` | boolean | No | `false` | Require authentication |
-| `smtpServer.user` | string | No | - | SMTP username |
-| `smtpServer.password` | string | No | - | SMTP password (use `passwordSecret` instead) |
-| `smtpServer.passwordSecret.name` | string | No | - | Secret name containing SMTP password (recommended) |
-| `smtpServer.passwordSecret.key` | string | No | `password` | Key in secret data |
+| `smtpServer.user` | `string` | No | - | SMTP username |
+| `smtpServer.password` | `string` | No | - | SMTP password (use `passwordSecret` instead) |
+| `smtpServer.passwordSecret.name` | `string` | No | - | Secret name containing SMTP password (recommended) |
+| `smtpServer.passwordSecret.key` | `string` | No | `password` | Key in secret data |
 
 **Example - Gmail:**
 ```yaml
@@ -257,8 +257,8 @@ Configure internationalization (i18n) support.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `localization.enabled` | boolean | No | `false` | Enable internationalization |
-| `localization.supportedLocales` | []string | No | - | List of supported locales (e.g., `en`, `de`, `fr`) |
-| `localization.defaultLocale` | string | No | - | Default locale |
+| `localization.supportedLocales` | []`string` | No | - | List of supported locales (e.g., `en`, `de`, `fr`) |
+| `localization.defaultLocale` | `string` | No | - | Default locale |
 
 **Example:**
 ```yaml
@@ -279,9 +279,9 @@ Define custom authentication flows.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `authenticationFlows[].alias` | string | **Yes** | - | Flow alias (unique identifier) |
-| `authenticationFlows[].description` | string | No | - | Flow description |
-| `authenticationFlows[].providerId` | string | No | - | Provider ID for the flow |
+| `authenticationFlows[].alias` | `string` | **Yes** | - | Flow alias (unique identifier) |
+| `authenticationFlows[].description` | `string` | No | - | Flow description |
+| `authenticationFlows[].providerId` | `string` | No | - | Provider ID for the flow |
 | `authenticationFlows[].topLevel` | boolean | No | - | Whether this is a top-level flow |
 | `authenticationFlows[].builtIn` | boolean | No | - | Whether this is a built-in flow |
 | `authenticationFlows[].executionConfig` | object | No | - | Execution configuration |
@@ -303,17 +303,17 @@ Configure external identity providers (social login, SAML, OIDC).
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `identityProviders[].alias` | string | **Yes** | - | Provider alias (unique identifier) |
-| `identityProviders[].providerId` | string | **Yes** | - | Provider ID (e.g., `google`, `github`, `oidc`, `saml`) |
+| `identityProviders[].alias` | `string` | **Yes** | - | Provider alias (unique identifier) |
+| `identityProviders[].providerId` | `string` | **Yes** | - | Provider ID (e.g., `google`, `github`, `oidc`, `saml`) |
 | `identityProviders[].enabled` | boolean | No | `true` | Enable this provider |
 | `identityProviders[].trustEmail` | boolean | No | `false` | Trust email from provider |
 | `identityProviders[].storeToken` | boolean | No | `false` | Store provider tokens |
 | `identityProviders[].addReadTokenRoleOnCreate` | boolean | No | `false` | Add read token role on create |
 | `identityProviders[].authenticateByDefault` | boolean | No | `false` | Authenticate by default |
 | `identityProviders[].linkOnly` | boolean | No | `false` | Only allow linking |
-| `identityProviders[].firstBrokerLoginFlowAlias` | string | No | - | First broker login flow |
-| `identityProviders[].postBrokerLoginFlowAlias` | string | No | - | Post broker login flow |
-| `identityProviders[].config` | map[string]string | No | `{}` | Provider-specific configuration |
+| `identityProviders[].firstBrokerLoginFlowAlias` | `string` | No | - | First broker login flow |
+| `identityProviders[].postBrokerLoginFlowAlias` | `string` | No | - | Post broker login flow |
+| `identityProviders[].config` | map[`string`]`string` | No | `{}` | Provider-specific configuration |
 
 **Example - Google:**
 ```yaml
@@ -354,10 +354,10 @@ Configure user federation providers (LDAP, Active Directory).
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `userFederation[].displayName` | string | **Yes** | - | Display name for the provider |
-| `userFederation[].providerName` | string | **Yes** | - | Provider name (e.g., `ldap`, `kerberos`) |
+| `userFederation[].displayName` | `string` | **Yes** | - | Display name for the provider |
+| `userFederation[].providerName` | `string` | **Yes** | - | Provider name (e.g., `ldap`, `kerberos`) |
 | `userFederation[].priority` | integer | No | - | Provider priority (min: 0) |
-| `userFederation[].config` | map[string]string | No | `{}` | Provider-specific configuration |
+| `userFederation[].config` | map[`string`]`string` | No | `{}` | Provider-specific configuration |
 
 **Example - LDAP:**
 ```yaml
@@ -379,10 +379,10 @@ Define reusable protocol mappers and claims.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `clientScopes[].name` | string | **Yes** | - | Scope name |
-| `clientScopes[].description` | string | No | - | Scope description |
-| `clientScopes[].protocol` | string | No | `openid-connect` | Protocol (e.g., `openid-connect`, `saml`) |
-| `clientScopes[].attributes` | map[string]string | No | `{}` | Scope attributes |
+| `clientScopes[].name` | `string` | **Yes** | - | Scope name |
+| `clientScopes[].description` | `string` | No | - | Scope description |
+| `clientScopes[].protocol` | `string` | No | `openid-connect` | Protocol (e.g., `openid-connect`, `saml`) |
+| `clientScopes[].attributes` | map[`string`]`string` | No | `{}` | Scope attributes |
 | `clientScopes[].protocolMappers` | []object | No | - | Protocol mappers for this scope |
 
 **Example:**
@@ -408,11 +408,11 @@ Define realm-level roles.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `roles.realmRoles[].name` | string | **Yes** | - | Role name |
-| `roles.realmRoles[].description` | string | No | - | Role description |
+| `roles.realmRoles[].name` | `string` | **Yes** | - | Role name |
+| `roles.realmRoles[].description` | `string` | No | - | Role description |
 | `roles.realmRoles[].composite` | boolean | No | `false` | Whether this is a composite role |
 | `roles.realmRoles[].clientRole` | boolean | No | `false` | Whether this is a client role |
-| `roles.realmRoles[].containerId` | string | No | - | Container ID (for composite roles) |
+| `roles.realmRoles[].containerId` | `string` | No | - | Container ID (for composite roles) |
 
 **Example:**
 ```yaml
@@ -433,11 +433,11 @@ Define user groups.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `groups[].name` | string | **Yes** | - | Group name |
-| `groups[].path` | string | No | - | Group path (for subgroups) |
-| `groups[].attributes` | map[string][]string | No | `{}` | Group attributes |
-| `groups[].realmRoles` | []string | No | - | Realm roles assigned to group |
-| `groups[].clientRoles` | map[string][]string | No | `{}` | Client roles assigned to group |
+| `groups[].name` | `string` | **Yes** | - | Group name |
+| `groups[].path` | `string` | No | - | Group path (for subgroups) |
+| `groups[].attributes` | map[`string`][]`string` | No | `{}` | Group attributes |
+| `groups[].realmRoles` | []`string` | No | - | Realm roles assigned to group |
+| `groups[].clientRoles` | map[`string`][]`string` | No | `{}` | Client roles assigned to group |
 
 **Example:**
 ```yaml
@@ -460,7 +460,7 @@ Add custom realm attributes.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `attributes` | map[string]string | No | `{}` | Custom attributes as key-value pairs |
+| `attributes` | map[`string`]`string` | No | `{}` | Custom attributes as key-value pairs |
 
 **Example:**
 ```yaml
@@ -477,8 +477,8 @@ Configure event logging and auditing.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `eventsConfig.eventsEnabled` | boolean | No | `false` | Enable user event logging |
-| `eventsConfig.eventsListeners` | []string | No | - | Event listener implementations |
-| `eventsConfig.enabledEventTypes` | []string | No | - | Enabled event types |
+| `eventsConfig.eventsListeners` | []`string` | No | - | Event listener implementations |
+| `eventsConfig.enabledEventTypes` | []`string` | No | - | Enabled event types |
 | `eventsConfig.eventsExpiration` | integer | No | - | Event expiration time in seconds |
 | `eventsConfig.adminEventsEnabled` | boolean | No | `false` | Enable admin event logging |
 | `eventsConfig.adminEventsDetailsEnabled` | boolean | No | `false` | Include details in admin events |
@@ -504,21 +504,21 @@ spec:
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `phase` | string | Current phase: `Pending`, `Provisioning`, `Ready`, `Failed`, `Updating`, `Degraded` |
-| `message` | string | Human-readable status message |
-| `reason` | string | Reason for current phase |
+| `phase` | `string` | Current phase: `Pending`, `Provisioning`, `Ready`, `Failed`, `Updating`, `Degraded` |
+| `message` | `string` | Human-readable status message |
+| `reason` | `string` | Reason for current phase |
 | `observedGeneration` | integer | Generation of spec that was last processed |
-| `realmName` | string | Name of the realm in Keycloak |
-| `internalId` | string | Internal Keycloak realm ID |
-| `keycloakInstance` | string | Keycloak instance managing this realm |
-| `authorizationSecretName` | string | Name of the secret containing the realm's authorization token (for delegating to clients) |
-| `endpoints.issuer` | string | OIDC issuer endpoint |
-| `endpoints.auth` | string | OIDC authorization endpoint |
-| `endpoints.token` | string | OIDC token endpoint |
-| `endpoints.userinfo` | string | OIDC userinfo endpoint |
-| `endpoints.jwks` | string | OIDC JWKS endpoint |
-| `endpoints.endSession` | string | OIDC end session endpoint |
-| `endpoints.registration` | string | OIDC dynamic client registration endpoint |
+| `realmName` | `string` | Name of the realm in Keycloak |
+| `internalId` | `string` | Internal Keycloak realm ID |
+| `keycloakInstance` | `string` | Keycloak instance managing this realm |
+| `authorizationSecretName` | `string` | Name of the secret containing the realm's authorization token (for delegating to clients) |
+| `endpoints.issuer` | `string` | OIDC issuer endpoint |
+| `endpoints.auth` | `string` | OIDC authorization endpoint |
+| `endpoints.token` | `string` | OIDC token endpoint |
+| `endpoints.userinfo` | `string` | OIDC userinfo endpoint |
+| `endpoints.jwks` | `string` | OIDC JWKS endpoint |
+| `endpoints.endSession` | `string` | OIDC end session endpoint |
+| `endpoints.registration` | `string` | OIDC dynamic client registration endpoint |
 | `features.userRegistration` | boolean | Whether user registration is enabled |
 | `features.passwordReset` | boolean | Whether password reset is enabled |
 | `features.identityProviders` | integer | Number of configured identity providers |
@@ -527,8 +527,8 @@ spec:
 | `activeUsers` | integer | Number of active users |
 | `totalClients` | integer | Number of clients in realm |
 | `realmRolesCount` | integer | Number of realm roles |
-| `lastHealthCheck` | string (datetime) | Last health check timestamp |
-| `lastUpdated` | string (datetime) | Last update timestamp |
+| `lastHealthCheck` | `string` (datetime) | Last health check timestamp |
+| `lastUpdated` | `string` (datetime) | Last update timestamp |
 
 ## Complete Examples
 
