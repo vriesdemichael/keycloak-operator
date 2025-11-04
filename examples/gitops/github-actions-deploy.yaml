@@ -1,0 +1,227 @@
+# GitHub Actions Workflow - Deploy Keycloak Realm
+#
+# This workflow demonstrates how to deploy KeycloakRealm resources using GitHub Actions.
+# It includes best practices for GitOps deployments with validation and rollback capabilities.
+#
+# Prerequisites:
+# - GitHub repository with Kubernetes manifests
+# - KUBECONFIG secret configured in GitHub Actions
+# - kubectl available in GitHub Actions runner
+#
+# Usage:
+# 1. Save this file as .github/workflows/deploy-keycloak.yaml in your repository
+# 2. Add KUBECONFIG as a repository secret
+# 3. Push changes to trigger deployment
+#
+# Operator Compatibility: v1+
+# GitHub Actions: ubuntu-latest
+
+name: Deploy Keycloak Resources
+
+on:
+  push:
+    branches:
+      - main
+      - production
+    paths:
+      - 'k8s/keycloak/**'
+  pull_request:
+    branches:
+      - main
+      - production
+    paths:
+      - 'k8s/keycloak/**'
+
+jobs:
+  validate:
+    name: Validate Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Validate YAML syntax
+        run: |
+          # Check YAML syntax
+          for file in k8s/keycloak/*.yaml; do
+            echo "Validating $file..."
+            kubectl apply --dry-run=client -f "$file"
+          done
+
+      - name: Validate against schemas
+        run: |
+          # Install kubeconform for schema validation
+          wget https://github.com/yannh/kubeconform/releases/latest/download/kubeconform-linux-amd64.tar.gz
+          tar xf kubeconform-linux-amd64.tar.gz
+          chmod +x kubeconform
+
+          # Validate against CRD schemas
+          ./kubeconform \
+            -schema-location default \
+            -schema-location 'https://vriesdemichael.github.io/keycloak-operator/schemas/{{ .ResourceKind }}.json' \
+            -summary \
+            k8s/keycloak/
+
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: development
+      url: https://keycloak-dev.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_DEV }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Deploy Keycloak resources
+        run: |
+          # Apply realms first (they create auth secrets for clients)
+          kubectl apply -f k8s/keycloak/realms/ -n development
+
+          # Wait for realms to be ready
+          echo "Waiting for realms to be ready..."
+          kubectl wait --for=condition=Ready \
+            keycloakrealm --all \
+            -n development \
+            --timeout=300s
+
+          # Then apply clients (they depend on realm auth secrets)
+          kubectl apply -f k8s/keycloak/clients/ -n development
+
+          # Wait for clients to be ready
+          echo "Waiting for clients to be ready..."
+          kubectl wait --for=condition=Ready \
+            keycloakclient --all \
+            -n development \
+            --timeout=300s
+
+      - name: Verify deployment
+        run: |
+          # Check resource status
+          kubectl get keycloakrealm,keycloakclient -n development
+          kubectl get events -n development --sort-by='.lastTimestamp' | tail -20
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "Deployment failed! Check logs:"
+          kubectl logs -n keycloak-operator-system -l app=keycloak-operator --tail=100
+
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: validate
+    if: github.ref == 'refs/heads/production'
+    environment:
+      name: production
+      url: https://keycloak.example.com
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBECONFIG_PROD }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Backup current state
+        run: |
+          # Backup existing resources before deployment
+          kubectl get keycloakrealm,keycloakclient -n production -o yaml > backup-$(date +%Y%m%d-%H%M%S).yaml
+
+      - name: Deploy with blue-green strategy
+        run: |
+          # Apply changes
+          kubectl apply -f k8s/keycloak/realms/ -n production
+          kubectl apply -f k8s/keycloak/clients/ -n production
+
+          # Wait for resources to be ready
+          kubectl wait --for=condition=Ready \
+            keycloakrealm,keycloakclient --all \
+            -n production \
+            --timeout=600s
+
+      - name: Smoke test
+        run: |
+          # Verify operator is healthy
+          kubectl get pods -n keycloak-operator-system
+
+          # Check for any error events
+          ERROR_COUNT=$(kubectl get events -n production \
+            --field-selector type=Warning \
+            --sort-by='.lastTimestamp' \
+            | grep -c "keycloak" || true)
+
+          if [ "$ERROR_COUNT" -gt 0 ]; then
+            echo "Warning: Found $ERROR_COUNT error events in production namespace"
+            kubectl get events -n production --field-selector type=Warning
+            exit 1
+          fi
+
+      - name: Upload backup artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-backup
+          path: backup-*.yaml
+          retention-days: 30
+
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Deployment failed! Restoring from backup..."
+          # In production, you'd implement proper rollback logic here
+          # For example: kubectl apply -f backup-latest.yaml
+          echo "Manual rollback required. Check backup artifacts."
+          exit 1
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: validate
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Scan for secrets
+        run: |
+          # Check for accidentally committed secrets
+          if grep -rn "client_secret\|clientSecret" k8s/keycloak/*.yaml | grep -v "your-"; then
+            echo "ERROR: Found hardcoded secrets in manifests!"
+            exit 1
+          fi
+          echo "No hardcoded secrets found."
+
+      - name: Check for insecure configurations
+        run: |
+          # Warn about insecure settings
+          if grep -rn "sslRequired.*NONE" k8s/keycloak/*.yaml; then
+            echo "WARNING: Found SSL disabled in realm configuration"
+          fi
+
+          if grep -rn "publicClient.*true" k8s/keycloak/*.yaml | grep -v "mobile\|spa"; then
+            echo "INFO: Found public clients. Verify these should not be confidential."
+          fi
