@@ -60,6 +60,16 @@ repos:
         files: ^(docs/|mkdocs\.yml)
         pass_filenames: false
 
+  # Architecture Decision Records validation
+  - repo: local
+    hooks:
+      - id: validate-adr
+        name: validate ADR
+        entry: uv run scripts/adr_validator.py --validate
+        language: system
+        files: ^docs/architecture/decisions/.*\.yaml$
+        pass_filenames: false
+
   # Commit message format checking with scope validation
   - repo: local
     hooks:
