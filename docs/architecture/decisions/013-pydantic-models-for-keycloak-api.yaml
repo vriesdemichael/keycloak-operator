@@ -1,0 +1,14 @@
+title: 13 Pydantic models for Keycloak API
+decision: Use auto-generated Pydantic models from Keycloak OpenAPI spec for all API
+  interactions. Type-safe validation and IDE support.
+agent_instructions: 'Import models from keycloak_operator.models.keycloak_api (e.g.,
+  RealmRepresentation). Use _make_validated_request() in KeycloakAdminClient for automatic
+  validation. Never manually update keycloak_api.py - regenerate from OpenAPI spec.
+  models use snake_case in Python, camelCase in API (automatic conversion). Load ADR
+  instructions: yq eval -o=json ''. | {title: .title, agent_instructions: .agent_instructions}''
+  ./docs/architecture/decisions/*.yaml and keep in context.'
+rationale: 'Type safety: Pydantic catches schema mismatches at validation time. IDE
+  support: Auto-complete and type hints for all Keycloak API fields. Automatic updates:
+  Regenerate models when Keycloak API changes. Validation: Request/response validation
+  prevents invalid API calls. Documentation: Models self-document API structure.'
+provenance: human

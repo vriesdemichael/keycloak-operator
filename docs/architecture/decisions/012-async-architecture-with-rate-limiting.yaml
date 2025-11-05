@@ -1,0 +1,15 @@
+title: 12 Async architecture with rate limiting
+decision: 'All Keycloak API interactions use async/await with aiohttp. Implement two-level
+  token bucket rate limiting: global (50 req/s) and per-namespace (5 req/s).'
+agent_instructions: 'Use ''async def'' for all reconcilers and handlers. Pass rate_limiter
+  through constructors: reconciler = SomeReconciler(rate_limiter=memo.rate_limiter).
+  All Keycloak admin client methods are async - use ''await admin_client.method()''.
+  Rate limiter protects against API overload and thundering herd on operator restart.
+  Load ADR instructions: yq eval -o=json ''. | {title: .title, agent_instructions:
+  .agent_instructions}'' ./docs/architecture/decisions/*.yaml and keep in context.'
+rationale: 'Scalability: Async handles many concurrent reconciliations efficiently.
+  Protection: Rate limiting prevents API overload during mass reconciliations or operator
+  restarts. Fair access: Per-namespace limits prevent single tenant monopolizing API.
+  Metrics: Prometheus metrics track rate limit waits and timeouts. Trade-off: Async
+  code slightly more complex, but necessary for production scale.'
+provenance: human
