@@ -1,14 +1,14 @@
-title: 6 All functionality must be tested with pytest
+number: 6
+title: All functionality must be tested with pytest
+category: development
 decision: Every feature, handler, and reconciliation logic must have pytest test coverage.
   No untested code in production.
-agent_instructions: 'When implementing features, write tests first or alongside implementation.
+agent_instructions: When implementing features, write tests first or alongside implementation.
   Unit tests required for all reconcilers and utility functions. Integration tests
-  required for all CRD operations. Refuse to merge code without tests. Run ''make
-  test-pre-commit'' before committing. Load ADR instructions: yq eval -o=json ''.
-  | {title: .title, agent_instructions: .agent_instructions}'' ./docs/architecture/decisions/*.yaml
-  and keep in context.'
+  required for all CRD operations. Refuse to merge code without tests. Run 'make test-pre-commit'
+  before committing.
 rationale: 'Quality assurance: Tests catch regressions and validate behavior. pytest
   ecosystem: Rich plugin ecosystem (pytest-asyncio, pytest-kubernetes, coverage).
   AI-friendly: Test-driven development works well with LLM assistance. Refactoring
   confidence: Comprehensive tests enable safe code changes.'
-provenance: human
+provenance: guided-ai
