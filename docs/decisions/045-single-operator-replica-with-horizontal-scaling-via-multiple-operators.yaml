@@ -1,0 +1,24 @@
+number: 45
+title: Single operator replica with horizontal scaling via multiple operators
+category: architecture
+decision: Run single replica of operator (no replication). If scaling needed, deploy
+  multiple operator instances each managing a subset of realms. Operator is not the
+  bottleneck.
+agent_instructions: 'Configure operator deployment with replicas: 1. Do not implement
+  leader election or active-passive HA. If users need more capacity, document deploying
+  multiple operator instances in different namespaces, each configured to watch different
+  realm subsets. Operator reconciles efficiently enough that single instance handles
+  typical loads.'
+rationale: Operator is not the bottleneck - Keycloak API is. Multiple operator replicas
+  would compete for same work, requiring leader election complexity. Single replica
+  is simpler, no split-brain risks. For large scale, deploy multiple operators each
+  responsible for subset of realms (sharding by realm). This scales better than vertical
+  scaling one operator. Most deployments will never need more than single operator.
+provenance: human
+rejected_alternatives:
+- alternative: Active-passive HA with leader election
+  reason: Adds complexity (leader election, coordination). Passive replicas waste
+    resources. Operator not critical enough to justify.
+- alternative: Active-active with work distribution
+  reason: Very complex. Risk of conflicts. Operator reconciliation fast enough that
+    single replica sufficient.

@@ -1,0 +1,21 @@
+number: 48
+title: Prometheus metrics exposure
+category: architecture
+decision: Expose Prometheus metrics from operator for monitoring reconciliation performance,
+  API calls, rate limiting, and errors.
+agent_instructions: 'Instrument operator code with Prometheus metrics. Expose metrics
+  endpoint on management port. Track: reconciliation duration, API call counts, rate
+  limit waits, error rates, resource counts. Include labels for resource type, namespace,
+  operation. Document available metrics.'
+rationale: Metrics enable monitoring operator health and performance. Track reconciliation
+  lag, API bottlenecks, rate limiting impact. Alert on error rates or reconciliation
+  failures. Prometheus is standard for Kubernetes monitoring. Metrics help capacity
+  planning and troubleshooting. Essential for production operations.
+provenance: human
+rejected_alternatives:
+- alternative: Logging only, no metrics
+  reason: Logs don't aggregate easily. Can't graph trends or set numeric alerts. Poor
+    visibility into system health.
+- alternative: Custom metrics format
+  reason: Prometheus is Kubernetes standard. Custom format requires special tooling,
+    reduces interoperability.
