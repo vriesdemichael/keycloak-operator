@@ -122,6 +122,16 @@ jobs:
       - name: Run quality checks (lint, format, type check)
         run: make quality
 
+      - name: Install yq for ADR validation
+        run: |
+          wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+        if: hashFiles('docs/architecture/decisions/*.yaml') != ''
+
+      - name: Validate Architecture Decision Records
+        run: uv run scripts/adr_validator.py --validate
+        if: hashFiles('docs/architecture/decisions/*.yaml') != ''
+
   security-sast:
     name: Security - CodeQL SAST
     needs: [build-test-image]

@@ -49,6 +49,14 @@ type-check: ## Run type checking with ty
 .PHONY: quality
 quality: format lint type-check ## Run all quality checks
 
+.PHONY: validate-adr
+validate-adr: ## Validate Architecture Decision Records
+	@if [ -n "$$(ls docs/architecture/decisions/*.yaml 2>/dev/null)" ]; then \
+		uv run scripts/adr_validator.py --validate; \
+	else \
+		echo "No ADR files found"; \
+	fi
+
 # ============================================================================
 # Unit Testing
 # ============================================================================
