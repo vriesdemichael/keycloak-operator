@@ -14,43 +14,38 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError, model_validator
+from pydantic import BaseModel, Field, ValidationError
 
-ADRS_DIR = Path("docs/architecture/decisions")
+DECISIONS_DIR = Path("docs/decisions")
 
 TitleStr = str
 
 
-class ADRModel(BaseModel):
-    """Architecture Decision Record model."""
+class RejectedAlternative(BaseModel):
+    """A rejected alternative with reasoning."""
 
+    alternative: str
+    reason: str
+
+
+class DecisionRecordModel(BaseModel):
+    """Decision Record model (Architecture or Development)."""
+
+    number: int = Field(..., description="Sequential number (e.g., 1, 2, 3)")
     title: TitleStr = Field(
-        ..., description="Numeric id + title, e.g. '42 Service-side feature-flagging'"
+        ..., description="Brief description (e.g., 'Kopf as operator framework')"
     )
+    category: Literal["architecture", "development"]
     decision: str
     agent_instructions: str
     rationale: str
-    provenance: Literal["human", "ai"]
-
-    @model_validator(mode="after")
-    def check_agent_instructions_has_yq(self):
-        """Validate agent_instructions contains yq snippet."""
-        ai = self.agent_instructions
-        if not re.search(r"\byq\b", ai):
-            raise ValueError(
-                "agent_instructions must contain a yq snippet the agent can run (contains 'yq')."
-            )
-        if "keep" not in ai.lower() and "context" not in ai.lower():
-            raise ValueError(
-                "agent_instructions should tell the agent to keep the retrieved instructions in its context."
-            )
-        return self
+    rejected_alternatives: list[RejectedAlternative] | None = None
+    provenance: Literal["human", "guided-ai", "autonomous-ai"]
 
 
 def slugify_title(title: str) -> str:
     """Convert title to slug for filename."""
-    s = re.sub(r"^\d+\s+", "", title)
-    s = re.sub(r"[^a-z0-9]+", "-", s.lower()).strip("-")
+    s = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
     return s[:80]
 
 
@@ -61,41 +56,55 @@ def read_yaml(path: Path) -> dict:
 
 
 def validate_file(path: Path) -> None:
-    """Validate a single ADR file."""
+    """Validate a single decision record file."""
     data = read_yaml(path)
     try:
-        ADRModel.model_validate(data)
+        DecisionRecordModel.model_validate(data)
     except ValidationError as e:
         print(f"VALIDATION ERROR in {path}:\n{e}", file=sys.stderr)
         raise SystemExit(2) from None
     print(f"✓ {path}")
 
 
-def create_adr(
+def create_decision(
+    number: int,
     title: str,
+    category: str,
     decision: str,
     agent_instructions: str,
     rationale: str,
     provenance: str,
+    rejected_alternatives: list[dict] | None = None,
 ) -> Path:
-    """Create a new ADR file."""
-    ADRS_DIR.mkdir(parents=True, exist_ok=True)
-    existing = sorted(ADRS_DIR.glob("*.yaml"))
-    ids = []
-    for p in existing:
-        m = re.match(r"^(\d+)-", p.name)
-        if m:
-            ids.append(int(m.group(1)))
-    next_id = (max(ids) + 1) if ids else 1
-    filename = f"{next_id:03d}-{slugify_title(title)}.yaml"
-    path = ADRS_DIR / filename
+    """Create a new decision record file."""
+    DECISIONS_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Determine next number if not provided
+    if number == 0:
+        existing = sorted(DECISIONS_DIR.glob("*.yaml"))
+        numbers = []
+        for p in existing:
+            m = re.match(r"^(\d+)-", p.name)
+            if m:
+                numbers.append(int(m.group(1)))
+        number = (max(numbers) + 1) if numbers else 1
+
+    filename = f"{number:03d}-{slugify_title(title)}.yaml"
+    path = DECISIONS_DIR / filename
+
     content = {
-        "title": f"{next_id} {title}",
+        "number": number,
+        "title": title,
+        "category": category,
         "decision": decision.strip(),
         "agent_instructions": agent_instructions.strip(),
         "rationale": rationale.strip(),
         "provenance": provenance,
     }
+
+    if rejected_alternatives:
+        content["rejected_alternatives"] = rejected_alternatives
+
     with path.open("w", encoding="utf-8") as fh:
         fh.write(yaml.safe_dump(content, sort_keys=False))
     return path
@@ -104,17 +113,17 @@ def create_adr(
 def main(argv: list[str] | None = None) -> int:
     """Main entry point."""
     p = argparse.ArgumentParser(
-        prog="adr_validator",
-        description="Validate and create Architecture Decision Records",
+        prog="decision_validator",
+        description="Validate and create Decision Records (Architecture/Development)",
     )
     p.add_argument(
         "--validate",
         nargs="*",
-        help="Files to validate (defaults to all in docs/architecture/decisions)",
+        help="Files to validate (defaults to all in docs/decisions)",
         default=None,
     )
     p.add_argument(
-        "--create", action="store_true", help="Create an ADR from stdin YAML"
+        "--create", action="store_true", help="Create a decision record from stdin YAML"
     )
     args = p.parse_args(argv)
 
@@ -122,24 +131,27 @@ def main(argv: list[str] | None = None) -> int:
         raw = sys.stdin.read()
         data = yaml.safe_load(raw)
         try:
-            ADRModel.model_validate(data)
+            DecisionRecordModel.model_validate(data)
         except ValidationError as e:
             print(f"VALIDATION ERROR:\n{e}", file=sys.stderr)
             return 2
-        path = create_adr(
+        path = create_decision(
+            number=data.get("number", 0),
             title=data["title"],
+            category=data["category"],
             decision=data["decision"],
             agent_instructions=data["agent_instructions"],
             rationale=data["rationale"],
             provenance=data["provenance"],
+            rejected_alternatives=data.get("rejected_alternatives"),
         )
         print(f"✓ Created {path}")
         return 0
 
     if args.validate is not None:
-        files = args.validate if args.validate else list(ADRS_DIR.glob("*.yaml"))
+        files = args.validate if args.validate else list(DECISIONS_DIR.glob("*.yaml"))
         if not files:
-            print("No ADR files found", file=sys.stderr)
+            print("No decision record files found", file=sys.stderr)
             return 0
         for f in files:
             validate_file(Path(f))

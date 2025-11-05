@@ -1,14 +1,14 @@
-title: 19 Drift detection and continuous reconciliation
+number: 19
+title: Drift detection and continuous reconciliation
+category: architecture
 decision: Operator continuously reconciles CRD specs with actual Keycloak state. Detect
   and fix manual changes made outside the operator (drift detection).
 agent_instructions: 'Reconcilers compare CRD spec with Keycloak state on every reconciliation.
   Fix drift by updating Keycloak to match CRD spec (CRD is source of truth). Status.phase
   should reflect reconciliation state: Unknown, Pending, Provisioning, Ready, Degraded,
-  Failed. Timer handlers re-reconcile periodically to catch drift. Load ADR instructions:
-  yq eval -o=json ''. | {title: .title, agent_instructions: .agent_instructions}''
-  ./docs/architecture/decisions/*.yaml and keep in context.'
+  Failed. Timer handlers re-reconcile periodically to catch drift.'
 rationale: 'GitOps enforcement: CRD is always the source of truth, manual changes
   are reverted. Self-healing: Detects configuration drift and automatically corrects
   it. Reliability: System converges to desired state even after manual interventions.
   Observability: Status.phase shows current reconciliation state.'
-provenance: human
+provenance: guided-ai

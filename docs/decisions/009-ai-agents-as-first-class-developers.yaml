@@ -1,0 +1,15 @@
+number: 9
+title: AI agents as first-class developers
+category: development
+decision: All documentation, code patterns, and development workflows must be accessible
+  and optimized for LLM agents. AI assistants should be able to contribute effectively.
+agent_instructions: This is a meta-decision record. All documentation targets both
+  humans and AI agents. CLAUDE.md contains AI-specific guidance. Keep it updated with
+  development patterns. Decision records use yq-extractable instructions specifically
+  for agents. Code comments explain 'why', not 'what' (LLMs understand code structure).
+rationale: 'Productivity: LLMs accelerate development when documentation is structured
+  for them. Consistency: AI agents follow documented patterns more reliably than humans.
+  Onboarding: New AI assistants can start contributing immediately by reading ADRs
+  and CLAUDE.md. Future-proof: As AI capabilities improve, this project will benefit
+  automatically.'
+provenance: guided-ai
