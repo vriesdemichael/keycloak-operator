@@ -27,12 +27,10 @@ class ADRModel(BaseModel):
     title: TitleStr = Field(
         ..., description="Numeric id + title, e.g. '42 Service-side feature-flagging'"
     )
-    status: Literal["accepted", "proposed", "deprecated", "superseded"]
     decision: str
     agent_instructions: str
     rationale: str
     provenance: Literal["human", "ai"]
-    superseded_by: str | None = None
 
     @model_validator(mode="after")
     def check_agent_instructions_has_yq(self):
@@ -46,13 +44,6 @@ class ADRModel(BaseModel):
             raise ValueError(
                 "agent_instructions should tell the agent to keep the retrieved instructions in its context."
             )
-        return self
-
-    @model_validator(mode="after")
-    def check_superseded_status(self):
-        """Validate superseded status has superseded_by field."""
-        if self.status == "superseded" and not self.superseded_by:
-            raise ValueError("superseded status requires superseded_by field")
         return self
 
 
@@ -86,7 +77,6 @@ def create_adr(
     agent_instructions: str,
     rationale: str,
     provenance: str,
-    status: str = "accepted",
 ) -> Path:
     """Create a new ADR file."""
     ADRS_DIR.mkdir(parents=True, exist_ok=True)
@@ -101,7 +91,6 @@ def create_adr(
     path = ADRS_DIR / filename
     content = {
         "title": f"{next_id} {title}",
-        "status": status,
         "decision": decision.strip(),
         "agent_instructions": agent_instructions.strip(),
         "rationale": rationale.strip(),
@@ -143,7 +132,6 @@ def main(argv: list[str] | None = None) -> int:
             agent_instructions=data["agent_instructions"],
             rationale=data["rationale"],
             provenance=data["provenance"],
-            status=data.get("status", "accepted"),
         )
         print(f"✓ Created {path}")
         return 0
