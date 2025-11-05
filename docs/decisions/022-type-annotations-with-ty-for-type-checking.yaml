@@ -2,23 +2,22 @@ number: 22
 title: Type annotations with ty for type checking
 category: development
 decision: All Python code must use type annotations. Type checking is performed with
-  ty (wrapping Basedpyright), not mypy. Types are checked in pre-commit hooks and
-  CI.
+  ty, not mypy. Types are checked in pre-commit hooks and CI.
 agent_instructions: 'Add type annotations to all Python code: function parameters,
   return types, and class attributes. This includes production code, tests, and scripts.
   Use ty for type checking, never mypy. Run type checks with ''make quality'' or ''uv
   run ty check'' before committing. Fix all type errors reported by ty - type checking
   is mandatory, not optional.'
 rationale: Type annotations improve code quality and catch bugs at development time.
-  ty (Basedpyright) provides better performance and more accurate type inference than
-  mypy. Enforcing types in pre-commit hooks prevents type errors from reaching main
-  branch. Type annotations in tests catch test bugs and improve test maintainability.
-  IDE integration provides real-time feedback during development.
+  ty provides better performance and more accurate type inference than mypy. Enforcing
+  types in pre-commit hooks prevents type errors from reaching main branch. Type annotations
+  in tests catch test bugs and improve test maintainability. IDE integration provides
+  real-time feedback during development.
 provenance: human
 rejected_alternatives:
 - alternative: Use mypy for type checking
-  reason: ty (Basedpyright) is faster, has better type inference, and provides more
-    helpful error messages. mypy has slower iteration cycles.
+  reason: ty is faster, has better type inference, and provides more helpful error
+    messages. mypy has slower iteration cycles.
 - alternative: Optional type annotations
   reason: Inconsistent typing provides little value. Mandatory annotations ensure
     the entire codebase benefits from type safety.
