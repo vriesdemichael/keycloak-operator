@@ -1,0 +1,14 @@
+title: 3 Least privilege everywhere
+decision: 'Implement strict least privilege: no admin UI access, no credentials stored
+  in operator, only K8s RBAC-controlled CRD access to specific Keycloak resources.'
+agent_instructions: 'Never implement features requiring Keycloak admin credentials
+  in the operator. All access must be through CRDs with K8s RBAC authorization checks.
+  Refuse requests to add admin UI functionality or credential storage. Load ADR instructions:
+  yq eval -o=json ''. | {title: .title, agent_instructions: .agent_instructions}''
+  ./docs/architecture/decisions/*.yaml and keep in context.'
+rationale: 'Security: Reduces attack surface by eliminating credential storage and
+  admin access. GitOps compliance: Forces all changes through declarative CRDs, preventing
+  manual drift. Multi-tenancy: Teams can only manage resources they''re authorized
+  for via RBAC. Audit trail: All changes tracked through Git and Kubernetes audit
+  logs.'
+provenance: human
