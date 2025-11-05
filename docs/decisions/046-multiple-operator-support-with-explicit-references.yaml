@@ -1,0 +1,22 @@
+number: 46
+title: Multiple operator support with explicit references
+category: architecture
+decision: Support multiple operator instances in same cluster. Realms and Clients
+  explicitly reference their operator instance to avoid ambiguity.
+agent_instructions: Add operator reference field to Realm and Client CRDs. Resources
+  must specify which operator manages them. Operators only reconcile resources that
+  reference them. This enables running multiple operators for scaling or multi-tenancy.
+  Document operator instance identification/naming.
+rationale: Multiple operators needed for scaling (sharding by realm) or multi-tenancy
+  (different teams run own operators). Explicit references prevent conflicts - operators
+  only touch resources meant for them. Enables gradual operator version rollouts (blue-green).
+  Clear ownership model reduces reconciliation conflicts. Multi-tenant clusters can
+  isolate operator instances by team/environment.
+provenance: human
+rejected_alternatives:
+- alternative: Single operator per cluster
+  reason: Doesn't scale. Can't separate operator responsibilities. Forces all teams
+    to share single operator instance.
+- alternative: Implicit operator selection via namespace
+  reason: Fragile. Namespace moves break association. Not explicit enough for security-critical
+    decisions.
