@@ -1,0 +1,31 @@
+number: 26
+title: Three-layer responsibility system with token delegation
+category: architecture
+decision: 'Implement a three-layer system: operator team manages Keycloak instances,
+  realm teams manage realms, application teams manage clients. Authorization is managed
+  through a token system that allows delegation between layers without requiring PRs
+  or manual approval.'
+agent_instructions: 'Implement token-based authorization for cross-namespace resource
+  access. Operator team creates Keycloak instances and delegates realm management
+  via tokens. Realm teams create realms and delegate client management via tokens.
+  Application teams create clients using delegated tokens. Design reconcilers to validate
+  tokens before allowing resource creation. This enables self-service: teams can manage
+  resources they''re authorized for without waiting for PRs between teams.'
+rationale: 'Three-layer separation matches organizational structure: platform teams
+  run Keycloak, security teams manage realms, developers manage OAuth clients. Token-based
+  delegation enables self-service and reduces operational burden. Once a token is
+  issued, teams can independently create resources without cross-team PRs or manual
+  approvals. This scales better than centralized control as organization grows. Tokens
+  provide audit trail of who authorized what. Reduces workload on platform and security
+  teams while maintaining security boundaries through RBAC and token validation.'
+provenance: human
+rejected_alternatives:
+- alternative: Centralized management - all resources created by operator team
+  reason: Doesn't scale. Creates bottleneck and slows down application teams. Operator
+    team overwhelmed with requests.
+- alternative: Direct RBAC without tokens
+  reason: RBAC alone can't express 'this team can create clients in this specific
+    realm'. Tokens provide fine-grained delegation.
+- alternative: Manual approval via PRs for every resource
+  reason: Slow, doesn't scale, requires synchronization between teams. Defeats purpose
+    of self-service.
