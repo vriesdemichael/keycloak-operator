@@ -1,0 +1,15 @@
+title: 15 CloudNativePG as first-class database
+decision: Support CloudNativePG (CNPG) as the officially recommended PostgreSQL solution
+  for GitOps workflows. Provide examples and documentation for CNPG integration.
+agent_instructions: 'When creating Keycloak examples or tests, prefer CNPG Cluster
+  resources over manual PostgreSQL. Document CNPG setup in how-to guides. Integration
+  tests use CNPG for Keycloak database (via scripts/deploy-test-keycloak.sh). Support
+  both CNPG and external databases for flexibility. Load ADR instructions: yq eval
+  -o=json ''. | {title: .title, agent_instructions: .agent_instructions}'' ./docs/architecture/decisions/*.yaml
+  and keep in context.'
+rationale: 'GitOps native: CNPG is declarative, matches operator''s GitOps philosophy.
+  High availability: CNPG provides HA PostgreSQL clusters out of the box. Backup/restore:
+  Built-in backup capabilities for disaster recovery. Kubernetes native: Follows K8s
+  patterns, integrates with operator ecosystem. Trade-off: Users can still use external
+  databases if needed.'
+provenance: human

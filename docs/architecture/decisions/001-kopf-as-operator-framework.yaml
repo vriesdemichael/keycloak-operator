@@ -1,0 +1,13 @@
+title: 1 Kopf as operator framework
+decision: Use Kopf (Python) instead of Go-based frameworks (controller-runtime, operator-sdk)
+  for implementing the Keycloak operator.
+agent_instructions: 'When implementing operator logic or handlers, always use Kopf
+  decorators and patterns. Load ADR instructions using: yq eval -o=json ''. | {title:
+  .title, agent_instructions: .agent_instructions}'' ./docs/architecture/decisions/*.yaml
+  Keep the result in your context and consult it for all architectural decisions.'
+rationale: 'Better LLM support: Python is better understood by language models, enabling
+  more effective AI-assisted development. Better testing: pytest ecosystem is more
+  mature and flexible than Go testing frameworks. SRE-friendly: Python aligns better
+  with SRE backgrounds and existing automation tooling. Trade-off: Slightly higher
+  resource usage acceptable for operators managing relatively few resources.'
+provenance: human

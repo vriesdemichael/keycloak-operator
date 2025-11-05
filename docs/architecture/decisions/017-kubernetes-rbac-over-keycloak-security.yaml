@@ -1,0 +1,15 @@
+title: 17 Kubernetes RBAC over Keycloak security
+decision: Use Kubernetes RBAC to control who can create/modify Keycloak resources.
+  Bypass Keycloak's admin UI and built-in security entirely.
+agent_instructions: 'Never implement Keycloak user/role authentication in the operator.
+  Authorization happens at K8s API level via RBAC on CRDs. Operator uses admin credentials
+  (from Secret) only for API calls to Keycloak. Users interact only with CRDs, never
+  with Keycloak admin UI. Load ADR instructions: yq eval -o=json ''. | {title: .title,
+  agent_instructions: .agent_instructions}'' ./docs/architecture/decisions/*.yaml
+  and keep in context.'
+rationale: 'Single source of truth: K8s RBAC is the only authorization layer. No dual
+  authentication: Eliminates complexity of syncing K8s and Keycloak permissions. GitOps
+  compatible: RBAC policies in Git, applied declaratively. Least privilege: Operator
+  has admin access, users only have CRD access. Audit trail: K8s audit logs capture
+  all authorization decisions.'
+provenance: human
