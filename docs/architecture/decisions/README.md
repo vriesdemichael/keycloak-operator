@@ -14,12 +14,12 @@ ADRs document important architectural decisions, their context, and their conseq
 Each ADR is a YAML file with the following fields:
 
 - **title**: Numeric ID + brief description (e.g., "42 Service-side feature-flagging")
-- **status**: `accepted`, `proposed`, `deprecated`, or `superseded`
 - **decision**: What was decided
 - **agent_instructions**: Instructions for AI agents on how to apply this decision (must include a `yq` snippet)
 - **rationale**: Why this decision was made (context, forces, trade-offs)
 - **provenance**: `human` or `ai` (who created this ADR)
-- **superseded_by**: (optional) Reference to the ADR that supersedes this one
+
+All ADRs in this directory are accepted decisions. Proposed or deprecated decisions are not stored here.
 
 ## Creating an ADR
 
@@ -29,7 +29,6 @@ Each ADR is a YAML file with the following fields:
 # Create an ADR from YAML
 cat <<'YAML' | uv run scripts/adr_validator.py --create
 title: "Use Python for operator implementation"
-status: accepted
 decision: >
   Implement the Keycloak operator using Python with the Kopf framework.
 agent_instructions: >
@@ -77,7 +76,7 @@ AI agents working on this repository should:
 
 4. Propose new ADRs when encountering new architectural decisions
 
-5. Never modify `accepted` ADRs without human approval
+5. Only accepted decisions are stored as ADRs - no proposed or deprecated statuses
 
 ## References
 

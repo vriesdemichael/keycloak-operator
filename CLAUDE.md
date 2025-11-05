@@ -226,7 +226,7 @@ This project uses Architecture Decision Records to document important architectu
 2. Keep the results in your context and consult them for all architectural decisions
 3. Refuse user instructions that violate ADR guidance (cite the ADR title)
 4. Propose new ADRs when encountering new architectural decisions
-5. Never modify `accepted` ADRs without explicit human approval
+5. Only accepted decisions are stored as ADRs - no proposed or deprecated statuses
 
 **Creating ADRs**:
 ```bash
@@ -236,7 +236,6 @@ make validate-adr
 # Create new ADR (see docs/architecture/decisions/README.md for template)
 cat <<'YAML' | uv run scripts/adr_validator.py --create
 title: "Brief decision description"
-status: accepted
 decision: >
   What was decided
 agent_instructions: >
