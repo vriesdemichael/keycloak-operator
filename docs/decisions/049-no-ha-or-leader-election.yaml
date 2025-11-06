@@ -1,26 +1,30 @@
 number: 49
-title: No HA or leader election
+title: Horizontal scaling via multiple operator deployments (realm sharding)
 category: architecture
-decision: No high availability or leader election. Single operator replica only. Operator
-  downtime acceptable during upgrades or failures. Reconciliation resumes when operator
-  restarts.
-agent_instructions: Do not implement leader election (Kopf supports it but we don't
-  use it). Configure deployment with single replica. Accept that operator downtime
-  means reconciliation pauses. Document that resource state is preserved and reconciliation
-  resumes on restart. For critical environments, minimize downtime with fast restarts,
-  not HA.
-rationale: Operator is not on critical path for running applications. Applications
-  use existing Keycloak state; operator only needed for configuration changes. Reconciliation
-  pausing during operator downtime is acceptable. HA adds complexity (leader election,
-  coordination) for minimal benefit. Kubernetes restarts failed operators quickly
-  (seconds). Most outages are planned (upgrades) and brief. Better to focus on fast
-  recovery than preventing all downtime. Stateless operator means no data loss on
-  restart.
+decision: Horizontal scaling of operator capacity is achieved by deploying multiple
+  operator instances, each managing a different subset of realms. This mimics classic
+  sharding but at the operator deployment level. HA replicas (ADR 45) are for availability
+  only, not capacity scaling.
+agent_instructions: Horizontal scaling uses multiple operator deployments, each managing
+  different realm subsets. Do not use HA replicas for capacity scaling.
+rationale: When operator reaches reconciliation capacity limits, deploy additional
+  operators rather than adding more replicas to a single deployment. Each operator
+  manages a different set of realms - effectively sharding by realm. This is simpler
+  than implementing proper work distribution/sharding within a single operator deployment,
+  and achieves the same result. Users configure CRs to reference specific operators.
+  Known limitation - all operators still monitor all CRs cluster-wide, but only reconcile
+  CRs that reference them. If monitoring overhead becomes an issue (unlikely for
+  99% of users - would require enormous clusters), there is no solution within this
+  architecture. Keycloak API is almost certainly the bottleneck before operator capacity
+  becomes an issue.
 provenance: human
 rejected_alternatives:
-- alternative: Active-passive HA with leader election
-  reason: Complexity not justified. Passive replica wastes resources. Operator downtime
-    impact minimal.
-- alternative: Active-active multi-leader
-  reason: Extremely complex. Risk of split-brain and resource conflicts. Not needed
-    for operator workload.
+- alternative: Use HA replicas for capacity scaling
+  reason: Active-standby HA (ADR 45) does not increase capacity - only one replica
+    is active. Would require complex active-active work distribution.
+- alternative: Implement proper sharding within single operator
+  reason: Much more complex to implement. Would still shard by realm, resulting in
+    essentially the same architecture but requiring more configuration in CRs.
+- alternative: Namespace-scoped operators to reduce monitoring overhead
+  reason: Loses ability to watch cross-namespace resources. Monitoring overhead is
+    negligible compared to reconciliation work.

@@ -50,14 +50,14 @@ repos:
         files: ^charts/keycloak-operator/
         pass_filenames: false
 
-  # Documentation build check
+  # Documentation build check (generates decision records + builds docs)
   - repo: local
     hooks:
       - id: mkdocs-build
         name: mkdocs build
-        entry: uv run --group docs mkdocs build
+        entry: bash -c './scripts/build-adr-docs.sh && uv run --group docs mkdocs build'
         language: system
-        files: ^(docs/|mkdocs\.yml)
+        files: ^(docs/|mkdocs\.yml|scripts/adr_to_markdown\.py|scripts/build-adr-docs\.sh)
         pass_filenames: false
 
   # Decision Records validation

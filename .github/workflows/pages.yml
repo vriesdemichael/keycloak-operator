@@ -20,6 +20,8 @@ on:
       - 'mkdocs.yml'
       - 'charts/**'
       - 'scripts/generate-crd-schemas.py'
+      - 'scripts/adr_to_markdown.py'
+      - 'scripts/build-adr-docs.sh'
       - '.github/workflows/pages.yml'
   release:
     types: [published]
@@ -132,6 +134,12 @@ jobs:
           echo "version=$DOC_VERSION" >> $GITHUB_OUTPUT
           echo "is_latest=$IS_LATEST" >> $GITHUB_OUTPUT
           echo "skip_docs=$SKIP_DOCS" >> $GITHUB_OUTPUT
+
+      - name: Generate decision record markdown
+        if: steps.doc-version.outputs.skip_docs != 'true'
+        run: |
+          echo "Generating decision record markdown from YAML..."
+          ./scripts/build-adr-docs.sh
 
       - name: Build versioned documentation with mike
         if: steps.doc-version.outputs.skip_docs != 'true'
