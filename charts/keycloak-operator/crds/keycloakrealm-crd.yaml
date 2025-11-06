@@ -528,24 +528,32 @@ spec:
               authorizationSecretName:
                 type: string
                 description: "Name of the secret containing the realm's authorization token for client delegation"
-              # Endpoints
+              # Endpoints - automatically populated OIDC discovery endpoints
               endpoints:
                 type: object
+                description: "OIDC/OAuth2 endpoints automatically populated by the operator based on Keycloak instance URL"
                 properties:
                   issuer:
                     type: string
+                    description: "OIDC issuer identifier URL"
                   auth:
                     type: string
+                    description: "OIDC authorization endpoint"
                   token:
                     type: string
+                    description: "OIDC token endpoint"
                   userinfo:
                     type: string
+                    description: "OIDC userinfo endpoint"
                   jwks:
                     type: string
+                    description: "OIDC JSON Web Key Set (JWKS) endpoint"
                   endSession:
                     type: string
+                    description: "OIDC end session (logout) endpoint"
                   registration:
                     type: string
+                    description: "OIDC dynamic client registration endpoint"
               # Feature status
               features:
                 type: object
