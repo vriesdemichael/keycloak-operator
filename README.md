@@ -47,6 +47,7 @@ kubectl apply -f examples/03-client-example.yaml
 - **High Availability** - Multi-replica Keycloak with PostgreSQL clustering via CloudNativePG
 - **OAuth2/OIDC Clients** - Automated client provisioning with credential management
 - **Service Accounts** - Declarative role assignment for machine-to-machine authentication
+- **OIDC Endpoint Discovery** - Automatic population of all OIDC/OAuth2 endpoints in realm status
 
 ## 📚 Documentation
 
