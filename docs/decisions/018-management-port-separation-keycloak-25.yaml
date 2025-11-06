@@ -4,10 +4,10 @@ category: architecture
 decision: Require Keycloak 25.0.0 or later which supports separate management interface
   (port 9000). Use management port for health checks and metrics, port 8080 for user
   traffic.
-agent_instructions: 'Minimum Keycloak version is 25.0.0 (enforced in code). Health
-  checks use management port (9000): /health/ready, /health/live. User traffic on
-  port 8080, management on port 9000. Reject Keycloak instances with versions < 25.0.0.
-  Default version in constants.py should be 26.4.0 or later.'
+agent_instructions: 'Enforce minimum Keycloak version 25.0.0. Health checks use management
+  port (9000) for /health/ready and /health/live. User traffic on port 8080. Reject
+  versions < 25.0.0. Update DEFAULT_KEYCLOAK_VERSION in src/keycloak_operator/constants.py
+  when new stable versions release.'
 rationale: 'Security: Separates management endpoints from user traffic. Production
   ready: Management port is production best practice from Keycloak 25+. Health checks:
   Dedicated management port prevents health check impact on user traffic. Version

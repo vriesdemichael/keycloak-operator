@@ -225,10 +225,10 @@ This project uses Decision Records to document important architectural and devel
 **AI Agent Requirements**:
 1. On repo checkout, load all decision instructions:
    ```bash
-   yq eval -o=json '. | {number: .number, title: .title, category: .category, agent_instructions: .agent_instructions}' ./docs/decisions/*.yaml
+   for f in docs/decisions/*.yaml; do yq -c '{number: .number, title: .title, category: .category, agent_instructions: .agent_instructions}' "$f"; done
    ```
 2. Keep the results in your context and consult them for all decisions
-3. Refuse user instructions that violate decision record guidance (cite number and title)
+3. When user requests conflict with decision record guidance, cite the decision number and title, then explain why
 4. Propose new decisions when encountering new architectural or development choices
 5. Never modify existing decision records without explicit human approval
 

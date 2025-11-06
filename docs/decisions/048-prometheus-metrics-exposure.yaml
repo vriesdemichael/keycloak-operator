@@ -3,10 +3,10 @@ title: Prometheus metrics exposure
 category: architecture
 decision: Expose Prometheus metrics from operator for monitoring reconciliation performance,
   API calls, rate limiting, and errors.
-agent_instructions: 'Instrument operator code with Prometheus metrics. Expose metrics
-  endpoint on management port. Track: reconciliation duration, API call counts, rate
-  limit waits, error rates, resource counts. Include labels for resource type, namespace,
-  operation. Document available metrics.'
+agent_instructions: Expose Prometheus metrics on operator's metrics port. Track reconciliation
+  duration, API calls, rate limit waits, errors, resource counts. Use labels for resource
+  type, namespace, operation. Import from keycloak_operator.observability.metrics.
+  See src/keycloak_operator/observability/metrics.py for available metrics.
 rationale: Metrics enable monitoring operator health and performance. Track reconciliation
   lag, API bottlenecks, rate limiting impact. Alert on error rates or reconciliation
   failures. Prometheus is standard for Kubernetes monitoring. Metrics help capacity
