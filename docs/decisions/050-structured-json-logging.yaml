@@ -3,10 +3,10 @@ title: Structured JSON logging
 category: development
 decision: Use structured logging with JSON output format. Every log entry is valid
   JSON with consistent fields.
-agent_instructions: 'Configure Python logging to output JSON. Include standard fields:
-  timestamp, level, message, logger name, correlation IDs, resource info (namespace,
-  name, kind). Use structlog or similar. Never use plain text logging. Add context
-  fields to logs for filtering and analysis.'
+agent_instructions: 'Configure Python logging to output JSON using structlog or similar.
+  Include standard fields: timestamp, level, message, logger name, correlation IDs,
+  resource info (namespace, name, kind). See src/keycloak_operator/observability/logging.py.
+  Never use plain text logging. Add context fields for filtering and analysis.'
 rationale: JSON logs are machine-parseable. Log aggregation systems (ELK, Loki) can
   index and search JSON fields. Correlation IDs link related log entries across reconciliation
   cycles. Structured context (namespace, resource name) enables filtering. Consistent

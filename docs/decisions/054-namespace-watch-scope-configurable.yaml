@@ -1,0 +1,31 @@
+number: 54
+title: Namespace watch scope configurable via environment variable
+category: architecture
+decision: Operator watches all namespaces by default (cluster-wide mode) but can
+  be restricted to specific namespaces via KEYCLOAK_OPERATOR_NAMESPACES environment
+  variable. No label-based selection.
+agent_instructions: 'Default behavior: operator watches all namespaces (clusterwide=True
+  in Kopf). To restrict: set KEYCLOAK_OPERATOR_NAMESPACES environment variable to
+  comma-separated namespace list. Implementation in src/keycloak_operator/operator.py
+  function get_watched_namespaces(). Kopf called with namespaces=list for restricted
+  mode or clusterwide=True for all namespaces. RBAC must grant access to watched
+  namespaces. No automatic label-based namespace discovery - explicit list only.'
+rationale: 'Cluster-wide operation by default enables dynamic provisioning - teams
+  can create resources in any namespace without operator reconfiguration. Environment
+  variable configuration supports restricted deployments where operator should only
+  manage specific namespaces (multi-tenant clusters, security boundaries). Explicit
+  namespace list (no labels) provides clear, auditable scope. Simpler than label-based
+  selection - no watching namespace objects, no dynamic discovery complexity. Kopf
+  natively supports both modes (clusterwide=True vs namespaces=list). RBAC enforcement
+  at Kubernetes level prevents unauthorized access regardless of watch scope.'
+provenance: human
+rejected_alternatives:
+- alternative: Always watch all namespaces only
+  reason: Doesn't support restricted deployments where operator should only access
+    specific namespaces for security/isolation.
+- alternative: Label-based namespace selection
+  reason: More complex - requires watching namespace objects, dynamic discovery. Harder
+    to audit. Explicit list is clearer.
+- alternative: Helm chart value for namespace list
+  reason: Requires operator restart to change scope. Environment variable allows
+    runtime configuration without chart upgrade.
