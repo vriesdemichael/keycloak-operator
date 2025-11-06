@@ -108,6 +108,7 @@ nav:
   - Development:
       - Getting Started: development.md
       - Testing: development/testing.md
+  - Decision Records: decisions/generated-markdown/
   - FAQ: faq.md
   - API Reference:
       - Overview: api/keycloak_operator.md
