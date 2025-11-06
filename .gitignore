@@ -216,3 +216,6 @@ __marimo__/
 # Generated JSON schemas (published via GitHub Pages)
 _schemas/
 _site/
+
+# Generated markdown from decision records
+docs/decisions/generated-markdown/

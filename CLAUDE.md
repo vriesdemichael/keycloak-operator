@@ -681,19 +681,29 @@ Before finishing your task, run through this mental checklist:
 Documentation is built with MkDocs. To build documentation locally:
 
 ```bash
-# Install documentation dependencies
-uv sync --group docs
+# Build documentation (generates decision records + builds site)
+make docs-build
 
-# Build documentation (generates static site in site/)
-uv run --group docs mkdocs build
+# Generate only decision record markdown (without building full site)
+make docs-generate-decisions
+
+# Clean generated documentation
+make docs-clean
 
 # Serve documentation locally (DO NOT USE AS LLM - creates endless process, HUMANS ONLY)
 uv run --group docs mkdocs serve
 # View at: http://127.0.0.1:8000
 ```
 
+**Decision Records in Documentation:**
+- Decision record YAML files in `docs/decisions/*.yaml` are automatically converted to Markdown
+- Generated markdown is placed in `docs/decisions/generated-markdown/` (gitignored)
+- The `make docs-build` target automatically generates decision record markdown before building
+- Decision records appear in the "Decision Records" section of the documentation site
+
 **When to update documentation:**
 - After adding/editing any `.md` files in `docs/`
+- After adding/editing decision record YAML files in `docs/decisions/`
 - To verify links work correctly
 - To check formatting and appearance
 - Before committing documentation changes

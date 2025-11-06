@@ -58,6 +58,23 @@ validate-decisions: ## Validate Decision Records (Architecture/Development)
 	fi
 
 # ============================================================================
+# Documentation
+# ============================================================================
+
+.PHONY: docs-generate-decisions
+docs-generate-decisions: ## Generate markdown from decision record YAML files
+	@./scripts/build-adr-docs.sh
+
+.PHONY: docs-build
+docs-build: docs-generate-decisions ## Build documentation site
+	uv run --group docs mkdocs build
+
+.PHONY: docs-clean
+docs-clean: ## Clean generated documentation
+	rm -rf site/
+	rm -rf docs/decisions/generated-markdown/
+
+# ============================================================================
 # Unit Testing
 # ============================================================================
 
