@@ -762,7 +762,6 @@ name = "keycloak-operator"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
-    { name = "aiohttp" },
     { name = "httpx" },
     { name = "kopf" },
     { name = "kubernetes" },
@@ -819,7 +818,6 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "aiohttp", specifier = ">=3.9.0" },
     { name = "httpx", specifier = ">=0.27.0" },
     { name = "kopf", specifier = ">=1.37.0" },
     { name = "kubernetes", specifier = ">=28.0.0" },

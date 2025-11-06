@@ -10,6 +10,10 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
+# Note: aiohttp is not listed in pyproject.toml dependencies.
+# It's provided transitively by Kopf (required for webhooks and health probes).
+# We use it here to avoid adding duplicate dependencies while keeping HTTP server
+# implementation consistent with Kopf's own usage.
 from aiohttp.web import (
     Application,
     AppRunner,
