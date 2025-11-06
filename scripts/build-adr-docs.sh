@@ -11,6 +11,18 @@ OUTPUT_DIR="${DECISIONS_DIR}/generated-markdown"
 
 echo "Generating decision record documentation..."
 
+# Check that decisions directory exists
+if [[ ! -d "${DECISIONS_DIR}" ]]; then
+    echo "Error: Decision records directory not found: ${DECISIONS_DIR}" >&2
+    exit 1
+fi
+
+# Check that YAML files exist
+if ! compgen -G "${DECISIONS_DIR}/*.yaml" > /dev/null; then
+    echo "Error: No YAML files found in ${DECISIONS_DIR}" >&2
+    exit 1
+fi
+
 # Create output directory
 mkdir -p "${OUTPUT_DIR}"
 
