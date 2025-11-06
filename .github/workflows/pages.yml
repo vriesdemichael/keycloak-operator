@@ -139,7 +139,7 @@ jobs:
         if: steps.doc-version.outputs.skip_docs != 'true'
         run: |
           echo "Generating decision record markdown from YAML..."
-          ./scripts/build-adr-docs.sh
+          bash scripts/build-adr-docs.sh
 
       - name: Build versioned documentation with mike
         if: steps.doc-version.outputs.skip_docs != 'true'
