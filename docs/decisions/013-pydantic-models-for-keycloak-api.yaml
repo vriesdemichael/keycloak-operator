@@ -3,13 +3,12 @@ title: Pydantic models for Keycloak API
 category: architecture
 decision: Use auto-generated Pydantic models from Keycloak OpenAPI spec for all Keycloak
   Admin API interactions. All requests and responses are validated against these models.
-agent_instructions: Always use Pydantic models when interacting with Keycloak Admin
-  API. Import models from keycloak_operator.models.keycloak_api (e.g., RealmRepresentation,
-  ClientRepresentation). Never construct request data manually with dicts - use the
-  Pydantic models. Use _make_validated_request() in KeycloakAdminClient for automatic
-  request/response validation. Never manually update keycloak_api.py - regenerate
-  from OpenAPI spec using the generation script. Models use snake_case in Python,
-  camelCase in API (automatic conversion).
+agent_instructions: Import models from keycloak_operator.models.keycloak_api (e.g.,
+  RealmRepresentation, ClientRepresentation). Use these models for all Keycloak API
+  interactions, never construct dicts manually. Use _make_validated_request() in KeycloakAdminClient
+  for automatic validation. Never edit src/keycloak_operator/models/keycloak_api.py
+  manually - regenerate with scripts/generate-keycloak-models.sh when OpenAPI spec
+  updates.
 rationale: 'Data validation: Pydantic validates all request/response data against Keycloak
   API schema, catching errors before sending invalid data. This prevents runtime failures
   from schema mismatches, missing required fields, or incorrect data types. Automatic

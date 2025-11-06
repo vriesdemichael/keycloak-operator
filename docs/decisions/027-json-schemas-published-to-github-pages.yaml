@@ -3,10 +3,10 @@ title: JSON schemas published to GitHub Pages
 category: development
 decision: Publish CRD JSON schemas to GitHub Pages for IDE validation and auto-completion.
   Schemas are available at https://vriesdemichael.github.io/keycloak-operator/schemas/
-agent_instructions: Generate JSON schemas from CRDs using scripts/generate-crd-schemas.py.
-  Publish schemas to GitHub Pages alongside documentation and Helm charts. Users reference
-  schemas in their IDE or CI for validation. Keep schemas in sync with CRD changes
-  - regenerate when CRDs are updated.
+agent_instructions: Generate schemas with scripts/generate-crd-schemas.py when CRDs
+  change. Publish to GitHub Pages at https://vriesdemichael.github.io/keycloak-operator/schemas/.
+  Regenerate before releasing new operator versions to keep schemas in sync with CRD
+  changes.
 rationale: JSON schemas enable IDE validation and auto-completion for CRD YAML files.
   Developers get immediate feedback on invalid configurations before applying to cluster.
   Schemas are versioned alongside releases, allowing users to validate against specific

@@ -1,17 +1,22 @@
 number: 46
 title: Multiple operator support with explicit references
 category: architecture
-decision: Support multiple operator instances in same cluster. Realms and Clients
-  explicitly reference their operator instance to avoid ambiguity.
-agent_instructions: Add operator reference field to Realm and Client CRDs. Resources
-  must specify which operator manages them. Operators only reconcile resources that
-  reference them. This enables running multiple operators for scaling or multi-tenancy.
-  Document operator instance identification/naming.
+decision: Support multiple operator instances in same cluster. Each operator instance
+  has unique OPERATOR_INSTANCE_ID. Resources track which operator instance created
+  them via Keycloak resource attributes.
+agent_instructions: 'Use ownership tracking from src/keycloak_operator/utils/ownership.py.
+  Each operator deployment sets OPERATOR_INSTANCE_ID environment variable. Operators
+  add ownership attributes to Keycloak resources: io.kubernetes.operator-instance,
+  io.kubernetes.cr-namespace, io.kubernetes.cr-name. Use is_owned_by_this_operator()
+  to check ownership before updates. Use create_ownership_attributes() when creating
+  resources. Realm CRD has operatorRef field specifying which operator instance to
+  use. Only reconcile resources owned by this instance or without ownership (for adoption).'
 rationale: Multiple operators needed for scaling (sharding by realm) or multi-tenancy
-  (different teams run own operators). Explicit references prevent conflicts - operators
-  only touch resources meant for them. Enables gradual operator version rollouts (blue-green).
-  Clear ownership model reduces reconciliation conflicts. Multi-tenant clusters can
-  isolate operator instances by team/environment.
+  (different teams run own operators). Ownership tracking via Keycloak attributes
+  prevents conflicts - operators only touch resources they created. OPERATOR_INSTANCE_ID
+  enables clear identification of which operator owns which resources. Enables gradual
+  operator version rollouts (blue-green). Multi-tenant clusters can isolate operator
+  instances by team/environment. Ownership validation prevents split-brain scenarios.
 provenance: human
 rejected_alternatives:
 - alternative: Single operator per cluster
