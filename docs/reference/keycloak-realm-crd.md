@@ -512,6 +512,13 @@ spec:
 | `internalId` | `string` | Internal Keycloak realm ID |
 | `keycloakInstance` | `string` | Keycloak instance managing this realm |
 | `authorizationSecretName` | `string` | Name of the secret containing the realm's authorization token (for delegating to clients) |
+
+### OIDC Endpoints (Automatically Populated)
+
+The operator automatically discovers and populates all standard OIDC/OAuth2 endpoints based on the Keycloak instance URL and realm name:
+
+| Field | Type | Description |
+|-------|------|-------------|
 | `endpoints.issuer` | `string` | OIDC issuer endpoint |
 | `endpoints.auth` | `string` | OIDC authorization endpoint |
 | `endpoints.token` | `string` | OIDC token endpoint |
@@ -519,6 +526,13 @@ spec:
 | `endpoints.jwks` | `string` | OIDC JWKS endpoint |
 | `endpoints.endSession` | `string` | OIDC end session endpoint |
 | `endpoints.registration` | `string` | OIDC dynamic client registration endpoint |
+
+These endpoints are automatically constructed using the Keycloak instance's base URL (from public/internal endpoints or service DNS) and follow the standard OIDC discovery specification.
+
+### Additional Status Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
 | `features.userRegistration` | boolean | Whether user registration is enabled |
 | `features.passwordReset` | boolean | Whether password reset is enabled |
 | `features.identityProviders` | integer | Number of configured identity providers |

@@ -160,7 +160,47 @@ class KeycloakRealmReconciler(BaseReconciler):
             "userFederationProviders": len(realm_spec.user_federation or []),
             "customThemes": bool(realm_spec.themes),
         }
-        # TODO: Add OIDC endpoint discovery (issuer, auth, token, userinfo, jwks, endSession, registration)
+
+        # Populate OIDC endpoint discovery
+        try:
+            from ..models.keycloak import Keycloak
+            from ..utils.oidc_endpoints import (
+                construct_oidc_endpoints,
+                get_keycloak_base_url,
+            )
+
+            # Fetch the Keycloak CR to get its base URL
+            custom_api = client.CustomObjectsApi(self.k8s_client)
+            keycloak_dict = custom_api.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=target_namespace,
+                plural="keycloaks",
+                name="keycloak",  # Default Keycloak instance name
+            )
+
+            # Parse into Pydantic model
+            keycloak = Keycloak.model_validate(keycloak_dict)
+
+            # Get base URL from Keycloak instance
+            base_url = get_keycloak_base_url(keycloak)
+
+            # Construct OIDC endpoints
+            oidc_endpoints = construct_oidc_endpoints(base_url, realm_spec.realm_name)
+
+            # Populate status.endpoints
+            status.endpoints = oidc_endpoints
+
+            self.logger.debug(
+                f"Populated OIDC endpoints for realm {realm_spec.realm_name}: "
+                f"issuer={oidc_endpoints['issuer']}"
+            )
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to populate OIDC endpoints for realm {realm_spec.realm_name}: {e}"
+            )
+            # Don't fail reconciliation if endpoint population fails
+            # Endpoints will be populated on next reconciliation
 
         # Update status to indicate successful reconciliation
         # This sets observedGeneration, phase, message, and timestamps
