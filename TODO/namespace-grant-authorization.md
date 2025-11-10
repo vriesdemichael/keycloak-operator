@@ -1,8 +1,8 @@
 # Namespace Grant Authorization Implementation Plan
 
-**Issue**: #102 - Simplify authorization: dual-token to namespace grant list  
-**Branch**: `feature/namespace-grant-authorization`  
-**Created**: 2025-11-10  
+**Issue**: #102 - Simplify authorization: dual-token to namespace grant list
+**Branch**: `feature/namespace-grant-authorization`
+**Created**: 2025-11-10
 **Status**: Planning
 
 ## Overview
@@ -101,22 +101,10 @@ Transform the authorization system from a complex dual-token model to a GitOps-n
 
 ### 2.1 Pydantic Models
 - [x] Update `src/keycloak_operator/models/realm.py`
-  - [x] Add `clientAuthorizationGrants` field (list of namespace strings)
-  - [x] Remove `authorization_secret_ref` from OperatorRef
-  - [x] Add status field: `authorizedClientNamespaces`
-  - [x] Add validation for namespace format
-  - [x] Update docstrings
 - [x] Update `src/keycloak_operator/models/client.py`
-  - [x] Remove `authorization_secret_ref` from RealmRef
-  - [x] Add status field: `authorizationGranted` and `authorizationMessage`
-  - [x] Update docstrings
 - [x] Update `src/keycloak_operator/models/keycloak.py`
-  - [x] Add `RealmCapacity` model (maxRealms, allowNewRealms, capacityMessage)
-  - [x] Add status fields: `realmCount`, `acceptingNewRealms`, `capacityStatus`
-  - [x] Update docstrings
 - [x] Update `src/keycloak_operator/models/common.py`
-  - [x] Keep AuthorizationSecretRef for internal operator tokens
-  - Note: TokenMetadata and AuthorizationStatus kept for potential internal use
+  - Note: Models updated, quality checks pass
 
 ### 2.2 JSON Schemas
 - [ ] Update `_schemas/v1/KeycloakRealm.json`
@@ -164,53 +152,53 @@ Transform the authorization system from a complex dual-token model to a GitOps-n
 **Goal**: Implement authorization enforcement
 
 ### 3.1 Keycloak Reconciler
-- [ ] Update `src/keycloak_operator/services/keycloak_reconciler.py`
-  - [ ] Add realm counting logic
-  - [ ] Update status with current realm count
-  - [ ] Update status with `acceptingNewRealms` flag
-  - [ ] Handle capacity configuration changes
-  - [ ] Add logging for capacity management
-- [ ] Add capacity helpers
-  - [ ] Function to check if new realms allowed
-  - [ ] Function to get current realm count
-  - [ ] Function to update capacity status
+- [x] Update `src/keycloak_operator/services/keycloak_reconciler.py`
+  - [x] Add realm counting logic
+  - [x] Update status with current realm count
+  - [x] Update status with `acceptingNewRealms` flag
+  - [x] Handle capacity configuration changes
+  - [x] Add logging for capacity management
+- [x] Add capacity helpers
+  - [x] Function to check if new realms allowed
+  - [x] Function to get current realm count
+  - [x] Function to update capacity status
 
 ### 3.2 Realm Reconciler
-- [ ] Update `src/keycloak_operator/services/realm_reconciler.py`
-  - [ ] Add capacity check before creating new realm
-  - [ ] Reject new realms if capacity exhausted
-  - [ ] Allow existing realms to reconcile normally
-  - [ ] Remove authorization token validation
-  - [ ] Update status with authorized namespaces list
-  - [ ] Add events for capacity rejection
-  - [ ] Add logging for grant list changes
-- [ ] Add grant list helpers
-  - [ ] Function to get grant list from realm spec
-  - [ ] Function to check if namespace is in grant list
-  - [ ] Function to update authorized namespaces status
+- [x] Update `src/keycloak_operator/services/realm_reconciler.py`
+  - [x] Add capacity check before creating new realm
+  - [x] Reject new realms if capacity exhausted
+  - [x] Allow existing realms to reconcile normally
+  - [x] Remove authorization token validation
+  - [x] Update status with authorized namespaces list
+  - [x] Add events for capacity rejection
+  - [x] Add logging for grant list changes
+- [x] Add grant list helpers
+  - [x] Function to get grant list from realm spec
+  - [x] Function to check if namespace is in grant list
+  - [x] Function to update authorized namespaces status
 
 ### 3.3 Client Reconciler
-- [ ] Update `src/keycloak_operator/services/client_reconciler.py`
-  - [ ] Remove authorization token validation
-  - [ ] Add realm lookup (cross-namespace read)
-  - [ ] Add grant list validation
-  - [ ] Check client namespace against grant list
-  - [ ] Reject if namespace not in grant list
-  - [ ] Update status with authorization result
-  - [ ] Add clear error messages for authorization failures
-  - [ ] Add events for authorization decisions
-  - [ ] Add logging for authorization checks
-- [ ] Add authorization helpers
-  - [ ] Function to fetch realm CR
-  - [ ] Function to validate namespace authorization
-  - [ ] Function to format authorization errors
+- [x] Update `src/keycloak_operator/services/client_reconciler.py`
+  - [x] Remove authorization token validation
+  - [x] Add realm lookup (cross-namespace read)
+  - [x] Add grant list validation
+  - [x] Check client namespace against grant list
+  - [x] Reject if namespace not in grant list
+  - [x] Update status with authorization result
+  - [x] Add clear error messages for authorization failures
+  - [x] Add events for authorization decisions
+  - [x] Add logging for authorization checks
+- [x] Add authorization helpers
+  - [x] Function to fetch realm CR
+  - [x] Function to validate namespace authorization
+  - [x] Function to format authorization errors
 
 ### 3.4 Status Management
-- [ ] Add status update utilities
-  - [ ] Helper to update realm authorization status
-  - [ ] Helper to update client authorization status
-  - [ ] Helper to update capacity status
-  - [ ] Ensure status updates don't cause unnecessary reconciliations
+- [x] Add status update utilities
+  - [x] Helper to update realm authorization status
+  - [x] Helper to update client authorization status
+  - [x] Helper to update capacity status
+  - [x] Ensure status updates don't cause unnecessary reconciliations
 
 ---
 
@@ -533,7 +521,7 @@ Transform the authorization system from a complex dual-token model to a GitOps-n
 
 ### Q1: Realm naming - enforce namespace prefix?
 - **Status**: TBD
-- **Options**: 
+- **Options**:
   - Enforce in reconciler (reject without prefix)
   - Validate in admission webhook
   - Document as best practice only
@@ -585,7 +573,7 @@ Transform the authorization system from a complex dual-token model to a GitOps-n
 - [x] Completed Phase 2.1: Pydantic Models (realm, client, keycloak updated)
 - [x] Partially completed Phase 3: Reconciler Logic
   - [x] realm_reconciler: Removed token auth, added capacity checking
-  - [x] client_reconciler: Removed token auth, added grant list validation  
+  - [x] client_reconciler: Removed token auth, added grant list validation
   - [x] keycloak_reconciler: Added capacity status updates
 - [ ] In progress: Fixing test files
   - [x] Fixed conftest.py fixtures
