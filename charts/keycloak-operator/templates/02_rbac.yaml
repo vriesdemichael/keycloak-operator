@@ -29,12 +29,13 @@ metadata:
   {{- end }}
 rules:
 # Watch CRDs cluster-wide (read-only metadata)
+# Note: 'get' added for cross-namespace realm lookups in grant list validation
 - apiGroups: ["vriesdemichael.github.io"]
   resources:
   - keycloaks
   - keycloakclients
   - keycloakrealms
-  verbs: ["list", "watch"]
+  verbs: ["get", "list", "watch"]
 
 # Update CRD status and finalizers (required by Kopf)
 - apiGroups: ["vriesdemichael.github.io"]

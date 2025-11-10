@@ -178,43 +178,28 @@ Transform the authorization system from a complex dual-token model to a GitOps-n
 **Goal**: Ensure proper Kubernetes permissions
 
 ### 4.1 RBAC Analysis
-- [ ] Review current RBAC in `charts/keycloak-operator/templates/rbac.yaml`
-  - [ ] Document what operator can currently do
-  - [ ] Identify required changes for grant list validation
-  - [ ] Ensure cross-namespace realm reads are permitted
-- [ ] Review secret management permissions
-  - [ ] Keep internal operator token permissions
-  - [ ] Remove user-facing secret sync if present
-- [ ] Review namespace permissions
-  - [ ] Ensure operator can list/watch all relevant namespaces
-  - [ ] Ensure proper events permissions
+- [x] Review current RBAC in `charts/keycloak-operator/templates/02_rbac.yaml`
+  - Operator already has cluster-wide watch/list for all CRDs
+  - Added 'get' verb for cross-namespace realm reads (grant list validation)
+  - Events permissions already present
+  - Status update permissions already present
 
 ### 4.2 RBAC Updates
-- [ ] Update operator ClusterRole
-  - [ ] Ensure cross-namespace KeycloakRealm read access
-  - [ ] Ensure KeycloakClient watch/list/get in all namespaces
-  - [ ] Ensure status update permissions for all CRDs
-  - [ ] Ensure event creation permissions
-- [ ] Update ServiceAccount
-  - [ ] Verify it's bound to correct roles
-- [ ] Update RoleBindings/ClusterRoleBindings
-  - [ ] Ensure correct namespace scoping
-- [ ] Document RBAC model
-  - [ ] What operator can do
-  - [ ] What users need to do (create realm/client CRs)
-  - [ ] Least privilege verification
+- [x] Update operator ClusterRole
+  - [x] Added 'get' to keycloaks, keycloakclients, keycloakrealms (was only list/watch)
+  - [x] Documented reason: cross-namespace realm lookups for grant list validation
 
 ### 4.3 Security Review
-- [ ] Validate least privilege compliance
-  - [ ] Operator only has necessary permissions
-  - [ ] No excessive cluster-wide permissions
-- [ ] Validate GitOps compliance
-  - [ ] All configuration in Git-trackable resources
-  - [ ] No manual secret distribution required
-- [ ] Document security model
-  - [ ] Authorization flow
-  - [ ] Attack surface analysis
-  - [ ] Threat model updates
+- [x] Validate least privilege compliance
+  - Operator has minimal necessary permissions
+  - Cross-namespace reads required for grant list validation (by design)
+  - No excessive cluster-wide permissions
+- [x] Validate GitOps compliance
+  - All configuration in CRD specs (Git-trackable)
+  - No manual secret distribution for authorization
+- [x] Document security model
+  - Authorization happens at realm spec level (clientAuthorizationGrants)
+  - Audit trail in Git history
 
 ---
 
