@@ -250,8 +250,8 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         try:
             # Fetch the Keycloak instance
-            custom_objects_api = client.CustomObjectsApi()
-            keycloak = await custom_objects_api.get_namespaced_custom_object(
+            custom_objects_api = client.CustomObjectsApi(self.k8s_client)
+            keycloak = custom_objects_api.get_namespaced_custom_object(
                 group="vriesdemichael.github.io",
                 version="v1",
                 namespace=keycloak_namespace,
