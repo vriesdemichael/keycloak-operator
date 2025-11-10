@@ -81,15 +81,6 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Ensure basic realm exists (pass kwargs for ownership tracking)
         await self.ensure_realm_exists(realm_spec, name, namespace, **kwargs)
 
-        # Generate/retrieve realm authorization token
-        owner_uid = kwargs.get("uid", "")
-        realm_auth_secret_name = await self.ensure_realm_authorization_secret(
-            realm_name=realm_spec.realm_name,
-            realm_cr_name=name,
-            namespace=namespace,
-            owner_uid=owner_uid,
-        )
-
         # Configure realm features
         if realm_spec.themes:
             await self.configure_themes(realm_spec, name, namespace)
@@ -118,36 +109,6 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Kopf StatusWrapper supports status.camelCase = value
         status.realmName = realm_spec.realm_name
         status.keycloakInstance = f"{target_namespace}/keycloak"
-        status.authorizationSecretName = realm_auth_secret_name
-
-        # Update authorization status if operational token was bootstrapped
-        # Check if operational token secret exists
-        from ..utils.secret_manager import SecretManager
-
-        secret_manager = SecretManager()
-        operational_secret_name = f"{namespace}-operator-token"
-        operational_secret = await secret_manager.get_secret(
-            operational_secret_name, namespace
-        )
-
-        if operational_secret and operational_secret.metadata:
-            # Operational token exists, update status
-
-            token_version = operational_secret.metadata.annotations.get(
-                "vriesdemichael.github.io/keycloak-version", "1"
-            )
-            valid_until_str = operational_secret.metadata.annotations.get(
-                "vriesdemichael.github.io/keycloak-valid-until"
-            )
-
-            if valid_until_str:
-                status.authorizationStatus = {
-                    "secretRef": {"name": operational_secret_name, "key": "token"},
-                    "tokenType": "operational",
-                    "tokenVersion": token_version,
-                    "validUntil": valid_until_str,
-                    "requiresUpdate": False,
-                }
 
         # Update authorized client namespaces from spec
         status.authorizedClientNamespaces = realm_spec.client_authorization_grants or []
@@ -419,102 +380,6 @@ class KeycloakRealmReconciler(BaseReconciler):
             raise ValidationError(
                 f"Failed to fetch SMTP password from secret '{secret_name}' "
                 f"in namespace '{namespace}': {e}"
-            ) from e
-
-    async def ensure_realm_authorization_secret(
-        self, realm_name: str, realm_cr_name: str, namespace: str, owner_uid: str
-    ) -> str:
-        """
-        Generate or retrieve authorization secret for this realm.
-
-        Creates a Kubernetes secret containing a secure token that will be used
-        by clients to authenticate their requests to manage resources within this realm.
-
-        The secret has an owner reference to the realm resource for automatic cleanup.
-
-        Args:
-            realm_name: Name of the realm (used in secret name)
-            realm_cr_name: Name of the realm CR (used in owner reference)
-            namespace: Namespace to create the secret in
-            owner_uid: UID of the realm resource (for owner reference)
-
-        Returns:
-            Name of the secret containing the realm authorization token
-
-        Raises:
-            ValidationError: If secret creation fails
-        """
-        import base64
-
-        from ..utils.auth import generate_token
-
-        secret_name = f"{realm_name}-realm-auth"
-
-        # Check if secret already exists
-        core_api = client.CoreV1Api(self.k8s_client)
-        try:
-            core_api.read_namespaced_secret(name=secret_name, namespace=namespace)
-            self.logger.debug(
-                f"Realm authorization secret {secret_name} already exists, reusing"
-            )
-            return secret_name
-        except client.ApiException as e:
-            if e.status != 404:
-                raise ValidationError(
-                    f"Failed to check for existing realm authorization secret: {e}"
-                ) from e
-            # Secret doesn't exist, create it
-            self.logger.info(f"Creating realm authorization secret {secret_name}")
-
-        # Generate secure token
-        token = generate_token(length=32)  # 256-bit entropy
-        token_bytes = token.encode("utf-8")
-        encoded_token = base64.b64encode(token_bytes).decode("utf-8")
-
-        # Create secret with owner reference for automatic cleanup
-        secret_body = client.V1Secret(
-            metadata=client.V1ObjectMeta(
-                name=secret_name,
-                namespace=namespace,
-                labels={
-                    "app.kubernetes.io/managed-by": "keycloak-operator",
-                    "app.kubernetes.io/component": "realm-authorization",
-                    "keycloak.k8s.intility.io/realm": realm_name,
-                    # RBAC label required for operator to read this secret
-                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
-                },
-                owner_references=[
-                    client.V1OwnerReference(
-                        api_version="vriesdemichael.github.io/v1",
-                        kind="KeycloakRealm",
-                        name=realm_cr_name,
-                        uid=owner_uid,
-                        controller=True,
-                        block_owner_deletion=True,
-                    )
-                ]
-                if owner_uid
-                else None,
-            ),
-            data={"token": encoded_token},
-            type="Opaque",
-        )
-
-        try:
-            core_api.create_namespaced_secret(namespace=namespace, body=secret_body)
-            self.logger.info(
-                f"Created realm authorization secret {secret_name} in namespace {namespace}"
-            )
-            return secret_name
-        except client.ApiException as e:
-            if e.status == 409:
-                # Secret was created by another reconciliation, reuse it
-                self.logger.debug(
-                    f"Realm authorization secret {secret_name} created by concurrent reconciliation"
-                )
-                return secret_name
-            raise ValidationError(
-                f"Failed to create realm authorization secret: {e}"
             ) from e
 
     async def ensure_realm_exists(
