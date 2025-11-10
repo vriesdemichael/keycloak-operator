@@ -249,6 +249,34 @@ class KeycloakDatabaseConfig(BaseModel):
         return self
 
 
+class RealmCapacity(BaseModel):
+    """
+    Capacity management for realms.
+
+    Controls how many realms can be managed by this Keycloak operator
+    and whether new realm creation is allowed.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    max_realms: int | None = Field(
+        None,
+        alias="maxRealms",
+        description="Maximum number of realms (None = unlimited)",
+        ge=1,
+    )
+    allow_new_realms: bool = Field(
+        True,
+        alias="allowNewRealms",
+        description="Whether to allow creation of new realms",
+    )
+    capacity_message: str | None = Field(
+        None,
+        alias="capacityMessage",
+        description="Message to show when capacity is reached",
+    )
+
+
 class KeycloakSpec(BaseModel):
     """
     Specification for a Keycloak instance.
@@ -345,6 +373,13 @@ class KeycloakSpec(BaseModel):
         None,
         alias="serviceAccount",
         description="Service account to use for Keycloak pods",
+    )
+
+    # Realm capacity management
+    realm_capacity: RealmCapacity | None = Field(
+        None,
+        alias="realmCapacity",
+        description="Capacity management for realms",
     )
 
     @field_validator("image")
@@ -452,6 +487,23 @@ class KeycloakStatus(BaseModel):
     # Endpoints
     endpoints: KeycloakEndpoints = Field(
         default_factory=KeycloakEndpoints, description="Access endpoints"
+    )
+
+    # Realm capacity status
+    realm_count: int | None = Field(
+        None,
+        alias="realmCount",
+        description="Current number of managed realms",
+    )
+    accepting_new_realms: bool = Field(
+        True,
+        alias="acceptingNewRealms",
+        description="Whether new realm creation is currently allowed",
+    )
+    capacity_status: str | None = Field(
+        None,
+        alias="capacityStatus",
+        description="Human-readable capacity status message",
     )
 
     # Version and capability information

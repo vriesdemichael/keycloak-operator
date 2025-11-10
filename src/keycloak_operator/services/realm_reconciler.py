@@ -149,6 +149,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     "requiresUpdate": False,
                 }
 
+        # Update authorized client namespaces from spec
+        status.authorizedClientNamespaces = realm_spec.client_authorization_grants or []
+
         status.features = {
             "userRegistration": realm_spec.security.registration_allowed
             if realm_spec.security
@@ -267,6 +270,97 @@ class KeycloakRealmReconciler(BaseReconciler):
         self.logger.info(
             f"Cross-namespace access validation passed for realm {spec.realm_name}"
         )
+
+    async def _check_realm_capacity(
+        self, keycloak_namespace: str, keycloak_name: str, realm_name: str
+    ) -> None:
+        """
+        Check if Keycloak operator has capacity for new realms.
+
+        Args:
+            keycloak_namespace: Namespace containing the Keycloak instance
+            keycloak_name: Name of the Keycloak instance
+            realm_name: Name of the realm being created
+
+        Raises:
+            PermanentError: If capacity is exhausted and new realms are not allowed
+        """
+        from ..errors import PermanentError, TemporaryError
+
+        try:
+            # Fetch the Keycloak instance
+            custom_objects_api = client.CustomObjectsApi()
+            keycloak = await custom_objects_api.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=keycloak_namespace,
+                plural="keycloaks",
+                name=keycloak_name,
+            )
+
+            spec = keycloak.get("spec", {})
+            realm_capacity = spec.get("realmCapacity", {})
+
+            # If no capacity config, allow unlimited realms
+            if not realm_capacity:
+                self.logger.debug("No realm capacity configuration, allowing realm creation")
+                return
+
+            # Check if new realms are allowed
+            allow_new_realms = realm_capacity.get("allowNewRealms", True)
+            if not allow_new_realms:
+                capacity_message = realm_capacity.get(
+                    "capacityMessage",
+                    f"Keycloak instance '{keycloak_name}' in namespace '{keycloak_namespace}' "
+                    f"is not accepting new realms. Contact platform team for assistance.",
+                )
+                raise PermanentError(
+                    f"Cannot create realm '{realm_name}': {capacity_message}"
+                )
+
+            # Check max realms limit
+            max_realms = realm_capacity.get("maxRealms")
+            if max_realms is not None:
+                # Count existing realms
+                realm_list = await custom_objects_api.list_cluster_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    plural="keycloakrealms",
+                )
+                
+                # Count realms that reference this Keycloak instance
+                realm_count = sum(
+                    1
+                    for item in realm_list.get("items", [])
+                    if item.get("spec", {})
+                    .get("operatorRef", {})
+                    .get("namespace")
+                    == keycloak_namespace
+                )
+
+                if realm_count >= max_realms:
+                    capacity_message = realm_capacity.get(
+                        "capacityMessage",
+                        f"Keycloak instance '{keycloak_name}' has reached maximum realm capacity "
+                        f"({max_realms} realms). Contact platform team to increase capacity.",
+                    )
+                    raise PermanentError(
+                        f"Cannot create realm '{realm_name}': {capacity_message}"
+                    )
+
+                self.logger.info(
+                    f"Realm capacity check passed: {realm_count}/{max_realms} realms"
+                )
+
+        except PermanentError:
+            # Re-raise capacity errors as permanent
+            raise
+        except Exception as e:
+            # Other errors (like Keycloak not found) are temporary
+            raise TemporaryError(
+                f"Failed to check realm capacity: {e}. Will retry.",
+                delay=30,
+            ) from e
 
     async def _fetch_smtp_password(
         self, namespace: str, secret_name: str, secret_key: str = "password"
@@ -439,7 +533,6 @@ class KeycloakRealmReconciler(BaseReconciler):
             **kwargs: Additional handler arguments (uid, meta, etc.)
         """
         self.logger.info(f"Ensuring realm {spec.realm_name} exists")
-        from ..utils.auth import AuthorizationContext, get_authorization_token
         from ..utils.kubernetes import validate_keycloak_reference
 
         # Resolve Keycloak operator reference
@@ -448,35 +541,8 @@ class KeycloakRealmReconciler(BaseReconciler):
         # For now, use the operator namespace as keycloak name (will be updated in Phase 4)
         keycloak_name = "keycloak"  # Default Keycloak instance name
 
-        # NEW: Use bootstrap-based authorization flow
-        # Get resource UID from kwargs
-        resource_uid = kwargs.get("uid", "")
-
-        # Create authorization context
-        auth_context = AuthorizationContext(
-            namespace=namespace,
-            secret_ref=operator_ref.authorization_secret_ref,
-            resource_name=name,
-            resource_uid=resource_uid,
-            resource_kind="KeycloakRealm",
-        )
-
-        # Get authorization token (handles bootstrap if needed)
-        try:
-            await get_authorization_token(
-                context=auth_context,
-                k8s_client=client.CoreV1Api(),
-            )
-            self.logger.info(
-                f"Authorization validated for realm {spec.realm_name} in namespace {namespace}"
-            )
-        except Exception as e:
-            from ..errors import PermanentError
-
-            # Authorization failures are permanent (won't succeed on retry without fixing the token)
-            raise PermanentError(
-                f"Authorization failed for realm {spec.realm_name}: {e}"
-            ) from e
+        # NEW: Check capacity before creating new realms
+        await self._check_realm_capacity(target_namespace, keycloak_name, name)
 
         self.logger.info(f"Authorization validated for realm {spec.realm_name}")
 

@@ -1,6 +1,9 @@
 number: 39
 title: Token rotation and bootstrap flows
 category: architecture
+status: superseded
+superseded_by: 63
+superseded_date: 2025-11-10
 decision: Automatic token rotation with grace periods for zero-downtime updates. Bootstrap
   flows enable initial token creation without manual intervention. Tokens rotated
   7 days before expiry with dual-token support during transition.

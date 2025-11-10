@@ -13,11 +13,10 @@ from keycloak_operator.models.realm import (
 
 
 # Helper function for test data
-def _make_operator_ref(namespace="keycloak-system", secret_name="operator-token"):
+def _make_operator_ref(namespace="keycloak-system"):
     """Create a test OperatorRef."""
     return OperatorRef(
         namespace=namespace,
-        authorization_secret_ref=AuthorizationSecretRef(name=secret_name),
     )
 
 
