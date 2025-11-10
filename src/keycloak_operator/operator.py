@@ -19,15 +19,13 @@ Environment Variables:
     KEYCLOAK_OPERATOR_DRY_RUN: Set to 'true' for dry-run mode
 """
 
-import base64
 import logging
 import os
 import random
 import sys
 
 import kopf
-from kubernetes import client, config
-from kubernetes.client.rest import ApiException
+from kubernetes import config
 
 from keycloak_operator.constants import (
     RATE_LIMIT_GLOBAL_BURST,
@@ -42,7 +40,6 @@ from keycloak_operator.handlers import client as client_handler  # noqa: F401
 from keycloak_operator.handlers import (  # noqa: F401
     keycloak,
     realm,
-    token_rotation,  # noqa: F401
 )
 from keycloak_operator.observability.health import HealthChecker
 from keycloak_operator.observability.leader_election import (
@@ -50,31 +47,13 @@ from keycloak_operator.observability.leader_election import (
 )
 from keycloak_operator.observability.logging import setup_structured_logging
 from keycloak_operator.observability.metrics import MetricsServer
-from keycloak_operator.utils.auth import generate_token
 from keycloak_operator.utils.rate_limiter import RateLimiter
 
 # Global reference to metrics server for cleanup
 _global_metrics_server: MetricsServer | None = None
 
-# Operator authorization token configuration
+# Operator configuration
 OPERATOR_NAMESPACE = os.environ.get("OPERATOR_NAMESPACE", "keycloak-system")
-OPERATOR_AUTH_SECRET_NAME = "keycloak-operator-auth-token"
-OPERATOR_TOKEN = ""  # Will be initialized on startup
-
-
-def get_operator_token() -> str:
-    """Get the current operator authorization token.
-
-    This function should be used instead of directly accessing OPERATOR_TOKEN
-    to ensure you get the current value after initialization.
-
-    Returns:
-        The current operator token
-    """
-    logging.debug(
-        f"get_operator_token called, returning token of length {len(OPERATOR_TOKEN)}"
-    )
-    return OPERATOR_TOKEN
 
 
 def configure_logging() -> None:
@@ -105,82 +84,6 @@ def get_watched_namespaces() -> list[str] | None:
     if namespaces_env:
         return [ns.strip() for ns in namespaces_env.split(",") if ns.strip()]
     return None  # Watch all namespaces by default
-
-
-async def initialize_operator_token() -> None:
-    """
-    Initialize the operator's authorization token on startup.
-
-    This function generates and stores a master token that will be used to authorize
-    realm creation requests. The token is stored in a Kubernetes secret in the operator's
-    namespace.
-
-    The token is only generated if it doesn't already exist. This allows the operator
-    to restart without generating a new token and breaking existing realm references.
-    """
-    global OPERATOR_TOKEN
-
-    # Use kopf's default API client which has proper configuration
-    core_v1 = client.CoreV1Api()
-    secret_name = OPERATOR_AUTH_SECRET_NAME
-    namespace = OPERATOR_NAMESPACE
-
-    logging.info(
-        f"Initializing operator authorization token in namespace={namespace}, "
-        f"secret={secret_name}"
-    )
-
-    try:
-        # Try to read existing secret
-        secret = core_v1.read_namespaced_secret(name=secret_name, namespace=namespace)
-
-        # Decode and store the existing token
-        if "token" in secret.data:
-            OPERATOR_TOKEN = base64.b64decode(secret.data["token"]).decode("utf-8")
-            logging.info(f"Loaded existing operator token from secret {secret_name}")
-        else:
-            # Secret exists but doesn't have the token key - regenerate
-            raise KeyError("Secret exists but missing 'token' key")
-
-    except (ApiException, KeyError) as e:
-        # Secret doesn't exist or is malformed - generate new token
-        if isinstance(e, ApiException) and e.status != 404:
-            # Some other API error - log and re-raise
-            logging.error(f"Failed to read operator token secret: {e}")
-            raise
-
-        # Generate new token
-        OPERATOR_TOKEN = generate_token()
-        logging.info("Generated new operator authorization token")
-
-        # Create the secret
-        secret_data = {
-            "token": base64.b64encode(OPERATOR_TOKEN.encode("utf-8")).decode("utf-8")
-        }
-
-        secret = client.V1Secret(
-            metadata=client.V1ObjectMeta(
-                name=secret_name,
-                namespace=namespace,
-                labels={
-                    "app.kubernetes.io/name": "keycloak-operator",
-                    "app.kubernetes.io/component": "authorization",
-                    # RBAC label required for realms to read this secret
-                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
-                },
-            ),
-            data=secret_data,
-            type="Opaque",
-        )
-
-        try:
-            core_v1.create_namespaced_secret(namespace=namespace, body=secret)
-            logging.info(
-                f"Created operator token secret {secret_name} in namespace {namespace}"
-            )
-        except ApiException as create_error:
-            logging.error(f"Failed to create operator token secret: {create_error}")
-            raise
 
 
 @kopf.on.startup()
@@ -239,9 +142,6 @@ async def startup_handler(
         except config.ConfigException:
             logging.error("Failed to load Kubernetes configuration")
             raise
-
-    # Initialize operator authorization token
-    await initialize_operator_token()
 
     # Validate operator instance ID is configured
     operator_instance_id = os.getenv("OPERATOR_INSTANCE_ID")
