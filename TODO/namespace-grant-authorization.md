@@ -539,3 +539,51 @@ All automated checks passing. Integration tests need cluster to run.
 - DO update this file as you progress
 - DO commit this file with your code changes
 - DO read issue #102 if you need context
+
+---
+
+## Phase 9: Test Migration (COMPLETED)
+**Goal**: Update integration tests for new authorization model
+**Date**: 2025-11-10 22:30 UTC
+
+### Test Fixes Applied
+- [x] test_grant_list_authorization.py: Fixed exclude_none → exclude_unset
+- [x] test_drift_detection.py: Removed authorizationSecretName checks (2 places)
+- [x] test_service_account_roles.py: Removed realm auth secret wait
+- [x] test_helm_charts.py: Removed auth secret from checks and helm calls
+
+### Summary
+All 4 failing test files updated to work with namespace grant list authorization.
+Tests no longer expect removed authorizationSecretName status field or realm auth secrets.
+
+**Status**: Running integration tests to validate fixes...
+
+---
+
+## Phase 10: Bug Fixing - RBAC & Status Fields (IN PROGRESS)
+**Goal**: Fix critical bugs preventing tests from passing
+**Date**: 2025-11-10 23:47 UTC
+
+### Bugs Found:
+1. **RBAC Issue**: Operator can't patch resources in other namespaces
+   - Root cause: Integration tests create RoleBindings correctly
+   - Manual test confirmed: With RoleBinding, realms reconcile successfully
+   - Status: ✅ RBAC is actually correct
+
+2. **Status Field Bug - ACTIVE**: `authorizationGranted` always False
+   - Root cause: StatusWrapper uses snake_case (`authorization_granted`)
+   - K8s CRD expects camelCase (`authorizationGranted`)
+   - Kopf warning: "Patching failed with inconsistencies" - fields removed
+   - Affects ALL custom status fields: clientId, clientUuid, etc.
+   - **FIX NEEDED**: Convert snake_case to camelCase in StatusWrapper
+
+### Evidence:
+```
+Patching failed with inconsistencies:
+- ('remove', ('status', 'authorization_granted'), True, None)
+- ('remove', ('status', 'client_id'), 'test-client-456', None)
+```
+
+### Next Steps:
+- Fix StatusWrapper to use camelCase for K8s API
+- Rerun integration tests
