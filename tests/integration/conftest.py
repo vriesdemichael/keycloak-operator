@@ -700,13 +700,10 @@ def sample_realm_spec() -> KeycloakRealmSpec:
     return KeycloakRealmSpec(
         operator_ref=OperatorRef(
             namespace="keycloak-system",
-            authorization_secret_ref=AuthorizationSecretRef(
-                name="keycloak-operator-auth-token",
-                key="token",
-            ),
         ),
         realm_name="test-realm",
         display_name="Test Realm",
+        client_authorization_grants=["test-namespace"],  # Default grant for test namespace
     )
 
 
@@ -717,10 +714,6 @@ def sample_client_spec() -> KeycloakClientSpec:
         realm_ref=RealmRef(
             name="test-realm",
             namespace="test-namespace",  # Will be overridden by test
-            authorization_secret_ref=AuthorizationSecretRef(
-                name="keycloak-operator-auth-token",
-                key="token",
-            ),
         ),
         client_id="test-client",
         client_name="Test Client",

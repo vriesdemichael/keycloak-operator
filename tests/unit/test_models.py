@@ -20,20 +20,18 @@ from keycloak_operator.models.realm import KeycloakRealm, KeycloakRealmSpec, Ope
 
 
 # Helper functions for test data
-def _make_operator_ref(namespace="keycloak-system", secret_name="operator-token"):
+def _make_operator_ref(namespace="keycloak-system"):
     """Create a test OperatorRef."""
     return OperatorRef(
         namespace=namespace,
-        authorization_secret_ref=AuthorizationSecretRef(name=secret_name),
     )
 
 
-def _make_realm_ref(name="test-realm", namespace="default", secret_name="realm-token"):
+def _make_realm_ref(name="test-realm", namespace="default"):
     """Create a test RealmRef."""
     return RealmRef(
         name=name,
         namespace=namespace,
-        authorization_secret_ref=AuthorizationSecretRef(name=secret_name),
     )
 
 
@@ -379,28 +377,20 @@ class TestKeycloakRealmModels:
             """Test OperatorRef validation."""
             ref = OperatorRef(
                 namespace="keycloak-system",
-                authorization_secret_ref=AuthorizationSecretRef(name="operator-token"),
             )
             assert ref.namespace == "keycloak-system"
-            assert ref.authorization_secret_ref.name == "operator-token"
-            assert ref.authorization_secret_ref.key == "token"  # default value
 
         def test_realm_ref_validation(self):
             """Test RealmRef validation."""
             ref = RealmRef(
                 name="my-realm",
                 namespace="default",
-                authorization_secret_ref=AuthorizationSecretRef(
-                    name="realm-token", key="custom-key"
-                ),
             )
             assert ref.name == "my-realm"
             assert ref.namespace == "default"
-            assert ref.authorization_secret_ref.name == "realm-token"
-            assert ref.authorization_secret_ref.key == "custom-key"
 
         def test_authorization_secret_ref_defaults(self):
-            """Test AuthorizationSecretRef default values."""
+            """Test AuthorizationSecretRef default values (still used for internal tokens)."""
             ref = AuthorizationSecretRef(name="my-secret")
             assert ref.name == "my-secret"
             assert ref.key == "token"  # default key

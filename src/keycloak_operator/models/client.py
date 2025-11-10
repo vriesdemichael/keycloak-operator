@@ -10,8 +10,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from .common import AuthorizationSecretRef, AuthorizationStatus
-
 
 class RealmRef(BaseModel):
     """Reference to a parent KeycloakRealm."""
@@ -20,11 +18,6 @@ class RealmRef(BaseModel):
 
     name: str = Field(..., description="Name of the KeycloakRealm CR")
     namespace: str = Field(..., description="Namespace of the KeycloakRealm CR")
-    authorization_secret_ref: AuthorizationSecretRef = Field(
-        ...,
-        alias="authorizationSecretRef",
-        description="Secret containing the token to authorize with the realm",
-    )
 
 
 class KeycloakClientScope(BaseModel):
@@ -528,11 +521,16 @@ class KeycloakClientStatus(BaseModel):
         default_factory=KeycloakClientEndpoints, description="Client endpoints"
     )
 
-    # Authorization status (new two-phase token system)
-    authorization_status: AuthorizationStatus | None = Field(
+    # Authorization status
+    authorization_granted: bool = Field(
+        False,
+        alias="authorizationGranted",
+        description="Whether this client's namespace is authorized by the realm",
+    )
+    authorization_message: str | None = Field(
         None,
-        alias="authorizationStatus",
-        description="Status of authorization token (admission vs operational)",
+        alias="authorizationMessage",
+        description="Human-readable authorization status message",
     )
 
     # Health and monitoring

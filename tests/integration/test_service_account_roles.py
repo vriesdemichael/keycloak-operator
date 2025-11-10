@@ -153,9 +153,9 @@ class TestServiceAccountRoles:
                     else:
                         raise
 
-            assert (
-                secret_exists
-            ), f"Realm authorization secret {realm_auth_secret_name} was not created"
+            assert secret_exists, (
+                f"Realm authorization secret {realm_auth_secret_name} was not created"
+            )
 
             # Create realm role using async HTTP call
             role_endpoint = (

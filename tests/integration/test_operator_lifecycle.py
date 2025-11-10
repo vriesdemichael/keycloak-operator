@@ -43,12 +43,12 @@ class TestOperatorLifecycle:
                 name="keycloak-operator", namespace=operator_namespace
             )
 
-            assert (
-                deployment.status.ready_replicas > 0
-            ), "Operator has no ready replicas"
-            assert (
-                deployment.status.replicas == deployment.status.ready_replicas
-            ), "Not all operator replicas are ready"
+            assert deployment.status.ready_replicas > 0, (
+                "Operator has no ready replicas"
+            )
+            assert deployment.status.replicas == deployment.status.ready_replicas, (
+                "Not all operator replicas are ready"
+            )
 
         except ApiException as e:
             pytest.fail(f"Failed to read operator deployment: {e}")
@@ -66,16 +66,16 @@ class TestOperatorLifecycle:
             assert len(pods.items) > 0, "No operator pods found"
 
             for pod in pods.items:
-                assert (
-                    pod.status.phase == "Running"
-                ), f"Pod {pod.metadata.name} is not running"
+                assert pod.status.phase == "Running", (
+                    f"Pod {pod.metadata.name} is not running"
+                )
 
                 # Check container readiness
                 if pod.status.container_statuses:
                     for container in pod.status.container_statuses:
-                        assert (
-                            container.ready
-                        ), f"Container {container.name} is not ready"
+                        assert container.ready, (
+                            f"Container {container.name} is not ready"
+                        )
 
         except ApiException as e:
             pytest.fail(f"Failed to list operator pods: {e}")
@@ -168,9 +168,9 @@ class TestOperatorLifecycle:
             namespace_access_role = rbac_api.read_cluster_role(
                 name=namespace_access_role_name
             )
-            assert (
-                namespace_access_role.rules
-            ), "Namespace access ClusterRole has no rules"
+            assert namespace_access_role.rules, (
+                "Namespace access ClusterRole has no rules"
+            )
 
             # Verify namespace-access role has status/finalizers permissions
             namespace_permissions = [
@@ -236,7 +236,9 @@ class TestOperatorLifecycle:
                     ):
                         found = True
                         break
-                assert found, f"Missing full CRUD permissions for {api_group} resources: {resources}"
+                assert found, (
+                    f"Missing full CRUD permissions for {api_group} resources: {resources}"
+                )
 
         except ApiException as e:
             if e.status == 404:
@@ -293,9 +295,9 @@ class TestBasicKeycloakDeployment:
                 name=keycloak_name,
             )
             finalizers = resource.get("metadata", {}).get("finalizers", [])
-            assert (
-                "vriesdemichael.github.io/keycloak-cleanup" in finalizers
-            ), "Finalizer was not added to Keycloak resource"
+            assert "vriesdemichael.github.io/keycloak-cleanup" in finalizers, (
+                "Finalizer was not added to Keycloak resource"
+            )
 
         except ApiException as e:
             pytest.fail(f"Failed to verify finalizer: {e}")
@@ -316,17 +318,17 @@ class TestBasicKeycloakDeployment:
             )
 
             # Verify deployment has correct configuration
-            assert (
-                deployment.spec.replicas == 1
-            ), "Deployment has incorrect replica count"
-            assert (
-                len(deployment.spec.template.spec.containers) > 0
-            ), "Deployment has no containers"
+            assert deployment.spec.replicas == 1, (
+                "Deployment has incorrect replica count"
+            )
+            assert len(deployment.spec.template.spec.containers) > 0, (
+                "Deployment has no containers"
+            )
 
             container = deployment.spec.template.spec.containers[0]
-            assert (
-                "keycloak" in container.image.lower()
-            ), "Container is not using Keycloak image"
+            assert "keycloak" in container.image.lower(), (
+                "Container is not using Keycloak image"
+            )
 
         except ApiException as e:
             pytest.fail(f"Failed to verify deployment: {e}")
@@ -398,16 +400,16 @@ class TestBasicKeycloakDeployment:
             assert pods.items, "No Keycloak pods found"
 
             for pod in pods.items:
-                assert (
-                    pod.status.phase == "Running"
-                ), f"Pod {pod.metadata.name} is not running"
+                assert pod.status.phase == "Running", (
+                    f"Pod {pod.metadata.name} is not running"
+                )
 
                 # Check container readiness
                 if pod.status.container_statuses:
                     for container in pod.status.container_statuses:
-                        assert (
-                            container.ready
-                        ), f"Container {container.name} is not ready"
+                        assert container.ready, (
+                            f"Container {container.name} is not ready"
+                        )
 
         except ApiException as e:
             pytest.fail(f"Failed to verify Keycloak pods: {e}")
@@ -438,9 +440,9 @@ class TestKeycloakAdminAPI:
                 name=f"{keycloak_name}-keycloak", namespace=namespace
             )
 
-            assert (
-                deployment.status.ready_replicas
-            ), "Keycloak deployment has no ready replicas"
+            assert deployment.status.ready_replicas, (
+                "Keycloak deployment has no ready replicas"
+            )
             assert deployment.status.ready_replicas >= deployment.spec.replicas, (
                 f"Keycloak deployment not fully ready: "
                 f"{deployment.status.ready_replicas}/{deployment.spec.replicas}"
@@ -452,12 +454,12 @@ class TestKeycloakAdminAPI:
                 name=admin_secret_name, namespace=namespace
             )
             assert secret.data, "Admin credentials secret has no data"
-            assert (
-                "password" in secret.data
-            ), "Admin credentials secret missing 'password' key"
-            assert (
-                "username" in secret.data
-            ), "Admin credentials secret missing 'username' key"
+            assert "password" in secret.data, (
+                "Admin credentials secret missing 'password' key"
+            )
+            assert "username" in secret.data, (
+                "Admin credentials secret missing 'username' key"
+            )
 
             # Verify service endpoint is available
             service = await k8s_core_v1.read_namespaced_service(
@@ -540,9 +542,9 @@ class TestRealmBasicOperations:
                 except ApiException:
                     return False
 
-            assert await _simple_wait(
-                check_realm_created, timeout=180
-            ), "Realm resource was not created successfully"
+            assert await _simple_wait(check_realm_created, timeout=180), (
+                "Realm resource was not created successfully"
+            )
 
         except ApiException as e:
             pytest.fail(f"Failed to create realm resource: {e}")
@@ -654,9 +656,9 @@ class TestClientBasicOperations:
                 except ApiException:
                     return False
 
-            assert await _simple_wait(
-                check_client_created, timeout=180
-            ), "Client resource was not created successfully"
+            assert await _simple_wait(check_client_created, timeout=180), (
+                "Client resource was not created successfully"
+            )
 
         except ApiException as e:
             pytest.fail(f"Failed to create client resource: {e}")
