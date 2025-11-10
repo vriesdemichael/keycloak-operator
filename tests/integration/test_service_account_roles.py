@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
 import uuid
 
@@ -111,34 +110,8 @@ class TestServiceAccountRoles:
                 allow_degraded=False,
             )
 
-            # Wait for realm authorization secret to be created before creating client
-            # The secret name pattern is: {realm_name}-realm-auth
-            realm_auth_secret_name = f"{realm_name}-realm-auth"
-
-            # Wait for realm authorization secret to be created
-            import time
-
-            start_time = time.time()
-            timeout = 30
-            interval = 2
-            secret_exists = False
-
-            while time.time() - start_time < timeout:
-                try:
-                    await k8s_core_v1.read_namespaced_secret(
-                        realm_auth_secret_name, namespace
-                    )
-                    secret_exists = True
-                    break
-                except ApiException as e:
-                    if e.status == 404:
-                        await asyncio.sleep(interval)
-                    else:
-                        raise
-
-            assert (
-                secret_exists
-            ), f"Realm authorization secret {realm_auth_secret_name} was not created"
+            # Realm is ready - no longer need to wait for authorization secret
+            # New grant list authorization doesn't create realm secrets
 
             # Create realm role using async HTTP call
             role_endpoint = (

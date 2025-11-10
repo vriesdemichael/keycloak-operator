@@ -127,25 +127,8 @@ async def test_client_ownership_attributes_are_added(
         timeout=120,
     )
 
-    # Get realm's authorization secret name from status
-    realm = await k8s_custom_objects.get_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-    )
-    status = realm.get("status", {}) or {}
-    realm_auth_secret_name = status.get("authorizationSecretName")
-    assert realm_auth_secret_name, (
-        f"Realm should have authorizationSecretName in status. "
-        f"Status keys: {list(status.keys())}"
-    )
-
-    # Update client_cr to use the correct authorization secret
-    client_cr["spec"]["realmRef"]["authorizationSecretRef"]["name"] = (
-        realm_auth_secret_name
-    )
+    # Realm is ready - no longer need authorizationSecretName (grant list authorization)
+    # Client authorization is now handled via realm's clientAuthorizationGrants
 
     await k8s_custom_objects.create_namespaced_custom_object(
         group="vriesdemichael.github.io",
@@ -326,25 +309,8 @@ async def test_orphan_detection_after_client_deletion(
         timeout=120,
     )
 
-    # Get realm's authorization secret name from status
-    realm = await k8s_custom_objects.get_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-    )
-    status = realm.get("status", {}) or {}
-    realm_auth_secret_name = status.get("authorizationSecretName")
-    assert realm_auth_secret_name, (
-        f"Realm should have authorizationSecretName in status. "
-        f"Status keys: {list(status.keys())}"
-    )
-
-    # Update client_cr to use the correct authorization secret
-    client_cr["spec"]["realmRef"]["authorizationSecretRef"]["name"] = (
-        realm_auth_secret_name
-    )
+    # Realm is ready - no longer need authorizationSecretName (grant list authorization)
+    # Client authorization is now handled via realm's clientAuthorizationGrants
 
     await k8s_custom_objects.create_namespaced_custom_object(
         group="vriesdemichael.github.io",
