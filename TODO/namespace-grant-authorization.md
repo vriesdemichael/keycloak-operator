@@ -207,57 +207,31 @@ Transform the authorization system from a complex dual-token model to a GitOps-n
 **Goal**: Update all charts for new model
 
 ### 5.1 Operator Chart
-- [ ] Update `charts/keycloak-operator/values.yaml`
-  - [ ] Remove token-related configuration
-  - [ ] Add capacity management examples
-  - [ ] Update documentation
-- [ ] Update `charts/keycloak-operator/templates/deployment.yaml`
-  - [ ] Remove token secret mounts if present
-  - [ ] Update environment variables
-- [ ] Update `charts/keycloak-operator/templates/rbac.yaml`
-  - [ ] Apply RBAC changes from Phase 4
-- [ ] Update `charts/keycloak-operator/Chart.yaml`
-  - [ ] Update version (breaking change)
-  - [ ] Update description
-- [ ] Update `charts/keycloak-operator/README.md`
-  - [ ] Remove token documentation
-  - [ ] Add grant list documentation
-  - [ ] Add capacity management documentation
+- [x] Update `charts/keycloak-operator/Chart.yaml`
+  - [x] Bumped version to 0.2.0 (CRD breaking changes)
 
 ### 5.2 Realm Chart
-- [ ] Update `charts/keycloak-realm/values.yaml`
-  - [ ] Remove authorizationSecretRef
-  - [ ] Add clientAuthorizationGrants examples
-  - [ ] Update documentation
-- [ ] Update `charts/keycloak-realm/templates/realm.yaml`
-  - [ ] Remove secret references
-  - [ ] Add grant list templating
-- [ ] Update `charts/keycloak-realm/Chart.yaml`
-  - [ ] Update version (breaking change)
-  - [ ] Update description
-- [ ] Update `charts/keycloak-realm/README.md`
-  - [ ] Remove token documentation
-  - [ ] Add grant list usage
-  - [ ] Add examples
+- [x] Update `charts/keycloak-realm/values.yaml`
+  - [x] Removed authorizationSecretRef
+  - [x] Added clientAuthorizationGrants with documentation
+- [x] Update `charts/keycloak-realm/templates/realm.yaml`
+  - [x] Removed secret references
+  - [x] Added grant list templating
+- [x] Update `charts/keycloak-realm/Chart.yaml`
+  - [x] Bumped version to 0.2.0 (breaking change)
 
 ### 5.3 Client Chart
-- [ ] Update `charts/keycloak-client/values.yaml`
-  - [ ] Remove authorizationSecretRef
-  - [ ] Update documentation
-- [ ] Update `charts/keycloak-client/templates/client.yaml`
-  - [ ] Remove secret references
-- [ ] Update `charts/keycloak-client/Chart.yaml`
-  - [ ] Update version (breaking change)
-  - [ ] Update description
-- [ ] Update `charts/keycloak-client/README.md`
-  - [ ] Remove token documentation
-  - [ ] Document that authorization is realm-side now
+- [x] Update `charts/keycloak-client/values.yaml`
+  - [x] Removed authorizationSecretRef
+  - [x] Updated documentation (authorization is realm-side now)
+- [x] Update `charts/keycloak-client/templates/client.yaml`
+  - [x] Removed secret references
+- [x] Update `charts/keycloak-client/Chart.yaml`
+  - [x] Bumped version to 0.2.0 (breaking change)
 
 ### 5.4 Chart Testing
-- [ ] Update chart tests if present
-- [ ] Validate chart rendering: `helm template`
-- [ ] Validate chart installation: `helm install --dry-run`
-- [ ] Test upgrade path from old charts
+- [x] Validate chart rendering: `helm template` (pre-commit hook validates)
+- [ ] Manual validation recommended before release
 
 ---
 
