@@ -44,28 +44,39 @@ class StatusWrapper:
 
     This wrapper provides both attribute and dict-like access to patch.status,
     ensuring all updates are written directly to the underlying patch object.
+
+    Automatically converts snake_case Python attribute names to camelCase for K8s API.
     """
 
     def __init__(self, patch_status: Any):
         object.__setattr__(self, "_patch_status", patch_status)
 
+    @staticmethod
+    def _to_camel_case(snake_str: str) -> str:
+        """Convert snake_case to camelCase."""
+        components = snake_str.split("_")
+        return components[0] + "".join(x.title() for x in components[1:])
+
     def __setattr__(self, name: str, value: Any) -> None:
         if name.startswith("_"):
             object.__setattr__(self, name, value)
             return
-        # Directly update patch.status
-        self._patch_status[name] = value
+        # Convert to camelCase for K8s API
+        camel_name = self._to_camel_case(name)
+        self._patch_status[camel_name] = value
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
             return object.__getattribute__(self, name)
-        # Directly read from patch.status
+        # Convert to camelCase and read from patch.status
+        camel_name = self._to_camel_case(name)
         try:
-            return self._patch_status[name]
+            return self._patch_status[camel_name]
         except (KeyError, TypeError):
             return None
 
     def update(self, data: dict[str, Any]) -> None:
+        """Update multiple fields. Assumes data keys are already in camelCase."""
         for k, v in data.items():
             self._patch_status[k] = v
 
