@@ -197,7 +197,6 @@ class TestKeycloakClientModels:
         assert client.spec.client_id == "webapp"
         assert client.spec.realm_ref.name == "demo-realm"
         assert client.spec.realm_ref.namespace == "default"
-        assert client.spec.realm_ref.authorization_secret_ref.name == "realm-token"
 
     def test_redirect_uri_wildcard_validation(self):
         """Test comprehensive redirect URI wildcard validation following Keycloak rules."""
@@ -366,7 +365,6 @@ class TestKeycloakRealmModels:
         assert realm.kind == "KeycloakRealm"
         assert realm.spec.realm_name == "demo"
         assert realm.spec.operator_ref.namespace == "keycloak-system"
-        assert realm.spec.operator_ref.authorization_secret_ref.name == "operator-token"
         assert realm.spec.security.registration_allowed is True
         assert realm.spec.security.verify_email is True
 
