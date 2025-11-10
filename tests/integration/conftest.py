@@ -61,7 +61,6 @@ from keycloak_operator.constants import (
     DEFAULT_KEYCLOAK_OPTIMIZED_VERSION,
 )
 from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
-from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
 from .cleanup_utils import (
@@ -703,7 +702,9 @@ def sample_realm_spec() -> KeycloakRealmSpec:
         ),
         realm_name="test-realm",
         display_name="Test Realm",
-        client_authorization_grants=["test-namespace"],  # Default grant for test namespace
+        client_authorization_grants=[
+            "test-namespace"
+        ],  # Default grant for test namespace
     )
 
 

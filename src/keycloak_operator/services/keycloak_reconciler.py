@@ -384,10 +384,10 @@ class KeycloakInstanceReconciler(BaseReconciler):
             "public": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
             "management": f"http://{name}-keycloak.{namespace}.svc.cluster.local:9000",
         }
-        
+
         # Update capacity status
         await self._update_capacity_status(status, keycloak_spec, namespace)
-        
+
         # Return empty dict - status updates are done via StatusWrapper
         return {}
 
@@ -489,18 +489,16 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 # Set capacity status message
                 if not accepting:
                     if realm_capacity.max_realms is not None:
-                        status.capacityStatus = (
-                            f"Capacity reached: {realm_count}/{realm_capacity.max_realms} realms"
-                        )
+                        status.capacityStatus = f"Capacity reached: {realm_count}/{realm_capacity.max_realms} realms"
                     else:
                         status.capacityStatus = "Not accepting new realms"
                 else:
                     if realm_capacity.max_realms is not None:
-                        status.capacityStatus = (
-                            f"Available: {realm_count}/{realm_capacity.max_realms} realms"
-                        )
+                        status.capacityStatus = f"Available: {realm_count}/{realm_capacity.max_realms} realms"
                     else:
-                        status.capacityStatus = f"Available: {realm_count} realms (no limit)"
+                        status.capacityStatus = (
+                            f"Available: {realm_count} realms (no limit)"
+                        )
             else:
                 # No capacity config - unlimited
                 status.acceptingNewRealms = True

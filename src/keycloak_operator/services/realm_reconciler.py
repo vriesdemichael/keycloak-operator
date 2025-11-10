@@ -303,7 +303,9 @@ class KeycloakRealmReconciler(BaseReconciler):
 
             # If no capacity config, allow unlimited realms
             if not realm_capacity:
-                self.logger.debug("No realm capacity configuration, allowing realm creation")
+                self.logger.debug(
+                    "No realm capacity configuration, allowing realm creation"
+                )
                 return
 
             # Check if new realms are allowed
@@ -327,14 +329,12 @@ class KeycloakRealmReconciler(BaseReconciler):
                     version="v1",
                     plural="keycloakrealms",
                 )
-                
+
                 # Count realms that reference this Keycloak instance
                 realm_count = sum(
                     1
                     for item in realm_list.get("items", [])
-                    if item.get("spec", {})
-                    .get("operatorRef", {})
-                    .get("namespace")
+                    if item.get("spec", {}).get("operatorRef", {}).get("namespace")
                     == keycloak_namespace
                 )
 
