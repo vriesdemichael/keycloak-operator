@@ -118,9 +118,9 @@ class TestAuthorizationDelegation:
                 name=operational_secret_name, namespace=namespace
             )
             assert operational_secret.data, "Operational token secret should have data"
-            assert (
-                "token" in operational_secret.data
-            ), "Operational token secret should have 'token' key"
+            assert "token" in operational_secret.data, (
+                "Operational token secret should have 'token' key"
+            )
 
             # Verify operational token has proper labels
             assert operational_secret.metadata.labels, "Secret should have labels"
@@ -266,9 +266,9 @@ class TestAuthorizationDelegation:
                     else:
                         raise
 
-            assert (
-                secret_exists
-            ), f"Authorization secret {realm_auth_secret_name} was not created"
+            assert secret_exists, (
+                f"Authorization secret {realm_auth_secret_name} was not created"
+            )
 
             # Create client with realmRef pointing to realm's token
             client_spec = KeycloakClientSpec(
@@ -436,9 +436,9 @@ class TestAuthorizationDelegation:
             status = realm.get("status", {}) or {}
             message = status.get("message", "")
 
-            assert (
-                "Authorization failed" in message
-            ), f"Realm should report authorization failure, got: {message}"
+            assert "Authorization failed" in message, (
+                f"Realm should report authorization failure, got: {message}"
+            )
 
         finally:
             # Cleanup

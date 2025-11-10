@@ -236,9 +236,10 @@ class KeycloakClientReconciler(BaseReconciler):
         status.credentials_secret = secret_name
         status.public_client = client_spec.public_client
         status.endpoints = endpoints
-
-        # TODO: Update authorization status when clients use operational tokens
-        # For now, clients use realm tokens which don't rotate yet
+        
+        # Authorization status
+        status.authorization_granted = True
+        status.authorization_message = f"Namespace '{namespace}' is authorized by realm"
 
         # Return empty dict - status updates are done via StatusWrapper
         return {}
@@ -304,6 +305,55 @@ class KeycloakClientReconciler(BaseReconciler):
             f"Cross-namespace access validation passed for client {spec.client_id}"
         )
 
+    async def _validate_namespace_authorization(
+        self,
+        realm_resource: dict[str, Any],
+        realm_name: str,
+        realm_namespace: str,
+        client_namespace: str,
+        client_id: str,
+    ) -> None:
+        """
+        Validate that client's namespace is authorized via realm's grant list.
+
+        Args:
+            realm_resource: The KeycloakRealm custom resource
+            realm_name: Name of the realm
+            realm_namespace: Namespace of the realm
+            client_namespace: Namespace of the client
+            client_id: ID of the client
+
+        Raises:
+            PermanentError: If namespace is not in grant list
+        """
+        from ..errors import PermanentError
+
+        # Get the grant list from realm spec
+        realm_spec = realm_resource.get("spec", {})
+        grant_list = realm_spec.get("clientAuthorizationGrants", [])
+
+        # Check if client's namespace is in the grant list
+        if client_namespace not in grant_list:
+            error_msg = (
+                f"Authorization denied: Namespace '{client_namespace}' is not authorized "
+                f"to create clients in realm '{realm_name}' (namespace: '{realm_namespace}'). "
+                f"The realm owner must add '{client_namespace}' to the "
+                f"spec.clientAuthorizationGrants list in the realm CR."
+            )
+            
+            if not grant_list:
+                error_msg += " (Note: The realm has no authorized namespaces configured)"
+            else:
+                error_msg += f" (Currently authorized: {', '.join(grant_list)})"
+
+            self.logger.warning(error_msg)
+            raise PermanentError(error_msg)
+
+        self.logger.info(
+            f"Authorization granted: Namespace '{client_namespace}' is authorized "
+            f"for realm '{realm_name}'"
+        )
+
     async def ensure_client_exists(
         self, spec: KeycloakClientSpec, name: str, namespace: str
     ) -> str:
@@ -345,85 +395,14 @@ class KeycloakClientReconciler(BaseReconciler):
                 ) from e
             raise
 
-        # Validate authorization: Check realm token (only if authorization_secret_ref is provided)
-        if realm_ref.authorization_secret_ref:
-            realm_status = realm_resource.get("status", {})
-            realm_auth_secret_name = realm_status.get("authorizationSecretName")
-            if not realm_auth_secret_name:
-                from ..errors import TemporaryError
-
-                raise TemporaryError(
-                    f"Realm {realm_resource_name} does not have an authorization secret yet. "
-                    f"Waiting for realm to complete initialization.",
-                    delay=30,
-                )
-
-            # Read the expected token from the realm's secret with RBAC validation
-            try:
-                # Get operator namespace from environment
-                operator_namespace = os.getenv("OPERATOR_NAMESPACE", "keycloak-system")
-
-                # Validate RBAC and read realm authorization secret
-                result, error = await get_secret_with_validation(
-                    secret_name=realm_auth_secret_name,
-                    namespace=target_namespace,
-                    operator_namespace=operator_namespace,
-                    key="token",
-                )
-
-                if error:
-                    raise ValidationError(
-                        f"Failed to read realm authorization secret: {error}"
-                    )
-
-                if not result or not isinstance(result, str):
-                    from ..errors import TemporaryError
-
-                    raise TemporaryError(
-                        f"Realm authorization secret {realm_auth_secret_name} is empty or invalid. "
-                        f"Waiting for realm to populate the secret.",
-                        delay=30,
-                    )
-
-                realm_token: str = result
-
-            except ValidationError as ve:
-                from ..errors import TemporaryError
-
-                # RBAC validation failures are temporary - user needs to fix permissions
-                raise TemporaryError(
-                    f"RBAC validation failed for realm authorization secret: {ve}",
-                    delay=60,
-                ) from ve
-            except Exception as secret_err:
-                from ..errors import TemporaryError
-
-                raise TemporaryError(
-                    f"Failed to read realm authorization secret {realm_auth_secret_name}: {secret_err}",
-                    delay=30,
-                ) from secret_err
-
-            # Validate the provided token matches the realm's token
-            # Need to create CoreV1Api for validate_authorization function
-            core_v1 = client.CoreV1Api()
-            if not validate_authorization(
-                secret_ref=realm_ref.authorization_secret_ref,
-                secret_namespace=namespace,  # Client's namespace (where the secret should be)
-                expected_token=realm_token,
-                k8s_client=core_v1,
-            ):
-                from ..errors import PermanentError
-
-                raise PermanentError(
-                    f"Authorization failed: Invalid or missing realm token for client {spec.client_id}"
-                )
-
-            self.logger.info(f"Authorization validated for client {spec.client_id}")
-        else:
-            # Authorization not required - log and proceed
-            self.logger.info(
-                f"Authorization not configured for client {spec.client_id} - proceeding without auth check"
-            )
+        # NEW: Validate authorization via namespace grant list
+        await self._validate_namespace_authorization(
+            realm_resource=realm_resource,
+            realm_name=realm_resource_name,
+            realm_namespace=target_namespace,
+            client_namespace=namespace,
+            client_id=spec.client_id,
+        )
 
         # Validate that the Keycloak instance exists and is ready
         keycloak_instance_obj = validate_keycloak_reference(

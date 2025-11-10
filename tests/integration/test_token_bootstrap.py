@@ -271,9 +271,9 @@ class TestTokenBootstrap:
                     assert metadata.get("created_by_realm") == realm_name
                     break
 
-            assert (
-                operational_metadata_found
-            ), "Operational token metadata not found in ConfigMap"
+            assert operational_metadata_found, (
+                "Operational token metadata not found in ConfigMap"
+            )
 
             # 7. Verify status.authorizationStatus updated
             realm = await k8s_custom_objects.get_namespaced_custom_object(
@@ -542,9 +542,9 @@ class TestTokenBootstrap:
                 == "operational"
             ]
 
-            assert (
-                len(operational_secrets) == 1
-            ), f"Expected 1 operational token, found {len(operational_secrets)}"
+            assert len(operational_secrets) == 1, (
+                f"Expected 1 operational token, found {len(operational_secrets)}"
+            )
             assert operational_secrets[0].metadata.name == operational_secret_name
 
         finally:

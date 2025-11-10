@@ -10,8 +10,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
-from .common import AuthorizationSecretRef, AuthorizationStatus
-
 
 class OperatorRef(BaseModel):
     """Reference to the operator managing this realm."""
@@ -19,11 +17,6 @@ class OperatorRef(BaseModel):
     model_config = {"populate_by_name": True}
 
     namespace: str = Field(..., description="Namespace where the operator is running")
-    authorization_secret_ref: AuthorizationSecretRef = Field(
-        ...,
-        alias="authorizationSecretRef",
-        description="Secret containing the token to authorize with the operator",
-    )
 
 
 class KeycloakRealmTheme(BaseModel):
@@ -425,6 +418,13 @@ class KeycloakRealmSpec(BaseModel):
         description="Reference to the operator managing this realm",
     )
 
+    # Client authorization grants
+    client_authorization_grants: list[str] = Field(
+        default_factory=list,
+        alias="clientAuthorizationGrants",
+        description="List of namespaces authorized to create clients in this realm",
+    )
+
     # Themes and localization
     themes: KeycloakRealmTheme | None = Field(None, description="Theme configuration")
     localization: KeycloakRealmLocalization | None = Field(
@@ -508,6 +508,30 @@ class KeycloakRealmSpec(BaseModel):
         for char in invalid_chars:
             if char in v:
                 raise ValueError(f"Realm name contains invalid character: {char}")
+        return v
+
+    @field_validator("client_authorization_grants")
+    @classmethod
+    def validate_namespace_grants(cls, v):
+        """Validate namespace names in authorization grants."""
+        if not isinstance(v, list):
+            raise ValueError("client_authorization_grants must be a list")
+
+        for namespace in v:
+            if not isinstance(namespace, str):
+                raise ValueError("All namespace grants must be strings")
+            if not namespace:
+                raise ValueError("Namespace grants cannot be empty strings")
+            # Validate DNS-1123 subdomain (Kubernetes namespace naming rules)
+            if len(namespace) > 63:
+                raise ValueError(f"Namespace '{namespace}' exceeds 63 characters")
+            if not namespace.replace("-", "").replace("_", "").isalnum():
+                raise ValueError(f"Namespace '{namespace}' contains invalid characters")
+            if namespace.startswith("-") or namespace.endswith("-"):
+                raise ValueError(
+                    f"Namespace '{namespace}' cannot start or end with hyphen"
+                )
+
         return v
 
     def to_keycloak_config(self) -> dict[str, Any]:
@@ -721,18 +745,11 @@ class KeycloakRealmStatus(BaseModel):
         description="Keycloak instance reference (namespace/name)",
     )
 
-    # Authorization
-    authorization_secret_name: str | None = Field(
-        None,
-        alias="authorizationSecretName",
-        description="Name of the secret containing the realm's authorization token",
-    )
-
-    # Authorization status (new two-phase token system)
-    authorization_status: AuthorizationStatus | None = Field(
-        None,
-        alias="authorizationStatus",
-        description="Status of authorization token (admission vs operational)",
+    # Authorization status
+    authorized_client_namespaces: list[str] = Field(
+        default_factory=list,
+        alias="authorizedClientNamespaces",
+        description="Current list of namespaces authorized to create clients",
     )
 
     # Endpoints

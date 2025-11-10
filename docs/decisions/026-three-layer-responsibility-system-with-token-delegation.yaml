@@ -1,6 +1,9 @@
 number: 26
 title: Three-layer responsibility system with token delegation
 category: architecture
+status: superseded
+superseded_by: 63
+superseded_date: 2025-11-10
 decision: 'Three-layer system: operator team manages Keycloak instances and issues
   admission tokens, realm teams manage realms and issue operational tokens, application
   teams manage clients. Authorization is managed through a token system that allows

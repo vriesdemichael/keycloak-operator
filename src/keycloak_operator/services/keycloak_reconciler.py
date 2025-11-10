@@ -384,6 +384,10 @@ class KeycloakInstanceReconciler(BaseReconciler):
             "public": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
             "management": f"http://{name}-keycloak.{namespace}.svc.cluster.local:9000",
         }
+        
+        # Update capacity status
+        await self._update_capacity_status(status, keycloak_spec, namespace)
+        
         # Return empty dict - status updates are done via StatusWrapper
         return {}
 
@@ -437,6 +441,77 @@ class KeycloakInstanceReconciler(BaseReconciler):
         self.logger.info(f"Production validation passed for {name}")
 
         return connection_info
+
+    async def _update_capacity_status(
+        self, status: StatusProtocol, spec: KeycloakSpec, namespace: str
+    ) -> None:
+        """
+        Update realm capacity status fields.
+
+        Args:
+            status: Status object to update
+            spec: Keycloak specification
+            namespace: Keycloak namespace
+        """
+        # Count realms that reference this Keycloak operator
+        try:
+            custom_objects_api = client.CustomObjectsApi()
+            realm_list = await custom_objects_api.list_cluster_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                plural="keycloakrealms",
+            )
+
+            # Count realms that reference this Keycloak instance (by namespace)
+            realm_count = sum(
+                1
+                for item in realm_list.get("items", [])
+                if item.get("spec", {}).get("operatorRef", {}).get("namespace")
+                == namespace
+            )
+
+            status.realmCount = realm_count
+
+            # Determine if accepting new realms
+            realm_capacity = spec.realm_capacity
+            if realm_capacity:
+                # Check allowNewRealms flag
+                accepting = realm_capacity.allow_new_realms
+
+                # Check max realms limit
+                if realm_capacity.max_realms is not None:
+                    at_capacity = realm_count >= realm_capacity.max_realms
+                    if at_capacity:
+                        accepting = False
+
+                status.acceptingNewRealms = accepting
+
+                # Set capacity status message
+                if not accepting:
+                    if realm_capacity.max_realms is not None:
+                        status.capacityStatus = (
+                            f"Capacity reached: {realm_count}/{realm_capacity.max_realms} realms"
+                        )
+                    else:
+                        status.capacityStatus = "Not accepting new realms"
+                else:
+                    if realm_capacity.max_realms is not None:
+                        status.capacityStatus = (
+                            f"Available: {realm_count}/{realm_capacity.max_realms} realms"
+                        )
+                    else:
+                        status.capacityStatus = f"Available: {realm_count} realms (no limit)"
+            else:
+                # No capacity config - unlimited
+                status.acceptingNewRealms = True
+                status.capacityStatus = f"{realm_count} realms (unlimited)"
+
+        except Exception as e:
+            self.logger.warning(f"Failed to update capacity status: {e}")
+            # Don't fail reconciliation if capacity status update fails
+            status.realmCount = None
+            status.acceptingNewRealms = True
+            status.capacityStatus = "Unknown"
 
     async def _validate_database_production_readiness(
         self, spec: KeycloakSpec, namespace: str
