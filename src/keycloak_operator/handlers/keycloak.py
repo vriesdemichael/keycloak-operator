@@ -50,11 +50,20 @@ class StatusProtocol(Protocol):
 
 
 class StatusWrapper(MutableMapping[str, Any]):
-    """Safe mutable wrapper around kopf patch.status for both item & attribute access."""
+    """Safe mutable wrapper around kopf patch.status for both item & attribute access.
+
+    Automatically converts snake_case Python attribute names to camelCase for K8s API.
+    """
 
     def __init__(self, patch_status: Any):
         # Store reference to patch.status, not a copy
         object.__setattr__(self, "_patch_status", patch_status)
+
+    @staticmethod
+    def _to_camel_case(snake_str: str) -> str:
+        """Convert snake_case to camelCase."""
+        components = snake_str.split("_")
+        return components[0] + "".join(x.title() for x in components[1:])
 
     # MutableMapping implementation - directly update patch.status
     def __getitem__(self, key: str) -> Any:
@@ -73,10 +82,11 @@ class StatusWrapper(MutableMapping[str, Any]):
     def __len__(self) -> int:  # pragma: no cover - trivial
         return len(self._patch_status)
 
-    # Attribute bridging - directly update patch.status
+    # Attribute bridging - convert snake_case to camelCase
     def __getattr__(self, item: str) -> Any:  # pragma: no cover - trivial
+        camel_item = self._to_camel_case(item)
         try:
-            return self._patch_status[item]
+            return self._patch_status[camel_item]
         except KeyError as e:
             raise AttributeError(item) from e
 
@@ -84,7 +94,8 @@ class StatusWrapper(MutableMapping[str, Any]):
         if key.startswith("_"):
             object.__setattr__(self, key, value)
         else:
-            self._patch_status[key] = value
+            camel_key = self._to_camel_case(key)
+            self._patch_status[camel_key] = value
 
     def get(self, key: str, default: Any = None) -> Any:  # explicit for protocol
         return self._patch_status.get(key, default)
