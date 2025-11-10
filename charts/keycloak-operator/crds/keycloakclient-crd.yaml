@@ -14,7 +14,7 @@ spec:
     schema:
       openAPIV3Schema:
         type: object
-        description: "Keycloak client configuration for dynamic OAuth2/OIDC client provisioning"
+        description: Keycloak client configuration for dynamic OAuth2/OIDC client provisioning
         properties:
           apiVersion:
             type: string
@@ -24,88 +24,68 @@ spec:
             type: object
           spec:
             type: object
-            description: "Specification for a Keycloak client"
+            description: Specification for a Keycloak client
             properties:
-              # Core client configuration
               clientId:
                 type: string
-                description: "Unique client identifier"
+                description: Unique client identifier
                 minLength: 1
                 maxLength: 255
               clientName:
                 type: string
-                description: "Human-readable client name"
+                description: Human-readable client name
               description:
                 type: string
-                description: "Client description"
-
-              # Realm reference and authorization
+                description: Client description
               realmRef:
                 type: object
-                description: "Reference to the parent KeycloakRealm"
+                description: Reference to the parent KeycloakRealm
                 properties:
                   name:
                     type: string
-                    description: "Name of the KeycloakRealm CR"
+                    description: Name of the KeycloakRealm CR
                   namespace:
                     type: string
-                    description: "Namespace of the KeycloakRealm CR"
-                  authorizationSecretRef:
-                    type: object
-                    description: "Secret containing the token to authorize with the realm"
-                    properties:
-                      name:
-                        type: string
-                        description: "Name of the realm's authorization secret"
-                      key:
-                        type: string
-                        description: "Key within the secret containing the token"
-                        default: "token"
-                    required:
-                    - name
+                    description: Namespace of the KeycloakRealm CR
                 required:
                 - name
                 - namespace
-                - authorizationSecretRef
-
-              # Client type configuration
               publicClient:
                 type: boolean
-                description: "Whether this is a public client"
+                description: Whether this is a public client
                 default: false
               bearerOnly:
                 type: boolean
-                description: "Bearer-only client"
+                description: Bearer-only client
                 default: false
               protocol:
                 type: string
-                description: "Client protocol"
-                enum: ["openid-connect", "saml", "docker-v2"]
-                default: "openid-connect"
-
-              # OAuth2/OIDC configuration
+                description: Client protocol
+                enum:
+                - openid-connect
+                - saml
+                - docker-v2
+                default: openid-connect
               redirectUris:
                 type: array
-                description: "Valid redirect URIs"
+                description: Valid redirect URIs
                 items:
                   type: string
                   format: uri
               webOrigins:
                 type: array
-                description: "Valid web origins for CORS"
+                description: Valid web origins for CORS
                 items:
                   type: string
               postLogoutRedirectUris:
                 type: array
-                description: "Valid post-logout redirect URIs"
+                description: Valid post-logout redirect URIs
                 items:
                   type: string
                   format: uri
-
-              # Client settings
               settings:
                 type: object
-                description: "Advanced client settings"
+                description: Advanced client settings
                 properties:
                   enabled:
                     type: boolean
@@ -115,26 +95,28 @@ spec:
                     default: false
                   clientAuthenticatorType:
                     type: string
-                    enum: ["client-secret", "client-jwt", "client-secret-jwt", "client-x509"]
-                    default: "client-secret"
-                  # Access settings
+                    enum:
+                    - client-secret
+                    - client-jwt
+                    - client-secret-jwt
+                    - client-x509
+                    default: client-secret
                   standardFlowEnabled:
                     type: boolean
-                    description: "Enable standard flow (authorization code flow)"
+                    description: Enable standard flow (authorization code flow)
                     default: true
                   implicitFlowEnabled:
                     type: boolean
-                    description: "Enable implicit flow"
+                    description: Enable implicit flow
                     default: false
                   directAccessGrantsEnabled:
                     type: boolean
-                    description: "Enable direct access grants (password flow)"
+                    description: Enable direct access grants (password flow)
                     default: true
                   serviceAccountsEnabled:
                     type: boolean
-                    description: "Enable service accounts"
+                    description: Enable service accounts
                     default: false
-                  # Advanced settings
                   consentRequired:
                     type: boolean
                     default: false
@@ -144,45 +126,40 @@ spec:
                   includeInTokenScope:
                     type: boolean
                     default: true
-                  # Token settings
                   accessTokenLifespan:
                     type: integer
-                    description: "Access token lifespan in seconds"
+                    description: Access token lifespan in seconds
                     minimum: 1
                   refreshTokenLifespan:
                     type: integer
-                    description: "Refresh token lifespan in seconds"
+                    description: Refresh token lifespan in seconds
                     minimum: 1
-
-              # Authentication flows
               authenticationFlows:
                 type: object
-                description: "Client authentication flow overrides"
+                description: Client authentication flow overrides
                 properties:
                   browserFlow:
                     type: string
-                    description: "Browser authentication flow"
+                    description: Browser authentication flow
                   directGrantFlow:
                     type: string
-                    description: "Direct grant authentication flow"
+                    description: Direct grant authentication flow
                   clientAuthenticationFlow:
                     type: string
-                    description: "Client authentication flow"
-
-              # Scopes and mappers
+                    description: Client authentication flow
               defaultClientScopes:
                 type: array
-                description: "Default client scopes"
+                description: Default client scopes
                 items:
                   type: string
               optionalClientScopes:
                 type: array
-                description: "Optional client scopes"
+                description: Optional client scopes
                 items:
                   type: string
               protocolMappers:
                 type: array
-                description: "Protocol mappers"
+                description: Protocol mappers
                 items:
                   type: object
                   properties:
@@ -190,7 +167,7 @@ spec:
                       type: string
                     protocol:
                       type: string
-                      default: "openid-connect"
+                      default: openid-connect
                     protocolMapper:
                       type: string
                     config:
@@ -200,67 +177,69 @@ spec:
                   required:
                   - name
                   - protocolMapper
-
-              # Roles and permissions
               clientRoles:
                 type: array
-                description: "Client-specific roles to create"
+                description: Client-specific roles to create
                 items:
                   type: string
-
               serviceAccountRoles:
                 type: object
-                description: "Role mappings for the client's service account user"
+                description: Role mappings for the client's service account user
                 properties:
                   realmRoles:
                     type: array
-                    description: "Realm-level roles to assign to the service account"
+                    description: Realm-level roles to assign to the service account
                     items:
                       type: string
-                    example: ["offline_access", "uma_authorization"]
+                    example:
+                    - offline_access
+                    - uma_authorization
                   clientRoles:
                     type: object
-                    description: "Client-level roles to assign to the service account"
+                    description: Client-level roles to assign to the service account
                     additionalProperties:
                       type: array
                       items:
                         type: string
                     example:
-                      api-server: ["read:data", "write:data"]
-                      admin-console: ["view-users"]
-
-              # Advanced configuration
+                      api-server:
+                      - read:data
+                      - write:data
+                      admin-console:
+                      - view-users
               attributes:
                 type: object
-                description: "Additional client attributes"
+                description: Additional client attributes
                 additionalProperties:
                   type: string
-
-              # Secret management
               regenerateSecret:
                 type: boolean
-                description: "Regenerate client secret on update"
+                description: Regenerate client secret on update
                 default: false
               secretName:
                 type: string
-                description: "Name of Kubernetes secret for client credentials"
+                description: Name of Kubernetes secret for client credentials
               manageSecret:
                 type: boolean
-                description: "Create and manage Kubernetes secret for credentials"
+                description: Create and manage Kubernetes secret for credentials
                 default: true
-
             required:
             - clientId
             - realmRef
-
           status:
             type: object
-            description: "Current status of the Keycloak client"
+            description: Current status of the Keycloak client
             properties:
               phase:
                 type: string
-                description: "Current phase"
-                enum: ["Pending", "Provisioning", "Ready", "Failed", "Updating", "Degraded"]
+                description: Current phase
+                enum:
+                - Pending
+                - Provisioning
+                - Ready
+                - Failed
+                - Updating
+                - Degraded
               message:
                 type: string
               reason:
@@ -274,7 +253,10 @@ spec:
                       type: string
                     status:
                       type: string
-                      enum: ["True", "False", "Unknown"]
+                      enum:
+                      - 'True'
+                      - 'False'
+                      - Unknown
                     reason:
                       type: string
                     message:
@@ -287,7 +269,6 @@ spec:
                   - status
               observedGeneration:
                 type: integer
-              # Client information
               clientId:
                 type: string
               internalId:
@@ -296,12 +277,10 @@ spec:
                 type: string
               publicClient:
                 type: boolean
-              # Connection information
               keycloakInstance:
                 type: string
               credentialsSecret:
                 type: string
-              # Endpoints
               endpoints:
                 type: object
                 properties:
@@ -317,14 +296,12 @@ spec:
                     type: string
                   endSession:
                     type: string
-              # Health monitoring
               lastHealthCheck:
                 type: string
                 format: date-time
               lastUpdated:
                 type: string
                 format: date-time
-              # Statistics
               createdRoles:
                 type: array
                 items:
@@ -333,6 +310,13 @@ spec:
                 type: array
                 items:
                   type: string
+              authorizationGranted:
+                type: boolean
+                description: Whether this client's namespace is authorized by the realm
+                default: false
+              authorizationMessage:
+                type: string
+                description: Human-readable authorization status message
     additionalPrinterColumns:
     - name: Phase
       type: string
