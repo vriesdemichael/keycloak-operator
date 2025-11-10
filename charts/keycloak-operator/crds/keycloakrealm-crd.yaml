@@ -14,7 +14,7 @@ spec:
     schema:
       openAPIV3Schema:
         type: object
-        description: "Keycloak realm configuration for comprehensive identity and access management"
+        description: Keycloak realm configuration for comprehensive identity and access management
         properties:
           apiVersion:
             type: string
@@ -24,55 +24,35 @@ spec:
             type: object
           spec:
             type: object
-            description: "Specification for a Keycloak realm"
+            description: Specification for a Keycloak realm
             properties:
-              # Core realm configuration
               realmName:
                 type: string
-                description: "Realm name (must be unique in Keycloak)"
+                description: Realm name (must be unique in Keycloak)
                 minLength: 1
                 maxLength: 255
               displayName:
                 type: string
-                description: "Human-readable realm name"
+                description: Human-readable realm name
               description:
                 type: string
-                description: "Realm description"
+                description: Realm description
               loginPageTitle:
                 type: string
-                description: "HTML title for login pages"
-
-              # Operator reference and authorization
+                description: HTML title for login pages
               operatorRef:
                 type: object
-                description: "Reference to the operator managing this realm"
+                description: Reference to the operator managing this realm
                 properties:
                   namespace:
                     type: string
-                    description: "Namespace where the operator is running (e.g., keycloak-system)"
-                  authorizationSecretRef:
-                    type: object
-                    description: "Secret containing the token to authorize with the operator"
-                    properties:
-                      name:
-                        type: string
-                        description: "Name of the authorization secret"
-                      key:
-                        type: string
-                        description: "Key within the secret containing the token"
-                        default: "token"
-                    required:
-                    - name
+                    description: Namespace where the operator is running (e.g., keycloak-system)
                 required:
                 - namespace
-                - authorizationSecretRef
-
-              # Security settings
               security:
                 type: object
-                description: "Security and authentication settings"
+                description: Security and authentication settings
                 properties:
-                  # Registration and email
                   registrationAllowed:
                     type: boolean
                     default: false
@@ -97,19 +77,19 @@ spec:
                   duplicateEmailsAllowed:
                     type: boolean
                     default: false
-                  # SSL/TLS requirements
                   sslRequired:
                     type: string
-                    enum: ["all", "external", "none"]
-                    default: "external"
-                  # Session and token settings
+                    enum:
+                    - all
+                    - external
+                    - none
+                    default: external
                   revokeRefreshToken:
                     type: boolean
                     default: false
                   refreshTokenMaxReuse:
                     type: integer
                     minimum: 0
-                  # Brute force protection
                   bruteForceProtected:
                     type: boolean
                     default: false
@@ -134,16 +114,14 @@ spec:
                   failureFactor:
                     type: integer
                     minimum: 1
-
-              # Token settings
               tokenSettings:
                 type: object
-                description: "Token and session configuration"
+                description: Token and session configuration
                 properties:
                   accessTokenLifespan:
                     type: integer
                     minimum: 1
-                    description: "Access token lifespan in seconds"
+                    description: Access token lifespan in seconds
                   accessTokenLifespanForImplicitFlow:
                     type: integer
                     minimum: 1
@@ -174,86 +152,80 @@ spec:
                   clientOfflineSessionMaxLifespan:
                     type: integer
                     minimum: 1
-
-              # Theme configuration
               themes:
                 type: object
-                description: "Theme configuration"
+                description: Theme configuration
                 properties:
                   login:
                     type: string
-                    description: "Login theme"
+                    description: Login theme
                   admin:
                     type: string
-                    description: "Admin theme"
+                    description: Admin theme
                   account:
                     type: string
-                    description: "Account theme"
+                    description: Account theme
                   email:
                     type: string
-                    description: "Email theme"
-
-              # SMTP configuration
+                    description: Email theme
               smtpServer:
                 type: object
-                description: "SMTP server configuration for email. Use passwordSecret for secure credential storage."
+                description: SMTP server configuration for email. Use passwordSecret for secure credential storage.
                 properties:
                   host:
                     type: string
-                    description: "SMTP server host"
+                    description: SMTP server host
                   port:
                     type: integer
                     minimum: 1
                     maximum: 65535
-                    description: "SMTP server port"
+                    description: SMTP server port
                   from:
                     type: string
-                    description: "From email address"
+                    description: From email address
                   fromDisplayName:
                     type: string
-                    description: "From display name"
+                    description: From display name
                   replyTo:
                     type: string
-                    description: "Reply-to email address"
+                    description: Reply-to email address
                   envelopeFrom:
                     type: string
-                    description: "Envelope from address"
+                    description: Envelope from address
                   ssl:
                     type: boolean
                     default: false
-                    description: "Use SSL"
+                    description: Use SSL
                   starttls:
                     type: boolean
                     default: false
-                    description: "Use STARTTLS"
+                    description: Use STARTTLS
                   auth:
                     type: boolean
                     default: false
-                    description: "Require authentication"
+                    description: Require authentication
                   user:
                     type: string
-                    description: "SMTP username"
+                    description: SMTP username
                   password:
                     type: string
-                    description: "SMTP password (use passwordSecret instead for better security)"
+                    description: SMTP password (use passwordSecret instead for better security)
                   passwordSecret:
                     type: object
-                    description: "Reference to Kubernetes secret containing SMTP password (recommended over password)"
+                    description: Reference to Kubernetes secret containing SMTP password (recommended over password)
                     properties:
                       name:
                         type: string
-                        description: "Secret name"
+                        description: Secret name
                       key:
                         type: string
-                        description: "Key in secret data"
-                        default: "password"
+                        description: Key in secret data
+                        default: password
                     required:
                     - name
-
-              # Localization
               localization:
                 type: object
-                description: "Internationalization settings"
+                description: Internationalization settings
                 properties:
                   enabled:
                     type: boolean
@@ -264,11 +236,9 @@ spec:
                       type: string
                   defaultLocale:
                     type: string
-
-              # Authentication flows
               authenticationFlows:
                 type: array
-                description: "Custom authentication flows"
+                description: Custom authentication flows
                 items:
                   type: object
                   properties:
@@ -287,11 +257,9 @@ spec:
                       additionalProperties: true
                   required:
                   - alias
-
-              # Identity providers
               identityProviders:
                 type: array
-                description: "Identity provider configurations"
+                description: Identity provider configurations
                 items:
                   type: object
                   properties:
@@ -328,11 +296,9 @@ spec:
                   required:
                   - alias
                   - providerId
-
-              # User federation
               userFederation:
                 type: array
-                description: "User federation provider configurations"
+                description: User federation provider configurations
                 items:
                   type: object
                   properties:
@@ -350,11 +316,9 @@ spec:
                   required:
                   - displayName
                   - providerName
-
-              # Client scopes
               clientScopes:
                 type: array
-                description: "Client scope definitions"
+                description: Client scope definitions
                 items:
                   type: object
                   properties:
@@ -364,7 +328,7 @@ spec:
                       type: string
                     protocol:
                       type: string
-                      default: "openid-connect"
+                      default: openid-connect
                     attributes:
                       type: object
                       additionalProperties:
@@ -389,11 +353,9 @@ spec:
                         - protocolMapper
                   required:
                   - name
-
-              # Roles
               roles:
                 type: object
-                description: "Realm and client role definitions"
+                description: Realm and client role definitions
                 properties:
                   realmRoles:
                     type: array
@@ -414,11 +376,9 @@ spec:
                           type: string
                       required:
                       - name
-
-              # Groups
               groups:
                 type: array
-                description: "Group definitions"
+                description: Group definitions
                 items:
                   type: object
                   properties:
@@ -444,18 +404,14 @@ spec:
                           type: string
                   required:
                   - name
-
-              # Custom attributes
               attributes:
                 type: object
-                description: "Additional realm attributes"
+                description: Additional realm attributes
                 additionalProperties:
                   type: string
-
-              # Events configuration
               eventsConfig:
                 type: object
-                description: "Event logging configuration"
+                description: Event logging configuration
                 properties:
                   eventsEnabled:
                     type: boolean
@@ -477,19 +433,30 @@ spec:
                   adminEventsDetailsEnabled:
                     type: boolean
                     default: false
-
+              clientAuthorizationGrants:
+                type: array
+                description: List of namespaces authorized to create clients in this realm
+                items:
+                  type: string
+                  minLength: 1
+                  maxLength: 63
             required:
             - realmName
             - operatorRef
-
           status:
             type: object
-            description: "Current status of the Keycloak realm"
+            description: Current status of the Keycloak realm
             properties:
               phase:
                 type: string
-                description: "Current phase"
-                enum: ["Pending", "Provisioning", "Ready", "Failed", "Updating", "Degraded"]
+                description: Current phase
+                enum:
+                - Pending
+                - Provisioning
+                - Ready
+                - Failed
+                - Updating
+                - Degraded
               message:
                 type: string
               reason:
@@ -503,7 +470,10 @@ spec:
                       type: string
                     status:
                       type: string
-                      enum: ["True", "False", "Unknown"]
+                      enum:
+                      - 'True'
+                      - 'False'
+                      - Unknown
                     reason:
                       type: string
                     message:
@@ -516,45 +486,37 @@ spec:
                   - status
               observedGeneration:
                 type: integer
-              # Realm information
               realmName:
                 type: string
               internalId:
                 type: string
-              # Connection information
               keycloakInstance:
                 type: string
-              # Authorization
-              authorizationSecretName:
-                type: string
-                description: "Name of the secret containing the realm's authorization token for client delegation"
-              # Endpoints - automatically populated OIDC discovery endpoints
               endpoints:
                 type: object
-                description: "OIDC/OAuth2 endpoints automatically populated by the operator based on Keycloak instance URL"
+                description: OIDC/OAuth2 endpoints automatically populated by the operator based on Keycloak instance URL
                 properties:
                   issuer:
                     type: string
-                    description: "OIDC issuer identifier URL"
+                    description: OIDC issuer identifier URL
                   auth:
                     type: string
-                    description: "OIDC authorization endpoint"
+                    description: OIDC authorization endpoint
                   token:
                     type: string
-                    description: "OIDC token endpoint"
+                    description: OIDC token endpoint
                   userinfo:
                     type: string
-                    description: "OIDC userinfo endpoint"
+                    description: OIDC userinfo endpoint
                   jwks:
                     type: string
-                    description: "OIDC JSON Web Key Set (JWKS) endpoint"
+                    description: OIDC JSON Web Key Set (JWKS) endpoint
                   endSession:
                     type: string
-                    description: "OIDC end session (logout) endpoint"
+                    description: OIDC end session (logout) endpoint
                   registration:
                     type: string
-                    description: "OIDC dynamic client registration endpoint"
-              # Feature status
+                    description: OIDC dynamic client registration endpoint
               features:
                 type: object
                 properties:
@@ -568,14 +530,12 @@ spec:
                     type: integer
                   customThemes:
                     type: boolean
-              # Health monitoring
               lastHealthCheck:
                 type: string
                 format: date-time
               lastUpdated:
                 type: string
                 format: date-time
-              # Statistics
               activeUsers:
                 type: integer
                 minimum: 0
@@ -585,6 +545,11 @@ spec:
               realmRolesCount:
                 type: integer
                 minimum: 0
+              authorizedClientNamespaces:
+                type: array
+                description: Current list of namespaces authorized to create clients
+                items:
+                  type: string
     additionalPrinterColumns:
     - name: Phase
       type: string

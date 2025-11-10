@@ -14,7 +14,7 @@ spec:
     schema:
       openAPIV3Schema:
         type: object
-        description: "Keycloak instance definition for dynamic identity and access management"
+        description: Keycloak instance definition for dynamic identity and access management
         properties:
           apiVersion:
             type: string
@@ -24,116 +24,127 @@ spec:
             type: object
           spec:
             type: object
-            description: "Specification for a Keycloak instance"
+            description: Specification for a Keycloak instance
             properties:
-              # Core configuration
               image:
                 type: string
-                description: "Container image for Keycloak"
+                description: Container image for Keycloak
               replicas:
                 type: integer
-                description: "Number of Keycloak replicas"
+                description: Number of Keycloak replicas
                 minimum: 1
                 default: 1
-
-              # Database configuration
               database:
                 type: object
-                description: "Database configuration. For CloudNativePG clusters, use standard PostgreSQL connection details (host: cluster-name-rw, type: postgresql)"
+                description: 'Database configuration. For CloudNativePG clusters, use standard PostgreSQL connection details
+                  (host: cluster-name-rw, type: postgresql)'
                 properties:
                   type:
                     type: string
-                    enum: ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
-                    default: "postgresql"
-                    description: "Database type"
+                    enum:
+                    - postgresql
+                    - mysql
+                    - mariadb
+                    - oracle
+                    - mssql
+                    default: postgresql
+                    description: Database type
                   host:
                     type: string
-                    description: "Database host"
+                    description: Database host
                   port:
                     type: integer
-                    description: "Database port (auto-detected if not specified)"
+                    description: Database port (auto-detected if not specified)
                     minimum: 1
                     maximum: 65535
                   database:
                     type: string
-                    description: "Database name"
+                    description: Database name
                   username:
                     type: string
-                    description: "Database username"
+                    description: Database username
                   passwordSecret:
                     type: object
-                    description: "Secret reference for database password"
+                    description: Secret reference for database password
                     properties:
                       name:
                         type: string
                       key:
                         type: string
-                        default: "password"
+                        default: password
                     required:
                     - name
                   credentialsSecret:
                     type: string
-                    description: "Kubernetes secret name with database credentials (alternative to username/passwordSecret)"
+                    description: Kubernetes secret name with database credentials (alternative to username/passwordSecret)
                   connectionParams:
                     type: object
-                    description: "Additional database connection parameters"
+                    description: Additional database connection parameters
                     additionalProperties:
                       type: string
                   connectionPool:
                     type: object
-                    description: "Database connection pool configuration"
+                    description: Database connection pool configuration
                     properties:
                       maxConnections:
                         type: integer
                         default: 20
-                        description: "Maximum number of connections"
+                        description: Maximum number of connections
                       minConnections:
                         type: integer
                         default: 5
-                        description: "Minimum number of connections"
+                        description: Minimum number of connections
                       connectionTimeout:
                         type: string
-                        default: "30s"
-                        description: "Connection timeout"
+                        default: 30s
+                        description: Connection timeout
                   sslMode:
                     type: string
-                    enum: ["disable", "allow", "prefer", "require", "verify-ca", "verify-full"]
-                    default: "require"
-                    description: "SSL mode for database connections"
+                    enum:
+                    - disable
+                    - allow
+                    - prefer
+                    - require
+                    - verify-ca
+                    - verify-full
+                    default: require
+                    description: SSL mode for database connections
                   migrationStrategy:
                     type: string
-                    enum: ["auto", "manual", "skip"]
-                    default: "auto"
-                    description: "Database migration strategy"
+                    enum:
+                    - auto
+                    - manual
+                    - skip
+                    default: auto
+                    description: Database migration strategy
                 required:
                 - type
                 - host
                 - database
-
-              # TLS configuration
               tls:
                 type: object
-                description: "TLS/SSL configuration"
+                description: TLS/SSL configuration
                 properties:
                   enabled:
                     type: boolean
                     default: false
                   secretName:
                     type: string
-                    description: "Secret containing TLS certificate"
+                    description: Secret containing TLS certificate
                   hostname:
                     type: string
-                    description: "Hostname for TLS certificate (SNI)"
-
-              # Service configuration
+                    description: Hostname for TLS certificate (SNI)
               service:
                 type: object
-                description: "Service configuration"
+                description: Service configuration
                 properties:
                   type:
                     type: string
-                    enum: ["ClusterIP", "NodePort", "LoadBalancer"]
-                    default: "ClusterIP"
+                    enum:
+                    - ClusterIP
+                    - NodePort
+                    - LoadBalancer
+                    default: ClusterIP
                   httpPort:
                     type: integer
                     minimum: 1
@@ -148,41 +159,36 @@ spec:
                     type: object
                     additionalProperties:
                       type: string
-
-              # Ingress configuration
               ingress:
                 type: object
-                description: "Ingress configuration"
+                description: Ingress configuration
                 properties:
                   enabled:
                     type: boolean
                     default: false
                   host:
                     type: string
-                    description: "Ingress hostname"
+                    description: Ingress hostname
                   path:
                     type: string
-                    description: "Ingress path"
-                    default: "/"
+                    description: Ingress path
+                    default: /
                   tlsEnabled:
                     type: boolean
                     default: true
                   tlsSecretName:
                     type: string
-                    description: "Secret name for ingress TLS certificate"
+                    description: Secret name for ingress TLS certificate
                   annotations:
                     type: object
                     additionalProperties:
                       type: string
                   className:
                     type: string
-                    description: "Ingress class name"
-
-
-              # Resource requirements
+                    description: Ingress class name
               resources:
                 type: object
-                description: "Resource requirements"
+                description: Resource requirements
                 properties:
                   requests:
                     type: object
@@ -192,71 +198,80 @@ spec:
                     type: object
                     additionalProperties:
                       type: string
-
-              # Environment variables
               env:
                 type: object
-                description: "Environment variables"
+                description: Environment variables
                 additionalProperties:
                   type: string
-
-              # JVM configuration
               jvmOptions:
                 type: array
-                description: "JVM options for Keycloak (e.g., heap size, GC settings)"
+                description: JVM options for Keycloak (e.g., heap size, GC settings)
                 items:
                   type: string
-                example: ["-Xms512m", "-Xmx2048m", "-XX:+UseG1GC"]
-
-              # Service account
+                example:
+                - -Xms512m
+                - -Xmx2048m
+                - -XX:+UseG1GC
               serviceAccount:
                 type: string
-                description: "Service account name for Keycloak pods (for workload identity)"
-
-              # Health probes
+                description: Service account name for Keycloak pods (for workload identity)
               startupProbe:
                 type: object
-                description: "Startup probe configuration (overrides defaults)"
+                description: Startup probe configuration (overrides defaults)
                 x-kubernetes-preserve-unknown-fields: true
-
               livenessProbe:
                 type: object
-                description: "Liveness probe configuration (overrides defaults)"
+                description: Liveness probe configuration (overrides defaults)
                 x-kubernetes-preserve-unknown-fields: true
-
               readinessProbe:
                 type: object
-                description: "Readiness probe configuration (overrides defaults)"
+                description: Readiness probe configuration (overrides defaults)
                 x-kubernetes-preserve-unknown-fields: true
-
-              # Security
               podSecurityContext:
                 type: object
-                description: "Pod-level security context (fsGroup, runAsUser, etc.)"
+                description: Pod-level security context (fsGroup, runAsUser, etc.)
                 x-kubernetes-preserve-unknown-fields: true
-
               securityContext:
                 type: object
-                description: "Container-level security context (capabilities, privileged, etc.)"
+                description: Container-level security context (capabilities, privileged, etc.)
                 x-kubernetes-preserve-unknown-fields: true
-
+              realmCapacity:
+                type: object
+                description: Capacity management for realms
+                properties:
+                  maxRealms:
+                    type: integer
+                    description: Maximum number of realms (null = unlimited)
+                    minimum: 1
+                  allowNewRealms:
+                    type: boolean
+                    description: Whether to allow creation of new realms
+                    default: true
+                  capacityMessage:
+                    type: string
+                    description: Message to show when capacity is reached
             required:
             - database
-
           status:
             type: object
-            description: "Current status of the Keycloak instance"
+            description: Current status of the Keycloak instance
             properties:
               phase:
                 type: string
-                description: "Current phase"
-                enum: ["Pending", "Provisioning", "Ready", "Failed", "Updating", "Degraded"]
+                description: Current phase
+                enum:
+                - Pending
+                - Provisioning
+                - Ready
+                - Failed
+                - Updating
+                - Degraded
               message:
                 type: string
-                description: "Human-readable status message"
+                description: Human-readable status message
               reason:
                 type: string
-                description: "Reason for current phase"
+                description: Reason for current phase
               conditions:
                 type: array
                 items:
@@ -266,7 +281,10 @@ spec:
                       type: string
                     status:
                       type: string
-                      enum: ["True", "False", "Unknown"]
+                      enum:
+                      - 'True'
+                      - 'False'
+                      - Unknown
                     reason:
                       type: string
                     message:
@@ -279,40 +297,37 @@ spec:
                   - status
               observedGeneration:
                 type: integer
-                description: "Generation of spec that was last processed"
-              # Connection details
+                description: Generation of spec that was last processed
               adminUsername:
                 type: string
               adminSecret:
                 type: string
               authorizationSecretName:
                 type: string
-                description: "Name of the secret containing the operator's authorization token"
+                description: Name of the secret containing the operator's authorization token
               internalUrl:
                 type: string
               externalUrl:
                 type: string
-              # Service endpoints
               endpoints:
                 type: object
-                description: "Keycloak service endpoints"
+                description: Keycloak service endpoints
                 properties:
                   admin:
                     type: string
-                    description: "Admin endpoint URL"
+                    description: Admin endpoint URL
                   public:
                     type: string
-                    description: "Public endpoint URL"
+                    description: Public endpoint URL
                   management:
                     type: string
-                    description: "Management endpoint URL"
+                    description: Management endpoint URL
               deployment:
                 type: string
-                description: "Name of the Keycloak deployment"
+                description: Name of the Keycloak deployment
               service:
                 type: string
-                description: "Name of the Keycloak service"
-              # Health status
+                description: Name of the Keycloak service
               readyReplicas:
                 type: integer
               lastHealthCheck:
@@ -320,7 +335,21 @@ spec:
                 format: date-time
               databaseStatus:
                 type: string
-                enum: ["Connected", "Connecting", "Failed", "Unknown"]
+                enum:
+                - Connected
+                - Connecting
+                - Failed
+                - Unknown
+              realmCount:
+                type: integer
+                description: Current number of managed realms
+              acceptingNewRealms:
+                type: boolean
+                description: Whether new realm creation is currently allowed
+                default: true
+              capacityStatus:
+                type: string
+                description: Human-readable capacity status message
     additionalPrinterColumns:
     - name: Phase
       type: string
