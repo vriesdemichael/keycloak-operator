@@ -201,8 +201,8 @@ class TestHelmClientDeployment:
             operator_auth_secret=admission_secret_name,
         )
 
-        # Wait for realm to be ready and get auth secret
-        async def realm_ready_with_secret():
+        # Wait for realm to be ready
+        async def realm_ready():
             try:
                 realm = await k8s_custom_objects.get_namespaced_custom_object(
                     group="vriesdemichael.github.io",
@@ -213,24 +213,15 @@ class TestHelmClientDeployment:
                 )
                 status = realm.get("status", {})
                 phase = status.get("phase")
-                auth_secret = status.get("authorizationSecretName")
-                return phase == "Ready" and auth_secret is not None
+                return phase == "Ready"
             except ApiException:
                 return False
 
-        assert await _simple_wait(realm_ready_with_secret, timeout=120, interval=5)
+        assert await _simple_wait(realm_ready, timeout=120, interval=5)
 
-        # Get the realm auth secret name
-        realm = await k8s_custom_objects.get_namespaced_custom_object(
-            group="vriesdemichael.github.io",
-            version="v1",
-            namespace=test_namespace,
-            plural="keycloakrealms",
-            name=f"{realm_release}-keycloak-realm",
-        )
-        realm_auth_secret = realm["status"]["authorizationSecretName"]
+        # Realm is ready - no auth secret needed (grant list authorization)
 
-        # Deploy client via Helm with realm auth secret
+        # Deploy client via Helm
         client_id = f"test-client-{uuid.uuid4().hex[:8]}"
         client_release = f"client-{uuid.uuid4().hex[:8]}"
 
@@ -239,7 +230,6 @@ class TestHelmClientDeployment:
             client_id=client_id,
             realm_name=f"{realm_release}-keycloak-realm",
             realm_namespace=test_namespace,
-            realm_auth_secret=realm_auth_secret,
             publicClient=False,
             redirectUris=["https://example.com/callback"],
         )
