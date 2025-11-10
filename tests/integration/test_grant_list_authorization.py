@@ -46,7 +46,7 @@ class TestGrantListAuthorization:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": client_namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         try:
@@ -96,7 +96,7 @@ class TestGrantListAuthorization:
                 "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakClient",
                 "metadata": {"name": client_name, "namespace": client_namespace},
-                "spec": client_spec.model_dump(by_alias=True, exclude_none=True),
+                "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
@@ -180,7 +180,7 @@ class TestGrantListAuthorization:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": client_namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
         }
 
         try:
@@ -216,7 +216,7 @@ class TestGrantListAuthorization:
                 "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakClient",
                 "metadata": {"name": client_name, "namespace": client_namespace},
-                "spec": client_spec.model_dump(by_alias=True, exclude_none=True),
+                "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
