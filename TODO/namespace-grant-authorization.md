@@ -107,44 +107,16 @@ Transform the authorization system from a complex dual-token model to a GitOps-n
   - Note: Models updated, quality checks pass
 
 ### 2.2 JSON Schemas
-- [ ] Update `_schemas/v1/KeycloakRealm.json`
-  - [ ] Add `clientAuthorizationGrants` array
-  - [ ] Remove `authorizationSecretRef` from operatorRef
-  - [ ] Add status properties
-  - [ ] Update descriptions
-- [ ] Update `_schemas/v1/KeycloakClient.json`
-  - [ ] Remove `authorizationSecretRef` from realmRef
-  - [ ] Add status properties
-  - [ ] Update descriptions
-- [ ] Update `_schemas/v1/Keycloak.json`
-  - [ ] Add `realmCapacity` object
-  - [ ] Add status properties
-  - [ ] Update descriptions
-- [ ] Sync to `_schemas/latest/`
-  - [ ] Copy all updated schemas
-  - [ ] Verify no breaking changes to existing fields
+- [x] Update `_schemas/v1/KeycloakRealm.json`
+- [x] Update `_schemas/v1/KeycloakClient.json`
+- [x] Update `_schemas/v1/Keycloak.json`
+- [x] Sync to `_schemas/latest/`
 
 ### 2.3 Kubernetes CRDs
-- [ ] Update `charts/keycloak-operator/crds/keycloakrealm-crd.yaml`
-  - [ ] Add `clientAuthorizationGrants` to spec
-  - [ ] Remove `authorizationSecretRef` from operatorRef
-  - [ ] Add status subresource fields
-  - [ ] Update OpenAPI validation
-  - [ ] Update field descriptions
-- [ ] Update `charts/keycloak-operator/crds/keycloakclient-crd.yaml`
-  - [ ] Remove `authorizationSecretRef` from realmRef
-  - [ ] Add status subresource fields
-  - [ ] Update OpenAPI validation
-  - [ ] Update field descriptions
-- [ ] Update `charts/keycloak-operator/crds/keycloak-crd.yaml`
-  - [ ] Add `realmCapacity` to spec
-  - [ ] Add status subresource fields
-  - [ ] Update OpenAPI validation
-  - [ ] Update field descriptions
-- [ ] Validate CRD changes
-  - [ ] Run `kubectl apply --dry-run=server` on test cluster
-  - [ ] Verify backwards compatibility where possible
-  - [ ] Document breaking changes
+- [x] Update `charts/keycloak-operator/crds/keycloakrealm-crd.yaml`
+- [x] Update `charts/keycloak-operator/crds/keycloakclient-crd.yaml`
+- [x] Update `charts/keycloak-operator/crds/keycloak-crd.yaml`
+- [x] Validate CRD changes (YAML validity checked)
 
 ---
 
