@@ -14,13 +14,10 @@ operatorRef:
   # Namespace where the operator is running
   namespace: keycloak-system
 
-  # Authorization secret containing the operator token (optional for now)
-  # This feature is not yet implemented - leave empty
-  authorizationSecretRef:
-    # Name of the secret containing the operator's authorization token
-    name: ""
-    # Key within the secret (default: token)
-    key: token
+# Client Authorization Grants
+# List of namespaces authorized to create clients in this realm
+# Example: ["app-team", "another-team"]
+clientAuthorizationGrants: []
 
 # RBAC configuration
 # Creates a RoleBinding to grant the operator access to this namespace

@@ -17,13 +17,10 @@ spec:
   description: {{ . }}
   {{- end }}
 
-  # Realm reference for authorization
+  # Realm reference
   realmRef:
     name: {{ required "realmRef.name is required" .Values.realmRef.name }}
     namespace: {{ required "realmRef.namespace is required" .Values.realmRef.namespace }}
-    authorizationSecretRef:
-      name: {{ required "realmRef.authorizationSecretRef.name is required" .Values.realmRef.authorizationSecretRef.name }}
-      key: {{ .Values.realmRef.authorizationSecretRef.key | default "token" }}
 
   # Client type
   publicClient: {{ .Values.publicClient }}

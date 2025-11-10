@@ -17,14 +17,15 @@ spec:
   displayName: {{ . }}
   {{- end }}
 
-  # Operator reference for authorization
+  # Operator reference
   operatorRef:
     namespace: {{ required "operatorRef.namespace is required" .Values.operatorRef.namespace }}
-    {{- if .Values.operatorRef.authorizationSecretRef.name }}
-    authorizationSecretRef:
-      name: {{ .Values.operatorRef.authorizationSecretRef.name }}
-      key: {{ .Values.operatorRef.authorizationSecretRef.key | default "token" }}
-    {{- end }}
+
+  # Client authorization grants
+  {{- with .Values.clientAuthorizationGrants }}
+  clientAuthorizationGrants:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 
   {{- with .Values.security }}
   security:
