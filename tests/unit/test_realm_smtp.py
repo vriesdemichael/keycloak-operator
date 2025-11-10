@@ -3,7 +3,6 @@
 import pytest
 from pydantic import ValidationError
 
-from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import (
     KeycloakRealmSpec,
     KeycloakSMTPConfig,

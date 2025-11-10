@@ -15,14 +15,14 @@ agent_instructions: >
   authorization state (authorizedClientNamespaces in realm, authorizationStatus in client).
 rationale: >
   The dual-token authorization model created complexity and deviated from GitOps principles:
-  
+
   Problems with token-based auth:
   - Complexity: Token generation, distribution, rotation lifecycle
   - Manual intervention: Platform team distributing secrets
   - Cross-namespace coordination: Secret syncing between namespaces
   - Not GitOps-native: Secrets don't belong in Git, rotation causes drift
   - Team churn: Long-lived credentials outlive team membership
-  
+
   Benefits of grant list approach:
   - Simplicity: No token management at all for users
   - GitOps-native: Authorization as declarative list in realm manifest
@@ -31,18 +31,18 @@ rationale: >
   - Audit trail: Git history shows all access changes
   - Self-service: Teams create realms without platform intervention
   - Kubernetes-native: Follows RBAC patterns, integrates with existing security model
-  
+
   Capacity management addresses operational scaling:
   - Operators can set maxRealms limit to prevent resource exhaustion
   - allowNewRealms flag enables graceful capacity handling
   - Existing realms continue working when capacity reached
   - Clear messaging guides users to alternative operators
-  
+
   Trade-offs:
   - Realm teams maintain grant lists (added overhead)
   - Requires cross-namespace read permissions for operator
   - Revocation only blocks new clients, existing continue (by design)
-  
+
   This aligns with ADR 003 (least privilege), ADR 004 (GitOps-first), ADR 005 (no plaintext secrets),
   ADR 016 (multi-namespace), and ADR 017 (K8s RBAC over Keycloak security).
 rejected_alternatives:

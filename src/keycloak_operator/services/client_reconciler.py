@@ -5,7 +5,6 @@ This module handles the lifecycle of Keycloak clients including
 client creation, credential management, and OAuth2 configuration.
 """
 
-import os
 from typing import Any
 
 from kubernetes import client
@@ -14,7 +13,6 @@ from kubernetes.client.rest import ApiException
 from ..errors import KeycloakAdminError, ReconciliationError, ValidationError
 from ..models.client import KeycloakClientSpec
 from ..utils.keycloak_admin import get_keycloak_admin_client
-from ..utils.rbac import get_secret_with_validation
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 
@@ -236,7 +234,7 @@ class KeycloakClientReconciler(BaseReconciler):
         status.credentials_secret = secret_name
         status.public_client = client_spec.public_client
         status.endpoints = endpoints
-        
+
         # Authorization status
         status.authorization_granted = True
         status.authorization_message = f"Namespace '{namespace}' is authorized by realm"
@@ -340,9 +338,11 @@ class KeycloakClientReconciler(BaseReconciler):
                 f"The realm owner must add '{client_namespace}' to the "
                 f"spec.clientAuthorizationGrants list in the realm CR."
             )
-            
+
             if not grant_list:
-                error_msg += " (Note: The realm has no authorized namespaces configured)"
+                error_msg += (
+                    " (Note: The realm has no authorized namespaces configured)"
+                )
             else:
                 error_msg += f" (Currently authorized: {', '.join(grant_list)})"
 
@@ -369,7 +369,6 @@ class KeycloakClientReconciler(BaseReconciler):
             Client UUID from Keycloak
         """
         self.logger.info(f"Ensuring client {spec.client_id} exists")
-        from ..utils.auth import validate_authorization
         from ..utils.kubernetes import validate_keycloak_reference
 
         # Resolve realm reference and get realm info

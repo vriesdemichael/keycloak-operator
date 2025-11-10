@@ -19,7 +19,6 @@ import pytest
 import yaml
 from kubernetes import client
 
-from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.realm import (
     KeycloakIdentityProvider,
     KeycloakRealmSpec,
@@ -213,12 +212,7 @@ async def test_realm_with_oidc_identity_provider(
 
     realm_spec = KeycloakRealmSpec(
         realm_name=realm_name,
-        operator_ref=OperatorRef(
-            namespace=operator_namespace,
-            authorization_secret_ref=AuthorizationSecretRef(
-                name=admission_secret_name, key="token"
-            ),
-        ),
+        operator_ref=OperatorRef(namespace=operator_namespace),
         identity_providers=[idp_config],
     )
 
@@ -337,12 +331,7 @@ async def test_realm_with_github_identity_provider_example(
 
     realm_spec = KeycloakRealmSpec(
         realm_name=realm_name,
-        operator_ref=OperatorRef(
-            namespace=operator_namespace,
-            authorization_secret_ref=AuthorizationSecretRef(
-                name=admission_secret_name, key="token"
-            ),
-        ),
+        operator_ref=OperatorRef(namespace=operator_namespace),
         identity_providers=[github_idp],
     )
 

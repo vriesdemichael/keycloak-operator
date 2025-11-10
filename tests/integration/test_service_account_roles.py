@@ -55,20 +55,13 @@ class TestServiceAccountRoles:
             RealmRef,
             ServiceAccountRoles,
         )
-        from keycloak_operator.models.common import AuthorizationSecretRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
         # Get admission token from fixture
         admission_secret_name, _ = admission_token_setup
 
         realm_spec = KeycloakRealmSpec(
-            operator_ref=OperatorRef(
-                namespace=operator_namespace,
-                authorization_secret_ref=AuthorizationSecretRef(
-                    name=admission_secret_name,
-                    key="token",
-                ),
-            ),
+            operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
         )
 
@@ -80,23 +73,13 @@ class TestServiceAccountRoles:
         }
 
         client_spec = KeycloakClientSpec(
-            realm_ref=RealmRef(
-                name=realm_name,
-                namespace=namespace,
-                authorization_secret_ref=AuthorizationSecretRef(
-                    name=f"{realm_name}-realm-auth",  # Created by realm reconciler
-                    key="token",
-                ),
-            ),
+            realm_ref=RealmRef(name=realm_name, namespace=namespace),
             client_id=client_name,
             public_client=False,
             service_account_roles=ServiceAccountRoles(
-                realm_roles=[service_account_role],
-                client_roles={},
+                realm_roles=[service_account_role], client_roles={}
             ),
-            settings=KeycloakClientSettings(
-                service_accounts_enabled=True,
-            ),
+            settings=KeycloakClientSettings(service_accounts_enabled=True),
         )
 
         client_manifest = {
@@ -153,9 +136,9 @@ class TestServiceAccountRoles:
                     else:
                         raise
 
-            assert secret_exists, (
-                f"Realm authorization secret {realm_auth_secret_name} was not created"
-            )
+            assert (
+                secret_exists
+            ), f"Realm authorization secret {realm_auth_secret_name} was not created"
 
             # Create realm role using async HTTP call
             role_endpoint = (
@@ -224,8 +207,7 @@ class TestServiceAccountRoles:
                     "Authorization": f"Bearer {keycloak_admin_client.access_token}"
                 }
                 mapping_response = await session.get(
-                    role_mapping_endpoint,
-                    headers=headers,
+                    role_mapping_endpoint, headers=headers
                 )
                 mapping_response.raise_for_status()
                 assigned_roles_data = mapping_response.json()

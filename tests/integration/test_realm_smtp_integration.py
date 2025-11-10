@@ -20,7 +20,6 @@ async def test_realm_with_smtp_secret_reference(
     # Get admission token from fixture
     admission_secret_name, _ = admission_token_setup
 
-    from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
         KeycloakSMTPConfig,
@@ -49,13 +48,7 @@ async def test_realm_with_smtp_secret_reference(
         custom_api = client.CustomObjectsApi()
 
         realm_spec = KeycloakRealmSpec(
-            operator_ref=OperatorRef(
-                namespace=operator_namespace,
-                authorization_secret_ref=AuthorizationSecretRef(
-                    name=admission_secret_name,
-                    key="token",
-                ),
-            ),
+            operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
             smtp_server=KeycloakSMTPConfig(
                 host="smtp.example.com",
@@ -140,7 +133,6 @@ async def test_realm_with_smtp_direct_password(
     # Get admission token from fixture
     admission_secret_name, _ = admission_token_setup
 
-    from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
         KeycloakSMTPConfig,
@@ -155,13 +147,7 @@ async def test_realm_with_smtp_direct_password(
     try:
         # Create KeycloakRealm with direct password
         realm_spec = KeycloakRealmSpec(
-            operator_ref=OperatorRef(
-                namespace=operator_namespace,
-                authorization_secret_ref=AuthorizationSecretRef(
-                    name=admission_secret_name,
-                    key="token",
-                ),
-            ),
+            operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
             smtp_server=KeycloakSMTPConfig(
                 host="smtp.example.com",
@@ -224,7 +210,6 @@ async def test_realm_with_missing_smtp_secret(
     # Get admission token from fixture
     admission_secret_name, _ = admission_token_setup
 
-    from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
         KeycloakSMTPConfig,
@@ -241,13 +226,7 @@ async def test_realm_with_missing_smtp_secret(
     try:
         # Create KeycloakRealm referencing non-existent secret
         realm_spec = KeycloakRealmSpec(
-            operator_ref=OperatorRef(
-                namespace=operator_namespace,
-                authorization_secret_ref=AuthorizationSecretRef(
-                    name=admission_secret_name,
-                    key="token",
-                ),
-            ),
+            operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
             smtp_server=KeycloakSMTPConfig(
                 host="smtp.example.com",
@@ -323,7 +302,6 @@ async def test_realm_with_missing_secret_key(
     # Get admission token from fixture
     admission_secret_name, _ = admission_token_setup
 
-    from keycloak_operator.models.common import AuthorizationSecretRef
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
         KeycloakSMTPConfig,
@@ -353,13 +331,7 @@ async def test_realm_with_missing_secret_key(
     try:
         # Create KeycloakRealm referencing wrong key
         realm_spec = KeycloakRealmSpec(
-            operator_ref=OperatorRef(
-                namespace=operator_namespace,
-                authorization_secret_ref=AuthorizationSecretRef(
-                    name=admission_secret_name,
-                    key="token",
-                ),
-            ),
+            operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
             smtp_server=KeycloakSMTPConfig(
                 host="smtp.example.com",
