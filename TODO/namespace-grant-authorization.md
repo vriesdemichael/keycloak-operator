@@ -346,17 +346,20 @@ Transform the authorization system from a complex dual-token model to a GitOps-n
 **Goal**: Remove old code, prepare for release
 
 ### 7.1 Code Cleanup
-- [x] Deleted token management files
+- [x] Deleted token management files (7 files)
   - [x] handlers/token_rotation.py (280 lines)
-  - [x] utils/auth.py
-  - [x] utils/token_manager.py
-  - [x] utils/secret_manager.py
-- [ ] Clean up operator.py (IN PROGRESS)
-  - [x] Remove token_rotation import
-  - [ ] Remove token initialization code
-  - [ ] Remove token global variables
-- [ ] Verify no broken imports
-- [ ] Run quality checks
+  - [x] utils/auth.py, token_manager.py, secret_manager.py
+  - [x] tests/unit/test_auth.py, test_secret_manager.py, test_token_manager.py
+- [x] Clean up operator.py
+  - [x] Removed token_rotation import
+  - [x] Removed token initialization code (~121 lines)
+  - [x] Removed token global variables
+- [x] Clean up realm_reconciler.py
+  - [x] Removed token status code (~30 lines)
+  - [x] Removed ensure_realm_authorization_secret function (~96 lines)
+- [x] Run quality checks (ALL PASSING ✓)
+
+**Total cleanup: ~850 lines of dead code removed**
 
 ### 7.2 Test Cleanup
 - [ ] Remove obsolete test files

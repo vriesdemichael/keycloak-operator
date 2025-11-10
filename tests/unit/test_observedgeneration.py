@@ -325,21 +325,10 @@ class TestRealmReconcilerGenerationTracking:
                 realm_reconciler, "ensure_realm_exists", new_callable=AsyncMock
             ),
             patch.object(
-                realm_reconciler,
-                "ensure_realm_authorization_secret",
-                new_callable=AsyncMock,
-                return_value="test-realm-realm-auth",
-            ),
-            patch.object(
                 realm_reconciler, "manage_realm_backup", new_callable=AsyncMock
             ),
             patch(
                 "keycloak_operator.utils.kubernetes.validate_keycloak_reference",
-                return_value=None,
-            ),
-            patch(
-                "keycloak_operator.utils.secret_manager.SecretManager.get_secret",
-                new_callable=AsyncMock,
                 return_value=None,
             ),
         ):
