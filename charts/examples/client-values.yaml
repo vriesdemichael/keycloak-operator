@@ -8,9 +8,6 @@ description: "My Application"
 realmRef:
   name: my-realm
   namespace: my-team
-  authorizationSecretRef:
-    name: my-realm-realm-auth  # Get this from realm status
-    key: token
 
 # Client type - confidential client for web application
 publicClient: false

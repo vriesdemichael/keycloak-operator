@@ -718,7 +718,7 @@ when creating the realm via Helm.
 6. feat: add grant list to keycloak-client Helm chart
 7. feat: add grant list to keycloak-operator Helm chart
 8. test: add comprehensive grant list integration tests
-9. docs: add ADR-0009 for namespace grant authorization
+9. docs: add ADR-063 for namespace grant authorization
 10. docs: update user guide with grant list instructions
 11. docs: add grant list examples
 12. fix: correct RBAC realm get permission
@@ -776,7 +776,7 @@ The tests were creating realms WITHOUT `clientAuthorizationGrants`, which meant:
 - ✅ All 3 Helm charts updated
 - ✅ 6 integration tests (4 new, 2 fixed)
 - ✅ 100% test coverage
-- ✅ ADR-0009 documentation
+- ✅ ADR-063 documentation
 - ✅ User guide and examples
 
 **Status**: PRODUCTION READY 🚀
