@@ -2482,6 +2482,9 @@ def realm_cr_factory(
                         "key": "token",
                     },
                 },
+                "clientAuthorizationGrants": [
+                    test_namespace
+                ],  # Grant test namespace access
                 "settings": {
                     "enabled": True,
                     "registrationAllowed": False,
