@@ -144,6 +144,9 @@ class TestFinalizersE2E:
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
+            client_authorization_grants=[
+                namespace
+            ],  # Grant client creation in this namespace
         )
 
         realm_manifest = {
@@ -274,6 +277,9 @@ class TestFinalizersE2E:
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
+            client_authorization_grants=[
+                test_namespace
+            ],  # Grant client creation in this namespace
         )
 
         realm_manifest = {
