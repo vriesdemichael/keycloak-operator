@@ -7,9 +7,6 @@ displayName: "My Team Realm"
 # Reference to the operator (required)
 operatorRef:
   namespace: keycloak-system
-  authorizationSecretRef:
-    name: keycloak-operator-auth-token
-    key: token
 
 # Security settings
 security:
