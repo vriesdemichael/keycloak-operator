@@ -261,7 +261,7 @@
          <lastmod>2025-11-11</lastmod>
     </url>
     <url>
-         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/054-namespace-watch-scope-configurable/</loc>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac/</loc>
          <lastmod>2025-11-11</lastmod>
     </url>
     <url>

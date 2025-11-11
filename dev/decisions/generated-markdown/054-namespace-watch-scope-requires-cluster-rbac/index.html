@@ -10,7 +10,7 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/054-namespace-watch-scope-configurable/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac/">
       
       
         <link rel="prev" href="../053-error-categorization-temporary-vs-permanent/">
@@ -24,7 +24,7 @@
     
     
       
-        <title>ADR-054: Namespace watch scope configurable via environment variable - Keycloak Operator</title>
+        <title>ADR-054: Namespace watch scope requires cluster-wide RBAC - Keycloak Operator</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-054-namespace-watch-scope-configurable-via-environment-variable" class="md-skip">
+        <a href="#adr-054-namespace-watch-scope-requires-cluster-wide-rbac" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-054: Namespace watch scope configurable via environment variable
+              ADR-054: Namespace watch scope requires cluster-wide RBAC
             
           </span>
         </div>
@@ -2532,7 +2532,7 @@
   
   
   <span class="md-ellipsis">
-    ADR-054: Namespace watch scope configurable via environment variable
+    ADR-054: Namespace watch scope requires cluster-wide RBAC
     
   </span>
   
@@ -2545,7 +2545,7 @@
   
   
   <span class="md-ellipsis">
-    ADR-054: Namespace watch scope configurable via environment variable
+    ADR-054: Namespace watch scope requires cluster-wide RBAC
     
   </span>
   
@@ -2626,6 +2626,15 @@
   <a href="#helm-chart-value-for-namespace-list" class="md-nav__link">
     <span class="md-ellipsis">
       Helm chart value for namespace list
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#namespace-scoped-rbac-role-instead-of-clusterrole" class="md-nav__link">
+    <span class="md-ellipsis">
+      Namespace-scoped RBAC (Role instead of ClusterRole)
     </span>
   </a>
   
@@ -3046,6 +3055,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#namespace-scoped-rbac-role-instead-of-clusterrole" class="md-nav__link">
+    <span class="md-ellipsis">
+      Namespace-scoped RBAC (Role instead of ClusterRole)
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -3067,7 +3085,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/054-namespace-watch-scope-configurable.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -3075,15 +3093,15 @@
   
 
 
-<h1 id="adr-054-namespace-watch-scope-configurable-via-environment-variable">ADR-054: Namespace watch scope configurable via environment variable<a class="headerlink" href="#adr-054-namespace-watch-scope-configurable-via-environment-variable" title="Permanent link">&para;</a></h1>
+<h1 id="adr-054-namespace-watch-scope-requires-cluster-wide-rbac">ADR-054: Namespace watch scope requires cluster-wide RBAC<a class="headerlink" href="#adr-054-namespace-watch-scope-requires-cluster-wide-rbac" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> architecture
 <strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Operator watches all namespaces by default (cluster-wide mode) but can be restricted to specific namespaces via KEYCLOAK_OPERATOR_NAMESPACES environment variable. No label-based selection.</p>
+<p>Operator watches all namespaces by default (cluster-wide mode) but can be restricted to specific namespaces via KEYCLOAK_OPERATOR_NAMESPACES environment variable. Regardless of watch scope restriction, operator always requires ClusterRole permissions because CRDs are cluster-scoped resources and ClusterKopfPeering is required for leader election. No label-based namespace selection.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Cluster-wide operation by default enables dynamic provisioning - teams can create resources in any namespace without operator reconfiguration. Environment variable configuration supports restricted deployments where operator should only manage specific namespaces (multi-tenant clusters, security boundaries). Explicit namespace list (no labels) provides clear, auditable scope. Simpler than label-based selection - no watching namespace objects, no dynamic discovery complexity. Kopf natively supports both modes (clusterwide=True vs namespaces=list). RBAC enforcement at Kubernetes level prevents unauthorized access regardless of watch scope.</p>
+<p>Cluster-wide operation by default enables dynamic provisioning - teams can create resources in any namespace without operator reconfiguration. Environment variable configuration supports restricted deployments where operator should only manage specific namespaces (multi-tenant clusters, security boundaries). Explicit namespace list (no labels) provides clear, auditable scope. Simpler than label-based selection - no watching namespace objects, no dynamic discovery complexity. Kopf natively supports both modes (clusterwide=True vs namespaces=list). RBAC enforcement at Kubernetes level prevents unauthorized access regardless of watch scope. Note that even with restricted watch scope, operator cannot be deployed with namespace-scoped RBAC only, because CRDs are cluster-scoped resources requiring ClusterRole for watching, and ClusterKopfPeering is required for leader election in HA deployments. This differs from controllers like nginx-ingress which use built-in Kubernetes resources (Ingress) rather than CRDs.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Default behavior: operator watches all namespaces (clusterwide=True in Kopf). To restrict: set KEYCLOAK_OPERATOR_NAMESPACES environment variable to comma-separated namespace list. Implementation in src/keycloak_operator/operator.py function get_watched_namespaces(). Kopf called with namespaces=list for restricted mode or clusterwide=True for all namespaces. RBAC must grant access to watched namespaces. No automatic label-based namespace discovery - explicit list only.</p>
+<p>Default behavior: operator watches all namespaces (clusterwide=True in Kopf). To restrict: set KEYCLOAK_OPERATOR_NAMESPACES environment variable to comma-separated namespace list. Implementation in src/keycloak_operator/operator.py function get_watched_namespaces(). Kopf called with namespaces=list for restricted mode or clusterwide=True for all namespaces. Important: ClusterRole permissions are always required for CRD watching (list/get/watch), status updates, and ClusterKopfPeering for leader election. RBAC must grant access to watched namespaces via additional RoleBindings. No automatic label-based namespace discovery - explicit list only.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="always-watch-all-namespaces-only">Always watch all namespaces only<a class="headerlink" href="#always-watch-all-namespaces-only" title="Permanent link">&para;</a></h3>
 <p>Doesn't support restricted deployments where operator should only access specific namespaces for security/isolation.</p>
@@ -3091,6 +3109,8 @@
 <p>More complex - requires watching namespace objects, dynamic discovery. Harder to audit. Explicit list is clearer.</p>
 <h3 id="helm-chart-value-for-namespace-list">Helm chart value for namespace list<a class="headerlink" href="#helm-chart-value-for-namespace-list" title="Permanent link">&para;</a></h3>
 <p>Requires operator restart to change scope. Environment variable allows runtime configuration without chart upgrade.</p>
+<h3 id="namespace-scoped-rbac-role-instead-of-clusterrole">Namespace-scoped RBAC (Role instead of ClusterRole)<a class="headerlink" href="#namespace-scoped-rbac-role-instead-of-clusterrole" title="Permanent link">&para;</a></h3>
+<p>Technically impossible. CRDs are cluster-scoped resources that require ClusterRole permissions to watch. ClusterKopfPeering for leader election also requires cluster permissions. Even controllers using built-in resources (nginx-ingress) require ClusterRole for cluster-scoped resources like IngressClass. Pre-installing CRDs separately doesn't solve this - the operator still needs to watch them at cluster scope.</p>
 
 
 
