@@ -1,0 +1,26 @@
+{{- if .Values.webhooks.enabled }}
+---
+# Service for admission webhooks
+# This service routes webhook requests from K8s API server to operator pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}-webhook
+  namespace: {{ include "keycloak-operator.namespace" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: webhook
+  {{- with include "keycloak-operator.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+  - name: webhook
+    port: 443
+    targetPort: webhook
+    protocol: TCP
+  selector:
+    {{- include "keycloak-operator.selectorLabels" . | nindent 4 }}
+{{- end }}
