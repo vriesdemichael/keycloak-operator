@@ -5,10 +5,12 @@ metadata:
   namespace: {{ include "keycloak-operator.namespace" . }}
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
-  {{- with include "keycloak-operator.annotations" . }}
   annotations:
+    {{- with include "keycloak-operator.annotations" . }}
     {{- . | nindent 4 }}
-  {{- end }}
+    {{- end }}
+    # ArgoCD sync wave: Deploy operator before application resources
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   replicas: {{ .Values.operator.replicaCount }}
   selector:
@@ -106,8 +108,26 @@ spec:
           {{- toYaml .Values.operator.resources | nindent 10 }}
         livenessProbe:
           {{- toYaml .Values.operator.livenessProbe | nindent 10 }}
+        {{- if .Values.webhooks.enabled }}
+        # When webhooks are enabled, check both health endpoint and webhook port
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - |
+              # Check health endpoint
+              wget -q -O- http://localhost:8080/healthz > /dev/null || exit 1
+              # Check webhook server is listening
+              timeout 2 bash -c '</dev/tcp/localhost/{{ .Values.webhooks.port }}' || exit 1
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        {{- else }}
         readinessProbe:
           {{- toYaml .Values.operator.readinessProbe | nindent 10 }}
+        {{- end }}
         securityContext:
           {{- toYaml .Values.operator.containerSecurityContext | nindent 10 }}
         volumeMounts:

@@ -7,10 +7,12 @@ metadata:
   namespace: {{ include "keycloak-operator.namespace" . }}
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
-  {{- with include "keycloak-operator.annotations" . }}
   annotations:
+    {{- with include "keycloak-operator.annotations" . }}
     {{- . | nindent 4 }}
-  {{- end }}
+    {{- end }}
+    # ArgoCD sync wave: Create Keycloak after operator is ready
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   replicas: {{ .Values.keycloak.replicas }}
   image: {{ .Values.keycloak.image }}:{{ .Values.keycloak.version }}
