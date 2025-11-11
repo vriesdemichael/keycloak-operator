@@ -339,3 +339,31 @@ commonLabels: {}
 
 # Common annotations applied to all resources
 commonAnnotations: {}
+
+# Admission webhook configuration
+webhooks:
+  # Enable admission webhooks for resource validation
+  # Provides immediate feedback on invalid resources and enforces quotas
+  enabled: true
+
+  # Webhook server port
+  port: 8443
+
+  # Webhook timeout (seconds)
+  # How long K8s API server waits for webhook response
+  timeoutSeconds: 10
+
+  # Failure policy: Fail (reject on webhook error) or Ignore (allow on webhook error)
+  # Fail = fail-closed (more secure, blocks on webhook issues)
+  # Ignore = fail-open (more available, allows on webhook issues)
+  failurePolicy: Fail
+
+  # Resource quotas enforced by webhooks
+  quotas:
+    # Maximum realms per namespace
+    realmsPerNamespace: 10
+
+    # Maximum clients per namespace
+    clientsPerNamespace: 50
+
+    # Note: Keycloak instances are limited to 1 per namespace (ADR-062)

@@ -102,6 +102,17 @@ RECONCILE_JITTER_MAX = float(os.getenv("RECONCILE_JITTER_MAX_SECONDS", "5.0"))
 SUPPORTED_DATABASES = ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
 DEPRECATED_DATABASES = ["h2"]  # No longer supported in production
 
+# Admission webhook quota configuration
+# These can be overridden via environment variables for different deployment scenarios
+WEBHOOK_MAX_REALMS_PER_NAMESPACE = int(
+    os.getenv("WEBHOOK_MAX_REALMS_PER_NAMESPACE", "10")
+)
+WEBHOOK_MAX_CLIENTS_PER_NAMESPACE = int(
+    os.getenv("WEBHOOK_MAX_CLIENTS_PER_NAMESPACE", "50")
+)
+# Keycloak instances: enforced as 1 per namespace (ADR-062)
+WEBHOOK_MAX_KEYCLOAKS_PER_NAMESPACE = 1
+
 # Error message templates
 ERROR_MISSING_SECRET = "Required secret '{}' not found in namespace '{}'"
 ERROR_SECRET_NOT_LABELED = (
