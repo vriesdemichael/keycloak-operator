@@ -193,12 +193,13 @@ class TestHelmClientDeployment:
         # Get admission token from fixture
         admission_secret_name, _ = admission_token_setup
 
-        # First deploy a realm
+        # First deploy a realm with grant list
         await helm_realm(
             release_name=realm_release,
             realm_name=realm_name,
             operator_namespace=operator_namespace,
             operator_auth_secret=admission_secret_name,
+            clientAuthorizationGrants=[test_namespace],  # Grant test namespace access
         )
 
         # Wait for realm to be ready
