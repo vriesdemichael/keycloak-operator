@@ -77,6 +77,11 @@ rules:
   resources: ["clusterkopfpeerings"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
+# Webhook configuration management (for CA bundle injection by Kopf)
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["validatingwebhookconfigurations"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+
 ---
 # Namespace-scoped Role for managing resources in operator's own namespace
 apiVersion: rbac.authorization.k8s.io/v1

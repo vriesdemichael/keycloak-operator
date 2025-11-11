@@ -44,6 +44,11 @@ spec:
         - containerPort: 8081
           name: metrics
           protocol: TCP
+        {{- if .Values.webhooks.enabled }}
+        - containerPort: {{ .Values.webhooks.port }}
+          name: webhook
+          protocol: TCP
+        {{- end }}
         env:
         - name: KOPF_STANDALONE
           value: "false"
@@ -81,6 +86,19 @@ spec:
           value: {{ .Values.monitoring.driftDetection.scope.identityProviders | quote }}
         - name: DRIFT_DETECTION_SCOPE_ROLES
           value: {{ .Values.monitoring.driftDetection.scope.roles | quote }}
+        {{- if .Values.webhooks.enabled }}
+        - name: ENABLE_WEBHOOKS
+          value: "true"
+        - name: WEBHOOK_PORT
+          value: {{ .Values.webhooks.port | quote }}
+        - name: WEBHOOK_MAX_REALMS_PER_NAMESPACE
+          value: {{ .Values.webhooks.quotas.realmsPerNamespace | quote }}
+        - name: WEBHOOK_MAX_CLIENTS_PER_NAMESPACE
+          value: {{ .Values.webhooks.quotas.clientsPerNamespace | quote }}
+        {{- else }}
+        - name: ENABLE_WEBHOOKS
+          value: "false"
+        {{- end }}
         {{- with .Values.operator.env }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

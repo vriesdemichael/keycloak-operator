@@ -49,6 +49,11 @@ from keycloak_operator.observability.logging import setup_structured_logging
 from keycloak_operator.observability.metrics import MetricsServer
 from keycloak_operator.utils.rate_limiter import RateLimiter
 
+# Import webhook modules to register admission webhooks
+from keycloak_operator.webhooks import (  # noqa: F401
+    client as client_webhook,
+)
+
 # Global reference to metrics server for cleanup
 _global_metrics_server: MetricsServer | None = None
 
@@ -101,6 +106,7 @@ async def startup_handler(
     - Performance tuning
     - Metrics and health check endpoints
     - Rate limiting for Keycloak API calls
+    - Admission webhook server
     """
     logging.info("Starting Keycloak Operator...")
     # Defaults commented out - adjust as needed
@@ -119,6 +125,18 @@ async def startup_handler(
 
     # Configure error handling - be more forgiving for temporary issues
     settings.execution.max_workers = 20  # Allow concurrent processing
+
+    # Configure admission webhooks
+    webhook_enabled = os.getenv("ENABLE_WEBHOOKS", "true").lower() == "true"
+    if webhook_enabled:
+        webhook_port = int(os.getenv("WEBHOOK_PORT", "8443"))
+        settings.admission.server = kopf.WebhookServer(port=webhook_port)
+        settings.admission.managed = (
+            "vriesdemichael.github.io"  # Auto-manage webhook configs
+        )
+        logging.info(f"Admission webhooks ENABLED on port {webhook_port}")
+    else:
+        logging.info("Admission webhooks DISABLED")
 
     # Log configuration
     watched_namespaces = get_watched_namespaces()
@@ -348,7 +366,7 @@ def main() -> None:
 
     try:
         # Run the operator with leader election support
-        # Peering settings are configured in the startup handler
+        # Peering and webhook settings are configured in the startup handler
         if watched_namespaces:
             # Watch specific namespaces
             kopf.run(
