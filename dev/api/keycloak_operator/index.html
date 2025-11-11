@@ -2713,6 +2713,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/063-namespace-grant-list-authorization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ADR-063: Namespace grant list authorization for clients
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -2901,15 +2924,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keycloak_operator.operator.get_operator_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_operator_token
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#keycloak_operator.operator.get_watched_namespaces" class="md-nav__link">
     <span class="md-ellipsis">
       get_watched_namespaces
@@ -2922,15 +2936,6 @@
   <a href="#keycloak_operator.operator.health_check" class="md-nav__link">
     <span class="md-ellipsis">
       health_check
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#keycloak_operator.operator.initialize_operator_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      initialize_operator_token
     </span>
   </a>
   
@@ -3096,6 +3101,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.keycloak.RealmCapacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      RealmCapacity
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.keycloak.SecretReference" class="md-nav__link">
     <span class="md-ellipsis">
       SecretReference
@@ -3244,6 +3258,15 @@
   <a href="#keycloak_operator.models.realm.KeycloakRealmSpec.to_keycloak_config" class="md-nav__link">
     <span class="md-ellipsis">
       to_keycloak_config
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakRealmSpec.validate_namespace_grants" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_namespace_grants
     </span>
   </a>
   
@@ -3525,6 +3548,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="StatusWrapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.keycloak.StatusWrapper._to_camel_case" class="md-nav__link">
+    <span class="md-ellipsis">
+      _to_camel_case
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3587,6 +3625,30 @@
       StatusWrapper
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="StatusWrapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.realm.StatusWrapper._to_camel_case" class="md-nav__link">
+    <span class="md-ellipsis">
+      _to_camel_case
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.realm.StatusWrapper.update" class="md-nav__link">
+    <span class="md-ellipsis">
+      update
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3677,6 +3739,30 @@
       StatusWrapper
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="StatusWrapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client.StatusWrapper._to_camel_case" class="md-nav__link">
+    <span class="md-ellipsis">
+      _to_camel_case
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client.StatusWrapper.update" class="md-nav__link">
+    <span class="md-ellipsis">
+      update
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3811,6 +3897,15 @@
   <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._store_keycloak_backup_in_secret" class="md-nav__link">
     <span class="md-ellipsis">
       _store_keycloak_backup_in_secret
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._update_capacity_status" class="md-nav__link">
+    <span class="md-ellipsis">
+      _update_capacity_status
     </span>
   </a>
   
@@ -3994,6 +4089,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._check_realm_capacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      _check_realm_capacity
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._create_realm_backup" class="md-nav__link">
     <span class="md-ellipsis">
       _create_realm_backup
@@ -4111,15 +4215,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler.ensure_realm_authorization_secret" class="md-nav__link">
-    <span class="md-ellipsis">
-      ensure_realm_authorization_secret
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler.ensure_realm_exists" class="md-nav__link">
     <span class="md-ellipsis">
       ensure_realm_exists
@@ -4210,6 +4305,15 @@
   <a href="#keycloak_operator.services.client_reconciler.KeycloakClientReconciler._protocol_mapper_needs_update" class="md-nav__link">
     <span class="md-ellipsis">
       _protocol_mapper_needs_update
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.services.client_reconciler.KeycloakClientReconciler._validate_namespace_authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      _validate_namespace_authorization
     </span>
   </a>
   
@@ -5535,15 +5639,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#keycloak_operator.operator.get_operator_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      get_operator_token
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#keycloak_operator.operator.get_watched_namespaces" class="md-nav__link">
     <span class="md-ellipsis">
       get_watched_namespaces
@@ -5556,15 +5651,6 @@
   <a href="#keycloak_operator.operator.health_check" class="md-nav__link">
     <span class="md-ellipsis">
       health_check
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#keycloak_operator.operator.initialize_operator_token" class="md-nav__link">
-    <span class="md-ellipsis">
-      initialize_operator_token
     </span>
   </a>
   
@@ -5730,6 +5816,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.keycloak.RealmCapacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      RealmCapacity
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.keycloak.SecretReference" class="md-nav__link">
     <span class="md-ellipsis">
       SecretReference
@@ -5878,6 +5973,15 @@
   <a href="#keycloak_operator.models.realm.KeycloakRealmSpec.to_keycloak_config" class="md-nav__link">
     <span class="md-ellipsis">
       to_keycloak_config
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakRealmSpec.validate_namespace_grants" class="md-nav__link">
+    <span class="md-ellipsis">
+      validate_namespace_grants
     </span>
   </a>
   
@@ -6159,6 +6263,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="StatusWrapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.keycloak.StatusWrapper._to_camel_case" class="md-nav__link">
+    <span class="md-ellipsis">
+      _to_camel_case
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -6221,6 +6340,30 @@
       StatusWrapper
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="StatusWrapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.realm.StatusWrapper._to_camel_case" class="md-nav__link">
+    <span class="md-ellipsis">
+      _to_camel_case
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.realm.StatusWrapper.update" class="md-nav__link">
+    <span class="md-ellipsis">
+      update
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -6311,6 +6454,30 @@
       StatusWrapper
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="StatusWrapper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client.StatusWrapper._to_camel_case" class="md-nav__link">
+    <span class="md-ellipsis">
+      _to_camel_case
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client.StatusWrapper.update" class="md-nav__link">
+    <span class="md-ellipsis">
+      update
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -6445,6 +6612,15 @@
   <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._store_keycloak_backup_in_secret" class="md-nav__link">
     <span class="md-ellipsis">
       _store_keycloak_backup_in_secret
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._update_capacity_status" class="md-nav__link">
+    <span class="md-ellipsis">
+      _update_capacity_status
     </span>
   </a>
   
@@ -6628,6 +6804,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._check_realm_capacity" class="md-nav__link">
+    <span class="md-ellipsis">
+      _check_realm_capacity
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._create_realm_backup" class="md-nav__link">
     <span class="md-ellipsis">
       _create_realm_backup
@@ -6745,15 +6930,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler.ensure_realm_authorization_secret" class="md-nav__link">
-    <span class="md-ellipsis">
-      ensure_realm_authorization_secret
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler.ensure_realm_exists" class="md-nav__link">
     <span class="md-ellipsis">
       ensure_realm_exists
@@ -6844,6 +7020,15 @@
   <a href="#keycloak_operator.services.client_reconciler.KeycloakClientReconciler._protocol_mapper_needs_update" class="md-nav__link">
     <span class="md-ellipsis">
       _protocol_mapper_needs_update
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.services.client_reconciler.KeycloakClientReconciler._validate_namespace_authorization" class="md-nav__link">
+    <span class="md-ellipsis">
+      _validate_namespace_authorization
     </span>
   </a>
   
@@ -8231,51 +8416,6 @@ and Kubernetes CRs. It detects:
 <div class="doc doc-object doc-function">
 
 
-<h2 id="keycloak_operator.operator.get_operator_token" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">get_operator_token</span>
-
-
-<a href="#keycloak_operator.operator.get_operator_token" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_operator_token</span><span class="p">()</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Get the current operator authorization token.</p>
-<p>This function should be used instead of directly accessing OPERATOR_TOKEN
-to ensure you get the current value after initialization.</p>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>The current operator token</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h2 id="keycloak_operator.operator.get_watched_namespaces" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">get_watched_namespaces</span>
 
@@ -8357,35 +8497,6 @@ to ensure you get the current value after initialization.</p>
           </tr>
       </tbody>
     </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
-<h2 id="keycloak_operator.operator.initialize_operator_token" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">initialize_operator_token</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#keycloak_operator.operator.initialize_operator_token" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">initialize_operator_token</span><span class="p">()</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Initialize the operator's authorization token on startup.</p>
-<p>This function generates and stores a master token that will be used to authorize
-realm creation requests. The token is stored in a Kubernetes secret in the operator's
-namespace.</p>
-<p>The token is only generated if it doesn't already exist. This allows the operator
-to restart without generating a new token and breaking existing realm references.</p>
 
 
     </div>
@@ -9050,6 +9161,55 @@ as observed by the operator.</p>
 
 
         <p>TLS configuration for Keycloak instance.</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.keycloak.RealmCapacity" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">RealmCapacity</span>
+
+
+<a href="#keycloak_operator.models.keycloak.RealmCapacity" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>Capacity management for realms.</p>
+<p>Controls how many realms can be managed by this Keycloak operator
+and whether new realm creation is allowed.</p>
 
 
 
@@ -9860,6 +10020,30 @@ including security, authentication, and user management settings.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.models.realm.KeycloakRealmSpec.validate_namespace_grants" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">validate_namespace_grants</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#keycloak_operator.models.realm.KeycloakRealmSpec.validate_namespace_grants" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">validate_namespace_grants</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Validate namespace names in authorization grants.</p>
 
 
     </div>
@@ -11094,6 +11278,7 @@ status object semantics.</p>
 
 
         <p>Safe mutable wrapper around kopf patch.status for both item &amp; attribute access.</p>
+<p>Automatically converts snake_case Python attribute names to camelCase for K8s API.</p>
 
 
 
@@ -11115,6 +11300,30 @@ status object semantics.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.handlers.keycloak.StatusWrapper._to_camel_case" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_to_camel_case</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#keycloak_operator.handlers.keycloak.StatusWrapper._to_camel_case" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_to_camel_case</span><span class="p">(</span><span class="n">snake_str</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert snake_case to camelCase.</p>
+
+
+    </div>
+
+</div>
 
 
 
@@ -11741,6 +11950,7 @@ and can be managed independently across different namespaces.</p>
         <p>Wrapper to make kopf patch.status compatible with StatusProtocol.</p>
 <p>This wrapper provides both attribute and dict-like access to patch.status,
 ensuring all updates are written directly to the underlying patch object.</p>
+<p>Automatically converts snake_case Python attribute names to camelCase for K8s API.</p>
 
 
 
@@ -11762,6 +11972,50 @@ ensuring all updates are written directly to the underlying patch object.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.handlers.realm.StatusWrapper._to_camel_case" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_to_camel_case</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#keycloak_operator.handlers.realm.StatusWrapper._to_camel_case" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_to_camel_case</span><span class="p">(</span><span class="n">snake_str</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert snake_case to camelCase.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.handlers.realm.StatusWrapper.update" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">update</span>
+
+
+<a href="#keycloak_operator.handlers.realm.StatusWrapper.update" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Update multiple fields. Assumes data keys are already in camelCase.</p>
+
+
+    </div>
+
+</div>
 
 
 
@@ -12895,6 +13149,7 @@ enables GitOps-compatible client management. Key features:</p>
         <p>Wrapper to make kopf patch.status compatible with StatusProtocol.</p>
 <p>This wrapper provides both attribute and dict-like access to patch.status,
 ensuring all updates are written directly to the underlying patch object.</p>
+<p>Automatically converts snake_case Python attribute names to camelCase for K8s API.</p>
 
 
 
@@ -12916,6 +13171,50 @@ ensuring all updates are written directly to the underlying patch object.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.handlers.client.StatusWrapper._to_camel_case" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_to_camel_case</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-staticmethod"><code>staticmethod</code></small>
+  </span>
+
+<a href="#keycloak_operator.handlers.client.StatusWrapper._to_camel_case" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_to_camel_case</span><span class="p">(</span><span class="n">snake_str</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert snake_case to camelCase.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.handlers.client.StatusWrapper.update" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">update</span>
+
+
+<a href="#keycloak_operator.handlers.client.StatusWrapper.update" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Update multiple fields. Assumes data keys are already in camelCase.</p>
+
+
+    </div>
+
+</div>
 
 
 
@@ -13962,6 +14261,93 @@ deployment, services, persistence, and administrative access.</p>
             <td>
               <div class="doc-md-description">
                 <p>Namespace to store the secret</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._update_capacity_status" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_update_capacity_status</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._update_capacity_status" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_update_capacity_status</span><span class="p">(</span><span class="n">status</span><span class="p">,</span> <span class="n">spec</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Update realm capacity status fields.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>status</code>
+            </td>
+            <td>
+                  <code><span title="keycloak_operator.services.base_reconciler.StatusProtocol">StatusProtocol</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Status object to update</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>spec</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="KeycloakSpec (keycloak_operator.models.keycloak.KeycloakSpec)" href="#keycloak_operator.models.keycloak.KeycloakSpec">KeycloakSpec</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Keycloak specification</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Keycloak namespace</p>
               </div>
             </td>
             <td>
@@ -15789,6 +16175,118 @@ themes, authentication flows, identity providers, and user federation.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._check_realm_capacity" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_check_realm_capacity</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._check_realm_capacity" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_check_realm_capacity</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">keycloak_namespace</span><span class="p">,</span> <span class="n">keycloak_name</span><span class="p">,</span> <span class="n">realm_name</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Check if Keycloak operator has capacity for new realms.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>keycloak_namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Namespace containing the Keycloak instance</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>keycloak_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the Keycloak instance</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm being created</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="PermanentError">PermanentError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If capacity is exhausted and new realms are not allowed</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._create_realm_backup" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">_create_realm_backup</span>
 
@@ -17104,160 +17602,6 @@ The secret must:
 <div class="doc doc-object doc-function">
 
 
-<h3 id="keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler.ensure_realm_authorization_secret" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">ensure_realm_authorization_secret</span>
-
-
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-async"><code>async</code></small>
-  </span>
-
-<a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler.ensure_realm_authorization_secret" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ensure_realm_authorization_secret</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">realm_cr_name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">owner_uid</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
-</span></code></pre></div>
-
-    <div class="doc doc-contents ">
-
-        <p>Generate or retrieve authorization secret for this realm.</p>
-<p>Creates a Kubernetes secret containing a secure token that will be used
-by clients to authenticate their requests to manage resources within this realm.</p>
-<p>The secret has an owner reference to the realm resource for automatic cleanup.</p>
-
-
-<p><span class="doc-section-title">Parameters:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Type</th>
-          <th>Description</th>
-          <th>Default</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                <code>realm_name</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Name of the realm (used in secret name)</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>realm_cr_name</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Name of the realm CR (used in owner reference)</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>namespace</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Namespace to create the secret in</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-          <tr class="doc-section-item">
-            <td>
-                <code>owner_uid</code>
-            </td>
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>UID of the realm resource (for owner reference)</p>
-              </div>
-            </td>
-            <td>
-                <em>required</em>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    <p><span class="doc-section-title">Returns:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>Name of the secret containing the realm authorization token</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-<p><span class="doc-section-title">Raises:</span></p>
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th>
-          <th>Description</th>
-        </tr>
-      </thead>
-      <tbody>
-          <tr class="doc-section-item">
-            <td>
-                  <code><span title="keycloak_operator.errors.ValidationError">ValidationError</span></code>
-            </td>
-            <td>
-              <div class="doc-md-description">
-                <p>If secret creation fails</p>
-              </div>
-            </td>
-          </tr>
-      </tbody>
-    </table>
-
-
-    </div>
-
-</div>
-
-<div class="doc doc-object doc-function">
-
-
 <h3 id="keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler.ensure_realm_exists" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">ensure_realm_exists</span>
 
@@ -18113,6 +18457,154 @@ client creation, credential management, and OAuth2 configuration.</p>
             <td>
               <div class="doc-md-description">
                 <p>True if update is needed, False otherwise</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.services.client_reconciler.KeycloakClientReconciler._validate_namespace_authorization" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_validate_namespace_authorization</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.services.client_reconciler.KeycloakClientReconciler._validate_namespace_authorization" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_validate_namespace_authorization</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_resource</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">realm_name</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">realm_namespace</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">client_namespace</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">client_id</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Validate that client's namespace is authorized via realm's grant list.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_resource</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The KeycloakRealm custom resource</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Namespace of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>client_namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Namespace of the client</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>client_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the client</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="PermanentError">PermanentError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If namespace is not in grant list</p>
               </div>
             </td>
           </tr>

@@ -297,6 +297,10 @@
          <lastmod>2025-11-11</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/063-namespace-grant-list-authorization/</loc>
+         <lastmod>2025-11-11</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/test-cleanup-strategy/</loc>
          <lastmod>2025-11-11</lastmod>
     </url>
