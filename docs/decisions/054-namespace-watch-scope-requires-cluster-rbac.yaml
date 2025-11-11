@@ -1,11 +1,11 @@
 number: 54
-title: Namespace watch scope configurable via environment variable
+title: Namespace watch scope requires cluster-wide RBAC
 category: architecture
 decision: Operator watches all namespaces by default (cluster-wide mode) but can
   be restricted to specific namespaces via KEYCLOAK_OPERATOR_NAMESPACES environment
-  variable. No label-based selection. Note that CRDs are cluster-scoped resources
-  and operator always requires ClusterRole permissions for CRD watching and leader
-  election, even when watch scope is restricted to specific namespaces.
+  variable. Regardless of watch scope restriction, operator always requires ClusterRole
+  permissions because CRDs are cluster-scoped resources and ClusterKopfPeering is
+  required for leader election. No label-based namespace selection.
 agent_instructions: 'Default behavior: operator watches all namespaces (clusterwide=True
   in Kopf). To restrict: set KEYCLOAK_OPERATOR_NAMESPACES environment variable to
   comma-separated namespace list. Implementation in src/keycloak_operator/operator.py
