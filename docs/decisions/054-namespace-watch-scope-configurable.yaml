@@ -3,13 +3,17 @@ title: Namespace watch scope configurable via environment variable
 category: architecture
 decision: Operator watches all namespaces by default (cluster-wide mode) but can
   be restricted to specific namespaces via KEYCLOAK_OPERATOR_NAMESPACES environment
-  variable. No label-based selection.
+  variable. No label-based selection. Note that CRDs are cluster-scoped resources
+  and operator always requires ClusterRole permissions for CRD watching and leader
+  election, even when watch scope is restricted to specific namespaces.
 agent_instructions: 'Default behavior: operator watches all namespaces (clusterwide=True
   in Kopf). To restrict: set KEYCLOAK_OPERATOR_NAMESPACES environment variable to
   comma-separated namespace list. Implementation in src/keycloak_operator/operator.py
   function get_watched_namespaces(). Kopf called with namespaces=list for restricted
-  mode or clusterwide=True for all namespaces. RBAC must grant access to watched
-  namespaces. No automatic label-based namespace discovery - explicit list only.'
+  mode or clusterwide=True for all namespaces. Important: ClusterRole permissions
+  are always required for CRD watching (list/get/watch), status updates, and ClusterKopfPeering
+  for leader election. RBAC must grant access to watched namespaces via additional
+  RoleBindings. No automatic label-based namespace discovery - explicit list only.'
 rationale: 'Cluster-wide operation by default enables dynamic provisioning - teams
   can create resources in any namespace without operator reconfiguration. Environment
   variable configuration supports restricted deployments where operator should only
@@ -17,7 +21,12 @@ rationale: 'Cluster-wide operation by default enables dynamic provisioning - tea
   namespace list (no labels) provides clear, auditable scope. Simpler than label-based
   selection - no watching namespace objects, no dynamic discovery complexity. Kopf
   natively supports both modes (clusterwide=True vs namespaces=list). RBAC enforcement
-  at Kubernetes level prevents unauthorized access regardless of watch scope.'
+  at Kubernetes level prevents unauthorized access regardless of watch scope. Note
+  that even with restricted watch scope, operator cannot be deployed with namespace-scoped
+  RBAC only, because CRDs are cluster-scoped resources requiring ClusterRole for watching,
+  and ClusterKopfPeering is required for leader election in HA deployments. This differs
+  from controllers like nginx-ingress which use built-in Kubernetes resources (Ingress)
+  rather than CRDs.'
 provenance: human
 rejected_alternatives:
 - alternative: Always watch all namespaces only
@@ -29,3 +38,10 @@ rejected_alternatives:
 - alternative: Helm chart value for namespace list
   reason: Requires operator restart to change scope. Environment variable allows
     runtime configuration without chart upgrade.
+- alternative: Namespace-scoped RBAC (Role instead of ClusterRole)
+  reason: Technically impossible. CRDs are cluster-scoped resources that require ClusterRole
+    permissions to watch. ClusterKopfPeering for leader election also requires cluster
+    permissions. Even controllers using built-in resources (nginx-ingress) require
+    ClusterRole for cluster-scoped resources like IngressClass. Pre-installing CRDs
+    separately doesn't solve this - the operator still needs to watch them at cluster
+    scope.
