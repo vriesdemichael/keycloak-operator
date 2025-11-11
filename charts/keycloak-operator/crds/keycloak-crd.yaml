@@ -302,9 +302,6 @@ spec:
                 type: string
               adminSecret:
                 type: string
-              authorizationSecretName:
-                type: string
-                description: Name of the secret containing the operator's authorization token
               internalUrl:
                 type: string
               externalUrl:
