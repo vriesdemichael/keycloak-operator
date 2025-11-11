@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/006-all-functionality-must-be-tested-with-pytest/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/064-no-force-delete-annotation/">
       
       
-        <link rel="prev" href="../005-no-plaintext-secrets/">
+        <link rel="prev" href="../063-namespace-grant-list-authorization/">
       
       
-        <link rel="next" href="../007-integration-tests-in-kind-clusters/">
+        <link rel="next" href="../../../faq/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>ADR-006: All functionality must be tested with pytest - Keycloak Operator</title>
+        <title>ADR-064: No force-delete annotation for finalizers - Keycloak Operator</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-006-all-functionality-must-be-tested-with-pytest" class="md-skip">
+        <a href="#adr-064-no-force-delete-annotation-for-finalizers" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-006: All functionality must be tested with pytest
+              ADR-064: No force-delete annotation for finalizers
             
           </span>
         </div>
@@ -1434,32 +1434,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    ADR-006: All functionality must be tested with pytest
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../006-all-functionality-must-be-tested-with-pytest/" class="md-nav__link">
         
   
   
@@ -1470,53 +1448,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      Decision
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rationale
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Agent Instructions
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2814,10 +2745,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../064-no-force-delete-annotation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    ADR-064: No force-delete annotation for finalizers
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2828,6 +2781,95 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      Decision
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rationale
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Agent Instructions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rejected Alternatives
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-force-delete-annotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Immediate force-delete annotation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeout-based-automatic-cleanup-zalando-postgresql-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      Timeout-based automatic cleanup (Zalando PostgreSQL pattern)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-step-confirmation-annotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Two-step confirmation annotation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -2990,6 +3032,48 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rejected Alternatives
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#immediate-force-delete-annotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Immediate force-delete annotation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#timeout-based-automatic-cleanup-zalando-postgresql-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      Timeout-based automatic cleanup (Zalando PostgreSQL pattern)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#two-step-confirmation-annotation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Two-step confirmation annotation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3006,7 +3090,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/006-all-functionality-must-be-tested-with-pytest.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/064-no-force-delete-annotation.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -3014,15 +3098,22 @@
   
 
 
-<h1 id="adr-006-all-functionality-must-be-tested-with-pytest">ADR-006: All functionality must be tested with pytest<a class="headerlink" href="#adr-006-all-functionality-must-be-tested-with-pytest" title="Permanent link">&para;</a></h1>
+<h1 id="adr-064-no-force-delete-annotation-for-finalizers">ADR-064: No force-delete annotation for finalizers<a class="headerlink" href="#adr-064-no-force-delete-annotation-for-finalizers" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> development
-<strong>Provenance:</strong> guided-ai</p>
+<strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Every feature, handler, and reconciliation logic must have pytest test coverage. No untested code in production.</p>
+<p>No force-delete annotation for stuck finalizers. Users manually remove finalizers with kubectl patch when Keycloak is permanently unavailable. Standard Kubernetes pattern documented in troubleshooting guide.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Quality assurance: Tests catch regressions and validate behavior. pytest ecosystem: Rich plugin ecosystem (pytest-asyncio, pytest-kubernetes, coverage). AI-friendly: Test-driven development works well with LLM assistance. Refactoring confidence: Comprehensive tests enable safe code changes.</p>
+<p>Industry standard approach (cert-manager, CloudNativePG, most operators rely on manual kubectl patch). Zero maintenance burden. Finalizers protect against data leaks - automatic removal contradicts their purpose. Manual removal forces user acknowledgment of consequences (orphaned realms/clients in Keycloak). Standard kubectl patch command is well-documented and universally available. Feature can be added later if proven necessary through usage patterns.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When implementing features, write tests first or alongside implementation. Unit tests required for all reconcilers and utility functions. Integration tests required for all CRD operations. Refuse to merge code without tests. Run 'make test-pre-commit' before committing.</p>
+<p>Do not implement force-delete annotations or timeout-based finalizer removal. When users report stuck resources, direct them to troubleshooting documentation for manual finalizer removal. Finalizers exist to prevent orphaned resources in Keycloak - removing them is user's explicit responsibility.</p>
+<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="immediate-force-delete-annotation">Immediate force-delete annotation<a class="headerlink" href="#immediate-force-delete-annotation" title="Permanent link">&para;</a></h3>
+<p>Too dangerous - no safety net, encourages careless usage, leaves orphaned resources in Keycloak without attempting cleanup.</p>
+<h3 id="timeout-based-automatic-cleanup-zalando-postgresql-pattern">Timeout-based automatic cleanup (Zalando PostgreSQL pattern)<a class="headerlink" href="#timeout-based-automatic-cleanup-zalando-postgresql-pattern" title="Permanent link">&para;</a></h3>
+<p>Added complexity for rare edge case. Users can manually patch immediately if needed rather than waiting for timeout. Maintenance burden not justified by infrequent use.</p>
+<h3 id="two-step-confirmation-annotation">Two-step confirmation annotation<a class="headerlink" href="#two-step-confirmation-annotation" title="Permanent link">&para;</a></h3>
+<p>Overly complex UX. Manual kubectl patch is simpler and achieves same result with clear user responsibility.</p>
 
 
 
