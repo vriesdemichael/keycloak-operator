@@ -494,6 +494,57 @@
       "type": "object",
       "description": "Annotations applied to all resources",
       "additionalProperties": {"type": "string"}
+    },
+    "webhooks": {
+      "type": "object",
+      "description": "Admission webhook configuration for resource validation",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable admission webhooks for resource validation",
+          "default": true
+        },
+        "port": {
+          "type": "integer",
+          "description": "Webhook server port",
+          "default": 8443,
+          "minimum": 1024,
+          "maximum": 65535
+        },
+        "timeoutSeconds": {
+          "type": "integer",
+          "description": "How long K8s API server waits for webhook response (seconds)",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 30
+        },
+        "failurePolicy": {
+          "type": "string",
+          "description": "Failure policy: Fail (reject on error) or Ignore (allow on error)",
+          "enum": ["Fail", "Ignore"],
+          "default": "Fail"
+        },
+        "quotas": {
+          "type": "object",
+          "description": "Resource quotas enforced by webhooks",
+          "properties": {
+            "realmsPerNamespace": {
+              "type": "integer",
+              "description": "Maximum realms per namespace",
+              "default": 10,
+              "minimum": 1
+            },
+            "clientsPerNamespace": {
+              "type": "integer",
+              "description": "Maximum clients per namespace",
+              "default": 50,
+              "minimum": 1
+            }
+          },
+          "required": ["realmsPerNamespace", "clientsPerNamespace"]
+        }
+      },
+      "required": ["enabled", "port", "timeoutSeconds", "failurePolicy", "quotas"]
     }
   }
 }
