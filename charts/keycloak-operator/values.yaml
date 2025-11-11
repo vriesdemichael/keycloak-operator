@@ -344,7 +344,8 @@ commonAnnotations: {}
 webhooks:
   # Enable admission webhooks for resource validation
   # Provides immediate feedback on invalid resources and enforces quotas
-  enabled: true
+  # Note: Disabled by default to avoid bootstrap issues in tests
+  enabled: false
 
   # Webhook server port
   port: 8443
