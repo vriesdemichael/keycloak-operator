@@ -16,24 +16,9 @@
         "namespace": {
           "type": "string",
           "description": "Namespace where the operator is running"
-        },
-        "authorizationSecretRef": {
-          "type": "object",
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "Name of the secret containing the operator's authorization token"
-            },
-            "key": {
-              "type": "string",
-              "description": "Key within the secret",
-              "default": "token"
-            }
-          },
-          "required": ["name"]
         }
       },
-      "required": ["namespace", "authorizationSecretRef"]
+      "required": ["namespace"]
     },
     "security": {
       "type": "object",

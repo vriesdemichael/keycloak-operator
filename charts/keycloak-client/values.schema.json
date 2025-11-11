@@ -20,21 +20,6 @@
         "namespace": {
           "type": "string",
           "description": "Namespace of the KeycloakRealm CR"
-        },
-        "authorizationSecretRef": {
-          "type": "object",
-          "properties": {
-            "name": {
-              "type": "string",
-              "description": "Name of the realm's authorization secret"
-            },
-            "key": {
-              "type": "string",
-              "description": "Key within the secret",
-              "default": "token"
-            }
-          },
-          "required": ["name"]
         }
       },
       "required": ["name", "namespace"]
