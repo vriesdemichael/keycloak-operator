@@ -587,3 +587,45 @@ Patching failed with inconsistencies:
 ### Next Steps:
 - Fix StatusWrapper to use camelCase for K8s API
 - Rerun integration tests
+
+---
+
+## Phase 10: Bug Fixing - COMPLETE ✅
+**Result**: Fixed camelCase bug, 32/36 tests passing (89%)
+
+### Bug Fix Applied:
+- **StatusWrapper camelCase conversion**: ✅ FIXED
+- Converts `authorization_granted` → `authorizationGranted`
+- Converts `client_id` → `clientId`, etc.
+- All status fields now properly persist to K8s
+
+### Test Results After Fix:
+- ✅ **32 PASSED** (89%)
+- ❌ **4 FAILED** (11%)
+
+### Passing Tests (NEW):
+- ✅ `test_client_authorized_via_grant_list` - **NOW WORKS!**
+- ✅ `test_client_rejected_not_in_grant_list` - Authorization denial works correctly
+
+### Remaining Failures (NOT NEW, TEST SCOPE ISSUES):
+1. **Helm client schema**: Missing `authorizationSecretRef` field (Helm values schema needs update)
+2. **Service account roles**: Timeout - test doesn't create realm with grant list
+3. **Drift detection (2 tests)**: "No authorized namespaces" - tests don't set grant lists
+
+**Root Cause of Remaining Failures**: These are **pre-existing tests** that were written before the grant list feature. They create realms WITHOUT `clientAuthorizationGrants`, so clients get rejected. Tests need to be updated to include grant lists OR be marked as testing the "deny" scenario.
+
+---
+
+## Phase 11: Test Migration (IN PROGRESS)
+**Goal**: Update pre-existing tests to work with grant list authorization
+
+### Tests Requiring Updates:
+1. ✅ Grant list tests - ALREADY PASSING
+2. ❌ Helm client test - schema issue
+3. ❌ Service account roles test - needs grant list
+4. ❌ Drift detection tests (2) - need grant lists
+
+###Next Steps:
+- Update Helm chart values schema for `authorizationSecretRef`
+- Update service account test to include grant list
+- Update drift detection tests to include grant lists

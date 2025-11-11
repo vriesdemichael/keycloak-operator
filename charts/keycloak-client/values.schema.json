@@ -37,7 +37,7 @@
           "required": ["name"]
         }
       },
-      "required": ["name", "namespace", "authorizationSecretRef"]
+      "required": ["name", "namespace"]
     },
     "publicClient": {"type": "boolean"},
     "bearerOnly": {"type": "boolean"},
