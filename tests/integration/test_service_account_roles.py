@@ -62,6 +62,7 @@ class TestServiceAccountRoles:
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
+            client_authorization_grants=[namespace],  # Grant this namespace access
         )
 
         realm_manifest = {
