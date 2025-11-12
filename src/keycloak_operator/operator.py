@@ -130,11 +130,25 @@ async def startup_handler(
     webhook_enabled = os.getenv("ENABLE_WEBHOOKS", "true").lower() == "true"
     if webhook_enabled:
         webhook_port = int(os.getenv("WEBHOOK_PORT", "8443"))
-        settings.admission.server = kopf.WebhookServer(port=webhook_port)
+
+        # Determine webhook service hostname for cert generation
+        # Format: <service-name>.<namespace>.svc
+        operator_namespace = os.getenv("POD_NAMESPACE", "keycloak-system")
+        webhook_service_name = os.getenv(
+            "WEBHOOK_SERVICE_NAME", "keycloak-operator-webhook"
+        )
+        webhook_host = f"{webhook_service_name}.{operator_namespace}.svc"
+
+        settings.admission.server = kopf.WebhookServer(
+            port=webhook_port,
+            host=webhook_host,  # Generate cert for service DNS name
+        )
         settings.admission.managed = (
             "vriesdemichael.github.io"  # Auto-manage webhook configs
         )
-        logging.info(f"Admission webhooks ENABLED on port {webhook_port}")
+        logging.info(
+            f"Admission webhooks ENABLED on port {webhook_port} (host: {webhook_host})"
+        )
     else:
         logging.info("Admission webhooks DISABLED")
 
