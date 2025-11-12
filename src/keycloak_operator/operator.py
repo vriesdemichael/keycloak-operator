@@ -20,7 +20,6 @@ Environment Variables:
 """
 
 import logging
-import os
 import random
 import sys
 
@@ -47,6 +46,7 @@ from keycloak_operator.observability.leader_election import (
 )
 from keycloak_operator.observability.logging import setup_structured_logging
 from keycloak_operator.observability.metrics import MetricsServer
+from keycloak_operator.settings import settings as operator_settings
 from keycloak_operator.utils.rate_limiter import RateLimiter
 
 # Import webhook modules to register admission webhooks
@@ -60,38 +60,24 @@ from keycloak_operator.webhooks import realm as realm_webhook  # noqa: F401
 # Global reference to metrics server for cleanup
 _global_metrics_server: MetricsServer | None = None
 
-# Operator configuration
-OPERATOR_NAMESPACE = os.environ.get("OPERATOR_NAMESPACE", "keycloak-system")
-
 
 def configure_logging() -> None:
-    """Configure structured logging for the operator based on environment variables."""
-    log_level = os.getenv("KEYCLOAK_OPERATOR_LOG_LEVEL", "INFO").upper()
-    enable_json_logging = (
-        os.getenv("KEYCLOAK_OPERATOR_JSON_LOGS", "true").lower() == "true"
-    )
-    enable_correlation_ids = (
-        os.getenv("KEYCLOAK_OPERATOR_CORRELATION_IDS", "true").lower() == "true"
-    )
-
+    """Configure structured logging for the operator based on operator_settings."""
     setup_structured_logging(
-        log_level=log_level,
-        enable_json_formatting=enable_json_logging,
-        correlation_id_enabled=enable_correlation_ids,
+        log_level=operator_settings.log_level.upper(),
+        enable_json_formatting=operator_settings.json_logs,
+        correlation_id_enabled=operator_settings.correlation_ids,
     )
 
 
 def get_watched_namespaces() -> list[str] | None:
     """
-    Get the list of namespaces to watch from environment variables.
+    Get the list of namespaces to watch from operator_settings.
 
     Returns:
         List of namespace names, or None to watch all namespaces
     """
-    namespaces_env = os.getenv("KEYCLOAK_OPERATOR_NAMESPACES")
-    if namespaces_env:
-        return [ns.strip() for ns in namespaces_env.split(",") if ns.strip()]
-    return None  # Watch all namespaces by default
+    return operator_settings.watched_namespaces
 
 
 @kopf.on.startup()
@@ -114,8 +100,8 @@ async def startup_handler(
     logging.info("Starting Keycloak Operator...")
     # Defaults commented out - adjust as needed
     # Configure operator behavior
-    # settings.scanning.disabled = False  # Enable resource scanning
-    # settings.posting.enabled = True  # Enable status posting
+    # operator_settings.scanning.disabled = False  # Enable resource scanning
+    # operator_settings.posting.enabled = True  # Enable status posting
     settings.watching.reconnect_backoff = 1.0  # Reconnect delay
 
     # Configure peering for leader election with random priority
@@ -139,7 +125,7 @@ async def startup_handler(
     else:
         logging.info("Watching all namespaces (cluster-wide mode)")
 
-    dry_run = os.getenv("KEYCLOAK_OPERATOR_DRY_RUN", "false").lower() == "true"
+    dry_run = operator_settings.dry_run
     if dry_run:
         logging.info("Running in DRY-RUN mode - no changes will be applied")
 
@@ -156,25 +142,23 @@ async def startup_handler(
             raise
 
     # Validate operator instance ID is configured
-    operator_instance_id = os.getenv("OPERATOR_INSTANCE_ID")
-    if not operator_instance_id:
+    if not operator_settings.operator_instance_id:
         logging.error(
             "OPERATOR_INSTANCE_ID environment variable is not set. "
             "This is required for drift detection and resource ownership tracking."
         )
         raise ValueError("OPERATOR_INSTANCE_ID is required but not configured")
 
-    logging.info(f"Operator instance ID: {operator_instance_id}")
+    logging.info(f"Operator instance ID: {operator_settings.operator_instance_id}")
 
     # Start metrics server for Prometheus scraping and health checks
-    metrics_port = int(os.getenv("METRICS_PORT", "8081"))
-    metrics_host = os.getenv("METRICS_HOST", "0.0.0.0")
-
     try:
-        metrics_server = MetricsServer(port=metrics_port, host=metrics_host)
+        metrics_server = MetricsServer(
+            port=operator_settings.metrics_port, host=operator_settings.metrics_host
+        )
         await metrics_server.start()
         logging.info(
-            f"Metrics and health endpoints available on {metrics_host}:{metrics_port}"
+            f"Metrics and health endpoints available on {operator_settings.metrics_host}:{operator_settings.metrics_port}"
         )
 
         # Store server reference for cleanup in a global variable
@@ -234,7 +218,7 @@ async def cleanup_handler(settings: kopf.OperatorSettings, **_) -> None:
 # Drift detection background task
 @kopf.timer(
     "keycloakrealms",  # Run as timer on any realm resource (just to trigger periodic execution)
-    interval=float(os.getenv("DRIFT_DETECTION_INTERVAL_SECONDS", "300")),
+    interval=float(operator_settings.drift_detection_interval_seconds),
     initial_delay=60.0,  # Wait 1 minute after startup before first run
     idle=10.0,  # Run every interval even if there are no realm resources
 )
@@ -362,27 +346,25 @@ def main() -> None:
     # Configure admission webhooks BEFORE calling kopf.run()
     # Note: We manage webhook configurations manually via Helm/cert-manager
     # instead of using Kopf's auto-management due to issues with insights.ready_resources
-    webhook_enabled = os.getenv("ENABLE_WEBHOOKS", "true").lower() == "true"
-    if webhook_enabled:
-        webhook_port = int(os.getenv("WEBHOOK_PORT", "8443"))
+    if operator_settings.enable_webhooks:
         cert_dir = "/tmp/k8s-webhook-server/serving-certs"
 
         # Create settings object to pass to kopf.run()
-        settings = kopf.OperatorSettings()
-        settings.admission.server = kopf.WebhookServer(
-            port=webhook_port,
+        settings_obj = kopf.OperatorSettings()
+        settings_obj.admission.server = kopf.WebhookServer(
+            port=operator_settings.webhook_port,
             certfile=f"{cert_dir}/tls.crt",
             pkeyfile=f"{cert_dir}/tls.key",
         )
         # Disable auto-management - we manage configurations via Helm
-        settings.admission.managed = None
+        settings_obj.admission.managed = None
         logging.info(
-            f"Admission webhooks ENABLED on port {webhook_port} using certificates from {cert_dir} (manually managed via Helm)"
+            f"Admission webhooks ENABLED on port {operator_settings.webhook_port} using certificates from {cert_dir} (manually managed via Helm)"
         )
     else:
-        settings = kopf.OperatorSettings()
-        settings.admission.server = None
-        settings.admission.managed = None
+        settings_obj = kopf.OperatorSettings()
+        settings_obj.admission.server = None
+        settings_obj.admission.managed = None
         logging.info("Admission webhooks DISABLED")
 
     try:
@@ -393,14 +375,14 @@ def main() -> None:
             kopf.run(
                 namespaces=watched_namespaces,
                 liveness_endpoint="http://0.0.0.0:8080/healthz",
-                settings=settings,
+                settings=settings_obj,
             )
         else:
             # Watch all namespaces (cluster-wide)
             kopf.run(
                 clusterwide=True,
                 liveness_endpoint="http://0.0.0.0:8080/healthz",
-                settings=settings,
+                settings=settings_obj,
             )
     except KeyboardInterrupt:
         logging.info("Received shutdown signal")

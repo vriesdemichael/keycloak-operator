@@ -9,7 +9,6 @@ This module provides functions to:
 
 import base64
 import logging
-import os
 from typing import Any
 
 from kubernetes import client
@@ -20,6 +19,7 @@ from keycloak_operator.constants import (
     ERROR_NAMESPACE_ACCESS_DENIED,
     ERROR_SECRET_NOT_LABELED,
 )
+from keycloak_operator.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +46,9 @@ async def check_namespace_access(
     try:
         auth_api = client.AuthorizationV1Api()
 
-        # Get service account name from environment or use default
-        # Chart sets SERVICE_ACCOUNT_NAME env var
-        service_account_name = os.getenv(
-            "SERVICE_ACCOUNT_NAME", f"keycloak-operator-{operator_namespace}"
+        # Get service account name from settings
+        service_account = (
+            settings.service_account_name or f"keycloak-operator-{operator_namespace}"
         )
 
         sar = client.V1SubjectAccessReview(
@@ -60,7 +59,7 @@ async def check_namespace_access(
                     group="",
                     resource="secrets",
                 ),
-                user=f"system:serviceaccount:{operator_namespace}:{service_account_name}",
+                user=f"system:serviceaccount:{operator_namespace}:{service_account}",
             )
         )
 
