@@ -431,6 +431,25 @@ jobs:
           echo "CNPG operator is ready!"
           kubectl get pods -n cnpg-system
 
+      - name: Install cert-manager
+        run: |
+          echo "Installing cert-manager..."
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+
+          echo "Waiting for cert-manager to be ready..."
+          kubectl wait -n cert-manager \
+            --for=condition=available deployment/cert-manager \
+            --timeout=300s
+          kubectl wait -n cert-manager \
+            --for=condition=available deployment/cert-manager-webhook \
+            --timeout=300s
+          kubectl wait -n cert-manager \
+            --for=condition=available deployment/cert-manager-cainjector \
+            --timeout=300s
+
+          echo "cert-manager is ready!"
+          kubectl get pods -n cert-manager
+
       - name: Run integration tests
         env:
           KUBERNETES_VERSION: ${{ matrix.k8s-version }}
