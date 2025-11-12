@@ -127,9 +127,20 @@ spec:
         volumeMounts:
         - name: tmp
           mountPath: /tmp
+        {{- if .Values.webhooks.enabled }}
+        - name: webhook-certs
+          mountPath: /tmp/k8s-webhook-server/serving-certs
+          readOnly: true
+        {{- end }}
       volumes:
       - name: tmp
         emptyDir: {}
+      {{- if .Values.webhooks.enabled }}
+      - name: webhook-certs
+        secret:
+          secretName: {{ include "keycloak-operator.fullname" . }}-webhook-tls
+          defaultMode: 420
+      {{- end }}
       terminationGracePeriodSeconds: 30
       {{- with .Values.operator.nodeSelector }}
       nodeSelector:

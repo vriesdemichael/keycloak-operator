@@ -1121,6 +1121,10 @@ async def shared_operator(
                 "pullPolicy": "Never",  # Use local image only
             },
         },
+        "webhooks": {
+            # Enable admission webhooks (default behavior)
+            "enabled": True,
+        },
     }
 
     # Create values file
@@ -1375,6 +1379,65 @@ async def shared_operator(
                 pytest.fail(f"Keycloak instance not ready in time (timeout: 300s): {e}")
 
         logger.info("✓ Keycloak instance ready")
+
+        # Wait for webhook server to be ready (if webhooks enabled)
+        logger.info("Waiting for webhook server to be ready...")
+        webhook_ready = False
+        start_time = time.time()
+        webhook_timeout = 60
+        webhook_interval = 2
+
+        while time.time() - start_time < webhook_timeout:
+            try:
+                # Try to create and immediately delete a test realm to verify webhook is responding
+                test_realm_name = f"webhook-readiness-test-{int(time.time())}"
+                await k8s_custom_objects.create_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=operator_namespace,
+                    plural="keycloakrealms",
+                    body={
+                        "apiVersion": "vriesdemichael.github.io/v1",
+                        "kind": "KeycloakRealm",
+                        "metadata": {"name": test_realm_name},
+                        "spec": {
+                            "realmName": test_realm_name,
+                            "operatorRef": {"namespace": operator_namespace},
+                        },
+                    },
+                )
+                # If we got here, webhook accepted the request - delete the test realm
+                await k8s_custom_objects.delete_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=operator_namespace,
+                    plural="keycloakrealms",
+                    name=test_realm_name,
+                )
+                webhook_ready = True
+                logger.info("✓ Webhook server is responding")
+                break
+            except ApiException as webhook_error:
+                # 500 errors mean webhook server not ready yet
+                if (
+                    webhook_error.status == 500
+                    and "connection refused" in str(webhook_error.body).lower()
+                ):
+                    logger.debug("Webhook server not ready yet, retrying...")
+                    await asyncio.sleep(webhook_interval)
+                else:
+                    # Other errors (like validation failures) mean webhook IS responding
+                    webhook_ready = True
+                    logger.info("✓ Webhook server is responding")
+                    break
+            except Exception as e:
+                logger.debug(f"Webhook readiness check error: {e}")
+                await asyncio.sleep(webhook_interval)
+
+        if not webhook_ready:
+            logger.warning(
+                f"Webhook server did not become ready within {webhook_timeout}s - tests may be flaky"
+            )
 
         yield SharedOperatorInfo(name=keycloak_name, namespace=operator_namespace)
 

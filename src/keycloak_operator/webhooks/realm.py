@@ -46,7 +46,9 @@ async def get_realm_count_in_namespace(namespace: str) -> int:
         return 0
 
 
-@kopf.on.validate("vriesdemichael.github.io", "v1", "keycloakrealms")
+@kopf.on.validate(
+    "vriesdemichael.github.io", "v1", "keycloakrealms", id="validate-realm"
+)
 async def validate_realm(
     spec: dict,
     namespace: str,

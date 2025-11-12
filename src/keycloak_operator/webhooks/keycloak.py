@@ -45,7 +45,7 @@ async def get_keycloak_count_in_namespace(namespace: str) -> int:
         return 0
 
 
-@kopf.on.validate("vriesdemichael.github.io", "v1", "keycloaks")
+@kopf.on.validate("vriesdemichael.github.io", "v1", "keycloaks", id="validate-keycloak")
 async def validate_keycloak(
     spec: dict,
     namespace: str,

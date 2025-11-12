@@ -46,7 +46,9 @@ async def get_client_count_in_namespace(namespace: str) -> int:
         return 0
 
 
-@kopf.on.validate("vriesdemichael.github.io", "v1", "keycloakclients")
+@kopf.on.validate(
+    "vriesdemichael.github.io", "v1", "keycloakclients", id="validate-client"
+)
 async def validate_client(
     spec: dict,
     namespace: str,
