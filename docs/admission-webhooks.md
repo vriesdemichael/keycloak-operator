@@ -94,6 +94,36 @@ Only one Keycloak instance allowed per namespace.
 Existing instance: keycloak-primary
 ```
 
+## Prerequisites
+
+### cert-manager (Required for Webhooks)
+
+Admission webhooks require TLS certificates for secure communication with the Kubernetes API server. The operator uses [cert-manager](https://cert-manager.io/) to automatically generate and rotate these certificates.
+
+**If you have cert-manager installed** (most production clusters do):
+- Webhooks work out of the box
+- Certificates are automatically managed
+- No additional configuration needed
+
+**If you don't have cert-manager**:
+
+Option 1 - Install cert-manager (recommended):
+```bash
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=2m
+```
+
+Option 2 - Disable webhooks:
+```yaml
+# values.yaml
+webhooks:
+  enabled: false
+```
+
+> **Note**: Disabling webhooks means you won't get immediate validation feedback. Resources will still be validated during reconciliation via Pydantic, but errors will appear in the operator logs and resource status rather than blocking `kubectl apply`.
+
+See [Decision Record 065](../decisions/065-webhook-certificate-management-with-cert-manager.yaml) for technical details on why cert-manager is used.
+
 ## Configuration
 
 Webhooks are configured in the operator Helm chart `values.yaml`:
