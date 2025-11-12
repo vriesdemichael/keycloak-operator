@@ -1,0 +1,105 @@
+{{- if .Values.webhooks.enabled }}
+---
+# Certificate for webhook TLS
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}-webhook-cert
+  namespace: {{ include "keycloak-operator.namespace" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "keycloak-operator.fullname" . }}-webhook-tls
+  dnsNames:
+  - {{ include "keycloak-operator.fullname" . }}-webhook.{{ include "keycloak-operator.namespace" . }}.svc
+  - {{ include "keycloak-operator.fullname" . }}-webhook.{{ include "keycloak-operator.namespace" . }}.svc.cluster.local
+  issuerRef:
+    name: {{ include "keycloak-operator.fullname" . }}-webhook-issuer
+    kind: Issuer
+
+---
+# Self-signed issuer for webhook certificates
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}-webhook-issuer
+  namespace: {{ include "keycloak-operator.namespace" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+spec:
+  selfSigned: {}
+
+---
+# Validating webhook configuration
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+  annotations:
+    cert-manager.io/inject-ca-from: {{ include "keycloak-operator.namespace" . }}/{{ include "keycloak-operator.fullname" . }}-webhook-cert
+webhooks:
+  - name: validate-keycloak.operator.vriesdemichael.github.io
+    admissionReviewVersions: ["v1", "v1beta1"]
+    clientConfig:
+      service:
+        name: {{ include "keycloak-operator.fullname" . }}-webhook
+        namespace: {{ include "keycloak-operator.namespace" . }}
+        path: /validate-keycloak
+        port: {{ .Values.webhooks.port }}
+    failurePolicy: {{ .Values.webhooks.failurePolicy }}
+    matchPolicy: Equivalent
+    namespaceSelector: {}
+    objectSelector: {}
+    rules:
+    - apiGroups: ["vriesdemichael.github.io"]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["keycloaks"]
+      scope: "*"
+    sideEffects: None
+    timeoutSeconds: {{ .Values.webhooks.timeoutSeconds }}
+
+  - name: validate-realm.operator.vriesdemichael.github.io
+    admissionReviewVersions: ["v1", "v1beta1"]
+    clientConfig:
+      service:
+        name: {{ include "keycloak-operator.fullname" . }}-webhook
+        namespace: {{ include "keycloak-operator.namespace" . }}
+        path: /validate-realm
+        port: {{ .Values.webhooks.port }}
+    failurePolicy: {{ .Values.webhooks.failurePolicy }}
+    matchPolicy: Equivalent
+    namespaceSelector: {}
+    objectSelector: {}
+    rules:
+    - apiGroups: ["vriesdemichael.github.io"]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["keycloakrealms"]
+      scope: "*"
+    sideEffects: None
+    timeoutSeconds: {{ .Values.webhooks.timeoutSeconds }}
+
+  - name: validate-client.operator.vriesdemichael.github.io
+    admissionReviewVersions: ["v1", "v1beta1"]
+    clientConfig:
+      service:
+        name: {{ include "keycloak-operator.fullname" . }}-webhook
+        namespace: {{ include "keycloak-operator.namespace" . }}
+        path: /validate-client
+        port: {{ .Values.webhooks.port }}
+    failurePolicy: {{ .Values.webhooks.failurePolicy }}
+    matchPolicy: Equivalent
+    namespaceSelector: {}
+    objectSelector: {}
+    rules:
+    - apiGroups: ["vriesdemichael.github.io"]
+      apiVersions: ["v1"]
+      operations: ["CREATE", "UPDATE"]
+      resources: ["keycloakclients"]
+      scope: "*"
+    sideEffects: None
+    timeoutSeconds: {{ .Values.webhooks.timeoutSeconds }}
+{{- end }}

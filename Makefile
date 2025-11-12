@@ -160,6 +160,7 @@ test-pre-commit: ## Complete pre-commit flow (quality + fresh cluster + unit + i
 	@echo "Step 4/4: Running integration tests..."
 	@echo "-------------------------------------"
 	@$(MAKE) install-cnpg || { echo "❌ Failed to install CNPG"; exit 1; }
+	@$(MAKE) install-cert-manager || { echo "❌ Failed to install cert-manager"; exit 1; }
 	@mkdir -p .tmp
 	@bash -c "set -o pipefail; $(MAKE) test-integration 2>&1 | tee .tmp/latest-integration-test.log" || { echo "❌ Integration tests failed"; exit 1; }
 	@echo "✓ Integration tests passed"
@@ -184,6 +185,10 @@ kind-teardown: ## Destroy Kind cluster
 install-cnpg: ## Install CNPG operator (idempotent)
 	@./scripts/install-cnpg.sh
 
+.PHONY: install-cert-manager
+install-cert-manager: ## Install cert-manager for webhooks (idempotent)
+	@./scripts/install-cert-manager.sh
+
 .PHONY: ensure-test-cluster
 ensure-test-cluster: ## Ensure clean test cluster ready for integration tests (idempotent)
 	@echo "Ensuring test cluster is ready..."
@@ -197,6 +202,8 @@ ensure-test-cluster: ## Ensure clean test cluster ready for integration tests (i
 	fi
 	@echo "  Ensuring CNPG operator is installed..."
 	@$(MAKE) install-cnpg
+	@echo "  Ensuring cert-manager is installed..."
+	@$(MAKE) install-cert-manager
 	@echo "✓ Test cluster ready for integration tests"
 
 .PHONY: ensure-kind-cluster

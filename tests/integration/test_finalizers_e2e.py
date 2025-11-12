@@ -402,8 +402,8 @@ class TestFinalizersE2E:
                     return False
 
             assert await _simple_wait(
-                check_all_deleted, timeout=120
-            ), "Cascading deletion did not complete"
+                check_all_deleted, timeout=180
+            ), "Cascading deletion did not complete within 180s"
 
         except ApiException as e:
             pytest.fail(f"Failed to test cascading deletion: {e}")

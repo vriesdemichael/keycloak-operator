@@ -50,6 +50,9 @@ from keycloak_operator.observability.metrics import MetricsServer
 from keycloak_operator.utils.rate_limiter import RateLimiter
 
 # Import webhook modules to register admission webhooks
+# IMPORTANT: These MUST be imported at module level (not conditionally) so that
+# Kopf can discover the @kopf.on.validate() decorators before startup runs.
+# The startup handler will configure whether webhooks are enabled based on ENABLE_WEBHOOKS env var.
 from keycloak_operator.webhooks import client as client_webhook  # noqa: F401
 from keycloak_operator.webhooks import keycloak as keycloak_webhook  # noqa: F401
 from keycloak_operator.webhooks import realm as realm_webhook  # noqa: F401
@@ -126,31 +129,8 @@ async def startup_handler(
     # Configure error handling - be more forgiving for temporary issues
     settings.execution.max_workers = 20  # Allow concurrent processing
 
-    # Configure admission webhooks
-    webhook_enabled = os.getenv("ENABLE_WEBHOOKS", "true").lower() == "true"
-    if webhook_enabled:
-        webhook_port = int(os.getenv("WEBHOOK_PORT", "8443"))
-
-        # Determine webhook service hostname for cert generation
-        # Format: <service-name>.<namespace>.svc
-        operator_namespace = os.getenv("POD_NAMESPACE", "keycloak-system")
-        webhook_service_name = os.getenv(
-            "WEBHOOK_SERVICE_NAME", "keycloak-operator-webhook"
-        )
-        webhook_host = f"{webhook_service_name}.{operator_namespace}.svc"
-
-        settings.admission.server = kopf.WebhookServer(
-            port=webhook_port,
-            host=webhook_host,  # Generate cert for service DNS name
-        )
-        # Do NOT auto-manage webhook configs - let Helm manage them with service references
-        # Kopf uses URL-based clientConfig which doesn't work with Kind's API server
-        settings.admission.managed = None
-        logging.info(
-            f"Admission webhooks ENABLED on port {webhook_port} (host: {webhook_host})"
-        )
-    else:
-        logging.info("Admission webhooks DISABLED")
+    # Note: Admission webhook configuration is done in main() before kopf.run()
+    # This is required for Kopf to discover handlers and populate webhook configurations
 
     # Log configuration
     watched_namespaces = get_watched_namespaces()
@@ -371,27 +351,56 @@ def main() -> None:
     This function:
     1. Configures logging
     2. Determines namespace scope
-    3. Runs the kopf operator with appropriate settings
+    3. Configures admission webhooks (must be before kopf.run())
+    4. Runs the kopf operator with appropriate settings
     """
     configure_logging()
 
     # Get namespace configuration
     watched_namespaces = get_watched_namespaces()
 
+    # Configure admission webhooks BEFORE calling kopf.run()
+    # Note: We manage webhook configurations manually via Helm/cert-manager
+    # instead of using Kopf's auto-management due to issues with insights.ready_resources
+    webhook_enabled = os.getenv("ENABLE_WEBHOOKS", "true").lower() == "true"
+    if webhook_enabled:
+        webhook_port = int(os.getenv("WEBHOOK_PORT", "8443"))
+        cert_dir = "/tmp/k8s-webhook-server/serving-certs"
+
+        # Create settings object to pass to kopf.run()
+        settings = kopf.OperatorSettings()
+        settings.admission.server = kopf.WebhookServer(
+            port=webhook_port,
+            certfile=f"{cert_dir}/tls.crt",
+            pkeyfile=f"{cert_dir}/tls.key",
+        )
+        # Disable auto-management - we manage configurations via Helm
+        settings.admission.managed = None
+        logging.info(
+            f"Admission webhooks ENABLED on port {webhook_port} using certificates from {cert_dir} (manually managed via Helm)"
+        )
+    else:
+        settings = kopf.OperatorSettings()
+        settings.admission.server = None
+        settings.admission.managed = None
+        logging.info("Admission webhooks DISABLED")
+
     try:
         # Run the operator with leader election support
-        # Peering and webhook settings are configured in the startup handler
+        # Other settings (peering, rate limiting, etc.) are configured in the startup handler
         if watched_namespaces:
             # Watch specific namespaces
             kopf.run(
                 namespaces=watched_namespaces,
                 liveness_endpoint="http://0.0.0.0:8080/healthz",
+                settings=settings,
             )
         else:
             # Watch all namespaces (cluster-wide)
             kopf.run(
                 clusterwide=True,
                 liveness_endpoint="http://0.0.0.0:8080/healthz",
+                settings=settings,
             )
     except KeyboardInterrupt:
         logging.info("Received shutdown signal")
