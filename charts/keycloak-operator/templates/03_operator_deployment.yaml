@@ -111,15 +111,9 @@ spec:
         {{- if .Values.webhooks.enabled }}
         # When webhooks are enabled, check both health endpoint and webhook port
         readinessProbe:
-          exec:
-            command:
-            - /bin/sh
-            - -c
-            - |
-              # Check health endpoint
-              wget -q -O- http://localhost:8081/healthz > /dev/null || exit 1
-              # Check webhook server is listening
-              timeout 2 bash -c '</dev/tcp/localhost/{{ .Values.webhooks.port }}' || exit 1
+          httpGet:
+            path: /ready
+            port: 8081
           initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 5
