@@ -39,10 +39,12 @@ kubectl apply -f examples/03-client-example.yaml
 ## ✨ Features
 
 - **Declarative Configuration** - Manage Keycloak entirely through Kubernetes resources
+- **Admission Webhooks** - Immediate validation feedback with clear error messages ([docs](docs/admission-webhooks.md))
 - **GitOps Ready** - Full observability with status conditions and `observedGeneration` tracking
 - **Drift Detection** - Automatic detection of orphaned resources and configuration drift ([docs](docs/drift-detection.md))
 - **Cross-Namespace Support** - Secure delegation model for multi-tenant environments
 - **Production Ready** - Rate limiting, exponential backoff, and comprehensive monitoring
+- **Resource Quotas** - Namespace-level limits on realms and clients via admission webhooks
 - **Rate Limiting** - Two-level throttling (global + per-namespace) protects Keycloak from overload
 - **High Availability** - Multi-replica Keycloak with PostgreSQL clustering via CloudNativePG
 - **OAuth2/OIDC Clients** - Automated client provisioning with credential management
@@ -57,6 +59,7 @@ kubectl apply -f examples/03-client-example.yaml
 
 - **[Quick Start Guide](https://vriesdemichael.github.io/keycloak-operator/latest/quickstart/README/)** - Get started in 10 minutes
 - **[Architecture](https://vriesdemichael.github.io/keycloak-operator/latest/architecture/)** - How the operator works
+- **[Admission Webhooks](https://vriesdemichael.github.io/keycloak-operator/latest/admission-webhooks/)** - Resource validation and quotas
 - **[Security Model](https://vriesdemichael.github.io/keycloak-operator/latest/security/)** - Secret-based authorization explained
 - **[Drift Detection](https://vriesdemichael.github.io/keycloak-operator/latest/drift-detection/)** - Orphan detection and auto-remediation
 - **[Observability](https://vriesdemichael.github.io/keycloak-operator/latest/observability/)** - Metrics, logs, and status conditions

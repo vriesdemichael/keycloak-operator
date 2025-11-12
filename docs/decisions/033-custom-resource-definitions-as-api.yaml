@@ -6,7 +6,9 @@ decision: Use Kubernetes Custom Resource Definitions (CRDs) as the API for manag
 agent_instructions: Define all Keycloak resource types as CRDs with OpenAPI schemas.
   Users interact with operator exclusively through CRDs - no CLI, no API endpoints,
   no webhooks for configuration. CRDs are the single source of truth. Design CRD schemas
-  to be intuitive and map closely to Keycloak's native concepts.
+  to be intuitive and map closely to Keycloak's native concepts. Note that admission
+  webhooks for validation (not configuration) are acceptable and encouraged for better
+  UX - see ADR-040 for details.
 rationale: CRDs are the Kubernetes-native way to extend the API. Provides declarative
   GitOps-friendly interface. kubectl works out of the box for managing resources.
   RBAC integrates natively. CRDs support validation, versioning, and schema evolution.
