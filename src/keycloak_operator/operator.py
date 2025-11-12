@@ -50,9 +50,9 @@ from keycloak_operator.observability.metrics import MetricsServer
 from keycloak_operator.utils.rate_limiter import RateLimiter
 
 # Import webhook modules to register admission webhooks
-from keycloak_operator.webhooks import (  # noqa: F401
-    client as client_webhook,
-)
+from keycloak_operator.webhooks import client as client_webhook  # noqa: F401
+from keycloak_operator.webhooks import keycloak as keycloak_webhook  # noqa: F401
+from keycloak_operator.webhooks import realm as realm_webhook  # noqa: F401
 
 # Global reference to metrics server for cleanup
 _global_metrics_server: MetricsServer | None = None
