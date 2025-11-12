@@ -344,7 +344,9 @@ commonAnnotations: {}
 webhooks:
   # Enable admission webhooks for resource validation
   # Provides immediate feedback on invalid resources and enforces quotas
-  enabled: true
+  # NOTE: In Kind clusters, webhooks may not work due to API server networking
+  # Set to false for local development/testing
+  enabled: false
 
   # Webhook server port
   port: 8443

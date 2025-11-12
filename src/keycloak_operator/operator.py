@@ -143,9 +143,9 @@ async def startup_handler(
             port=webhook_port,
             host=webhook_host,  # Generate cert for service DNS name
         )
-        settings.admission.managed = (
-            "vriesdemichael.github.io"  # Auto-manage webhook configs
-        )
+        # Do NOT auto-manage webhook configs - let Helm manage them with service references
+        # Kopf uses URL-based clientConfig which doesn't work with Kind's API server
+        settings.admission.managed = None
         logging.info(
             f"Admission webhooks ENABLED on port {webhook_port} (host: {webhook_host})"
         )
