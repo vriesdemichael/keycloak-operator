@@ -2298,6 +2298,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../040-admission-webhooks-for-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ADR-040: Admission Webhooks for Resource Validation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../040-ruff-for-formatting-and-linting/" class="md-nav__link">
         
   
@@ -2866,6 +2889,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../065-webhook-certificate-management-with-cert-manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ADR-065: Webhook certificate management with cert-manager
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3088,7 +3134,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>CRDs are the Kubernetes-native way to extend the API. Provides declarative GitOps-friendly interface. kubectl works out of the box for managing resources. RBAC integrates natively. CRDs support validation, versioning, and schema evolution. Users already familiar with Kubernetes patterns. Eliminates need for custom API servers or CLIs. Works with all GitOps tools (ArgoCD, Flux) without special support.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Define all Keycloak resource types as CRDs with OpenAPI schemas. Users interact with operator exclusively through CRDs - no CLI, no API endpoints, no webhooks for configuration. CRDs are the single source of truth. Design CRD schemas to be intuitive and map closely to Keycloak's native concepts.</p>
+<p>Define all Keycloak resource types as CRDs with OpenAPI schemas. Users interact with operator exclusively through CRDs - no CLI, no API endpoints, no webhooks for configuration. CRDs are the single source of truth. Design CRD schemas to be intuitive and map closely to Keycloak's native concepts. Note that admission webhooks for validation (not configuration) are acceptable and encouraged for better UX - see ADR-040 for details.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="rest-api-with-custom-api-server">REST API with custom API server<a class="headerlink" href="#rest-api-with-custom-api-server" title="Permanent link">&para;</a></h3>
 <p>Additional infrastructure to maintain. Doesn't integrate with kubectl or RBAC. Not GitOps-friendly.</p>

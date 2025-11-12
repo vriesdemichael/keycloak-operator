@@ -2191,6 +2191,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/040-admission-webhooks-for-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ADR-040: Admission Webhooks for Resource Validation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../decisions/generated-markdown/040-ruff-for-formatting-and-linting/" class="md-nav__link">
         
   
@@ -2749,6 +2772,29 @@
   
   <span class="md-ellipsis">
     ADR-064: No force-delete annotation for finalizers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/065-webhook-certificate-management-with-cert-manager/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ADR-065: Webhook certificate management with cert-manager
     
   </span>
   
@@ -8543,7 +8589,8 @@ and Kubernetes CRs. It detects:
 <p>This function:
 1. Configures logging
 2. Determines namespace scope
-3. Runs the kopf operator with appropriate settings</p>
+3. Configures admission webhooks (must be before kopf.run())
+4. Runs the kopf operator with appropriate settings</p>
 
 
     </div>
@@ -8622,7 +8669,8 @@ global operator settings including:
 - Networking settings
 - Performance tuning
 - Metrics and health check endpoints
-- Rate limiting for Keycloak API calls</p>
+- Rate limiting for Keycloak API calls
+- Admission webhook server</p>
 
 
     </div>

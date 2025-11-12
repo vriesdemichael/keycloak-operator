@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/002-uv-for-dependency-management/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/040-admission-webhooks-for-validation/">
       
       
-        <link rel="prev" href="../001-kopf-as-operator-framework/">
+        <link rel="prev" href="../039-token-rotation-and-bootstrap-flows/">
       
       
-        <link rel="next" href="../003-least-privilege-everywhere/">
+        <link rel="next" href="../040-ruff-for-formatting-and-linting/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>ADR-002: uv for dependency management - Keycloak Operator</title>
+        <title>ADR-040: Admission Webhooks for Resource Validation - Keycloak Operator</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-002-uv-for-dependency-management" class="md-skip">
+        <a href="#adr-040-admission-webhooks-for-resource-validation" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-002: uv for dependency management
+              ADR-040: Admission Webhooks for Resource Validation
             
           </span>
         </div>
@@ -1342,32 +1342,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    ADR-002: uv for dependency management
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../002-uv-for-dependency-management/" class="md-nav__link">
         
   
   
@@ -1378,53 +1356,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      Decision
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rationale
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Agent Instructions
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -2262,10 +2193,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../040-admission-webhooks-for-validation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    ADR-040: Admission Webhooks for Resource Validation
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -2276,6 +2229,104 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      Decision
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rationale
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Agent Instructions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rejected Alternatives
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pydantic-validation-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pydantic validation only
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-kopf-auto-managed-webhooks-with-self-signed-certs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Kopf auto-managed webhooks with self-signed certs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disable-webhooks-only-use-crd-openapi-schema-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disable webhooks, only use CRD OpenAPI schema validation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-certificate-management-without-cert-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual certificate management without cert-manager
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3036,6 +3087,57 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rejected Alternatives
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pydantic-validation-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pydantic validation only
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-kopf-auto-managed-webhooks-with-self-signed-certs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Use Kopf auto-managed webhooks with self-signed certs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#disable-webhooks-only-use-crd-openapi-schema-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Disable webhooks, only use CRD OpenAPI schema validation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-certificate-management-without-cert-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual certificate management without cert-manager
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3052,7 +3154,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/002-uv-for-dependency-management.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/040-admission-webhooks-for-validation.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -3060,15 +3162,41 @@
   
 
 
-<h1 id="adr-002-uv-for-dependency-management">ADR-002: uv for dependency management<a class="headerlink" href="#adr-002-uv-for-dependency-management" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> development
-<strong>Provenance:</strong> guided-ai</p>
+<h1 id="adr-040-admission-webhooks-for-resource-validation">ADR-040: Admission Webhooks for Resource Validation<a class="headerlink" href="#adr-040-admission-webhooks-for-resource-validation" title="Permanent link">&para;</a></h1>
+<p><strong>Category:</strong> architecture
+<strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use uv instead of pip, poetry, or pipenv for Python dependency management and environment handling.</p>
+<p>Implement Kubernetes admission webhooks to validate Custom Resource specifications before they are persisted to etcd. Use cert-manager for TLS certificate management instead of Kopf's auto-managed webhooks (see ADR-065 for details).</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Lockfiles ensure reproducible builds across environments (uv.lock). Minimal image footprint: uv produces smaller, faster Docker images. Speed: uv is significantly faster than pip for dependency resolution and installation. Modern standard: uv is becoming the Python packaging standard with PEP 723 inline script support.</p>
+<p>Pydantic validation happens during reconciliation, which means:
+1. Users see "resource created successfully" but it fails later
+2. No immediate feedback on typos or invalid values
+3. Poor user experience debugging failed resources</p>
+<p>Admission webhooks solve this by validating at admission time:
+1. kubectl create fails immediately with clear error message
+2. Users get instant feedback on what's wrong
+3. Invalid resources never enter etcd
+4. Better GitOps experience (ArgoCD shows validation errors immediately)</p>
+<p>Additionally, webhooks enable enforcement of:
+- Resource quotas (e.g., max realms per namespace)
+- Cross-resource constraints (e.g., one Keycloak instance per namespace)
+- Namespace-based authorization (before resource is created)</p>
+<p>Using cert-manager for certificates (instead of Kopf auto-management):
+- Kopf's auto-management depends on insights.ready_resources which doesn't complete
+- cert-manager is a standard Kubernetes pattern
+- Allows manual control over ValidatingWebhookConfiguration
+- See ADR-065 for full technical rationale</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Always use 'uv run' for running Python commands. Never use 'python' or 'pip' directly. Use 'uv sync' for installing dependencies. Update pyproject.toml for dependency changes.</p>
+<p>When implementing resource validation, use both Pydantic models (for type safety in code) AND admission webhooks (for early validation at K8s API boundary). Webhooks should validate specs synchronously and return clear error messages. Use kopf.on.validate decorators with explicit 'id' parameter for webhook paths. Ensure cert-manager is available for TLS certificate generation. Include readiness probe that checks webhook server port.</p>
+<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="pydantic-validation-only">Pydantic validation only<a class="headerlink" href="#pydantic-validation-only" title="Permanent link">&para;</a></h3>
+<p>No immediate feedback to users. Resources appear created but fail during reconciliation. Poor UX for debugging.</p>
+<h3 id="use-kopf-auto-managed-webhooks-with-self-signed-certs">Use Kopf auto-managed webhooks with self-signed certs<a class="headerlink" href="#use-kopf-auto-managed-webhooks-with-self-signed-certs" title="Permanent link">&para;</a></h3>
+<p>Kopf's auto-management depends on insights.ready_resources.wait() which never completes in our operator setup. See ADR-065 for details.</p>
+<h3 id="disable-webhooks-only-use-crd-openapi-schema-validation">Disable webhooks, only use CRD OpenAPI schema validation<a class="headerlink" href="#disable-webhooks-only-use-crd-openapi-schema-validation" title="Permanent link">&para;</a></h3>
+<p>CRD validation is limited (no cross-resource checks, no quotas, no complex logic). Webhooks enable richer validation.</p>
+<h3 id="manual-certificate-management-without-cert-manager">Manual certificate management without cert-manager<a class="headerlink" href="#manual-certificate-management-without-cert-manager" title="Permanent link">&para;</a></h3>
+<p>Requires custom rotation logic. cert-manager is a standard solution.</p>
 
 
 
