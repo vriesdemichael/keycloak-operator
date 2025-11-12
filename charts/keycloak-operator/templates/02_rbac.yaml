@@ -77,10 +77,10 @@ rules:
   resources: ["clusterkopfpeerings"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
-# Webhook configuration management (for CA bundle injection by Kopf)
+# Webhook configuration management (Kopf auto-manages webhook configs)
 - apiGroups: ["admissionregistration.k8s.io"]
-  resources: ["validatingwebhookconfigurations"]
-  verbs: ["get", "list", "watch", "update", "patch"]
+  resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 ---
 # Namespace-scoped Role for managing resources in operator's own namespace
