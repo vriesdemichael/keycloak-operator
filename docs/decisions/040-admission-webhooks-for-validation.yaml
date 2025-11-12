@@ -1,0 +1,79 @@
+number: 40
+title: Admission Webhooks for Resource Validation
+category: architecture
+decision: Implement Kubernetes admission webhooks to validate Custom Resource specifications
+  before they are persisted to etcd. Use Kopf's auto-managed webhook functionality
+  with self-signed certificates (kopf[dev] extra) for ease of deployment.
+agent_instructions: When implementing resource validation, use both Pydantic models
+  (for type safety in code) AND admission webhooks (for early validation at K8s API
+  boundary). Webhooks should validate specs synchronously and return clear error
+  messages. Use kopf.on.validate decorators. Ensure proper RBAC for webhook config
+  management. Include readiness probe that checks webhook server port.
+rationale: |
+  Pydantic validation happens during reconciliation, which means:
+  1. Users see "resource created successfully" but it fails later
+  2. No immediate feedback on typos or invalid values
+  3. Poor user experience debugging failed resources
+
+  Admission webhooks solve this by validating at admission time:
+  1. kubectl create fails immediately with clear error message
+  2. Users get instant feedback on what's wrong
+  3. Invalid resources never enter etcd
+  4. Better GitOps experience (ArgoCD shows validation errors immediately)
+
+  Additionally, webhooks enable enforcement of:
+  - Resource quotas (e.g., max realms per namespace)
+  - Cross-resource constraints (e.g., one Keycloak instance per namespace)
+  - Namespace-based authorization (before resource is created)
+
+  Using Kopf's auto-managed webhooks simplifies deployment:
+  - No manual certificate management
+  - Kopf handles CA bundle injection
+  - Self-signed certs rotate automatically
+  - ValidatingWebhookConfigurations managed by operator
+provenance: human
+implementation_notes: |
+  Bootstrap consideration: The Keycloak CR in the operator Helm chart must be
+  created AFTER the operator pod is ready and webhook server is listening. This
+  is handled by:
+  1. Enhanced readiness probe checking webhook port 8443
+  2. Helm --wait flag ensures operator ready before Keycloak CR
+  3. ArgoCD sync waves (operator=wave0, Keycloak=wave1)
+
+  RBAC requirements:
+  - create/update/delete for validatingwebhookconfigurations
+  - create/update/delete for mutatingwebhookconfigurations (for future use)
+
+  Dependencies:
+  - kopf[dev] extra (includes certbuilder, oscrypto)
+  - Adds ~3MB to image but eliminates cert-manager dependency
+rejected_alternatives:
+- alternative: Pydantic validation only
+  reason: No immediate feedback to users. Resources appear created but fail during
+    reconciliation. Poor UX for debugging.
+- alternative: Use cert-manager for webhook certificates
+  reason: Adds external dependency. Many users don't have cert-manager. Self-signed
+    certs with kopf[dev] work out of the box.
+- alternative: Disable webhooks, only use CRD OpenAPI schema validation
+  reason: CRD validation is limited (no cross-resource checks, no quotas, no complex
+    logic). Webhooks enable richer validation.
+- alternative: Manual ValidatingWebhookConfiguration in Helm chart
+  reason: Kopf auto-manages webhook configs with proper CA bundle injection. Manual
+    approach requires coordinating cert rotation.
+consequences:
+  positive:
+  - Immediate validation feedback (better UX)
+  - Resource quotas prevent namespace abuse
+  - One-Keycloak-per-namespace prevents conflicts
+  - GitOps tools show validation errors immediately
+  - Invalid resources never stored in etcd
+  negative:
+  - Increased complexity (webhook server, RBAC, certificates)
+  - Bootstrap coordination needed (operator must be ready before CRs)
+  - Slightly larger image (~3MB for kopf[dev] dependencies)
+  - Admission webhook failures block resource creation (fail-closed by default)
+related_decisions:
+- number: 33
+  relationship: clarifies
+  note: ADR-033 prohibits webhooks for configuration API. This ADR adds webhooks
+    for validation only, which is complementary.
