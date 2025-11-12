@@ -5,8 +5,9 @@ This module provides utilities for tracking which operator instance created
 resources in Keycloak, enabling drift detection and multi-operator support.
 """
 
-import os
 from datetime import UTC, datetime
+
+from keycloak_operator.settings import settings
 
 # Keycloak attribute keys for ownership tracking
 # These are stored in the 'attributes' field of Keycloak resources
@@ -19,38 +20,37 @@ ATTR_CREATED_AT = "io.kubernetes.created-at"
 # Constant value for managed-by attribute
 MANAGED_BY_VALUE = "keycloak-operator"
 
-# Cache for operator instance ID to avoid repeated environment lookups
+# Cache for operator instance ID to avoid repeated lookups
 _operator_instance_id_cache: str | None = None
 
 
 def get_operator_instance_id() -> str:
     """
-    Get the current operator instance ID from environment.
+    Get the current operator instance ID from settings.
 
     The instance ID uniquely identifies this operator deployment and is used
     to track ownership of Keycloak resources. The value is cached after first
-    retrieval to avoid repeated environment variable lookups.
+    retrieval to avoid repeated lookups.
 
     Returns:
         Operator instance ID (e.g., "keycloak-operator-production")
 
     Raises:
-        RuntimeError: If OPERATOR_INSTANCE_ID environment variable is not set
+        RuntimeError: If OPERATOR_INSTANCE_ID is not set in settings
     """
     global _operator_instance_id_cache
 
     if _operator_instance_id_cache is not None:
         return _operator_instance_id_cache
 
-    instance_id = os.getenv("OPERATOR_INSTANCE_ID")
-    if not instance_id:
+    if not settings.operator_instance_id:
         raise RuntimeError(
-            "OPERATOR_INSTANCE_ID environment variable is not set. "
+            "OPERATOR_INSTANCE_ID is not set in settings. "
             "This should be configured in the Helm chart deployment."
         )
 
-    _operator_instance_id_cache = instance_id
-    return instance_id
+    _operator_instance_id_cache = settings.operator_instance_id
+    return settings.operator_instance_id
 
 
 def create_ownership_attributes(cr_namespace: str, cr_name: str) -> dict[str, str]:

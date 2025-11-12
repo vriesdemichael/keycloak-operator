@@ -6,7 +6,6 @@ to ensure robustness and proper error handling.
 """
 
 import asyncio
-import os
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -25,24 +24,28 @@ class TestLeaderElectionFailureScenarios:
     @pytest.fixture
     def monitor(self):
         """Create a leader election monitor for testing."""
-        with patch.dict(os.environ, {"POD_NAME": "test-operator-pod"}):
+        from keycloak_operator import settings as settings_module
+
+        with patch.object(settings_module.settings, "pod_name", "test-operator-pod"):
             return LeaderElectionMonitor()
 
     def test_instance_id_generation_fallbacks(self):
         """Test instance ID generation with various environment conditions."""
+        from keycloak_operator import settings as settings_module
+
         # Test with POD_NAME set
-        with patch.dict(os.environ, {"POD_NAME": "test-pod-123"}):
+        with patch.object(settings_module.settings, "pod_name", "test-pod-123"):
             monitor = LeaderElectionMonitor()
             assert monitor.instance_id == "test-pod-123"
 
         # Test without POD_NAME but with hostname
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.object(settings_module.settings, "pod_name", ""):
             with patch("platform.node", return_value="test-hostname"):
                 monitor = LeaderElectionMonitor()
                 assert monitor.instance_id == "test-hostname"
 
         # Test without POD_NAME or hostname (fallback to UUID)
-        with patch.dict(os.environ, {}, clear=True):
+        with patch.object(settings_module.settings, "pod_name", ""):
             with patch("platform.node", return_value=""):
                 with patch("uuid.uuid4") as mock_uuid:
                     mock_uuid.return_value.hex = "abcdef1234567890"

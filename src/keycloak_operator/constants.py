@@ -8,7 +8,7 @@ This module defines all constant values used by the operator including:
 - Error messages and status constants
 """
 
-import os
+from keycloak_operator.settings import settings
 
 # Finalizer constants for cleanup coordination
 # These prevent Kubernetes from deleting resources until cleanup is complete
@@ -90,13 +90,11 @@ DEFAULT_BACKOFF_FACTOR = 2.0
 DEFAULT_INITIAL_DELAY = 1.0
 
 # Rate limiting configuration
-RATE_LIMIT_GLOBAL_TPS = float(os.getenv("KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS", "50"))
-RATE_LIMIT_GLOBAL_BURST = int(os.getenv("KEYCLOAK_API_GLOBAL_BURST", "100"))
-RATE_LIMIT_NAMESPACE_TPS = float(
-    os.getenv("KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS", "5")
-)
-RATE_LIMIT_NAMESPACE_BURST = int(os.getenv("KEYCLOAK_API_NAMESPACE_BURST", "10"))
-RECONCILE_JITTER_MAX = float(os.getenv("RECONCILE_JITTER_MAX_SECONDS", "5.0"))
+RATE_LIMIT_GLOBAL_TPS = settings.api_global_rate_limit_tps
+RATE_LIMIT_GLOBAL_BURST = settings.api_global_burst
+RATE_LIMIT_NAMESPACE_TPS = settings.api_namespace_rate_limit_tps
+RATE_LIMIT_NAMESPACE_BURST = settings.api_namespace_burst
+RECONCILE_JITTER_MAX = settings.reconcile_jitter_max_seconds
 
 # Production validation constants
 SUPPORTED_DATABASES = ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
@@ -104,12 +102,8 @@ DEPRECATED_DATABASES = ["h2"]  # No longer supported in production
 
 # Admission webhook quota configuration
 # These can be overridden via environment variables for different deployment scenarios
-WEBHOOK_MAX_REALMS_PER_NAMESPACE = int(
-    os.getenv("WEBHOOK_MAX_REALMS_PER_NAMESPACE", "10")
-)
-WEBHOOK_MAX_CLIENTS_PER_NAMESPACE = int(
-    os.getenv("WEBHOOK_MAX_CLIENTS_PER_NAMESPACE", "50")
-)
+WEBHOOK_MAX_REALMS_PER_NAMESPACE = settings.webhook_max_realms_per_namespace
+WEBHOOK_MAX_CLIENTS_PER_NAMESPACE = settings.webhook_max_clients_per_namespace
 # Keycloak instances: enforced as 1 per namespace (ADR-062)
 WEBHOOK_MAX_KEYCLOAKS_PER_NAMESPACE = 1
 

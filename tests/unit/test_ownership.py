@@ -34,82 +34,117 @@ def clear_instance_id_cache():
 class TestGetOperatorInstanceId:
     """Test operator instance ID retrieval."""
 
-    def test_get_operator_instance_id_success(self, monkeypatch):
+    def test_get_operator_instance_id_success(self):
         """Test successful retrieval of operator instance ID."""
-        monkeypatch.setenv("OPERATOR_INSTANCE_ID", "test-operator-production")
-        assert get_operator_instance_id() == "test-operator-production"
+        from unittest.mock import patch
 
-    def test_get_operator_instance_id_missing(self, monkeypatch):
+        from keycloak_operator import settings as settings_module
+
+        with patch.object(
+            settings_module.settings, "operator_instance_id", "test-operator-production"
+        ):
+            assert get_operator_instance_id() == "test-operator-production"
+
+    def test_get_operator_instance_id_missing(self):
         """Test error when OPERATOR_INSTANCE_ID is not set."""
-        monkeypatch.delenv("OPERATOR_INSTANCE_ID", raising=False)
-        with pytest.raises(RuntimeError, match="OPERATOR_INSTANCE_ID"):
-            get_operator_instance_id()
+        from unittest.mock import patch
+
+        from keycloak_operator import settings as settings_module
+
+        with patch.object(settings_module.settings, "operator_instance_id", ""):
+            with pytest.raises(RuntimeError, match="OPERATOR_INSTANCE_ID"):
+                get_operator_instance_id()
 
 
 class TestCreateOwnershipAttributes:
     """Test creation of ownership attributes."""
 
-    def test_create_ownership_attributes(self, monkeypatch):
+    def test_create_ownership_attributes(self):
         """Test that ownership attributes are created correctly."""
-        monkeypatch.setenv("OPERATOR_INSTANCE_ID", "test-operator")
+        from unittest.mock import patch
 
-        attrs = create_ownership_attributes("my-namespace", "my-resource")
+        from keycloak_operator import settings as settings_module
 
-        assert attrs[ATTR_MANAGED_BY] == MANAGED_BY_VALUE
-        assert attrs[ATTR_OPERATOR_INSTANCE] == "test-operator"
-        assert attrs[ATTR_CR_NAMESPACE] == "my-namespace"
-        assert attrs[ATTR_CR_NAME] == "my-resource"
-        assert ATTR_CREATED_AT in attrs
+        with patch.object(
+            settings_module.settings, "operator_instance_id", "test-operator"
+        ):
+            attrs = create_ownership_attributes("my-namespace", "my-resource")
 
-        # Verify timestamp is recent (within 1 second)
-        created_at = datetime.fromisoformat(attrs[ATTR_CREATED_AT])
-        age = (datetime.now(UTC) - created_at).total_seconds()
-        assert age < 1.0
+            assert attrs[ATTR_MANAGED_BY] == MANAGED_BY_VALUE
+            assert attrs[ATTR_OPERATOR_INSTANCE] == "test-operator"
+            assert attrs[ATTR_CR_NAMESPACE] == "my-namespace"
+            assert attrs[ATTR_CR_NAME] == "my-resource"
+            assert ATTR_CREATED_AT in attrs
+
+            # Verify timestamp is recent (within 1 second)
+            created_at = datetime.fromisoformat(attrs[ATTR_CREATED_AT])
+            age = (datetime.now(UTC) - created_at).total_seconds()
+            assert age < 1.0
 
 
 class TestIsOwnedByThisOperator:
     """Test ownership checking."""
 
-    def test_is_owned_by_this_operator_true(self, monkeypatch):
+    def test_is_owned_by_this_operator_true(self):
         """Test when resource is owned by this operator."""
-        monkeypatch.setenv("OPERATOR_INSTANCE_ID", "my-operator")
+        from unittest.mock import patch
 
-        attributes = {
-            ATTR_MANAGED_BY: MANAGED_BY_VALUE,
-            ATTR_OPERATOR_INSTANCE: "my-operator",
-        }
+        from keycloak_operator import settings as settings_module
 
-        assert is_owned_by_this_operator(attributes) is True
+        with patch.object(
+            settings_module.settings, "operator_instance_id", "my-operator"
+        ):
+            attributes = {
+                ATTR_MANAGED_BY: MANAGED_BY_VALUE,
+                ATTR_OPERATOR_INSTANCE: "my-operator",
+            }
 
-    def test_is_owned_by_different_operator(self, monkeypatch):
+            assert is_owned_by_this_operator(attributes) is True
+
+    def test_is_owned_by_different_operator(self):
         """Test when resource is owned by a different operator."""
-        monkeypatch.setenv("OPERATOR_INSTANCE_ID", "my-operator")
+        from unittest.mock import patch
 
-        attributes = {
-            ATTR_MANAGED_BY: MANAGED_BY_VALUE,
-            ATTR_OPERATOR_INSTANCE: "other-operator",
-        }
+        from keycloak_operator import settings as settings_module
 
-        assert is_owned_by_this_operator(attributes) is False
+        with patch.object(
+            settings_module.settings, "operator_instance_id", "my-operator"
+        ):
+            attributes = {
+                ATTR_MANAGED_BY: MANAGED_BY_VALUE,
+                ATTR_OPERATOR_INSTANCE: "other-operator",
+            }
 
-    def test_is_owned_no_attributes(self, monkeypatch):
+            assert is_owned_by_this_operator(attributes) is False
+
+    def test_is_owned_no_attributes(self):
         """Test when resource has no attributes."""
-        monkeypatch.setenv("OPERATOR_INSTANCE_ID", "my-operator")
+        from unittest.mock import patch
 
-        assert is_owned_by_this_operator(None) is False
-        assert is_owned_by_this_operator({}) is False
+        from keycloak_operator import settings as settings_module
 
-    def test_is_owned_list_value(self, monkeypatch):
+        with patch.object(
+            settings_module.settings, "operator_instance_id", "my-operator"
+        ):
+            assert is_owned_by_this_operator(None) is False
+            assert is_owned_by_this_operator({}) is False
+
+    def test_is_owned_list_value(self):
         """Test handling of list values (Keycloak sometimes uses lists)."""
-        monkeypatch.setenv("OPERATOR_INSTANCE_ID", "my-operator")
+        from unittest.mock import patch
 
-        # Keycloak may store attributes as lists
-        attributes = {
-            ATTR_MANAGED_BY: [MANAGED_BY_VALUE],
-            ATTR_OPERATOR_INSTANCE: ["my-operator"],
-        }
+        from keycloak_operator import settings as settings_module
 
-        assert is_owned_by_this_operator(attributes) is True
+        with patch.object(
+            settings_module.settings, "operator_instance_id", "my-operator"
+        ):
+            # Keycloak may store attributes as lists
+            attributes = {
+                ATTR_MANAGED_BY: [MANAGED_BY_VALUE],
+                ATTR_OPERATOR_INSTANCE: ["my-operator"],
+            }
+
+            assert is_owned_by_this_operator(attributes) is True
 
 
 class TestIsManagedByOperator:

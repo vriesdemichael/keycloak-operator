@@ -8,7 +8,6 @@ unmanaged resources.
 
 import asyncio
 import logging
-import os
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -26,6 +25,7 @@ from keycloak_operator.observability.metrics import (
     REMEDIATION_TOTAL,
     UNMANAGED_RESOURCES,
 )
+from keycloak_operator.settings import settings
 from keycloak_operator.utils.keycloak_admin import (
     KeycloakAdminClient,
     get_keycloak_admin_client,
@@ -68,23 +68,16 @@ class DriftDetectionConfig:
 
     @classmethod
     def from_env(cls) -> "DriftDetectionConfig":
-        """Load configuration from environment variables."""
+        """Load configuration from settings."""
         return cls(
-            enabled=os.getenv("DRIFT_DETECTION_ENABLED", "true").lower() == "true",
-            interval_seconds=int(os.getenv("DRIFT_DETECTION_INTERVAL_SECONDS", "300")),
-            auto_remediate=os.getenv("DRIFT_DETECTION_AUTO_REMEDIATE", "false").lower()
-            == "true",
-            minimum_age_hours=int(os.getenv("DRIFT_DETECTION_MINIMUM_AGE_HOURS", "24")),
-            scope_realms=os.getenv("DRIFT_DETECTION_SCOPE_REALMS", "true").lower()
-            == "true",
-            scope_clients=os.getenv("DRIFT_DETECTION_SCOPE_CLIENTS", "true").lower()
-            == "true",
-            scope_identity_providers=os.getenv(
-                "DRIFT_DETECTION_SCOPE_IDENTITY_PROVIDERS", "true"
-            ).lower()
-            == "true",
-            scope_roles=os.getenv("DRIFT_DETECTION_SCOPE_ROLES", "true").lower()
-            == "true",
+            enabled=settings.drift_detection_enabled,
+            interval_seconds=settings.drift_detection_interval_seconds,
+            auto_remediate=settings.drift_detection_auto_remediate,
+            minimum_age_hours=settings.drift_detection_minimum_age_hours,
+            scope_realms=settings.drift_detection_scope_realms,
+            scope_clients=settings.drift_detection_scope_clients,
+            scope_identity_providers=settings.drift_detection_scope_identity_providers,
+            scope_roles=settings.drift_detection_scope_roles,
         )
 
 
@@ -480,8 +473,7 @@ class DriftDetector:
         # For now, return a hardcoded list
         # TODO(#66): Discover Keycloak instances dynamically via CRDs for multi-instance deployments
         # This limitation impacts scalability in production environments with multiple Keycloak instances
-        operator_namespace = os.getenv("OPERATOR_NAMESPACE", "keycloak-system")
-        return [(operator_namespace, "keycloak")]
+        return [(settings.operator_namespace, "keycloak")]
 
     def _update_drift_metrics(
         self, drift_results: list[DriftResult], resource_type: str
@@ -503,7 +495,7 @@ class DriftDetector:
                 ORPHANED_RESOURCES.labels(
                     resource_type=drift.resource_type,
                     resource_name=drift.resource_name,
-                    operator_instance=os.getenv("OPERATOR_INSTANCE_ID", "unknown"),
+                    operator_instance=settings.operator_instance_id,
                 ).set(1)
 
             elif drift.drift_type == "config_drift":
