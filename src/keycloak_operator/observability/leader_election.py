@@ -6,11 +6,12 @@ collecting metrics about leadership status, changes, and lease renewals.
 """
 
 import logging
-import os
 import platform
 
 import kopf
 from kubernetes.client.rest import ApiException
+
+from keycloak_operator.settings import settings
 
 from .metrics import metrics_collector
 
@@ -23,7 +24,7 @@ class LeaderElectionMonitor:
     def __init__(self):
         """Initialize the leader election monitor."""
         self.instance_id = self._get_instance_id()
-        self.namespace = os.getenv("POD_NAMESPACE", "keycloak-system")
+        self.namespace = settings.pod_namespace
         self.is_leader = False
         self.previous_leader: str | None = None
 
@@ -38,10 +39,9 @@ class LeaderElectionMonitor:
         Returns:
             Unique identifier for this operator instance
         """
-        # Try to get pod name from environment (set in deployment)
-        pod_name = os.getenv("POD_NAME")
-        if pod_name:
-            return pod_name
+        # Try to get pod name from settings (set via downward API)
+        if settings.pod_name:
+            return settings.pod_name
 
         # Fallback to hostname
         hostname = platform.node()

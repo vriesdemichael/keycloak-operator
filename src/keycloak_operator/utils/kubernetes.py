@@ -20,6 +20,7 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
+from keycloak_operator.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -1230,20 +1231,12 @@ def get_current_service_account_info() -> dict[str, str]:
         with open("/var/run/secrets/kubernetes.io/serviceaccount/namespace") as f:
             namespace = f.read().strip()
 
-        # Read service account name from environment variable (set by Helm chart)
-        # or fall back to reading from mounted service account token directory
-        import os
-
-        service_account = os.getenv("SERVICE_ACCOUNT_NAME")
-        if not service_account:
-            # Try to infer from mounted token path
-            try:
-                # The token is mounted at /var/run/secrets/kubernetes.io/serviceaccount/
-                # and the SA name can be found via the Kubernetes downward API if configured,
-                # but since we control the deployment, we can use a naming convention
-                service_account = f"keycloak-operator-{namespace}"
-            except Exception:
-                service_account = "keycloak-operator"
+        # Read service account name from settings or fall back to naming convention
+        service_account = (
+            settings.service_account_name
+            if settings.service_account_name
+            else f"keycloak-operator-{namespace}"
+        )
 
         return {"name": service_account, "namespace": namespace}
 

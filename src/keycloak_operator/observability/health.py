@@ -13,6 +13,8 @@ from typing import Any
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.settings import settings
+
 logger = logging.getLogger(__name__)
 
 
@@ -307,14 +309,7 @@ class HealthChecker:
 
                 self.k8s_client = get_kubernetes_client()
 
-            # Get operator's namespace and name from environment or configuration
-            import os
-
-            operator_namespace = os.getenv(
-                "OPERATOR_NAMESPACE", "keycloak-operator-system"
-            )
-            operator_name = os.getenv("OPERATOR_NAME", "keycloak-operator")
-
+            # Get operator's namespace and name from settings
             apps_api = client.AppsV1Api(self.k8s_client)
             core_api = client.CoreV1Api(self.k8s_client)
 
@@ -323,7 +318,8 @@ class HealthChecker:
             # Check operator deployment
             try:
                 deployment = apps_api.read_namespaced_deployment(
-                    name=operator_name, namespace=operator_namespace
+                    name=settings.operator_name,
+                    namespace=settings.operator_namespace,
                 )
                 ready_replicas = deployment.status.ready_replicas or 0
                 desired_replicas = deployment.spec.replicas or 1
@@ -351,7 +347,8 @@ class HealthChecker:
             # Check service account
             try:
                 core_api.read_namespaced_service_account(
-                    name=operator_name, namespace=operator_namespace
+                    name=settings.operator_name,
+                    namespace=settings.operator_namespace,
                 )
                 resource_status["service_account"] = {"status": "healthy"}
 
