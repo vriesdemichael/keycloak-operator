@@ -215,15 +215,5 @@ async def on_lease_event(event, name, namespace, **kwargs):
         await monitor.check_leadership_status()
 
 
-# Periodic leadership status check
-@kopf.timer("", "v1", "pods", interval=30.0, idle=30.0)
-async def periodic_leadership_check(**kwargs):
-    """Periodically check and update leadership status."""
-    monitor = get_leader_election_monitor()
-
-    # Only run this on our own pod
-    pod_name = kwargs.get("name", "")
-    our_pod_name = os.getenv("POD_NAME", "")
-
-    if our_pod_name and pod_name == our_pod_name:
-        await monitor.check_leadership_status()
+# Periodic leadership status check via lease monitoring (no pod watching needed)
+# Leadership is determined by the lease owner, which is already monitored above
