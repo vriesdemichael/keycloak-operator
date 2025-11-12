@@ -80,9 +80,9 @@ class TestGrantListAuthorization:
             )
             status = realm.get("status", {})
             authorized_ns = status.get("authorizedClientNamespaces", [])
-            assert (
-                client_namespace in authorized_ns
-            ), f"Namespace {client_namespace} should be in authorized list"
+            assert client_namespace in authorized_ns, (
+                f"Namespace {client_namespace} should be in authorized list"
+            )
 
             # Create client in authorized namespace
             client_name = f"test-client-{suffix}"
@@ -127,12 +127,12 @@ class TestGrantListAuthorization:
                 name=client_name,
             )
             client_status = client.get("status", {})
-            assert (
-                client_status.get("authorizationGranted") is True
-            ), "Client should be authorized"
-            assert (
-                client_status.get("phase") == "Ready"
-            ), f"Client should be Ready, got: {client_status.get('phase')}"
+            assert client_status.get("authorizationGranted") is True, (
+                "Client should be authorized"
+            )
+            assert client_status.get("phase") == "Ready", (
+                f"Client should be Ready, got: {client_status.get('phase')}"
+            )
 
         finally:
             # Cleanup
@@ -249,12 +249,12 @@ class TestGrantListAuthorization:
                 name=client_name,
             )
             client_status = client.get("status", {})
-            assert (
-                client_status.get("phase") == "Failed"
-            ), "Client should be in Failed phase"
-            assert (
-                "not authorized" in client_status.get("message", "").lower()
-            ), "Error message should mention authorization failure"
+            assert client_status.get("phase") == "Failed", (
+                "Client should be in Failed phase"
+            )
+            assert "not authorized" in client_status.get("message", "").lower(), (
+                "Error message should mention authorization failure"
+            )
 
         finally:
             # Cleanup
