@@ -20,9 +20,8 @@ classifiers = [
 
 dependencies = [
     "aiohttp>=3.10.11",
-    "certbuilder>=0.14.2",  # Required for Kopf webhook self-signed certs
     "httpx>=0.27.0",
-    "kopf>=1.37.0",
+    "kopf[dev]>=1.37.0",  # [dev] includes certbuilder for webhook self-signed certs
     "kubernetes>=28.0.0",
     "prometheus-client>=0.20.0",
     "pydantic>=2.0.0",

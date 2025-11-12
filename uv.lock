@@ -221,6 +221,19 @@ wheels = [
 ]
 
 [[package]]
+name = "certvalidator"
+version = "0.11.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asn1crypto" },
+    { name = "oscrypto" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/a2/92/bb5902af005671fe343a55d50db4f1680f8a5551cd1f28f54118c4a61865/certvalidator-0.11.1.tar.gz", hash = "sha256:922d141c94393ab285ca34338e18dd4093e3ae330b1f278e96c837cb62cffaad", size = 25204, upload-time = "2016-07-29T14:57:44.754Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5a/e5/7f18a038f5951318234215403c396cf078e1bef7700a1a8527149e6bc72a/certvalidator-0.11.1-py2.py3-none-any.whl", hash = "sha256:77520b269f516d4fb0902998d5bd0eb3727fe153b659aa1cb828dcf12ea6b8de", size = 31458, upload-time = "2016-07-29T14:57:42.107Z" },
+]
+
+[[package]]
 name = "cffi"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -785,9 +798,8 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
-    { name = "certbuilder" },
     { name = "httpx" },
-    { name = "kopf" },
+    { name = "kopf", extra = ["dev"] },
     { name = "kubernetes" },
     { name = "prometheus-client" },
     { name = "pydantic" },
@@ -845,9 +857,8 @@ test = [
 [package.metadata]
 requires-dist = [
     { name = "aiohttp", specifier = ">=3.10.11" },
-    { name = "certbuilder", specifier = ">=0.14.2" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "kopf", specifier = ">=1.37.0" },
+    { name = "kopf", extras = ["dev"], specifier = ">=1.37.0" },
     { name = "kubernetes", specifier = ">=28.0.0" },
     { name = "prometheus-client", specifier = ">=0.20.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
@@ -916,6 +927,14 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/74/d3/2b8a63a02b3fdf68f91d15b009ad7799c3fdcd6268c3b5e20863453d5215/kopf-1.38.0.tar.gz", hash = "sha256:7b9f83240269636e00e4b11e9c7c8afbfefba3d3326ac2d2aa7904d35c4f89cd", size = 1193277, upload-time = "2025-05-12T11:23:44.442Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b1/df/419544157085b971e1f5e4449b95c7b399f84b3f496e6aaf4ca41e7d6c9f/kopf-1.38.0-py3-none-any.whl", hash = "sha256:2384b8021032d9f87e53a6b46097c47e566d9280c838809483698640e1b36df0", size = 209563, upload-time = "2025-05-12T11:23:42.87Z" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "certbuilder" },
+    { name = "certvalidator" },
+    { name = "oscrypto" },
+    { name = "pyngrok" },
 ]
 
 [[package]]
@@ -1733,6 +1752,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/55/b3/6d2b3f149bc5413b0a29761c2c5832d8ce904a1d7f621e86616d96f505cc/pymdown_extensions-10.16.1.tar.gz", hash = "sha256:aace82bcccba3efc03e25d584e6a22d27a8e17caa3f4dd9f207e49b787aa9a91", size = 853277, upload-time = "2025-07-28T16:19:34.167Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e4/06/43084e6cbd4b3bc0e80f6be743b2e79fbc6eed8de9ad8c629939fa55d972/pymdown_extensions-10.16.1-py3-none-any.whl", hash = "sha256:d6ba157a6c03146a7fb122b2b9a121300056384eafeec9c9f9e584adfdb2a32d", size = 266178, upload-time = "2025-07-28T16:19:31.401Z" },
+]
+
+[[package]]
+name = "pyngrok"
+version = "7.4.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/3f/64/5ab436dd78db3bcfdbae5965c48e21a6ee3fa6ec87859e44442e2fb361c3/pyngrok-7.4.1.tar.gz", hash = "sha256:ad8637738ced5bdb88c28b087fea39ca552860c2d30004ac01033c0f8eb4f36e", size = 44612, upload-time = "2025-10-23T14:32:50.524Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/8d/5d/231c395723ee72bae6c272831642304067fda24a4d4f008e18b1088348f4/pyngrok-7.4.1-py3-none-any.whl", hash = "sha256:0325e34f26f7a5a9324df414eebbfaec5e5388f77e7439ea45a3358f645bc840", size = 25464, upload-time = "2025-10-23T14:32:49.147Z" },
 ]
 
 [[package]]
