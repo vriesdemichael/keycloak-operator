@@ -237,7 +237,7 @@ monitoring:
 # Keycloak instance configuration (optional)
 # Set enabled: true to deploy a Keycloak instance managed by the operator
 keycloak:
-  enabled: false
+  enabled: true
 
   # Name of the Keycloak instance
   name: keycloak
