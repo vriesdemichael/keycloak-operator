@@ -1101,9 +1101,8 @@ async def shared_operator(
     helm_values = {
         "namespace": {"name": operator_namespace, "create": False},
         "keycloak": {
-            # Disable Keycloak creation in chart when webhooks are enabled
-            # Tests will create Keycloak resources after operator is ready
-            "enabled": False,  # Changed from True
+            # Enable Keycloak creation with CNPG database
+            "enabled": True,
             "replicas": 1,
             "image": keycloak_image,  # Use optimized image for faster startup
             "version": keycloak_version,
