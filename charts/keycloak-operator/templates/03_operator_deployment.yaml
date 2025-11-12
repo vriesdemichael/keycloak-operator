@@ -117,7 +117,7 @@ spec:
             - -c
             - |
               # Check health endpoint
-              wget -q -O- http://localhost:8080/healthz > /dev/null || exit 1
+              wget -q -O- http://localhost:8081/healthz > /dev/null || exit 1
               # Check webhook server is listening
               timeout 2 bash -c '</dev/tcp/localhost/{{ .Values.webhooks.port }}' || exit 1
           initialDelaySeconds: 10
