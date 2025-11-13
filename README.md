@@ -2,6 +2,7 @@
 
 [![CI/CD Pipeline](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd.yml)
 [![Release](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml)
+[![codecov](https://codecov.io/gh/vriesdemichael/keycloak-operator/branch/main/graph/badge.svg)](https://codecov.io/gh/vriesdemichael/keycloak-operator)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 
@@ -44,6 +45,7 @@ kubectl apply -f examples/03-client-example.yaml
 - **Drift Detection** - Automatic detection of orphaned resources and configuration drift ([docs](docs/drift-detection.md))
 - **Cross-Namespace Support** - Secure delegation model for multi-tenant environments
 - **Production Ready** - Rate limiting, exponential backoff, and comprehensive monitoring
+- **Comprehensive Test Coverage** - Unit and integration tests with coverage tracking
 - **Resource Quotas** - Namespace-level limits on realms and clients via admission webhooks
 - **Rate Limiting** - Two-level throttling (global + per-namespace) protects Keycloak from overload
 - **High Availability** - Multi-replica Keycloak with PostgreSQL clustering via CloudNativePG

@@ -298,22 +298,53 @@ Without running this pre-commit directive you are prohibited to make commits. An
 
 ### Testing Infrastructure
 
-This project has comprehensive testing infrastructure:
+This project has comprehensive testing infrastructure with coverage collection:
 
 **Test Types:**
 - **Unit Tests**: Fast tests in `tests/unit/` that mock Kubernetes interactions
 - **Integration Tests**: Real Kubernetes tests in `tests/integration/` using Kind clusters
+- **Coverage Collection**: Unit + integration coverage combined for complete visibility
 
 **Testing Commands (following 2025 best practices):**
 ```bash
-# Complete test suite (recommended)
+# Complete test suite with coverage (recommended)
 make test                        # Quality + unit + integration tests with cluster reuse
 
 # Individual test types
-make test-unit                   # Fast unit tests only
-make test-integration            # Integration tests (reuses existing cluster for speed)
-make test-pre-commit             # Ticks all requirements before committing (quality, unittest, integration tests)
+make test-unit                   # Fast unit tests only (generates .coverage)
+make test-integration            # Integration tests (reuses existing cluster)
+make test-integration-coverage   # Integration tests with coverage collection
+make test-pre-commit             # Full flow: quality + fresh cluster + all tests with coverage
 make quality                     # Linting and formatting
+```
+
+**Coverage Workflow:**
+1. **Unit tests** run on host and generate `.coverage` file
+2. **Integration tests** deploy coverage-instrumented operator in Kubernetes
+3. Coverage data is retrieved from operator pod after tests complete
+4. Unit + integration coverage are combined into single report
+5. Combined coverage uploaded to Codecov for tracking
+
+**Coverage Configuration:**
+- Configuration: `.coveragerc` in repository root
+- Instrumentation: `images/operator/Dockerfile.test` (coverage-enabled image)
+- Auto-start: `test-inject/sitecustomize.py` (imported at Python startup)
+- Retrieval: `scripts/retrieve-coverage.sh` (extracts from pod)
+- Combination: `scripts/combine-coverage.sh` (merges unit + integration)
+- Reports: `coverage.xml` (Codecov), `htmlcov/` (local viewing)
+
+**Enabling Coverage:**
+```bash
+# Coverage is enabled by default in make test-pre-commit
+make test-pre-commit
+
+# Manual control via environment variable
+INTEGRATION_COVERAGE=true make test-integration
+
+# View coverage report locally
+make test-integration-coverage
+coverage html
+open htmlcov/index.html  # or xdg-open on Linux
 ```
 
 **Cluster and Deployment Management:**
