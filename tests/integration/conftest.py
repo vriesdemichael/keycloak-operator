@@ -291,18 +291,37 @@ async def _retrieve_integration_coverage(
             return
         pod_name = pods.items[0].metadata.name
         logger.info(f"Found operator pod: {pod_name}")
-        logger.info("Deleting pod to trigger coverage save...")
-        await k8s_core_v1.delete_namespaced_pod(
-            name=pod_name, namespace=operator_namespace, grace_period_seconds=30
-        )
+
         import asyncio
 
-        logger.info("Waiting for coverage save...")
-        await asyncio.sleep(5)
         from kubernetes.stream import stream
 
         coverage_dir = Path(__file__).parent.parent.parent / ".tmp" / "coverage"
         coverage_dir.mkdir(parents=True, exist_ok=True)
+
+        # Signal the pod to shut down gracefully to trigger coverage save
+        logger.info("Sending SIGTERM to operator to trigger coverage save...")
+        signal_command = ["sh", "-c", "kill -TERM 1"]
+        try:
+            stream(
+                k8s_core_v1.connect_get_namespaced_pod_exec,
+                pod_name,
+                operator_namespace,
+                command=signal_command,
+                stderr=True,
+                stdin=False,
+                stdout=True,
+                tty=False,
+                _preload_content=True,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send SIGTERM: {e}")
+
+        # Wait for coverage to be written (but before pod terminates)
+        logger.info("Waiting for coverage save...")
+        await asyncio.sleep(10)
+
+        # Now retrieve the coverage files
         exec_command = [
             "sh",
             "-c",
