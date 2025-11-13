@@ -13,12 +13,10 @@ class Settings(BaseSettings):
     """Operator configuration loaded from environment variables.
 
     All settings have sensible defaults for production use. Override via
-    environment variables with the KEYCLOAK_OPERATOR_ prefix (or specific
-    prefixes as documented per field).
+    environment variables as documented per field.
     """
 
     model_config = SettingsConfigDict(
-        env_prefix="KEYCLOAK_OPERATOR_",
         case_sensitive=False,
         env_file=".env",
         env_file_encoding="utf-8",
@@ -62,26 +60,31 @@ class Settings(BaseSettings):
     # Logging configuration
     log_level: str = Field(
         default="INFO",
+        validation_alias="LOG_LEVEL",
         description="Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     )
     json_logs: bool = Field(
         default=True,
+        validation_alias="JSON_LOGS",
         description="Enable JSON formatted logging for structured log aggregation",
     )
     correlation_ids: bool = Field(
         default=True,
+        validation_alias="CORRELATION_IDS",
         description="Enable correlation IDs in logs for request tracing",
     )
 
     # Namespace watching
     namespaces: str = Field(
         default="",
+        validation_alias="KEYCLOAK_OPERATOR_NAMESPACES",
         description="Comma-separated list of namespaces to watch (empty = all namespaces)",
     )
 
     # Operator behavior
     dry_run: bool = Field(
         default=False,
+        validation_alias="DRY_RUN",
         description="Run in dry-run mode (no changes applied to Keycloak)",
     )
 

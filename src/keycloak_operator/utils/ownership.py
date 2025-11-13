@@ -85,12 +85,17 @@ def create_ownership_attributes(cr_namespace: str, cr_name: str) -> dict[str, st
     }
 
 
-def is_owned_by_this_operator(attributes: dict[str, str | list[str]] | None) -> bool:
+def is_owned_by_this_operator(
+    attributes: dict[str, str | list[str]] | None,
+    operator_instance_id: str | None = None,
+) -> bool:
     """
     Check if a Keycloak resource is owned by this operator instance.
 
     Args:
         attributes: Keycloak resource attributes (may be None or empty)
+        operator_instance_id: Optional operator instance ID to check against.
+                            If None, uses get_operator_instance_id()
 
     Returns:
         True if the resource was created by this operator instance
@@ -111,7 +116,9 @@ def is_owned_by_this_operator(attributes: dict[str, str | list[str]] | None) -> 
     if isinstance(operator_instance, list):
         operator_instance = operator_instance[0] if operator_instance else None
 
-    return operator_instance == get_operator_instance_id()
+    # Use provided operator_instance_id or get it from settings
+    expected_id = operator_instance_id or get_operator_instance_id()
+    return operator_instance == expected_id
 
 
 def is_managed_by_operator(attributes: dict[str, str | list[str]] | None) -> bool:

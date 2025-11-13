@@ -2216,6 +2216,41 @@ async def helm_client(
     # Cleanup all created Helm releases
     for release_name in created_releases:
         try:
+            # First, manually delete the KeycloakClient CR to avoid finalizer issues
+            # Helm-created resources follow the pattern: {release-name}-keycloak-client
+            client_name = f"{release_name}-keycloak-client"
+
+            # Try to get the custom objects API
+            try:
+                from kubernetes import client
+
+                k8s_client = client.ApiClient()
+                custom_api = client.CustomObjectsApi(k8s_client)
+
+                # Try to delete the client CR with a short timeout
+                try:
+                    await custom_api.delete_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakclients",
+                        name=client_name,
+                    )
+                    logger.info(
+                        f"Deleted KeycloakClient CR {client_name} before Helm uninstall"
+                    )
+
+                    # Wait a bit for the CR to be deleted
+                    await asyncio.sleep(2)
+                except Exception as e:
+                    # CR might not exist or already deleted, that's fine
+                    logger.debug(
+                        f"Could not pre-delete KeycloakClient {client_name}: {e}"
+                    )
+            except Exception as e:
+                logger.debug(f"Could not setup K8s client for pre-cleanup: {e}")
+
+            # Now run helm uninstall with a shorter timeout since we pre-cleaned the CR
             cmd = [
                 "helm",
                 "uninstall",
@@ -2224,7 +2259,7 @@ async def helm_client(
                 test_namespace,
                 "--wait",
                 "--timeout",
-                "2m",
+                "1m",
             ]
 
             proc = await asyncio.create_subprocess_exec(
@@ -2714,8 +2749,14 @@ async def drift_detector(
 
     # Return factory function for tests to configure detector
     def create_detector(config):
+        # Use the shared_operator namespace and name for discovering Keycloak instances
+        keycloak_instances = [(shared_operator.namespace, shared_operator.name)]
         return DriftDetector(
-            config=config, k8s_client=k8s_client, keycloak_admin_factory=admin_factory
+            config=config,
+            k8s_client=k8s_client,
+            keycloak_admin_factory=admin_factory,
+            keycloak_instances=keycloak_instances,
+            operator_instance_id=operator_instance_id,
         )
 
     return create_detector
