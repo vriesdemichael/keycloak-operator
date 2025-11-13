@@ -95,6 +95,18 @@ build-test: ## Build operator test image and load into Kind
 	kind load docker-image keycloak-operator:test --name keycloak-operator-test
 	@echo "✓ Operator image loaded into Kind"
 
+.PHONY: build-test-coverage
+build-test-coverage: ## Build operator test image with coverage instrumentation
+	@echo "Building operator test image with coverage..."
+	docker build -f images/operator/Dockerfile.test -t keycloak-operator:test-coverage .
+	@echo "✓ Operator coverage image built"
+
+.PHONY: kind-load-test-coverage
+kind-load-test-coverage: build-test-coverage ## Build and load coverage-instrumented image into Kind
+	@echo "Loading coverage-instrumented operator image into Kind cluster..."
+	kind load docker-image keycloak-operator:test-coverage --name keycloak-operator-test
+	@echo "✓ Coverage image loaded into Kind"
+
 .PHONY: build-keycloak-optimized
 build-keycloak-optimized: ## Build optimized Keycloak image
 	@echo "Building optimized Keycloak image for faster startup..."
@@ -122,6 +134,15 @@ test-integration: ensure-test-cluster build-all-test ## Run integration tests (b
 	@echo "Running integration tests (tests deploy operator via Helm)..."
 	uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
+.PHONY: test-integration-coverage
+test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized ## Run integration tests with coverage collection
+	@echo "Running integration tests with coverage enabled..."
+	INTEGRATION_COVERAGE=true uv run pytest tests/integration/ -v -n auto --dist=loadscope
+	@echo "Retrieving coverage data from operator pod..."
+	./scripts/retrieve-coverage.sh || true
+	@echo "Combining coverage data..."
+	./scripts/combine-coverage.sh
+
 .PHONY: test-integration-clean
 test-integration-clean: kind-teardown test-integration ## Tear down cluster, then run integration tests
 
@@ -136,7 +157,7 @@ test-integration-clean: kind-teardown test-integration ## Tear down cluster, the
 test: quality test-unit test-integration ## Run complete test suite (quality + unit + integration)
 
 .PHONY: test-pre-commit
-test-pre-commit: ## Complete pre-commit flow (quality + fresh cluster + unit + integration)
+test-pre-commit: ## Complete pre-commit flow (quality + fresh cluster + unit + integration with coverage)
 	@echo "====================================="
 	@echo "Pre-commit test suite"
 	@echo "====================================="
@@ -152,17 +173,17 @@ test-pre-commit: ## Complete pre-commit flow (quality + fresh cluster + unit + i
 	@$(MAKE) kind-setup || { echo "❌ Failed to setup Kind cluster"; exit 1; }
 	@echo "✓ Fresh cluster ready"
 	@echo ""
-	@echo "Step 3/4: Running unit tests..."
+	@echo "Step 3/4: Running unit tests with coverage..."
 	@echo "-------------------------------------"
 	@$(MAKE) test-unit || { echo "❌ Unit tests failed"; exit 1; }
 	@echo "✓ Unit tests passed"
 	@echo ""
-	@echo "Step 4/4: Running integration tests..."
+	@echo "Step 4/4: Running integration tests with coverage..."
 	@echo "-------------------------------------"
 	@$(MAKE) install-cnpg || { echo "❌ Failed to install CNPG"; exit 1; }
 	@$(MAKE) install-cert-manager || { echo "❌ Failed to install cert-manager"; exit 1; }
 	@mkdir -p .tmp
-	@bash -c "set -o pipefail; $(MAKE) test-integration 2>&1 | tee .tmp/latest-integration-test.log" || { echo "❌ Integration tests failed"; exit 1; }
+	@bash -c "set -o pipefail; INTEGRATION_COVERAGE=true $(MAKE) test-integration-coverage 2>&1 | tee .tmp/latest-integration-test.log" || { echo "❌ Integration tests failed"; exit 1; }
 	@echo "✓ Integration tests passed"
 	@echo ""
 	@echo "====================================="

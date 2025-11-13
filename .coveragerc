@@ -1,0 +1,62 @@
+[run]
+# Enable parallel coverage collection for multi-process execution
+parallel = true
+
+# Source code to measure coverage for
+source = keycloak_operator
+
+# Where to store coverage data files
+# In containers, this will be /tmp/.coverage
+# On host, this will be .coverage (default)
+data_file = .coverage
+
+# Include branch coverage
+branch = true
+
+# Omit these files from coverage
+omit =
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */site-packages/*
+    */dist-packages/*
+
+[report]
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    # Don't complain about missing debug-only code
+    def __repr__
+    def __str__
+
+    # Don't complain if tests don't hit defensive assertion code
+    raise AssertionError
+    raise NotImplementedError
+
+    # Don't complain if non-runnable code isn't run
+    if __name__ == .__main__.:
+    if TYPE_CHECKING:
+
+    # Don't complain about abstract methods
+    @abstractmethod
+    @abc.abstractmethod
+
+# Show missing lines in report
+show_missing = true
+
+# Precision for coverage percentage
+precision = 2
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml
+
+[paths]
+# Map container paths to host paths for proper coverage combination
+source =
+    src/keycloak_operator
+    /app/src/keycloak_operator

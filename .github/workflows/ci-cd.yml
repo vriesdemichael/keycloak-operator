@@ -40,7 +40,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build operator test image
+      - name: Build operator test image (standard)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -51,11 +51,29 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Build operator test image (coverage)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: images/operator/Dockerfile.test
+          platforms: linux/amd64
+          tags: keycloak-operator:test-coverage
+          outputs: type=docker,dest=/tmp/operator-test-coverage.tar
+          cache-from: type=gha,scope=coverage
+          cache-to: type=gha,mode=max,scope=coverage
+
       - name: Upload operator image artifact
         uses: actions/upload-artifact@v5
         with:
           name: operator-image
           path: /tmp/operator-test.tar
+          retention-days: 1
+
+      - name: Upload operator coverage image artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: operator-coverage-image
+          path: /tmp/operator-test-coverage.tar
           retention-days: 1
 
   # ==========================================================================
@@ -351,14 +369,22 @@ jobs:
       - name: Install dependencies
         run: uv sync --group test
 
-      - name: Download image artifact
+      - name: Download operator image artifact
         uses: actions/download-artifact@v6
         with:
           name: operator-image
           path: /tmp
 
-      - name: Load operator image
-        run: docker load --input /tmp/operator-test.tar
+      - name: Download operator coverage image artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: operator-coverage-image
+          path: /tmp
+
+      - name: Load operator images
+        run: |
+          docker load --input /tmp/operator-test.tar
+          docker load --input /tmp/operator-test-coverage.tar
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -384,11 +410,12 @@ jobs:
           ls -la ${KUBECONFIG}
           echo "Kubeconfig configured at: ${KUBECONFIG}"
 
-      - name: Load operator image into Kind
+      - name: Load operator and coverage images into Kind
         run: |
-          echo "Loading operator image into Kind cluster..."
+          echo "Loading operator images into Kind cluster..."
           kind load docker-image keycloak-operator:test --name keycloak-operator-test-${{ github.run_id }}
-          echo "Image loaded successfully"
+          kind load docker-image keycloak-operator:test-coverage --name keycloak-operator-test-${{ github.run_id }}
+          echo "Images loaded successfully"
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -450,13 +477,39 @@ jobs:
           echo "cert-manager is ready!"
           kubectl get pods -n cert-manager
 
-      - name: Run integration tests
+      - name: Run integration tests with coverage
         env:
           KUBERNETES_VERSION: ${{ matrix.k8s-version }}
+          INTEGRATION_COVERAGE: "true"
         run: |
           echo "Using KUBECONFIG: $KUBECONFIG"
-          echo "Running integration tests (tests will deploy operator and Keycloak via Helm)..."
+          echo "Running integration tests with coverage enabled..."
           uv run pytest tests/integration/ -v -n auto --dist=loadscope
+
+      - name: Retrieve coverage data from operator
+        if: always()
+        run: |
+          echo "Retrieving coverage data from operator pod..."
+          ./scripts/retrieve-coverage.sh keycloak-test-system app.kubernetes.io/name=keycloak-operator || true
+
+      - name: Combine coverage data
+        if: always()
+        run: |
+          echo "Combining unit and integration coverage..."
+          # Copy unit test coverage if it exists (from parallel job)
+          if [ ! -f .coverage ]; then
+            echo "No unit test coverage found, creating empty coverage file"
+            uv run coverage erase
+          fi
+          ./scripts/combine-coverage.sh || true
+
+      - name: Upload combined coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: always()
+        with:
+          file: ./coverage.xml
+          flags: integration,k8s-${{ matrix.k8s-version }}
+          fail_ci_if_error: false
 
       - name: Collect logs and diagnostics
         if: always()
