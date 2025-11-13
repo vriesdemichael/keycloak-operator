@@ -360,8 +360,10 @@ async def _retrieve_integration_coverage(
                 tty=False,
                 _preload_content=True,
             )
+            # Coverage files are binary SQLite databases
+            # stream() returns text, so encode to bytes with latin-1 to preserve binary data
             if isinstance(content, str):
-                local_path.write_text(content)
+                local_path.write_bytes(content.encode("latin-1"))
             else:
                 local_path.write_bytes(content)
             logger.info(f"✓ Retrieved {filename}")
