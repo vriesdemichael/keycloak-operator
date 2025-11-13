@@ -9,7 +9,6 @@ These tests verify that:
 """
 
 import asyncio
-import os
 
 import pytest
 
@@ -38,9 +37,6 @@ async def test_realm_ownership_attributes_are_added(
     realm_cr,
 ):
     """Test that ownership attributes are added when creating a realm."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
-    os.environ["OPERATOR_INSTANCE_ID"] = operator_instance_id
-
     # Use k8s_custom_objects fixture instead of creating new API client
     await k8s_custom_objects.create_namespaced_custom_object(
         group="vriesdemichael.github.io",
@@ -75,7 +71,7 @@ async def test_realm_ownership_attributes_are_added(
     assert attributes[ATTR_OPERATOR_INSTANCE] == operator_instance_id
     assert attributes[ATTR_CR_NAMESPACE] == realm_cr["metadata"]["namespace"]
     assert attributes[ATTR_CR_NAME] == realm_cr["metadata"]["name"]
-    assert is_owned_by_this_operator(attributes)
+    assert is_owned_by_this_operator(attributes, operator_instance_id)
 
     cr_ref = get_cr_reference(attributes)
     assert cr_ref is not None
@@ -105,8 +101,6 @@ async def test_client_ownership_attributes_are_added(
     client_cr,
 ):
     """Test that ownership attributes are added when creating a client."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
-
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
@@ -162,7 +156,7 @@ async def test_client_ownership_attributes_are_added(
     assert ATTR_OPERATOR_INSTANCE in attributes
     assert ATTR_CR_NAMESPACE in attributes
     assert ATTR_CR_NAME in attributes
-    assert is_owned_by_this_operator(attributes)
+    assert is_owned_by_this_operator(attributes, operator_instance_id)
 
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="vriesdemichael.github.io",
@@ -192,8 +186,6 @@ async def test_orphan_detection_after_realm_deletion(
     drift_detector,
 ):
     """Test that orphaned realms are detected after CR deletion."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
-
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
@@ -287,8 +279,6 @@ async def test_orphan_detection_after_client_deletion(
     drift_detector,
 ):
     """Test that orphaned clients are detected after CR deletion."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
-
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
@@ -410,8 +400,6 @@ async def test_unmanaged_resources_detected(
     drift_detector,
 ):
     """Test that unmanaged resources (created without operator) are detected."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
-
     import uuid
 
     unmanaged_realm_name = f"unmanaged-{uuid.uuid4().hex[:8]}"
@@ -464,8 +452,6 @@ async def test_auto_remediation_deletes_orphans(
     drift_detector,
 ):
     """Test that auto-remediation deletes orphaned resources when enabled."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
-
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(
@@ -551,8 +537,6 @@ async def test_minimum_age_prevents_deletion(
     drift_detector,
 ):
     """Test that minimum age check prevents deletion of recent orphans."""
-    os.environ["OPERATOR_NAMESPACE"] = shared_operator.namespace
-
     # Use k8s_custom_objects fixture instead of creating new API client
 
     await k8s_custom_objects.create_namespaced_custom_object(

@@ -91,6 +91,8 @@ class DriftDetector:
         keycloak_admin_factory: (
             Callable[[str, str], Awaitable[KeycloakAdminClient]] | None
         ) = None,
+        keycloak_instances: list[tuple[str, str]] | None = None,
+        operator_instance_id: str | None = None,
     ):
         """
         Initialize drift detector.
@@ -100,12 +102,18 @@ class DriftDetector:
             k8s_client: Kubernetes API client
             keycloak_admin_factory: Factory function for creating Keycloak admin clients.
                 Signature: async (keycloak_name: str, namespace: str) -> KeycloakAdminClient
+            keycloak_instances: Optional list of (namespace, name) tuples for Keycloak instances to scan.
+                If None, will discover instances automatically.
+            operator_instance_id: Optional operator instance ID for ownership checks.
+                If None, will use get_operator_instance_id() which reads from settings.
         """
         self.config = config or DriftDetectionConfig.from_env()
         self.k8s_client = k8s_client or client.ApiClient()
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
+        self.keycloak_instances_override = keycloak_instances
+        self.operator_instance_id = operator_instance_id
         self.custom_objects_api = client.CustomObjectsApi(self.k8s_client)
         self.core_v1_api = client.CoreV1Api(self.k8s_client)
 
@@ -284,7 +292,7 @@ class DriftDetector:
         attributes = realm.attributes or {}
 
         # Check if owned by this operator
-        if is_owned_by_this_operator(attributes):
+        if is_owned_by_this_operator(attributes, self.operator_instance_id):
             # Get CR reference
             cr_ref = get_cr_reference(attributes)
             if not cr_ref:
@@ -368,7 +376,7 @@ class DriftDetector:
         attributes = client_dict.get("attributes", {})
 
         # Check if owned by this operator
-        if is_owned_by_this_operator(attributes):
+        if is_owned_by_this_operator(attributes, self.operator_instance_id):
             # Get CR reference
             cr_ref = get_cr_reference(attributes)
             if not cr_ref:
@@ -470,6 +478,10 @@ class DriftDetector:
         Returns:
             List of (namespace, name) tuples for Keycloak instances
         """
+        # If instances were provided at init, use those
+        if self.keycloak_instances_override is not None:
+            return self.keycloak_instances_override
+
         # For now, return a hardcoded list
         # TODO(#66): Discover Keycloak instances dynamically via CRDs for multi-instance deployments
         # This limitation impacts scalability in production environments with multiple Keycloak instances
