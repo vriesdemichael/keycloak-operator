@@ -88,5 +88,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD python -c "import requests; requests.get('http://localhost:8080/healthz', timeout=5)" || exit 1
 
-# Start operator with coverage (coverage.process_startup() called automatically via sitecustomize.py)
-CMD ["python", "-m", "keycloak_operator.operator"]
+# Start operator with coverage instrumentation
+# Using 'coverage run' ensures coverage starts BEFORE any application code is imported
+CMD ["coverage", "run", "--parallel-mode", "--source=keycloak_operator", "-m", "keycloak_operator.operator"]
