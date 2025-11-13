@@ -112,6 +112,10 @@ _Record any problems encountered during implementation_
   - Unit test with coverage: Verified working
   - Integration test with coverage: Will be tested in validation phase
   - Scripts tested for syntax, runtime testing deferred
+- ❌ **BLOCKER FOUND**: Coverage file created but empty
+  - **Root Cause**: sitecustomize.py runs AFTER operator code is imported
+  - **Solution**: Change CMD to use `coverage run` instead of `python -m`
+  - **Status**: Fixed in Dockerfile.test, needs rebuild and retest
 
 ## Questions for User
 
