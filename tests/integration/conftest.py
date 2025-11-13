@@ -299,12 +299,15 @@ async def _retrieve_integration_coverage(
         coverage_dir = Path(__file__).parent.parent.parent / ".tmp" / "coverage"
         coverage_dir.mkdir(parents=True, exist_ok=True)
 
+        # Get the sync client for stream() calls
+        sync_client = k8s_core_v1._sync_client
+
         # Signal the pod to shut down gracefully to trigger coverage save
         logger.info("Sending SIGTERM to operator to trigger coverage save...")
         signal_command = ["sh", "-c", "kill -TERM 1"]
         try:
             stream(
-                k8s_core_v1.connect_get_namespaced_pod_exec,
+                sync_client.connect_get_namespaced_pod_exec,
                 pod_name,
                 operator_namespace,
                 command=signal_command,
@@ -328,7 +331,7 @@ async def _retrieve_integration_coverage(
             "ls -1 /tmp/coverage/.coverage* 2>/dev/null || echo 'NO_FILES'",
         ]
         resp = stream(
-            k8s_core_v1.connect_get_namespaced_pod_exec,
+            sync_client.connect_get_namespaced_pod_exec,
             pod_name,
             operator_namespace,
             command=exec_command,
@@ -347,7 +350,7 @@ async def _retrieve_integration_coverage(
             filename = Path(coverage_file).name
             local_path = coverage_dir / filename
             content = stream(
-                k8s_core_v1.connect_get_namespaced_pod_exec,
+                sync_client.connect_get_namespaced_pod_exec,
                 pod_name,
                 operator_namespace,
                 command=["cat", coverage_file],
