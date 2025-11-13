@@ -1652,11 +1652,11 @@ async def shared_operator(
                         # Last worker - perform cleanup immediately
                         logger.info("Last worker exiting - cleaning up shared operator")
 
-                    # Retrieve coverage if enabled
-                    if coverage_enabled:
-                        await _retrieve_integration_coverage(
-                            k8s_core_v1, operator_namespace, logger
-                        )
+                        # Retrieve coverage if enabled
+                        if coverage_enabled:
+                            await _retrieve_integration_coverage(
+                                k8s_core_v1, operator_namespace, logger
+                            )
 
                         # Run cleanup synchronously in blocking subprocess
                         import subprocess
