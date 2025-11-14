@@ -279,9 +279,19 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
 async def _retrieve_integration_coverage(
     k8s_core_v1, operator_namespace: str, logger
 ) -> None:
-    """Retrieve coverage data from operator pod."""
+    """Retrieve coverage data from operator pod.
+
+    This function:
+    1. Forces coverage to flush all buffered data by calling .save()
+    2. Retrieves the coverage files from the pod
+
+    This must be called BEFORE any pod termination to avoid the Terminating state
+    where exec commands are blocked.
+    """
+    import traceback
+
+    logger.info("Starting coverage retrieval from operator pod")
     try:
-        logger.info("Retrieving coverage from operator pod...")
         pods = await k8s_core_v1.list_namespaced_pod(
             namespace=operator_namespace,
             label_selector="app.kubernetes.io/name=keycloak-operator",
@@ -302,10 +312,34 @@ async def _retrieve_integration_coverage(
         # Get the sync client for stream() calls
         sync_client = k8s_core_v1._sync_client
 
-        # Signal the pod to shut down gracefully to trigger coverage save
-        logger.info("Sending SIGTERM to operator to trigger coverage save...")
-        signal_command = ["sh", "-c", "kill -TERM 1"]
+        # Step 1: Force coverage to flush all buffered data via SIGUSR1
+        # This is critical - coverage.py buffers data in memory and we need to ensure
+        # it's all written to disk before we retrieve files
+        # We send SIGUSR1 to the main operator process which has a signal handler
+        logger.info("Forcing coverage data flush via SIGUSR1...")
         try:
+            # Find the main operator process PID
+            find_pid_command = [
+                "sh",
+                "-c",
+                "pgrep -f 'coverage run' | head -1 || echo 1",
+            ]
+            pid_resp = stream(
+                sync_client.connect_get_namespaced_pod_exec,
+                pod_name,
+                operator_namespace,
+                command=find_pid_command,
+                stderr=True,
+                stdin=False,
+                stdout=True,
+                tty=False,
+                _preload_content=True,
+            )
+            operator_pid = pid_resp.strip() or "1"
+            logger.info(f"Found operator PID: {operator_pid}")
+
+            # Send SIGUSR1 to trigger coverage flush
+            signal_command = ["sh", "-c", f"kill -USR1 {operator_pid}"]
             stream(
                 sync_client.connect_get_namespaced_pod_exec,
                 pod_name,
@@ -317,59 +351,76 @@ async def _retrieve_integration_coverage(
                 tty=False,
                 _preload_content=True,
             )
+            logger.info("SIGUSR1 signal sent successfully")
         except Exception as e:
-            logger.warning(f"Failed to send SIGTERM: {e}")
+            logger.warning(f"Failed to send SIGUSR1 (continuing anyway): {e}")
 
-        # Wait for coverage to be written (but before pod terminates)
-        logger.info("Waiting for coverage save...")
-        await asyncio.sleep(10)
+        # Give coverage a moment to complete file writes
+        await asyncio.sleep(3)
 
-        # Now retrieve the coverage files
-        exec_command = [
+        # Step 2: List and retrieve coverage files
+        logger.info("Listing coverage files...")
+        list_command = [
             "sh",
             "-c",
             "ls -1 /tmp/coverage/.coverage* 2>/dev/null || echo 'NO_FILES'",
         ]
+
         resp = stream(
             sync_client.connect_get_namespaced_pod_exec,
             pod_name,
             operator_namespace,
-            command=exec_command,
+            command=list_command,
             stderr=True,
             stdin=False,
             stdout=True,
             tty=False,
             _preload_content=True,
         )
+
         if "NO_FILES" in resp:
-            logger.warning("No coverage files found")
+            logger.warning("No coverage files found in /tmp/coverage/")
             return
+
         coverage_files = [f for f in resp.strip().split("\n") if f and f.strip()]
         logger.info(f"Found {len(coverage_files)} coverage file(s)")
+
+        # Step 3: Retrieve each coverage file using kubectl cp
+        import subprocess
+
         for coverage_file in coverage_files:
             filename = Path(coverage_file).name
             local_path = coverage_dir / filename
-            content = stream(
-                sync_client.connect_get_namespaced_pod_exec,
-                pod_name,
-                operator_namespace,
-                command=["cat", coverage_file],
-                stderr=False,
-                stdin=False,
-                stdout=True,
-                tty=False,
-                _preload_content=True,
-            )
-            # Coverage files are binary SQLite databases
-            # stream() returns text, so encode to bytes with latin-1 to preserve binary data
-            if isinstance(content, str):
-                local_path.write_bytes(content.encode("latin-1"))
-            else:
-                local_path.write_bytes(content)
-            logger.info(f"✓ Retrieved {filename}")
-        logger.info(f"✓ Coverage saved to {coverage_dir}")
+
+            try:
+                subprocess.run(
+                    [
+                        "kubectl",
+                        "cp",
+                        f"{operator_namespace}/{pod_name}:{coverage_file}",
+                        str(local_path),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    timeout=10,
+                )
+                file_size = local_path.stat().st_size
+                logger.info(f"✓ Retrieved {filename} ({file_size} bytes)")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Failed to copy {coverage_file}: {e.stderr}")
+                continue
+            except Exception as e:
+                logger.error(f"Error copying {coverage_file}: {e}")
+                continue
+
+        logger.info(f"✓ Coverage files saved to {coverage_dir}")
+
     except Exception as e:
-        logger.warning(f"Coverage retrieval failed: {e}")
+        logger.error(f"Coverage retrieval failed: {e}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Don't re-raise - coverage failure shouldn't break test cleanup
+        logger.warning("Continuing with cleanup despite coverage retrieval failure")
 
 
 @pytest.fixture(scope="session")
@@ -2876,3 +2927,62 @@ async def drift_detector(
         )
 
     return create_detector
+
+
+# ============================================================================
+# Pytest Hooks for Coverage Collection
+# ============================================================================
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """
+    Hook that runs after all tests complete, before test run ends.
+
+    This is the ONLY reliable way to retrieve coverage with pytest-xdist.
+    Session-scoped fixture teardowns are unreliable with parallel execution.
+
+    With pytest-xdist, this runs on each worker AND the controller.
+    We only want to run on the controller (master) node.
+    """
+    import subprocess
+
+    # Only run on the controller/master node, not on workers
+    if hasattr(session.config, "workerinput"):
+        # This is a worker node, skip
+        return
+
+    # Only retrieve coverage if enabled
+    if os.getenv("INTEGRATION_COVERAGE", "false").lower() != "true":
+        return
+
+    logger = logging.getLogger("pytest_sessionfinish")
+    logger.info("=" * 80)
+    logger.info("Pytest session finished - retrieving integration coverage")
+    logger.info("=" * 80)
+
+    try:
+        # Use the retrieve-coverage script which handles everything
+        script_path = (
+            Path(__file__).parent.parent.parent / "scripts" / "retrieve-coverage.sh"
+        )
+
+        result = subprocess.run(
+            [str(script_path)],
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+
+        if result.returncode == 0:
+            logger.info("✓ Coverage retrieval completed successfully")
+            # Print to stdout so it appears in pytest output
+            print("\n" + result.stdout)
+        else:
+            logger.warning(f"Coverage retrieval returned non-zero: {result.returncode}")
+            print("\n" + result.stderr)
+
+    except Exception as e:
+        logger.error(f"Failed to retrieve integration coverage: {e}")
+        import traceback
+
+        logger.error(traceback.format_exc())

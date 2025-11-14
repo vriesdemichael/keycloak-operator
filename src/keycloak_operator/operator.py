@@ -328,6 +328,53 @@ async def readiness_check(**_) -> dict[str, str]:
         return {"status": "not_ready", "operator": "keycloak-operator", "error": str(e)}
 
 
+def _setup_coverage_signal_handler() -> None:
+    """
+    Setup SIGUSR1 signal handler to flush coverage data on demand.
+
+    This allows graceful coverage data collection during integration tests by:
+    1. Sending SIGUSR1 to the operator process
+    2. Handler calls coverage.save() to flush data to disk
+    3. Coverage files can then be retrieved while operator continues running
+
+    Only enabled when COVERAGE_PROCESS_START environment variable is set.
+
+    Raises:
+        ImportError: If coverage module is not installed when coverage is enabled
+    """
+    import os
+    import signal
+
+    # Only setup handler if coverage is enabled
+    if not os.getenv("COVERAGE_PROCESS_START"):
+        return
+
+    # If coverage is enabled, coverage module MUST be installed
+    try:
+        import coverage
+    except ImportError as e:
+        raise ImportError(
+            "Coverage is enabled (COVERAGE_PROCESS_START is set) but coverage module is not installed. "
+            "Install with: pip install coverage"
+        ) from e
+
+    def coverage_flush_handler(signum, frame):
+        """Signal handler that flushes coverage data."""
+        try:
+            cov = coverage.Coverage.current()
+            if cov:
+                cov.save()
+                logging.info("Coverage data flushed to disk via SIGUSR1")
+            else:
+                logging.warning("SIGUSR1 received but no coverage instance found")
+        except Exception as e:
+            logging.error(f"Failed to flush coverage data: {e}")
+
+    # Register handler for SIGUSR1
+    signal.signal(signal.SIGUSR1, coverage_flush_handler)
+    logging.info("Coverage flush handler registered for SIGUSR1")
+
+
 def main() -> None:
     """
     Main entry point for the operator.
@@ -338,6 +385,9 @@ def main() -> None:
     3. Configures admission webhooks (must be before kopf.run())
     4. Runs the kopf operator with appropriate settings
     """
+    # Setup coverage flush handler if coverage is enabled
+    _setup_coverage_signal_handler()
+
     configure_logging()
 
     # Get namespace configuration
