@@ -11,23 +11,25 @@ Before you begin, ensure you have:
 - ✅ [Helm 3](https://helm.sh/docs/intro/install/) installed
 - ✅ Cluster admin permissions (for CRD and operator installation)
 - ✅ [CloudNativePG operator](https://cloudnative-pg.io/documentation/current/installation_upgrade/) installed (for PostgreSQL database)
+- ✅ [cert-manager](https://cert-manager.io/docs/installation/) installed (for webhook certificates)
 
 **Optional but recommended:**
 - Ingress controller (nginx, traefik, etc.) for external access
-- cert-manager for automatic TLS certificates
 
 ## Step 1: Install the Operator
 
 Install the Keycloak operator using Helm:
 
 ```bash
-# Add the Helm repository (if published)
-# helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operator
+# Add the Helm repository
+helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operator
+helm repo update
 
-# Or install directly from local chart
-helm install keycloak-operator ./charts/keycloak-operator \
+# Install the operator
+helm install keycloak-operator keycloak-operator/keycloak-operator \
   --namespace keycloak-system \
-  --create-namespace
+  --create-namespace \
+  --wait
 ```
 
 Verify the operator is running:
@@ -37,29 +39,46 @@ kubectl get pods -n keycloak-system
 # Expected output:
 # NAME                                 READY   STATUS    RESTARTS   AGE
 # keycloak-operator-xxxxx-xxxxx        1/1     Running   0          30s
-# keycloak-operator-xxxxx-xxxxx        1/1     Running   0          30s
 ```
 
 **Troubleshooting:** If pods are not running, check logs:
 ```bash
-kubectl logs -n keycloak-system -l app=keycloak-operator --tail=50
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=50
 ```
 
 ## Step 2: Deploy Keycloak Instance
 
-Create a Keycloak instance with an integrated PostgreSQL database:
+Create a Keycloak instance with PostgreSQL database managed by the operator:
 
 ```bash
-kubectl apply -f examples/01-keycloak-instance.yaml
+kubectl apply -f - <<EOF
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
+apiVersion: vriesdemichael.github.io/v1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak-system
+spec:
+  hostname: keycloak.local  # Change to your domain
+  replicas: 3
+  database:
+    vendor: postgres
+    host: keycloak-postgresql.keycloak-system.svc
+    name: keycloak
+    credentialsSecret: keycloak-db-credentials
+  http:
+    tlsSecret: ""  # Add your TLS secret name for HTTPS
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "2000m"
+EOF
 ```
 
-This creates:
-- **Keycloak deployment** with 3 replicas for high availability
-- **PostgreSQL cluster** managed by CloudNativePG
-- **Kubernetes Service** for internal access
-- **Admin credentials secret** for console access
-
-Wait for Keycloak to become ready (this takes 2-3 minutes):
+Wait for Keycloak to become ready (takes 2-3 minutes):
 
 ```bash
 kubectl wait --for=condition=Ready keycloak/keycloak \
@@ -76,16 +95,16 @@ kubectl get keycloak -n keycloak-system
 # keycloak   Ready   3m
 ```
 
-Verify the Keycloak instance is running:
+Verify the Keycloak instance:
 
 ```bash
-# Check Keycloak endpoints in status
-kubectl get keycloak keycloak -n keycloak-system -o yaml | grep -A10 status:
+# Check status details
+kubectl get keycloak keycloak -n keycloak-system -o jsonpath='{.status}' | jq
 ```
 
-**Note:** Admin credentials are managed by the operator. You should never need direct access to the Keycloak admin console - all configuration is done through CRDs.
+**Note:** Admin credentials are stored in the `keycloak-admin-credentials` secret. You generally don't need direct admin console access - all configuration is done through CRDs.
 
-## Step 3: Create Application Namespace and Bootstrap Token
+## Step 3: Create Application Namespace
 
 Create a namespace for your application:
 
@@ -93,79 +112,15 @@ Create a namespace for your application:
 kubectl create namespace my-app
 ```
 
-### Understanding Token Types
-
-The operator uses a **two-phase token system** for enhanced security:
-
-1. **Admission Token** (one-time, platform team creates)
-   - Used to bootstrap a namespace
-   - Creates the first realm
-   - Triggers automatic generation of operational token
-
-2. **Operational Token** (auto-rotating, operator manages)
-   - Generated automatically after first realm
-   - Used by all subsequent realms
-   - Rotates every 90 days with zero downtime
-
-### Create Admission Token
-
-Platform teams create admission tokens for application teams:
-
-```bash
-# Generate a cryptographically secure token
-ADMISSION_TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
-
-# Create admission token secret
-kubectl create secret generic admission-token-my-app \
-  --from-literal=token="$ADMISSION_TOKEN" \
-  --namespace=my-app
-
-# Add required labels
-kubectl label secret admission-token-my-app \
-  vriesdemichael.github.io/token-type=admission \
-  vriesdemichael.github.io/allow-operator-read=true \
-  --namespace=my-app
-
-# Store token metadata in operator ConfigMap
-TOKEN_HASH=$(echo -n "$ADMISSION_TOKEN" | sha256sum | cut -d' ' -f1)
-kubectl patch configmap keycloak-operator-token-metadata \
-  --namespace=keycloak-operator-system \
-  --type=merge \
-  --patch "{
-    \"data\": {
-      \"$TOKEN_HASH\": \"{\\\"namespace\\\": \\\"my-app\\\", \\\"token_type\\\": \\\"admission\\\", \\\"token_hash\\\": \\\"$TOKEN_HASH\\\", \\\"issued_at\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"valid_until\\\": \\\"$(date -u -d '+1 year' +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"version\\\": 1, \\\"created_by_realm\\\": null, \\\"revoked\\\": false}\"
-    }
-  }"
-```
-
-Verify the admission token was created:
-
-```bash
-kubectl get secret admission-token-my-app -n my-app
-```
-
-**📝 Note**: In production, platform teams typically:
-- Use sealed secrets or external secret managers
-- Distribute via GitOps repositories
-- Include token setup in namespace provisioning automation
-
-## Step 4: Create Your First Realm (Bootstrap)
+## Step 4: Create Your First Realm
 
 A realm is an identity domain that contains users, roles, and clients.
 
-**The first realm in a namespace is special** - it triggers the bootstrap process:
-1. Validates the admission token
-2. Generates an operational token (auto-rotating)
-3. Stores operational token in `my-app-operator-token` secret
-4. Future realms automatically use the operational token
-
-Create your first realm:
-
-> **Note:** The schema annotation in the following heredoc block will *not* be recognized by IDE language servers.
-> For IDE features like validation and autocompletion, copy the YAML into a separate `.yaml` file with the schema annotation at the top.
+Create your realm:
 
 ```bash
 kubectl apply -f - <<EOF
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
@@ -173,21 +128,25 @@ metadata:
   namespace: my-app
 spec:
   realmName: my-app
-  operatorRef:
-    namespace: keycloak-operator-system
-    authorizationSecretRef:
-      name: admission-token-my-app  # ← Uses admission token (one-time)
-      key: token
+  instanceRef:
+    name: keycloak
+    namespace: keycloak-system
+  displayName: "My Application"
+  enabled: true
   security:
     registrationAllowed: false
     resetPasswordAllowed: true
+    rememberMe: true
   themes:
     loginTheme: keycloak
     accountTheme: keycloak
+  # Grant permission for this namespace to create clients
+  clientAuthorizationGrants:
+    - my-app
 EOF
 ```
 
-Wait for the realm to become ready (takes 10-30 seconds):
+Wait for the realm to become ready:
 
 ```bash
 kubectl wait --for=condition=Ready keycloakrealm/my-app-realm \
@@ -204,68 +163,46 @@ kubectl get keycloakrealm -n my-app
 # my-app-realm    Ready   45s
 
 # View detailed status
-kubectl get keycloakrealm my-app-realm -n my-app -o yaml | grep -A 10 status:
+kubectl get keycloakrealm my-app-realm -n my-app -o jsonpath='{.status}' | jq
 ```
 
-**Verify operational token was created**:
+**Understanding Authorization:**
+- The `clientAuthorizationGrants` field lists which namespaces can create clients in this realm
+- In this example, `my-app` namespace can create clients
+- This is a declarative, GitOps-friendly authorization model (no tokens required!)
 
-```bash
-# After first realm creation, operational token should exist
-kubectl get secret my-app-operator-token -n my-app
-
-# Check token metadata
-kubectl get secret my-app-operator-token -n my-app -o yaml | grep -A5 annotations:
-# You should see:
-#   vriesdemichael.github.io/version: "1"
-#   vriesdemichael.github.io/valid-until: "<90 days from now>"
-#   vriesdemichael.github.io/created-by-realm: "my-app-realm"
-```
-
-The realm is now available at: `http://localhost:8080/realms/my-app` (via port-forward)
-
-**🎉 Bootstrap Complete!**
-- ✅ Admission token used (one-time)
-- ✅ Operational token generated
-- ✅ Automatic rotation enabled (90-day cycle)
-- ✅ Future realms will use operational token
-
-### Optional: Create Additional Realms
-
-After bootstrap, create additional realms using the operational token:
-
-> **Note:** The schema annotation in heredoc blocks will *not* be recognized by IDE language servers.
-> For IDE features, copy the YAML into a separate `.yaml` file with the schema annotation at the top.
-
-```bash
-kubectl apply -f - <<EOF
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: my-second-realm
-  namespace: my-app
-spec:
-  realmName: my-second-app
-  operatorRef:
-    namespace: keycloak-operator-system
-    authorizationSecretRef:
-      name: my-app-operator-token  # ← Uses operational token (auto-rotating)
-      key: token
-  security:
-    registrationAllowed: false
-    resetPasswordAllowed: true
-EOF
-```
-
-**Notice the difference:**
-- First realm: Uses `admission-token-my-app` (one-time)
-- Additional realms: Use `my-app-operator-token` (auto-rotating)
-
-## Step 5: Create an OAuth2 Client
+## Step 5: Create an OAuth2/OIDC Client
 
 Create an OAuth2/OIDC client for your application:
 
 ```bash
-kubectl apply -f examples/03-client-example.yaml
+kubectl apply -f - <<EOF
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakClient
+metadata:
+  name: my-app-client
+  namespace: my-app
+spec:
+  clientId: my-app
+  realmRef:
+    name: my-app-realm
+    namespace: my-app
+  name: "My Application"
+  description: "OAuth2/OIDC client for my-app"
+  enabled: true
+  publicClient: false  # confidential client (has secret)
+  standardFlowEnabled: true
+  implicitFlowEnabled: false
+  directAccessGrantsEnabled: true
+  serviceAccountsEnabled: false
+  redirectUris:
+    - "https://my-app.example.com/callback"
+    - "http://localhost:3000/callback"  # for local development
+  webOrigins:
+    - "https://my-app.example.com"
+    - "http://localhost:3000"
+EOF
 ```
 
 Wait for the client to become ready:
@@ -324,9 +261,14 @@ cat .env
 ## Step 7: Test OAuth2 Flow
 
 Test the OAuth2 authorization flow:
+
 ```bash
+# Get the realm's public URL from status
+ISSUER_URL=$(kubectl get keycloakrealm my-app-realm -n my-app \
+  -o jsonpath='{.status.publicUrl}')
+
 # Authorization endpoint
-AUTH_URL="http://localhost:8080/realms/my-app/protocol/openid-connect/auth"
+AUTH_URL="${ISSUER_URL}/protocol/openid-connect/auth"
 CLIENT_ID="my-app"
 REDIRECT_URI="http://localhost:3000/callback"
 
@@ -401,7 +343,7 @@ Check that all resources are healthy:
 
 ```bash
 # Check operator
-kubectl get pods -n keycloak-system -l app=keycloak-operator
+kubectl get pods -n keycloak-system -l app.kubernetes.io/name=keycloak-operator
 
 # Check Keycloak instance
 kubectl get keycloak -n keycloak-system
@@ -413,7 +355,7 @@ kubectl get keycloakrealm -n my-app
 kubectl get keycloakclient -n my-app
 
 # View operator logs
-kubectl logs -n keycloak-system -l app=keycloak-operator --tail=100
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=100
 ```
 
 All resources should show `PHASE=Ready`.
@@ -443,10 +385,26 @@ helm uninstall keycloak-operator -n keycloak-system
 
 ## Next Steps
 
-- 📖 Read the [Security Model](../security.md) documentation
-- 📊 Learn about [Observability](../observability.md) features
-- 🏗️ Understand the [Architecture](../architecture.md)
-- 🔧 Explore [Development Guide](../development.md)
+Now that you have a working Keycloak realm and client, explore these guides:
+
+**Production Deployment:**
+- [High Availability](../how-to/ha-deployment.md) - Deploy Keycloak with redundancy and failover
+- [Database Setup](../how-to/database-setup.md) - Configure production-grade PostgreSQL database
+
+**Configuration:**
+- [SMTP Configuration](../how-to/smtp-configuration.md) - Enable email notifications for password reset, verification, etc.
+- [Identity Providers](../identity-providers.md) - Integrate with Google, GitHub, Azure AD, and other SSO providers
+- [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md) - Complete realm configuration options
+- [KeycloakClient CRD Reference](../reference/keycloak-client-crd.md) - Complete client configuration options
+
+**Operations:**
+- [Troubleshooting Guide](../operations/troubleshooting.md) - Diagnose and resolve common issues
+- [Backup & Restore](../how-to/backup-restore.md) - Protect your Keycloak data
+
+**Understanding the System:**
+- [Architecture](../architecture.md) - How the operator works (reconciliation, status management)
+- [Security Model](../security.md) - Authorization model and security best practices
+- [FAQ](../faq.md) - Answers to common questions
 
 ## Troubleshooting
 
@@ -454,10 +412,13 @@ helm uninstall keycloak-operator -n keycloak-system
 
 ```bash
 # Check operator logs
-kubectl logs -n keycloak-system -l app=keycloak-operator
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator
 
 # Check for RBAC issues
 kubectl describe clusterrolebinding keycloak-operator
+
+# Check webhook certificates
+kubectl get certificate -n keycloak-system
 ```
 
 ### Keycloak instance stuck in Pending
@@ -479,126 +440,43 @@ kubectl get events -n keycloak-system --sort-by='.lastTimestamp'
 # Check realm status
 kubectl describe keycloakrealm my-app-realm -n my-app
 
-# Verify authorization token exists (admission or operational)
-kubectl get secret admission-token-my-app -n my-app  # For first realm
-kubectl get secret my-app-operator-token -n my-app    # For subsequent realms
+# Check realm status conditions
+kubectl get keycloakrealm my-app-realm -n my-app -o jsonpath='{.status.conditions}' | jq
 
 # Check operator can reach Keycloak
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep "my-app-realm"
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator | grep "my-app-realm"
 ```
 
-### Bootstrap not working (no operational token created)
+### Client creation fails with authorization error
 
-**Symptoms**: First realm created but no `my-app-operator-token` secret generated
-
-```bash
-# Check if admission token exists
-kubectl get secret admission-token-my-app -n my-app
-
-# Check if admission token has correct labels
-kubectl get secret admission-token-my-app -n my-app -o yaml | grep -A3 labels:
-# Should include:
-#   vriesdemichael.github.io/token-type: admission
-#   vriesdemichael.github.io/allow-operator-read: "true"
-
-# Check if token is in metadata ConfigMap
-TOKEN_HASH=$(kubectl get secret admission-token-my-app -n my-app -o jsonpath='{.data.token}' | base64 -d | sha256sum | cut -d' ' -f1)
-kubectl get configmap keycloak-operator-token-metadata \
-  -n keycloak-operator-system -o json | jq --arg hash "$TOKEN_HASH" '.data[$hash]'
-
-# Check operator logs for bootstrap
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep -i "bootstrap\|admission"
-```
-
-### Token rotation issues
-
-**Symptoms**: Token expired, rotation not happening automatically
+**Symptoms**: Client shows error about namespace not authorized
 
 ```bash
-# Check token status
-kubectl get secret my-app-operator-token -n my-app -o yaml | grep -A10 annotations:
+# Check realm's authorization grants
+kubectl get keycloakrealm my-app-realm -n my-app \
+  -o jsonpath='{.spec.clientAuthorizationGrants}' | jq
 
-# Check if token is past expiry
-VALID_UNTIL=$(kubectl get secret my-app-operator-token -n my-app \
-  -o jsonpath='{.metadata.annotations.vriesdemichael.github.io/keycloak-valid-until}')
-echo "Token expires: $VALID_UNTIL"
-echo "Current time:  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-# Check operator logs for rotation
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep -i "rotation"
-
-# Check for rotation metrics
-kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -s localhost:8080/metrics | grep token_rotation
-```
-
-### Authorization failed after token rotation
-
-**Symptoms**: Realms fail with "Authorization failed" after automatic rotation
-
-```bash
-# Check if realm is using admission token (should use operational)
-kubectl get keycloakrealm my-app-realm -n my-app -o yaml | grep -A3 authorizationSecretRef:
-# First realm can use admission token OR operational token
-# Subsequent realms MUST use operational token
-
-# Check if grace period has ended
-kubectl get secret my-app-operator-token -n my-app -o jsonpath='{.data}' | jq 'keys'
-# During grace period: ["token", "token-previous"]
-# After grace period: ["token"]
-
-# Update realm to use operational token
+# Ensure client's namespace is in the grant list
 kubectl patch keycloakrealm my-app-realm -n my-app --type=merge -p '
 spec:
-  operatorRef:
-    authorizationSecretRef:
-      name: my-app-operator-token
-      key: token
+  clientAuthorizationGrants:
+    - my-app
+    - other-allowed-namespace
 '
 ```
 
-### Client creation fails
+### Admission webhook failures
 
 ```bash
-# Check client status
-kubectl describe keycloakclient my-app-client -n my-app
+# Check webhook is ready
+kubectl get validatingwebhookconfiguration keycloak-operator-webhook
 
-# Verify realm is Ready
-kubectl get keycloakrealm -n my-app
+# Check certificate is valid
+kubectl get certificate -n keycloak-system keycloak-operator-webhook-cert
 
-# Check realm authorization secret exists
-kubectl get secret my-app-realm-realm-auth -n my-app
+# Check webhook logs
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator | grep webhook
 ```
-
-## Next Steps
-
-Now that you have a working Keycloak realm and client, explore these guides:
-
-**Production Deployment:**
-
-- [End-to-End Production Setup](../how-to/end-to-end-setup.md) - Complete production deployment with HA, TLS, and monitoring
-- [Multi-Tenant Setup](../how-to/multi-tenant.md) - Set up multi-team environment with operational tokens
-- [Database Setup](../how-to/database-setup.md) - Configure production-grade PostgreSQL database
-- [High Availability](../how-to/ha-deployment.md) - Deploy Keycloak with redundancy and failover
-
-**Configuration:**
-
-- [SMTP Configuration](../how-to/smtp-configuration.md) - Enable email notifications for password reset, verification, etc.
-- [Identity Providers](../identity-providers.md) - Integrate with Google, GitHub, Azure AD, and other SSO providers
-- [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md) - Complete realm configuration options
-- [KeycloakClient CRD Reference](../reference/keycloak-client-crd.md) - Complete client configuration options
-
-**Operations:**
-
-- [Troubleshooting Guide](../operations/troubleshooting.md) - Diagnose and resolve common issues
-- [Token Management](../operations/token-management.md) - Manage authorization tokens
-- [Backup & Restore](../how-to/backup-restore.md) - Protect your Keycloak data
-
-**Understanding the System:**
-
-- [Architecture](../architecture.md) - How the operator works (token system, reconciliation, scaling)
-- [Security Model](../security.md) - Authorization model and security best practices
-- [FAQ](../faq.md) - Answers to common questions
 
 ## Support
 
