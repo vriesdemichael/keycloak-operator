@@ -43,6 +43,19 @@ if [ "${POD_STATUS}" != "Running" ]; then
     warn "Coverage data may be incomplete"
 fi
 
+# Force coverage to flush all buffered data before retrieval
+log "Forcing coverage data flush via SIGUSR1..."
+
+# The operator runs as PID 1 in the container
+OPERATOR_PID=1
+log "Sending SIGUSR1 to operator process (PID: ${OPERATOR_PID})"
+kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -- \
+    sh -c "kill -USR1 ${OPERATOR_PID}" 2>&1 || warn "Failed to send SIGUSR1"
+
+# Wait a moment for coverage to flush
+log "Waiting for coverage flush..."
+sleep 3
+
 # List coverage files in pod
 log "Checking for coverage files in pod..."
 COVERAGE_FILES=$(kubectl exec -n "${NAMESPACE}" "${POD_NAME}" -- \

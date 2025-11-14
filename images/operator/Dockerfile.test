@@ -59,8 +59,12 @@ COPY --from=builder /app/pyproject.toml /app/pyproject.toml
 COPY --from=builder /app/README.md /app/README.md
 COPY --from=builder /app/LICENSE /app/LICENSE
 
-# Copy coverage configuration
+# Copy coverage configurations
+# - .coveragerc: Used by unit tests on host (relative paths)
+# - coveragerc.container: Used by operator in container (absolute paths)
+# Both are needed because paths differ between host and container environments
 COPY .coveragerc /app/.coveragerc
+COPY images/operator/coveragerc.container /app/.coveragerc.container
 
 # Copy test injection directory
 COPY test-inject /app/test-inject
@@ -74,10 +78,8 @@ pth.write_text("/app/test-inject\n")
 print(f"Created {pth}")
 PY
 
-# Create directory for coverage data files (writable by non-root user)
-RUN mkdir -p /tmp/coverage && chown -R keycloak:keycloak /tmp/coverage
-
-# Set coverage data file path (parallel mode creates .coverage.<machine>.<pid> files)
+# Set coverage environment variables to use container-specific config
+ENV COVERAGE_PROCESS_START=/app/.coveragerc.container
 ENV COVERAGE_FILE=/tmp/coverage/.coverage
 
 RUN chown -R keycloak:keycloak /app
@@ -89,5 +91,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD python -c "import requests; requests.get('http://localhost:8080/healthz', timeout=5)" || exit 1
 
 # Start operator with coverage instrumentation
-# Using 'coverage run' ensures coverage starts BEFORE any application code is imported
-CMD ["coverage", "run", "--parallel-mode", "--source=keycloak_operator", "-m", "keycloak_operator.operator"]
+# Use absolute path for --source to match container structure
+CMD ["coverage", "run", "--parallel-mode", "--source=/app/src/keycloak_operator", "-m", "keycloak_operator.operator"]

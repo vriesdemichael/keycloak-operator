@@ -1,12 +1,15 @@
+# Coverage configuration for containerized operator
+# This config uses absolute paths suitable for the container environment
+
 [run]
 # Enable parallel coverage collection for multi-process execution
 parallel = true
 
-# Source code to measure coverage for - use package name
-source = keycloak_operator
+# Source code to measure - use absolute path for container
+source = /app/src/keycloak_operator
 
 # Where to store coverage data files
-data_file = .coverage
+data_file = /tmp/coverage/.coverage
 
 # Include branch coverage
 branch = true
@@ -47,14 +50,8 @@ show_missing = true
 # Precision for coverage percentage
 precision = 2
 
-[html]
-directory = htmlcov
-
-[xml]
-output = coverage.xml
-
 [paths]
-# Map container paths to host paths for proper coverage combination
+# Map container paths to host paths for combining with unit test coverage
 source =
-    src/keycloak_operator
     /app/src/keycloak_operator
+    src/keycloak_operator

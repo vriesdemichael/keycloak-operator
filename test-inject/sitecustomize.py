@@ -30,6 +30,15 @@ def start_coverage():
         )
         return
 
+    # Check if coverage is already running (e.g., via 'coverage run' command)
+    # This prevents double initialization which causes coverage to not measure any files
+    if coverage.Coverage.current() is not None:
+        print(
+            "Coverage already running (started by 'coverage run'), skipping sitecustomize initialization",
+            file=sys.stderr,
+        )
+        return
+
     # Start coverage collection
     # This will read config from COVERAGE_PROCESS_START path
     coverage.process_startup()

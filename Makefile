@@ -138,8 +138,6 @@ test-integration: ensure-test-cluster build-all-test ## Run integration tests (b
 test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized ## Run integration tests with coverage collection
 	@echo "Running integration tests with coverage enabled..."
 	INTEGRATION_COVERAGE=true uv run pytest tests/integration/ -v -n auto --dist=loadscope
-	@echo "Retrieving coverage data from operator pod..."
-	./scripts/retrieve-coverage.sh || true
 	@echo "Combining coverage data..."
 	./scripts/combine-coverage.sh
 
