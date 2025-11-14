@@ -1,0 +1,38 @@
+codecov:
+  require_ci_to_pass: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        base: auto
+    patch:
+      default:
+        target: auto
+        threshold: 1%
+
+comment:
+  layout: "reach,diff,flags,tree,footer"
+  behavior: default
+  require_changes: false
+
+flags:
+  unit:
+    carryforward: false
+    paths:
+      - src/keycloak_operator/
+  integration:
+    carryforward: false
+    paths:
+      - src/keycloak_operator/
+
+# Fix path issues between local, container, and CI environments
+fixes:
+  - "/mnt/c/Users/vries/Projects/Visual Studio Code Projects/keycloak-operator/::"
+  - "/app/::"
+  - "/home/runner/work/keycloak-operator/keycloak-operator/::"
