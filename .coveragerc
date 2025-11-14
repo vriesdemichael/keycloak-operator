@@ -58,3 +58,4 @@ output = coverage.xml
 source =
     src/keycloak_operator
     /app/src/keycloak_operator
+    /home/runner/work/keycloak-operator/keycloak-operator/src/keycloak_operator

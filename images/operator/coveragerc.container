@@ -55,3 +55,4 @@ precision = 2
 source =
     /app/src/keycloak_operator
     src/keycloak_operator
+    /home/runner/work/keycloak-operator/keycloak-operator/src/keycloak_operator
