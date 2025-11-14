@@ -2,62 +2,50 @@
 
 A GitOps-friendly Kubernetes operator for managing Keycloak instances, realms, and OAuth2/OIDC clients declaratively.
 
-## 🚀 Quick Start
+## Why Use This Operator?
 
-Get a complete Keycloak setup running in 10 minutes:
+### vs. Official Keycloak Operator
+- ✅ **True Multi-Tenancy**: Cross-namespace realm and client provisioning
+- ✅ **GitOps Native**: Namespace grant lists instead of manual secret distribution
+- ✅ **Declarative Authorization**: RBAC + namespace grants, no separate token system
+- ✅ **Built for Production**: Rate limiting, drift detection, admission webhooks
+- ✅ **Comprehensive Status**: Rich status fields with observedGeneration tracking
+
+### vs. Manual Keycloak Management
+- ✅ **No Admin Console Access**: Everything through Kubernetes CRDs
+- ✅ **Drift Detection**: Automatic detection of manual changes
+- ✅ **Automated Credentials**: Client secrets managed as Kubernetes secrets
+- ✅ **Full Observability**: Prometheus metrics, structured logging
+
+## 🚀 Quick Start (3 Helm Charts)
+
+Deploy a complete Keycloak setup with database, operator, realm, and client:
 
 ```bash
-# 1. Install the operator
+# 1. Deploy PostgreSQL (CloudNativePG)
+helm install cnpg cloudnative-pg/cloudnative-pg \
+  --namespace cnpg-system --create-namespace
+
+# 2. Install operator + Keycloak instance
 helm install keycloak-operator keycloak-operator/keycloak-operator \
-  --namespace keycloak-system --create-namespace
+  --namespace keycloak-system --create-namespace \
+  --set keycloak.enabled=true \
+  --set keycloak.database.cnpg.enabled=true
 
-# 2. Deploy Keycloak
-kubectl apply -f - <<EOF
-apiVersion: vriesdemichael.github.io/v1
-kind: Keycloak
-metadata:
-  name: keycloak
-  namespace: keycloak-system
-spec:
-  hostname: keycloak.example.com
-  replicas: 3
-  database:
-    vendor: postgres
-    host: postgresql.keycloak-system.svc
-    name: keycloak
-    credentialsSecret: keycloak-db-credentials
-EOF
+# 3. Create realm (in your app namespace)
+helm install my-realm keycloak-operator/keycloak-realm \
+  --namespace my-app --create-namespace \
+  --set realmName=my-app \
+  --set instanceRef.name=keycloak \
+  --set instanceRef.namespace=keycloak-system \
+  --set 'clientAuthorizationGrants={my-app}'
 
-# 3. Create an identity realm
-kubectl apply -f - <<EOF
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: my-app-realm
-  namespace: my-app
-spec:
-  realmName: my-app
-  instanceRef:
-    name: keycloak
-    namespace: keycloak-system
-EOF
-
-# 4. Create an OAuth2 client
-kubectl apply -f - <<EOF
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
-metadata:
-  name: my-app-client
-  namespace: my-app
-spec:
-  clientId: my-app
-  realmRef:
-    name: my-app-realm
-  publicClient: false
-  standardFlowEnabled: true
-  redirectUris:
-    - https://my-app.example.com/callback
-EOF
+# 4. Create OAuth2 client
+helm install my-client keycloak-operator/keycloak-client \
+  --namespace my-app \
+  --set clientId=my-app \
+  --set realmRef.name=my-realm \
+  --set 'redirectUris={https://my-app.example.com/callback}'
 ```
 
 **📖 [Complete Quick Start Guide →](quickstart/README.md)**
