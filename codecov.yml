@@ -31,8 +31,15 @@ flags:
     paths:
       - src/keycloak_operator/
 
+# Ignore files that shouldn't be uploaded
+ignore:
+  - "tests/"
+  - "images/"
+  - "*.container"
+
 # Fix path issues between local, container, and CI environments
+# Strip absolute paths to leave only relative paths from repo root
 fixes:
   - "/mnt/c/Users/vries/Projects/Visual Studio Code Projects/keycloak-operator/::"
-  - "/app/::"
   - "/home/runner/work/keycloak-operator/keycloak-operator/::"
+  - "/app/::"
