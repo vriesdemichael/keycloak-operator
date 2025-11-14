@@ -3,6 +3,9 @@
 [![CI/CD Pipeline](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd.yml)
 [![Release](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml)
 [![codecov](https://codecov.io/gh/vriesdemichael/keycloak-operator/branch/main/graph/badge.svg)](https://codecov.io/gh/vriesdemichael/keycloak-operator)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/vriesdemichael/keycloak-operator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/vriesdemichael/keycloak-operator)
+[![Snyk Security](https://snyk.io/test/github/vriesdemichael/keycloak-operator/badge.svg)](https://snyk.io/test/github/vriesdemichael/keycloak-operator)
+[![Docker Image](https://ghcr-badge.egpl.dev/vriesdemichael/keycloak-operator/size?color=%2344cc11&tag=latest&label=image+size&trim=)](https://github.com/vriesdemichael/keycloak-operator/pkgs/container/keycloak-operator)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 
