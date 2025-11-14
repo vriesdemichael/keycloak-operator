@@ -115,6 +115,7 @@ jobs:
           flags: unit
           name: unit-tests
           token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
           fail_ci_if_error: true
 
   code-quality:
@@ -526,6 +527,7 @@ jobs:
           flags: integration
           name: integration-k8s-${{ matrix.k8s-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
           fail_ci_if_error: true
 
       - name: Collect logs and diagnostics
