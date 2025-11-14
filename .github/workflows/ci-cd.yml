@@ -107,6 +107,16 @@ jobs:
       - name: Run unit tests
         run: uv run pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
 
+      - name: Upload unit coverage artifact for combining
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: unit-coverage
+          path: |
+            .coverage
+            coverage.xml
+          retention-days: 1
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         if: success() || failure()
@@ -490,23 +500,25 @@ jobs:
           echo "Running integration tests with coverage enabled..."
           uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
+      - name: Download unit test coverage
+        uses: actions/download-artifact@v6
+        if: always()
+        with:
+          name: unit-coverage
+          path: .
+
       - name: Retrieve coverage data from operator
         if: always()
         run: |
           echo "Retrieving coverage data from operator pod..."
-          ./scripts/retrieve-coverage.sh keycloak-test-system app.kubernetes.io/name=keycloak-operator || true
+          bash ./scripts/retrieve-coverage.sh keycloak-test-system app.kubernetes.io/name=keycloak-operator || true
 
       - name: Combine coverage data
         if: always()
         run: |
           echo "Combining unit and integration coverage..."
-          # Copy unit test coverage if it exists (from parallel job)
-          if [ ! -f .coverage ]; then
-            echo "No unit test coverage found, creating empty coverage file"
-            uv run coverage erase
-          fi
           # Skip threshold check in CI
-          MINIMUM_COVERAGE=0 ./scripts/combine-coverage.sh
+          MINIMUM_COVERAGE=0 bash ./scripts/combine-coverage.sh
 
       - name: Verify coverage.xml exists
         if: always()
