@@ -112,6 +112,8 @@ jobs:
         if: success() || failure()
         with:
           files: ./coverage.xml
+          flags: unit
+          name: unit-tests
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
 
@@ -502,14 +504,27 @@ jobs:
             echo "No unit test coverage found, creating empty coverage file"
             uv run coverage erase
           fi
-          ./scripts/combine-coverage.sh || true
+          # Skip threshold check in CI
+          MINIMUM_COVERAGE=0 ./scripts/combine-coverage.sh
+
+      - name: Verify coverage.xml exists
+        if: always()
+        run: |
+          if [ ! -f coverage.xml ]; then
+            echo "ERROR: coverage.xml not found after combining coverage"
+            echo "Listing files in current directory:"
+            ls -la
+            exit 1
+          fi
+          echo "coverage.xml found, size: $(stat -c%s coverage.xml) bytes"
 
       - name: Upload combined coverage to Codecov
         uses: codecov/codecov-action@v5
         if: always()
         with:
           files: ./coverage.xml
-          flags: integration,k8s-${{ matrix.k8s-version }}
+          flags: integration
+          name: integration-k8s-${{ matrix.k8s-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
 
