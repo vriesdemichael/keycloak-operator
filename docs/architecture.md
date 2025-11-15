@@ -123,6 +123,20 @@ spec:
 
 See [Security Model](security.md) for detailed authorization architecture and best practices.
 
+
+## Reconciliation Flow
+
+The operator follows a consistent reconciliation pattern for all custom resources:
+
+```mermaid
+flowchart TD
+    A[Kubernetes Event<br/>create/update/delete] --> B[Kopf Handler<br/>handlers/*.py]
+    B --> C{Validate Input}
+    C -->|Invalid| D[Update Status: Failed<br/>Emit Event]
+    C -->|Valid| E[Reconciler Service<br/>services/*_reconciler.py]
+
+    E --> F[Load Current State]
+    F --> G[From Keycloak API]
     F --> H[From Kubernetes API]
 
     G --> I{Compute Diff}

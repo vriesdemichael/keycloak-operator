@@ -450,30 +450,32 @@ export KEYCLOAK_ADMIN_PASS=$(kubectl get secret keycloak-admin-credentials -n ke
 
 ---
 
-## Part 5: Multi-Tenant Bootstrap (Platform Team)
+## Part 5: Multi-Tenant Setup (Platform Team)
 
 This section is for platform teams setting up multi-tenant Keycloak access.
 
-### 5.1 Understanding Multi-Tenant Token Flow
+### 5.1 Understanding Multi-Tenant Authorization
+
+The operator uses **namespace grant lists** for multi-tenant authorization:
 
 ```
 Platform Team                     Application Team
      │                                    │
-     ├─ Creates Admission Token ─────────►│
-     │  (one-time, namespace-scoped)      │
+     ├─ Creates Realm (central) ─────────┤
+     │  with clientAuthorizationGrants   │
      │                                    │
-     │                             Creates First Realm
-     │                             (uses admission token)
+     │                          Creates Client Resources
+     │                          (authorized via grant list)
      │                                    │
-     │◄─── Operational Token Generated ───┤
-     │     (auto-rotating, 90 days)       │
-     │                                    │
-     │                          Creates Additional Realms
-     │                          (auto-discovers operational token)
-     │                                    │
-     │◄───── Token Rotates Every 90d ────┤
-          (automatic, zero downtime)
+     │                          Manages Own Clients
+     │                          (full self-service)
 ```
+
+**Key Concepts:**
+- **Realm Creation**: Controlled by Kubernetes RBAC
+- **Client Creation**: Controlled by realm's `clientAuthorizationGrants`
+- **No Tokens**: Authorization is declarative (namespace names in manifest)
+- **GitOps-Friendly**: All authorization changes via PR workflow
 
 ### 5.2 Create Namespace for Application Team
 
@@ -483,71 +485,168 @@ kubectl create namespace team-alpha
 kubectl label namespace team-alpha team=alpha
 ```
 
-### 5.3 Generate Admission Token
+### 5.3 Grant Team Permissions via RBAC
 
 ```bash
-# Generate cryptographically secure token
-ADMISSION_TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
+# Create Role for realm management
+kubectl apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: keycloak-realm-manager
+  namespace: team-alpha
+rules:
+  - apiGroups: ["vriesdemichael.github.io"]
+    resources: ["keycloakrealms", "keycloakclients"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+EOF
 
-# Create admission token secret
-kubectl create secret generic admission-token-team-alpha \
-  --from-literal=token="$ADMISSION_TOKEN" \
-  --namespace=team-alpha
-
-# Add required labels
-kubectl label secret admission-token-team-alpha \
-  vriesdemichael.github.io/token-type=admission \
-  vriesdemichael.github.io/allow-operator-read=true \
-  --namespace=team-alpha
-
-# Store token metadata in operator ConfigMap
-TOKEN_HASH=$(echo -n "$ADMISSION_TOKEN" | sha256sum | cut -d' ' -f1)
-kubectl patch configmap keycloak-operator-token-metadata \
-  --namespace=keycloak-operator-system \
-  --type=merge \
-  --patch "{
-    \"data\": {
-      \"$TOKEN_HASH\": \"{\\\"namespace\\\": \\\"team-alpha\\\", \\\"token_type\\\": \\\"admission\\\", \\\"token_hash\\\": \\\"$TOKEN_HASH\\\", \\\"issued_at\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"valid_until\\\": \\\"$(date -u -d '+1 year' +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"version\\\": 1, \\\"created_by_realm\\\": null, \\\"revoked\\\": false}\"
-    }
-  }"
+# Bind to team's ServiceAccount (for GitOps)
+kubectl apply -f - <<EOF
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: team-alpha-keycloak-manager
+  namespace: team-alpha
+subjects:
+  - kind: ServiceAccount
+    name: argocd-application-controller
+    namespace: argocd
+  - kind: Group
+    name: team-alpha
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: keycloak-realm-manager
+  apiGroup: rbac.authorization.k8s.io
+EOF
 ```
 
-### 5.4 Share Admission Token with Application Team
+### 5.4 Create Realm with Client Authorization Grants
+
+Platform team creates realm and grants team-alpha access:
+
+```bash
+kubectl apply -f - <<EOF
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakRealm
+metadata:
+  name: team-alpha-realm
+  namespace: team-alpha
+spec:
+  realmName: team-alpha
+  displayName: "Team Alpha Identity"
+  instanceRef:
+    name: keycloak
+    namespace: keycloak-system
+  enabled: true
+  # Grant team-alpha namespace permission to create clients
+  clientAuthorizationGrants:
+    - team-alpha
+  security:
+    registrationAllowed: false
+    resetPasswordAllowed: true
+    rememberMe: true
+  loginConfig:
+    rememberMe: true
+  themes:
+    loginTheme: keycloak
+    accountTheme: keycloak
+EOF
+```
+
+Wait for realm to be ready:
+
+```bash
+kubectl wait --for=condition=Ready keycloakrealm/team-alpha-realm \
+  -n team-alpha \
+  --timeout=2m
+```
+
+### 5.5 Share Realm Information with Team
 
 **Option A: GitOps (Recommended)**
 
 ```bash
-# Export admission token as YAML
-kubectl get secret admission-token-team-alpha -n team-alpha -o yaml > team-alpha-admission.yaml
+# Export realm manifest to team's GitOps repository
+kubectl get keycloakrealm team-alpha-realm -n team-alpha -o yaml > team-alpha-realm.yaml
 
-# Commit to team's GitOps repository
-git add team-alpha-admission.yaml
-git commit -m "feat(team-alpha): add Keycloak admission token"
+# Commit to team's repository
+git add team-alpha-realm.yaml
+git commit -m "feat(team-alpha): add Keycloak realm"
 git push
 
-# Team applies via ArgoCD or Flux
+# Team can now create clients via PR
 ```
 
-**Option B: Sealed Secrets (Recommended)**
+**Option B: Direct Communication**
+
+Share realm details with team:
+- Realm name: `team-alpha`
+- Namespace: `team-alpha`
+- Authorization: `team-alpha` namespace can create clients
+
+### 5.6 Team Creates First Client (Self-Service)
+
+Team can now create clients without platform team intervention:
 
 ```bash
-# Encrypt using SealedSecrets
-kubeseal -o yaml < team-alpha-admission.yaml > team-alpha-admission-sealed.yaml
-
-# Commit encrypted version
-git add team-alpha-admission-sealed.yaml
-git commit -m "feat(team-alpha): add Keycloak admission token (sealed)"
-git push
+kubectl apply -f - <<EOF
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakClient
+metadata:
+  name: team-alpha-app
+  namespace: team-alpha
+spec:
+  clientId: team-alpha-app
+  realmRef:
+    name: team-alpha-realm
+    namespace: team-alpha
+  name: "Team Alpha Application"
+  enabled: true
+  publicClient: false
+  standardFlowEnabled: true
+  directAccessGrantsEnabled: true
+  redirectUris:
+    - "https://team-alpha-app.example.com/callback"
+  webOrigins:
+    - "https://team-alpha-app.example.com"
+EOF
 ```
 
-**Option C: Direct Share (Dev/Test Only)**
+**Key Points:**
+- ✅ Team manages own clients (self-service)
+- ✅ Platform team controls authorization via `clientAuthorizationGrants`
+- ✅ All changes via GitOps/PR workflow
+- ✅ No secrets to distribute or rotate
+
+### 5.7 Add Cross-Namespace Authorization (Optional)
+
+If team-alpha needs to create clients in another realm:
 
 ```bash
-# Share token directly (not recommended for production)
-echo "Admission Token for team-alpha: $ADMISSION_TOKEN"
+# Platform team updates realm to grant access
+kubectl patch keycloakrealm shared-api-realm -n platform --type=merge -p '
+spec:
+  clientAuthorizationGrants:
+    - platform
+    - team-alpha  # ← Add this via PR
+'
 ```
 
-### 5.5 Create RBAC for Application Team
+**Workflow:**
+1. Team-alpha creates PR requesting access
+2. Platform team reviews and approves PR
+3. Realm manifest updated with new namespace
+4. Team-alpha can create clients in that realm
+
+---
+
+## Part 6: Application Team Self-Service
+
+### 6.1 Create Additional Clients
+
+Application teams can create unlimited clients (within resource quotas):
 
 ```bash
 kubectl apply -f - <<EOF
