@@ -157,8 +157,6 @@ spec:
   realmName: alpha-prod
   operatorRef:
     namespace: platform
-    authorizationSecretRef:
-      name: admission-token-team-alpha  # ← One-time admission token
       key: token
 
   security:
@@ -185,8 +183,6 @@ spec:
   realmName: alpha-staging
   operatorRef:
     namespace: platform
-    authorizationSecretRef:
-      name: team-alpha-operator-token  # ← Operational token
       key: token
 
   security:
@@ -206,8 +202,6 @@ spec:
   realmRef:
     name: alpha-prod
     namespace: team-alpha
-    authorizationSecretRef:
-      name: alpha-prod-realm-auth  # ← Auto-generated realm token
       key: token
 
   settings:
@@ -261,8 +255,6 @@ spec:
   realmRef:
     name: alpha-prod
     namespace: team-alpha  # ← References team-alpha realm
-    authorizationSecretRef:
-      name: alpha-prod-realm-auth  # ← Must have access to this secret
 ```
 
 **Requires:** RBAC allowing team-beta to read `alpha-prod-realm-auth` secret.

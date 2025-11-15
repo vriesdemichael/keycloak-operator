@@ -706,8 +706,6 @@ spec:
 
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: admission-token-team-alpha  # ← One-time admission token
       key: token
 
   security:
@@ -779,8 +777,6 @@ spec:
 
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: team-alpha-operator-token  # ← Uses operational token
       key: token
 
   security:
@@ -817,8 +813,6 @@ spec:
   realmRef:
     name: team-alpha-prod
     namespace: team-alpha
-    authorizationSecretRef:
-      name: team-alpha-prod-realm-auth
       key: token
 
   settings:
