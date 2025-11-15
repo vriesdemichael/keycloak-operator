@@ -37,7 +37,6 @@ OPERATOR_TOKEN=$(kubectl get secret keycloak-operator-auth-token \
 helm install my-realm keycloak-operator/keycloak-realm \
   --set realmName=my-app \
   --set operatorRef.namespace=keycloak-system \
-  --set operatorRef.authorizationSecretRef.name=keycloak-operator-auth-token \
   --namespace my-team \
   --create-namespace
 ```
@@ -113,7 +112,6 @@ kubectl describe keycloakrealm my-realm -n my-team
 |-----------|-------------|---------|
 | `realmName` | **REQUIRED** Keycloak realm identifier | `""` |
 | `operatorRef.namespace` | **REQUIRED** Namespace where operator is running | `keycloak-system` |
-| `operatorRef.authorizationSecretRef.name` | **REQUIRED** Secret containing operator token | `""` |
 
 #### Realm Settings
 
@@ -325,8 +323,6 @@ displayName: "Basic Application"
 
 operatorRef:
   namespace: keycloak-system
-  authorizationSecretRef:
-    name: admission-token-basic  # First realm in namespace
 ```
 
 ### Realm with Email Verification
@@ -339,8 +335,6 @@ displayName: "Verified Application"
 
 operatorRef:
   namespace: keycloak-system
-  authorizationSecretRef:
-    name: my-team-operator-token  # Subsequent realm
 
 security:
   verifyEmail: true
@@ -369,8 +363,6 @@ displayName: "Public Application"
 
 operatorRef:
   namespace: keycloak-system
-  authorizationSecretRef:
-    name: my-team-operator-token
 
 security:
   registrationAllowed: true
@@ -402,8 +394,6 @@ displayName: "Branded Application"
 
 operatorRef:
   namespace: keycloak-system
-  authorizationSecretRef:
-    name: my-team-operator-token
 
 themes:
   loginTheme: my-company-theme
@@ -424,8 +414,6 @@ displayName: "International Application"
 
 operatorRef:
   namespace: keycloak-system
-  authorizationSecretRef:
-    name: my-team-operator-token
 
 localization:
   enabled: true
@@ -450,8 +438,6 @@ displayName: "High Security Application"
 
 operatorRef:
   namespace: keycloak-system
-  authorizationSecretRef:
-    name: my-team-operator-token
 
 security:
   resetPasswordAllowed: false  # Require admin intervention
@@ -507,7 +493,6 @@ helm install my-client keycloak-operator/keycloak-client \
   --set clientId=my-app \
   --set realmRef.name=my-realm \
   --set realmRef.namespace=my-team \
-  --set realmRef.authorizationSecretRef.name=$REALM_SECRET \
   --namespace my-team
 ```
 

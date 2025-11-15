@@ -147,7 +147,6 @@ helm install my-realm ./charts/keycloak-realm \
   --set realmName=myteam \
   --set displayName="My Team Realm" \
   --set operatorRef.namespace=keycloak-system \
-  --set operatorRef.authorizationSecretRef.name=admission-token-my-team
 
 # Wait for realm to be ready
 kubectl wait --for=jsonpath='{.status.phase}'=Ready \
@@ -192,7 +191,6 @@ helm install my-client ./charts/keycloak-client \
   --set clientId=myapp \
   --set realmRef.name=my-realm \
   --set realmRef.namespace=my-team \
-  --set realmRef.authorizationSecretRef.name=$REALM_SECRET \
   --set redirectUris[0]="https://myapp.example.com/callback" \
   --set webOrigins[0]="https://myapp.example.com"
 
@@ -471,7 +469,6 @@ helm template test-client ./charts/keycloak-client \
   --set clientId=test \
   --set realmRef.name=test-realm \
   --set realmRef.namespace=test \
-  --set realmRef.authorizationSecretRef.name=test-secret
 ```
 
 Perform dry-run installation:
