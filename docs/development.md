@@ -196,13 +196,12 @@ src/keycloak_operator/
 │   ├── keycloak.py        # Keycloak resource handlers
 │   ├── realm.py           # Realm resource handlers
 │   ├── client.py          # Client resource handlers
-│   └── timers.py          # Timer handlers (drift detection, token rotation)
+│   └── timers.py          # Timer handlers (drift detection)
 ├── services/              # Business logic (thick layer)
 │   ├── keycloak_reconciler.py
 │   ├── realm_reconciler.py
 │   ├── client_reconciler.py
 │   ├── drift_detection.py
-│   └── token_rotation.py
 ├── utils/                 # Reusable utilities
 │   ├── keycloak_admin.py  # Keycloak Admin API client
 │   ├── kubernetes.py      # Kubernetes API helpers
@@ -359,7 +358,7 @@ Determine what should trigger this reconciliation:
 - **Create event**: New resource created
 - **Update event**: Resource spec changed
 - **Delete event**: Resource deleted
-- **Timer event**: Periodic reconciliation (drift detection, token rotation)
+- **Timer event**: Periodic reconciliation (drift detection)
 
 ### 2. Add Handler (if needed)
 

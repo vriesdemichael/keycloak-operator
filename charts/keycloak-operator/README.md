@@ -71,7 +71,6 @@ The operator should be in `Running` state within 1-2 minutes.
 | `operator.replicaCount` | Number of operator replicas for HA | `2` |
 | `operator.instanceId` | Operator instance ID for multi-operator deployments. Auto-generated if empty. | `""` |
 | ~~`operator.createAdmissionToken`~~ | **DEPRECATED** - No longer used with namespace grant authorization | `true` |
-| ~~`operator.admissionTokenName`~~ | **DEPRECATED** - No longer used with namespace grant authorization | `keycloak-operator-auth-token` |
 | ~~`operator.admissionToken`~~ | **DEPRECATED** - No longer used with namespace grant authorization | `""` |
 | `operator.image.repository` | Operator container image repository | `ghcr.io/vriesdemichael/keycloak-operator` |
 | `operator.image.tag` | Operator image tag (overrides chart appVersion) | `"v0.2.14"` |

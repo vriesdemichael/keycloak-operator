@@ -690,9 +690,7 @@ EOF
 
 This section is for application teams creating their realms.
 
-### 6.1 Create First Realm (Bootstrap)
-
-The first realm in a namespace triggers the bootstrap process:
+### 6.1 Create a Realm
 
 ```bash
 kubectl apply -f - <<EOF
@@ -706,7 +704,9 @@ spec:
 
   operatorRef:
     namespace: keycloak-system
-      key: token
+
+  clientAuthorizationGrants:
+    - team-alpha
 
   security:
     registrationAllowed: false
@@ -738,7 +738,7 @@ spec:
 EOF
 ```
 
-### 6.2 Wait for Realm and Operational Token
+### 6.2 Wait for Realm
 
 ```bash
 # Wait for realm to become ready (10-30 seconds)
@@ -749,16 +749,14 @@ kubectl wait --for=condition=Ready keycloakrealm/team-alpha-prod \
 ```
 
 **What happened:**
-1. ✅ Admission token validated
+1. ✅ Operator validated RBAC permissions
 2. ✅ Realm created in Keycloak
-3. ✅ Operational token generated (`team-alpha-operator-token`)
-4. ✅ Token metadata stored in ConfigMap
-5. ✅ Realm token created (`team-alpha-prod-realm-auth`)
-6. ✅ Automatic rotation enabled (90-day cycle)
+3. ✅ OIDC endpoints populated in status
+4. ✅ Realm ready for client creation
 
-### 6.3 Create Additional Realms (Auto-Discovery)
+### 6.3 Create Additional Realms
 
-After bootstrap, create additional realms without specifying token:
+Create more realms as needed:
 
 ```bash
 kubectl apply -f - <<EOF
@@ -772,7 +770,9 @@ spec:
 
   operatorRef:
     namespace: keycloak-system
-      key: token
+
+  clientAuthorizationGrants:
+    - team-alpha
 
   security:
     registrationAllowed: false

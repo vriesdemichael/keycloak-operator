@@ -422,10 +422,6 @@ kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
 # Verify secret exists
 kubectl get secret <auth-secret-name> -n <namespace>
 
-# For first realm (admission token):
-kubectl get secret admission-token-<namespace> -n <namespace>
-
-# For subsequent realms (operational token):
 kubectl get secret <namespace>-operator-token -n <namespace>
 
 # Check secret has correct labels
@@ -487,10 +483,6 @@ kubectl get configmap keycloak-operator-token-metadata \
 
 **Using Wrong Token:**
 ```bash
-# First realm should use admission token OR operational token
-# Subsequent realms should use operational token
-
-# Update realm to use operational token
 kubectl patch keycloakrealm <name> -n <namespace> --type=merge -p '
 spec:
   operatorRef:
@@ -518,11 +510,6 @@ kubectl get keycloakrealm <name> -n <namespace> \
 
 **Bootstrap Not Completed:**
 ```bash
-# Check if operational token was created
-kubectl get secret <namespace>-operator-token -n <namespace>
-
-# If missing, re-apply first realm with admission token
-# This should trigger bootstrap and create operational token
 ```
 
 ---
@@ -1200,17 +1187,6 @@ helm upgrade keycloak-operator ./charts/keycloak-operator \
 
 ### Pitfall 1: Using Operator Token in Production
 
-**Problem**: Using the operator token (created at operator startup) for all realms instead of multi-tenant admission/operational token flow.
-
-**Impact**:
-- No token rotation
-- All teams share one token
-- Token compromise affects all realms
-
-**Solution**: Use multi-tenant token flow:
-1. Platform team creates admission token per namespace
-2. First realm uses admission token → generates operational token
-3. Subsequent realms use operational token
 4. Tokens rotate automatically every 90 days
 
 See: [Multi-Tenant Guide](../how-to/multi-tenant.md)
@@ -1236,13 +1212,6 @@ spec:
 
 ### Pitfall 3: Forgetting to Bootstrap Namespace
 
-**Problem**: Creating realms without first creating admission token and bootstrapping.
-
-**Impact**: Realm creation fails with authorization error
-
-**Solution**: Follow bootstrap process:
-1. Platform team creates admission token
-2. Create first realm with admission token
 3. Operational token generated automatically
 4. Create subsequent realms
 
