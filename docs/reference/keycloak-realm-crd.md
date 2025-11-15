@@ -26,8 +26,6 @@ spec:
   displayName: "My Team"
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: admission-token-my-team
 ```
 
 ## Spec Fields
@@ -57,16 +55,12 @@ Reference to the Keycloak operator and authorization token.
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `operatorRef.namespace` | `string` | **Yes** | - | Namespace where the operator is running (e.g., `keycloak-system`) |
-| `operatorRef.authorizationSecretRef.name` | `string` | **Yes** | - | Name of the authorization secret (admission token for first realm, or leave empty for auto-discovery) |
-| `operatorRef.authorizationSecretRef.key` | `string` | No | `token` | Key within the secret containing the token |
 
 **Example - First realm (admission token):**
 ```yaml
 spec:
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: admission-token-my-team
 ```
 
 **Example - Additional realms (auto-discovery):**
@@ -74,7 +68,6 @@ spec:
 spec:
   operatorRef:
     namespace: keycloak-system
-    # No authorizationSecretRef needed - operator auto-discovers operational token
 ```
 
 ### Security Settings
@@ -511,7 +504,6 @@ spec:
 | `realmName` | `string` | Name of the realm in Keycloak |
 | `internalId` | `string` | Internal Keycloak realm ID |
 | `keycloakInstance` | `string` | Keycloak instance managing this realm |
-| `authorizationSecretName` | `string` | Name of the secret containing the realm's authorization token (for delegating to clients) |
 
 ### OIDC Endpoints (Automatically Populated)
 
@@ -560,8 +552,6 @@ spec:
   displayName: "Basic Realm"
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: admission-token-my-team
 ```
 
 ### Production Realm with Security
@@ -579,8 +569,6 @@ spec:
 
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: admission-token-production
 
   security:
     registrationAllowed: false
