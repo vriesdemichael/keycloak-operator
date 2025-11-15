@@ -372,7 +372,6 @@ The operator populates the `status` subresource with the current state of the Ke
 | `observedGeneration` | integer | Generation of spec that was last processed |
 | `adminUsername` | string | Keycloak admin username |
 | `adminSecret` | string | Name of secret containing admin password |
-| `authorizationSecretName` | string | Name of secret containing operator's authorization token |
 | `internalUrl` | string | Internal cluster URL |
 | `externalUrl` | string | External URL (if ingress enabled) |
 | `endpoints.admin` | string | Admin console endpoint |
@@ -392,7 +391,6 @@ status:
   observedGeneration: 1
   adminUsername: admin
   adminSecret: my-keycloak-admin-password
-  authorizationSecretName: my-keycloak-operator-token
   internalUrl: http://my-keycloak:8080
   externalUrl: https://keycloak.example.com
   endpoints:

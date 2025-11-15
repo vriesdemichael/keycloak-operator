@@ -186,18 +186,12 @@ kubectl describe keycloakrealm my-realm -n my-team
 ### Deploy Client to Team Namespace
 
 ```bash
-# Get realm authorization secret
-REALM_SECRET=$(kubectl get keycloakrealm my-realm \
-  -n my-team \
-  -o jsonpath='{.status.authorizationSecretName}')
-
 # Deploy client (creates RoleBinding automatically)
 helm install my-client charts/keycloak-client \
   --namespace my-team \
   --set clientId=my-client \
   --set realmRef.name=my-realm \
   --set realmRef.namespace=my-team \
-  --set realmRef.authorizationSecretRef.name=$REALM_SECRET \
   --set rbac.create=true \
   --set rbac.operatorNamespace=keycloak-system
 ```
