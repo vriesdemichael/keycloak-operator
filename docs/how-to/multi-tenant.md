@@ -1,5 +1,13 @@
 # Multi-Tenant Configuration Guide
 
+> **⚠️ DEPRECATED:** This guide documents the old token-based authorization system which was superseded by namespace grant lists (ADR 063) on 2025-11-10. This file needs a complete rewrite.
+>
+> **Current Authorization Model:** Multi-tenant access is now controlled via:
+> - **Realm Creation:** Kubernetes RBAC (RoleBinding with `create` permission on KeycloakRealm)
+> - **Client Creation:** Namespace grant lists (realm's `spec.clientAuthorizationGrants` field)
+>
+> See [Security Model](../security.md) for current documentation.
+
 Configure the operator for multi-tenant environments where multiple teams manage their own realms and clients independently.
 
 ## Architecture

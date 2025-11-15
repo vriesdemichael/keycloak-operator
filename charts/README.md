@@ -1,5 +1,19 @@
 # Keycloak Operator Helm Charts
 
+> **⚠️ PARTIALLY OUTDATED:** This README contains sections about the old token-based authorization system which was superseded by namespace grant lists (ADR 063).
+>
+> **Outdated sections:**
+> - Installation Flow diagram (shows token workflow)
+> - "Understanding the Token System" section
+> - Token bootstrap examples
+>
+> **Current Authorization Model:**
+> - **Realm Creation:** Kubernetes RBAC controls who can create realms
+> - **Client Creation:** Realm's `clientAuthorizationGrants` list controls which namespaces can create clients
+> - **No tokens:** Authorization is purely declarative via grant lists
+>
+> Individual chart READMEs (keycloak-realm/, keycloak-client/) are up to date.
+
 This directory contains three Helm charts for deploying and managing Keycloak infrastructure with GitOps compatibility.
 
 ## Charts Overview
