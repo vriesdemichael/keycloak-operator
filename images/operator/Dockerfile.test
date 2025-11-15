@@ -82,7 +82,10 @@ PY
 ENV COVERAGE_PROCESS_START=/app/.coveragerc.container
 ENV COVERAGE_FILE=/tmp/coverage/.coverage
 
-RUN chown -R keycloak:keycloak /app
+# Create coverage data directory with proper permissions
+RUN mkdir -p /tmp/coverage && \
+    chown -R keycloak:keycloak /app /tmp/coverage
+
 USER keycloak
 
 EXPOSE 8080
