@@ -298,24 +298,6 @@ kubectl auth can-i get secrets \
   -n my-team
 ```
 
-## Migration from Old RBAC
-
-If upgrading from a previous version with cluster-wide secret access:
-
-1. **Upgrade the operator chart** - This updates the RBAC to the new model
-2. **Deploy realm/client charts** - These will create RoleBindings automatically
-3. **Label all secrets** - Add the required label to existing secrets
-4. **Test reconciliation** - Verify everything works as expected
-
-## Security Benefits
-
-1. **Least Privilege**: Operator only has permissions it needs
-2. **Explicit Opt-In**: Teams must intentionally grant access
-3. **Secret Isolation**: Secrets must be explicitly labeled
-4. **Namespace Boundaries**: Clear separation of permissions
-5. **Auditable**: Easy to see who has granted access
-6. **Revocable**: Teams can revoke access anytime
-
 ## Testing
 
 Run the integration tests:

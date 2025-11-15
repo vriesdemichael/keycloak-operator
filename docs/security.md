@@ -4,7 +4,7 @@ This document explains the security and authorization model of the Keycloak oper
 
 ## Overview
 
-The Keycloak operator uses **Kubernetes RBAC** combined with **declarative namespace grant lists** for authorization. This design eliminates the need for a separate token system while enabling secure, scalable multi-tenant operation.
+The Keycloak operator uses **Kubernetes RBAC** combined with **declarative namespace grant lists** for authorization.
 
 ## Design Philosophy
 
@@ -20,7 +20,7 @@ Pure RBAC approaches don't scale for multi-tenant Keycloak:
 
 ### Why Not Tokens?
 
-Token-based systems (like the operator previously used) create operational overhead:
+Token-based systems (like this operator previously used) create operational overhead:
 - ❌ Token generation, distribution, and rotation lifecycle
 - ❌ Manual secret syncing between namespaces
 - ❌ Not GitOps-native (secrets don't belong in Git)
@@ -29,7 +29,7 @@ Token-based systems (like the operator previously used) create operational overh
 ### The Solution: RBAC + Namespace Grants
 
 The operator combines Kubernetes RBAC with declarative namespace authorization:
-- ✅ **Realm Creation**: Controlled by Kubernetes RBAC
+- ✅ **Realm Creation**: Controlled by Kubernetes RBAC.
 - ✅ **Client Creation**: Controlled by realm's `clientAuthorizationGrants` list
 - ✅ **Fully Declarative**: All authorization in Git-committable manifests
 - ✅ **Self-Service**: Teams can grant access via PR workflow
@@ -529,38 +529,6 @@ spec:
 1. Existing clients continue to work (runtime not affected)
 2. To allow updates: Re-add namespace to grant list
 3. Or: Transfer ownership by recreating client in authorized namespace
-
-## Migration from Token-Based Authorization
-
-If migrating from the previous token-based system (ADR 026):
-
-**Before (tokens):**
-```yaml
-spec:
-  operatorRef:
-    authorizationSecretRef:
-      name: admission-token
-      key: token
-```
-
-**After (namespace grants):**
-```yaml
-spec:
-  instanceRef:
-    name: keycloak
-    namespace: keycloak-system
-  # Authorization via namespace grants instead
-```
-
-**Migration steps:**
-
-1. **Audit current authorization**: Document which namespaces create clients in each realm
-2. **Add grant lists**: Update realms with `clientAuthorizationGrants`
-3. **Update clients**: Remove `authorizationSecretRef` from client specs
-4. **Clean up secrets**: Remove old token secrets (optional)
-5. **Update documentation**: Update team runbooks
-
-See [ADR 063](decisions/063-namespace-grant-list-authorization.yaml) for full migration rationale.
 
 ## Related Documentation
 
