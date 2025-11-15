@@ -32,8 +32,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
 
   # Azure AD (Microsoft Entra ID) OIDC Identity Provider
   identityProviders:

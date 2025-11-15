@@ -246,37 +246,6 @@ See: [Migration Guide](operations/migration.md#comparison-with-official-keycloak
 
 ---
 
-### How do I set up single-tenant (dev) vs multi-tenant (production)?
-
-**Single-Tenant (Dev Mode):**
-```yaml
-# All teams use operator token (created at startup)
-spec:
-  operatorRef:
-    authorizationSecretRef:
-      name: keycloak-operator-auth-token
-```
-- Simple setup
-- No token rotation
-- All teams share token
-
-**Multi-Tenant (Production):**
-```yaml
-# First realm uses admission token → generates operational token
-# Other realms use operational token (auto-rotates)
-spec:
-  operatorRef:
-    authorizationSecretRef:
-      name: team-alpha-operator-token
-```
-- Namespace isolation
-- Automatic 90-day rotation
-- Per-team tokens
-
-See: [Multi-Tenant Guide](how-to/multi-tenant.md)
-
----
-
 ### Can I use this operator with ArgoCD / Flux?
 
 **Yes, fully supported.** The operator is GitOps-native.
@@ -297,7 +266,7 @@ spec:
 ```
 
 **Best practices:**
-- Use SealedSecrets for tokens
+- Use SealedSecrets or external-secrets for sensitive data
 - Separate repos per team
 - Health checks via `status.phase`
 
