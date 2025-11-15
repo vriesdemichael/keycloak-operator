@@ -9,7 +9,6 @@ import pytest
 from pydantic import ValidationError
 
 from keycloak_operator.models.client import KeycloakClient, KeycloakClientSpec, RealmRef
-from keycloak_operator.models.common import AuthorizationSecretRef
 from keycloak_operator.models.keycloak import (
     Keycloak,
     KeycloakResourceRequirements,
@@ -386,9 +385,3 @@ class TestKeycloakRealmModels:
             )
             assert ref.name == "my-realm"
             assert ref.namespace == "default"
-
-        def test_authorization_secret_ref_defaults(self):
-            """Test AuthorizationSecretRef default values (still used for internal tokens)."""
-            ref = AuthorizationSecretRef(name="my-secret")
-            assert ref.name == "my-secret"
-            assert ref.key == "token"  # default key

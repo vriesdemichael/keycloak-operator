@@ -25,8 +25,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: my-app-operator-token
 
   smtp:
     host: smtp.sendgrid.net
@@ -164,9 +162,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: my-app-operator-token
-      key: token
 
   security:
     verifyEmail: true

@@ -53,9 +53,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
-      key: token
 
   identityProviders:
     - alias: github
@@ -103,9 +100,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
-      key: token
 
   identityProviders:
     - alias: google
@@ -153,9 +147,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
-      key: token
 
   identityProviders:
     - alias: azure-ad
@@ -195,9 +186,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
-      key: token
 
   identityProviders:
     - alias: custom-oidc
@@ -242,9 +230,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
-      key: token
 
   identityProviders:
     - alias: saml-idp
@@ -278,9 +263,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
-      key: token
 
   clientScopes:
     - name: custom-claims
@@ -315,9 +297,6 @@ spec:
   realmName: multi-idp
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: multi-idp-token
-      key: token
 
   identityProviders:
     # GitHub for developers

@@ -28,8 +28,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
 
   # GitHub OAuth Identity Provider
   identityProviders:

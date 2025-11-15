@@ -30,8 +30,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-operator
-    authorizationSecretRef:
-      name: my-realm-token
 
   # Generic OIDC Identity Provider (works with any OIDC-compliant provider)
   identityProviders:
