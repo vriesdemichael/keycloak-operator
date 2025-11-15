@@ -6,7 +6,7 @@
 #
 # Prerequisites:
 # - KeycloakRealm must be Ready
-# - Realm authorization secret exists in this namespace
+# - Client's namespace must be in realm's clientAuthorizationGrants list
 #
 # Operator Compatibility: v1+
 # Keycloak Version: 22.0+
@@ -30,9 +30,6 @@ spec:
   realmRef:
     name: my-app-realm  # The KeycloakRealm resource name
     namespace: my-app
-    authorizationSecretRef:
-      # This secret is automatically created by the realm reconciliation
-      name: my-app-realm-realm-auth
 
   # Client type: false = confidential (has secret), true = public (no secret)
   publicClient: false

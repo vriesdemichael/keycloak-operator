@@ -470,7 +470,7 @@ kubectl describe keycloakrealm <name> -n <namespace> | grep -i authorization
 
 # Check which secret realm is using
 kubectl get keycloakrealm <name> -n <namespace> \
-  -o jsonpath='{.spec.operatorRef.authorizationSecretRef.name}'
+  # Authorization no longer uses tokens
 
 # Verify secret exists
 kubectl get secret <secret-name> -n <namespace>
@@ -514,7 +514,7 @@ kubectl get secret <namespace>-operator-token -n <namespace> \
 
 # If after grace period, ensure using "token" key (not "token-previous")
 kubectl get keycloakrealm <name> -n <namespace> \
-  -o jsonpath='{.spec.operatorRef.authorizationSecretRef.key}'
+  # Authorization no longer uses tokens
 # Should be "token"
 ```
 
@@ -835,7 +835,7 @@ kubectl auth can-i update configmap \
 ```bash
 # Check which token realm is using
 kubectl get keycloakrealm <name> -n <namespace> \
-  -o jsonpath='{.spec.operatorRef.authorizationSecretRef}'
+  # Authorization no longer uses tokens
 
 # Check operational token status
 kubectl get secret <namespace>-operator-token -n <namespace> -o yaml
@@ -865,7 +865,7 @@ spec:
 ```bash
 # Check key
 kubectl get keycloakrealm <name> -n <namespace> \
-  -o jsonpath='{.spec.operatorRef.authorizationSecretRef.key}'
+  # Authorization no longer uses tokens
 
 # Should be "token" (default if not specified)
 # Update if using wrong key:

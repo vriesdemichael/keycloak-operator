@@ -338,8 +338,6 @@ spec:
   realmName: my-realm
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: keycloak-operator-auth-token
   # ... rest of realm config
 ```
 
