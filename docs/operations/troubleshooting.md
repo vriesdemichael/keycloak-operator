@@ -494,8 +494,6 @@ kubectl get configmap keycloak-operator-token-metadata \
 kubectl patch keycloakrealm <name> -n <namespace> --type=merge -p '
 spec:
   operatorRef:
-    authorizationSecretRef:
-      name: <namespace>-operator-token
       key: token
 '
 ```
@@ -855,8 +853,6 @@ kubectl get secret <namespace>-operator-token -n <namespace> \
 kubectl patch keycloakrealm <name> -n <namespace> --type=merge -p '
 spec:
   operatorRef:
-    authorizationSecretRef:
-      name: <namespace>-operator-token
       key: token
 '
 ```
