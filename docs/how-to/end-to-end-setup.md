@@ -1,19 +1,5 @@
 # End-to-End Setup Guide
 
-> **⚠️ PARTIALLY OUTDATED:** Sections 5-6 of this guide describe the old token-based authorization system which was superseded by namespace grant lists (ADR 063) on 2025-11-10.
->
-> **Sections needing rewrite:**
-> - Part 5: Multi-Tenant Setup (Platform Team) - admission tokens obsolete
-> - Part 6: Realm Creation (Application Team) - operational tokens obsolete
-> - Section 9.5: Token Management Checklist - no longer applicable
-> - Troubleshooting: Token Rotation Issues - obsolete
->
-> **Current Authorization Model:**
-> - **Realm Creation:** Controlled by Kubernetes RBAC
-> - **Client Creation:** Controlled by realm's `clientAuthorizationGrants` list
->
-> See [Security Model](../security.md) for current documentation.
-
 This guide walks you through deploying a **production-ready** Keycloak setup from scratch, including database configuration, high availability, TLS, and monitoring.
 
 For a simpler quick start, see the [Quick Start Guide](../quickstart/README.md).
@@ -26,8 +12,8 @@ This guide covers:
 2. **Operator Installation** - Deploy the Keycloak operator with monitoring
 3. **Database Configuration** - PostgreSQL with CloudNativePG, backup, HA
 4. **Keycloak Deployment** - Multi-replica Keycloak with TLS and ingress
-5. **~~Multi-Tenant Bootstrap~~ (OUTDATED)** - ~~Platform team creates admission tokens~~
-6. **~~Realm Creation~~ (OUTDATED)** - ~~Application teams create realms with automatic token rotation~~
+5. **Multi-Tenant Setup** - Platform team configures RBAC and namespace grants
+6. **Realm Creation** - Application teams create and manage realms
 7. **Client Configuration** - OAuth2/OIDC client setup with credential management
 8. **Verification & Testing** - End-to-end OAuth2 flow validation
 9. **Production Checklist** - Security, monitoring, backup verification
@@ -678,7 +664,7 @@ rules:
   # Read authorization tokens
   - apiGroups: [""]
     resources: ["secrets"]
-    resourceNames: ["admission-token-team-alpha", "team-alpha-operator-token", "*-realm-auth"]
+    resourceNames: ["*"]  # All secrets
     verbs: ["get"]
 
 ---
@@ -760,11 +746,6 @@ kubectl wait --for=condition=Ready keycloakrealm/team-alpha-prod \
   -n team-alpha \
   --timeout=2m
 
-# Verify operational token was created
-kubectl get secret team-alpha-operator-token -n team-alpha
-
-# Check token metadata
-kubectl get secret team-alpha-operator-token -n team-alpha -o yaml
 ```
 
 **What happened:**
@@ -799,14 +780,6 @@ spec:
 EOF
 ```
 
-**Note:** The operator can auto-discover the operational token by labels, so you can also omit `authorizationSecretRef` entirely:
-
-```yaml
-spec:
-  operatorRef:
-    namespace: keycloak-system
-    # No authorizationSecretRef - operator finds team-alpha-operator-token via labels
-```
 
 ---
 
@@ -1064,9 +1037,6 @@ kubectl describe certificate keycloak-tls -n keycloak-system
 ### Token Rotation Issues
 
 ```bash
-# Check operational token status
-kubectl get secret team-alpha-operator-token -n team-alpha -o yaml | grep -A10 annotations
-
 # Check token metadata
 kubectl get configmap keycloak-operator-token-metadata \
   -n keycloak-operator-system -o yaml | grep team-alpha

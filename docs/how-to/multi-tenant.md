@@ -1,13 +1,5 @@
 # Multi-Tenant Configuration Guide
 
-> **⚠️ DEPRECATED:** This guide documents the old token-based authorization system which was superseded by namespace grant lists (ADR 063) on 2025-11-10. This file needs a complete rewrite.
->
-> **Current Authorization Model:** Multi-tenant access is now controlled via:
-> - **Realm Creation:** Kubernetes RBAC (RoleBinding with `create` permission on KeycloakRealm)
-> - **Client Creation:** Namespace grant lists (realm's `spec.clientAuthorizationGrants` field)
->
-> See [Security Model](../security.md) for current documentation.
-
 Configure the operator for multi-tenant environments where multiple teams manage their own realms and clients independently.
 
 ## Architecture
@@ -17,20 +9,23 @@ Platform Team                    Application Teams
      │                                │
      ├─ Deploys Operator              │
      ├─ Creates Keycloak Instance     │
-     ├─ Creates Admission Tokens ─────►
+     ├─ Grants RBAC Permissions ──────►
      │                                │
-     │                         Creates First Realm
-     │                         (admission token)
+     │                         Creates Realms
+     │                         (RBAC-controlled)
      │                                │
-     │◄──── Operational Token ─────────┤
-     │      Auto-generated             │
+     │                         Sets clientAuthorizationGrants
      │                                │
-     │                         Creates More Realms
-     │                         (operational token)
-     │                                │
-     │◄────── Auto-Rotation ───────────┤
-            (90-day cycle)
+     │                         Manages Clients
+     │                         (grant list-controlled)
 ```
+
+**Key Concepts:**
+
+- **Realm Creation**: Controlled by Kubernetes RBAC (RoleBinding)
+- **Client Creation**: Controlled by realm's `clientAuthorizationGrants` list
+- **Declarative**: All authorization via manifest fields, no secrets/tokens
+- **GitOps-Friendly**: Everything in version control
 
 ---
 
@@ -69,428 +64,405 @@ kubectl label namespace team-beta team=beta env=prod
 kubectl label namespace team-gamma team=gamma env=prod
 ```
 
-### 3. Generate Admission Tokens
+### 3. Grant Realm Creation Permissions
 
-```bash
-#!/bin/bash
-TEAMS=("team-alpha" "team-beta" "team-gamma")
-
-for TEAM in "${TEAMS[@]}"; do
-  # Generate token
-  TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
-
-  # Create secret
-  kubectl create secret generic admission-token-${TEAM} \
-    --from-literal=token="$TOKEN" \
-    --namespace=${TEAM}
-
-  # Add labels
-  kubectl label secret admission-token-${TEAM} \
-    vriesdemichael.github.io/token-type=admission \
-    vriesdemichael.github.io/allow-operator-read=true \
-    --namespace=${TEAM}
-
-  # Store metadata
-  TOKEN_HASH=$(echo -n "$TOKEN" | sha256sum | cut -d' ' -f1)
-  kubectl patch configmap keycloak-operator-token-metadata \
-    --namespace=keycloak-operator-system \
-    --type=merge \
-    --patch "{
-      \"data\": {
-        \"$TOKEN_HASH\": \"{\\\"namespace\\\": \\\"${TEAM}\\\", \\\"token_type\\\": \\\"admission\\\", \\\"token_hash\\\": \\\"$TOKEN_HASH\\\", \\\"issued_at\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"valid_until\\\": \\\"$(date -u -d '+1 year' +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"version\\\": 1, \\\"created_by_realm\\\": null, \\\"revoked\\\": false}\"
-      }
-    }"
-done
-```
-
-### 4. Configure RBAC per Team
+Create ClusterRole for realm management:
 
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
+kind: ClusterRole
 metadata:
-  name: keycloak-manager
-  namespace: team-alpha
+  name: keycloak-realm-manager
 rules:
-  # Manage Keycloak resources
   - apiGroups: ["vriesdemichael.github.io"]
-    resources: ["keycloakrealms", "keycloakclients"]
-    verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
-
-  # Read tokens
-  - apiGroups: [""]
-    resources: ["secrets"]
-    resourceNames: ["admission-token-team-alpha", "team-alpha-operator-token", "*-realm-auth"]
-    verbs: ["get"]
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: team-alpha-keycloak
-  namespace: team-alpha
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: keycloak-manager
-subjects:
-  - kind: ServiceAccount
-    name: team-alpha-deployer
-    namespace: team-alpha
+    resources: ["keycloakrealms"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["vriesdemichael.github.io"]
+    resources: ["keycloakclients"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ```
 
-### 5. Distribute Tokens (GitOps)
+Grant to each team:
 
 ```bash
-# Export for GitOps
-kubectl get secret admission-token-team-alpha -n team-alpha -o yaml \
-  > gitops/teams/team-alpha/admission-token.yaml
+# Team Alpha
+kubectl create rolebinding realm-manager-alpha \
+  --clusterrole=keycloak-realm-manager \
+  --serviceaccount=team-alpha:default \
+  --namespace=team-alpha
 
-# Or use SealedSecrets
-kubeseal -o yaml < admission-token.yaml > admission-token-sealed.yaml
+# Team Beta
+kubectl create rolebinding realm-manager-beta \
+  --clusterrole=keycloak-realm-manager \
+  --serviceaccount=team-beta:default \
+  --namespace=team-beta
+
+# Team Gamma
+kubectl create rolebinding realm-manager-gamma \
+  --clusterrole=keycloak-realm-manager \
+  --serviceaccount=team-gamma:default \
+  --namespace=team-gamma
+```
+
+### 4. Grant Operator Namespace Access
+
+The operator needs to read secrets in each team namespace:
+
+```bash
+# Create RoleBinding for each team namespace
+for TEAM in team-alpha team-beta team-gamma; do
+  kubectl create rolebinding keycloak-operator-access \
+    --clusterrole=keycloak-operator-namespace-access \
+    --serviceaccount=platform:keycloak-operator \
+    --namespace=$TEAM
+done
 ```
 
 ---
 
-## Application Team Workflow
+## Application Team Usage
 
-### Team Alpha: First Realm (Bootstrap)
+### Create a Realm
+
+Each team creates realms in their own namespace:
 
 ```yaml
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
-  name: alpha-prod
+  name: alpha-production
   namespace: team-alpha
 spec:
-  realmName: alpha-prod
+  realmName: alpha-production
+
   operatorRef:
     namespace: platform
-      key: token
+
+  # Grant these namespaces permission to create clients
+  clientAuthorizationGrants:
+    - team-alpha           # Our namespace
+    - team-alpha-dev       # Our dev namespace
+    - partner-namespace    # External partner (if needed)
+
+  security:
+    registrationAllowed: false
+    resetPasswordAllowed: true
+    verifyEmail: true
+
+  smtp:
+    host: smtp.company.com
+    from: noreply@team-alpha.com
+    credentialsSecret: smtp-credentials
+```
+
+### Create Clients in Authorized Namespaces
+
+Team Alpha can create clients in their namespace:
+
+```yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakClient
+metadata:
+  name: alpha-app
+  namespace: team-alpha
+spec:
+  clientId: alpha-app
+
+  realmRef:
+    name: alpha-production
+    namespace: team-alpha
+
+  redirectUris:
+    - https://app.team-alpha.com/callback
+
+  publicClient: false
+```
+
+### Cross-Namespace Client Creation
+
+If a realm grants access, other namespaces can create clients:
+
+```yaml
+# In team-alpha-dev namespace
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakClient
+metadata:
+  name: dev-app
+  namespace: team-alpha-dev
+spec:
+  clientId: dev-app
+
+  realmRef:
+    name: alpha-production
+    namespace: team-alpha  # Cross-namespace reference
+
+  redirectUris:
+    - https://dev.team-alpha.com/callback
+```
+
+---
+
+## Multi-Realm Scenarios
+
+### Shared Platform Realm
+
+Platform team creates a central realm that all teams can use:
+
+```yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakRealm
+metadata:
+  name: company-sso
+  namespace: platform
+spec:
+  realmName: company-sso
+
+  operatorRef:
+    namespace: platform
+
+  # Grant all team namespaces access
+  clientAuthorizationGrants:
+    - team-alpha
+    - team-beta
+    - team-gamma
+    - "*-dev"  # All dev namespaces
 
   security:
     registrationAllowed: false
     resetPasswordAllowed: true
 ```
 
-**What happens:**
-1. Operator validates admission token
-2. Creates realm in Keycloak
-3. Generates `team-alpha-operator-token` (operational token)
-4. Future realms use operational token
-5. Token rotates automatically every 90 days
+All teams can now create clients in this realm.
 
-### Team Alpha: Additional Realms
+### Team-Specific Realms with Selective Sharing
+
+Team creates realm and selectively grants access:
 
 ```yaml
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
-  name: alpha-staging
-  namespace: team-alpha
+  name: beta-services
+  namespace: team-beta
 spec:
-  realmName: alpha-staging
+  realmName: beta-services
+
   operatorRef:
     namespace: platform
-      key: token
 
-  security:
-    registrationAllowed: false
-```
-
-### Team Alpha: Create Client
-
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
-metadata:
-  name: alpha-webapp
-  namespace: team-alpha
-spec:
-  clientId: alpha-webapp
-  realmRef:
-    name: alpha-prod
-    namespace: team-alpha
-      key: token
-
-  settings:
-    publicClient: false
-    standardFlowEnabled: true
-    redirectUris:
-      - "https://alpha.company.com/callback"
+  # Only beta team and specific partners
+  clientAuthorizationGrants:
+    - team-beta
+    - team-beta-staging
+    - partner-integration-team  # External partner
 ```
 
 ---
 
-## Isolation Patterns
+## Security Model
+
+### Realm Creation Authorization
+
+**Who can create realms?**
+- Users/ServiceAccounts with RoleBinding granting `create` permission on `KeycloakRealm`
+- Platform team controls via RBAC policies
+
+**Verification:**
+```bash
+# Check if team can create realms
+kubectl auth can-i create keycloakrealms.vriesdemichael.github.io \
+  --as=system:serviceaccount:team-alpha:default \
+  --namespace=team-alpha
+```
+
+### Client Creation Authorization
+
+**Who can create clients?**
+- Namespaces listed in realm's `clientAuthorizationGrants`
+- Defined by realm owner (application team)
+- Fully declarative (no secret distribution)
+
+**Verification:**
+```bash
+# Check realm's grants
+kubectl get keycloakrealm alpha-production -n team-alpha \
+  -o jsonpath='{.spec.clientAuthorizationGrants}' | jq
+```
 
 ### Namespace Isolation
 
-Each team operates in their own namespace:
-- **Team Alpha**: `team-alpha` namespace
-- **Team Beta**: `team-beta` namespace
-- **Team Gamma**: `team-gamma` namespace
+- Teams cannot access other teams' namespaces (Kubernetes RBAC)
+- Teams cannot modify other teams' realms (resource ownership)
+- Clients can only reference realms that grant their namespace access
+- Operator enforces authorization at reconciliation time
 
-Benefits:
-- ✅ RBAC enforced at namespace level
-- ✅ Tokens don't leak between teams
-- ✅ Resource quotas per team
-- ✅ Network policies for isolation
+---
 
-### Realm Isolation
+## GitOps Workflow
 
-Each team manages multiple realms:
-- **Team Alpha**: `alpha-prod`, `alpha-staging`, `alpha-dev`
-- **Team Beta**: `beta-prod`, `beta-staging`
+### ArgoCD Application Structure
 
-Benefits:
-- ✅ Environment separation
-- ✅ Independent configuration
-- ✅ Isolated user bases
+```
+gitops-repo/
+├── platform/
+│   ├── keycloak-operator.yaml
+│   └── shared-realms/
+│       └── company-sso.yaml
+├── team-alpha/
+│   ├── realms/
+│   │   └── alpha-production.yaml
+│   └── clients/
+│       ├── web-app.yaml
+│       └── mobile-app.yaml
+└── team-beta/
+    ├── realms/
+    │   └── beta-services.yaml
+    └── clients/
+        └── api-gateway.yaml
+```
 
-### Cross-Namespace Clients (Advanced)
+### Updating Authorization Grants
 
-Team can create clients in different namespace:
+To grant a new namespace access:
+
+```bash
+# Update realm manifest
+kubectl patch keycloakrealm alpha-production -n team-alpha --type=merge -p '
+spec:
+  clientAuthorizationGrants:
+    - team-alpha
+    - team-alpha-dev
+    - new-namespace  # Add new namespace
+'
+
+# Or update in Git and let ArgoCD sync
+```
+
+Changes apply immediately - new namespace can create clients.
+
+---
+
+## Common Patterns
+
+### Development/Staging/Production Separation
 
 ```yaml
-# In team-beta namespace
+# Production realm - strict grants
 apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
+kind: KeycloakRealm
 metadata:
-  name: beta-to-alpha
-  namespace: team-beta
+  name: prod-realm
+  namespace: team-prod
 spec:
-  clientId: beta-to-alpha
-  realmRef:
-    name: alpha-prod
-    namespace: team-alpha  # ← References team-alpha realm
-```
-
-**Requires:** RBAC allowing team-beta to read `alpha-prod-realm-auth` secret.
+  clientAuthorizationGrants:
+    - team-prod  # Only production namespace
 
 ---
+# Staging realm - more permissive
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakRealm
+metadata:
+  name: staging-realm
+  namespace: team-staging
+spec:
+  clientAuthorizationGrants:
+    - team-staging
+    - team-dev
+    - qa-team  # QA can create test clients
+```
 
-## Resource Quotas
-
-Limit resource usage per team:
+### Partner Integration
 
 ```yaml
-apiVersion: v1
-kind: ResourceQuota
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakRealm
 metadata:
-  name: team-alpha-quota
-  namespace: team-alpha
+  name: partner-api
+  namespace: platform
 spec:
-  hard:
-    keycloakrealms.vriesdemichael.github.io: "5"
-    keycloakclients.vriesdemichael.github.io: "50"
-    requests.cpu: "4"
-    requests.memory: "8Gi"
-    limits.cpu: "8"
-    limits.memory: "16Gi"
+  clientAuthorizationGrants:
+    - partner-a
+    - partner-b
+    - internal-gateway  # Our API gateway
+
+  # Strict security for external partners
+  security:
+    registrationAllowed: false
+    bruteForceProtected: true
 ```
 
 ---
 
-## Monitoring Per Team
+## Troubleshooting
 
-### Metrics by Namespace
+### Permission Denied Creating Realm
 
-```promql
-# Realms per team
-count(keycloak_realm_info) by (namespace)
+```bash
+# Check RBAC permissions
+kubectl auth can-i create keycloakrealms.vriesdemichael.github.io \
+  --namespace=team-alpha
 
-# Clients per team
-count(keycloak_client_info) by (namespace)
-
-# Token rotation status per team
-keycloak_operator_tokens_expiring_soon{namespace=~"team-.*"}
+# Check RoleBindings
+kubectl get rolebinding -n team-alpha \
+  -o json | jq '.items[] | select(.subjects[]?.kind=="ServiceAccount")'
 ```
 
-### Team-Specific Alerts
+**Solution:** Create RoleBinding granting realm creation permission.
 
-```yaml
-apiVersion: monitoring.coreos.com/v1
-kind: PrometheusRule
-metadata:
-  name: team-alpha-alerts
-  namespace: team-alpha
-spec:
-  groups:
-    - name: team-alpha
-      rules:
-        - alert: TeamAlphaTokenExpiring
-          expr: keycloak_operator_tokens_expiring_soon{namespace="team-alpha"} > 0
-          for: 24h
-          labels:
-            severity: warning
-            team: alpha
-          annotations:
-            summary: "Team Alpha token expiring soon"
+### Client Creation Fails - Not Authorized
+
+```bash
+# Check realm's grants
+kubectl get keycloakrealm <realm> -n <realm-namespace> \
+  -o jsonpath='{.spec.clientAuthorizationGrants[*]}'
+
+# Check operator logs
+kubectl logs -n platform -l app=keycloak-operator \
+  | grep -i "authorization\|grant"
 ```
+
+**Solution:** Add client's namespace to realm's `clientAuthorizationGrants`.
+
+### Operator Can't Read Secrets
+
+```bash
+# Check operator has access to namespace
+kubectl auth can-i get secrets \
+  --as=system:serviceaccount:platform:keycloak-operator \
+  --namespace=team-alpha
+```
+
+**Solution:** Create RoleBinding for operator in the namespace.
 
 ---
 
-## Token Management
+## Migration from Token System
 
-### Platform Team Responsibilities
+If migrating from the old token-based system:
 
-| Task | Frequency | Command |
-|------|-----------|---------|
-| Create admission tokens | Once per namespace | `kubectl create secret` |
-| Monitor token rotation | Continuous | Prometheus metrics |
-| Revoke compromised tokens | As needed | `kubectl patch configmap` |
-| Audit token usage | Monthly | Review ConfigMap |
-
-### Application Team Responsibilities
-
-| Task | Frequency | Command |
-|------|-----------|---------|
-| Create first realm | Once | Use admission token |
-| Create additional realms | As needed | Use operational token |
-| Monitor realm health | Continuous | `kubectl get keycloakrealm` |
-| Update realm config | As needed | `kubectl edit keycloakrealm` |
-
-### Token Lifecycle
-
-```
-Day 1:   Platform creates admission token
-Day 1:   Team creates first realm → operational token generated
-Day 2-82: Team uses operational token for all realms
-Day 83:  Operator starts rotation (7-day grace period)
-Day 83-90: Both old and new tokens valid
-Day 90:  Old token removed, new token active
-```
-
----
-
-## Self-Service Onboarding
-
-### Automated Namespace Provisioning
-
-```bash
-#!/bin/bash
-# scripts/onboard-team.sh
-
-TEAM_NAME=$1
-NAMESPACE="team-${TEAM_NAME}"
-
-# 1. Create namespace
-kubectl create namespace ${NAMESPACE}
-kubectl label namespace ${NAMESPACE} team=${TEAM_NAME} env=prod
-
-# 2. Generate admission token
-TOKEN=$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')
-kubectl create secret generic admission-token-${NAMESPACE} \
-  --from-literal=token="$TOKEN" \
-  --namespace=${NAMESPACE}
-kubectl label secret admission-token-${NAMESPACE} \
-  vriesdemichael.github.io/token-type=admission \
-  vriesdemichael.github.io/allow-operator-read=true \
-  --namespace=${NAMESPACE}
-
-# 3. Create RBAC
-kubectl apply -f - <<EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: keycloak-manager
-  namespace: ${NAMESPACE}
-rules:
-  - apiGroups: ["vriesdemichael.github.io"]
-    resources: ["keycloakrealms", "keycloakclients"]
-    verbs: ["*"]
-  - apiGroups: [""]
-    resources: ["secrets"]
-    resourceNames: ["admission-token-${NAMESPACE}", "${NAMESPACE}-operator-token", "*-realm-auth"]
-    verbs: ["get"]
-EOF
-
-# 4. Create resource quota
-kubectl apply -f - <<EOF
-apiVersion: v1
-kind: ResourceQuota
-metadata:
-  name: ${NAMESPACE}-quota
-  namespace: ${NAMESPACE}
-spec:
-  hard:
-    keycloakrealms.vriesdemichael.github.io: "5"
-    keycloakclients.vriesdemichael.github.io: "50"
-EOF
-
-echo "Team ${TEAM_NAME} onboarded to namespace ${NAMESPACE}"
-```
-
----
-
-## Troubleshooting Multi-Tenant
-
-### Token Confusion
-
-```bash
-# Check which token realm is using
-kubectl get keycloakrealm <name> -n <namespace> \
-  -o jsonpath='{.spec.operatorRef.authorizationSecretRef.name}'
-
-# First realm: admission-token-<namespace> OR <namespace>-operator-token
-# Other realms: <namespace>-operator-token
-```
-
-### Cross-Namespace Access Denied
-
-```bash
-# Verify RBAC allows reading secret
-kubectl auth can-i get secret/<secret-name> \
-  --as=system:serviceaccount:<namespace>:<serviceaccount> \
-  --namespace=<target-namespace>
-```
-
-### Token Not Rotating
-
-```bash
-# Check operator has access to ConfigMap
-kubectl auth can-i update configmap \
-  --as=system:serviceaccount:keycloak-operator-system:keycloak-operator \
-  --namespace=keycloak-operator-system
-
-# Check token expiry
-kubectl get secret <namespace>-operator-token -n <namespace> \
-  -o jsonpath='{.metadata.annotations.vriesdemichael\.github\.io/valid-until}'
-```
+1. **Remove token references** from all realm/client manifests
+2. **Add `clientAuthorizationGrants`** to realm manifests
+3. **Delete token secrets** (admission tokens, operational tokens)
+4. **Delete ConfigMap** `keycloak-operator-token-metadata`
+5. **Update RBAC** to grant realm creation permissions
+6. **Verify** realms and clients reconcile successfully
 
 ---
 
 ## Best Practices
 
-### 1. Namespace Strategy
-- One namespace per team/department
-- Use labels for organization (`team=alpha`, `env=prod`)
-- Apply resource quotas
-
-### 2. Token Distribution
-- Use GitOps for admission tokens (SealedSecrets/SOPS)
-- Never commit plaintext tokens
-- Rotate admission tokens yearly
-
-### 3. RBAC
-- Least privilege per team
-- Separate service accounts per team
-- Audit RBAC quarterly
-
-### 4. Monitoring
-- Team-specific dashboards
-- Per-namespace alerts
-- Token expiry notifications
-
-### 5. Documentation
-- Onboarding guide for new teams
-- Token management procedures
-- Escalation paths
+✅ **Use least-privilege grants** - Only grant namespaces that need access
+✅ **Document grants** - Comment why each namespace is granted
+✅ **Review regularly** - Audit `clientAuthorizationGrants` periodically
+✅ **Separate environments** - Different realms for dev/staging/prod
+✅ **Use GitOps** - All changes via PR workflow
+✅ **Monitor authorization** - Alert on denied client creation attempts
 
 ---
 
 ## Related Documentation
 
-- [End-to-End Setup Guide](./end-to-end-setup.md)
 - [Security Model](../security.md)
-- [Troubleshooting Guide](../operations/troubleshooting.md)
+- [RBAC Implementation](../rbac-implementation.md)
+- [End-to-End Setup Guide](end-to-end-setup.md)
+- [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md)
