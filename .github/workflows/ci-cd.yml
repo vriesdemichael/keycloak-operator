@@ -500,38 +500,13 @@ jobs:
           echo "Running integration tests with coverage enabled..."
           uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
-      - name: Download unit test coverage
-        uses: actions/download-artifact@v6
-        if: always()
-        with:
-          name: unit-coverage
-          path: .
-
       - name: Retrieve coverage data from operator
         if: always()
         run: |
           echo "Retrieving coverage data from operator pod..."
           bash ./scripts/retrieve-coverage.sh keycloak-test-system app.kubernetes.io/name=keycloak-operator || true
 
-      - name: Combine coverage data
-        if: always()
-        run: |
-          echo "Combining unit and integration coverage..."
-          # Skip threshold check in CI
-          MINIMUM_COVERAGE=0 bash ./scripts/combine-coverage.sh
-
-      - name: Verify coverage.xml exists
-        if: always()
-        run: |
-          if [ ! -f coverage.xml ]; then
-            echo "ERROR: coverage.xml not found after combining coverage"
-            echo "Listing files in current directory:"
-            ls -la
-            exit 1
-          fi
-          echo "coverage.xml found, size: $(stat -c%s coverage.xml) bytes"
-
-      - name: Upload combined coverage to Codecov
+      - name: Upload integration coverage to Codecov
         uses: codecov/codecov-action@v5
         if: always()
         with:
