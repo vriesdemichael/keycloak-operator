@@ -219,3 +219,9 @@ _site/
 
 # Generated markdown from decision records
 docs/decisions/generated-markdown/
+
+# Backup files (use git instead!)
+*.backup
+*.bak
+*~
+*.orig
