@@ -90,8 +90,6 @@ clientId: my-app
 realmRef:
   name: myapp
   namespace: app-namespace
-  authorizationSecretRef:
-    name: myapp-realm-auth
 
 serviceAccountsEnabled: true
 manageSecret: true

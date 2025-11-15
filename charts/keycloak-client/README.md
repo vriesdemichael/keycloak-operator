@@ -38,7 +38,6 @@ helm install my-client keycloak-operator/keycloak-client \
   --set clientId=my-app \
   --set realmRef.name=my-realm \
   --set realmRef.namespace=my-team \
-  --set realmRef.authorizationSecretRef.name=$REALM_SECRET \
   --set redirectUris[0]="https://myapp.example.com/callback" \
   --set webOrigins[0]="https://myapp.example.com" \
   --namespace my-team
@@ -54,8 +53,6 @@ description: "My Application OAuth2 Client"
 realmRef:
   name: my-realm
   namespace: my-team
-  authorizationSecretRef:
-    name: my-realm-realm-auth
 
 # Confidential client (server-side app)
 publicClient: false
@@ -115,7 +112,6 @@ kubectl describe keycloakclient my-client -n my-team
 | `clientId` | **REQUIRED** Unique client identifier | `""` |
 | `realmRef.name` | **REQUIRED** Name of KeycloakRealm CR | `""` |
 | `realmRef.namespace` | **REQUIRED** Namespace of KeycloakRealm CR | `""` |
-| `realmRef.authorizationSecretRef.name` | **REQUIRED** Realm authorization secret | `""` |
 
 #### Client Settings
 
@@ -132,8 +128,6 @@ kubectl describe keycloakclient my-client -n my-team
 |-----------|-------------|---------|
 | `realmRef.name` | Name of KeycloakRealm custom resource | `""` |
 | `realmRef.namespace` | Namespace of KeycloakRealm resource | `""` |
-| `realmRef.authorizationSecretRef.name` | Secret containing realm token | `""` |
-| `realmRef.authorizationSecretRef.key` | Key in the secret | `token` |
 
 #### RBAC Configuration
 
@@ -355,8 +349,6 @@ description: "My Web Application"
 realmRef:
   name: my-realm
   namespace: my-team
-  authorizationSecretRef:
-    name: my-realm-realm-auth
 
 # Confidential client (has secret)
 publicClient: false
@@ -385,8 +377,6 @@ description: "My Single Page Application"
 realmRef:
   name: my-realm
   namespace: my-team
-  authorizationSecretRef:
-    name: my-realm-realm-auth
 
 # Public client (no secret)
 publicClient: true
@@ -421,8 +411,6 @@ description: "My Mobile Application"
 realmRef:
   name: my-realm
   namespace: my-team
-  authorizationSecretRef:
-    name: my-realm-realm-auth
 
 publicClient: true
 
@@ -451,8 +439,6 @@ description: "My REST API"
 realmRef:
   name: my-realm
   namespace: my-team
-  authorizationSecretRef:
-    name: my-realm-realm-auth
 
 # Bearer-only (no login flows)
 bearerOnly: true
@@ -480,8 +466,6 @@ description: "Background Processing Service"
 realmRef:
   name: my-realm
   namespace: my-team
-  authorizationSecretRef:
-    name: my-realm-realm-auth
 
 publicClient: false
 
@@ -519,8 +503,6 @@ description: "Client with Custom Token Claims"
 realmRef:
   name: my-realm
   namespace: my-team
-  authorizationSecretRef:
-    name: my-realm-realm-auth
 
 publicClient: false
 
