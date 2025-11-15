@@ -688,189 +688,208 @@ kubectl annotate keycloakclient <name> -n <namespace> \
 
 ---
 
-## Token & Authorization Issues
+## Authorization Issues
 
-### Symptom: Bootstrap Not Working (No Operational Token Created)
+### Symptom: Realm Creation Fails with Permission Denied
 
 **Possible Causes:**
-- Admission token not found
-- Admission token not in metadata ConfigMap
-- Admission token already used
-- Labels missing on admission token secret
+- Missing RBAC permissions to create KeycloakRealm resources
+- ServiceAccount lacks necessary ClusterRole binding
+- Namespace doesn't exist
 
 **Diagnosis:**
 
 ```bash
-# Check if admission token exists
-kubectl get secret admission-token-<namespace> -n <namespace>
+# Check if user/ServiceAccount can create realms
+kubectl auth can-i create keycloakrealms.vriesdemichael.github.io \
+  --namespace=<namespace>
 
-# Check labels on admission token
-kubectl get secret admission-token-<namespace> -n <namespace> \
-  -o yaml | grep -A5 labels
+# Check existing RoleBindings
+kubectl get rolebinding,clusterrolebinding -A \
+  -o json | jq '.items[] | select(.subjects[]?.name=="<serviceaccount-name>") | {name: .metadata.name, namespace: .metadata.namespace, role: .roleRef.name}'
 
-# Check token in metadata ConfigMap
-TOKEN=$(kubectl get secret admission-token-<namespace> -n <namespace> \
-  -o jsonpath='{.data.token}' | base64 -d)
-TOKEN_HASH=$(echo -n "$TOKEN" | sha256sum | cut -d' ' -f1)
-kubectl get configmap keycloak-operator-token-metadata \
-  -n keycloak-operator-system -o json | jq --arg hash "$TOKEN_HASH" '.data[$hash]'
-
-# Check operator logs for bootstrap
+# Check operator logs for authorization errors
 kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep -i "bootstrap\|admission"
+  | grep -i "permission\|forbidden\|unauthorized"
 ```
 
 **Solutions:**
 
-**Admission Token Missing Required Labels:**
+**Grant Realm Creation Permission:**
 ```bash
-# Add required labels
-kubectl label secret admission-token-<namespace> \
-  vriesdemichael.github.io/token-type=admission \
-  vriesdemichael.github.io/allow-operator-read=true \
-  --namespace=<namespace> --overwrite
+# Create RoleBinding in target namespace
+kubectl create rolebinding realm-creator \
+  --clusterrole=keycloak-realm-manager \
+  --serviceaccount=<namespace>:<serviceaccount> \
+  --namespace=<namespace>
+
+# Or use ClusterRoleBinding for cluster-wide access
+kubectl create clusterrolebinding realm-creator-global \
+  --clusterrole=keycloak-realm-manager \
+  --serviceaccount=<namespace>:<serviceaccount>
 ```
 
-**Admission Token Not in ConfigMap:**
+**Verify Permissions:**
 ```bash
-# Re-create token metadata entry
-ADMISSION_TOKEN=$(kubectl get secret admission-token-<namespace> -n <namespace> \
-  -o jsonpath='{.data.token}' | base64 -d)
-TOKEN_HASH=$(echo -n "$ADMISSION_TOKEN" | sha256sum | cut -d' ' -f1)
-
-kubectl patch configmap keycloak-operator-token-metadata \
-  --namespace=keycloak-operator-system \
-  --type=merge \
-  --patch "{
-    \"data\": {
-      \"$TOKEN_HASH\": \"{\\\"namespace\\\": \\\"<namespace>\\\", \\\"token_type\\\": \\\"admission\\\", \\\"token_hash\\\": \\\"$TOKEN_HASH\\\", \\\"issued_at\\\": \\\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"valid_until\\\": \\\"$(date -u -d '+1 year' +%Y-%m-%dT%H:%M:%SZ)\\\", \\\"version\\\": 1, \\\"created_by_realm\\\": null, \\\"revoked\\\": false}\"
-    }
-  }"
-```
-
-**Force Bootstrap:**
-```bash
-# Delete first realm and recreate
-kubectl delete keycloakrealm <first-realm> -n <namespace>
-kubectl apply -f first-realm.yaml
-
-# Watch for operational token creation
-kubectl get secret -n <namespace> -w | grep operator-token
-```
-
----
-
-### Symptom: Token Rotation Not Happening
-
-**Possible Causes:**
-- Timer handler not running
-- Token not expiring soon (> 7 days)
-- ConfigMap update permissions missing
-- Operator crashes during rotation
-
-**Diagnosis:**
-
-```bash
-# Check token expiry date
-kubectl get secret <namespace>-operator-token -n <namespace> \
-  -o jsonpath='{.metadata.annotations.vriesdemichael\.github\.io/valid-until}'
-
-# Calculate days until expiry
-VALID_UNTIL=$(kubectl get secret <namespace>-operator-token -n <namespace> \
-  -o jsonpath='{.metadata.annotations.vriesdemichael\.github\.io/valid-until}')
-echo "Token expires: $VALID_UNTIL"
-echo "Current time:  $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-# Check operator logs for rotation
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep -i "rotation\|timer"
-
-# Check rotation metrics
-kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -s localhost:8080/metrics | grep token_rotation
-```
-
-**Solutions:**
-
-**Rotation Not Due Yet:**
-```bash
-# Rotation happens automatically 7 days before expiry
-# If > 7 days remaining, rotation won't trigger
-# Manual rotation not recommended - wait for automatic rotation
-```
-
-**Operator Not Running Timer Handlers:**
-```bash
-# Restart operator to restart timer handlers
-kubectl rollout restart deployment/keycloak-operator -n keycloak-operator-system
-
-# Watch logs for timer startup
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator -f \
-  | grep -i "timer\|rotation"
-```
-
-**ConfigMap Permissions:**
-```bash
-# Verify operator can update ConfigMap
-kubectl auth can-i update configmap \
-  --as=system:serviceaccount:keycloak-operator-system:keycloak-operator \
-  --namespace=keycloak-operator-system
-
+# Test as the ServiceAccount
+kubectl auth can-i create keycloakrealms.vriesdemichael.github.io \
+  --as=system:serviceaccount:<namespace>:<serviceaccount> \
+  --namespace=<namespace>
 # Should return "yes"
 ```
 
 ---
 
-### Symptom: Authorization Failed After Token Rotation
+### Symptom: Client Creation Fails - Namespace Not Authorized
 
 **Possible Causes:**
-- Grace period ended, realm using old token
-- Realm still referencing admission token
-- Token key wrong ("token-previous" instead of "token")
+- Client's namespace not in realm's `clientAuthorizationGrants` list
+- Realm doesn't exist or isn't ready
+- Typo in namespace name
 
 **Diagnosis:**
 
 ```bash
-# Check which token realm is using
-kubectl get keycloakrealm <name> -n <namespace> \
-  # Authorization no longer uses tokens
+# Check realm's authorization grants
+kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
+  -o jsonpath='{.spec.clientAuthorizationGrants}' | jq
 
-# Check operational token status
-kubectl get secret <namespace>-operator-token -n <namespace> -o yaml
+# Check if client namespace is in the list
+kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
+  -o jsonpath='{.spec.clientAuthorizationGrants[*]}' | grep -w <client-namespace>
 
-# Check if grace period active
-kubectl get secret <namespace>-operator-token -n <namespace> \
-  -o jsonpath='{.data}' | jq 'keys'
-# During grace: ["token", "token-previous"]
-# After grace: ["token"]
+# Check operator logs
+kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
+  | grep -i "authorization\|grant"
 ```
 
 **Solutions:**
 
-**Update Realm to Use Operational Token:**
+**Add Namespace to Grant List:**
 ```bash
-# Update realm to use operational token (not admission token)
-kubectl patch keycloakrealm <name> -n <namespace> --type=merge -p '
+# Add client's namespace to realm's grants
+kubectl patch keycloakrealm <realm-name> -n <realm-namespace> --type=merge -p '
 spec:
-  operatorRef:
-      key: token
+  clientAuthorizationGrants:
+    - <existing-namespace>
+    - <client-namespace>  # Add this
 '
+
+# Verify the update
+kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
+  -o jsonpath='{.spec.clientAuthorizationGrants}' | jq
 ```
 
-**Ensure Using "token" Key (Not "token-previous"):**
+**Check Realm Status:**
 ```bash
-# Check key
-kubectl get keycloakrealm <name> -n <namespace> \
-  # Authorization no longer uses tokens
+# Ensure realm is Ready before creating clients
+kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
+  -o jsonpath='{.status.phase}'
+# Should be "Ready"
 
-# Should be "token" (default if not specified)
-# Update if using wrong key:
-kubectl patch keycloakrealm <name> -n <namespace> --type=merge -p '
+# If not ready, check status
+kubectl describe keycloakrealm <realm-name> -n <realm-namespace>
+```
+
+---
+
+### Symptom: Operator Can't Read Secrets in Client Namespace
+
+**Possible Causes:**
+- Missing RoleBinding in client's namespace
+- Operator ServiceAccount lacks namespace access
+- `rbac.create=false` in Helm chart
+
+**Diagnosis:**
+
+```bash
+# Check if operator can read secrets in namespace
+kubectl auth can-i get secrets \
+  --as=system:serviceaccount:keycloak-system:keycloak-operator \
+  --namespace=<client-namespace>
+
+# Check for RoleBinding
+kubectl get rolebinding -n <client-namespace> \
+  -o json | jq '.items[] | select(.subjects[]?.name=="keycloak-operator")'
+
+# Check operator logs
+kubectl logs -n keycloak-system -l app=keycloak-operator \
+  | grep -i "forbidden\|access denied" | grep <client-namespace>
+```
+
+**Solutions:**
+
+**Create RoleBinding for Operator:**
+```bash
+# Grant operator read access to secrets
+kubectl create rolebinding keycloak-operator-secret-reader \
+  --clusterrole=keycloak-operator-namespace-access \
+  --serviceaccount=keycloak-system:keycloak-operator \
+  --namespace=<client-namespace>
+
+# Or use Helm chart with rbac.create=true
+helm install my-client charts/keycloak-client \
+  --set rbac.create=true \
+  --set rbac.operatorNamespace=keycloak-system \
+  --namespace=<client-namespace>
+```
+
+---
+
+### Symptom: Cross-Namespace Client Creation Not Working
+
+**Possible Causes:**
+- Realm and client in different namespaces without grant
+- Incorrect namespace in `realmRef`
+- Network policies blocking cross-namespace communication
+
+**Diagnosis:**
+
+```bash
+# Verify realmRef is correct
+kubectl get keycloakclient <client-name> -n <client-namespace> \
+  -o jsonpath='{.spec.realmRef}' | jq
+
+# Check if client namespace is authorized
+kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
+  -o jsonpath='{.spec.clientAuthorizationGrants[*]}' \
+  | tr ' ' '\n' | grep -w <client-namespace>
+
+# Check operator can access both namespaces
+for ns in <realm-namespace> <client-namespace>; do
+  echo "Checking namespace: $ns"
+  kubectl auth can-i get secrets \
+    --as=system:serviceaccount:keycloak-system:keycloak-operator \
+    --namespace=$ns
+done
+```
+
+**Solutions:**
+
+**Ensure Proper Configuration:**
+```yaml
+# Realm in namespace "platform"
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakRealm
+metadata:
+  name: shared-realm
+  namespace: platform
 spec:
-  operatorRef:
-    authorizationSecretRef:
-      key: token
-'
+  clientAuthorizationGrants:
+    - app-team-a
+    - app-team-b
+
+---
+# Client in namespace "app-team-a"
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakClient
+metadata:
+  name: my-app
+  namespace: app-team-a
+spec:
+  realmRef:
+    name: shared-realm
+    namespace: platform  # Points to realm's namespace
 ```
 
 ---
