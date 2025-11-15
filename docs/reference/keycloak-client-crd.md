@@ -26,8 +26,6 @@ spec:
   realmRef:
     name: my-realm
     namespace: my-team
-    authorizationSecretRef:
-      name: my-realm-auth-token
 ```
 
 ## Spec Fields
@@ -56,8 +54,6 @@ Reference to the parent KeycloakRealm and authorization token.
 |-------|------|----------|---------|-------------|
 | `realmRef.name` | `string` | **Yes** | - | Name of the KeycloakRealm CR |
 | `realmRef.namespace` | `string` | **Yes** | - | Namespace of the KeycloakRealm CR |
-| `realmRef.authorizationSecretRef.name` | `string` | **Yes** | - | Name of the realm's authorization secret |
-| `realmRef.authorizationSecretRef.key` | `string` | No | `token` | Key within the secret containing the token |
 
 **Example:**
 ```yaml
@@ -65,8 +61,6 @@ spec:
   realmRef:
     name: production-realm
     namespace: production
-    authorizationSecretRef:
-      name: production-realm-auth-token
 ```
 
 ### Client Type Configuration
@@ -414,8 +408,6 @@ spec:
   realmRef:
     name: production-realm
     namespace: production
-    authorizationSecretRef:
-      name: production-realm-auth
 
   publicClient: false  # Confidential client
 
@@ -457,8 +449,6 @@ spec:
   realmRef:
     name: production-realm
     namespace: production
-    authorizationSecretRef:
-      name: production-realm-auth
 
   publicClient: true  # Public client (no secret)
 
@@ -494,8 +484,6 @@ spec:
   realmRef:
     name: production-realm
     namespace: production
-    authorizationSecretRef:
-      name: production-realm-auth
 
   publicClient: true
 
@@ -529,8 +517,6 @@ spec:
   realmRef:
     name: production-realm
     namespace: production
-    authorizationSecretRef:
-      name: production-realm-auth
 
   bearerOnly: true  # Only validates tokens, doesn't initiate login
   publicClient: false
@@ -553,8 +539,6 @@ spec:
   realmRef:
     name: production-realm
     namespace: production
-    authorizationSecretRef:
-      name: production-realm-auth
 
   publicClient: false
 
@@ -589,8 +573,6 @@ spec:
   realmRef:
     name: production-realm
     namespace: production
-    authorizationSecretRef:
-      name: production-realm-auth
 
   redirectUris:
     - "https://app.example.com/callback"
