@@ -342,7 +342,7 @@ kubectl patch configmap keycloak-operator-token-metadata \
 2. Update first realm to use new admission token
 3. New operational token generated
 
-See: [Security Model](security.md#token-revocation)
+See: [Security Model](security.md#revocation)
 
 ---
 

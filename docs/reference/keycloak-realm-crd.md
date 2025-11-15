@@ -668,6 +668,6 @@ spec:
 
 **Architecture & Security:**
 
-- [Architecture: Token System](../architecture.md#token-system-architecture) - How realm tokens work
+- [Architecture: Token System](../architecture.md#authorization-architecture) - How realm tokens work
 - [Security Model](../security.md) - Authorization and token security
 - [Security Model](../security.md) - Authorization model
