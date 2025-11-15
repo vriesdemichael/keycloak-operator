@@ -107,7 +107,6 @@ status:
   deployment: my-keycloak-keycloak  # Name of the deployment
   service: my-keycloak-keycloak      # Name of the service
   adminSecret: my-keycloak-admin-credentials  # Admin credentials secret
-  authorizationSecretName: keycloak-operator-auth-token  # Operator auth token
   endpoints:
     admin: http://...    # Admin API endpoint
     public: http://...   # Public endpoint
@@ -120,7 +119,6 @@ status:
 status:
   realmName: my-realm  # Actual realm name in Keycloak
   keycloakInstance: default/keycloak  # Referenced Keycloak instance
-  authorizationSecretName: my-realm-realm-auth  # Realm authorization token
   features:
     userRegistration: true
     passwordReset: true
