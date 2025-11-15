@@ -500,11 +500,26 @@ jobs:
           echo "Running integration tests with coverage enabled..."
           uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
-      - name: Retrieve coverage data from operator
+      - name: Generate integration coverage report
         if: always()
         run: |
-          echo "Retrieving coverage data from operator pod..."
-          bash ./scripts/retrieve-coverage.sh keycloak-test-system app.kubernetes.io/name=keycloak-operator || true
+          echo "Generating coverage XML report from integration tests..."
+
+          # Check if integration coverage was collected by pytest fixture
+          if [ -d .tmp/coverage ] && [ -n "$(ls -A .tmp/coverage/.coverage* 2>/dev/null)" ]; then
+            echo "Found integration coverage files:"
+            ls -la .tmp/coverage/
+
+            # Combine integration coverage files and generate XML report
+            uv run coverage combine .tmp/coverage/.coverage*
+            uv run coverage xml -o coverage.xml
+            echo "✓ Generated coverage.xml from integration tests"
+          else
+            echo "ERROR: No integration coverage files found in .tmp/coverage/"
+            echo "Coverage collection may have failed during pytest teardown"
+            ls -la .tmp/ || echo "No .tmp directory found"
+            exit 1
+          fi
 
       - name: Upload integration coverage to Codecov
         uses: codecov/codecov-action@v5
