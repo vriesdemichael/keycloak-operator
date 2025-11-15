@@ -510,7 +510,6 @@ Use the operator token to create a realm:
 helm install my-realm keycloak-operator/keycloak-realm \
   --set realmName=my-app \
   --set operatorRef.namespace=keycloak-system \
-  --set operatorRef.authorizationSecretRef.name=keycloak-operator-auth-token \
   --namespace my-team \
   --create-namespace
 ```
@@ -528,8 +527,6 @@ spec:
   realmName: my-app
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: keycloak-operator-auth-token  # Single-tenant mode
       key: token
   security:
     registrationAllowed: false
