@@ -1,51 +1,66 @@
 # Frequently Asked Questions
 
-## Token System
+## Authorization & Security
 
-### Why does this operator use a token system instead of RBAC?
+### How does authorization work in this operator?
 
-**Problem with traditional RBAC:**
-- Doesn't scale beyond ~10 teams
-- Requires cluster admin to add every new team
-- ClusterRole must list every Keycloak instance by name
-- Breaks GitOps self-service model
+The operator uses **two-level authorization**:
 
-**Token system benefits:**
-- ✅ Scales to 100+ teams without operator changes
-- ✅ Platform team shares secret → team can proceed
-- ✅ GitOps-friendly (secrets are standard K8s resources)
-- ✅ Audit trail via K8s API logs
+1. **Realm Creation**: Controlled by Kubernetes RBAC
+   - Any user with RBAC permission to create \`KeycloakRealm\` resources can create realms
+   - Standard Kubernetes authorization model
 
-**Example:** Adding team #50 with RBAC requires updating ClusterRole. With tokens, platform team creates one secret and team is onboarded.
+2. **Client Creation**: Controlled by namespace grant lists
+   - Realm owners specify which namespaces can create clients via \`clientAuthorizationGrants\`
+   - Fully declarative and GitOps-friendly
+
+**Example:**
+\`\`\`yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakRealm
+spec:
+  clientAuthorizationGrants:
+    - my-app
+    - partner-team
+\`\`\`
 
 See: [Security Model](security.md)
 
 ---
 
-### What's the difference between operator token and operational token?
+### Why not use traditional RBAC alone?
 
-| Token Type | Use Case | Rotation | Created By |
-|------------|----------|----------|------------|
-| **Operator Token** | Single-tenant dev mode | Manual | Operator at startup |
-| **Operational Token** | Multi-tenant production | Automatic (90 days) | Operator during bootstrap |
+**Problem with pure RBAC:**
+- Can't express "team A can create clients in realm X but not realm Y"
+- Requires cluster-wide RBAC updates for each team
+- Complex RoleBinding hierarchies for cross-namespace access
 
-**Rule of thumb:** "Operator" = dev, "Operational" = production.
+**Namespace grant benefits:**
+- ✅ Declarative authorization in realm manifest
+- ✅ GitOps-friendly (PR workflow for access changes)
+- ✅ Self-service for realm owners
+- ✅ Clear audit trail in Git history
 
-See: [Glossary](security.md#glossary)
+See: [Security Model](security.md#design-philosophy)
 
 ---
 
-### When do I use admission token vs operational token?
+### How do I grant a team access to create clients in my realm?
 
-- **Admission Token**: Only for the **first realm** in a namespace (one-time bootstrap)
-- **Operational Token**: For **all other realms** in that namespace (auto-discovered)
+Add their namespace to your realm's \`clientAuthorizationGrants\`:
 
-**Workflow:**
-1. Platform creates admission token
-2. Team creates first realm → operational token generated
-3. Team creates more realms → operational token auto-used
+\`\`\`bash
+kubectl patch keycloakrealm my-realm -n my-namespace --type=merge -p '
+spec:
+  clientAuthorizationGrants:
+    - my-namespace
+    - team-b-namespace  # ← Add this
+'
+\`\`\`
 
-See: [Multi-Tenant Guide](how-to/multi-tenant.md)
+Or via GitOps: update realm manifest and create PR.
+
+See: [Security Model](security.md#namespace-authorization-workflow)
 
 ---
 
