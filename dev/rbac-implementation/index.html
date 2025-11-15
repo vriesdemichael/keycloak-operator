@@ -342,7 +342,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../operations/token-management/" class="md-tabs__link">
+        <a href="../operations/troubleshooting/" class="md-tabs__link">
           
   
   
@@ -936,29 +936,6 @@
             Operations
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../operations/token-management/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Token Management
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -3258,24 +3235,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#migration-from-old-rbac" class="md-nav__link">
-    <span class="md-ellipsis">
-      Migration from Old RBAC
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-benefits" class="md-nav__link">
-    <span class="md-ellipsis">
-      Security Benefits
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#testing" class="md-nav__link">
     <span class="md-ellipsis">
       Testing
@@ -3581,23 +3540,6 @@
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--as<span class="o">=</span>system:serviceaccount:keycloak-system:keycloak-operator<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>-n<span class="w"> </span>my-team
 </span></code></pre></div>
-<h2 id="migration-from-old-rbac">Migration from Old RBAC<a class="headerlink" href="#migration-from-old-rbac" title="Permanent link">&para;</a></h2>
-<p>If upgrading from a previous version with cluster-wide secret access:</p>
-<ol>
-<li><strong>Upgrade the operator chart</strong> - This updates the RBAC to the new model</li>
-<li><strong>Deploy realm/client charts</strong> - These will create RoleBindings automatically</li>
-<li><strong>Label all secrets</strong> - Add the required label to existing secrets</li>
-<li><strong>Test reconciliation</strong> - Verify everything works as expected</li>
-</ol>
-<h2 id="security-benefits">Security Benefits<a class="headerlink" href="#security-benefits" title="Permanent link">&para;</a></h2>
-<ol>
-<li><strong>Least Privilege</strong>: Operator only has permissions it needs</li>
-<li><strong>Explicit Opt-In</strong>: Teams must intentionally grant access</li>
-<li><strong>Secret Isolation</strong>: Secrets must be explicitly labeled</li>
-<li><strong>Namespace Boundaries</strong>: Clear separation of permissions</li>
-<li><strong>Auditable</strong>: Easy to see who has granted access</li>
-<li><strong>Revocable</strong>: Teams can revoke access anytime</li>
-</ol>
 <h2 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">&para;</a></h2>
 <p>Run the integration tests:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>make<span class="w"> </span>test-integration

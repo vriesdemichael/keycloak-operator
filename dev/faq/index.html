@@ -346,7 +346,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../operations/token-management/" class="md-tabs__link">
+        <a href="../operations/troubleshooting/" class="md-tabs__link">
           
   
   
@@ -942,29 +942,6 @@
             Operations
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../operations/token-management/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Token Management
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
             
               
                 
@@ -2894,37 +2871,37 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#token-system" class="md-nav__link">
+  <a href="#authorization-security" class="md-nav__link">
     <span class="md-ellipsis">
-      Token System
+      Authorization &amp; Security
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Token System">
+    <nav class="md-nav" aria-label="Authorization &amp; Security">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-does-this-operator-use-a-token-system-instead-of-rbac" class="md-nav__link">
+  <a href="#how-does-authorization-work-in-this-operator" class="md-nav__link">
     <span class="md-ellipsis">
-      Why does this operator use a token system instead of RBAC?
+      How does authorization work in this operator?
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#whats-the-difference-between-operator-token-and-operational-token" class="md-nav__link">
+  <a href="#why-not-use-traditional-rbac-alone" class="md-nav__link">
     <span class="md-ellipsis">
-      What's the difference between operator token and operational token?
+      Why not use traditional RBAC alone?
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#when-do-i-use-admission-token-vs-operational-token" class="md-nav__link">
+  <a href="#how-do-i-grant-a-team-access-to-create-clients-in-my-realm" class="md-nav__link">
     <span class="md-ellipsis">
-      When do I use admission token vs operational token?
+      How do I grant a team access to create clients in my realm?
     </span>
   </a>
   
@@ -3270,37 +3247,37 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#token-system" class="md-nav__link">
+  <a href="#authorization-security" class="md-nav__link">
     <span class="md-ellipsis">
-      Token System
+      Authorization &amp; Security
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Token System">
+    <nav class="md-nav" aria-label="Authorization &amp; Security">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#why-does-this-operator-use-a-token-system-instead-of-rbac" class="md-nav__link">
+  <a href="#how-does-authorization-work-in-this-operator" class="md-nav__link">
     <span class="md-ellipsis">
-      Why does this operator use a token system instead of RBAC?
+      How does authorization work in this operator?
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#whats-the-difference-between-operator-token-and-operational-token" class="md-nav__link">
+  <a href="#why-not-use-traditional-rbac-alone" class="md-nav__link">
     <span class="md-ellipsis">
-      What's the difference between operator token and operational token?
+      Why not use traditional RBAC alone?
     </span>
   </a>
   
 </li>
         
           <li class="md-nav__item">
-  <a href="#when-do-i-use-admission-token-vs-operational-token" class="md-nav__link">
+  <a href="#how-do-i-grant-a-team-access-to-create-clients-in-my-realm" class="md-nav__link">
     <span class="md-ellipsis">
-      When do I use admission token vs operational token?
+      How do I grant a team access to create clients in my realm?
     </span>
   </a>
   
@@ -3561,59 +3538,56 @@
 
 
 <h1 id="frequently-asked-questions">Frequently Asked Questions<a class="headerlink" href="#frequently-asked-questions" title="Permanent link">&para;</a></h1>
-<h2 id="token-system">Token System<a class="headerlink" href="#token-system" title="Permanent link">&para;</a></h2>
-<h3 id="why-does-this-operator-use-a-token-system-instead-of-rbac">Why does this operator use a token system instead of RBAC?<a class="headerlink" href="#why-does-this-operator-use-a-token-system-instead-of-rbac" title="Permanent link">&para;</a></h3>
-<p><strong>Problem with traditional RBAC:</strong>
-- Doesn't scale beyond ~10 teams
-- Requires cluster admin to add every new team
-- ClusterRole must list every Keycloak instance by name
-- Breaks GitOps self-service model</p>
-<p><strong>Token system benefits:</strong>
-- ✅ Scales to 100+ teams without operator changes
-- ✅ Platform team shares secret → team can proceed
-- ✅ GitOps-friendly (secrets are standard K8s resources)
-- ✅ Audit trail via K8s API logs</p>
-<p><strong>Example:</strong> Adding team #50 with RBAC requires updating ClusterRole. With tokens, platform team creates one secret and team is onboarded.</p>
+<h2 id="authorization-security">Authorization &amp; Security<a class="headerlink" href="#authorization-security" title="Permanent link">&para;</a></h2>
+<h3 id="how-does-authorization-work-in-this-operator">How does authorization work in this operator?<a class="headerlink" href="#how-does-authorization-work-in-this-operator" title="Permanent link">&para;</a></h3>
+<p>The operator uses <strong>two-level authorization</strong>:</p>
+<ol>
+<li><strong>Realm Creation</strong>: Controlled by Kubernetes RBAC</li>
+<li>Any user with RBAC permission to create `KeycloakRealm` resources can create realms</li>
+<li>
+<p>Standard Kubernetes authorization model</p>
+</li>
+<li>
+<p><strong>Client Creation</strong>: Controlled by namespace grant lists</p>
+</li>
+<li>Realm owners specify which namespaces can create clients via `clientAuthorizationGrants`</li>
+<li>Fully declarative and GitOps-friendly</li>
+</ol>
+<p><strong>Example:</strong>
+```yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: KeycloakRealm
+spec:
+  clientAuthorizationGrants:
+    - my-app
+    - partner-team
+```</p>
 <p>See: <a href="../security/">Security Model</a></p>
 <hr />
-<h3 id="whats-the-difference-between-operator-token-and-operational-token">What's the difference between operator token and operational token?<a class="headerlink" href="#whats-the-difference-between-operator-token-and-operational-token" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Token Type</th>
-<th>Use Case</th>
-<th>Rotation</th>
-<th>Created By</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Operator Token</strong></td>
-<td>Single-tenant dev mode</td>
-<td>Manual</td>
-<td>Operator at startup</td>
-</tr>
-<tr>
-<td><strong>Operational Token</strong></td>
-<td>Multi-tenant production</td>
-<td>Automatic (90 days)</td>
-<td>Operator during bootstrap</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Rule of thumb:</strong> "Operator" = dev, "Operational" = production.</p>
-<p>See: <a href="../security/#glossary">Glossary</a></p>
+<h3 id="why-not-use-traditional-rbac-alone">Why not use traditional RBAC alone?<a class="headerlink" href="#why-not-use-traditional-rbac-alone" title="Permanent link">&para;</a></h3>
+<p><strong>Problem with pure RBAC:</strong>
+- Can't express "team A can create clients in realm X but not realm Y"
+- Requires cluster-wide RBAC updates for each team
+- Complex RoleBinding hierarchies for cross-namespace access</p>
+<p><strong>Namespace grant benefits:</strong>
+- ✅ Declarative authorization in realm manifest
+- ✅ GitOps-friendly (PR workflow for access changes)
+- ✅ Self-service for realm owners
+- ✅ Clear audit trail in Git history</p>
+<p>See: <a href="../security/#design-philosophy">Security Model</a></p>
 <hr />
-<h3 id="when-do-i-use-admission-token-vs-operational-token">When do I use admission token vs operational token?<a class="headerlink" href="#when-do-i-use-admission-token-vs-operational-token" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Admission Token</strong>: Only for the <strong>first realm</strong> in a namespace (one-time bootstrap)</li>
-<li><strong>Operational Token</strong>: For <strong>all other realms</strong> in that namespace (auto-discovered)</li>
-</ul>
-<p><strong>Workflow:</strong>
-1. Platform creates admission token
-2. Team creates first realm → operational token generated
-3. Team creates more realms → operational token auto-used</p>
-<p>See: <a href="../how-to/multi-tenant/">Multi-Tenant Guide</a></p>
+<h3 id="how-do-i-grant-a-team-access-to-create-clients-in-my-realm">How do I grant a team access to create clients in my realm?<a class="headerlink" href="#how-do-i-grant-a-team-access-to-create-clients-in-my-realm" title="Permanent link">&para;</a></h3>
+<p>Add their namespace to your realm's `clientAuthorizationGrants`:</p>
+<p>```bash
+kubectl patch keycloakrealm my-realm -n my-namespace --type=merge -p '
+spec:
+  clientAuthorizationGrants:
+    - my-namespace
+    - team-b-namespace  # ← Add this
+'
+```</p>
+<p>Or via GitOps: update realm manifest and create PR.</p>
+<p>See: <a href="../security/#namespace-authorization-workflow">Security Model</a></p>
 <hr />
 <h2 id="scaling-performance">Scaling &amp; Performance<a class="headerlink" href="#scaling-performance" title="Permanent link">&para;</a></h2>
 <h3 id="will-this-scale-beyond-high-availability">Will this scale beyond high availability?<a class="headerlink" href="#will-this-scale-beyond-high-availability" title="Permanent link">&para;</a></h3>
@@ -3850,7 +3824,7 @@
 1. Create new admission token
 2. Update first realm to use new admission token
 3. New operational token generated</p>
-<p>See: <a href="../security/#token-revocation">Security Model</a></p>
+<p>See: <a href="../security/#revocation">Security Model</a></p>
 <hr />
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="my-realm-is-stuck-in-pending">My realm is stuck in Pending<a class="headerlink" href="#my-realm-is-stuck-in-pending" title="Permanent link">&para;</a></h3>
