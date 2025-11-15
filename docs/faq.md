@@ -233,7 +233,6 @@ See: [Database Setup Guide](how-to/database-setup.md)
 - ✅ Multi-tenant environment (10+ teams)
 - ✅ GitOps-first workflow
 - ✅ Strong namespace isolation needed
-- ✅ Automatic token rotation desired
 - ✅ CloudNativePG database management
 
 **Choose official operator if:**
@@ -287,7 +286,6 @@ See charts/README.md in the repository root for GitOps examples.
 **Best practices:**
 - Use SealedSecrets or SOPS for GitOps
 - Enable K8s encryption at rest
-- Rotate tokens regularly (automatic with operational tokens)
 
 ---
 

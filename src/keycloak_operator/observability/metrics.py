@@ -73,20 +73,6 @@ DATABASE_CONNECTION_STATUS = Gauge(
     registry=None,
 )
 
-# Token rotation metrics
-TOKEN_ROTATIONS_TOTAL = Counter(
-    "keycloak_operator_token_rotations_total",
-    "Total number of token rotations",
-    ["namespace"],
-    registry=None,
-)
-
-TOKEN_BOOTSTRAP_TOTAL = Counter(
-    "keycloak_operator_token_bootstrap_total",
-    "Total number of token bootstraps (admission → operational)",
-    ["namespace"],
-    registry=None,
-)
 
 TOKEN_EXPIRES_TIMESTAMP = Gauge(
     "keycloak_operator_token_expires_timestamp",
@@ -373,17 +359,6 @@ class MetricsCollector:
         ACTIVE_RESOURCES.labels(
             resource_type=resource_type, namespace=namespace, phase=phase
         ).set(count)
-
-    # Token rotation metrics properties
-    @property
-    def token_rotations(self):
-        """Counter for token rotations."""
-        return TOKEN_ROTATIONS_TOTAL
-
-    @property
-    def token_bootstraps(self):
-        """Counter for token bootstraps."""
-        return TOKEN_BOOTSTRAP_TOTAL
 
     @property
     def token_expires(self):

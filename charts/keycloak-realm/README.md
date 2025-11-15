@@ -132,7 +132,6 @@ kubectl describe keycloakrealm my-realm -n my-team
 - **Client Creation:** Only namespaces in `clientAuthorizationGrants` can create clients
 - No tokens required - fully declarative authorization
 
-See [Security Model](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/security.md#token-rotation) for details on token rotation.
 
 #### RBAC Configuration
 
@@ -608,7 +607,6 @@ print('SMTP connection successful!')
 
 ### Token Rotation Issues
 
-**Symptom:** Realm fails after automatic token rotation
 
 See the [Token Rotation Troubleshooting](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/security.md#troubleshooting) section in the security documentation.
 
