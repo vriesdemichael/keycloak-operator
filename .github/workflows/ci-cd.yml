@@ -567,7 +567,7 @@ jobs:
 
           echo "=== Keycloak Logs ===" | tee test-logs/keycloak-logs.log
           # Find Keycloak pods and collect their logs
-          for pod in $(kubectl get pods --all-namespaces -l keycloak.mdvr.nl/component=server -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
+          for pod in $(kubectl get pods --all-namespaces -l vriesdemichael.github.io/keycloak-component=server -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
             namespace=$(echo $pod | cut -d/ -f1)
             podname=$(echo $pod | cut -d/ -f2)
             echo "--- Logs from $namespace/$podname ---" >> test-logs/keycloak-logs.log
