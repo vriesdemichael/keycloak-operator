@@ -70,9 +70,9 @@ The operator should be in `Running` state within 1-2 minutes.
 |-----------|-------------|---------|
 | `operator.replicaCount` | Number of operator replicas for HA | `2` |
 | `operator.instanceId` | Operator instance ID for multi-operator deployments. Auto-generated if empty. | `""` |
-| `operator.createAdmissionToken` | Create admission token for namespace bootstrapping | `true` |
-| `operator.admissionTokenName` | Name of the admission token secret | `keycloak-operator-auth-token` |
-| `operator.admissionToken` | Token value (auto-generated if empty) | `""` |
+| ~~`operator.createAdmissionToken`~~ | **DEPRECATED** - No longer used with namespace grant authorization | `true` |
+| ~~`operator.admissionTokenName`~~ | **DEPRECATED** - No longer used with namespace grant authorization | `keycloak-operator-auth-token` |
+| ~~`operator.admissionToken`~~ | **DEPRECATED** - No longer used with namespace grant authorization | `""` |
 | `operator.image.repository` | Operator container image repository | `ghcr.io/vriesdemichael/keycloak-operator` |
 | `operator.image.tag` | Operator image tag (overrides chart appVersion) | `"v0.2.14"` |
 | `operator.image.pullPolicy` | Image pull policy | `IfNotPresent` |
@@ -419,15 +419,16 @@ helm install keycloak-staging keycloak-operator/keycloak-operator \
 
 ## Post-Installation
 
-### Quick Start (Single-Tenant / Dev Mode)
+### Quick Start
 
-> **⚠️ Note:** This quick start is designed for **single-tenant environments, evaluation, and development**.
->
-> For **production multi-tenant setups**, see the [Multi-Tenant Production Setup](../README.md#understanding-the-token-system) guide which uses the two-phase token system (admission tokens → operational tokens) for proper namespace isolation and token rotation.
+After installation, you can create realms and clients. Authorization is controlled by:
 
-#### 1. Retrieve the Operator Token
+1. **Realm Creation**: Kubernetes RBAC (who can create KeycloakRealm resources)
+2. **Client Creation**: Namespace grant lists (realm's `clientAuthorizationGrants`)
 
-After installation, the operator automatically creates a token for quick evaluation:
+> **📖 See the [Complete Quick Start Guide](https://vriesdemichael.github.io/keycloak-operator/latest/quickstart/README/) for detailed setup instructions.**
+
+#### 1. Create a Realm
 
 ```bash
 # Wait for operator to be ready

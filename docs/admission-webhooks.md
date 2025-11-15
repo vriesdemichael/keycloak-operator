@@ -122,7 +122,7 @@ webhooks:
 
 > **Note**: Disabling webhooks means you won't get immediate validation feedback. Resources will still be validated during reconciliation via Pydantic, but errors will appear in the operator logs and resource status rather than blocking `kubectl apply`.
 
-See [Decision Record 065](../decisions/065-webhook-certificate-management-with-cert-manager.yaml) for technical details on why cert-manager is used.
+See [Decision Record 065](decisions/065-webhook-certificate-management-with-cert-manager.yaml) for technical details on why cert-manager is used.
 
 ## Configuration
 
@@ -298,4 +298,4 @@ kubectl logs -l app.kubernetes.io/name=keycloak-operator -n keycloak-system | gr
 - **Cert Rotation**: Handled automatically by Kopf
 - **Management**: ValidatingWebhookConfigurations auto-created and managed by operator
 
-See [ADR-040: Admission Webhooks](../decisions/040-admission-webhooks-for-validation.yaml) for design rationale.
+See [ADR-040: Admission Webhooks](decisions/040-admission-webhooks-for-validation.yaml) for design rationale.

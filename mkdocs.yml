@@ -96,7 +96,6 @@ nav:
       - High Availability: how-to/ha-deployment.md
       - Backup & Restore: how-to/backup-restore.md
   - Operations:
-      - Token Management: operations/token-management.md
       - Troubleshooting: operations/troubleshooting.md
       - Migration & Upgrade: operations/migration.md
   - Reference:

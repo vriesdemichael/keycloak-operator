@@ -1317,7 +1317,7 @@ If you've tried the solutions above and still have issues:
 
 **Problem-Specific Guides:**
 
-- [Token Management Operations](token-management.md) - Detailed token rotation, revocation, and troubleshooting
+- [Security Model](../security.md) - Authorization and access control
 - [Migration Guide](migration.md) - Troubleshooting migration from official Keycloak operator
 - [FAQ: Troubleshooting](../faq.md#troubleshooting) - Quick answers to frequent problems
 
