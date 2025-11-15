@@ -26,7 +26,7 @@ body:
 
         Example:
         ```yaml
-        apiVersion: keycloak.mdvr.nl/v1
+        apiVersion: vriesdemichael.github.io/v1
         kind: KeycloakClient
         metadata:
           name: my-client
