@@ -519,7 +519,7 @@ See [Observability](observability.md) for complete metrics documentation.
 
 **Operational Guides:**
 
-- [Token Management](operations/token-management.md) - Token lifecycle operations
+- [Security Model](security.md) - Authorization and access control
 - [Troubleshooting](operations/troubleshooting.md) - Debugging common issues
 - [High Availability Deployment](how-to/ha-deployment.md) - Production deployment patterns
 

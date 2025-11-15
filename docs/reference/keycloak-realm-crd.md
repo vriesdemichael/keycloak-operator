@@ -670,4 +670,4 @@ spec:
 
 - [Architecture: Token System](../architecture.md#token-system-architecture) - How realm tokens work
 - [Security Model](../security.md) - Authorization and token security
-- [Token Management](../operations/token-management.md) - Operational token procedures
+- [Security Model](../security.md) - Authorization model

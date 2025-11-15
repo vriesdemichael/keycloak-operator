@@ -49,10 +49,14 @@ helm install my-realm keycloak-operator/keycloak-realm \
 realmName: my-app-realm
 displayName: "My Application"
 
-operatorRef:
+instanceRef:
+  name: keycloak
   namespace: keycloak-system
-  authorizationSecretRef:
-    name: admission-token-my-team  # First realm uses admission token
+
+# Grant these namespaces permission to create clients
+clientAuthorizationGrants:
+  - my-namespace
+  - partner-namespace
 
 security:
   registrationAllowed: false
@@ -121,13 +125,14 @@ kubectl describe keycloakrealm my-realm -n my-team
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `operatorRef.namespace` | Namespace where the operator is running | `keycloak-system` |
-| `operatorRef.authorizationSecretRef.name` | Secret containing authorization token | `""` |
-| `operatorRef.authorizationSecretRef.key` | Key in the secret | `token` |
+| `instanceRef.name` | Name of the Keycloak instance | `keycloak` |
+| `instanceRef.namespace` | Namespace where Keycloak instance is running | `keycloak-system` |
+| `clientAuthorizationGrants` | List of namespaces that can create clients in this realm | `[]` |
 
-**Token Types:**
-- **First realm in namespace:** Use admission token (e.g., `admission-token-my-team`)
-- **Subsequent realms:** Use operational token (e.g., `my-team-operator-token`)
+**Authorization:**
+- **Realm Creation:** Controlled by Kubernetes RBAC
+- **Client Creation:** Only namespaces in `clientAuthorizationGrants` can create clients
+- No tokens required - fully declarative authorization
 
 See [Security Model](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/security.md#token-rotation) for details on token rotation.
 
