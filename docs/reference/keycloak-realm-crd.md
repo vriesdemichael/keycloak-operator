@@ -56,7 +56,7 @@ Reference to the Keycloak operator and authorization token.
 |-------|------|----------|---------|-------------|
 | `operatorRef.namespace` | `string` | **Yes** | - | Namespace where the operator is running (e.g., `keycloak-system`) |
 
-**Example - First realm (admission token):**
+**Example:**
 ```yaml
 spec:
   operatorRef:
@@ -646,7 +646,7 @@ spec:
 
 - [End-to-End Setup](../how-to/end-to-end-setup.md) - Complete realm deployment example
 - [SMTP Configuration](../how-to/smtp-configuration.md) - Email server setup for realms
-- [Multi-Tenant Setup](../how-to/multi-tenant.md) - Configuring multiple realms with operational tokens
+- [Multi-Tenant Setup](../how-to/multi-tenant.md) - Configuring multiple realms with authorization grants
 - [Identity Providers](../identity-providers.md) - Integrate Google, GitHub, Azure AD, and other SSO
 
 **Examples:**

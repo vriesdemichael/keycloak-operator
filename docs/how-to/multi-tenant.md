@@ -436,16 +436,6 @@ kubectl auth can-i get secrets \
 
 ---
 
-## Migration from Token System
-
-If migrating from the old token-based system:
-
-1. **Remove token references** from all realm/client manifests
-2. **Add `clientAuthorizationGrants`** to realm manifests
-3. **Delete token secrets** (admission tokens, operational tokens)
-4. **Delete ConfigMap** `keycloak-operator-token-metadata`
-5. **Update RBAC** to grant realm creation permissions
-6. **Verify** realms and clients reconcile successfully
 
 ---
 

@@ -6,7 +6,6 @@ This guide covers upgrading the Keycloak operator, migrating between token syste
 
 1. [Upgrading the Operator](#upgrading-the-operator)
 2. [Upgrading Keycloak Version](#upgrading-keycloak-version)
-3. [Migrating from Manual to Automatic Token Rotation](#migrating-from-manual-to-automatic-token-rotation)
 4. [Comparison with Official Keycloak Operator](#comparison-with-official-keycloak-operator)
 5. [Backup & Rollback](#backup-rollback)
 
