@@ -324,11 +324,11 @@ class KeycloakRealmReconciler(BaseReconciler):
                 delay=30,
             ) from e
 
-    async def _fetch_smtp_password(
-        self, namespace: str, secret_name: str, secret_key: str = "password"
+    async def _fetch_secret_value(
+        self, namespace: str, secret_name: str, secret_key: str
     ) -> str:
         """
-        Fetch SMTP password from Kubernetes secret with RBAC validation.
+        Fetch secret value from Kubernetes secret with RBAC validation.
 
         This method enforces namespace access control and secret labeling requirements.
         The secret must:
@@ -338,10 +338,10 @@ class KeycloakRealmReconciler(BaseReconciler):
         Args:
             namespace: Namespace containing the secret
             secret_name: Name of the secret
-            secret_key: Key in secret data (default: password)
+            secret_key: Key in secret data
 
         Returns:
-            Decoded password string
+            Decoded secret value string
 
         Raises:
             ValidationError: If RBAC validation fails, secret not found, or key missing
@@ -363,20 +363,20 @@ class KeycloakRealmReconciler(BaseReconciler):
                     f"Key '{secret_key}' not found in secret '{secret_name}' or invalid value type"
                 )
 
-            password = result
+            secret_value = result
 
             self.logger.debug(
-                f"Successfully fetched SMTP password from secret {secret_name} "
+                f"Successfully fetched secret value from secret {secret_name} "
                 f"in namespace {namespace} with RBAC validation"
             )
-            return password
+            return secret_value
 
         except ValidationError:
             # Re-raise validation errors as-is
             raise
         except Exception as e:
             raise ValidationError(
-                f"Failed to fetch SMTP password from secret '{secret_name}' "
+                f"Failed to fetch secret value from secret '{secret_name}' "
                 f"in namespace '{namespace}': {e}"
             ) from e
 
@@ -435,7 +435,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         if spec.smtp_server:
             if spec.smtp_server.password_secret:
                 # Fetch password from Kubernetes secret
-                password = await self._fetch_smtp_password(
+                password = await self._fetch_secret_value(
                     namespace=namespace,
                     secret_name=spec.smtp_server.password_secret.name,
                     secret_key=spec.smtp_server.password_secret.key,
@@ -712,6 +712,28 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(idp_config, "model_dump")
                     else idp_config,
                 )
+
+                # Inject secrets from configSecrets into config
+                if idp_config.config_secrets:
+                    if "config" not in idp_dict:
+                        idp_dict["config"] = {}
+
+                    for config_key, secret_ref in idp_config.config_secrets.items():
+                        secret_value = await self._fetch_secret_value(
+                            namespace=namespace,
+                            secret_name=secret_ref.name,
+                            secret_key=secret_ref.key,
+                        )
+                        idp_dict["config"][config_key] = secret_value
+                        self.logger.debug(
+                            f"Injected secret value for IDP config key '{config_key}' "
+                            f"from secret '{secret_ref.name}'"
+                        )
+
+                # Remove configSecrets from payload (not part of Keycloak API)
+                idp_dict.pop("configSecrets", None)
+                idp_dict.pop("config_secrets", None)
+
                 await admin_client.configure_identity_provider(
                     spec.realm_name, idp_dict, namespace
                 )
@@ -1047,6 +1069,27 @@ class KeycloakRealmReconciler(BaseReconciler):
                             if hasattr(idp_config, "model_dump")
                             else idp_config,
                         )
+
+                        # Inject secrets from configSecrets into config
+                        if idp_config.config_secrets:
+                            if "config" not in idp_dict:
+                                idp_dict["config"] = {}
+
+                            for (
+                                config_key,
+                                secret_ref,
+                            ) in idp_config.config_secrets.items():
+                                secret_value = await self._fetch_secret_value(
+                                    namespace=namespace,
+                                    secret_name=secret_ref.name,
+                                    secret_key=secret_ref.key,
+                                )
+                                idp_dict["config"][config_key] = secret_value
+
+                        # Remove configSecrets from payload
+                        idp_dict.pop("configSecrets", None)
+                        idp_dict.pop("config_secrets", None)
+
                         await admin_client.configure_identity_provider(
                             realm_name, idp_dict, namespace
                         )

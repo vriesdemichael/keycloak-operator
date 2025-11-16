@@ -7,14 +7,28 @@
 # Prerequisites:
 # - Google OAuth 2.0 Client ID and Secret (from Google Cloud Console)
 # - Keycloak instance must be Ready
+# - Kubernetes secret with client secret (see secret example below)
 # - Configure authorized redirect URIs in Google:
 #   https://<keycloak-host>/realms/<realm-name>/broker/google/endpoint
 #
 # Setup Instructions:
 # 1. Create OAuth 2.0 credentials in Google Cloud Console
 # 2. Add authorized redirect URI (see above)
-# 3. Store client secret in Kubernetes secret (optional, or use plain text)
+# 3. Create Kubernetes secret with client secret (see example below)
 # 4. Apply this manifest
+#
+# Secret Example:
+# ---
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: google-idp-secret
+#   namespace: my-app
+#   labels:
+#     vriesdemichael.github.io/keycloak-allow-operator-read: "true"
+# type: Opaque
+# stringData:
+#   clientSecret: your-google-oauth-client-secret
 #
 # Operator Compatibility: v1+
 # Keycloak Version: 22.0+
@@ -38,7 +52,10 @@ spec:
       firstBrokerLoginFlowAlias: first broker login
       config:
         clientId: your-google-oauth-client-id.apps.googleusercontent.com
-        clientSecret: your-google-oauth-client-secret
         hostedDomain: ""  # Leave empty for all Google accounts, or set to your domain (e.g., "example.com")
         defaultScope: "openid profile email"
         syncMode: IMPORT
+      configSecrets:
+        clientSecret:
+          name: google-idp-secret
+          key: clientSecret

@@ -9,6 +9,7 @@
 # - Azure AD Application Registration (from Azure Portal)
 # - Azure Tenant ID
 # - Keycloak instance must be Ready
+# - Kubernetes secret with client secret (see secret example below)
 # - Configure redirect URI in Azure AD:
 #   https://<keycloak-host>/realms/<realm-name>/broker/azure-ad/endpoint
 #
@@ -17,8 +18,21 @@
 # 2. Add redirect URI (see above)
 # 3. Create client secret in Azure AD
 # 4. Replace YOUR_TENANT_ID with your Azure AD tenant ID
-# 5. Store client secret in Kubernetes secret (optional, or use plain text)
+# 5. Create Kubernetes secret with client secret (see example below)
 # 6. Apply this manifest
+#
+# Secret Example:
+# ---
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: azure-ad-idp-secret
+#   namespace: my-app
+#   labels:
+#     vriesdemichael.github.io/keycloak-allow-operator-read: "true"
+# type: Opaque
+# stringData:
+#   clientSecret: your-azure-app-client-secret
 #
 # Operator Compatibility: v1+
 # Keycloak Version: 22.0+
@@ -42,7 +56,6 @@ spec:
       firstBrokerLoginFlowAlias: first broker login
       config:
         clientId: your-azure-app-client-id
-        clientSecret: your-azure-app-client-secret
         authorizationUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/authorize
         tokenUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token
         userInfoUrl: https://graph.microsoft.com/oidc/userinfo
@@ -52,3 +65,7 @@ spec:
         syncMode: IMPORT
         validateSignature: "true"
         useJwksUrl: "true"
+      configSecrets:
+        clientSecret:
+          name: azure-ad-idp-secret
+          key: clientSecret

@@ -106,6 +106,18 @@ class KeycloakRealmTokenSettings(BaseModel):
         return v
 
 
+class KeycloakIdentityProviderSecretRef(BaseModel):
+    """
+    Reference to Kubernetes secret containing identity provider secrets.
+
+    The secret must be in the same namespace as the KeycloakRealm.
+    Cross-namespace secret references are not supported for security reasons.
+    """
+
+    name: str = Field(..., description="Secret name")
+    key: str = Field(..., description="Key in secret data")
+
+
 class KeycloakIdentityProvider(BaseModel):
     """Identity provider configuration."""
 
@@ -121,6 +133,13 @@ class KeycloakIdentityProvider(BaseModel):
     # Provider-specific configuration
     config: dict[str, Any] = Field(
         default_factory=dict, description="Provider-specific configuration"
+    )
+
+    # Secret references for sensitive configuration values
+    config_secrets: dict[str, KeycloakIdentityProviderSecretRef] = Field(
+        default_factory=dict,
+        alias="configSecrets",
+        description="Secret references for sensitive config values (e.g., clientSecret)",
     )
 
     # UI settings
@@ -146,6 +165,34 @@ class KeycloakIdentityProvider(BaseModel):
         if not v or not isinstance(v, str):
             raise ValueError("Alias must be a non-empty string")
         return v
+
+    def model_post_init(self, __context):
+        """Validate that sensitive keys are only in configSecrets, not plaintext in config."""
+        # Define known sensitive keys that must use configSecrets
+        sensitive_keys = {
+            "clientSecret",
+            "secret",
+            "password",
+            "privateKey",
+            "signingKey",
+        }
+
+        # Check if any sensitive keys are in config (plaintext)
+        for key in self.config:
+            if key in sensitive_keys:
+                raise ValueError(
+                    f"Sensitive config key '{key}' must not be in 'config'. "
+                    f"Use 'configSecrets' to reference a Kubernetes secret instead."
+                )
+
+        # Also check for duplicates between config and configSecrets
+        if self.config_secrets:
+            for key in self.config_secrets:
+                if key in self.config:
+                    raise ValueError(
+                        f"Config key '{key}' cannot be specified in both 'config' and 'configSecrets'. "
+                        f"Use 'configSecrets' for sensitive values."
+                    )
 
 
 class KeycloakUserFederation(BaseModel):
