@@ -96,15 +96,17 @@ extra_css:
 
 nav:
   - Home: index.md
-  - Quick Start: quickstart/README.md
-  - Architecture: architecture.md
-  - Security Model: security.md
-  - Configuration:
-      - Identity Providers: identity-providers.md
-      - Drift Detection: drift-detection.md
-  - How-To Guides:
-      - End-to-End Setup: how-to/end-to-end-setup.md
-      - Multi-Tenant Configuration: how-to/multi-tenant.md
+  - Getting Started:
+      - Quick Start: quickstart/README.md
+      - Installation: how-to/end-to-end-setup.md
+  - Concepts:
+      - Architecture: concepts/architecture.md
+      - Security Model: concepts/security.md
+  - Guides:
+      - Identity Providers: guides/identity-providers.md
+      - Drift Detection: guides/drift-detection.md
+      - Observability: guides/observability.md
+      - Multi-Tenant Setup: how-to/multi-tenant.md
       - Database Setup: how-to/database-setup.md
       - SMTP Configuration: how-to/smtp-configuration.md
       - High Availability: how-to/ha-deployment.md
@@ -117,11 +119,9 @@ nav:
       - KeycloakRealm CRD: reference/keycloak-realm-crd.md
       - KeycloakClient CRD: reference/keycloak-client-crd.md
       - Versioning: versioning.md
-  - Observability: observability.md
+      - API Docs: api/keycloak_operator.md
   - Development:
-      - Getting Started: development.md
+      - Contributing: development.md
       - Testing: development/testing.md
-  - Decision Records: decisions/generated-markdown/
+      - Decision Records: decisions/generated-markdown/
   - FAQ: faq.md
-  - API Reference:
-      - Overview: api/keycloak_operator.md
