@@ -42,8 +42,6 @@ theme:
 
 plugins:
   - search
-  - tags:
-      tags_file: decisions/generated-markdown/index.md
   - mkdocstrings:
       handlers:
         python:
