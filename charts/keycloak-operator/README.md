@@ -70,8 +70,6 @@ The operator should be in `Running` state within 1-2 minutes.
 |-----------|-------------|---------|
 | `operator.replicaCount` | Number of operator replicas for HA | `2` |
 | `operator.instanceId` | Operator instance ID for multi-operator deployments. Auto-generated if empty. | `""` |
-| ~~`operator.createAdmissionToken`~~ | **DEPRECATED** - No longer used with namespace grant authorization | `true` |
-| ~~`operator.admissionToken`~~ | **DEPRECATED** - No longer used with namespace grant authorization | `""` |
 | `operator.image.repository` | Operator container image repository | `ghcr.io/vriesdemichael/keycloak-operator` |
 | `operator.image.tag` | Operator image tag (overrides chart appVersion) | `"v0.2.14"` |
 | `operator.image.pullPolicy` | Image pull policy | `IfNotPresent` |
@@ -395,7 +393,6 @@ Deploy multiple operators for workload isolation:
 # values-production.yaml
 operator:
   instanceId: "production-operator"
-  admissionTokenName: keycloak-operator-prod-auth
 
 namespace:
   name: keycloak-production
@@ -433,18 +430,6 @@ After installation, you can create realms and clients. Authorization is controll
 # Wait for operator to be ready
 kubectl wait --for=condition=available deployment/keycloak-operator \
   -n keycloak-system --timeout=300s
-
-# Get the operator token (single-tenant mode only)
-kubectl get secret keycloak-operator-auth-token \
-  -n keycloak-system \
-  -o jsonpath='{.data.token}' | base64 -d
-
-# Or export to variable
-OPERATOR_TOKEN=$(kubectl get secret keycloak-operator-auth-token \
-  -n keycloak-system \
-  -o jsonpath='{.data.token}' | base64 -d)
-
-echo $OPERATOR_TOKEN
 ```
 
 #### 2. Deploy a Keycloak Instance
@@ -502,7 +487,7 @@ See the [Keycloak CRD Reference](../../docs/reference/keycloak-crd.md) for compl
 
 #### 3. Create Your First Realm
 
-Use the operator token to create a realm:
+Create a realm using the realm chart:
 
 ```bash
 # Install realm chart
@@ -640,23 +625,6 @@ kubectl get crd | grep keycloak
 # Reinstall with CRDs
 helm upgrade keycloak-operator keycloak-operator/keycloak-operator \
   --set crds.install=true \
-  --namespace keycloak-system
-```
-
-### Admission Token Not Created
-
-**Symptom:** Secret `keycloak-operator-auth-token` doesn't exist
-
-```bash
-# Check secret
-kubectl get secret keycloak-operator-auth-token -n keycloak-system
-
-# Verify configuration
-helm get values keycloak-operator -n keycloak-system | grep -A5 operator
-
-# Reinstall with token creation enabled
-helm upgrade keycloak-operator keycloak-operator/keycloak-operator \
-  --set operator.createAdmissionToken=true \
   --namespace keycloak-system
 ```
 
