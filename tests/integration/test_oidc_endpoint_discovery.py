@@ -43,8 +43,8 @@ class TestOIDCEndpointDiscovery:
 
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
-        # Get admission token from fixture
-        admission_secret_name, _ = realm_spec = KeycloakRealmSpec(
+        # Create a realm with OIDC endpoints
+        realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
         )
