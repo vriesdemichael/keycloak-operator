@@ -14,25 +14,25 @@ The operator now implements a **least-privilege RBAC model** where:
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Operator Namespace (e.g., keycloak-system)                 │
+┌──────────────────────────────────────────────────────────────┐
+│  Operator Namespace (e.g., keycloak-system)                  │
 │                                                              │
-│  ├── Operator Deployment                                    │
-│  │   └── Watches: All CRDs cluster-wide (list/watch only)  │
+│  ├── Operator Deployment                                     │
+│  │   └── Watches: All CRDs cluster-wide (list/watch only)    │
 │  │                                                           │
-│  ├── Keycloak Instance (StatefulSet/Deployment)            │
-│  │   └── Runs in same namespace as operator               │
+│  ├── Keycloak Instance (StatefulSet/Deployment)              │
+│  │   └── Runs in same namespace as operator                  │
 │  │                                                           │
-│  └── Full RBAC (Role) - Can manage all resources here      │
-└─────────────────────────────────────────────────────────────┘
+│  └── Full RBAC (Role) - Can manage all resources here        │
+└──────────────────────────────────────────────────────────────┘
                         ↓ watches CRDs
-┌─────────────────────────────────────────────────────────────┐
-│  Team Namespace (e.g., team-a)                              │
+┌──────────────────────────────────────────────────────────────┐
+│  Team Namespace (e.g., team-a)                               │
 │                                                              │
-│  ├── KeycloakRealm / KeycloakClient CRDs                   │
-│  ├── Secrets (with required label)                          │
-│  └── RoleBinding (opt-in for operator access)              │
-└─────────────────────────────────────────────────────────────┘
+│  ├── KeycloakRealm / KeycloakClient CRDs                     │
+│  ├── Secrets (with required label)                           │
+│  └── RoleBinding (opt-in for operator access)                │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ## RBAC Components

@@ -38,3 +38,9 @@ done
 
 echo "Decision record documentation generated in ${OUTPUT_DIR}"
 echo "Total records: $(find "${OUTPUT_DIR}" -name "*.md" | wc -l)"
+
+# Update the decision records index with categorized lists
+echo "Updating decision records index..."
+uv run python "${SCRIPT_DIR}/update-decision-index.py"
+
+echo "✓ All decision record documentation ready"
