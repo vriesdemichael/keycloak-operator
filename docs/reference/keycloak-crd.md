@@ -541,6 +541,6 @@ spec:
 
 **Architecture & Operations:**
 
-- [Architecture](../architecture.md) - Operator design and reconciliation flow
+- [Architecture](../concepts/architecture.md) - Operator design and reconciliation flow
 - [Troubleshooting: Keycloak Instance Issues](../operations/troubleshooting.md#keycloak-instance-issues) - Common deployment problems
-- [Observability](../observability.md) - Monitoring Keycloak instances
+- [Observability](../guides/observability.md) - Monitoring Keycloak instances

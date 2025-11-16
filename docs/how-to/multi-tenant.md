@@ -452,7 +452,7 @@ kubectl auth can-i get secrets \
 
 ## Related Documentation
 
-- [Security Model](../security.md)
+- [Security Model](../concepts/security.md)
 - [RBAC Implementation](../rbac-implementation.md)
 - [End-to-End Setup Guide](end-to-end-setup.md)
 - [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md)

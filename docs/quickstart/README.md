@@ -342,13 +342,13 @@ spec:
 
 **Configuration:**
 - [SMTP Configuration](../how-to/smtp-configuration.md) - Email notifications
-- [Identity Providers](../identity-providers.md) - Google, GitHub, Azure AD SSO
+- [Identity Providers](../guides/identity-providers.md) - Google, GitHub, Azure AD SSO
 - [High Availability](../how-to/ha-deployment.md) - Production HA setup
 
 **Understanding the System:**
-- [Architecture](../architecture.md) - How the operator works
-- [Security Model](../security.md) - Authorization and RBAC
-- [Drift Detection](../drift-detection.md) - Orphan detection
+- [Architecture](../concepts/architecture.md) - How the operator works
+- [Security Model](../concepts/security.md) - Authorization and RBAC
+- [Drift Detection](../guides/drift-detection.md) - Orphan detection
 
 **CRD References:**
 - [KeycloakRealm](../reference/keycloak-realm-crd.md) - All realm options

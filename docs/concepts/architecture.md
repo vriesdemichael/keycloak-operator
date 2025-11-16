@@ -523,13 +523,13 @@ See [Observability](../guides/observability.md) for complete metrics documentati
 
 **Quickstart:**
 
-- [Getting Started](quickstart/README.md) - Deploy your first Keycloak realm
+- [Getting Started](../quickstart/README.md) - Deploy your first Keycloak realm
 - [End-to-End Setup](../how-to/end-to-end-setup.md) - Complete production deployment
 
 **API Reference:**
 
-- [Keycloak CRD](reference/keycloak-crd.md) - Keycloak instance configuration
-- [KeycloakRealm CRD](reference/keycloak-realm-crd.md) - Realm configuration
-- [KeycloakClient CRD](reference/keycloak-client-crd.md) - Client configuration
+- [Keycloak CRD](../reference/keycloak-crd.md) - Keycloak instance configuration
+- [KeycloakRealm CRD](../reference/keycloak-realm-crd.md) - Realm configuration
+- [KeycloakClient CRD](../reference/keycloak-client-crd.md) - Client configuration
 
-Return to the [index](index.md) or continue with the [development guide](../development.md).
+Return to the [index](../index.md) or continue with the [development guide](../development.md).
