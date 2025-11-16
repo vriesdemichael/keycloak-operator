@@ -1,3 +1,8 @@
+---
+hide:
+  - toc
+---
+
 # Keycloak Operator
 
 A GitOps-friendly Kubernetes operator for managing Keycloak instances, realms, and OAuth2/OIDC clients declaratively.
