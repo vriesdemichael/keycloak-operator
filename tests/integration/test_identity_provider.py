@@ -190,7 +190,23 @@ async def test_realm_with_oidc_identity_provider(
 
     realm_name = f"test-idp-{uuid.uuid4().hex[:8]}"
 
-    # Create realm with Dex IDP
+    # Create secret with IDP client secret
+    core_api = client.CoreV1Api()
+    secret_name = f"dex-idp-secret-{uuid.uuid4().hex[:8]}"
+    secret = client.V1Secret(
+        metadata=client.V1ObjectMeta(
+            name=secret_name,
+            namespace=test_namespace,
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
+        ),
+        string_data={"clientSecret": dex_ready["client_secret"]},
+    )
+    core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
+    logger.info(f"Created secret {secret_name} for IDP client secret")
+
+    # Create realm with Dex IDP using secret reference
+    from keycloak_operator.models.realm import KeycloakIdentityProviderSecretRef
+
     idp_config = KeycloakIdentityProvider(
         alias="dex",
         provider_id="oidc",
@@ -199,7 +215,6 @@ async def test_realm_with_oidc_identity_provider(
         first_broker_login_flow_alias="first broker login",
         config={
             "clientId": dex_ready["client_id"],
-            "clientSecret": dex_ready["client_secret"],
             "authorizationUrl": f"{dex_ready['issuer_url']}/auth",
             "tokenUrl": f"{dex_ready['issuer_url']}/token",
             "userInfoUrl": f"{dex_ready['issuer_url']}/userinfo",
@@ -207,6 +222,11 @@ async def test_realm_with_oidc_identity_provider(
             "issuer": dex_ready["issuer_url"],
             "defaultScope": "openid profile email",
             "syncMode": "IMPORT",
+        },
+        config_secrets={
+            "clientSecret": KeycloakIdentityProviderSecretRef(
+                name=secret_name, key="clientSecret"
+            )
         },
     )
 
@@ -291,6 +311,14 @@ async def test_realm_with_oidc_identity_provider(
         except Exception as e:
             logger.warning(f"Failed to delete realm {realm_name}: {e}")
 
+        # Cleanup secret
+        try:
+            core_api.delete_namespaced_secret(
+                name=secret_name, namespace=test_namespace
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete secret {secret_name}: {e}")
+
 
 @pytest.mark.asyncio
 @pytest.mark.integration
@@ -313,8 +341,23 @@ async def test_realm_with_github_identity_provider_example(
 
     realm_name = f"test-github-idp-{uuid.uuid4().hex[:8]}"
 
-    # Example GitHub IDP configuration
-    # In production, clientSecret would come from a Kubernetes Secret
+    # Create secret with IDP client secret
+    core_api = client.CoreV1Api()
+    secret_name = f"github-idp-secret-{uuid.uuid4().hex[:8]}"
+    secret = client.V1Secret(
+        metadata=client.V1ObjectMeta(
+            name=secret_name,
+            namespace=test_namespace,
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
+        ),
+        string_data={"clientSecret": "your-github-oauth-app-client-secret"},
+    )
+    core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
+    logger.info(f"Created secret {secret_name} for GitHub IDP")
+
+    # Example GitHub IDP configuration using secret reference
+    from keycloak_operator.models.realm import KeycloakIdentityProviderSecretRef
+
     github_idp = KeycloakIdentityProvider(
         alias="github",
         provider_id="github",
@@ -323,9 +366,13 @@ async def test_realm_with_github_identity_provider_example(
         first_broker_login_flow_alias="first broker login",
         config={
             "clientId": "your-github-oauth-app-client-id",
-            "clientSecret": "your-github-oauth-app-client-secret",
             "defaultScope": "user:email",
             "syncMode": "IMPORT",
+        },
+        config_secrets={
+            "clientSecret": KeycloakIdentityProviderSecretRef(
+                name=secret_name, key="clientSecret"
+            )
         },
     )
 
@@ -399,3 +446,11 @@ async def test_realm_with_github_identity_provider_example(
             )
         except Exception as e:
             logger.warning(f"Failed to delete realm {realm_name}: {e}")
+
+        # Cleanup secret
+        try:
+            core_api.delete_namespaced_secret(
+                name=secret_name, namespace=test_namespace
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete secret {secret_name}: {e}")
