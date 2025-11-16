@@ -956,7 +956,7 @@ curl -X POST "$TOKEN_URL" \
 
 - [ ] **TLS enabled** - All traffic encrypted (ingress handles TLS termination)
 - [ ] **Admin credentials rotated** - Changed from initial auto-generated password
-- [ ] **Admission tokens stored securely** - Using SealedSecrets or external secret manager
+- [ ] **Secret references used** - All sensitive values use Kubernetes secrets with proper labels
 - [ ] **RBAC configured** - Application teams have least privilege access
 - [ ] **Network policies** - Limit pod-to-pod communication (optional)
 - [ ] **Audit logging enabled** - Kubernetes audit logs capture secret access
@@ -975,7 +975,7 @@ curl -X POST "$TOKEN_URL" \
 - [ ] **Database backups enabled** - CloudNativePG barman backups to S3
 - [ ] **Backup retention policy** - 30 days configured
 - [ ] **Backup tested** - Restore tested at least once
-- [ ] **Token metadata backed up** - ConfigMap in operator namespace
+- [ ] **Realm exports** - Regular exports of realm configurations
 - [ ] **Documentation** - Disaster recovery procedures documented
 
 ### 9.4 Monitoring Checklist
@@ -983,16 +983,16 @@ curl -X POST "$TOKEN_URL" \
 - [ ] **Metrics enabled** - Operator, Keycloak, database expose Prometheus metrics
 - [ ] **ServiceMonitors created** - Prometheus scrapes all components
 - [ ] **Dashboards created** - Grafana dashboards for operator, Keycloak, database
-- [ ] **Alerts configured** - Token expiry, pod failures, database issues
+- [ ] **Alerts configured** - Pod failures, database issues, drift detection
 - [ ] **Log aggregation** - Logs forwarded to centralized system (ELK, Loki)
 
-### 9.5 Token Management Checklist
+### 9.5 Authorization Management Checklist
 
-- [ ] **Automatic rotation enabled** - Operational tokens rotate every 90 days
-- [ ] **Grace period configured** - 7-day grace period for zero-downtime rotation
-- [ ] **Token metadata tracked** - ConfigMap contains all token metadata
-- [ ] **Token expiry alerts** - Alert when tokens expire in < 7 days
-- [ ] **Admission tokens documented** - Platform team has list of all namespaces
+- [ ] **Namespace grants documented** - Each realm's clientAuthorizationGrants tracked in Git
+- [ ] **Access reviews scheduled** - Quarterly review of namespace authorization grants
+- [ ] **Approval workflow** - PRs required for adding new namespace grants
+- [ ] **Drift detection enabled** - Monitors for unauthorized manual changes
+- [ ] **Audit trail maintained** - Git history tracks all authorization changes
 
 ### 9.6 Testing Checklist
 
