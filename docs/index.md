@@ -78,18 +78,18 @@ The operator manages three core resources:
 
 ### Getting Started
 - **[Quick Start Guide](quickstart/README.md)** - Get running in 10 minutes
-- **[Architecture Overview](architecture.md)** - How the operator works
-- **[Security Model](security.md)** - Authorization and access control
+- **[Architecture Overview](concepts/architecture.md)** - How the operator works
+- **[Security Model](concepts/security.md)** - Authorization and access control
 
 ### Configuration
 - **[KeycloakRealm Reference](reference/keycloak-realm-crd.md)** - Complete realm options
 - **[KeycloakClient Reference](reference/keycloak-client-crd.md)** - Complete client options
-- **[Identity Providers](identity-providers.md)** - Integrate Google, GitHub, Azure AD, etc.
+- **[Identity Providers](guides/identity-providers.md)** - Integrate Google, GitHub, Azure AD, etc.
 
 ### Operations
 - **[Admission Webhooks](admission-webhooks.md)** - Validation and resource quotas
-- **[Drift Detection](drift-detection.md)** - Orphan detection and remediation
-- **[Observability](observability.md)** - Metrics, logging, and monitoring
+- **[Drift Detection](guides/drift-detection.md)** - Orphan detection and remediation
+- **[Observability](guides/observability.md)** - Metrics, logging, and monitoring
 - **[Troubleshooting](operations/troubleshooting.md)** - Common issues and solutions
 
 ### Development
@@ -131,7 +131,7 @@ spec:
 
 Only namespaces in the grant list can create clients in that realm.
 
-**📖 [Full Security Model Documentation →](security.md)**
+**📖 [Full Security Model Documentation →](concepts/security.md)**
 
 ## 📊 Status & Observability
 
@@ -151,7 +151,7 @@ status:
   publicUrl: "https://keycloak.example.com/realms/my-app"
 ```
 
-**📖 [Observability Guide →](observability.md)**
+**📖 [Observability Guide →](guides/observability.md)**
 
 ## 🔄 Drift Detection
 
@@ -160,7 +160,7 @@ The operator continuously monitors for:
 - **Configuration Drift** - Manual changes to Keycloak resources
 - **Missing Resources** - CRs referencing deleted Keycloak objects
 
-**📖 [Drift Detection Guide →](drift-detection.md)**
+**📖 [Drift Detection Guide →](guides/drift-detection.md)**
 
 ## 🚦 Admission Webhooks
 

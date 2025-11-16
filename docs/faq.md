@@ -24,7 +24,7 @@ spec:
     - partner-team
 \`\`\`
 
-See: [Security Model](security.md)
+See: [Security Model](concepts/security.md)
 
 ---
 
@@ -41,7 +41,7 @@ See: [Security Model](security.md)
 - ✅ Self-service for realm owners
 - ✅ Clear audit trail in Git history
 
-See: [Security Model](security.md#design-philosophy)
+See: [Security Model](concepts/security.md#design-philosophy)
 
 ---
 
@@ -60,7 +60,7 @@ spec:
 
 Or via GitOps: update realm manifest and create PR.
 
-See: [Security Model](security.md#namespace-authorization-workflow)
+See: [Security Model](concepts/security.md#namespace-authorization-workflow)
 
 ---
 
@@ -85,7 +85,7 @@ See: [Security Model](security.md#namespace-authorization-workflow)
 - Per-namespace: 5 req/s (default)
 - Configurable via environment variables
 
-See: [Architecture](architecture.md)
+See: [Architecture](concepts/architecture.md)
 
 ---
 
@@ -321,7 +321,7 @@ kubectl delete keycloakclient <client-name> -n compromised-namespace
 - Implement approval workflow for grant additions
 - Monitor client creation events
 
-See: [Security Model](security.md#namespace-authorization)
+See: [Security Model](concepts/security.md#namespace-authorization)
 
 ---
 

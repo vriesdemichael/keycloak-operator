@@ -647,7 +647,7 @@ spec:
 - [End-to-End Setup](../how-to/end-to-end-setup.md) - Complete realm deployment example
 - [SMTP Configuration](../how-to/smtp-configuration.md) - Email server setup for realms
 - [Multi-Tenant Setup](../how-to/multi-tenant.md) - Configuring multiple realms with authorization grants
-- [Identity Providers](../identity-providers.md) - Integrate Google, GitHub, Azure AD, and other SSO
+- [Identity Providers](../guides/identity-providers.md) - Integrate Google, GitHub, Azure AD, and other SSO
 
 **Examples:**
 
@@ -656,6 +656,6 @@ spec:
 
 **Architecture & Security:**
 
-- [Architecture: Token System](../architecture.md#authorization-architecture) - How realm tokens work
-- [Security Model](../security.md) - Authorization and token security
-- [Security Model](../security.md) - Authorization model
+- [Architecture: Token System](../concepts/architecture.md#authorization-architecture) - How realm tokens work
+- [Security Model](../concepts/security.md) - Authorization and token security
+- [Security Model](../concepts/security.md) - Authorization model
