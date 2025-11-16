@@ -653,6 +653,6 @@ kubectl get secret webapp-client-secret \
 
 **Architecture & Operations:**
 
-- [Architecture](../architecture.md) - How client reconciliation works
-- [Security Model](../security.md#level-2-client-creation) - How clients authenticate
+- [Architecture](../concepts/architecture.md) - How client reconciliation works
+- [Security Model](../concepts/security.md#level-2-client-creation) - How clients authenticate
 - [Troubleshooting: Client Issues](../operations/troubleshooting.md#client-issues) - Common client problems

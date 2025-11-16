@@ -1074,8 +1074,8 @@ After completing this guide, you have:
 **Recommended next actions:**
 
 1. **Configure Additional Teams** - Repeat Part 5-7 for other teams
-2. **Set Up Monitoring** - Create Grafana dashboards (see [Observability](../observability.md))
-3. **Configure Identity Providers** - Add SAML/OIDC providers (see [Identity Providers](../identity-providers.md))
+2. **Set Up Monitoring** - Create Grafana dashboards (see [Observability](../guides/observability.md))
+3. **Configure Identity Providers** - Add SAML/OIDC providers (see [Identity Providers](../guides/identity-providers.md))
 4. **Implement Backup Testing** - Schedule regular backup restore tests
 5. **Document Runbooks** - Create team-specific runbooks for common operations
 6. **Set Up Alerts** - Configure PagerDuty/OpsGenie for critical alerts

@@ -30,6 +30,13 @@
   background: linear-gradient(135deg, var(--kc-primary-dark) 0%, var(--kc-primary) 100%);
 }
 
+/* Header text - white for readability */
+.md-header__title,
+.md-header__button,
+.md-header__topic {
+  color: white !important;
+}
+
 /* Dark mode header - darker gradient */
 [data-md-color-scheme="slate"] .md-header {
   background: linear-gradient(135deg, #006b85 0%, var(--kc-primary-dark) 100%);
@@ -91,6 +98,15 @@
 /* Navigation tabs with gradient */
 .md-tabs {
   background: linear-gradient(90deg, var(--kc-primary-dark) 0%, var(--kc-primary) 100%);
+}
+
+/* Tab text - white for readability */
+.md-tabs__link {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.md-tabs__link--active {
+  color: white !important;
 }
 
 /* Dark mode navigation tabs */

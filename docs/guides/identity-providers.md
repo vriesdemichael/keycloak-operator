@@ -401,5 +401,5 @@ kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
 
 ## See Also
 
-- [KeycloakRealm CRD Reference](reference/keycloak-realm-crd.md)
-- [Quick Start Guide](quickstart/README.md)
+- [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md)
+- [Quick Start Guide](../quickstart/README.md)
