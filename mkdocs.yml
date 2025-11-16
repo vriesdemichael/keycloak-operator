@@ -102,8 +102,8 @@ extra_javascript:
   - https://unpkg.com/mermaid@10/dist/mermaid.min.js
 
 nav:
-  - Home: index.md
   - Getting Started:
+      - Home: index.md
       - Quick Start: quickstart/README.md
       - Installation: how-to/end-to-end-setup.md
   - Concepts:
