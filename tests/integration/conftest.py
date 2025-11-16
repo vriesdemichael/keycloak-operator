@@ -2114,6 +2114,28 @@ async def helm_client(
 # ============================================================================
 
 # ============================================================================
+# Drift Detection Fixtures
+# ============================================================================
+
+
+@pytest.fixture
+async def operator_instance_id(k8s_apps_v1, shared_operator):
+    """Get the actual operator instance ID from running deployment."""
+    deployment = await k8s_apps_v1.read_namespaced_deployment(
+        name="keycloak-operator", namespace=shared_operator.namespace
+    )
+
+    # Extract from environment variable
+    for container in deployment.spec.template.spec.containers:
+        for env in container.env or []:
+            if env.name == "OPERATOR_INSTANCE_ID":
+                return env.value
+
+    # Fallback to Helm chart default pattern
+    return f"keycloak-operator-{shared_operator.namespace}"
+
+
+# ============================================================================
 # CR Factory Functions
 # ============================================================================
 
