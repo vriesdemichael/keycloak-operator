@@ -7,6 +7,8 @@ edit_uri: blob/main/docs/
 
 theme:
   name: material
+  logo: https://www.keycloak.org/resources/images/icon.svg
+  favicon: https://www.keycloak.org/resources/images/favicon.ico
   features:
     - navigation.instant
     - navigation.tracking
@@ -17,16 +19,25 @@ theme:
     - search.share
     - content.code.copy
     - content.action.edit
+    - navigation.top
+    - navigation.footer
   palette:
-    - scheme: default
-      primary: indigo
-      accent: deep purple
-    - scheme: slate
-      primary: indigo
-      accent: deep purple
+    # Light mode - Keycloak cyan blue
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: cyan
       toggle:
-        icon: material/weather-night
+        icon: material/brightness-7
         name: Switch to dark mode
+    # Dark mode - Keycloak teal/cyan
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: cyan
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
   language: en
 
 plugins:
@@ -79,6 +90,9 @@ extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/vriesdemichael
+
+extra_css:
+  - stylesheets/extra.css
 
 nav:
   - Home: index.md
