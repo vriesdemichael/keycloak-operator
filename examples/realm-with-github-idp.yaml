@@ -7,14 +7,28 @@
 # Prerequisites:
 # - GitHub OAuth App Client ID and Secret (from GitHub Developer Settings)
 # - Keycloak instance must be Ready
+# - Kubernetes secret with client secret (see secret example below)
 # - Configure authorization callback URL in GitHub:
 #   https://<keycloak-host>/realms/<realm-name>/broker/github/endpoint
 #
 # Setup Instructions:
 # 1. Create OAuth App in GitHub Developer Settings
 # 2. Set authorization callback URL (see above)
-# 3. Store client secret in Kubernetes secret (optional, or use plain text)
+# 3. Create Kubernetes secret with client secret (see example below)
 # 4. Apply this manifest
+#
+# Secret Example:
+# ---
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: github-idp-secret
+#   namespace: my-app
+#   labels:
+#     vriesdemichael.github.io/keycloak-allow-operator-read: "true"
+# type: Opaque
+# stringData:
+#   clientSecret: your-github-oauth-app-client-secret
 #
 # Operator Compatibility: v1+
 # Keycloak Version: 22.0+
@@ -38,6 +52,9 @@ spec:
       firstBrokerLoginFlowAlias: first broker login
       config:
         clientId: your-github-oauth-app-client-id
-        clientSecret: your-github-oauth-app-client-secret
         defaultScope: "user:email"
         syncMode: IMPORT
+      configSecrets:
+        clientSecret:
+          name: github-idp-secret
+          key: clientSecret

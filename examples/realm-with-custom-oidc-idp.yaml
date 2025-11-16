@@ -8,6 +8,7 @@
 # Prerequisites:
 # - OIDC Provider configuration (client ID, secret, endpoints)
 # - Keycloak instance must be Ready
+# - Kubernetes secret with client secret (see secret example below)
 # - Configure redirect URI in your OIDC provider:
 #   https://<keycloak-host>/realms/<realm-name>/broker/custom-oidc/endpoint
 #
@@ -15,8 +16,22 @@
 # 1. Create OAuth/OIDC application in your identity provider
 # 2. Configure redirect URI (see above)
 # 3. Obtain client ID, secret, and OIDC discovery endpoints
-# 4. Update config section with your provider's endpoints
-# 5. Apply this manifest
+# 4. Create Kubernetes secret with client secret (see example below)
+# 5. Update config section with your provider's endpoints
+# 6. Apply this manifest
+#
+# Secret Example:
+# ---
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   name: custom-oidc-idp-secret
+#   namespace: my-app
+#   labels:
+#     vriesdemichael.github.io/keycloak-allow-operator-read: "true"
+# type: Opaque
+# stringData:
+#   clientSecret: your-client-secret
 #
 # Operator Compatibility: v1+
 # Keycloak Version: 22.0+
@@ -40,7 +55,6 @@ spec:
       firstBrokerLoginFlowAlias: first broker login
       config:
         clientId: your-client-id
-        clientSecret: your-client-secret
         authorizationUrl: https://idp.example.com/oauth2/authorize
         tokenUrl: https://idp.example.com/oauth2/token
         userInfoUrl: https://idp.example.com/oauth2/userinfo
@@ -50,3 +64,7 @@ spec:
         syncMode: IMPORT
         validateSignature: "true"
         useJwksUrl: "true"
+      configSecrets:
+        clientSecret:
+          name: custom-oidc-idp-secret
+          key: clientSecret
