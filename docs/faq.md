@@ -289,27 +289,39 @@ See charts/README.md in the repository root for GitOps examples.
 
 ---
 
-### How do I revoke a compromised token?
+### How do I revoke access to a compromised namespace?
 
 **Immediate revocation:**
 ```bash
-# Method 1: Delete operational token (realm will fail auth)
-kubectl delete secret team-alpha-operator-token -n team-alpha
+# Remove namespace from realm's authorization grants
+kubectl patch keycloakrealm <realm-name> -n <realm-namespace> --type=json -p '[
+  {
+    "op": "remove",
+    "path": "/spec/clientAuthorizationGrants/-",
+    "value": "compromised-namespace"
+  }
+]'
 
-# Method 2: Mark as revoked in metadata
-TOKEN_HASH="<hash>"
-kubectl patch configmap keycloak-operator-token-metadata \
-  --namespace=keycloak-operator-system \
-  --type=json \
-  -p "[{\"op\": \"replace\", \"path\": \"/data/$TOKEN_HASH\", \"value\": \"$(kubectl get configmap keycloak-operator-token-metadata -n keycloak-operator-system -o jsonpath=\"{.data.$TOKEN_HASH}\" | jq '.revoked = true')\"}]"
+# Or edit directly
+kubectl edit keycloakrealm <realm-name> -n <realm-namespace>
+# Remove the namespace from clientAuthorizationGrants list
 ```
 
-**Re-bootstrap:**
-1. Create new admission token
-2. Update first realm to use new admission token
-3. New operational token generated
+**Clean up existing clients:**
+```bash
+# List clients from compromised namespace
+kubectl get keycloakclient -n compromised-namespace
 
-See: [Security Model](security.md#revocation)
+# Delete specific client
+kubectl delete keycloakclient <client-name> -n compromised-namespace
+```
+
+**Prevention:**
+- Use Git history to audit authorization changes
+- Implement approval workflow for grant additions
+- Monitor client creation events
+
+See: [Security Model](security.md#namespace-authorization)
 
 ---
 
@@ -338,29 +350,26 @@ See: [Troubleshooting Guide](operations/troubleshooting.md#symptom-realm-stuck-i
 
 ---
 
-### Bootstrap not working (no operational token created)
+### My realm authorization not working
 
-**Common issues:**
+**Check:**
+1. Namespace is listed in `clientAuthorizationGrants`
+2. Keycloak instance is Ready
+3. Operator can reach Keycloak API
+4. No rate limiting errors
 
-1. **Admission token missing:**
-   ```bash
-   kubectl get secret admission-token-<namespace> -n <namespace>
-   ```
+```bash
+# Check realm authorization grants
+kubectl get keycloakrealm <name> -n <namespace> -o jsonpath='{.spec.clientAuthorizationGrants}'
 
-2. **Labels missing:**
-   ```bash
-   kubectl label secret admission-token-<namespace> \
-     vriesdemichael.github.io/token-type=admission \
-     vriesdemichael.github.io/allow-operator-read=true \
-     --namespace=<namespace>
-   ```
+# Check realm status
+kubectl describe keycloakrealm <name> -n <namespace>
 
-3. **Not in metadata ConfigMap:**
-   ```bash
-   # Re-add to ConfigMap (see Multi-Tenant Guide)
-   ```
+# Check operator logs
+kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep <realm-name>
+```
 
-See: [Troubleshooting Guide](operations/troubleshooting.md#symptom-bootstrap-not-working-no-operational-token-created)
+See: [Troubleshooting Guide](operations/troubleshooting.md#symptom-realm-stuck-in-pendingprovisioning)
 
 ---
 
