@@ -2144,38 +2144,25 @@ async def operator_instance_id(k8s_apps_v1, shared_operator):
 def realm_cr_factory(
     test_namespace: str,
     shared_operator: SharedOperatorInfo,
-    drift_test_auth_token: tuple[str, str],
 ):
     """Factory for creating KeycloakRealm CR manifests.
 
     This replaces the realm_cr fixture to allow customization without modifying
     shared state.
 
-    NOTE: This factory depends on drift_test_auth_token for backward compatibility
-    with existing tests. For new tests, consider using auth_token_factory directly
-    and passing the secret name to your realm manifest.
-
     Usage:
         def test_something(realm_cr_factory):
-            # Simple usage (uses drift_test_auth_token for compatibility)
+            # Simple usage
             realm_manifest = realm_cr_factory(
                 realm_name="custom-realm",
                 settings={"enabled": False},
             )
-
-        async def test_with_custom_token(realm_cr_factory, auth_token_factory, test_namespace):
-            # For more control, create your own token
-            secret_name, _ = await auth_token_factory(namespace=test_namespace)
-            realm_manifest = realm_cr_factory(realm_name="custom-realm")
-            # Then modify the auth secret reference
-            realm_manifest["spec"]["operatorRef"]["authorizationSecretRef"]["name"] = secret_name
 
     Args:
         realm_name: Optional custom realm name
         settings: Optional realm settings dict to merge
         **overrides: Any other spec fields to override
     """
-    secret_name, _ = drift_test_auth_token
 
     def _create_realm_cr(**overrides) -> dict[str, Any]:
         """Create a KeycloakRealm CR manifest with optional overrides."""
@@ -2194,10 +2181,6 @@ def realm_cr_factory(
                 "realmName": realm_name,
                 "operatorRef": {
                     "namespace": shared_operator.namespace,
-                    "authorizationSecretRef": {
-                        "name": secret_name,
-                        "key": "token",
-                    },
                 },
                 "clientAuthorizationGrants": [
                     test_namespace
