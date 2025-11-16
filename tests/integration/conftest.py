@@ -55,7 +55,6 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
-    DEFAULT_KEYCLOAK_IMAGE,
     DEFAULT_KEYCLOAK_OPTIMIZED_VERSION,
 )
 from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
@@ -71,7 +70,6 @@ from .cleanup_utils import (
 from .models import KeycloakReadySetup, SharedOperatorInfo
 
 # wait_helpers are imported directly in tests, not used in conftest
-
 
 # ============================================================================
 # Test Helper Functions
@@ -797,48 +795,6 @@ async def cnpg_cluster(
 
 
 @pytest.fixture
-def sample_keycloak_spec(test_secrets, cnpg_cluster) -> dict[str, Any]:
-    """Return a sample Keycloak resource specification using standard PostgreSQL config."""
-    if cnpg_cluster:
-        # Use standard PostgreSQL configuration with CNPG connection details
-        database_block: dict[str, Any] = {
-            "type": cnpg_cluster["type"],
-            "host": cnpg_cluster["host"],
-            "port": cnpg_cluster["port"],
-            "database": cnpg_cluster["database"],
-            "username": cnpg_cluster["username"],
-            "password_secret": {
-                "name": cnpg_cluster["password_secret"],
-                "key": "password",
-            },
-        }
-    else:
-        # Fallback minimal traditional config (may fail if real DB not present)
-        database_block = {
-            "type": "postgresql",
-            "host": "postgres-test",
-            "database": "keycloak",
-            "username": "keycloak",
-            "password_secret": {"name": test_secrets["database"], "key": "password"},
-        }
-
-    return {
-        "apiVersion": "vriesdemichael.github.io/v1",
-        "kind": "Keycloak",
-        "spec": {
-            "image": DEFAULT_KEYCLOAK_IMAGE,
-            "replicas": 1,
-            "database": database_block,
-            "admin_access": {
-                "username": "admin",
-                "password_secret": {"name": test_secrets["admin"], "key": "password"},
-            },
-            "service": {"type": "ClusterIP", "port": 8080},
-        },
-    }
-
-
-@pytest.fixture
 def sample_realm_spec() -> KeycloakRealmSpec:
     """Return a sample Keycloak realm specification using Pydantic model."""
     return KeycloakRealmSpec(
@@ -980,144 +936,6 @@ def wait_for_keycloak_ready(
 # ============================================================================
 # Class-scoped fixtures for shared Keycloak instances (performance optimization)
 # ============================================================================
-
-
-@pytest.fixture(scope="class")
-def class_scoped_namespace(_k8s_core_v1_sync, request) -> str:
-    """Create a test namespace that lives for entire test class.
-
-    This allows tests within a class to share resources like Keycloak instances,
-    significantly reducing test execution time.
-    """
-    namespace_name = f"test-{os.urandom(4).hex()}"
-
-    # Create namespace
-    namespace = client.V1Namespace(
-        metadata=client.V1ObjectMeta(
-            name=namespace_name, labels={"test": "integration", "operator": "keycloak"}
-        )
-    )
-
-    _k8s_core_v1_sync.create_namespace(namespace)
-
-    # Register cleanup finalizer
-    def cleanup():
-        try:
-            _k8s_core_v1_sync.delete_namespace(
-                name=namespace_name,
-                body=client.V1DeleteOptions(propagation_policy="Foreground"),
-            )
-        except ApiException as e:
-            if e.status != 404:  # Ignore not found errors
-                print(f"Warning: Failed to cleanup namespace {namespace_name}: {e}")
-
-    request.addfinalizer(cleanup)
-    return namespace_name
-
-
-@pytest.fixture(scope="class")
-def class_scoped_test_secrets(
-    _k8s_core_v1_sync, class_scoped_namespace
-) -> dict[str, str]:
-    """Create test secrets for class-scoped Keycloak instances with required RBAC label.
-
-    Note: Synchronous fixture for pytest-xdist compatibility.
-    """
-    secrets = {}
-
-    # Database secret
-    db_secret = client.V1Secret(
-        metadata=client.V1ObjectMeta(
-            name="shared-db-secret",
-            namespace=class_scoped_namespace,
-            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
-        ),
-        string_data={"password": "test-db-password", "username": "keycloak"},
-    )
-    _k8s_core_v1_sync.create_namespaced_secret(class_scoped_namespace, db_secret)
-    secrets["database"] = "shared-db-secret"
-
-    # Admin secret
-    admin_secret = client.V1Secret(
-        metadata=client.V1ObjectMeta(
-            name="shared-admin-secret",
-            namespace=class_scoped_namespace,
-            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
-        ),
-        string_data={"password": "admin-password", "username": "admin"},
-    )
-    _k8s_core_v1_sync.create_namespaced_secret(class_scoped_namespace, admin_secret)
-    secrets["admin"] = "shared-admin-secret"
-
-    return secrets
-
-
-@pytest.fixture(scope="class")
-def class_scoped_cnpg_cluster(
-    k8s_client, class_scoped_namespace, cnpg_installed
-) -> dict[str, str] | None:
-    """Create a CNPG cluster that lives for entire test class."""
-    if not cnpg_installed:
-        return None
-
-    import time
-
-    from kubernetes import dynamic
-
-    dyn = dynamic.DynamicClient(k8s_client)
-    cluster_api = dyn.resources.get(api_version="postgresql.cnpg.io/v1", kind="Cluster")
-
-    cluster_name = "kc-shared-cnpg"
-    db_name = "keycloak"
-
-    cluster_manifest = {
-        "apiVersion": "postgresql.cnpg.io/v1",
-        "kind": "Cluster",
-        "metadata": {"name": cluster_name, "namespace": class_scoped_namespace},
-        "spec": {
-            "instances": 1,
-            "primaryUpdateStrategy": "unsupervised",
-            "storage": {"size": "1Gi"},
-            "bootstrap": {"initdb": {"database": db_name, "owner": "app"}},
-            "enableSuperuserAccess": False,
-            "resources": {
-                "requests": {"cpu": "100m", "memory": "128Mi"},
-                "limits": {"cpu": "200m", "memory": "256Mi"},
-            },
-        },
-    }
-
-    # Create cluster
-    try:
-        cluster_api.create(body=cluster_manifest, namespace=class_scoped_namespace)
-    except ApiException as e:
-        if e.status != 409:  # 409 AlreadyExists
-            raise
-
-    # Wait for cluster to be ready (synchronous polling)
-    timeout = 420
-    interval = 5
-    start_time = time.time()
-
-    while time.time() - start_time < timeout:
-        try:
-            obj = cluster_api.get(name=cluster_name, namespace=class_scoped_namespace)
-            phase = obj.to_dict().get("status", {}).get("phase")
-            if phase == "Cluster in healthy state":
-                # Confirm app secret existence
-                core = client.CoreV1Api(k8s_client)
-                try:
-                    core.read_namespaced_secret(
-                        f"{cluster_name}-app", class_scoped_namespace
-                    )
-                    return {"name": cluster_name, "database": db_name}
-                except ApiException:
-                    pass
-        except ApiException:
-            pass
-        time.sleep(interval)
-
-    pytest.skip("CNPG cluster was not ready in time")
 
 
 @pytest.fixture(scope="session")
@@ -1610,17 +1428,6 @@ async def shared_operator(
         # with pytest-xdist workers. The fixture teardown used to track worker counts
         # but this caused premature cleanup when a worker exited early (e.g., due to test errors).
         # Now we let pytest_sessionfinish handle all cleanup after coverage retrieval.
-
-
-@pytest.fixture
-def temp_manifest_file():
-    """Create a temporary file for Kubernetes manifests."""
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        temp_path = Path(f.name)
-        yield temp_path
-        # Cleanup
-        if temp_path.exists():
-            temp_path.unlink()
 
 
 @pytest.fixture
@@ -2305,7 +2112,6 @@ async def helm_client(
 # ============================================================================
 # Auth Token Factory (Consolidated)
 # ============================================================================
-
 
 # ============================================================================
 # CR Factory Functions
