@@ -222,7 +222,7 @@ src/keycloak_operator/
 4. **Models are type-safe** - Pydantic validates all data
 5. **Utils are reusable** - No business logic in utilities
 
-See [Architecture](architecture.md) for detailed architecture diagrams and explanations.
+See [Architecture](concepts/architecture.md) for detailed architecture diagrams and explanations.
 
 ## How to Add New CRD Fields
 
@@ -593,7 +593,7 @@ See CLAUDE.md in the repository root for detailed development workflow and Git p
 - **Documentation**: Start with [Quick Start](quickstart/README.md)
 - **Issues**: [GitHub Issues](https://github.com/vriesdemichael/keycloak-operator/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/vriesdemichael/keycloak-operator/discussions)
-- **Architecture**: [Architecture Guide](architecture.md)
+- **Architecture**: [Architecture Guide](concepts/architecture.md)
 - **Testing**: [Testing Guide](development/testing.md)
 
 Return to [Home](index.md).

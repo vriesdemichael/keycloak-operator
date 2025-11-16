@@ -498,7 +498,7 @@ The operator exposes Prometheus metrics for rate limiting (when implemented):
 - `keycloak_operator_rate_limit_denied_total`: Number of requests denied (should be 0)
 - `keycloak_operator_rate_limit_tokens_available`: Current token bucket levels
 
-See [Observability](observability.md) for complete metrics documentation.
+See [Observability](../guides/observability.md) for complete metrics documentation.
 
 ## Future Enhancements
 
@@ -512,19 +512,19 @@ See [Observability](observability.md) for complete metrics documentation.
 **Core Architecture:**
 
 - [Security Model](security.md) - Token system security architecture and authorization model
-- [Observability](observability.md) - Metrics, health checks, and monitoring
-- [Development Guide](development.md) - Code structure and development workflow
+- [Observability](../guides/observability.md) - Metrics, health checks, and monitoring
+- [Development Guide](../development.md) - Code structure and development workflow
 
 **Operational Guides:**
 
 - [Security Model](security.md) - Authorization and access control
-- [Troubleshooting](operations/troubleshooting.md) - Debugging common issues
-- [High Availability Deployment](how-to/ha-deployment.md) - Production deployment patterns
+- [Troubleshooting](../operations/troubleshooting.md) - Debugging common issues
+- [High Availability Deployment](../how-to/ha-deployment.md) - Production deployment patterns
 
 **Quickstart:**
 
 - [Getting Started](quickstart/README.md) - Deploy your first Keycloak realm
-- [End-to-End Setup](how-to/end-to-end-setup.md) - Complete production deployment
+- [End-to-End Setup](../how-to/end-to-end-setup.md) - Complete production deployment
 
 **API Reference:**
 
@@ -532,4 +532,4 @@ See [Observability](observability.md) for complete metrics documentation.
 - [KeycloakRealm CRD](reference/keycloak-realm-crd.md) - Realm configuration
 - [KeycloakClient CRD](reference/keycloak-client-crd.md) - Client configuration
 
-Return to the [index](index.md) or continue with the [development guide](development.md).
+Return to the [index](index.md) or continue with the [development guide](../development.md).
