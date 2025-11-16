@@ -1301,7 +1301,7 @@ If you've tried the solutions above and still have issues:
 
 **Problem-Specific Guides:**
 
-- [Security Model](../security.md) - Authorization and access control
+- [Security Model](../concepts/security.md) - Authorization and access control
 - [Migration Guide](migration.md) - Troubleshooting migration from official Keycloak operator
 - [FAQ: Troubleshooting](../faq.md#troubleshooting) - Quick answers to frequent problems
 
@@ -1320,9 +1320,9 @@ If you've tried the solutions above and still have issues:
 
 **Architecture:**
 
-- [Architecture Overview](../architecture.md) - Understanding reconciliation flow and token system
-- [Security Model](../security.md) - Authorization model and token types
-- [Observability](../observability.md) - Metrics and monitoring for proactive issue detection
+- [Architecture Overview](../concepts/architecture.md) - Understanding reconciliation flow and token system
+- [Security Model](../concepts/security.md) - Authorization model and token types
+- [Observability](../guides/observability.md) - Metrics and monitoring for proactive issue detection
 
 ---
 
@@ -1330,5 +1330,5 @@ If you've tried the solutions above and still have issues:
 
 - [End-to-End Setup Guide](../how-to/end-to-end-setup.md)
 - [Multi-Tenant Configuration](../how-to/multi-tenant.md)
-- [Security Model](../security.md)
+- [Security Model](../concepts/security.md)
 - [FAQ](../faq.md)

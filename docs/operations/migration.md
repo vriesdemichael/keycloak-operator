@@ -488,4 +488,4 @@ Document your upgrade:
 - [End-to-End Setup Guide](../how-to/end-to-end-setup.md)
 - [Backup & Restore Guide](../how-to/backup-restore.md)
 - [Troubleshooting Guide](./troubleshooting.md)
-- [Security Model](../security.md)
+- [Security Model](../concepts/security.md)
