@@ -14,12 +14,8 @@ async def test_realm_with_smtp_secret_reference(
     keycloak_admin_client,
     operator_namespace,
     test_namespace,
-    admission_token_setup,
 ):
     """Test creating realm with SMTP config using secret reference."""
-    # Get admission token from fixture
-    admission_secret_name, _ = admission_token_setup
-
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
         KeycloakSMTPConfig,
@@ -127,12 +123,8 @@ async def test_realm_with_smtp_direct_password(
     keycloak_admin_client,
     operator_namespace,
     test_namespace,
-    admission_token_setup,
 ):
     """Test creating realm with SMTP config using direct password (deprecated)."""
-    # Get admission token from fixture
-    admission_secret_name, _ = admission_token_setup
-
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
         KeycloakSMTPConfig,
@@ -204,12 +196,9 @@ async def test_realm_with_smtp_direct_password(
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_missing_smtp_secret(
-    shared_operator, operator_namespace, test_namespace, admission_token_setup
+    shared_operator, operator_namespace, test_namespace
 ):
     """Test realm creation fails gracefully with missing SMTP secret."""
-    # Get admission token from fixture
-    admission_secret_name, _ = admission_token_setup
-
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
         KeycloakSMTPConfig,
@@ -296,12 +285,9 @@ async def test_realm_with_missing_smtp_secret(
 @pytest.mark.integration
 @pytest.mark.asyncio
 async def test_realm_with_missing_secret_key(
-    shared_operator, operator_namespace, test_namespace, admission_token_setup
+    shared_operator, operator_namespace, test_namespace
 ):
     """Test realm creation fails gracefully with missing key in secret."""
-    # Get admission token from fixture
-    admission_secret_name, _ = admission_token_setup
-
     from keycloak_operator.models.realm import (
         KeycloakRealmSpec,
         KeycloakSMTPConfig,

@@ -24,7 +24,6 @@ Session-scoped (shared across all tests):
 
 Function-scoped (per test):
 ├── test_namespace → str (unique per test with RBAC)
-├── auth_token_factory → Creates admission/operational tokens
 ├── keycloak_ready → KeycloakReadySetup (operator + port + admin client)
 └── managed_* → Auto-cleanup resource creators
 
@@ -35,13 +34,12 @@ Internal fixtures (prefixed with _):
 
 Recommended Usage:
 - Simple operator tests: shared_operator + test_namespace
-- Realm tests: keycloak_ready + test_namespace + auth_token_factory
+- Realm tests: keycloak_ready + test_namespace
 - Client tests: keycloak_ready + test_namespace + managed_realm
 - Drift tests: keycloak_ready + drift_detector
 """
 
 import asyncio
-import contextlib
 import fcntl
 import logging
 import os
@@ -2013,7 +2011,6 @@ async def helm_realm(
         release_name: str,
         realm_name: str,
         operator_namespace: str = "keycloak-system",
-        operator_auth_secret: str = "keycloak-operator-auth-token",
         **values_overrides,
     ) -> str:
         """
@@ -2027,10 +2024,6 @@ async def helm_realm(
             "realmName": realm_name,
             "operatorRef": {
                 "namespace": operator_namespace,
-                "authorizationSecretRef": {
-                    "name": operator_auth_secret,
-                    "key": "token",
-                },
             },
             **values_overrides,
         }
@@ -2312,228 +2305,6 @@ async def helm_client(
 # ============================================================================
 # Auth Token Factory (Consolidated)
 # ============================================================================
-
-
-@pytest.fixture
-async def auth_token_factory(
-    k8s_core_v1,
-    operator_namespace: str,
-    shared_operator: SharedOperatorInfo,
-):
-    """Factory for creating auth tokens (admission or operational).
-
-    This consolidated fixture replaces admission_token_setup and drift_test_auth_token.
-
-    Usage:
-        async def test_something(auth_token_factory, test_namespace):
-            secret_name, token_value = await auth_token_factory(
-                namespace=test_namespace,
-                secret_name="my-token",  # Optional, auto-generated if not provided
-                token_type="admission",
-            )
-
-    Args:
-        namespace: Where to create the token secret
-        secret_name: Optional secret name (auto-generated if not provided)
-        token_type: "admission" or "operational" (default: "admission")
-
-    Returns:
-        Tuple of (secret_name, token_value)
-    """
-    import base64
-    import hashlib
-    import json
-    import uuid
-    from datetime import UTC, datetime, timedelta
-
-    created_tokens: list[
-        tuple[str, str, str]
-    ] = []  # (namespace, secret_name, token_hash)
-
-    async def _create_token(
-        namespace: str,
-        secret_name: str | None = None,
-        token_type: str = "admission",
-    ) -> tuple[str, str]:
-        """Create an auth token and return (secret_name, token_value)."""
-        suffix = uuid.uuid4().hex[:8]
-
-        if secret_name is None:
-            secret_name = f"{token_type}-token-{suffix}"
-
-        token_value = f"test-{token_type}-token-{suffix}"
-
-        # Create token secret
-        secret_body = {
-            "apiVersion": "v1",
-            "kind": "Secret",
-            "metadata": {
-                "name": secret_name,
-                "namespace": namespace,
-                "labels": {
-                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true",
-                    "vriesdemichael.github.io/keycloak-token-type": token_type,
-                },
-            },
-            "type": "Opaque",
-            "data": {
-                "token": base64.b64encode(token_value.encode()).decode(),
-            },
-        }
-
-        await k8s_core_v1.create_namespaced_secret(namespace, secret_body)
-
-        # Store token metadata in operator namespace ConfigMap
-        token_hash = hashlib.sha256(token_value.encode()).hexdigest()
-        valid_until = datetime.now(UTC) + timedelta(days=365)
-
-        token_metadata = {
-            "namespace": namespace,
-            "token_type": token_type,
-            "issued_at": datetime.now(UTC).isoformat(),
-            "valid_until": valid_until.isoformat(),
-            "version": 1,
-            "created_by_realm": None,
-            "revoked": False,
-            "revoked_at": None,
-        }
-
-        configmap_name = "keycloak-operator-token-metadata"
-
-        # Retry loop to handle concurrent updates (409 conflicts)
-        max_retries = 5
-        for attempt in range(max_retries):
-            try:
-                cm = await k8s_core_v1.read_namespaced_config_map(
-                    name=configmap_name, namespace=operator_namespace
-                )
-                if not cm.data:
-                    cm.data = {}
-                cm.data[token_hash] = json.dumps(token_metadata)
-                await k8s_core_v1.patch_namespaced_config_map(
-                    name=configmap_name, namespace=operator_namespace, body=cm
-                )
-                break  # Success
-            except ApiException as e:
-                if e.status == 404:
-                    # ConfigMap doesn't exist - create it
-                    cm_body = {
-                        "apiVersion": "v1",
-                        "kind": "ConfigMap",
-                        "metadata": {
-                            "name": configmap_name,
-                            "namespace": operator_namespace,
-                        },
-                        "data": {token_hash: json.dumps(token_metadata)},
-                    }
-                    try:
-                        await k8s_core_v1.create_namespaced_config_map(
-                            namespace=operator_namespace, body=cm_body
-                        )
-                        break  # Success
-                    except ApiException as create_err:
-                        if create_err.status == 409:
-                            continue  # Another worker created it - retry
-                        raise
-                elif e.status == 409:
-                    # Conflict - retry with backoff
-                    if attempt < max_retries - 1:
-                        await asyncio.sleep(0.1 * (attempt + 1))
-                        continue
-                    raise
-                else:
-                    raise
-
-        created_tokens.append((namespace, secret_name, token_hash))
-        return (secret_name, token_value)
-
-    yield _create_token
-
-    # Cleanup all created tokens
-    configmap_name = "keycloak-operator-token-metadata"
-
-    for namespace, secret_name, token_hash in created_tokens:
-        # Delete secret
-        with contextlib.suppress(ApiException):
-            await k8s_core_v1.delete_namespaced_secret(
-                name=secret_name, namespace=namespace
-            )
-
-        # Remove from ConfigMap
-        try:
-            cm = await k8s_core_v1.read_namespaced_config_map(
-                name=configmap_name, namespace=operator_namespace
-            )
-            if cm.data and token_hash in cm.data:
-                del cm.data[token_hash]
-                await k8s_core_v1.patch_namespaced_config_map(
-                    name=configmap_name, namespace=operator_namespace, body=cm
-                )
-        except ApiException:
-            pass  # Cleanup failure is not critical
-
-
-# ============================================================================
-# Legacy Token Fixtures (Deprecated - use auth_token_factory)
-# ============================================================================
-
-
-@pytest.fixture
-async def admission_token_setup(
-    auth_token_factory,
-    test_namespace: str,
-) -> AsyncGenerator[tuple[str, str]]:
-    """DEPRECATED: Use auth_token_factory instead.
-
-    Create admission token for testing new auth system.
-
-    Returns tuple of (secret_name, token_value) for use in tests.
-    """
-    secret_name, token_value = await auth_token_factory(
-        namespace=test_namespace,
-        token_type="admission",
-    )
-    yield (secret_name, token_value)
-
-
-# Drift detection test fixtures
-
-
-@pytest.fixture
-async def operator_instance_id(k8s_apps_v1, shared_operator):
-    """Get the actual operator instance ID from running deployment."""
-    deployment = await k8s_apps_v1.read_namespaced_deployment(
-        name="keycloak-operator", namespace=shared_operator.namespace
-    )
-
-    # Extract from environment variable
-    for container in deployment.spec.template.spec.containers:
-        for env in container.env or []:
-            if env.name == "OPERATOR_INSTANCE_ID":
-                return env.value
-
-    # Fallback to Helm chart default pattern
-    return f"keycloak-operator-{shared_operator.namespace}"
-
-
-@pytest.fixture
-async def drift_test_auth_token(
-    auth_token_factory,
-    test_namespace: str,
-) -> AsyncGenerator[tuple[str, str]]:
-    """DEPRECATED: Use auth_token_factory instead.
-
-    Create admission token for drift detection tests.
-
-    Returns tuple of (secret_name, token_value) for use in tests.
-    """
-    # Use fixed name for compatibility with existing tests
-    secret_name, token_value = await auth_token_factory(
-        namespace=test_namespace,
-        secret_name="keycloak-operator-auth-token",
-        token_type="admission",
-    )
-    yield (secret_name, token_value)
 
 
 # ============================================================================

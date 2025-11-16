@@ -27,7 +27,6 @@ class TestServiceAccountRoles:
         operator_namespace,
         shared_operator,
         keycloak_admin_client,
-        admission_token_setup,
     ) -> None:
         """End-to-end verification that realm roles are assigned to service accounts.
 
@@ -57,9 +56,7 @@ class TestServiceAccountRoles:
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
         # Get admission token from fixture
-        admission_secret_name, _ = admission_token_setup
-
-        realm_spec = KeycloakRealmSpec(
+        admission_secret_name, _ = realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
             client_authorization_grants=[namespace],  # Grant this namespace access

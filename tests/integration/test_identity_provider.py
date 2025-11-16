@@ -180,14 +180,10 @@ async def test_realm_with_oidc_identity_provider(
     keycloak_admin_client,
     operator_namespace,
     test_namespace,
-    admission_token_setup,
     k8s_custom_objects,
     dex_ready,
 ):
     """Test creating a realm with an OIDC identity provider (Dex)."""
-    # Get admission token from fixture
-    admission_secret_name, _ = admission_token_setup
-
     realm_name = f"test-idp-{uuid.uuid4().hex[:8]}"
 
     # Create secret with IDP client secret
@@ -326,7 +322,6 @@ async def test_realm_with_github_identity_provider_example(
     shared_operator,
     operator_namespace,
     test_namespace,
-    admission_token_setup,
     k8s_custom_objects,  # Need async client for wait helper
 ):
     """
@@ -336,9 +331,6 @@ async def test_realm_with_github_identity_provider_example(
     It does NOT test actual authentication as that requires real GitHub OAuth credentials.
     This serves as a documentation example for users.
     """
-    # Get admission token from fixture
-    admission_secret_name, _ = admission_token_setup
-
     realm_name = f"test-github-idp-{uuid.uuid4().hex[:8]}"
 
     # Create secret with IDP client secret
