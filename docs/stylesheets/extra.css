@@ -21,34 +21,47 @@
   --md-primary-fg-color--light: var(--kc-primary);
   --md-primary-fg-color--dark: #006b85;
   --md-accent-fg-color: var(--kc-primary-light);
+  --md-code-bg-color: #1e1e1e;
+  --md-code-fg-color: var(--kc-primary-light);
 }
 
-/* Header styling */
+/* Header styling - both modes */
 .md-header {
   background: linear-gradient(135deg, var(--kc-primary-dark) 0%, var(--kc-primary) 100%);
 }
 
-/* Links */
-a {
+/* Dark mode header - darker gradient */
+[data-md-color-scheme="slate"] .md-header {
+  background: linear-gradient(135deg, #006b85 0%, var(--kc-primary-dark) 100%);
+}
+
+/* Links - Light mode */
+[data-md-color-scheme="default"] a {
   color: var(--kc-primary-dark);
 }
 
-a:hover {
+[data-md-color-scheme="default"] a:hover {
   color: var(--kc-primary);
 }
 
+/* Links - Dark mode with better contrast */
 [data-md-color-scheme="slate"] a {
   color: var(--kc-primary-light);
 }
 
 [data-md-color-scheme="slate"] a:hover {
-  color: var(--kc-primary);
+  color: #5dd8ff;
 }
 
 /* Code blocks with Keycloak accent */
-.highlight .filename,
 .md-typeset code {
   border-left: 3px solid var(--kc-primary);
+}
+
+/* Dark mode code blocks */
+[data-md-color-scheme="slate"] .md-typeset code {
+  background-color: var(--md-code-bg-color);
+  color: var(--md-code-fg-color);
 }
 
 /* Admonitions with Keycloak colors */
@@ -63,6 +76,12 @@ a:hover {
   border-color: var(--kc-primary);
 }
 
+/* Dark mode admonitions */
+[data-md-color-scheme="slate"] .md-typeset .note > .admonition-title,
+[data-md-color-scheme="slate"] .md-typeset .note > summary {
+  background-color: rgba(0, 184, 227, 0.15);
+}
+
 /* Info admonitions */
 .md-typeset .admonition.info > .admonition-title:before,
 .md-typeset details.info > summary:before {
@@ -74,15 +93,30 @@ a:hover {
   background: linear-gradient(90deg, var(--kc-primary-dark) 0%, var(--kc-primary) 100%);
 }
 
+/* Dark mode navigation tabs */
+[data-md-color-scheme="slate"] .md-tabs {
+  background: linear-gradient(90deg, #006b85 0%, var(--kc-primary-dark) 100%);
+}
+
 /* Search highlighting */
 .md-search__input:focus {
   border-color: var(--kc-primary);
+}
+
+[data-md-color-scheme="slate"] .md-search__input:focus {
+  border-color: var(--kc-primary-light);
 }
 
 /* Tables */
 .md-typeset table:not([class]) th {
   background-color: rgba(0, 184, 227, 0.1);
   border-bottom: 2px solid var(--kc-primary);
+}
+
+/* Dark mode tables */
+[data-md-color-scheme="slate"] .md-typeset table:not([class]) th {
+  background-color: rgba(0, 184, 227, 0.2);
+  border-bottom: 2px solid var(--kc-primary-light);
 }
 
 /* Buttons */
@@ -107,6 +141,21 @@ a:hover {
   border-color: var(--kc-primary-dark);
 }
 
+/* Dark mode buttons */
+[data-md-color-scheme="slate"] .md-button {
+  border: 1px solid var(--kc-primary-light);
+  color: var(--kc-primary-light);
+}
+
+[data-md-color-scheme="slate"] .md-button--primary {
+  background-color: var(--kc-primary-dark);
+  border-color: var(--kc-primary-dark);
+}
+
+[data-md-color-scheme="slate"] .md-button--primary:hover {
+  background-color: #006b85;
+}
+
 /* Task lists with Keycloak colors */
 .md-typeset .task-list-indicator:before {
   background-color: var(--kc-primary);
@@ -121,14 +170,32 @@ a:hover {
   background: var(--kc-primary-dark);
 }
 
+/* Dark mode scrollbar */
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb {
+  background: var(--kc-primary-dark);
+}
+
+[data-md-color-scheme="slate"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--kc-primary);
+}
+
 /* Footer gradient */
 .md-footer {
   background: linear-gradient(90deg, var(--kc-primary-dark) 0%, var(--kc-primary) 100%);
 }
 
+/* Dark mode footer */
+[data-md-color-scheme="slate"] .md-footer {
+  background: linear-gradient(90deg, #006b85 0%, var(--kc-primary-dark) 100%);
+}
+
 /* Version selector */
 .md-version__current {
   color: var(--kc-primary);
+}
+
+[data-md-color-scheme="slate"] .md-version__current {
+  color: var(--kc-primary-light);
 }
 
 /* Navigation highlighting */
@@ -144,6 +211,10 @@ a:hover {
   color: var(--kc-primary-light);
 }
 
+[data-md-color-scheme="slate"] .md-nav__link:hover {
+  color: #5dd8ff;
+}
+
 /* Content headings with bottom border accent */
 .md-typeset h1 {
   border-bottom: 3px solid var(--kc-primary);
@@ -156,6 +227,15 @@ a:hover {
   padding-bottom: 0.3rem;
 }
 
+/* Dark mode headings */
+[data-md-color-scheme="slate"] .md-typeset h1 {
+  border-bottom: 3px solid var(--kc-primary-dark);
+}
+
+[data-md-color-scheme="slate"] .md-typeset h2 {
+  border-bottom: 2px solid rgba(0, 184, 227, 0.4);
+}
+
 /* Hero section styling (for homepage) */
 .md-typeset .hero {
   padding: 2rem 0;
@@ -163,6 +243,11 @@ a:hover {
   background: linear-gradient(135deg, rgba(0, 184, 227, 0.1) 0%, rgba(0, 138, 170, 0.1) 100%);
   border-radius: 8px;
   margin: 2rem 0;
+}
+
+/* Dark mode hero */
+[data-md-color-scheme="slate"] .md-typeset .hero {
+  background: linear-gradient(135deg, rgba(0, 184, 227, 0.15) 0%, rgba(0, 138, 170, 0.15) 100%);
 }
 
 /* Warning/Important boxes */
@@ -191,4 +276,29 @@ a:hover {
 
 .md-clipboard:hover {
   color: var(--kc-primary-dark);
+}
+
+[data-md-color-scheme="slate"] .md-clipboard {
+  color: var(--kc-primary-light);
+}
+
+[data-md-color-scheme="slate"] .md-clipboard:hover {
+  color: #5dd8ff;
+}
+
+/* Dark mode syntax highlighting improvements */
+[data-md-color-scheme="slate"] .highlight .hll { background-color: #404040; }
+[data-md-color-scheme="slate"] .highlight .c { color: #7c7c7c; }
+[data-md-color-scheme="slate"] .highlight .k { color: var(--kc-primary-light); }
+[data-md-color-scheme="slate"] .highlight .s { color: #a6e22e; }
+[data-md-color-scheme="slate"] .highlight .n { color: #f8f8f2; }
+[data-md-color-scheme="slate"] .highlight .mi { color: #ae81ff; }
+
+/* Toggle button visibility improvement */
+.md-header__button.md-icon {
+  color: white;
+}
+
+[data-md-color-scheme="slate"] .md-header__button.md-icon {
+  color: var(--kc-primary-light);
 }
