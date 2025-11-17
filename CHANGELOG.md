@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.6](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.5...v0.3.6) (2025-11-17)
+
+
+### Bug Fixes
+
+* restore coverage collection and upload for tests ([0ae218d](https://github.com/vriesdemichael/keycloak-operator/commit/0ae218dc926c3c5bb834c3cf9cedf952b2106c45))
+
 ## [0.3.5](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.4...v0.3.5) (2025-11-17)
 
 
