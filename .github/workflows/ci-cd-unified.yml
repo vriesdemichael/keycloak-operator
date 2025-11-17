@@ -294,7 +294,7 @@ jobs:
       - name: Install yq for decision record validation
         env:
           YQ_VERSION: "v4.44.3"
-          YQ_CHECKSUM: "6f02dd3e1c3b7c6e87b2e5a4f0e3b3e4c5d6a7b8c9d0e1f2a3b4c5d6e7f8a9b0"
+          YQ_CHECKSUM: "a2c097180dd884a8d50c956ee16a9cec070f30a7947cf4ebf87d5f36213e9ed7"
         run: |
           wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /tmp/yq
           echo "${YQ_CHECKSUM}  /tmp/yq" | sha256sum -c -
