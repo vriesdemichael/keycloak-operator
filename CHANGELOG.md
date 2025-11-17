@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.0...v0.3.1) (2025-11-17)
+
+
+### Bug Fixes
+
+* use correct image tag in promote workflow SBOM/Trivy steps ([65e5984](https://github.com/vriesdemichael/keycloak-operator/commit/65e59847f23d3a364fdabd4f6e54361d9c72ccd0))
+
 ## [0.3.0](https://github.com/vriesdemichael/keycloak-operator/compare/v0.2.15...v0.3.0) (2025-11-17)
 
 
