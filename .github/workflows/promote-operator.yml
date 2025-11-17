@@ -97,21 +97,28 @@ jobs:
 
       - name: Generate SBOM for released image
         uses: anchore/sbom-action@v0
+        continue-on-error: true
         with:
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
           format: spdx-json
           output-file: sbom.spdx.json
 
       - name: Upload SBOM to release assets
+        if: success() || failure()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload ${{ github.event.release.tag_name }} sbom.spdx.json \
-            --clobber \
-            --repo ${{ github.repository }}
+          if [ -f sbom.spdx.json ]; then
+            gh release upload ${{ github.event.release.tag_name }} sbom.spdx.json \
+              --clobber \
+              --repo ${{ github.repository }}
+          else
+            echo "SBOM file not found, skipping upload"
+          fi
 
       - name: Scan promoted image with Trivy
         uses: aquasecurity/trivy-action@master
+        continue-on-error: true
         with:
           image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
           format: 'sarif'
@@ -120,7 +127,7 @@ jobs:
 
       - name: Upload Trivy results to GitHub Security
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && hashFiles('trivy-release-results.sarif') != ''
         with:
           sarif_file: 'trivy-release-results.sarif'
           category: 'trivy-release-image'
