@@ -87,10 +87,18 @@ jobs:
             fi
           done
 
+      - name: Extract primary version tag (without v prefix)
+        id: version
+        run: |
+          # Get the first version tag from metadata output (e.g., 0.3.0)
+          PRIMARY_TAG=$(echo "${{ steps.meta.outputs.tags }}" | head -n 1 | cut -d: -f2)
+          echo "tag=${PRIMARY_TAG}" >> $GITHUB_OUTPUT
+          echo "Primary version tag: ${PRIMARY_TAG}"
+
       - name: Generate SBOM for released image
         uses: anchore/sbom-action@v0
         with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
           format: spdx-json
           output-file: sbom.spdx.json
 
@@ -105,7 +113,7 @@ jobs:
       - name: Scan promoted image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.tag }}
           format: 'sarif'
           output: 'trivy-release-results.sarif'
           severity: 'CRITICAL,HIGH'
