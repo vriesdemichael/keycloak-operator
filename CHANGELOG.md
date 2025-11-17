@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.1...v0.3.2) (2025-11-17)
+
+
+### Bug Fixes
+
+* resolve all three workflow failures ([9c6b5ed](https://github.com/vriesdemichael/keycloak-operator/commit/9c6b5edb50995ee1ccce91f5d9b1d690428f78e5))
+
 ## [0.3.1](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.0...v0.3.1) (2025-11-17)
 
 
