@@ -1,14 +1,11 @@
-name: Release Please
+name: Release Please (DISABLED - Using ci-cd-unified.yml)
 
-# Automated release management using conventional commits
-# - Creates/updates release PR with changelog and version bump
-# - When PR is merged, creates GitHub release
-# - CI/CD workflow triggers on tag push to publish Docker images
+# DISABLED: Functionality moved to ci-cd-unified.yml
+# This workflow is kept for reference but will not run automatically
+# Remove this file once ci-cd-unified.yml is proven stable
 
 on:
-  push:
-    branches:
-      - main
+  workflow_dispatch:  # Manual only
 
 permissions:
   contents: write
