@@ -971,6 +971,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --group docs
 
+      - name: Install yq for YAML parsing
+        env:
+          YQ_VERSION: "v4.44.3"
+        run: |
+          wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /tmp/yq
+          sudo mv /tmp/yq /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+
       - name: Configure Git
         run: |
           git config user.name "github-actions[bot]"
