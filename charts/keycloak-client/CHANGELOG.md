@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.2.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.1.3...chart-client-v0.2.0) (2025-11-17)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-client+chart-realm:** Removed token-based authorization from all charts
+* The API group domain has changed from keycloak.mdvr.nl to vriesdemichael.github.io. Existing installations must migrate by:
+
+### Features
+
+* **chart-client+chart-realm:** update charts for namespace grant authorization ([add6af9](https://github.com/vriesdemichael/keycloak-operator/commit/add6af903c2ff887cd44c5608ceb1a1a6436f23e)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* migrate API group from keycloak.mdvr.nl to vriesdemichael.github.io ([d93b3c1](https://github.com/vriesdemichael/keycloak-operator/commit/d93b3c115d73ba8e3f1fa99c48c1e058f315b075))
+
+
+### Bug Fixes
+
+* remove authorizationSecretRef from Helm values schemas ([f87585b](https://github.com/vriesdemichael/keycloak-operator/commit/f87585b10b7446822636a909e83f1c45235fa62d)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* update tests and Helm schema for grant list authorization ([0fe6fca](https://github.com/vriesdemichael/keycloak-operator/commit/0fe6fcae8c638595a117b2093d869ecb85b37f47)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+
+
+### Documentation
+
+* bulk cleanup of authorizationSecretRef in chart READMEs ([7010d85](https://github.com/vriesdemichael/keycloak-operator/commit/7010d855084409af6a36e3d17fae465070afd6b9))
+* **chart-client:** add comprehensive README ([7b147c8](https://github.com/vriesdemichael/keycloak-operator/commit/7b147c845b18172f0526182ecc33a469a56b5f07))
+
 ## [0.1.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.1.2...chart-client-v0.1.3) (2025-11-01)
 
 
