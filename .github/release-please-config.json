@@ -3,7 +3,7 @@
   "packages": {
     ".": {
       "release-type": "simple",
-      "component": "Operator Image",
+      "component": "operator",
       "package-name": "keycloak-operator",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
