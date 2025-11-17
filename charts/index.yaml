@@ -3,9 +3,9 @@ entries:
   keycloak-client:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2025-11-15T00:27:39.781573284Z"
+    created: "2025-11-17T11:13:10.784731878Z"
     description: A Helm chart for deploying Keycloak clients with authorization
-    digest: ad966b672dfd8adf6d0c6c22e302d533dd065a954fa2339c47754784464df0b8
+    digest: 07f006671ae99f184b3fdc70d1a27d9dfa949269d01301da9be440fa88225e94
     home: https://github.com/vriesdemichael/keycloak-operator
     keywords:
     - keycloak
@@ -25,7 +25,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2025-11-15T00:27:39.780991972Z"
+    created: "2025-11-17T11:13:10.784147867Z"
     description: A Helm chart for deploying Keycloak clients with authorization
     digest: fb22c39897261c5dba6f599690d68559888f93e7df4b64cec3fc037a2dca8e7a
     home: https://github.com/vriesdemichael/keycloak-operator
@@ -48,9 +48,9 @@ entries:
   keycloak-operator:
   - apiVersion: v2
     appVersion: v0.2.14
-    created: "2025-11-15T00:27:39.784166543Z"
+    created: "2025-11-17T11:13:10.788323147Z"
     description: A Helm chart for deploying the Keycloak Operator with GitOps compatibility
-    digest: 673ea9fbfed9b3eae0d6deacbadd7136e993f29552b38ea49c721a5140ba7083
+    digest: af394b774db18874a20f6d77e74e1dab9cb8aba7404eae0b08d4ed3153b2e894
     home: https://github.com/vriesdemichael/keycloak-operator
     icon: https://www.keycloak.org/resources/images/icon.svg
     keywords:
@@ -71,7 +71,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: v0.2.14
-    created: "2025-11-15T00:27:39.782853685Z"
+    created: "2025-11-17T11:13:10.786107148Z"
     description: A Helm chart for deploying the Keycloak Operator with GitOps compatibility
     digest: ea34b465bb9145c16acb8363f67052d38bd78e9582b339a8df687ec194bd1593
     home: https://github.com/vriesdemichael/keycloak-operator
@@ -95,9 +95,9 @@ entries:
   keycloak-realm:
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2025-11-15T00:27:39.786113501Z"
+    created: "2025-11-17T11:13:10.789447087Z"
     description: A Helm chart for deploying Keycloak realms with authorization
-    digest: ce5cedf1c7ef271f901dc40d16129d468fb0360ebb71f68cbbaec66842375a7d
+    digest: 1aad2654a14e77cb85ba982abd0917337b7144ee4a060d62d84a35cc8aec8cb3
     home: https://github.com/vriesdemichael/keycloak-operator
     keywords:
     - keycloak
@@ -117,7 +117,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 1.0.0
-    created: "2025-11-15T00:27:39.785506533Z"
+    created: "2025-11-17T11:13:10.788875619Z"
     description: A Helm chart for deploying Keycloak realms with authorization
     digest: cfcb7d03f914d6297375fbb30fddb9d7b4e2db7f905126ac467742eceeadb6ee
     home: https://github.com/vriesdemichael/keycloak-operator
@@ -137,4 +137,4 @@ entries:
     urls:
     - https://vriesdemichael.github.io/keycloak-operator/charts/keycloak-realm-0.1.3.tgz
     version: 0.1.3
-generated: "2025-11-15T00:27:39.780201412Z"
+generated: "2025-11-17T11:13:10.783424075Z"
