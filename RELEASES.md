@@ -174,7 +174,7 @@ The project follows a **build-once, promote-on-release** workflow to ensure rele
 
 4. **Release-Please Creates PRs**
    - Scans commits since last release
-   - Creates **separate PRs** for each component (if both have changes)
+   - Creates **separate PRs** for each component that has changes
    - Updates version in files (operator: `pyproject.toml`, chart: `Chart.yaml`)
    - Generates CHANGELOG
    - **Auto-merges** when all checks pass

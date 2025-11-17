@@ -4,6 +4,15 @@ name: Deploy Dev Docs to GitHub Pages
 # Triggered manually only
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - 'mkdocs.yml'
+      - 'scripts/build-adr-docs.sh'
+      - 'scripts/generate-crd-schemas.py'
+      - 'src/domain/models.py'
+      - '.github/workflows/pages-dev.yml'
   workflow_dispatch:
 
 permissions:
