@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.4...v0.3.5) (2025-11-17)
+
+
+### Bug Fixes
+
+* use proper conventional commit scope for chart updates ([70cf9c0](https://github.com/vriesdemichael/keycloak-operator/commit/70cf9c043040b3405c48ccc5b4b92f23e368c30f))
+
 ## [0.3.4](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.3...v0.3.4) (2025-11-17)
 
 
