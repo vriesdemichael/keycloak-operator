@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.3...v0.3.4) (2025-11-17)
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.3.3 compatibility ([584c98f](https://github.com/vriesdemichael/keycloak-operator/commit/584c98f080352b39eab75c1c18e5faba838af9e9))
+
 ## [0.3.3](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.2...v0.3.3) (2025-11-17)
 
 
