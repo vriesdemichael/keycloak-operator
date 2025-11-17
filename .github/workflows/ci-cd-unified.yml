@@ -254,6 +254,16 @@ jobs:
       - name: Run unit tests
         run: uv run pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
 
+      - name: Upload unit coverage artifact for combining
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: unit-coverage
+          path: |
+            .coverage
+            coverage.xml
+          retention-days: 1
+
       - name: Upload coverage
         uses: codecov/codecov-action@v5
         if: (success() || failure()) && github.actor != 'dependabot[bot]'
@@ -529,7 +539,41 @@ jobs:
             --timeout=300s
 
       - name: Run integration tests
+        env:
+          INTEGRATION_COVERAGE: "true"
         run: uv run pytest tests/integration/ -v -n auto --dist=loadscope
+
+      - name: Generate integration coverage report
+        if: always()
+        run: |
+          echo "Generating coverage XML report from integration tests..."
+
+          # Check if integration coverage was collected by pytest fixture
+          if [ -d .tmp/coverage ] && [ -n "$(ls -A .tmp/coverage/.coverage* 2>/dev/null)" ]; then
+            echo "Found integration coverage files:"
+            ls -la .tmp/coverage/
+
+            # Combine integration coverage files and generate XML report
+            uv run coverage combine .tmp/coverage/.coverage*
+            uv run coverage xml -o coverage.xml
+            echo "✓ Generated coverage.xml from integration tests"
+          else
+            echo "ERROR: No integration coverage files found in .tmp/coverage/"
+            echo "Coverage collection may have failed during pytest teardown"
+            ls -la .tmp/ || echo "No .tmp directory found"
+            exit 1
+          fi
+
+      - name: Upload integration coverage to Codecov
+        uses: codecov/codecov-action@v5
+        if: always() && github.actor != 'dependabot[bot]'
+        with:
+          files: ./coverage.xml
+          flags: integration
+          name: integration-tests
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: true
 
       - name: Collect logs and diagnostics
         if: always()
