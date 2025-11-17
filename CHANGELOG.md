@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.3.6](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.5...v0.3.6) (2025-11-17)
+
+
+### Bug Fixes
+
+* restore coverage collection and upload for tests ([0ae218d](https://github.com/vriesdemichael/keycloak-operator/commit/0ae218dc926c3c5bb834c3cf9cedf952b2106c45))
+
+## [0.3.5](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.4...v0.3.5) (2025-11-17)
+
+
+### Bug Fixes
+
+* use proper conventional commit scope for chart updates ([70cf9c0](https://github.com/vriesdemichael/keycloak-operator/commit/70cf9c043040b3405c48ccc5b4b92f23e368c30f))
+
+## [0.3.4](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.3...v0.3.4) (2025-11-17)
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.3.3 compatibility ([584c98f](https://github.com/vriesdemichael/keycloak-operator/commit/584c98f080352b39eab75c1c18e5faba838af9e9))
+
 ## [0.3.3](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.2...v0.3.3) (2025-11-17)
 
 
