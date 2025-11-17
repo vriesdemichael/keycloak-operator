@@ -379,8 +379,9 @@ jobs:
 
   integration-tests:
     name: Integration Tests (K8s ${{ matrix.k8s-version }})
-    needs: [detect-changes, build-test-image]
-    if: needs.detect-changes.outputs.code-changed == 'true'
+    needs:
+      - detect-changes
+      - build-test-image
       - unit-tests
       - code-quality
       - security-sast
@@ -388,6 +389,7 @@ jobs:
       - security-image-scan
       - security-sbom
       - security-secrets
+    if: needs.detect-changes.outputs.code-changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
