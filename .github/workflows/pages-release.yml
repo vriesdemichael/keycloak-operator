@@ -1,17 +1,10 @@
-name: Deploy Release to GitHub Pages
+name: Deploy Release to GitHub Pages (DISABLED - Using ci-cd-unified.yml)
 
-# Deploy versioned documentation and Helm charts on releases
-# - Documentation built with MkDocs + mike for versioning
-# - Helm charts packaged with version history
-#
-# Versioning Strategy:
-# - Operator chart releases (chart-operator-v*): Create new versioned docs + set as latest
-# - Realm/Client chart releases (chart-realm-v*, chart-client-v*): Update charts only, update latest docs
-# - Operator image releases (v*): Update charts only, no doc changes
+# DISABLED: Functionality moved to ci-cd-unified.yml
+# This workflow is kept for reference but will not run automatically
+# Remove this file once ci-cd-unified.yml is proven stable
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       version_override:

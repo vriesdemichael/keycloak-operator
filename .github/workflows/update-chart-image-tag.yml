@@ -1,11 +1,10 @@
-name: Update Chart Image Tags
+name: Update Chart Image Tags (DISABLED - Using ci-cd-unified.yml)
 
-# Automatically updates operator chart values.yaml with the latest image tag
-# when a new release is published
+# DISABLED: Functionality moved to ci-cd-unified.yml
+# This workflow is kept for reference but will not run automatically
+# Remove this file once ci-cd-unified.yml is proven stable
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
     inputs:
       version:
