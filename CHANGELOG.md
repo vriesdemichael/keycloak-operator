@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.3](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.2...v0.3.3) (2025-11-17)
+
+
+### Bug Fixes
+
+* add yq installation to release docs job ([6e53a92](https://github.com/vriesdemichael/keycloak-operator/commit/6e53a92a6ca26979eef60b0d3842d6e754bc9f27))
+* address Copilot review comments on unified CI/CD ([9cb6372](https://github.com/vriesdemichael/keycloak-operator/commit/9cb637234011f17b94db9547d590ed76459adbc3))
+* use correct yq sha256 checksum for v4.44.3 ([f4c7dc0](https://github.com/vriesdemichael/keycloak-operator/commit/f4c7dc0683a368ccb8bb2df25b087776b3d9d5df))
+
+
+### Code Refactoring
+
+* **ci:** unify CI/CD pipeline into single workflow ([ea1b748](https://github.com/vriesdemichael/keycloak-operator/commit/ea1b74895c277ec70b7f2e35d15a5cdcdc0729d9))
+
 ## [0.3.2](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.1...v0.3.2) (2025-11-17)
 
 
