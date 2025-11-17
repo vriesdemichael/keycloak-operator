@@ -21,11 +21,43 @@ env:
 
 jobs:
   # ==========================================================================
+  # STAGE 0: DETECT CHANGES
+  # Determine if code/tests changed to conditionally skip expensive jobs
+  # ==========================================================================
+
+  detect-changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      code-changed: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '!**.md'
+              - '!docs/**'
+              - '!TODO/**'
+              - '!.github/ISSUE_TEMPLATE/**'
+              - '!.github/PULL_REQUEST_TEMPLATE.md'
+              - '!.github/release-please-config.json'
+              - '!.github/.release-please-manifest.json'
+              - '!Makefile'
+              - '!codecov.yml'
+              - '!.pre-commit-config.yaml'
+              - '!mkdocs.yml'
+
+  # ==========================================================================
   # STAGE 1: BUILD TEST IMAGES
   # Build operator and check/build optimized Keycloak image
   # ==========================================================================
 
   build-test-image:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.code-changed == 'true'
     name: Build Test Image
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -83,7 +115,8 @@ jobs:
 
   unit-tests:
     name: Unit Tests & Coverage
-    needs: [build-test-image]
+    needs: [detect-changes, build-test-image]
+    if: needs.detect-changes.outputs.code-changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -119,7 +152,8 @@ jobs:
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
-        if: success() || failure()
+        # Skip codecov for Dependabot PRs (no access to secrets)
+        if: (success() || failure()) && github.actor != 'dependabot[bot]'
         with:
           files: ./coverage.xml
           flags: unit
@@ -130,7 +164,8 @@ jobs:
 
   code-quality:
     name: Code Quality
-    needs: [build-test-image]
+    needs: [detect-changes, build-test-image]
+    if: needs.detect-changes.outputs.code-changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -166,7 +201,8 @@ jobs:
 
   security-sast:
     name: Security - CodeQL SAST
-    needs: [build-test-image]
+    needs: [detect-changes, build-test-image]
+    if: needs.detect-changes.outputs.code-changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -195,7 +231,8 @@ jobs:
 
   security-dependencies:
     name: Security - Dependency Scan
-    needs: [build-test-image]
+    needs: [detect-changes, build-test-image]
+    if: needs.detect-changes.outputs.code-changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -226,7 +263,8 @@ jobs:
 
   security-image-scan:
     name: Security - Container Image Scan
-    needs: [build-test-image]
+    needs: [detect-changes, build-test-image]
+    if: needs.detect-changes.outputs.code-changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -272,7 +310,8 @@ jobs:
 
   security-sbom:
     name: Security - SBOM Generation & Validation
-    needs: [build-test-image]
+    needs: [detect-changes, build-test-image]
+    if: needs.detect-changes.outputs.code-changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -313,7 +352,8 @@ jobs:
 
   security-secrets:
     name: Security - Secret Scanning
-    needs: [build-test-image]
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.code-changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -339,8 +379,8 @@ jobs:
 
   integration-tests:
     name: Integration Tests (K8s ${{ matrix.k8s-version }})
-    needs:
-      - build-test-image
+    needs: [detect-changes, build-test-image]
+    if: needs.detect-changes.outputs.code-changed == 'true'
       - unit-tests
       - code-quality
       - security-sast
@@ -523,7 +563,8 @@ jobs:
 
       - name: Upload integration coverage to Codecov
         uses: codecov/codecov-action@v5
-        if: always()
+        # Skip codecov for Dependabot PRs (no access to secrets)
+        if: always() && github.actor != 'dependabot[bot]'
         with:
           files: ./coverage.xml
           flags: integration
@@ -600,8 +641,11 @@ jobs:
 
   push-sha-image:
     name: Push SHA-Tagged Image
-    needs: [integration-tests]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [detect-changes, integration-tests]
+    if: |
+      needs.detect-changes.outputs.code-changed == 'true' &&
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
