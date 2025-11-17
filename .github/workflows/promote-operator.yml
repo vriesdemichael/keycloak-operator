@@ -1,12 +1,11 @@
-name: Promote Operator Image
+name: Promote Operator Image (DISABLED - Using ci-cd-unified.yml)
 
-# Promote tested operator image with version tags on release
-# Does NOT rebuild - pulls existing sha-{commit} image and re-tags it
-# Only runs for operator releases (v*), not chart releases (chart-*-v*)
+# DISABLED: Functionality moved to ci-cd-unified.yml
+# This workflow is kept for reference but will not run automatically
+# Remove this file once ci-cd-unified.yml is proven stable
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:  # Manual only
 
 permissions:
   contents: read
