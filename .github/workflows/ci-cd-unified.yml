@@ -1,0 +1,1034 @@
+name: CI/CD Pipeline (Unified)
+
+# Unified CI/CD pipeline with clear phases:
+# 1. Detection - Determine what changed and what needs to run
+# 2. Fast checks - Unit tests + code quality (parallel, ~2-5 min)
+# 3. Slow checks - Security + integration tests (parallel after fast, ~15-30 min)
+# 4. Release-please - Create/update release PRs (non-release commits only)
+# 5. Publish - Publish artifacts (release commits only)
+# 6. Docs - Update documentation (after checks pass)
+# 7. Complete - Final status check
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+  KEYCLOAK_VERSION: "26.4.1"
+
+jobs:
+  # =====================================================
+  # PHASE 1: DETECTION
+  # =====================================================
+  detect:
+    name: Detect Changes & Release Type
+    runs-on: ubuntu-latest
+    outputs:
+      # Release detection
+      is_release: ${{ steps.release-check.outputs.is_release }}
+      release_type: ${{ steps.release-check.outputs.release_type }}
+      # Which components are releasing
+      operator_releasing: ${{ steps.release-check.outputs.operator_releasing }}
+      chart_operator_releasing: ${{ steps.release-check.outputs.chart_operator_releasing }}
+      chart_realm_releasing: ${{ steps.release-check.outputs.chart_realm_releasing }}
+      chart_client_releasing: ${{ steps.release-check.outputs.chart_client_releasing }}
+      any_chart_releasing: ${{ steps.release-check.outputs.any_chart_releasing }}
+      # Version info
+      operator_version: ${{ steps.release-check.outputs.operator_version }}
+      # File changes
+      code_changed: ${{ steps.filter.outputs.code }}
+      charts_changed: ${{ steps.filter.outputs.charts }}
+      docs_changed: ${{ steps.filter.outputs.docs }}
+      crds_changed: ${{ steps.filter.outputs.crds }}
+      # Branch info
+      is_main: ${{ steps.branch.outputs.is_main }}
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+
+      - name: Check branch
+        id: branch
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "is_main=true" >> $GITHUB_OUTPUT
+          else
+            echo "is_main=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Detect release commit
+        id: release-check
+        run: |
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          COMMIT_AUTHOR="${{ github.event.head_commit.author.username }}"
+
+          # Check if this is a release-please commit (Method A+B for security)
+          IS_RELEASE=false
+          if [[ "$COMMIT_AUTHOR" == "github-actions[bot]" ]] && \
+             [[ "$COMMIT_MSG" == "chore: release"* || "$COMMIT_MSG" == "chore(main): release"* ]]; then
+            IS_RELEASE=true
+          fi
+
+          echo "is_release=${IS_RELEASE}" >> $GITHUB_OUTPUT
+
+          if [[ "$IS_RELEASE" == "false" ]]; then
+            echo "Not a release commit"
+            echo "release_type=none" >> $GITHUB_OUTPUT
+            echo "operator_releasing=false" >> $GITHUB_OUTPUT
+            echo "chart_operator_releasing=false" >> $GITHUB_OUTPUT
+            echo "chart_realm_releasing=false" >> $GITHUB_OUTPUT
+            echo "chart_client_releasing=false" >> $GITHUB_OUTPUT
+            echo "any_chart_releasing=false" >> $GITHUB_OUTPUT
+            echo "operator_version=" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Release commit detected, parsing versions..."
+
+          # Initialize outputs
+          OPERATOR_RELEASING=false
+          CHART_OP_RELEASING=false
+          CHART_REALM_RELEASING=false
+          CHART_CLIENT_RELEASING=false
+          OPERATOR_VERSION=""
+          RELEASE_TYPE=""
+
+          # Parse from changed CHANGELOG files
+          if git diff HEAD~1 HEAD --name-only | grep -q "^CHANGELOG.md$"; then
+            OPERATOR_RELEASING=true
+            OPERATOR_VERSION=$(grep -m1 "^## \[" CHANGELOG.md | sed 's/## \[\(.*\)\].*/\1/')
+            RELEASE_TYPE="operator"
+          fi
+
+          if git diff HEAD~1 HEAD --name-only | grep -q "^charts/keycloak-operator/CHANGELOG.md$"; then
+            CHART_OP_RELEASING=true
+            RELEASE_TYPE="${RELEASE_TYPE:+$RELEASE_TYPE,}chart-operator"
+          fi
+
+          if git diff HEAD~1 HEAD --name-only | grep -q "^charts/keycloak-realm/CHANGELOG.md$"; then
+            CHART_REALM_RELEASING=true
+            RELEASE_TYPE="${RELEASE_TYPE:+$RELEASE_TYPE,}chart-realm"
+          fi
+
+          if git diff HEAD~1 HEAD --name-only | grep -q "^charts/keycloak-client/CHANGELOG.md$"; then
+            CHART_CLIENT_RELEASING=true
+            RELEASE_TYPE="${RELEASE_TYPE:+$RELEASE_TYPE,}chart-client"
+          fi
+
+          # Set any_chart_releasing
+          ANY_CHART_RELEASING=false
+          if [[ "$CHART_OP_RELEASING" == "true" ]] || \
+             [[ "$CHART_REALM_RELEASING" == "true" ]] || \
+             [[ "$CHART_CLIENT_RELEASING" == "true" ]]; then
+            ANY_CHART_RELEASING=true
+          fi
+
+          # Output results
+          echo "operator_releasing=${OPERATOR_RELEASING}" >> $GITHUB_OUTPUT
+          echo "chart_operator_releasing=${CHART_OP_RELEASING}" >> $GITHUB_OUTPUT
+          echo "chart_realm_releasing=${CHART_REALM_RELEASING}" >> $GITHUB_OUTPUT
+          echo "chart_client_releasing=${CHART_CLIENT_RELEASING}" >> $GITHUB_OUTPUT
+          echo "any_chart_releasing=${ANY_CHART_RELEASING}" >> $GITHUB_OUTPUT
+          echo "operator_version=${OPERATOR_VERSION}" >> $GITHUB_OUTPUT
+          echo "release_type=${RELEASE_TYPE}" >> $GITHUB_OUTPUT
+
+          # Summary
+          echo "### 🎯 Release Detection" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Type:** ${RELEASE_TYPE}" >> $GITHUB_STEP_SUMMARY
+          echo "- Operator: ${OPERATOR_RELEASING} ${OPERATOR_VERSION:+(v$OPERATOR_VERSION)}" >> $GITHUB_STEP_SUMMARY
+          echo "- Chart Operator: ${CHART_OP_RELEASING}" >> $GITHUB_STEP_SUMMARY
+          echo "- Chart Realm: ${CHART_REALM_RELEASING}" >> $GITHUB_STEP_SUMMARY
+          echo "- Chart Client: ${CHART_CLIENT_RELEASING}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Detect file changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - 'src/**'
+              - 'tests/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - 'images/operator/**'
+            charts:
+              - 'charts/*/Chart.yaml'
+              - 'charts/*/values.yaml'
+              - 'charts/*/values.schema.json'
+              - 'charts/*/templates/**'
+              - 'charts/*/crds/**'
+            docs:
+              - 'docs/**'
+              - 'mkdocs.yml'
+              - 'scripts/build-adr-docs.sh'
+            crds:
+              - 'src/domain/models.py'
+
+      - name: Summary
+        run: |
+          echo "### 📋 Change Detection" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Is Main:** ${{ steps.branch.outputs.is_main }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Is Release:** ${{ steps.release-check.outputs.is_release }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Changed Files:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Code: ${{ steps.filter.outputs.code }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Charts: ${{ steps.filter.outputs.charts }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docs: ${{ steps.filter.outputs.docs }}" >> $GITHUB_STEP_SUMMARY
+          echo "- CRDs: ${{ steps.filter.outputs.crds }}" >> $GITHUB_STEP_SUMMARY
+
+  # =====================================================
+  # PHASE 2: BUILD (Always on code/chart changes)
+  # =====================================================
+  build-operator:
+    name: Build Operator Image
+    needs: detect
+    # Force full run on main, use change detection for PRs
+    if: |
+      github.ref == 'refs/heads/main' ||
+      needs.detect.outputs.code_changed == 'true' ||
+      needs.detect.outputs.charts_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build operator image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: images/operator/Dockerfile
+          platforms: linux/amd64
+          tags: keycloak-operator:test
+          outputs: type=docker,dest=/tmp/operator-test.tar
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Upload image artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: operator-image
+          path: /tmp/operator-test.tar
+          retention-days: 1
+
+  # =====================================================
+  # PHASE 3: FAST CHECKS (Parallel, ~2-5 min)
+  # =====================================================
+  unit-tests:
+    name: Unit Tests & Coverage
+    needs: [detect, build-operator]
+    if: |
+      github.ref == 'refs/heads/main' ||
+      needs.detect.outputs.code_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group test
+
+      - name: Run unit tests
+        run: uv run pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        if: (success() || failure()) && github.actor != 'dependabot[bot]'
+        with:
+          files: ./coverage.xml
+          flags: unit
+          name: unit-tests
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: true
+
+  code-quality:
+    name: Code Quality
+    needs: [detect, build-operator]
+    if: |
+      github.ref == 'refs/heads/main' ||
+      needs.detect.outputs.code_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group quality
+
+      - name: Run quality checks
+        run: make quality
+
+      - name: Install yq for decision record validation
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/local/bin/yq
+          sudo chmod +x /usr/local/bin/yq
+        if: hashFiles('docs/decisions/*.yaml') != ''
+
+      - name: Validate Decision Records
+        run: uv run scripts/adr_validator.py --validate
+        if: hashFiles('docs/decisions/*.yaml') != ''
+
+  # =====================================================
+  # PHASE 4: SLOW CHECKS (Parallel after fast, ~15-30 min)
+  # =====================================================
+  security-scans:
+    name: Security Scans
+    needs: [detect, build-operator, unit-tests, code-quality]
+    if: |
+      github.ref == 'refs/heads/main' ||
+      needs.detect.outputs.code_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # CodeQL SAST
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python
+          config-file: .github/codeql-config.yml
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v4
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/language:python"
+
+      # Dependency scanning
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --group security
+
+      - name: Run pip-audit
+        run: uv run pip-audit --desc || true
+
+      - name: Run safety check
+        run: uv run safety check --json || true
+
+      # Image scanning
+      - name: Download image
+        uses: actions/download-artifact@v6
+        with:
+          name: operator-image
+          path: /tmp
+
+      - name: Load image
+        run: docker load --input /tmp/operator-test.tar
+
+      - name: Trivy scan (SARIF)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'keycloak-operator:test'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy-test-image'
+
+      - name: Trivy scan (table, fail on critical)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'keycloak-operator:test'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+
+      # SBOM generation
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: keycloak-operator:test
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Scan SBOM for vulnerabilities
+        uses: anchore/scan-action@v7
+        with:
+          sbom: sbom.spdx.json
+          fail-build: false
+          severity-cutoff: high
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: sbom-test-image
+          path: sbom.spdx.json
+          retention-days: 90
+
+      # Secret scanning
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || 'HEAD~1' }}
+          head: HEAD
+          extra_args: --only-verified
+
+  integration-tests:
+    name: Integration Tests
+    needs: [detect, build-operator, unit-tests, code-quality]
+    if: |
+      github.ref == 'refs/heads/main' ||
+      needs.detect.outputs.code_changed == 'true' ||
+      needs.detect.outputs.charts_changed == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+
+      - name: Install dependencies
+        run: uv sync --group test
+
+      - name: Download operator image
+        uses: actions/download-artifact@v6
+        with:
+          name: operator-image
+          path: /tmp
+
+      - name: Load operator image
+        run: docker load --input /tmp/operator-test.tar
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Kind
+        uses: helm/kind-action@v1.13.0
+        with:
+          version: v0.20.0
+          kubectl_version: v1.30.0
+          cluster_name: test-${{ github.run_id }}
+          config: tests/kind/kind-config.yaml
+          node_image: kindest/node:v1.30.0
+          wait: 300s
+
+      - name: Verify Kind cluster
+        run: |
+          kubectl cluster-info
+          kubectl get nodes
+          kubectl get pods -A
+
+      - name: Load operator image into Kind
+        run: |
+          kind load docker-image keycloak-operator:test --name test-${{ github.run_id }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull and load Keycloak optimized image
+        env:
+          KEYCLOAK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
+        run: |
+          docker pull "${KEYCLOAK_IMAGE}"
+          docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
+          kind load docker-image keycloak-optimized:${{ env.KEYCLOAK_VERSION }} --name test-${{ github.run_id }}
+
+      - name: Install CloudNativePG operator
+        run: |
+          helm repo add cnpg https://cloudnative-pg.github.io/charts
+          helm repo update
+          helm upgrade --install cnpg cnpg/cloudnative-pg \
+            --namespace cnpg-system \
+            --create-namespace \
+            --wait \
+            --timeout=300s
+
+          kubectl wait -n cnpg-system \
+            --for=condition=available deployment/cnpg-cloudnative-pg \
+            --timeout=300s
+
+      - name: Install cert-manager
+        run: |
+          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+
+          kubectl wait -n cert-manager \
+            --for=condition=available deployment/cert-manager \
+            --timeout=300s
+          kubectl wait -n cert-manager \
+            --for=condition=available deployment/cert-manager-webhook \
+            --timeout=300s
+          kubectl wait -n cert-manager \
+            --for=condition=available deployment/cert-manager-cainjector \
+            --timeout=300s
+
+      - name: Run integration tests
+        run: uv run pytest tests/integration/ -v -n auto --dist=loadscope
+
+      - name: Collect logs and diagnostics
+        if: always()
+        run: |
+          mkdir -p test-logs
+
+          kubectl cluster-info | tee test-logs/cluster-info.log
+
+          for pod in $(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
+            namespace=$(echo $pod | cut -d/ -f1)
+            podname=$(echo $pod | cut -d/ -f2)
+            kubectl logs -n $namespace $podname --all-containers=true --tail=2000 >> test-logs/operator-logs.log 2>&1 || true
+          done
+
+          kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide >> test-logs/operator-status.log 2>&1 || true
+          kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
+          kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
+          kubectl get pods --all-namespaces -o wide >> test-logs/all-pods.log 2>&1 || true
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-logs-${{ github.run_id }}
+          path: test-logs/
+          retention-days: 7
+
+  # =====================================================
+  # CHECKPOINT: All required checks passed
+  # =====================================================
+  all-required-checks-passed:
+    name: All Required Checks Passed
+    needs: [detect, unit-tests, code-quality, security-scans, integration-tests]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      passed: ${{ steps.check.outputs.passed }}
+
+    steps:
+      - name: Check all required
+        id: check
+        run: |
+          echo "### ✅ Required Checks Status" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Scans: ${{ needs.security-scans.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check if any required job failed
+          if [[ "${{ needs.unit-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.code-quality.result }}" == "failure" ]] || \
+             [[ "${{ needs.security-scans.result }}" == "failure" ]] || \
+             [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
+            echo "❌ Required checks failed" >> $GITHUB_STEP_SUMMARY
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Check if skipped inappropriately on main
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            if [[ "${{ needs.integration-tests.result }}" == "skipped" ]]; then
+              echo "⚠️ Integration tests should not skip on main branch" >> $GITHUB_STEP_SUMMARY
+              echo "passed=false" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          fi
+
+          echo "✅ All required checks passed" >> $GITHUB_STEP_SUMMARY
+          echo "passed=true" >> $GITHUB_OUTPUT
+
+  # =====================================================
+  # PHASE 5: RELEASE-PLEASE (Non-release commits only)
+  # =====================================================
+  release-please:
+    name: Release Please
+    needs: [detect, all-required-checks-passed]
+    if: |
+      needs.detect.outputs.is_main == 'true' &&
+      needs.detect.outputs.is_release == 'false' &&
+      github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Run Release Please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
+
+      - name: Release summary
+        if: steps.release.outputs.release_created == 'true'
+        run: |
+          echo "### :rocket: Release Created" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag:** \`${{ steps.release.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: PR summary
+        if: steps.release.outputs.pr != ''
+        env:
+          PR_DATA: ${{ steps.release.outputs.pr }}
+        run: |
+          echo "### :memo: Release PR Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**PR:** ${PR_DATA}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Enable auto-merge for non-major releases
+        if: steps.release.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          PR_DATA: ${{ steps.release.outputs.pr }}
+          VERSION_OUTPUT: ${{ steps.release.outputs.version }}
+        run: |
+          PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
+          PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+
+          if [ -n "$VERSION_OUTPUT" ]; then
+            VERSION_STRING="$VERSION_OUTPUT"
+          else
+            VERSION_STRING="$PR_TITLE"
+          fi
+
+          if [[ "$VERSION_STRING" =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="${BASH_REMATCH[3]}"
+
+            # Auto-merge for non-major versions
+            if [[ "$MAJOR" == "0" ]] || [[ "$MINOR" != "0" ]] || [[ "$PATCH" != "0" ]]; then
+              if gh pr merge $PR_NUMBER --auto --rebase --repo ${{ github.repository }}; then
+                echo "### :white_check_mark: Auto-merge enabled" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "### :warning: Auto-merge failed" >> $GITHUB_STEP_SUMMARY
+              fi
+            else
+              echo "### :warning: Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
+            fi
+          fi
+
+  # =====================================================
+  # PHASE 6: PUBLISH OPERATOR IMAGE (Release commits)
+  # =====================================================
+  publish-operator-image:
+    name: Publish Operator Image
+    needs: [detect, all-required-checks-passed]
+    if: |
+      needs.detect.outputs.is_main == 'true' &&
+      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.operator_releasing == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract version
+        id: version
+        run: |
+          VERSION="${{ needs.detect.outputs.operator_version }}"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Publishing operator version: ${VERSION}"
+
+      - name: Generate tags
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=v${{ steps.version.outputs.version }}
+            type=raw,value=${{ steps.version.outputs.version }}
+          labels: |
+            org.opencontainers.image.title=Keycloak Operator
+            org.opencontainers.image.description=GitOps-compatible Kubernetes operator for Keycloak
+            org.opencontainers.image.vendor=Michaël de Vries
+            org.opencontainers.image.licenses=MIT
+            org.opencontainers.image.version=v${{ steps.version.outputs.version }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: images/operator/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.version.outputs.version }}
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: sbom-operator-v${{ steps.version.outputs.version }}
+          path: sbom.spdx.json
+          retention-days: 90
+
+      - name: Summary
+        run: |
+          echo "### :whale: Operator Image Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # =====================================================
+  # PHASE 7: UPDATE OPERATOR CHART (After operator publish)
+  # =====================================================
+  update-operator-chart:
+    name: Update Operator Chart Version
+    needs: [detect, all-required-checks-passed, publish-operator-image]
+    if: |
+      needs.detect.outputs.is_main == 'true' &&
+      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.operator_releasing == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Update chart values
+        run: |
+          VERSION="v${{ needs.detect.outputs.operator_version }}"
+
+          sed -i "s|tag: \"v.*\"|tag: \"${VERSION}\"|g" charts/keycloak-operator/values.yaml
+          sed -i "s|appVersion: \"v.*\"|appVersion: \"${VERSION}\"|g" charts/keycloak-operator/Chart.yaml
+
+          git diff
+
+      - name: Check for changes
+        id: check
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create Pull Request
+        if: steps.check.outputs.changed == 'true'
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: main
+          commit-message: "chore(chart): update operator version to v${{ needs.detect.outputs.operator_version }}"
+          branch: chore/update-operator-chart-v${{ needs.detect.outputs.operator_version }}
+          delete-branch: true
+          title: "chore(chart): update operator version to v${{ needs.detect.outputs.operator_version }}"
+          body: |
+            Updates operator chart to use operator version `v${{ needs.detect.outputs.operator_version }}`.
+
+            **Changes:**
+            - Updated `charts/keycloak-operator/values.yaml` image tag
+            - Updated `charts/keycloak-operator/Chart.yaml` appVersion
+
+            🤖 Auto-generated by CI/CD workflow
+          labels: |
+            dependencies
+            helm
+            automated
+
+      - name: Enable auto-rebase for chart update PR
+        if: steps.check.outputs.changed == 'true' && steps.cpr.outputs.pull-request-number
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER="${{ steps.cpr.outputs.pull-request-number }}"
+
+          # Enable auto-merge with rebase
+          if gh pr merge $PR_NUMBER --auto --rebase --repo ${{ github.repository }}; then
+            echo "### :white_check_mark: Auto-rebase enabled for chart update PR" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "PR #${PR_NUMBER} will merge automatically when checks pass." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "### :warning: Could not enable auto-rebase" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # =====================================================
+  # PHASE 8: PUBLISH HELM CHARTS (Chart releases)
+  # =====================================================
+  publish-helm-charts:
+    name: Publish Helm Charts
+    needs: [detect, all-required-checks-passed]
+    if: |
+      needs.detect.outputs.is_main == 'true' &&
+      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.any_chart_releasing == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Package charts
+        run: |
+          mkdir -p .helm-repo
+
+          if [[ "${{ needs.detect.outputs.chart_operator_releasing }}" == "true" ]]; then
+            helm package charts/keycloak-operator -d .helm-repo
+          fi
+
+          if [[ "${{ needs.detect.outputs.chart_realm_releasing }}" == "true" ]]; then
+            helm package charts/keycloak-realm -d .helm-repo
+          fi
+
+          if [[ "${{ needs.detect.outputs.chart_client_releasing }}" == "true" ]]; then
+            helm package charts/keycloak-client -d .helm-repo
+          fi
+
+          helm repo index .helm-repo --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./.helm-repo
+          destination_dir: charts
+          keep_files: true
+
+      - name: Summary
+        run: |
+          echo "### :package: Helm Charts Published" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Released Charts:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Operator: ${{ needs.detect.outputs.chart_operator_releasing }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Realm: ${{ needs.detect.outputs.chart_realm_releasing }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Client: ${{ needs.detect.outputs.chart_client_releasing }}" >> $GITHUB_STEP_SUMMARY
+
+  # =====================================================
+  # PHASE 9: DOCUMENTATION
+  # =====================================================
+  update-dev-docs:
+    name: Update Dev Documentation
+    needs: [detect, all-required-checks-passed]
+    if: |
+      needs.all-required-checks-passed.outputs.passed == 'true' &&
+      needs.detect.outputs.is_main == 'true' &&
+      needs.detect.outputs.is_release == 'false' &&
+      needs.detect.outputs.docs_changed == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --group docs
+
+      - name: Build dev docs
+        run: uv run mkdocs build --site-dir site/dev
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site/dev
+          destination_dir: dev
+
+  publish-release-docs:
+    name: Publish Release Documentation
+    needs: [detect, all-required-checks-passed, publish-helm-charts]
+    if: |
+      needs.detect.outputs.is_main == 'true' &&
+      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.chart_operator_releasing == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - uses: astral-sh/setup-uv@v7
+
+      - name: Install dependencies
+        run: uv sync --group docs
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Get chart version
+        id: version
+        run: |
+          VERSION=$(grep '^version:' charts/keycloak-operator/Chart.yaml | awk '{print $2}')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Deploy versioned docs with mike
+        run: |
+          uv run mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
+          uv run mike set-default --push latest
+
+  # =====================================================
+  # FINAL CHECKPOINT: Workflow Complete
+  # =====================================================
+  all-complete:
+    name: Workflow Complete
+    needs: [
+      detect,
+      all-required-checks-passed,
+      release-please,
+      publish-operator-image,
+      update-operator-chart,
+      publish-helm-charts,
+      update-dev-docs,
+      publish-release-docs
+    ]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Workflow summary
+        run: |
+          echo "### 🎯 Workflow Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Required Checks:** ${{ needs.all-required-checks-passed.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Please:** ${{ needs.release-please.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Operator Image:** ${{ needs.publish-operator-image.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Chart Update:** ${{ needs.update-operator-chart.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Helm Charts:** ${{ needs.publish-helm-charts.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Dev Docs:** ${{ needs.update-dev-docs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Release Docs:** ${{ needs.publish-release-docs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Check if any publish job that RAN failed
+          FAILED=false
+
+          if [[ "${{ needs.all-required-checks-passed.result }}" == "failure" ]]; then
+            echo "❌ Required checks failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [[ "${{ needs.publish-operator-image.result }}" == "failure" ]] || \
+             [[ "${{ needs.publish-helm-charts.result }}" == "failure" ]] || \
+             [[ "${{ needs.publish-release-docs.result }}" == "failure" ]] || \
+             [[ "${{ needs.update-dev-docs.result }}" == "failure" ]]; then
+            echo "❌ Publishing failed" >> $GITHUB_STEP_SUMMARY
+            FAILED=true
+          fi
+
+          if [[ "$FAILED" == "true" ]]; then
+            exit 1
+          fi
+
+          echo "✅ Workflow completed successfully" >> $GITHUB_STEP_SUMMARY
