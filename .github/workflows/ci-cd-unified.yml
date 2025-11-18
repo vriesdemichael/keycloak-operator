@@ -255,9 +255,6 @@ jobs:
         with:
           enable-cache: true
 
-      - name: Install dependencies
-        run: uv sync --group test
-
       - name: Run unit tests
         run: uv run --group test pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
 
@@ -301,9 +298,6 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --group quality
 
       - name: Run quality checks
         run: make quality
@@ -365,9 +359,6 @@ jobs:
       - uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
-
-      - name: Install dependencies
-        run: uv sync --group security
 
       - name: Run pip-audit
         run: uv run --group security pip-audit --desc || true
@@ -466,9 +457,6 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
-
-      - name: Install dependencies
-        run: uv sync --group test
 
       - name: Download operator image
         uses: actions/download-artifact@v6
@@ -973,9 +961,6 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
 
-      - name: Install dependencies
-        run: uv sync --group docs
-
       - name: Build dev docs
         run: uv run --group docs mkdocs build --site-dir site/dev
 
@@ -1009,9 +994,6 @@ jobs:
           python-version: '3.13'
 
       - uses: astral-sh/setup-uv@v7
-
-      - name: Install dependencies
-        run: uv sync --group docs
 
       - name: Install yq for YAML parsing
         env:
