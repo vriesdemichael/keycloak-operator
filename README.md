@@ -15,22 +15,19 @@ A Kubernetes operator for managing Keycloak instances, realms, and OAuth2/OIDC c
 Get a complete Keycloak setup running in under 10 minutes:
 
 ```bash
-# 1. Add the Helm repository
-helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operator
-helm repo update
-
-# 2. Install the operator
-helm install keycloak-operator keycloak-operator/keycloak-operator \
+# 1. Install the operator (OCI registry)
+helm install keycloak-operator \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system --create-namespace
 
 # Or install from local charts:
 # helm install keycloak-operator ./charts/keycloak-operator \
 #   --namespace keycloak-system --create-namespace
 
-# 3. Deploy Keycloak with database
+# 2. Deploy Keycloak with database
 kubectl apply -f examples/01-keycloak-instance.yaml
 
-# 4. Create an identity realm
+# 3. Create an identity realm
 kubectl apply -f examples/02-realm-example.yaml
 
 # 5. Create an OAuth2 client
