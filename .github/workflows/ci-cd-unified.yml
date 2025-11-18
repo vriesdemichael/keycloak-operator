@@ -259,7 +259,7 @@ jobs:
         run: uv sync --group test
 
       - name: Run unit tests
-        run: uv run --group test pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
+        run: uv run pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
 
       - name: Upload unit coverage artifact for combining
         uses: actions/upload-artifact@v5
@@ -320,7 +320,7 @@ jobs:
         if: hashFiles('docs/decisions/*.yaml') != ''
 
       - name: Validate Decision Records
-        run: uv run --group quality scripts/adr_validator.py --validate
+        run: uv run scripts/adr_validator.py --validate
         if: hashFiles('docs/decisions/*.yaml') != ''
 
   # =====================================================
@@ -370,10 +370,10 @@ jobs:
         run: uv sync --group security
 
       - name: Run pip-audit
-        run: uv run --group security pip-audit --desc || true
+        run: uv run pip-audit --desc || true
 
       - name: Run safety check
-        run: uv run --group security safety check --json || true
+        run: uv run safety check --json || true
 
       # Image scanning
       - name: Download image
@@ -548,7 +548,7 @@ jobs:
       - name: Run integration tests
         env:
           INTEGRATION_COVERAGE: "true"
-        run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
+        run: uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
       - name: Upload integration coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -973,7 +973,7 @@ jobs:
         run: uv sync --group docs
 
       - name: Build dev docs
-        run: uv run --group docs mkdocs build --site-dir site/dev
+        run: uv run mkdocs build --site-dir site/dev
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
@@ -1031,8 +1031,8 @@ jobs:
 
       - name: Deploy versioned docs with mike
         run: |
-          uv run --group docs mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
-          uv run --group docs mike set-default --push latest
+          uv run mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
+          uv run mike set-default --push latest
 
   # =====================================================
   # FINAL CHECKPOINT: Workflow Complete
