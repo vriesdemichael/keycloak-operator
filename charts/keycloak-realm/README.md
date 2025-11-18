@@ -498,11 +498,9 @@ helm install my-client keycloak-operator/keycloak-client \
 ## Upgrading
 
 ```bash
-# Update Helm repository
-helm repo update
-
 # Upgrade to latest version
-helm upgrade my-realm keycloak-operator/keycloak-realm \
+helm upgrade my-realm \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
   --namespace my-team \
   --reuse-values
 ```

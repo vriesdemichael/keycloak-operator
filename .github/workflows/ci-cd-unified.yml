@@ -918,69 +918,173 @@ jobs:
           fi
 
   # =====================================================
-  # PHASE 8: PUBLISH HELM CHARTS (Chart releases)
+  # PHASE 8: PUBLISH HELM CHARTS (Chart releases to OCI)
   # =====================================================
-  publish-helm-charts:
-    name: Publish Helm Charts
+  publish-chart-operator:
+    name: Publish Helm Chart (Operator)
     needs: [detect, all-required-checks-passed]
     if: |
       needs.detect.outputs.is_main == 'true' &&
       needs.detect.outputs.is_release == 'true' &&
-      needs.detect.outputs.any_chart_releasing == 'true'
+      needs.detect.outputs.chart_operator_releasing == 'true'
     runs-on: ubuntu-latest
     environment:
-      name: github-pages-charts
-      url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts
+      name: ghcr-chart-operator
+      url: https://github.com/${{ github.repository }}/pkgs/container/charts%2Fkeycloak-operator
     permissions:
-      contents: write
-      pages: write
+      contents: read
+      packages: write
       id-token: write
+      attestations: write
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Configure Git
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Get chart version
+        id: version
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          VERSION=$(yq eval '.version' charts/keycloak-operator/Chart.yaml)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Publishing keycloak-operator chart version: ${VERSION}"
+
+      - name: Package chart
+        id: package
+        run: |
+          helm package charts/keycloak-operator
+          PACKAGE_FILE=$(ls keycloak-operator-*.tgz)
+          echo "file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
+
+      - name: Push chart to OCI registry
+        id: push
+        run: |
+          OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://ghcr.io/${{ github.repository_owner }}/charts 2>&1)
+          echo "$OUTPUT"
+          # Extract digest from output
+          DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K[a-f0-9:]+' || echo "")
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+
+      - name: Attest chart provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/charts/keycloak-operator
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+  publish-chart-realm:
+    name: Publish Helm Chart (Realm)
+    needs: [detect, all-required-checks-passed]
+    if: |
+      needs.detect.outputs.is_main == 'true' &&
+      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.chart_realm_releasing == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: ghcr-chart-realm
+      url: https://github.com/${{ github.repository }}/pkgs/container/charts%2Fkeycloak-realm
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v5
 
       - name: Set up Helm
         uses: azure/setup-helm@v4
 
-      - name: Package charts
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Get chart version
+        id: version
         run: |
-          mkdir -p .helm-repo
+          VERSION=$(yq eval '.version' charts/keycloak-realm/Chart.yaml)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Publishing keycloak-realm chart version: ${VERSION}"
 
-          if [[ "${{ needs.detect.outputs.chart_operator_releasing }}" == "true" ]]; then
-            helm package charts/keycloak-operator -d .helm-repo
-          fi
+      - name: Package chart
+        id: package
+        run: |
+          helm package charts/keycloak-realm
+          PACKAGE_FILE=$(ls keycloak-realm-*.tgz)
+          echo "file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
 
-          if [[ "${{ needs.detect.outputs.chart_realm_releasing }}" == "true" ]]; then
-            helm package charts/keycloak-realm -d .helm-repo
-          fi
+      - name: Push chart to OCI registry
+        id: push
+        run: |
+          OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://ghcr.io/${{ github.repository_owner }}/charts 2>&1)
+          echo "$OUTPUT"
+          DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K[a-f0-9:]+' || echo "")
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
-          if [[ "${{ needs.detect.outputs.chart_client_releasing }}" == "true" ]]; then
-            helm package charts/keycloak-client -d .helm-repo
-          fi
-
-          helm repo index .helm-repo --url https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/charts
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Attest chart provenance
+        uses: actions/attest-build-provenance@v2
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./.helm-repo
-          destination_dir: charts
-          keep_files: true
+          subject-name: ghcr.io/${{ github.repository_owner }}/charts/keycloak-realm
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
 
-      - name: Summary
+  publish-chart-client:
+    name: Publish Helm Chart (Client)
+    needs: [detect, all-required-checks-passed]
+    if: |
+      needs.detect.outputs.is_main == 'true' &&
+      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.chart_client_releasing == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: ghcr-chart-client
+      url: https://github.com/${{ github.repository }}/pkgs/container/charts%2Fkeycloak-client
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Get chart version
+        id: version
         run: |
-          echo "### :package: Helm Charts Published" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Released Charts:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Operator: ${{ needs.detect.outputs.chart_operator_releasing }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Realm: ${{ needs.detect.outputs.chart_realm_releasing }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Client: ${{ needs.detect.outputs.chart_client_releasing }}" >> $GITHUB_STEP_SUMMARY
+          VERSION=$(yq eval '.version' charts/keycloak-client/Chart.yaml)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Publishing keycloak-client chart version: ${VERSION}"
+
+      - name: Package chart
+        id: package
+        run: |
+          helm package charts/keycloak-client
+          PACKAGE_FILE=$(ls keycloak-client-*.tgz)
+          echo "file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
+
+      - name: Push chart to OCI registry
+        id: push
+        run: |
+          OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://ghcr.io/${{ github.repository_owner }}/charts 2>&1)
+          echo "$OUTPUT"
+          DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K[a-f0-9:]+' || echo "")
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+
+      - name: Attest chart provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/charts/keycloak-client
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
 
   # =====================================================
   # PHASE 9: DOCUMENTATION
@@ -1023,7 +1127,7 @@ jobs:
 
   publish-release-docs:
     name: Publish Release Documentation
-    needs: [detect, all-required-checks-passed, publish-helm-charts]
+    needs: [detect, all-required-checks-passed, publish-chart-operator]
     if: |
       needs.detect.outputs.is_main == 'true' &&
       needs.detect.outputs.is_release == 'true' &&
