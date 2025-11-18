@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.9](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.8...v0.3.9) (2025-11-18)
+
+
+### Bug Fixes
+
+* **operator:** enable auto-merge for grouped release PRs ([7c2419a](https://github.com/vriesdemichael/keycloak-operator/commit/7c2419a95aca55264400d1d0252e2af52fec0501))
+* **operator:** group release-please PRs to prevent manifest conflicts ([529c990](https://github.com/vriesdemichael/keycloak-operator/commit/529c99037235bd63b315ae3673a1c1506dcccdca))
+
+
+### Code Refactoring
+
+* **operator:** use manifest diff for major version detection ([3a161be](https://github.com/vriesdemichael/keycloak-operator/commit/3a161beddd0f086f03f5db0e637aaf0d724f21a2))
+
 ## [0.3.8](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.7...v0.3.8) (2025-11-18)
 
 
