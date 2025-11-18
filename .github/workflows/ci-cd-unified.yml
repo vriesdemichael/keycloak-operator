@@ -675,6 +675,18 @@ jobs:
           PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
           PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
 
+          # For grouped releases (title: "chore: release multiple components")
+          # Always enable auto-merge as they're typically non-breaking
+          if [[ "$PR_TITLE" == "chore: release multiple components" ]]; then
+            if gh pr merge $PR_NUMBER --auto --rebase --repo ${{ github.repository }}; then
+              echo "### :white_check_mark: Auto-merge enabled (grouped release)" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "### :warning: Auto-merge failed" >> $GITHUB_STEP_SUMMARY
+            fi
+            exit 0
+          fi
+
+          # For single component releases, check version
           if [ -n "$VERSION_OUTPUT" ]; then
             VERSION_STRING="$VERSION_OUTPUT"
           else
