@@ -284,19 +284,20 @@ jobs:
       - name: Upload coverage (fallback to legacy)
         if: (success() || failure()) && github.actor != 'dependabot[bot]' && steps.codecov_cli.outcome == 'failure'
         uses: codecov/codecov-action@v5
+        continue-on-error: true
         with:
           files: ./coverage.xml
           flags: unit
           name: unit-tests
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
-          fail_ci_if_error: true
+          fail_ci_if_error: false  # TEMPORARY: Global Codecov outage 2025-11-18
           use_legacy_upload_endpoint: true
 
       - name: Check coverage upload
         if: (success() || failure()) && github.actor != 'dependabot[bot]' && steps.codecov_cli.outcome == 'failure'
         run: |
-          echo "::warning::Codecov CLI upload failed, used legacy endpoint as fallback"
+          echo "::warning::Codecov CLI upload failed, used legacy endpoint as fallback (allowing failures due to outage)"
 
   code-quality:
     name: Code Quality
