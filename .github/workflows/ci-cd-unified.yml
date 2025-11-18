@@ -743,6 +743,8 @@ jobs:
       contents: read
       packages: write
       security-events: write
+      id-token: write  # For OIDC token to sign attestations
+      attestations: write  # For publishing attestations
 
     steps:
       - uses: actions/checkout@v5
@@ -781,6 +783,7 @@ jobs:
             org.opencontainers.image.version=v${{ steps.version.outputs.version }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -791,6 +794,10 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          # Generate build provenance attestation (SLSA)
+          provenance: true
+          # Generate SBOM attestation
+          sbom: true
 
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
@@ -798,6 +805,14 @@ jobs:
           image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.version.outputs.version }}
           format: spdx-json
           output-file: sbom.spdx.json
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          sbom-path: sbom.spdx.json
+          push-to-registry: true
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v5
