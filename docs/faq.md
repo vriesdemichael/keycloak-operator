@@ -1,5 +1,7 @@
 # Frequently Asked Questions
 
+This page provides answers to common questions about the Keycloak Operator.
+
 ## Authorization & Security
 
 ### How does authorization work in this operator?
