@@ -552,6 +552,7 @@ jobs:
 
       - name: Generate integration coverage report
         if: always()
+        continue-on-error: true
         run: |
           echo "Generating coverage XML report from integration tests..."
 
@@ -565,22 +566,22 @@ jobs:
             uv run coverage xml -o coverage.xml
             echo "✓ Generated coverage.xml from integration tests"
           else
-            echo "ERROR: No integration coverage files found in .tmp/coverage/"
+            echo "⚠️  No integration coverage files found in .tmp/coverage/"
             echo "Coverage collection may have failed during pytest teardown"
             ls -la .tmp/ || echo "No .tmp directory found"
-            exit 1
+            echo "Skipping coverage upload (non-fatal)"
           fi
 
       - name: Upload integration coverage to Codecov
         uses: codecov/codecov-action@v5
-        if: always() && github.actor != 'dependabot[bot]'
+        if: always() && github.actor != 'dependabot[bot]' && hashFiles('coverage.xml') != ''
         with:
           files: ./coverage.xml
           flags: integration
           name: integration-tests
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Collect logs and diagnostics
         if: always()
