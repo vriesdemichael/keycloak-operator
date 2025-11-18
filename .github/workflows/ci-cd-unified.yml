@@ -670,44 +670,58 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           PR_DATA: ${{ steps.release.outputs.pr }}
-          VERSION_OUTPUT: ${{ steps.release.outputs.version }}
         run: |
           PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
-          PR_TITLE=$(echo "$PR_DATA" | jq -r '.title')
+          PR_BRANCH=$(echo "$PR_DATA" | jq -r '.headBranchName')
 
-          # For grouped releases (title: "chore: release multiple components")
-          # Always enable auto-merge as they're typically non-breaking
-          if [[ "$PR_TITLE" == "chore: release multiple components" ]]; then
-            if gh pr merge $PR_NUMBER --auto --rebase --repo ${{ github.repository }}; then
-              echo "### :white_check_mark: Auto-merge enabled (grouped release)" >> $GITHUB_STEP_SUMMARY
+          # Fetch the PR branch to compare manifest
+          git fetch origin "$PR_BRANCH:$PR_BRANCH"
+
+          # Check manifest changes to determine if this is a major release
+          HAS_MAJOR_BUMP=false
+
+          # Get current and new manifest
+          CURRENT_MANIFEST=$(cat .github/.release-please-manifest.json)
+          NEW_MANIFEST=$(git show "$PR_BRANCH:.github/.release-please-manifest.json")
+
+          # Compare each component
+          for component in $(echo "$CURRENT_MANIFEST" | jq -r 'keys[]'); do
+            CURRENT_VERSION=$(echo "$CURRENT_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
+            NEW_VERSION=$(echo "$NEW_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
+
+            if [[ "$CURRENT_VERSION" != "$NEW_VERSION" ]]; then
+              echo "Component '$component': $CURRENT_VERSION -> $NEW_VERSION"
+
+              # Parse versions
+              if [[ "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+                CUR_MAJOR="${BASH_REMATCH[1]}"
+                CUR_MINOR="${BASH_REMATCH[2]}"
+                CUR_PATCH="${BASH_REMATCH[3]}"
+              fi
+
+              if [[ "$NEW_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+                NEW_MAJOR="${BASH_REMATCH[1]}"
+                NEW_MINOR="${BASH_REMATCH[2]}"
+                NEW_PATCH="${BASH_REMATCH[3]}"
+              fi
+
+              # Check if it's a major release (X.0.0 where X > current major and X > 0)
+              if [[ "$NEW_MAJOR" -gt "$CUR_MAJOR" ]] && [[ "$NEW_MAJOR" -gt 0 ]]; then
+                echo "⚠️  Major version bump detected: $CURRENT_VERSION -> $NEW_VERSION"
+                HAS_MAJOR_BUMP=true
+              fi
+            fi
+          done
+
+          # Enable auto-merge only if no major bumps
+          if [[ "$HAS_MAJOR_BUMP" == "false" ]]; then
+            if gh pr merge "$PR_NUMBER" --auto --rebase --repo ${{ github.repository }}; then
+              echo "### :white_check_mark: Auto-merge enabled" >> $GITHUB_STEP_SUMMARY
             else
               echo "### :warning: Auto-merge failed" >> $GITHUB_STEP_SUMMARY
             fi
-            exit 0
-          fi
-
-          # For single component releases, check version
-          if [ -n "$VERSION_OUTPUT" ]; then
-            VERSION_STRING="$VERSION_OUTPUT"
           else
-            VERSION_STRING="$PR_TITLE"
-          fi
-
-          if [[ "$VERSION_STRING" =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
-            MAJOR="${BASH_REMATCH[1]}"
-            MINOR="${BASH_REMATCH[2]}"
-            PATCH="${BASH_REMATCH[3]}"
-
-            # Auto-merge for non-major versions (skip only for X.0.0 where X > 0)
-            if [[ "$MAJOR" == "0" ]] || ( [[ "$MINOR" != "0" ]] || [[ "$PATCH" != "0" ]] ); then
-              if gh pr merge $PR_NUMBER --auto --rebase --repo ${{ github.repository }}; then
-                echo "### :white_check_mark: Auto-merge enabled" >> $GITHUB_STEP_SUMMARY
-              else
-                echo "### :warning: Auto-merge failed" >> $GITHUB_STEP_SUMMARY
-              fi
-            else
-              echo "### :warning: Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
-            fi
+            echo "### :warning: Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
           fi
 
   # =====================================================
