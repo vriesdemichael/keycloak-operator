@@ -1,7 +1,6 @@
 # Keycloak Operator
 
-[![CI/CD Pipeline](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd.yml)
-[![Release](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/release-please.yml)
+[![CI/CD Pipeline (Unified)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd-unified.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd-unified.yml)
 [![codecov](https://codecov.io/gh/vriesdemichael/keycloak-operator/branch/main/graph/badge.svg)](https://codecov.io/gh/vriesdemichael/keycloak-operator)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/vriesdemichael/keycloak-operator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/vriesdemichael/keycloak-operator)
 [![Snyk Security](https://snyk.io/test/github/vriesdemichael/keycloak-operator/badge.svg)](https://snyk.io/test/github/vriesdemichael/keycloak-operator)
