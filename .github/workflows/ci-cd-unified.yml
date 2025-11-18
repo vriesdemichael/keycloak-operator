@@ -500,7 +500,11 @@ jobs:
 
       - name: Load operator image into Kind
         run: |
+          # Tag image for coverage tests (integration tests expect test-coverage tag)
+          docker tag keycloak-operator:test keycloak-operator:test-coverage
+          # Load both tags into kind cluster
           kind load docker-image keycloak-operator:test --name test-${{ github.run_id }}
+          kind load docker-image keycloak-operator:test-coverage --name test-${{ github.run_id }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
