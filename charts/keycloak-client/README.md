@@ -628,11 +628,9 @@ const userManager = new UserManager({
 ## Upgrading
 
 ```bash
-# Update Helm repository
-helm repo update
-
 # Upgrade to latest version
-helm upgrade my-client keycloak-operator/keycloak-client \
+helm upgrade my-client \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-client \
   --namespace my-team \
   --reuse-values
 ```

@@ -24,12 +24,9 @@ This chart installs the Keycloak Operator which enables declarative management o
 ### Quick Start
 
 ```bash
-# Add the Helm repository
-helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operator
-helm repo update
-
-# Install the operator
-helm install keycloak-operator keycloak-operator/keycloak-operator \
+# Install the operator from OCI registry
+helm install keycloak-operator \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system \
   --create-namespace
 ```
@@ -538,11 +535,9 @@ kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator
 ### Upgrade the Chart
 
 ```bash
-# Update Helm repository
-helm repo update
-
 # Upgrade to latest version
-helm upgrade keycloak-operator keycloak-operator/keycloak-operator \
+helm upgrade keycloak-operator \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system \
   --reuse-values
 ```
