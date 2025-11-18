@@ -66,5 +66,5 @@
     }
   },
   "group-pull-request-title-pattern": "chore: release multiple components",
-  "separate-pull-requests": true
+  "separate-pull-requests": false
 }
