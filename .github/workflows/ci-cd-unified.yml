@@ -1188,7 +1188,9 @@ jobs:
       release-please,
       publish-operator-image,
       update-operator-chart,
-      publish-helm-charts,
+      publish-chart-operator,
+      publish-chart-realm,
+      publish-chart-client,
       update-dev-docs,
       publish-release-docs
     ]
@@ -1204,7 +1206,9 @@ jobs:
           echo "**Release Please:** ${{ needs.release-please.result }}" >> $GITHUB_STEP_SUMMARY
           echo "**Operator Image:** ${{ needs.publish-operator-image.result }}" >> $GITHUB_STEP_SUMMARY
           echo "**Chart Update:** ${{ needs.update-operator-chart.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Helm Charts:** ${{ needs.publish-helm-charts.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Chart Operator:** ${{ needs.publish-chart-operator.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Chart Realm:** ${{ needs.publish-chart-realm.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Chart Client:** ${{ needs.publish-chart-client.result }}" >> $GITHUB_STEP_SUMMARY
           echo "**Dev Docs:** ${{ needs.update-dev-docs.result }}" >> $GITHUB_STEP_SUMMARY
           echo "**Release Docs:** ${{ needs.publish-release-docs.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
