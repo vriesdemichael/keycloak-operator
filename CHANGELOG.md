@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.8](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.7...v0.3.8) (2025-11-18)
+
+
+### Documentation
+
+* update CI/CD badges to point to unified workflow ([4419899](https://github.com/vriesdemichael/keycloak-operator/commit/4419899d41bd4bb949f0d4c82d67d48334c6a08c))
+
 ## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.6...v0.3.7) (2025-11-18)
 
 
