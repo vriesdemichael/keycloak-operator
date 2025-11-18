@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.6...v0.3.7) (2025-11-18)
+
+
+### Bug Fixes
+
+* **operator:** detect release commits merged by users, not just bots ([50a21e9](https://github.com/vriesdemichael/keycloak-operator/commit/50a21e9c619faefe47e9d7a7b688b3d883518120))
+* **operator:** load test-coverage image tag for integration tests ([af358ba](https://github.com/vriesdemichael/keycloak-operator/commit/af358ba923a7e9625920de99abeac52d696a49e2))
+* **operator:** make integration coverage non-fatal if not generated ([02022c7](https://github.com/vriesdemichael/keycloak-operator/commit/02022c7a728db530be61accf4961aa1ac70b1f53))
+* **operator:** properly fix coverage collection and uv group isolation ([867df0a](https://github.com/vriesdemichael/keycloak-operator/commit/867df0ae0140573ccb9f0788b5308ad231bd5d20))
+* **operator:** restore --group flags and upload integration coverage files separately ([b067c30](https://github.com/vriesdemichael/keycloak-operator/commit/b067c304459bd556de67f3bc292dab385a5fdac4))
+* **operator:** revert uv run --group flag, keep coverage upload fix ([225cef3](https://github.com/vriesdemichael/keycloak-operator/commit/225cef3794076367e1ab25b659197460c25bd218))
+
+
+### Code Refactoring
+
+* **operator:** remove redundant uv sync steps when using --group ([c9aea4f](https://github.com/vriesdemichael/keycloak-operator/commit/c9aea4fa42335ae65efcd0a4874341cb9fcfbd2f))
+
 ## [0.3.6](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.5...v0.3.6) (2025-11-17)
 
 
