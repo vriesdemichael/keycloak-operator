@@ -697,3 +697,4 @@ operator:
 
 MIT License - see [LICENSE](https://github.com/vriesdemichael/keycloak-operator/blob/main/LICENSE) for details.
 # Trigger chart release for v0.3.3 operator
+# Test release flow - Tue Nov 18 01:14:44 CET 2025
