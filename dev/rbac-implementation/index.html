@@ -10,17 +10,21 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/rbac-implementation/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/rbac-implementation/">
       
       
+        <link rel="prev" href="../admission-webhooks/">
       
       
-      <link rel="icon" href="../assets/images/favicon.png">
+        <link rel="next" href="../guides/identity-providers/">
+      
+      
+      <link rel="icon" href="https://www.keycloak.org/resources/images/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
     
     
       
-        <title>Namespaced RBAC Implementation - Keycloak Operator</title>
+        <title>RBAC Implementation - Keycloak Operator</title>
       
     
     
@@ -48,6 +52,8 @@
     
       <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -65,7 +71,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="cyan">
   
     
     <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
@@ -94,8 +100,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Keycloak Operator" class="md-header__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="https://www.keycloak.org/resources/images/icon.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -112,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Namespaced RBAC Implementation
+              RBAC Implementation
             
           </span>
         </div>
@@ -125,16 +130,20 @@
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="cyan"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
     
   
     
     
     
-    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="deep-purple"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="cyan"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
     
-      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_0" hidden>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
       </label>
     
   
@@ -223,90 +232,36 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
-        
-  
-  
-    
-  
-  Home
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../quickstart/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Quick Start
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../architecture/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Architecture
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../security/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Security Model
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
     
     
       <li class="md-tabs__item">
-        <a href="../identity-providers/" class="md-tabs__link">
+        <a href=".." class="md-tabs__link">
           
   
   
-  Configuration
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../concepts/architecture/" class="md-tabs__link">
+          
+  
+  
+  Concepts
 
         </a>
       </li>
@@ -322,11 +277,11 @@
     
     
       <li class="md-tabs__item">
-        <a href="../how-to/end-to-end-setup/" class="md-tabs__link">
+        <a href="../guides/identity-providers/" class="md-tabs__link">
           
   
   
-  How-To Guides
+  Guides
 
         </a>
       </li>
@@ -379,25 +334,6 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../observability/" class="md-tabs__link">
-        
-  
-  
-    
-  
-  Observability
-
-      </a>
-    </li>
-  
-
-      
-        
-  
-  
-  
-  
     
     
       <li class="md-tabs__item">
@@ -419,7 +355,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../decisions/generated-markdown/001-kopf-as-operator-framework/" class="md-tabs__link">
+      <a href="../decisions/generated-markdown" class="md-tabs__link">
         
   
   
@@ -451,26 +387,6 @@
   
 
       
-        
-  
-  
-  
-  
-    
-    
-      <li class="md-tabs__item">
-        <a href="../api/keycloak_operator/" class="md-tabs__link">
-          
-  
-  
-  API Reference
-
-        </a>
-      </li>
-    
-  
-
-      
     </ul>
   </div>
 </nav>
@@ -495,8 +411,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Keycloak Operator" class="md-nav__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
       
-  
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+  <img src="https://www.keycloak.org/resources/images/icon.svg" alt="logo">
 
     </a>
     Keycloak Operator
@@ -522,6 +437,51 @@
   
   
   
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href=".." class="md-nav__link">
         
@@ -537,9 +497,10 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
@@ -559,15 +520,94 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+      <a href="../how-to/end-to-end-setup/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Concepts
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Concepts
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/architecture/" class="md-nav__link">
         
   
   
@@ -581,15 +621,16 @@
     </li>
   
 
-    
-      
-      
+              
+            
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="../security/" class="md-nav__link">
+      <a href="../concepts/security/" class="md-nav__link">
         
   
   
@@ -603,51 +644,7 @@
     </li>
   
 
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    Configuration
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5">
-            <span class="md-nav__icon md-icon"></span>
-            Configuration
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
+              
             
               
                 
@@ -656,12 +653,12 @@
   
   
     <li class="md-nav__item">
-      <a href="../identity-providers/" class="md-nav__link">
+      <a href="../admission-webhooks/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Identity Providers
+    Admission Webhooks
     
   </span>
   
@@ -676,20 +673,425 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../drift-detection/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    RBAC Implementation
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
   <span class="md-ellipsis">
-    Drift Detection
+    RBAC Implementation
     
   </span>
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      Architecture
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rbac-components" class="md-nav__link">
+    <span class="md-ellipsis">
+      RBAC Components
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="RBAC Components">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-clusterrole-keycloak-operator-core" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. ClusterRole: keycloak-operator-core
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-role-keycloak-operator-manager" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Role: keycloak-operator-manager
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-clusterrole-keycloak-operator-namespace-access-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. ClusterRole: keycloak-operator-namespace-access (Template)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#secret-label-requirement" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secret Label Requirement
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Secret Label Requirement">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-this-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why This Matters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#example" class="md-nav__link">
+    <span class="md-ellipsis">
+      Example
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#operator-deployment-helm-chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operator Deployment (Helm Chart)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Operator Deployment (Helm Chart)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#install-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      Install Operator
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-gets-created" class="md-nav__link">
+    <span class="md-ellipsis">
+      What Gets Created
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#realm-deployment-helm-chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      Realm Deployment (Helm Chart)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Realm Deployment (Helm Chart)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-realm-to-team-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploy Realm to Team Namespace
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-gets-created_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      What Gets Created
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify Access
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#client-deployment-helm-chart" class="md-nav__link">
+    <span class="md-ellipsis">
+      Client Deployment (Helm Chart)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Client Deployment (Helm Chart)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#deploy-client-to-team-namespace" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deploy Client to Team Namespace
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-gets-created_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      What Gets Created
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#manual-rolebinding-creation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Manual RoleBinding Creation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Error Handling
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Error Handling">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#missing-rolebinding" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing RoleBinding
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#missing-secret-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing Secret Label
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#secret-not-found" class="md-nav__link">
+    <span class="md-ellipsis">
+      Secret Not Found
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#revoking-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      Revoking Access
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#auditing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Auditing
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Auditing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#find-namespaces-with-operator-access" class="md-nav__link">
+    <span class="md-ellipsis">
+      Find Namespaces with Operator Access
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#find-labeled-secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Find Labeled Secrets
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-operator-permissions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check Operator Permissions
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Testing
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Troubleshooting">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#operator-logs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Operator Logs
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#check-rbac-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Check RBAC Resources
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#verify-secret-label" class="md-nav__link">
+    <span class="md-ellipsis">
+      Verify Secret Label
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      References
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -724,15 +1126,15 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
-    How-To Guides
+    Guides
     
   </span>
   
@@ -740,10 +1142,10 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_6">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
-            How-To Guides
+            Guides
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
             
@@ -754,12 +1156,58 @@
   
   
     <li class="md-nav__item">
-      <a href="../how-to/end-to-end-setup/" class="md-nav__link">
+      <a href="../guides/identity-providers/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    End-to-End Setup
+    Identity Providers
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/drift-detection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Drift Detection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Observability
     
   </span>
   
@@ -782,7 +1230,7 @@
   
   
   <span class="md-ellipsis">
-    Multi-Tenant Configuration
+    Multi-Tenant Setup
     
   </span>
   
@@ -914,10 +1362,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_7" id="__nav_7_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -930,8 +1378,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_7">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Operations
           </label>
@@ -1012,10 +1460,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1028,8 +1476,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_8">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Reference
           </label>
@@ -1127,31 +1575,32 @@
 
               
             
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
+              
+                
   
   
   
   
     <li class="md-nav__item">
-      <a href="../observability/" class="md-nav__link">
+      <a href="../api/keycloak_operator/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
-    Observability
+    API Docs
     
   </span>
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1178,10 +1627,10 @@
         
           
         
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_10" >
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
         
           
-          <label class="md-nav__link" for="__nav_10" id="__nav_10_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="0">
             
   
   
@@ -1194,8 +1643,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_10_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_10">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
             <span class="md-nav__icon md-icon"></span>
             Development
           </label>
@@ -1213,7 +1662,7 @@
   
   
   <span class="md-ellipsis">
-    Getting Started
+    Contributing
     
   </span>
   
@@ -1247,6 +1696,29 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/test-cleanup-strategy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Test Cleanup Strategy
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -1260,28 +1732,9 @@
   
   
   
-    
-    
-    
-    
-      
-      
+    <li class="md-nav__item">
+      <a href="../decisions/generated-markdown" class="md-nav__link">
         
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_11" >
-        
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../decisions/generated-markdown/001-kopf-as-operator-framework/" class="md-nav__link ">
-              
   
   
   <span class="md-ellipsis">
@@ -1290,1520 +1743,7 @@
   </span>
   
 
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_11" id="__nav_11_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_11_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_11">
-            <span class="md-nav__icon md-icon"></span>
-            Decision Records
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/002-uv-for-dependency-management/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-002: uv for dependency management
-    
-  </span>
-  
-
       </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/003-least-privilege-everywhere/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-003: Least privilege everywhere
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/004-everything-must-be-gitopsable/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-004: Everything must be GitOpsable
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/005-no-plaintext-secrets/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-005: No plaintext secrets
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/006-all-functionality-must-be-tested-with-pytest/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-006: All functionality must be tested with pytest
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/007-integration-tests-in-kind-clusters/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-007: Integration tests in Kind clusters
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/008-feature-parity-with-self-managed-keycloak/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-008: Feature parity with self-managed Keycloak
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/009-ai-agents-as-first-class-developers/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-009: AI agents as first-class developers
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/010-semantic-versioning-for-all-artifacts/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-010: Semantic versioning for all artifacts
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/011-conventional-commits-for-all-development/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-011: Conventional commits for all development
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/012-async-api-with-rate-limiting-and-retries/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-012: Async API with rate limiting and retries
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/013-pydantic-models-for-keycloak-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-013: Pydantic models for Keycloak API
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/014-separate-helm-charts-per-resource-type/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-014: Separate Helm charts per resource type
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/015-cloudnativepg-as-first-class-database/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-015: CloudNativePG as first-class database
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/016-multi-namespace-operation-by-default/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-016: Multi-namespace operation by default
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-017: Kubernetes RBAC over Keycloak security
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/018-management-port-separation-keycloak-25/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-018: Management port separation - Keycloak 25+
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/019-drift-detection-and-continuous-reconciliation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-019: Drift detection and continuous reconciliation
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/020-real-kubernetes-for-integration-testing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-020: Real Kubernetes for integration testing
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/021-pre-commit-hooks-with-strict-validation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-021: Pre-commit hooks with strict validation
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/022-type-annotations-with-ty-for-type-checking/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-022: Type annotations with ty for type checking
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/023-make-for-development-automation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-023: Make for development automation
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/024-helm-as-deployment-mechanism/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-024: Helm as deployment mechanism
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/025-realm-and-client-as-primary-crd-resource-types/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-025: Realm and Client as primary CRD resource types
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/026-three-layer-responsibility-system-with-token-delegation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-026: Three-layer responsibility system with token delegation
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/027-json-schemas-published-to-github-pages/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-027: JSON schemas published to GitHub Pages
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/028-documentation-published-to-github-pages/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-028: Documentation published to GitHub Pages
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/029-versioned-documentation-with-mike/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-029: Versioned documentation with mike
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/030-helm-charts-published-to-github-pages-oci-registry/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-030: Helm charts published to GitHub Pages OCI registry
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/031-automated-releases-with-release-please/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-031: Automated releases with release-please
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/032-minimal-rbac-with-namespaced-service-accounts/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-032: Minimal RBAC with namespaced service accounts
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/033-custom-resource-definitions-as-api/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-033: Custom Resource Definitions as API
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/034-github-actions-for-ci-and-artifact-publication/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-034: GitHub Actions for CI and artifact publication
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/035-keycloak-25-0-version-support-requirement/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-035: Keycloak 25.0+ version support requirement
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/036-automated-dependency-updates-with-dependabot-and-custom-workflows/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-036: Automated dependency updates with Dependabot and custom workflows
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/037-support-for-operator-managed-and-external-keycloak-instances/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-037: Support for operator-managed and external Keycloak instances
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-039: Token rotation and bootstrap flows
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/040-admission-webhooks-for-validation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-040: Admission Webhooks for Resource Validation
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/040-ruff-for-formatting-and-linting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-040: Ruff for formatting and linting
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/041-shared-operator-fixture-in-tests/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-041: Shared operator fixture in tests
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/042-pytest-xdist-for-parallel-integration-tests/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-042: pytest-xdist for parallel integration tests
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/043-wait-helpers-with-debug-logging-in-tests/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-043: Wait helpers with debug logging in tests
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/044-extra-manifests-support-in-helm-charts/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-044: Extra manifests support in Helm charts
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/045-active-standby-ha-using-kopf-peering/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-045: Active-standby HA using Kopf peering
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/046-multiple-operator-support-with-explicit-references/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-046: Multiple operator support with explicit references
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/047-managed-keycloak-for-quick-start/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-047: Managed Keycloak for quick start
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/048-prometheus-metrics-exposure/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-048: Prometheus metrics exposure
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/049-horizontal-scaling-via-multiple-operators/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-049: Horizontal scaling via multiple operator deployments (realm sharding)
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/050-structured-json-logging/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-050: Structured JSON logging
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/051-multi-stage-docker-builds-for-minimal-images/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-051: Multi-stage Docker builds for minimal images
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/052-optimized-keycloak-container-for-tests/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-052: Optimized Keycloak container for tests
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/053-error-categorization-temporary-vs-permanent/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-053: Error categorization - temporary vs permanent
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-054: Namespace watch scope requires cluster-wide RBAC
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/055-container-image-registry-and-tagging/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-055: Container image registry and tagging strategy
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/056-no-opinionated-backup-or-secret-management/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-056: No opinionated backup or secret management
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/057-cr-data-validated-with-pydantic/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-057: CR data must be validated with Pydantic models
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/058-single-keycloak-version-support/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-058: Single Keycloak version support (26.x)
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/059-no-managed-keycloak-upgrades/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-059: No managed Keycloak upgrades
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/060-cascading-deletes/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-060: Cascading deletes for dependent resources
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/061-github-issues-with-ai-instructions/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-061: GitHub Issues for planned work with AI agent instructions
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/062-one-keycloak-per-operator/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-062: One Keycloak instance per operator deployment
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/063-namespace-grant-list-authorization/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-063: Namespace grant list authorization for clients
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/064-no-force-delete-annotation/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-064: No force-delete annotation for finalizers
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/065-webhook-certificate-management-with-cert-manager/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-065: Webhook certificate management with cert-manager
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../decisions/generated-markdown/066-centralized-settings-with-pydantic/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    ADR-066: Centralized settings management with pydantic-settings
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -2826,81 +1766,6 @@
   
 
       </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_13" >
-        
-          
-          <label class="md-nav__link" for="__nav_13" id="__nav_13_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    API Reference
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_13_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_13">
-            <span class="md-nav__icon md-icon"></span>
-            API Reference
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../api/keycloak_operator/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Overview
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
     </li>
   
 
@@ -3329,25 +2194,25 @@
 <li><strong>Secret label requirement</strong>: Secrets must be explicitly labeled for operator access</li>
 </ol>
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────────────────────────────────┐
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│  Operator Namespace (e.g., keycloak-system)                 │
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌──────────────────────────────────────────────────────────────┐
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│  Operator Namespace (e.g., keycloak-system)                  │
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│                                                              │
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│  ├── Operator Deployment                                    │
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  │   └── Watches: All CRDs cluster-wide (list/watch only)  │
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>│  ├── Operator Deployment                                     │
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>│  │   └── Watches: All CRDs cluster-wide (list/watch only)    │
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>│  │                                                           │
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│  ├── Keycloak Instance (StatefulSet/Deployment)            │
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  │   └── Runs in same namespace as operator               │
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>│  ├── Keycloak Instance (StatefulSet/Deployment)              │
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│  │   └── Runs in same namespace as operator                  │
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│  │                                                           │
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│  └── Full RBAC (Role) - Can manage all resources here      │
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>└─────────────────────────────────────────────────────────────┘
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>│  └── Full RBAC (Role) - Can manage all resources here        │
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>└──────────────────────────────────────────────────────────────┘
 </span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                        ↓ watches CRDs
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>┌─────────────────────────────────────────────────────────────┐
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  Team Namespace (e.g., team-a)                              │
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>┌──────────────────────────────────────────────────────────────┐
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│  Team Namespace (e.g., team-a)                               │
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│                                                              │
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  ├── KeycloakRealm / KeycloakClient CRDs                   │
-</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│  ├── Secrets (with required label)                          │
-</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│  └── RoleBinding (opt-in for operator access)              │
-</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>└─────────────────────────────────────────────────────────────┘
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  ├── KeycloakRealm / KeycloakClient CRDs                     │
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>│  ├── Secrets (with required label)                           │
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>│  └── RoleBinding (opt-in for operator access)                │
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>└──────────────────────────────────────────────────────────────┘
 </span></code></pre></div>
 <h2 id="rbac-components">RBAC Components<a class="headerlink" href="#rbac-components" title="Permanent link">&para;</a></h2>
 <h3 id="1-clusterrole-keycloak-operator-core">1. ClusterRole: <code>keycloak-operator-core</code><a class="headerlink" href="#1-clusterrole-keycloak-operator-core" title="Permanent link">&para;</a></h3>
@@ -3464,20 +2329,14 @@
 </span></code></pre></div>
 <h2 id="client-deployment-helm-chart">Client Deployment (Helm Chart)<a class="headerlink" href="#client-deployment-helm-chart" title="Permanent link">&para;</a></h2>
 <h3 id="deploy-client-to-team-namespace">Deploy Client to Team Namespace<a class="headerlink" href="#deploy-client-to-team-namespace" title="Permanent link">&para;</a></h3>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Get realm authorization secret</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nv">REALM_SECRET</span><span class="o">=</span><span class="k">$(</span>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>my-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>-n<span class="w"> </span>my-team<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.authorizationSecretName}&#39;</span><span class="k">)</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="c1"># Deploy client (creates RoleBinding automatically)</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>helm<span class="w"> </span>install<span class="w"> </span>my-client<span class="w"> </span>charts/keycloak-client<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span>--namespace<span class="w"> </span>my-team<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">clientId</span><span class="o">=</span>my-client<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.name<span class="o">=</span>my-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.namespace<span class="o">=</span>my-team<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.authorizationSecretRef.name<span class="o">=</span><span class="nv">$REALM_SECRET</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">  </span>--set<span class="w"> </span>rbac.create<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">  </span>--set<span class="w"> </span>rbac.operatorNamespace<span class="o">=</span>keycloak-system
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Deploy client (creates RoleBinding automatically)</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>helm<span class="w"> </span>install<span class="w"> </span>my-client<span class="w"> </span>charts/keycloak-client<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">  </span>--namespace<span class="w"> </span>my-team<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">  </span>--set<span class="w"> </span><span class="nv">clientId</span><span class="o">=</span>my-client<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.name<span class="o">=</span>my-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">  </span>--set<span class="w"> </span>realmRef.namespace<span class="o">=</span>my-team<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">  </span>--set<span class="w"> </span>rbac.create<span class="o">=</span><span class="nb">true</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="w">  </span>--set<span class="w"> </span>rbac.operatorNamespace<span class="o">=</span>keycloak-system
 </span></code></pre></div>
 <h3 id="what-gets-created_2">What Gets Created<a class="headerlink" href="#what-gets-created_2" title="Permanent link">&para;</a></h3>
 <ol>
@@ -3595,9 +2454,55 @@
 <script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
         </div>
         
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
       </main>
       
         <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../admission-webhooks/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Admission Webhooks">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Admission Webhooks
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../guides/identity-providers/" class="md-footer__link md-footer__link--next" aria-label="Next: Identity Providers">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Identity Providers
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
   
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
@@ -3639,10 +2544,12 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "search.share", "content.code.copy", "content.action.edit"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "search.share", "content.code.copy", "content.action.edit", "navigation.top", "navigation.footer"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
       <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
       
     
   </body>
