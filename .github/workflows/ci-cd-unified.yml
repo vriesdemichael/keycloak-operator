@@ -268,8 +268,10 @@ jobs:
             coverage.xml
           retention-days: 1
 
-      - name: Upload coverage
+      - name: Upload coverage (try CLI first)
+        id: codecov_cli
         uses: codecov/codecov-action@v5
+        continue-on-error: true
         if: (success() || failure()) && github.actor != 'dependabot[bot]'
         with:
           files: ./coverage.xml
@@ -277,8 +279,24 @@ jobs:
           name: unit-tests
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
+          fail_ci_if_error: false
+
+      - name: Upload coverage (fallback to legacy)
+        if: (success() || failure()) && github.actor != 'dependabot[bot]' && steps.codecov_cli.outcome == 'failure'
+        uses: codecov/codecov-action@v5
+        with:
+          files: ./coverage.xml
+          flags: unit
+          name: unit-tests
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
           fail_ci_if_error: true
-          use_legacy_upload_endpoint: true  # Fallback to HTTP upload if CLI fails
+          use_legacy_upload_endpoint: true
+
+      - name: Check coverage upload
+        if: (success() || failure()) && github.actor != 'dependabot[bot]' && steps.codecov_cli.outcome == 'failure'
+        run: |
+          echo "::warning::Codecov CLI upload failed, used legacy endpoint as fallback"
 
   code-quality:
     name: Code Quality
@@ -543,8 +561,10 @@ jobs:
           INTEGRATION_COVERAGE: "true"
         run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
 
-      - name: Upload integration coverage to Codecov
+      - name: Upload integration coverage to Codecov (try CLI first)
+        id: codecov_integration_cli
         uses: codecov/codecov-action@v5
+        continue-on-error: true
         if: always() && github.actor != 'dependabot[bot]'
         with:
           files: .tmp/coverage/.coverage.*
@@ -553,6 +573,23 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           disable_search: true
           fail_ci_if_error: false
+
+      - name: Upload integration coverage to Codecov (fallback to legacy)
+        if: always() && github.actor != 'dependabot[bot]' && steps.codecov_integration_cli.outcome == 'failure'
+        uses: codecov/codecov-action@v5
+        with:
+          files: .tmp/coverage/.coverage.*
+          flags: integration
+          name: integration-tests
+          token: ${{ secrets.CODECOV_TOKEN }}
+          disable_search: true
+          fail_ci_if_error: false
+          use_legacy_upload_endpoint: true
+
+      - name: Check integration coverage upload
+        if: always() && github.actor != 'dependabot[bot]' && steps.codecov_integration_cli.outcome == 'failure'
+        run: |
+          echo "::warning::Codecov CLI upload failed for integration tests, used legacy endpoint as fallback"
 
       - name: Collect logs and diagnostics
         if: always()
