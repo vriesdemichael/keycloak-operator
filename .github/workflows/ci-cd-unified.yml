@@ -214,11 +214,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build operator image (coverage always on)
+      - name: Build operator image (test with coverage)
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: images/operator/Dockerfile
+          file: images/operator/Dockerfile.test
           platforms: linux/amd64
           tags: keycloak-operator:test
           outputs: type=docker,dest=/tmp/operator-test.tar
