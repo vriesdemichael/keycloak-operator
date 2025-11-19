@@ -1138,6 +1138,9 @@ jobs:
       needs.detect.outputs.is_release == 'false' &&
       needs.detect.outputs.docs_changed == 'true'
     runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
     environment:
       name: github-pages-dev
       url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/dev
@@ -1148,6 +1151,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-python@v6
         with:
@@ -1155,15 +1160,14 @@ jobs:
 
       - uses: astral-sh/setup-uv@v7
 
-      - name: Build dev docs
-        run: uv run --group docs mkdocs build --site-dir site/dev
+      - name: Configure Git for mike
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./site/dev
-          destination_dir: dev
+      - name: Deploy dev docs with mike
+        run: |
+          uv run --group docs mike deploy --push dev
 
   publish-release-docs:
     name: Publish Release Documentation
@@ -1173,6 +1177,9 @@ jobs:
       needs.detect.outputs.is_release == 'true' &&
       needs.detect.outputs.chart_operator_releasing == 'true'
     runs-on: ubuntu-latest
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
     environment:
       name: github-pages-release
       url: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
