@@ -40,7 +40,7 @@ jobs:
       any_chart_releasing: ${{ steps.release-check.outputs.any_chart_releasing }}
       # Version info
       operator_version: ${{ steps.release-check.outputs.operator_version }}
-      # File changes
+      # File changes (set by dorny/paths-filter@v3 action)
       code_changed: ${{ steps.filter.outputs.code }}
       charts_changed: ${{ steps.filter.outputs.charts }}
       docs_changed: ${{ steps.filter.outputs.docs }}
@@ -1270,7 +1270,9 @@ jobs:
           fi
 
           if [[ "${{ needs.publish-operator-image.result }}" == "failure" ]] || \
-             [[ "${{ needs.publish-helm-charts.result }}" == "failure" ]] || \
+             [[ "${{ needs.publish-chart-operator.result }}" == "failure" ]] || \
+             [[ "${{ needs.publish-chart-realm.result }}" == "failure" ]] || \
+             [[ "${{ needs.publish-chart-client.result }}" == "failure" ]] || \
              [[ "${{ needs.publish-release-docs.result }}" == "failure" ]] || \
              [[ "${{ needs.update-dev-docs.result }}" == "failure" ]]; then
             echo "❌ Publishing failed" >> $GITHUB_STEP_SUMMARY
