@@ -40,7 +40,7 @@ jobs:
       any_chart_releasing: ${{ steps.release-check.outputs.any_chart_releasing }}
       # Version info
       operator_version: ${{ steps.release-check.outputs.operator_version }}
-      # File changes
+      # File changes (set by dorny/paths-filter@v3 action)
       code_changed: ${{ steps.filter.outputs.code }}
       charts_changed: ${{ steps.filter.outputs.charts }}
       docs_changed: ${{ steps.filter.outputs.docs }}
