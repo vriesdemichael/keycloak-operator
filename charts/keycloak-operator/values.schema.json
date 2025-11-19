@@ -1,103 +1,145 @@
 {
   "$schema": "https://json-schema.org/draft-07/schema#",
+  "title": "Keycloak Operator Helm Chart Values",
+  "description": "Configuration values for deploying the Keycloak Operator, which manages Keycloak instances and resources in Kubernetes",
   "type": "object",
   "properties": {
     "operator": {
       "type": "object",
-      "description": "Operator deployment configuration",
+      "description": "Operator deployment configuration including replicas, image, resources, and security settings",
       "properties": {
         "replicaCount": {
           "type": "integer",
-          "description": "Number of operator replicas for HA",
+          "description": "Number of operator replicas for high availability. Leader election ensures only one replica is active. Recommended: 2+ for production",
           "minimum": 1,
           "default": 2
         },
+        "instanceId": {
+          "type": "string",
+          "description": "Operator instance ID for resource ownership tracking. Auto-generates '<release>-<namespace>' if empty. Used to identify which operator created resources in Keycloak.",
+          "maxLength": 63,
+          "pattern": "^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$"
+        },
         "image": {
           "type": "object",
+          "description": "Container image configuration for the operator",
           "properties": {
             "repository": {
               "type": "string",
-              "description": "Container image repository"
+              "description": "Container registry and repository path for the operator image",
+              "examples": ["ghcr.io/vriesdemichael/keycloak-operator"]
             },
             "pullPolicy": {
               "type": "string",
-              "description": "Image pull policy",
+              "description": "Image pull policy. IfNotPresent (pull if not cached), Always (always pull), Never (use local only)",
               "enum": ["Always", "IfNotPresent", "Never"],
               "default": "IfNotPresent"
             },
             "tag": {
               "type": "string",
-              "description": "Image tag override (defaults to chart appVersion)"
+              "description": "Image tag override. Defaults to chart appVersion if not specified",
+              "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+(-.*)?$|^latest$",
+              "examples": ["v0.3.2", "latest"]
             }
           },
           "required": ["repository"]
         },
         "imagePullSecrets": {
           "type": "array",
-          "description": "Image pull secrets for private registries",
+          "description": "Image pull secrets for private container registries. Required when using private registries",
           "items": {
             "type": "object",
             "properties": {
-              "name": {"type": "string"}
-            }
-          }
+              "name": {
+                "type": "string",
+                "description": "Name of the secret containing registry credentials"
+              }
+            },
+            "required": ["name"]
+          },
+          "examples": [[{"name": "ghcr-registry-secret"}]]
         },
         "resources": {
           "type": "object",
-          "description": "Resource limits and requests",
+          "description": "CPU and memory resource limits and requests. Adjust based on cluster size and number of managed Keycloak instances",
           "properties": {
             "limits": {
               "type": "object",
+              "description": "Maximum resources the operator can use. Pod is killed if exceeded",
               "properties": {
-                "cpu": {"type": "string"},
-                "memory": {"type": "string"}
+                "cpu": {
+                  "type": "string",
+                  "description": "CPU limit (e.g., '500m' = 0.5 cores)",
+                  "pattern": "^[0-9]+(m|\\.[0-9]+)?$"
+                },
+                "memory": {
+                  "type": "string",
+                  "description": "Memory limit (e.g., '512Mi', '1Gi')",
+                  "pattern": "^[0-9]+(Mi|Gi|M|G)$"
+                }
               }
             },
             "requests": {
               "type": "object",
+              "description": "Minimum resources guaranteed for the operator. Used for scheduling decisions",
               "properties": {
-                "cpu": {"type": "string"},
-                "memory": {"type": "string"}
+                "cpu": {
+                  "type": "string",
+                  "description": "CPU request (e.g., '100m' = 0.1 cores)",
+                  "pattern": "^[0-9]+(m|\\.[0-9]+)?$"
+                },
+                "memory": {
+                  "type": "string",
+                  "description": "Memory request (e.g., '128Mi', '1Gi')",
+                  "pattern": "^[0-9]+(Mi|Gi|M|G)$"
+                }
               }
             }
           }
         },
         "nodeSelector": {
           "type": "object",
-          "description": "Node selector for pod scheduling",
-          "additionalProperties": {"type": "string"}
+          "description": "Node labels required for pod scheduling. Restricts operator pods to specific nodes",
+          "additionalProperties": {"type": "string"},
+          "examples": [{"kubernetes.io/os": "linux", "node-type": "general"}]
         },
         "tolerations": {
           "type": "array",
-          "description": "Tolerations for pod scheduling",
+          "description": "Tolerations allow pods to schedule on nodes with matching taints. Useful for control plane nodes",
           "items": {
-            "type": "object"
+            "type": "object",
+            "properties": {
+              "key": {"type": "string", "description": "Taint key to tolerate"},
+              "operator": {"type": "string", "enum": ["Exists", "Equal"], "description": "Comparison operator"},
+              "value": {"type": "string", "description": "Taint value (if operator=Equal)"},
+              "effect": {"type": "string", "enum": ["NoSchedule", "PreferNoSchedule", "NoExecute"], "description": "Taint effect"}
+            }
           }
         },
         "affinity": {
           "type": "object",
-          "description": "Affinity rules for pod scheduling"
+          "description": "Pod affinity and anti-affinity rules. Used to spread replicas across nodes for high availability"
         },
         "securityContext": {
           "type": "object",
-          "description": "Pod-level security context"
+          "description": "Pod-level security context. Defines user/group IDs and security policies for the entire pod"
         },
         "containerSecurityContext": {
           "type": "object",
-          "description": "Container-level security context"
+          "description": "Container-level security context. Defines capabilities, privilege escalation, and filesystem permissions"
         },
         "livenessProbe": {
           "type": "object",
-          "description": "Liveness probe configuration",
+          "description": "Liveness probe configuration. Restarts pod if health check fails. Checks /healthz endpoint",
           "properties": {
             "httpGet": {
               "type": "object",
               "properties": {
-                "path": {"type": "string"},
-                "port": {"type": ["string", "integer"]}
+                "path": {"type": "string", "description": "HTTP path to check"},
+                "port": {"type": ["string", "integer"], "description": "Port to check"}
               }
             },
-            "initialDelaySeconds": {"type": "integer"},
+            "initialDelaySeconds": {"type": "integer", "description": "Seconds before first check", "minimum": 0},
             "periodSeconds": {"type": "integer"},
             "timeoutSeconds": {"type": "integer"},
             "failureThreshold": {"type": "integer"}
