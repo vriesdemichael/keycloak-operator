@@ -98,22 +98,33 @@ async def test_with_mock(mock_keycloak_admin):
 
 Integration tests run on real Kubernetes clusters:
 
-```
-┌─────────────────────────────────────────┐
-│         Kind Cluster (Test Env)         │
-├─────────────────────────────────────────┤
-│ • CloudNativePG operator                │
-│ • PostgreSQL cluster                    │
-│ • Keycloak instance (shared or dedicate)│
-│ • Keycloak operator (via Helm)          │
-└─────────────────────────────────────────┘
-         ↕ Port-forward for tests
-┌─────────────────────────────────────────┐
-│    Test Runner (Your Machine/CI)       │
-│ • pytest with xdist (8 workers)         │
-│ • Port-forwards to Keycloak             │
-│ • Kubernetes API access                 │
-└─────────────────────────────────────────┘
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
+graph TB
+    subgraph cluster["Kind Cluster (Test Env)"]
+        cnpg["CloudNativePG operator"]
+        postgres["PostgreSQL cluster"]
+        keycloak["Keycloak instance<br/>(shared or dedicated)"]
+        operator["Keycloak operator<br/>(via Helm)"]
+    end
+
+    subgraph runner["Test Runner (Your Machine/CI)"]
+        pytest["pytest with xdist<br/>(8 workers)"]
+        portfwd["Port-forwards to Keycloak"]
+        k8s["Kubernetes API access"]
+    end
+
+    runner <-->|Port-forward| cluster
+
+    style cluster fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style runner fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style cnpg fill:#00838f,stroke:#006064,color:#fff
+    style postgres fill:#00838f,stroke:#006064,color:#fff
+    style keycloak fill:#00838f,stroke:#006064,color:#fff
+    style operator fill:#00838f,stroke:#006064,color:#fff
+    style pytest fill:#00838f,stroke:#006064,color:#fff
+    style portfwd fill:#00838f,stroke:#006064,color:#fff
+    style k8s fill:#00838f,stroke:#006064,color:#fff
 ```
 
 ### Setup Flow

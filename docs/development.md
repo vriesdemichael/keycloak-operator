@@ -185,33 +185,81 @@ This ensures:
 
 The operator follows a clean layered architecture:
 
-```
-src/keycloak_operator/
-├── models/                  # Pydantic models for CRDs
-│   ├── keycloak.py         # Keycloak CRD spec/status
-│   ├── realm.py            # KeycloakRealm CRD spec/status
-│   ├── client.py           # KeycloakClient CRD spec/status
-│   └── keycloak_api.py     # Keycloak Admin API models
-├── handlers/               # Kopf event handlers (thin layer)
-│   ├── keycloak.py        # Keycloak resource handlers
-│   ├── realm.py           # Realm resource handlers
-│   ├── client.py          # Client resource handlers
-│   └── timers.py          # Timer handlers (drift detection)
-├── services/              # Business logic (thick layer)
-│   ├── keycloak_reconciler.py
-│   ├── realm_reconciler.py
-│   ├── client_reconciler.py
-│   ├── drift_detection.py
-├── utils/                 # Reusable utilities
-│   ├── keycloak_admin.py  # Keycloak Admin API client
-│   ├── kubernetes.py      # Kubernetes API helpers
-│   ├── rate_limiter.py    # API rate limiting
-│   └── validation.py      # Input validation
-├── observability/         # Monitoring & logging
-│   ├── metrics.py         # Prometheus metrics
-│   └── logging.py         # Structured logging
-└── errors/               # Custom exceptions
-    └── operator_errors.py
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
+graph TB
+    root["📁 src/keycloak_operator/"]
+
+    models["📁 models/<br/><small>Pydantic models for CRDs</small>"]
+    keycloak_py["📄 keycloak.py<br/><small>Keycloak CRD spec/status</small>"]
+    realm_py["📄 realm.py<br/><small>KeycloakRealm CRD spec/status</small>"]
+    client_py["📄 client.py<br/><small>KeycloakClient CRD spec/status</small>"]
+    keycloak_api["📄 keycloak_api.py<br/><small>Keycloak Admin API models</small>"]
+
+    handlers["📁 handlers/<br/><small>Kopf event handlers (thin layer)</small>"]
+    h_keycloak["📄 keycloak.py"]
+    h_realm["📄 realm.py"]
+    h_client["📄 client.py"]
+    h_timers["📄 timers.py<br/><small>Drift detection</small>"]
+
+    services["📁 services/<br/><small>Business logic (thick layer)</small>"]
+    s_keycloak["📄 keycloak_reconciler.py"]
+    s_realm["📄 realm_reconciler.py"]
+    s_client["📄 client_reconciler.py"]
+    s_drift["📄 drift_detection.py"]
+
+    utils["📁 utils/<br/><small>Reusable utilities</small>"]
+    u_admin["📄 keycloak_admin.py"]
+    u_k8s["📄 kubernetes.py"]
+    u_rate["📄 rate_limiter.py"]
+    u_valid["📄 validation.py"]
+
+    observability["📁 observability/<br/><small>Monitoring & logging</small>"]
+    o_metrics["📄 metrics.py"]
+    o_logging["📄 logging.py"]
+
+    errors["📁 errors/<br/><small>Custom exceptions</small>"]
+    e_ops["📄 operator_errors.py"]
+
+    root --> models
+    root --> handlers
+    root --> services
+    root --> utils
+    root --> observability
+    root --> errors
+
+    models --> keycloak_py
+    models --> realm_py
+    models --> client_py
+    models --> keycloak_api
+
+    handlers --> h_keycloak
+    handlers --> h_realm
+    handlers --> h_client
+    handlers --> h_timers
+
+    services --> s_keycloak
+    services --> s_realm
+    services --> s_client
+    services --> s_drift
+
+    utils --> u_admin
+    utils --> u_k8s
+    utils --> u_rate
+    utils --> u_valid
+
+    observability --> o_metrics
+    observability --> o_logging
+
+    errors --> e_ops
+
+    style root fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style models fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style handlers fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style services fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style utils fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style observability fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style errors fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
 ```
 
 ### Design Principles

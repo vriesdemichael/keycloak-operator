@@ -4,31 +4,37 @@ Configure Keycloak and PostgreSQL for high availability with automatic failover.
 
 ## Architecture Overview
 
-```
-                  ┌─────────────┐
-                  │   Ingress   │
-                  └──────┬──────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-   ┌────▼────┐     ┌────▼────┐     ┌────▼────┐
-   │Keycloak │     │Keycloak │     │Keycloak │
-   │ Pod 1   │     │ Pod 2   │     │ Pod 3   │
-   └────┬────┘     └────┬────┘     └────┬────┘
-        │                │                │
-        └────────────────┼────────────────┘
-                         │
-                  ┌──────▼──────┐
-                  │ PostgreSQL  │
-                  │   Primary   │
-                  └──────┬──────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-   ┌────▼────┐     ┌────▼────┐
-   │PostgreSQL    │PostgreSQL│
-   │Replica 1│     │Replica 2│
-   └─────────┘     └─────────┘
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
+graph TD
+    ingress["⚡ Ingress"]
+
+    kc1["🔐 Keycloak<br/>Pod 1"]
+    kc2["🔐 Keycloak<br/>Pod 2"]
+    kc3["🔐 Keycloak<br/>Pod 3"]
+
+    pg_primary["🗄️ PostgreSQL<br/>Primary"]
+    pg_replica1["🗄️ PostgreSQL<br/>Replica 1"]
+    pg_replica2["🗄️ PostgreSQL<br/>Replica 2"]
+
+    ingress --> kc1
+    ingress --> kc2
+    ingress --> kc3
+
+    kc1 --> pg_primary
+    kc2 --> pg_primary
+    kc3 --> pg_primary
+
+    pg_primary --> pg_replica1
+    pg_primary --> pg_replica2
+
+    style ingress fill:#00838f,stroke:#006064,color:#fff
+    style kc1 fill:#00838f,stroke:#006064,color:#fff
+    style kc2 fill:#00838f,stroke:#006064,color:#fff
+    style kc3 fill:#00838f,stroke:#006064,color:#fff
+    style pg_primary fill:#1565c0,stroke:#0d47a1,color:#fff
+    style pg_replica1 fill:#1565c0,stroke:#0d47a1,color:#fff
+    style pg_replica2 fill:#1565c0,stroke:#0d47a1,color:#fff
 ```
 
 ---

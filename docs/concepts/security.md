@@ -424,19 +424,50 @@ spec:
 
 **Recommended structure:**
 
-```
-repos/
-├── infrastructure/
-│   └── keycloak/
-│       ├── operator.yaml         # Operator + instance
-│       └── realms/
-│           ├── api-realm.yaml    # Platform-managed realms
-│           └── auth-realm.yaml
-└── applications/
-    ├── app-a/
-    │   └── keycloak-client.yaml  # App-managed clients
-    └── app-b/
-        └── keycloak-client.yaml
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
+graph TB
+    root["📁 repos/"]
+
+    infra["📁 infrastructure/"]
+    infra_kc["📁 keycloak/"]
+    operator["📄 operator.yaml<br/><small>Operator + instance</small>"]
+    realms["📁 realms/"]
+    api_realm["📄 api-realm.yaml<br/><small>Platform-managed</small>"]
+    auth_realm["📄 auth-realm.yaml<br/><small>Platform-managed</small>"]
+
+    apps["📁 applications/"]
+    app_a["📁 app-a/"]
+    client_a["📄 keycloak-client.yaml<br/><small>App-managed clients</small>"]
+    app_b["📁 app-b/"]
+    client_b["📄 keycloak-client.yaml<br/><small>App-managed clients</small>"]
+
+    root --> infra
+    root --> apps
+
+    infra --> infra_kc
+    infra_kc --> operator
+    infra_kc --> realms
+    realms --> api_realm
+    realms --> auth_realm
+
+    apps --> app_a
+    apps --> app_b
+    app_a --> client_a
+    app_b --> client_b
+
+    style root fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style infra fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style infra_kc fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style realms fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style apps fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style app_a fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style app_b fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style operator fill:#00838f,stroke:#006064,color:#fff
+    style api_realm fill:#00838f,stroke:#006064,color:#fff
+    style auth_realm fill:#00838f,stroke:#006064,color:#fff
+    style client_a fill:#00838f,stroke:#006064,color:#fff
+    style client_b fill:#00838f,stroke:#006064,color:#fff
 ```
 
 **Benefits:**
