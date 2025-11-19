@@ -220,7 +220,7 @@ jobs:
           context: .
           file: images/operator/Dockerfile.test
           platforms: linux/amd64
-          tags: keycloak-operator:test
+          tags: keycloak-operator:test-coverage
           outputs: type=docker,dest=/tmp/operator-test.tar
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -507,7 +507,7 @@ jobs:
           kubectl get pods -A
 
       - name: Load operator image into Kind
-        run: kind load docker-image keycloak-operator:test --name test-${{ github.run_id }}
+        run: kind load docker-image keycloak-operator:test-coverage --name test-${{ github.run_id }}
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
