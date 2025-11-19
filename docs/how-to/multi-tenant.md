@@ -4,20 +4,35 @@ Configure the operator for multi-tenant environments where multiple teams manage
 
 ## Architecture
 
-```
-Platform Team                    Application Teams
-     │                                │
-     ├─ Deploys Operator              │
-     ├─ Creates Keycloak Instance     │
-     ├─ Grants RBAC Permissions ──────►
-     │                                │
-     │                         Creates Realms
-     │                         (RBAC-controlled)
-     │                                │
-     │                         Sets clientAuthorizationGrants
-     │                                │
-     │                         Manages Clients
-     │                         (grant list-controlled)
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
+graph LR
+    subgraph platform["👥 Platform Team"]
+        deploy["Deploy Operator"]
+        instance["Create Keycloak Instance"]
+        rbac["Grant RBAC Permissions"]
+    end
+
+    subgraph app["👥 Application Teams"]
+        realms["Create Realms<br/><small>(RBAC-controlled)</small>"]
+        grants["Set clientAuthorizationGrants"]
+        clients["Manage Clients<br/><small>(grant list-controlled)</small>"]
+    end
+
+    deploy --> instance
+    instance --> rbac
+    rbac -.->|authorize| realms
+    realms --> grants
+    grants --> clients
+
+    style platform fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style app fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style deploy fill:#00838f,stroke:#006064,color:#fff
+    style instance fill:#00838f,stroke:#006064,color:#fff
+    style rbac fill:#00838f,stroke:#006064,color:#fff
+    style realms fill:#00838f,stroke:#006064,color:#fff
+    style grants fill:#00838f,stroke:#006064,color:#fff
+    style clients fill:#00838f,stroke:#006064,color:#fff
 ```
 
 **Key Concepts:**

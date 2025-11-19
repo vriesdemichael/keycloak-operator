@@ -458,17 +458,26 @@ This section is for platform teams setting up multi-tenant Keycloak access.
 
 The operator uses **namespace grant lists** for multi-tenant authorization:
 
-```
-Platform Team                     Application Team
-     │                                    │
-     ├─ Creates Realm (central) ─────────┤
-     │  with clientAuthorizationGrants   │
-     │                                    │
-     │                          Creates Client Resources
-     │                          (authorized via grant list)
-     │                                    │
-     │                          Manages Own Clients
-     │                          (full self-service)
+```mermaid
+%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
+graph LR
+    subgraph platform["👥 Platform Team"]
+        realm["Create Realm (central)<br/>with clientAuthorizationGrants"]
+    end
+
+    subgraph app["👥 Application Team"]
+        create["Create Client Resources<br/><small>(authorized via grant list)</small>"]
+        manage["Manage Own Clients<br/><small>(full self-service)</small>"]
+    end
+
+    realm -.->|authorize| create
+    create --> manage
+
+    style platform fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style app fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style realm fill:#00838f,stroke:#006064,color:#fff
+    style create fill:#00838f,stroke:#006064,color:#fff
+    style manage fill:#00838f,stroke:#006064,color:#fff
 ```
 
 **Key Concepts:**
