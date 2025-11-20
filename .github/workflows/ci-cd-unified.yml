@@ -211,26 +211,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build operator image (test with coverage)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: images/operator/Dockerfile.test
-          platforms: linux/amd64
-          tags: keycloak-operator:test-coverage
-          outputs: type=docker,dest=/tmp/operator-test.tar
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Upload image artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: operator-image
-          path: /tmp/operator-test.tar
-          retention-days: 1
+      - name: Build operator
+        uses: ./.github/actions/build-operator
 
   # =====================================================
   # PHASE 3: FAST CHECKS (Parallel, ~2-5 min)
@@ -247,57 +229,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-
       - name: Run unit tests
-        run: uv run --group test pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
-
-      - name: Upload unit coverage artifact for combining
-        uses: actions/upload-artifact@v5
-        if: always()
+        uses: ./.github/actions/unit-tests
         with:
-          name: unit-coverage
-          path: |
-            .coverage
-            coverage.xml
-          retention-days: 1
-
-      - name: Upload coverage (try CLI first)
-        id: codecov_cli
-        uses: codecov/codecov-action@v5
-        continue-on-error: true
-        if: (success() || failure()) && github.actor != 'dependabot[bot]'
-        with:
-          files: ./coverage.xml
-          flags: unit
-          name: unit-tests
-          token: ${{ secrets.CODECOV_TOKEN }}
-          disable_search: true
-          fail_ci_if_error: false
-
-      - name: Upload coverage (fallback to legacy)
-        if: (success() || failure()) && github.actor != 'dependabot[bot]' && steps.codecov_cli.outcome == 'failure'
-        uses: codecov/codecov-action@v5
-        continue-on-error: true
-        with:
-          files: ./coverage.xml
-          flags: unit
-          name: unit-tests
-          token: ${{ secrets.CODECOV_TOKEN }}
-          disable_search: true
-          fail_ci_if_error: false  # TEMPORARY: Global Codecov outage 2025-11-18
-          use_legacy_upload_endpoint: true
-
-      - name: Check coverage upload
-        if: (success() || failure()) && github.actor != 'dependabot[bot]' && steps.codecov_cli.outcome == 'failure'
-        run: |
-          echo "::warning::Codecov CLI upload failed, used legacy endpoint as fallback (allowing failures due to outage)"
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          github-actor: ${{ github.actor }}
 
   code-quality:
     name: Code Quality
@@ -311,31 +247,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-
       - name: Run quality checks
-        run: make quality
-
-      - name: Install yq for decision record validation
-        env:
-          YQ_VERSION: "v4.44.3"
-          YQ_CHECKSUM: "a2c097180dd884a8d50c956ee16a9cec070f30a7947cf4ebf87d5f36213e9ed7"
-        run: |
-          wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /tmp/yq
-          echo "${YQ_CHECKSUM}  /tmp/yq" | sha256sum -c -
-          sudo mv /tmp/yq /usr/local/bin/yq
-          sudo chmod +x /usr/local/bin/yq
-        if: hashFiles('docs/decisions/*.yaml') != ''
-
-      - name: Validate Decision Records
-        run: uv run --group quality scripts/adr_validator.py --validate
-        if: hashFiles('docs/decisions/*.yaml') != ''
+        uses: ./.github/actions/code-quality
 
   # =====================================================
   # PHASE 4: SLOW CHECKS (Parallel after fast, ~15-30 min)
@@ -356,100 +269,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      # CodeQL SAST
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v4
-        with:
-          languages: python
-          config-file: .github/codeql-config.yml
-
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v4
-
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v4
-        with:
-          category: "/language:python"
-
-      # Dependency scanning
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-
-      - name: Run pip-audit
-        run: uv run --group security pip-audit --desc || true
-
-      - name: Run safety check
-        run: uv run --group security safety check --json || true
-
-      # Image scanning
-      - name: Download image
-        uses: actions/download-artifact@v6
-        with:
-          name: operator-image
-          path: /tmp
-
-      - name: Load image
-        run: docker load --input /tmp/operator-test.tar
-
-      - name: Trivy scan (SARIF)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'keycloak-operator:test-coverage'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-
-      - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
-          category: 'trivy-test-image'
-
-      - name: Trivy scan (table, fail on critical)
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'keycloak-operator:test-coverage'
-          format: 'table'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-
-      # SBOM generation
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: keycloak-operator:test-coverage
-          format: spdx-json
-          output-file: sbom.spdx.json
-
-      - name: Scan SBOM for vulnerabilities
-        uses: anchore/scan-action@v7
-        with:
-          sbom: sbom.spdx.json
-          fail-build: false
-          severity-cutoff: high
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v5
-        if: always()
-        with:
-          name: sbom-test-image
-          path: sbom.spdx.json
-          retention-days: 90
-
-      # Secret scanning
-      - name: TruffleHog Secret Scan
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || 'HEAD~1' }}
-          head: HEAD
-          extra_args: --only-verified
+      - name: Run security scans
+        uses: ./.github/actions/security-scans
 
   integration-tests:
     name: Integration Tests
@@ -469,151 +290,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-
-      - uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
-
-      - name: Download operator image
-        uses: actions/download-artifact@v6
-        with:
-          name: operator-image
-          path: /tmp
-
-      - name: Load operator image
-        run: docker load --input /tmp/operator-test.tar
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Set up Kind
-        uses: helm/kind-action@v1.13.0
-        with:
-          version: v0.20.0
-          kubectl_version: v1.30.0
-          cluster_name: test-${{ github.run_id }}
-          config: tests/kind/kind-config.yaml
-          node_image: kindest/node:v1.30.0
-          wait: 300s
-
-      - name: Verify Kind cluster
-        run: |
-          kubectl cluster-info
-          kubectl get nodes
-          kubectl get pods -A
-
-      - name: Load operator image into Kind
-        run: kind load docker-image keycloak-operator:test-coverage --name test-${{ github.run_id }}
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Pull and load Keycloak optimized image
-        env:
-          KEYCLOAK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-        run: |
-          docker pull "${KEYCLOAK_IMAGE}"
-          docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
-          kind load docker-image keycloak-optimized:${{ env.KEYCLOAK_VERSION }} --name test-${{ github.run_id }}
-
-      - name: Install CloudNativePG operator
-        run: |
-          helm repo add cnpg https://cloudnative-pg.github.io/charts
-          helm repo update
-          helm upgrade --install cnpg cnpg/cloudnative-pg \
-            --namespace cnpg-system \
-            --create-namespace \
-            --wait \
-            --timeout=300s
-
-          kubectl wait -n cnpg-system \
-            --for=condition=available deployment/cnpg-cloudnative-pg \
-            --timeout=300s
-
-      - name: Install cert-manager
-        run: |
-          kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
-
-          kubectl wait -n cert-manager \
-            --for=condition=available deployment/cert-manager \
-            --timeout=300s
-          kubectl wait -n cert-manager \
-            --for=condition=available deployment/cert-manager-webhook \
-            --timeout=300s
-          kubectl wait -n cert-manager \
-            --for=condition=available deployment/cert-manager-cainjector \
-            --timeout=300s
-
       - name: Run integration tests
-        env:
-          INTEGRATION_COVERAGE: "true"
-        run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
-
-      - name: Combine and convert coverage to XML
-        if: always()
-        run: |
-          echo "Combining coverage files and generating XML..."
-          if [ -d .tmp/coverage ] && [ -n "$(ls -A .tmp/coverage/.coverage* 2>/dev/null)" ]; then
-            echo "Found coverage files:"
-            ls -la .tmp/coverage/
-
-            # Combine all .coverage.* files
-            uv run coverage combine .tmp/coverage/.coverage*
-
-            # Generate XML report for Codecov
-            uv run coverage xml -o coverage.xml
-
-            echo "✓ Generated coverage.xml"
-            ls -lh coverage.xml
-          else
-            echo "ERROR: No coverage files found in .tmp/coverage/"
-            exit 1
-          fi
-
-      - name: Upload integration coverage to Codecov
-        uses: codecov/codecov-action@v5
-        if: always() && github.actor != 'dependabot[bot]'
+        uses: ./.github/actions/integration-tests
         with:
-          files: ./coverage.xml
-          flags: integration
-          name: integration-tests
-          token: ${{ secrets.CODECOV_TOKEN }}
-          disable_search: true
-          fail_ci_if_error: true
-
-      - name: Collect logs and diagnostics
-        if: always()
-        run: |
-          mkdir -p test-logs
-
-          kubectl cluster-info | tee test-logs/cluster-info.log
-
-          for pod in $(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
-            namespace=$(echo $pod | cut -d/ -f1)
-            podname=$(echo $pod | cut -d/ -f2)
-            kubectl logs -n $namespace $podname --all-containers=true --tail=2000 >> test-logs/operator-logs.log 2>&1 || true
-          done
-
-          kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide >> test-logs/operator-status.log 2>&1 || true
-          kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
-          kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
-          kubectl get pods --all-namespaces -o wide >> test-logs/all-pods.log 2>&1 || true
-
-      - name: Upload test artifacts
-        if: always()
-        uses: actions/upload-artifact@v5
-        with:
-          name: test-logs-${{ github.run_id }}
-          path: test-logs/
-          retention-days: 7
+          cluster-name: test-${{ github.run_id }}
+          registry: ${{ env.REGISTRY }}
+          image-name: ${{ env.IMAGE_NAME }}
+          keycloak-version: ${{ env.KEYCLOAK_VERSION }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          codecov-token: ${{ secrets.CODECOV_TOKEN }}
+          github-actor: ${{ github.actor }}
+          run-id: ${{ github.run_id }}
 
   # =====================================================
   # CHECKPOINT: All required checks passed
@@ -760,6 +447,9 @@ jobs:
             echo "### :warning: Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
           fi
 
+      - uses: actions/checkout@v5
+        if: steps.release.outputs.pr != ''
+
   # =====================================================
   # PHASE 6: PUBLISH OPERATOR IMAGE (Release commits)
   # =====================================================
@@ -779,93 +469,20 @@ jobs:
       contents: read
       packages: write
       security-events: write
-      id-token: write  # For OIDC token to sign attestations
-      attestations: write  # For publishing attestations
+      id-token: write
+      attestations: write
 
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
+      - name: Publish operator image
+        uses: ./.github/actions/publish-operator-image
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract version
-        id: version
-        run: |
-          VERSION="${{ needs.detect.outputs.operator_version }}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Publishing operator version: ${VERSION}"
-
-      - name: Generate tags
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=latest
-            type=raw,value=v${{ steps.version.outputs.version }}
-            type=raw,value=${{ steps.version.outputs.version }}
-          labels: |
-            org.opencontainers.image.title=Keycloak Operator
-            org.opencontainers.image.description=GitOps-compatible Kubernetes operator for Keycloak
-            org.opencontainers.image.vendor=Michaël de Vries
-            org.opencontainers.image.licenses=MIT
-            org.opencontainers.image.version=v${{ steps.version.outputs.version }}
-
-      - name: Build and push
-        id: build
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: images/operator/Dockerfile
-          platforms: linux/amd64
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          # Generate build provenance attestation (SLSA)
-          provenance: true
-          # Generate SBOM attestation
-          sbom: true
-
-      - name: Generate SBOM
-        uses: anchore/sbom-action@v0
-        with:
-          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:v${{ steps.version.outputs.version }}
-          format: spdx-json
-          output-file: sbom.spdx.json
-
-      - name: Attest SBOM
-        uses: actions/attest-sbom@v2
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          subject-digest: ${{ steps.build.outputs.digest }}
-          sbom-path: sbom.spdx.json
-          push-to-registry: true
-
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: sbom-operator-v${{ steps.version.outputs.version }}
-          path: sbom.spdx.json
-          retention-days: 90
-
-      - name: Summary
-        run: |
-          echo "### :whale: Operator Image Published" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Version:** v${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Tags:**" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-          echo "${{ steps.meta.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          image-name: ${{ env.IMAGE_NAME }}
+          operator-version: ${{ needs.detect.outputs.operator_version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-actor: ${{ github.actor }}
 
   # =====================================================
   # PHASE 7: UPDATE OPERATOR CHART (After operator publish)
@@ -887,71 +504,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Update chart values
-        run: |
-          VERSION="v${{ needs.detect.outputs.operator_version }}"
-
-          sed -i "s|tag: \"v.*\"|tag: \"${VERSION}\"|g" charts/keycloak-operator/values.yaml
-          sed -i "s|appVersion: \"v.*\"|appVersion: \"${VERSION}\"|g" charts/keycloak-operator/Chart.yaml
-
-          git diff
-
-      - name: Check for changes
-        id: check
-        run: |
-          if git diff --quiet; then
-            echo "changed=false" >> $GITHUB_OUTPUT
-          else
-            echo "changed=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Create Pull Request
-        if: steps.check.outputs.changed == 'true'
-        id: cpr
-        uses: peter-evans/create-pull-request@v7
+      # Use RELEASE_PLEASE_TOKEN (PAT) instead of GITHUB_TOKEN so the PR triggers workflows
+      # This allows the chart update PR to trigger release-please when merged
+      - name: Update chart version
+        uses: ./.github/actions/update-operator-chart
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          base: main
-          commit-message: |
-            fix(chart-operator): update for operator v${{ needs.detect.outputs.operator_version }}
-
-            Update operator chart to use operator v${{ needs.detect.outputs.operator_version }}.
-            This ensures helm deployments use the latest tested operator image.
-
-            Auto-generated by CI/CD workflow
-          branch: chore/update-operator-chart-v${{ needs.detect.outputs.operator_version }}
-          delete-branch: true
-          title: "fix(chart-operator): update for operator v${{ needs.detect.outputs.operator_version }}"
-          body: |
-            Updates operator chart to use operator version `v${{ needs.detect.outputs.operator_version }}`.
-
-            **Changes:**
-            - Updated `charts/keycloak-operator/values.yaml` image tag
-            - Updated `charts/keycloak-operator/Chart.yaml` appVersion
-
-            This fix ensures the chart is compatible with operator v${{ needs.detect.outputs.operator_version }}.
-
-            🤖 Auto-generated by CI/CD workflow
-          labels: |
-            dependencies
-            helm
-            automated
-
-      - name: Enable auto-rebase for chart update PR
-        if: steps.check.outputs.changed == 'true' && steps.cpr.outputs.pull-request-number
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          PR_NUMBER="${{ steps.cpr.outputs.pull-request-number }}"
-
-          # Enable auto-merge with rebase
-          if gh pr merge $PR_NUMBER --auto --rebase --repo ${{ github.repository }}; then
-            echo "### :white_check_mark: Auto-rebase enabled for chart update PR" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "PR #${PR_NUMBER} will merge automatically when checks pass." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "### :warning: Could not enable auto-rebase" >> $GITHUB_STEP_SUMMARY
-          fi
+          operator-version: ${{ needs.detect.outputs.operator_version }}
+          github-token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          github-repository: ${{ github.repository }}
 
   # =====================================================
   # PHASE 8: PUBLISH HELM CHARTS (Chart releases to OCI)
@@ -976,41 +536,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Get chart version
-        id: version
-        run: |
-          VERSION=$(yq eval '.version' charts/keycloak-operator/Chart.yaml)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Publishing keycloak-operator chart version: ${VERSION}"
-
-      - name: Package chart
-        id: package
-        run: |
-          helm package charts/keycloak-operator
-          PACKAGE_FILE=$(ls keycloak-operator-*.tgz)
-          echo "file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
-
-      - name: Push chart to OCI registry
-        id: push
-        run: |
-          OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://ghcr.io/${{ github.repository_owner }}/charts 2>&1)
-          echo "$OUTPUT"
-          # Extract digest from output
-          DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K[a-f0-9:]+' || echo "")
-          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
-
-      - name: Attest chart provenance
-        uses: actions/attest-build-provenance@v2
+      - name: Publish chart
+        uses: ./.github/actions/publish-helm-chart
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/charts/keycloak-operator
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+          chart-name: keycloak-operator
+          chart-path: charts/keycloak-operator
+          registry-url: ${{ env.REGISTRY }}
+          registry-owner: ${{ github.repository_owner }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-actor: ${{ github.actor }}
 
   publish-chart-realm:
     name: Publish Helm Chart (Realm)
@@ -1032,40 +566,15 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Get chart version
-        id: version
-        run: |
-          VERSION=$(yq eval '.version' charts/keycloak-realm/Chart.yaml)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Publishing keycloak-realm chart version: ${VERSION}"
-
-      - name: Package chart
-        id: package
-        run: |
-          helm package charts/keycloak-realm
-          PACKAGE_FILE=$(ls keycloak-realm-*.tgz)
-          echo "file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
-
-      - name: Push chart to OCI registry
-        id: push
-        run: |
-          OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://ghcr.io/${{ github.repository_owner }}/charts 2>&1)
-          echo "$OUTPUT"
-          DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K[a-f0-9:]+' || echo "")
-          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
-
-      - name: Attest chart provenance
-        uses: actions/attest-build-provenance@v2
+      - name: Publish chart
+        uses: ./.github/actions/publish-helm-chart
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/charts/keycloak-realm
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+          chart-name: keycloak-realm
+          chart-path: charts/keycloak-realm
+          registry-url: ${{ env.REGISTRY }}
+          registry-owner: ${{ github.repository_owner }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-actor: ${{ github.actor }}
 
   publish-chart-client:
     name: Publish Helm Chart (Client)
@@ -1087,52 +596,26 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Set up Helm
-        uses: azure/setup-helm@v4
-
-      - name: Log in to GHCR
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Get chart version
-        id: version
-        run: |
-          VERSION=$(yq eval '.version' charts/keycloak-client/Chart.yaml)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "Publishing keycloak-client chart version: ${VERSION}"
-
-      - name: Package chart
-        id: package
-        run: |
-          helm package charts/keycloak-client
-          PACKAGE_FILE=$(ls keycloak-client-*.tgz)
-          echo "file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
-
-      - name: Push chart to OCI registry
-        id: push
-        run: |
-          OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://ghcr.io/${{ github.repository_owner }}/charts 2>&1)
-          echo "$OUTPUT"
-          DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K[a-f0-9:]+' || echo "")
-          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
-
-      - name: Attest chart provenance
-        uses: actions/attest-build-provenance@v2
+      - name: Publish chart
+        uses: ./.github/actions/publish-helm-chart
         with:
-          subject-name: ghcr.io/${{ github.repository_owner }}/charts/keycloak-client
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
+          chart-name: keycloak-client
+          chart-path: charts/keycloak-client
+          registry-url: ${{ env.REGISTRY }}
+          registry-owner: ${{ github.repository_owner }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-actor: ${{ github.actor }}
 
   # =====================================================
   # PHASE 9: DOCUMENTATION
   # =====================================================
   update-dev-docs:
     name: Update Dev Documentation
-    needs: [detect, all-required-checks-passed]
+    needs: [detect]
     if: |
-      needs.all-required-checks-passed.outputs.passed == 'true' &&
       needs.detect.outputs.is_main == 'true' &&
       needs.detect.outputs.is_release == 'false' &&
-      needs.detect.outputs.docs_changed == 'true'
+      github.event_name == 'push'
     runs-on: ubuntu-latest
     concurrency:
       group: github-pages
@@ -1150,25 +633,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-
-      - uses: astral-sh/setup-uv@v7
-
-      - name: Build ADR documentation
-        run: bash scripts/build-adr-docs.sh
-
-      - name: Generate CRD JSON schemas
-        run: uv run python scripts/generate-crd-schemas.py
-
-      - name: Configure Git for mike
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Deploy dev docs with mike
-        run: uv run --group docs mike deploy --push dev
+      - name: Update docs
+        uses: ./.github/actions/update-dev-docs
 
   publish-release-docs:
     name: Publish Release Documentation
@@ -1194,36 +660,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.13'
-
-      - uses: astral-sh/setup-uv@v7
-
-      - name: Install yq for YAML parsing
-        env:
-          YQ_VERSION: "v4.44.3"
-        run: |
-          wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /tmp/yq
-          sudo mv /tmp/yq /usr/local/bin/yq
-          sudo chmod +x /usr/local/bin/yq
-
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Get chart version
-        id: version
-        run: |
-          # Use yq for robust YAML parsing instead of grep/awk
-          VERSION=$(yq eval '.version' charts/keycloak-operator/Chart.yaml)
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-
-      - name: Deploy versioned docs with mike
-        run: |
-          uv run --group docs mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
-          uv run --group docs mike set-default --push latest
+      - name: Publish docs
+        uses: ./.github/actions/publish-release-docs
 
   # =====================================================
   # FINAL CHECKPOINT: Workflow Complete

@@ -1,0 +1,35 @@
+name: 'Update Dev Documentation'
+description: 'Build and publish development documentation to GitHub Pages'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.13'
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@v7
+
+    - name: Build ADR documentation
+      shell: bash
+      run: bash scripts/build-adr-docs.sh
+
+    - name: Generate CRD JSON schemas
+      shell: bash
+      run: uv run python scripts/generate-crd-schemas.py
+
+    - name: Configure Git for mike
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Deploy dev docs with mike
+      shell: bash
+      run: uv run --group docs mike deploy --push dev

@@ -1,0 +1,37 @@
+name: 'Build Operator Image'
+description: 'Build the operator Docker image with test coverage support'
+
+inputs:
+  cache-key-prefix:
+    description: 'Prefix for cache key'
+    required: false
+    default: 'buildx'
+
+outputs:
+  image-artifact:
+    description: 'Name of the uploaded image artifact'
+    value: 'operator-image'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build operator image (test with coverage)
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: images/operator/Dockerfile.test
+        platforms: linux/amd64
+        tags: keycloak-operator:test-coverage
+        outputs: type=docker,dest=/tmp/operator-test.tar
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Upload image artifact
+      uses: actions/upload-artifact@v5
+      with:
+        name: operator-image
+        path: /tmp/operator-test.tar
+        retention-days: 1
