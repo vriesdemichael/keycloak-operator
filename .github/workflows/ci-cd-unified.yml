@@ -222,7 +222,8 @@ jobs:
     needs: [detect, build-operator]
     if: |
       github.ref == 'refs/heads/main' ||
-      needs.detect.outputs.code_changed == 'true'
+      needs.detect.outputs.code_changed == 'true' ||
+      needs.detect.outputs.charts_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -240,7 +241,8 @@ jobs:
     needs: [detect, build-operator]
     if: |
       github.ref == 'refs/heads/main' ||
-      needs.detect.outputs.code_changed == 'true'
+      needs.detect.outputs.code_changed == 'true' ||
+      needs.detect.outputs.charts_changed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
