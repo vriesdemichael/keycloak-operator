@@ -1,0 +1,54 @@
+name: 'Publish Release Documentation'
+description: 'Build and publish versioned release documentation to GitHub Pages'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.13'
+  chart-path:
+    description: 'Path to the operator chart'
+    required: false
+    default: 'charts/keycloak-operator'
+  yq-version:
+    description: 'yq version to use'
+    required: false
+    default: 'v4.44.3'
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@v7
+
+    - name: Install yq for YAML parsing
+      shell: bash
+      env:
+        YQ_VERSION: ${{ inputs.yq-version }}
+      run: |
+        wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /tmp/yq
+        sudo mv /tmp/yq /usr/local/bin/yq
+        sudo chmod +x /usr/local/bin/yq
+
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+    - name: Get chart version
+      id: version
+      shell: bash
+      run: |
+        # Use yq for robust YAML parsing instead of grep/awk
+        VERSION=$(yq eval '.version' ${{ inputs.chart-path }}/Chart.yaml)
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+    - name: Deploy versioned docs with mike
+      shell: bash
+      run: |
+        uv run --group docs mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
+        uv run --group docs mike set-default --push latest
