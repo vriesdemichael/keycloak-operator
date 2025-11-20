@@ -24,7 +24,7 @@ runs:
         context: .
         file: images/operator/Dockerfile.test
         platforms: linux/amd64
-        tags: keycloak-operator:test-coverage
+        tags: keycloak-operator:test
         outputs: type=docker,dest=/tmp/operator-test.tar
         cache-from: type=gha
         cache-to: type=gha,mode=max
