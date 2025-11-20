@@ -1091,7 +1091,7 @@ async def shared_operator(
             "replicaCount": 1,
             "image": {
                 "repository": "keycloak-operator",
-                "tag": "test-coverage" if coverage_enabled else "test",
+                "tag": "test",
                 "pullPolicy": "Never",  # Use local image only
             },
         },
