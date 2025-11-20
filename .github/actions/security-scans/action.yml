@@ -1,0 +1,117 @@
+name: 'Security Scans'
+description: 'Run comprehensive security scanning including CodeQL, dependency checks, and image scanning'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.13'
+  codeql-languages:
+    description: 'Languages to scan with CodeQL'
+    required: false
+    default: 'python'
+  codeql-config-file:
+    description: 'CodeQL config file path'
+    required: false
+    default: '.github/codeql-config.yml'
+
+runs:
+  using: "composite"
+  steps:
+    # CodeQL SAST
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v4
+      with:
+        languages: ${{ inputs.codeql-languages }}
+        config-file: ${{ inputs.codeql-config-file }}
+
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v4
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v4
+      with:
+        category: "/language:python"
+
+    # Dependency scanning
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+
+    - name: Run pip-audit
+      shell: bash
+      run: uv run --group security pip-audit --desc || true
+
+    - name: Run safety check
+      shell: bash
+      run: uv run --group security safety check --json || true
+
+    # Image scanning
+    - name: Download image
+      uses: actions/download-artifact@v6
+      with:
+        name: operator-image
+        path: /tmp
+
+    - name: Load image
+      shell: bash
+      run: docker load --input /tmp/operator-test.tar
+
+    - name: Trivy scan (SARIF)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'keycloak-operator:test-coverage'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH,MEDIUM'
+
+    - name: Upload Trivy results
+      uses: github/codeql-action/upload-sarif@v4
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+        category: 'trivy-test-image'
+
+    - name: Trivy scan (table, fail on critical)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'keycloak-operator:test-coverage'
+        format: 'table'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '1'
+
+    # SBOM generation
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: keycloak-operator:test-coverage
+        format: spdx-json
+        output-file: sbom.spdx.json
+
+    - name: Scan SBOM for vulnerabilities
+      uses: anchore/scan-action@v7
+      with:
+        sbom: sbom.spdx.json
+        fail-build: false
+        severity-cutoff: high
+
+    - name: Upload SBOM artifact
+      uses: actions/upload-artifact@v5
+      if: always()
+      with:
+        name: sbom-test-image
+        path: sbom.spdx.json
+        retention-days: 90
+
+    # Secret scanning
+    - name: TruffleHog Secret Scan
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || 'HEAD~1' }}
+        head: HEAD
+        extra_args: --only-verified
