@@ -91,7 +91,7 @@ runs:
 
     - name: Load operator image into Kind
       shell: bash
-      run: kind load docker-image keycloak-operator:test-coverage --name ${{ inputs.cluster-name }}
+      run: kind load docker-image keycloak-operator:test --name ${{ inputs.cluster-name }}
 
     - name: Log in to GHCR
       uses: docker/login-action@v3
