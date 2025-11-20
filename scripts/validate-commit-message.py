@@ -14,11 +14,17 @@ Valid scopes:
 Scopes can be combined with '+' (e.g., 'operator+chart-operator').
 Components must be in alphabetical order and not duplicated.
 
+IMPORTANT: Commits that trigger releases (feat, fix) MUST have a scope.
+Other commit types (chore, docs, ci, test, etc.) can omit the scope.
+
 Examples:
   ✅ feat(operator): add new feature
   ✅ fix(chart-realm): fix bug
   ✅ feat(chart-client+chart-realm): update both charts
-  ✅ chore!: breaking change without scope (allowed)
+  ✅ chore: update dependencies (no scope needed for chore)
+  ✅ docs: update README (no scope needed for docs)
+  ❌ feat: add feature (scope required for feat!)
+  ❌ fix: fix bug (scope required for fix!)
   ❌ feat(invalid): wrong scope
   ❌ feat(operator+operator): duplicate component
   ❌ feat(chart-realm+chart-client): wrong order (should be chart-client+chart-realm)
@@ -35,6 +41,9 @@ VALID_SCOPES = {
     "chart-realm",
     "chart-client",
 }
+
+# Commit types that trigger releases and REQUIRE a scope
+RELEASE_TYPES = {"feat", "fix"}
 
 # Conventional commit pattern
 # Matches: type(scope): description
@@ -114,8 +123,20 @@ def validate_commit_message(message: str) -> tuple[bool, str]:
             f"Your message: {first_line}"
         )
 
-    # Validate the scope
+    # Extract commit type and scope
+    commit_type = match.group("type")
     scope = match.group("scope")
+
+    # Release-triggering commits (feat, fix) MUST have a scope
+    if commit_type in RELEASE_TYPES and scope is None:
+        return False, (
+            f"Commit type '{commit_type}' triggers a release and MUST have a scope.\n"
+            f"Valid scopes: {', '.join(sorted(VALID_SCOPES))}\n"
+            f"Example: {commit_type}(operator): your description\n\n"
+            f"Your message: {first_line}"
+        )
+
+    # Validate the scope if present
     scope_valid, scope_error = validate_scope(scope)
     if not scope_valid:
         return False, scope_error
@@ -163,7 +184,11 @@ def main() -> int:
         print("  - chart-client+chart-realm", file=sys.stderr)
         print("  - operator+chart-operator", file=sys.stderr)
         print(
-            "\nScope is optional for chore, docs, ci, and test commits.",
+            "\nScope is optional for chore, docs, ci, test, refactor, style, perf, build, and revert commits.",
+            file=sys.stderr,
+        )
+        print(
+            "Scope is REQUIRED for feat and fix commits (they trigger releases).",
             file=sys.stderr,
         )
         return 1
