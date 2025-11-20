@@ -1,0 +1,206 @@
+name: 'Integration Tests'
+description: 'Run integration tests in a Kind cluster with all dependencies'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.13'
+  kind-version:
+    description: 'Kind version to use'
+    required: false
+    default: 'v0.20.0'
+  kubectl-version:
+    description: 'kubectl version to use'
+    required: false
+    default: 'v1.30.0'
+  node-image:
+    description: 'Kind node image'
+    required: false
+    default: 'kindest/node:v1.30.0'
+  cluster-name:
+    description: 'Kind cluster name'
+    required: true
+  kind-config:
+    description: 'Path to Kind config file'
+    required: false
+    default: 'tests/kind/kind-config.yaml'
+  registry:
+    description: 'Container registry'
+    required: true
+  image-name:
+    description: 'Image name (repository)'
+    required: true
+  keycloak-version:
+    description: 'Keycloak version to use'
+    required: true
+  github-token:
+    description: 'GitHub token for registry access'
+    required: true
+  codecov-token:
+    description: 'Codecov token for uploads'
+    required: true
+  github-actor:
+    description: 'GitHub actor name'
+    required: true
+  run-id:
+    description: 'GitHub run ID for unique naming'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+        cache-dependency-glob: "pyproject.toml"
+
+    - name: Download operator image
+      uses: actions/download-artifact@v6
+      with:
+        name: operator-image
+        path: /tmp
+
+    - name: Load operator image
+      shell: bash
+      run: docker load --input /tmp/operator-test.tar
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Set up Kind
+      uses: helm/kind-action@v1.13.0
+      with:
+        version: ${{ inputs.kind-version }}
+        kubectl_version: ${{ inputs.kubectl-version }}
+        cluster_name: ${{ inputs.cluster-name }}
+        config: ${{ inputs.kind-config }}
+        node_image: ${{ inputs.node-image }}
+        wait: 300s
+
+    - name: Verify Kind cluster
+      shell: bash
+      run: |
+        kubectl cluster-info
+        kubectl get nodes
+        kubectl get pods -A
+
+    - name: Load operator image into Kind
+      shell: bash
+      run: kind load docker-image keycloak-operator:test-coverage --name ${{ inputs.cluster-name }}
+
+    - name: Log in to GHCR
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.github-actor }}
+        password: ${{ inputs.github-token }}
+
+    - name: Pull and load Keycloak optimized image
+      shell: bash
+      env:
+        KEYCLOAK_IMAGE: ${{ inputs.registry }}/${{ inputs.image-name }}/keycloak-optimized:${{ inputs.keycloak-version }}
+      run: |
+        docker pull "${KEYCLOAK_IMAGE}"
+        docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ inputs.keycloak-version }}
+        kind load docker-image keycloak-optimized:${{ inputs.keycloak-version }} --name ${{ inputs.cluster-name }}
+
+    - name: Install CloudNativePG operator
+      shell: bash
+      run: |
+        helm repo add cnpg https://cloudnative-pg.github.io/charts
+        helm repo update
+        helm upgrade --install cnpg cnpg/cloudnative-pg \
+          --namespace cnpg-system \
+          --create-namespace \
+          --wait \
+          --timeout=300s
+
+        kubectl wait -n cnpg-system \
+          --for=condition=available deployment/cnpg-cloudnative-pg \
+          --timeout=300s
+
+    - name: Install cert-manager
+      shell: bash
+      run: |
+        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
+
+        kubectl wait -n cert-manager \
+          --for=condition=available deployment/cert-manager \
+          --timeout=300s
+        kubectl wait -n cert-manager \
+          --for=condition=available deployment/cert-manager-webhook \
+          --timeout=300s
+        kubectl wait -n cert-manager \
+          --for=condition=available deployment/cert-manager-cainjector \
+          --timeout=300s
+
+    - name: Run integration tests
+      shell: bash
+      env:
+        INTEGRATION_COVERAGE: "true"
+      run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
+
+    - name: Combine and convert coverage to XML
+      if: always()
+      shell: bash
+      run: |
+        echo "Combining coverage files and generating XML..."
+        if [ -d .tmp/coverage ] && [ -n "$(ls -A .tmp/coverage/.coverage* 2>/dev/null)" ]; then
+          echo "Found coverage files:"
+          ls -la .tmp/coverage/
+
+          # Combine all .coverage.* files
+          uv run coverage combine .tmp/coverage/.coverage*
+
+          # Generate XML report for Codecov
+          uv run coverage xml -o coverage.xml
+
+          echo "✓ Generated coverage.xml"
+          ls -lh coverage.xml
+        else
+          echo "ERROR: No coverage files found in .tmp/coverage/"
+          exit 1
+        fi
+
+    - name: Upload integration coverage to Codecov
+      uses: codecov/codecov-action@v5
+      if: always() && inputs.github-actor != 'dependabot[bot]'
+      with:
+        files: ./coverage.xml
+        flags: integration
+        name: integration-tests
+        token: ${{ inputs.codecov-token }}
+        disable_search: true
+        fail_ci_if_error: true
+
+    - name: Collect logs and diagnostics
+      if: always()
+      shell: bash
+      run: |
+        mkdir -p test-logs
+
+        kubectl cluster-info | tee test-logs/cluster-info.log
+
+        for pod in $(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
+          namespace=$(echo $pod | cut -d/ -f1)
+          podname=$(echo $pod | cut -d/ -f2)
+          kubectl logs -n $namespace $podname --all-containers=true --tail=2000 >> test-logs/operator-logs.log 2>&1 || true
+        done
+
+        kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide >> test-logs/operator-status.log 2>&1 || true
+        kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
+        kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
+        kubectl get pods --all-namespaces -o wide >> test-logs/all-pods.log 2>&1 || true
+
+    - name: Upload test artifacts
+      if: always()
+      uses: actions/upload-artifact@v5
+      with:
+        name: test-logs-${{ inputs.run-id }}
+        path: test-logs/
+        retention-days: 7

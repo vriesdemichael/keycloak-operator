@@ -1,0 +1,71 @@
+name: 'Unit Tests & Coverage'
+description: 'Run unit tests with coverage reporting'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.13'
+  codecov-token:
+    description: 'Codecov token for uploads'
+    required: true
+  github-actor:
+    description: 'GitHub actor name'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+
+    - name: Run unit tests
+      shell: bash
+      run: uv run --group test pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
+
+    - name: Upload unit coverage artifact for combining
+      uses: actions/upload-artifact@v5
+      if: always()
+      with:
+        name: unit-coverage
+        path: |
+          .coverage
+          coverage.xml
+        retention-days: 1
+
+    - name: Upload coverage (try CLI first)
+      id: codecov_cli
+      uses: codecov/codecov-action@v5
+      continue-on-error: true
+      if: (success() || failure()) && inputs.github-actor != 'dependabot[bot]'
+      with:
+        files: ./coverage.xml
+        flags: unit
+        name: unit-tests
+        token: ${{ inputs.codecov-token }}
+        disable_search: true
+        fail_ci_if_error: false
+
+    - name: Upload coverage (fallback to legacy)
+      if: (success() || failure()) && inputs.github-actor != 'dependabot[bot]' && steps.codecov_cli.outcome == 'failure'
+      uses: codecov/codecov-action@v5
+      continue-on-error: true
+      with:
+        files: ./coverage.xml
+        flags: unit
+        name: unit-tests
+        token: ${{ inputs.codecov-token }}
+        disable_search: true
+        fail_ci_if_error: false
+        use_legacy_upload_endpoint: true
+
+    - name: Check coverage upload
+      if: (success() || failure()) && inputs.github-actor != 'dependabot[bot]' && steps.codecov_cli.outcome == 'failure'
+      shell: bash
+      run: |
+        echo "::warning::Codecov CLI upload failed, used legacy endpoint as fallback (allowing failures due to outage)"

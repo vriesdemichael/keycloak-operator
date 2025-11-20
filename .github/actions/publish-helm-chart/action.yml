@@ -1,0 +1,65 @@
+name: 'Publish Helm Chart'
+description: 'Package and publish a Helm chart to OCI registry with attestation'
+
+inputs:
+  chart-name:
+    description: 'Name of the chart (keycloak-operator, keycloak-realm, or keycloak-client)'
+    required: true
+  chart-path:
+    description: 'Path to the chart directory'
+    required: true
+  registry-url:
+    description: 'OCI registry URL'
+    required: true
+  registry-owner:
+    description: 'Registry owner/organization'
+    required: true
+  github-token:
+    description: 'GitHub token for registry access'
+    required: true
+  github-actor:
+    description: 'GitHub actor name'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Helm
+      uses: azure/setup-helm@v4
+
+    - name: Log in to GHCR
+      shell: bash
+      run: echo "${{ inputs.github-token }}" | helm registry login ${{ inputs.registry-url }} -u ${{ inputs.github-actor }} --password-stdin
+
+    - name: Get chart version
+      id: version
+      shell: bash
+      run: |
+        VERSION=$(yq eval '.version' ${{ inputs.chart-path }}/Chart.yaml)
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "Publishing ${{ inputs.chart-name }} chart version: ${VERSION}"
+
+    - name: Package chart
+      id: package
+      shell: bash
+      run: |
+        helm package ${{ inputs.chart-path }}
+        PACKAGE_FILE=$(ls ${{ inputs.chart-name }}-*.tgz)
+        echo "file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
+
+    - name: Push chart to OCI registry
+      id: push
+      shell: bash
+      run: |
+        OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://${{ inputs.registry-url }}/${{ inputs.registry-owner }}/charts 2>&1)
+        echo "$OUTPUT"
+        # Extract digest from output
+        DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K[a-f0-9:]+' || echo "")
+        echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+
+    - name: Attest chart provenance
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-name: ${{ inputs.registry-url }}/${{ inputs.registry-owner }}/charts/${{ inputs.chart-name }}
+        subject-digest: ${{ steps.push.outputs.digest }}
+        push-to-registry: true

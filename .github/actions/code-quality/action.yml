@@ -1,0 +1,48 @@
+name: 'Code Quality'
+description: 'Run code quality checks and validate decision records'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.13'
+  yq-version:
+    description: 'yq version to use'
+    required: false
+    default: 'v4.44.3'
+  yq-checksum:
+    description: 'yq binary checksum'
+    required: false
+    default: 'a2c097180dd884a8d50c956ee16a9cec070f30a7947cf4ebf87d5f36213e9ed7'
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+
+    - name: Run quality checks
+      shell: bash
+      run: make quality
+
+    - name: Install yq for decision record validation
+      shell: bash
+      env:
+        YQ_VERSION: ${{ inputs.yq-version }}
+        YQ_CHECKSUM: ${{ inputs.yq-checksum }}
+      run: |
+        wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /tmp/yq
+        echo "${YQ_CHECKSUM}  /tmp/yq" | sha256sum -c -
+        sudo mv /tmp/yq /usr/local/bin/yq
+        sudo chmod +x /usr/local/bin/yq
+      if: hashFiles('docs/decisions/*.yaml') != ''
+
+    - name: Validate Decision Records
+      shell: bash
+      run: uv run --group quality scripts/adr_validator.py --validate
+      if: hashFiles('docs/decisions/*.yaml') != ''
