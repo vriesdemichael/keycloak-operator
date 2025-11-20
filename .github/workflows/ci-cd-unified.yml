@@ -1,13 +1,12 @@
 name: CI/CD Pipeline (Unified)
 
 # Unified CI/CD pipeline with clear phases:
-# 1. Detection - Determine what changed and what needs to run
-# 2. Fast checks - Unit tests + code quality (parallel, ~2-5 min)
-# 3. Slow checks - Security + integration tests (parallel after fast, ~15-30 min)
-# 4. Release-please - Create/update release PRs (non-release commits only)
-# 5. Publish - Publish artifacts (release commits only)
-# 6. Docs - Update documentation (after checks pass)
-# 7. Complete - Final status check
+# 1. Detection - Determine branch and release commit status
+# 2. Quality checks - Run on all commits except release commits on main (parallel, ~20-40 min)
+# 3. Release-please - Create/update release PRs (non-release commits on main after checks)
+# 4. Publish - Publish artifacts (release commits on main, skip checks)
+# 5. Docs - Update dev docs on every main commit, versioned docs on chart-operator releases
+# 6. Complete - Final status check
 
 on:
   push:
@@ -26,27 +25,23 @@ jobs:
   # PHASE 1: DETECTION
   # =====================================================
   detect:
-    name: Detect Changes & Release Type
+    name: Detect Branch & Release Status
     runs-on: ubuntu-latest
     outputs:
+      # Branch info
+      is_main: ${{ steps.branch.outputs.is_main }}
       # Release detection
-      is_release: ${{ steps.release-check.outputs.is_release }}
-      release_type: ${{ steps.release-check.outputs.release_type }}
-      # Which components are releasing
+      is_release_commit: ${{ steps.release-check.outputs.is_release }}
+      # Which components are releasing (on release commits only)
       operator_releasing: ${{ steps.release-check.outputs.operator_releasing }}
       chart_operator_releasing: ${{ steps.release-check.outputs.chart_operator_releasing }}
       chart_realm_releasing: ${{ steps.release-check.outputs.chart_realm_releasing }}
       chart_client_releasing: ${{ steps.release-check.outputs.chart_client_releasing }}
-      any_chart_releasing: ${{ steps.release-check.outputs.any_chart_releasing }}
-      # Version info
+      # Version info (on release commits only)
       operator_version: ${{ steps.release-check.outputs.operator_version }}
-      # File changes (set by dorny/paths-filter@v3 action)
-      code_changed: ${{ steps.filter.outputs.code }}
-      charts_changed: ${{ steps.filter.outputs.charts }}
-      docs_changed: ${{ steps.filter.outputs.docs }}
-      crds_changed: ${{ steps.filter.outputs.crds }}
-      # Branch info
-      is_main: ${{ steps.branch.outputs.is_main }}
+      chart_operator_version: ${{ steps.release-check.outputs.chart_operator_version }}
+      chart_realm_version: ${{ steps.release-check.outputs.chart_realm_version }}
+      chart_client_version: ${{ steps.release-check.outputs.chart_client_version }}
 
     steps:
       - uses: actions/checkout@v5
@@ -87,54 +82,55 @@ jobs:
 
           if [[ "$IS_RELEASE" == "false" ]]; then
             echo "Not a release commit"
-            echo "release_type=none" >> $GITHUB_OUTPUT
             echo "operator_releasing=false" >> $GITHUB_OUTPUT
             echo "chart_operator_releasing=false" >> $GITHUB_OUTPUT
             echo "chart_realm_releasing=false" >> $GITHUB_OUTPUT
             echo "chart_client_releasing=false" >> $GITHUB_OUTPUT
-            echo "any_chart_releasing=false" >> $GITHUB_OUTPUT
             echo "operator_version=" >> $GITHUB_OUTPUT
+            echo "chart_operator_version=" >> $GITHUB_OUTPUT
+            echo "chart_realm_version=" >> $GITHUB_OUTPUT
+            echo "chart_client_version=" >> $GITHUB_OUTPUT
             exit 0
           fi
 
-          echo "Release commit detected, parsing versions..."
+          echo "Release commit detected, checking manifest for version changes..."
 
-          # Initialize outputs
+          # Parse version changes from .release-please-manifest.json
           OPERATOR_RELEASING=false
           CHART_OP_RELEASING=false
           CHART_REALM_RELEASING=false
           CHART_CLIENT_RELEASING=false
           OPERATOR_VERSION=""
-          RELEASE_TYPE=""
+          CHART_OP_VERSION=""
+          CHART_REALM_VERSION=""
+          CHART_CLIENT_VERSION=""
 
-          # Parse from changed CHANGELOG files
-          if git diff HEAD~1 HEAD --name-only | grep -q "^CHANGELOG.md$"; then
-            OPERATOR_RELEASING=true
-            OPERATOR_VERSION=$(grep -m1 "^## \[" CHANGELOG.md | sed 's/## \[\(.*\)\].*/\1/')
-            RELEASE_TYPE="operator"
-          fi
+          # Check if manifest changed
+          if git diff HEAD~1 HEAD --name-only | grep -q "^\.github/\.release-please-manifest\.json$"; then
+            # Get the diff of the manifest
+            MANIFEST_DIFF=$(git diff HEAD~1 HEAD .github/.release-please-manifest.json)
 
-          if git diff HEAD~1 HEAD --name-only | grep -q "^charts/keycloak-operator/CHANGELOG.md$"; then
-            CHART_OP_RELEASING=true
-            RELEASE_TYPE="${RELEASE_TYPE:+$RELEASE_TYPE,}chart-operator"
-          fi
+            # Check each component for version changes
+            if echo "$MANIFEST_DIFF" | grep -q '^\-.*"\.".*:'; then
+              # Operator version changed
+              OPERATOR_RELEASING=true
+              OPERATOR_VERSION=$(jq -r '."."' .github/.release-please-manifest.json)
+            fi
 
-          if git diff HEAD~1 HEAD --name-only | grep -q "^charts/keycloak-realm/CHANGELOG.md$"; then
-            CHART_REALM_RELEASING=true
-            RELEASE_TYPE="${RELEASE_TYPE:+$RELEASE_TYPE,}chart-realm"
-          fi
+            if echo "$MANIFEST_DIFF" | grep -q '^\-.*"charts/keycloak-operator".*:'; then
+              CHART_OP_RELEASING=true
+              CHART_OP_VERSION=$(jq -r '."charts/keycloak-operator"' .github/.release-please-manifest.json)
+            fi
 
-          if git diff HEAD~1 HEAD --name-only | grep -q "^charts/keycloak-client/CHANGELOG.md$"; then
-            CHART_CLIENT_RELEASING=true
-            RELEASE_TYPE="${RELEASE_TYPE:+$RELEASE_TYPE,}chart-client"
-          fi
+            if echo "$MANIFEST_DIFF" | grep -q '^\-.*"charts/keycloak-realm".*:'; then
+              CHART_REALM_RELEASING=true
+              CHART_REALM_VERSION=$(jq -r '."charts/keycloak-realm"' .github/.release-please-manifest.json)
+            fi
 
-          # Set any_chart_releasing
-          ANY_CHART_RELEASING=false
-          if [[ "$CHART_OP_RELEASING" == "true" ]] || \
-             [[ "$CHART_REALM_RELEASING" == "true" ]] || \
-             [[ "$CHART_CLIENT_RELEASING" == "true" ]]; then
-            ANY_CHART_RELEASING=true
+            if echo "$MANIFEST_DIFF" | grep -q '^\-.*"charts/keycloak-client".*:'; then
+              CHART_CLIENT_RELEASING=true
+              CHART_CLIENT_VERSION=$(jq -r '."charts/keycloak-client"' .github/.release-please-manifest.json)
+            fi
           fi
 
           # Output results
@@ -142,69 +138,37 @@ jobs:
           echo "chart_operator_releasing=${CHART_OP_RELEASING}" >> $GITHUB_OUTPUT
           echo "chart_realm_releasing=${CHART_REALM_RELEASING}" >> $GITHUB_OUTPUT
           echo "chart_client_releasing=${CHART_CLIENT_RELEASING}" >> $GITHUB_OUTPUT
-          echo "any_chart_releasing=${ANY_CHART_RELEASING}" >> $GITHUB_OUTPUT
           echo "operator_version=${OPERATOR_VERSION}" >> $GITHUB_OUTPUT
-          echo "release_type=${RELEASE_TYPE}" >> $GITHUB_OUTPUT
+          echo "chart_operator_version=${CHART_OP_VERSION}" >> $GITHUB_OUTPUT
+          echo "chart_realm_version=${CHART_REALM_VERSION}" >> $GITHUB_OUTPUT
+          echo "chart_client_version=${CHART_CLIENT_VERSION}" >> $GITHUB_OUTPUT
 
           # Summary
           echo "### 🎯 Release Detection" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Release Type:** ${RELEASE_TYPE}" >> $GITHUB_STEP_SUMMARY
+          echo "**Components Releasing:**" >> $GITHUB_STEP_SUMMARY
           echo "- Operator: ${OPERATOR_RELEASING} ${OPERATOR_VERSION:+(v$OPERATOR_VERSION)}" >> $GITHUB_STEP_SUMMARY
-          echo "- Chart Operator: ${CHART_OP_RELEASING}" >> $GITHUB_STEP_SUMMARY
-          echo "- Chart Realm: ${CHART_REALM_RELEASING}" >> $GITHUB_STEP_SUMMARY
-          echo "- Chart Client: ${CHART_CLIENT_RELEASING}" >> $GITHUB_STEP_SUMMARY
-
-      - name: Detect file changes
-        uses: dorny/paths-filter@v3
-        id: filter
-        with:
-          filters: |
-            code:
-              - 'src/**'
-              - 'tests/**'
-              - 'pyproject.toml'
-              - 'uv.lock'
-              - 'images/operator/**'
-            charts:
-              - 'charts/*/Chart.yaml'
-              - 'charts/*/values.yaml'
-              - 'charts/*/values.schema.json'
-              - 'charts/*/templates/**'
-              - 'charts/*/crds/**'
-            docs:
-              - 'docs/**'
-              - 'mkdocs.yml'
-              - 'scripts/build-adr-docs.sh'
-            crds:
-              - 'src/domain/models.py'
+          echo "- Chart Operator: ${CHART_OP_RELEASING} ${CHART_OP_VERSION:+(v$CHART_OP_VERSION)}" >> $GITHUB_STEP_SUMMARY
+          echo "- Chart Realm: ${CHART_REALM_RELEASING} ${CHART_REALM_VERSION:+(v$CHART_REALM_VERSION)}" >> $GITHUB_STEP_SUMMARY
+          echo "- Chart Client: ${CHART_CLIENT_RELEASING} ${CHART_CLIENT_VERSION:+(v$CHART_CLIENT_VERSION)}" >> $GITHUB_STEP_SUMMARY
 
       - name: Summary
         run: |
-          echo "### 📋 Change Detection" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Detection Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "**Is Main:** ${{ steps.branch.outputs.is_main }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Is Release:** ${{ steps.release-check.outputs.is_release }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Changed Files:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Code: ${{ steps.filter.outputs.code }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Charts: ${{ steps.filter.outputs.charts }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Docs: ${{ steps.filter.outputs.docs }}" >> $GITHUB_STEP_SUMMARY
-          echo "- CRDs: ${{ steps.filter.outputs.crds }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Is Release Commit:** ${{ steps.release-check.outputs.is_release }}" >> $GITHUB_STEP_SUMMARY
 
   # =====================================================
-  # PHASE 2: BUILD (Always on code/chart changes)
+  # PHASE 2: QUALITY CHECKS (Skip on release commits)
   # =====================================================
   build-operator:
     name: Build Operator Image
     needs: detect
-    # Force full run on main to catch integration issues from previous commits
-    # Use change detection for PRs to save resources
     if: |
-      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
-      needs.detect.outputs.code_changed == 'true' ||
-      needs.detect.outputs.charts_changed == 'true'
+      needs.detect.outputs.is_main == 'false' ||
+      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -214,16 +178,12 @@ jobs:
       - name: Build operator
         uses: ./.github/actions/build-operator
 
-  # =====================================================
-  # PHASE 3: FAST CHECKS (Parallel, ~2-5 min)
-  # =====================================================
   unit-tests:
     name: Unit Tests & Coverage
     needs: [detect, build-operator]
     if: |
-      github.ref == 'refs/heads/main' ||
-      needs.detect.outputs.code_changed == 'true' ||
-      needs.detect.outputs.charts_changed == 'true'
+      needs.detect.outputs.is_main == 'false' ||
+      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -240,9 +200,8 @@ jobs:
     name: Code Quality
     needs: [detect, build-operator]
     if: |
-      github.ref == 'refs/heads/main' ||
-      needs.detect.outputs.code_changed == 'true' ||
-      needs.detect.outputs.charts_changed == 'true'
+      needs.detect.outputs.is_main == 'false' ||
+      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -252,15 +211,12 @@ jobs:
       - name: Run quality checks
         uses: ./.github/actions/code-quality
 
-  # =====================================================
-  # PHASE 4: SLOW CHECKS (Parallel after fast, ~15-30 min)
-  # =====================================================
   security-scans:
     name: Security Scans
     needs: [detect, build-operator, unit-tests, code-quality]
     if: |
-      github.ref == 'refs/heads/main' ||
-      needs.detect.outputs.code_changed == 'true'
+      needs.detect.outputs.is_main == 'false' ||
+      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -278,9 +234,8 @@ jobs:
     name: Integration Tests
     needs: [detect, build-operator, unit-tests, code-quality]
     if: |
-      github.ref == 'refs/heads/main' ||
-      needs.detect.outputs.code_changed == 'true' ||
-      needs.detect.outputs.charts_changed == 'true'
+      needs.detect.outputs.is_main == 'false' ||
+      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -337,28 +292,29 @@ jobs:
             exit 1
           fi
 
-          # Check if skipped inappropriately on main push
-          # Note: workflow_dispatch on main is allowed to skip
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]] && [[ "${{ github.event_name }}" == "push" ]]; then
-            if [[ "${{ needs.integration-tests.result }}" == "skipped" ]]; then
-              echo "⚠️ Integration tests should not skip on main branch pushes" >> $GITHUB_STEP_SUMMARY
+          # On release commits, checks are skipped - that's ok
+          # On non-release commits, checks must not be skipped
+          if [[ "${{ needs.detect.outputs.is_release_commit }}" == "false" ]]; then
+            if [[ "${{ needs.unit-tests.result }}" == "skipped" ]] || \
+               [[ "${{ needs.integration-tests.result }}" == "skipped" ]]; then
+              echo "⚠️ Quality checks should not skip on non-release commits" >> $GITHUB_STEP_SUMMARY
               echo "passed=false" >> $GITHUB_OUTPUT
               exit 1
             fi
           fi
 
-          echo "✅ All required checks passed" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All required checks passed or skipped appropriately" >> $GITHUB_STEP_SUMMARY
           echo "passed=true" >> $GITHUB_OUTPUT
 
   # =====================================================
-  # PHASE 5: RELEASE-PLEASE (Non-release commits only)
+  # PHASE 3: RELEASE-PLEASE (Non-release commits on main)
   # =====================================================
   release-please:
     name: Release Please
     needs: [detect, all-required-checks-passed]
     if: |
       needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release == 'false' &&
+      needs.detect.outputs.is_release_commit == 'false' &&
       github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
@@ -453,14 +409,14 @@ jobs:
         if: steps.release.outputs.pr != ''
 
   # =====================================================
-  # PHASE 6: PUBLISH OPERATOR IMAGE (Release commits)
+  # PHASE 4: PUBLISH ARTIFACTS (Release commits only)
   # =====================================================
   publish-operator-image:
     name: Publish Operator Image
-    needs: [detect, all-required-checks-passed]
+    needs: [detect]
     if: |
       needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.is_release_commit == 'true' &&
       needs.detect.outputs.operator_releasing == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -487,14 +443,14 @@ jobs:
           github-actor: ${{ github.actor }}
 
   # =====================================================
-  # PHASE 7: UPDATE OPERATOR CHART (After operator publish)
+  # PHASE 5: UPDATE OPERATOR CHART (After operator publish)
   # =====================================================
   update-operator-chart:
     name: Update Operator Chart Version
-    needs: [detect, all-required-checks-passed, publish-operator-image]
+    needs: [detect, publish-operator-image]
     if: |
       needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.is_release_commit == 'true' &&
       needs.detect.outputs.operator_releasing == 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -515,15 +471,12 @@ jobs:
           github-token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           github-repository: ${{ github.repository }}
 
-  # =====================================================
-  # PHASE 8: PUBLISH HELM CHARTS (Chart releases to OCI)
-  # =====================================================
   publish-chart-operator:
     name: Publish Helm Chart (Operator)
-    needs: [detect, all-required-checks-passed]
+    needs: [detect]
     if: |
       needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.is_release_commit == 'true' &&
       needs.detect.outputs.chart_operator_releasing == 'true'
     runs-on: ubuntu-latest
     environment:
@@ -550,10 +503,10 @@ jobs:
 
   publish-chart-realm:
     name: Publish Helm Chart (Realm)
-    needs: [detect, all-required-checks-passed]
+    needs: [detect]
     if: |
       needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.is_release_commit == 'true' &&
       needs.detect.outputs.chart_realm_releasing == 'true'
     runs-on: ubuntu-latest
     environment:
@@ -580,10 +533,10 @@ jobs:
 
   publish-chart-client:
     name: Publish Helm Chart (Client)
-    needs: [detect, all-required-checks-passed]
+    needs: [detect]
     if: |
       needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.is_release_commit == 'true' &&
       needs.detect.outputs.chart_client_releasing == 'true'
     runs-on: ubuntu-latest
     environment:
@@ -609,15 +562,12 @@ jobs:
           github-actor: ${{ github.actor }}
 
   # =====================================================
-  # PHASE 9: DOCUMENTATION
+  # PHASE 6: DOCUMENTATION
   # =====================================================
   update-dev-docs:
     name: Update Dev Documentation
     needs: [detect]
-    if: |
-      needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release == 'false' &&
-      github.event_name == 'push'
+    if: needs.detect.outputs.is_main == 'true'
     runs-on: ubuntu-latest
     concurrency:
       group: github-pages
@@ -640,10 +590,10 @@ jobs:
 
   publish-release-docs:
     name: Publish Release Documentation
-    needs: [detect, all-required-checks-passed, publish-chart-operator]
+    needs: [detect, publish-chart-operator]
     if: |
       needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release == 'true' &&
+      needs.detect.outputs.is_release_commit == 'true' &&
       needs.detect.outputs.chart_operator_releasing == 'true'
     runs-on: ubuntu-latest
     concurrency:
