@@ -145,11 +145,19 @@ runs:
         INTEGRATION_COVERAGE: "true"
       run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
 
+    - name: List coverage files
+      if: always()
+      shell: bash
+      run: |
+        echo "Looking for coverage files..."
+        ls -la .tmp/coverage/ || echo "Coverage directory not found"
+        find .tmp/coverage -name ".coverage.*" -type f 2>/dev/null || echo "No coverage files found"
+
     - name: Upload integration coverage to Codecov
       uses: codecov/codecov-action@v5
       if: always() && inputs.github-actor != 'dependabot[bot]'
       with:
-        files: .tmp/coverage/.coverage.*
+        directory: .tmp/coverage
         flags: integration
         name: integration-tests
         token: ${{ inputs.codecov-token }}
