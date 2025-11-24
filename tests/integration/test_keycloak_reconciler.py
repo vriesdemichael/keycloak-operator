@@ -34,6 +34,7 @@ class TestKeycloakReconciler:
         k8s_apps_v1,
         test_namespace,
         operator_namespace,
+        shared_operator,
         sample_keycloak_spec,
     ) -> None:
         """Test complete Keycloak instance lifecycle: create, ready, delete."""
@@ -153,6 +154,7 @@ class TestKeycloakReconciler:
         k8s_apps_v1,
         test_namespace,
         operator_namespace,
+        shared_operator,
         sample_keycloak_spec,
     ) -> None:
         """Test Keycloak instance with custom replica count."""
