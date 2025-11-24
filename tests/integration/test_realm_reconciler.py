@@ -290,8 +290,8 @@ class TestRealmReconciler:
             )
 
             # Wait for the display name to actually update in Keycloak
-            # The reconciler needs time to detect the change and apply it
-            max_attempts = 30  # Increased from 15 to allow more time
+            # Should be fast (< 5 seconds) if reconciler is working properly
+            max_attempts = 10
             for attempt in range(max_attempts):
                 realm_repr = await keycloak_admin_client.get_realm(
                     realm_name, namespace
@@ -299,7 +299,7 @@ class TestRealmReconciler:
                 if realm_repr.display_name == "Updated Name":
                     break
                 if attempt < max_attempts - 1:
-                    await asyncio.sleep(3)  # Increased from 2 to 3 seconds
+                    await asyncio.sleep(1)
 
             # Verify update in Keycloak
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
