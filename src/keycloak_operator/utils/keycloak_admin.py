@@ -428,7 +428,10 @@ class KeycloakAdminClient:
             # Convert Pydantic model to JSON-compatible dict
             # exclude_none: Don't send null values to API
             # by_alias: Use camelCase field names for API
-            kwargs["json"] = request_model.model_dump(exclude_none=True, by_alias=True)
+            # mode='json': Serialize Enums and other types properly
+            kwargs["json"] = request_model.model_dump(
+                exclude_none=True, by_alias=True, mode="json"
+            )
 
         # Make the HTTP request
         response = await self._make_request(method, endpoint, namespace, **kwargs)
@@ -1011,7 +1014,8 @@ class KeycloakAdminClient:
 
         # Serialize roles to dict for API
         roles_data = [
-            role.model_dump(by_alias=True, exclude_none=True) for role in roles
+            role.model_dump(by_alias=True, exclude_none=True, mode="json")
+            for role in roles
         ]
 
         try:
@@ -1088,7 +1092,8 @@ class KeycloakAdminClient:
 
         # Serialize roles to dict for API
         roles_data = [
-            role.model_dump(by_alias=True, exclude_none=True) for role in roles
+            role.model_dump(by_alias=True, exclude_none=True, mode="json")
+            for role in roles
         ]
 
         try:

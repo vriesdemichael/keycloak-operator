@@ -86,7 +86,7 @@ class TestKeycloakAdminAPI:
             realm_repr.display_name = "Updated CRUD Realm"
             realm_repr.enabled = False
 
-            await keycloak_admin_client.update_realm(realm_name, namespace, realm_repr)
+            await keycloak_admin_client.update_realm(realm_name, realm_repr, namespace)
 
             # Verify update
             updated_realm = await keycloak_admin_client.get_realm(realm_name, namespace)
@@ -245,8 +245,8 @@ class TestKeycloakAdminAPI:
         from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
         from keycloak_operator.utils.kubernetes import get_admin_credentials
 
-        keycloak_name = shared_operator["name"]
-        keycloak_namespace = shared_operator["namespace"]
+        keycloak_name = shared_operator.name
+        keycloak_namespace = shared_operator.namespace
 
         # Set up port-forward
         local_port = await keycloak_port_forward(keycloak_name, keycloak_namespace)

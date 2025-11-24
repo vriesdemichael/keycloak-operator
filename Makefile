@@ -98,13 +98,13 @@ build-test: ## Build operator test image and load into Kind
 .PHONY: build-test-coverage
 build-test-coverage: ## Build operator test image with coverage instrumentation
 	@echo "Building operator test image with coverage..."
-	docker build -f images/operator/Dockerfile.test -t keycloak-operator:test-coverage .
+	docker build -f images/operator/Dockerfile.test -t keycloak-operator:test .
 	@echo "✓ Operator coverage image built"
 
 .PHONY: kind-load-test-coverage
 kind-load-test-coverage: build-test-coverage ## Build and load coverage-instrumented image into Kind
 	@echo "Loading coverage-instrumented operator image into Kind cluster..."
-	kind load docker-image keycloak-operator:test-coverage --name keycloak-operator-test
+	kind load docker-image keycloak-operator:test --name keycloak-operator-test
 	@echo "✓ Coverage image loaded into Kind"
 
 .PHONY: build-keycloak-optimized
