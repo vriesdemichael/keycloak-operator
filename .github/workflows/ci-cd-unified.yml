@@ -5,7 +5,7 @@ name: CI/CD Pipeline (Unified)
 # 2. Quality checks - Run on all commits except release commits on main (parallel, ~20-40 min)
 # 3. Release-please - Create/update release PRs (non-release commits on main after checks)
 # 4. Publish - Publish artifacts (release commits on main, skip checks)
-# 5. Docs - Update dev docs on every main commit, versioned docs on chart-operator releases
+# 5. Documentation - Update dev docs on every main commit, versioned docs on chart-operator releases
 # 6. Complete - Final status check
 
 on:
@@ -110,26 +110,26 @@ jobs:
             # Get the diff of the manifest
             MANIFEST_DIFF=$(git diff HEAD~1 HEAD .github/.release-please-manifest.json)
 
-            # Check each component for version changes
-            if echo "$MANIFEST_DIFF" | grep -q '^\-.*"\.".*:'; then
+            # Check each component for version changes (look for removed lines with exact JSON key patterns)
+            if echo "$MANIFEST_DIFF" | grep -q '^\-[ ]*"\."[ ]*:'; then
               # Operator version changed
               OPERATOR_RELEASING=true
-              OPERATOR_VERSION=$(jq -r '."."' .github/.release-please-manifest.json)
+              OPERATOR_VERSION=$(jq -r '."." // ""' .github/.release-please-manifest.json)
             fi
 
-            if echo "$MANIFEST_DIFF" | grep -q '^\-.*"charts/keycloak-operator".*:'; then
+            if echo "$MANIFEST_DIFF" | grep -q '^\-[ ]*"charts/keycloak-operator"[ ]*:'; then
               CHART_OP_RELEASING=true
-              CHART_OP_VERSION=$(jq -r '."charts/keycloak-operator"' .github/.release-please-manifest.json)
+              CHART_OP_VERSION=$(jq -r '."charts/keycloak-operator" // ""' .github/.release-please-manifest.json)
             fi
 
-            if echo "$MANIFEST_DIFF" | grep -q '^\-.*"charts/keycloak-realm".*:'; then
+            if echo "$MANIFEST_DIFF" | grep -q '^\-[ ]*"charts/keycloak-realm"[ ]*:'; then
               CHART_REALM_RELEASING=true
-              CHART_REALM_VERSION=$(jq -r '."charts/keycloak-realm"' .github/.release-please-manifest.json)
+              CHART_REALM_VERSION=$(jq -r '."charts/keycloak-realm" // ""' .github/.release-please-manifest.json)
             fi
 
-            if echo "$MANIFEST_DIFF" | grep -q '^\-.*"charts/keycloak-client".*:'; then
+            if echo "$MANIFEST_DIFF" | grep -q '^\-[ ]*"charts/keycloak-client"[ ]*:'; then
               CHART_CLIENT_RELEASING=true
-              CHART_CLIENT_VERSION=$(jq -r '."charts/keycloak-client"' .github/.release-please-manifest.json)
+              CHART_CLIENT_VERSION=$(jq -r '."charts/keycloak-client" // ""' .github/.release-please-manifest.json)
             fi
           fi
 
@@ -296,6 +296,8 @@ jobs:
           # On non-release commits, checks must not be skipped
           if [[ "${{ needs.detect.outputs.is_release_commit }}" == "false" ]]; then
             if [[ "${{ needs.unit-tests.result }}" == "skipped" ]] || \
+               [[ "${{ needs.code-quality.result }}" == "skipped" ]] || \
+               [[ "${{ needs.security-scans.result }}" == "skipped" ]] || \
                [[ "${{ needs.integration-tests.result }}" == "skipped" ]]; then
               echo "⚠️ Quality checks should not skip on non-release commits" >> $GITHUB_STEP_SUMMARY
               echo "passed=false" >> $GITHUB_OUTPUT
@@ -411,6 +413,9 @@ jobs:
   # =====================================================
   # PHASE 4: PUBLISH ARTIFACTS (Release commits only)
   # =====================================================
+  # NOTE: Publish jobs skip quality checks and only depend on [detect].
+  # This assumes quality checks passed in the release PR before merging.
+  # Release PRs should be protected by branch rules requiring status checks.
   publish-operator-image:
     name: Publish Operator Image
     needs: [detect]
@@ -442,9 +447,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-actor: ${{ github.actor }}
 
-  # =====================================================
-  # PHASE 5: UPDATE OPERATOR CHART (After operator publish)
-  # =====================================================
+  # Update operator chart version (part of publish artifacts phase)
   update-operator-chart:
     name: Update Operator Chart Version
     needs: [detect, publish-operator-image]
@@ -562,11 +565,12 @@ jobs:
           github-actor: ${{ github.actor }}
 
   # =====================================================
-  # PHASE 6: DOCUMENTATION
+  # PHASE 5: DOCUMENTATION
   # =====================================================
   update-dev-docs:
     name: Update Dev Documentation
     needs: [detect]
+    # Run on every main commit to keep docs 1-1 with branch (includes release commits)
     if: needs.detect.outputs.is_main == 'true'
     runs-on: ubuntu-latest
     concurrency:
