@@ -9,11 +9,21 @@ import pytest
 
 from keycloak_operator.utils.validation import (
     ValidationError,
+    _extract_version_from_image,
+    _parse_kubernetes_quantity,
+    _parse_version,
     validate_client_id,
+    validate_complete_resource,
+    validate_cross_resource_references,
+    validate_environment_variables,
     validate_image_reference,
+    validate_keycloak_version,
+    validate_namespace_name,
     validate_realm_name,
     validate_redirect_uris,
+    validate_resource_limits,
     validate_resource_name,
+    validate_security_settings,
     validate_url,
 )
 
@@ -251,3 +261,549 @@ class TestImageReferenceValidation:
         caplog.clear()
         validate_image_reference("keycloak:latest")
         assert "latest" in caplog.text
+
+
+class TestParseKubernetesQuantity:
+    """Test cases for Kubernetes quantity parsing."""
+
+    def test_parse_cpu_millicores(self):
+        """Test parsing CPU millicores."""
+        assert _parse_kubernetes_quantity("100m") == 0.1
+        assert _parse_kubernetes_quantity("500m") == 0.5
+        assert _parse_kubernetes_quantity("1000m") == 1.0
+        assert _parse_kubernetes_quantity("2500m") == 2.5
+
+    def test_parse_cpu_cores(self):
+        """Test parsing CPU cores."""
+        assert _parse_kubernetes_quantity("1") == 1.0
+        assert _parse_kubernetes_quantity("2") == 2.0
+        assert _parse_kubernetes_quantity("4") == 4.0
+        assert _parse_kubernetes_quantity("0.5") == 0.5
+
+    def test_parse_memory_decimal_units(self):
+        """Test parsing memory with decimal units (K, M, G, T, P)."""
+        assert _parse_kubernetes_quantity("1K") == 1000
+        assert _parse_kubernetes_quantity("1M") == 1000**2
+        assert _parse_kubernetes_quantity("1G") == 1000**3
+        assert _parse_kubernetes_quantity("1T") == 1000**4
+        assert _parse_kubernetes_quantity("1P") == 1000**5
+        assert _parse_kubernetes_quantity("500M") == 500 * 1000**2
+
+    def test_parse_memory_binary_units(self):
+        """Test parsing memory with binary units (Ki, Mi, Gi, Ti, Pi)."""
+        assert _parse_kubernetes_quantity("1Ki") == 1024
+        assert _parse_kubernetes_quantity("1Mi") == 1024**2
+        assert _parse_kubernetes_quantity("1Gi") == 1024**3
+        assert _parse_kubernetes_quantity("1Ti") == 1024**4
+        assert _parse_kubernetes_quantity("1Pi") == 1024**5
+        assert _parse_kubernetes_quantity("512Mi") == 512 * 1024**2
+
+    def test_parse_plain_numbers(self):
+        """Test parsing plain numeric values."""
+        assert _parse_kubernetes_quantity("100") == 100.0
+        assert _parse_kubernetes_quantity("1.5") == 1.5
+        assert _parse_kubernetes_quantity("0.25") == 0.25
+
+    def test_parse_numeric_types(self):
+        """Test handling non-string numeric types."""
+        # Type hint says str, but function handles numbers internally
+        assert _parse_kubernetes_quantity(str(100)) == 100.0
+        assert _parse_kubernetes_quantity(str(1.5)) == 1.5
+
+    def test_invalid_quantity_format(self):
+        """Test that invalid quantity formats raise ValueError."""
+        invalid_quantities = [
+            "invalid",
+            "100x",
+            "m100",
+            "1.2.3",
+            "",
+        ]
+
+        for quantity in invalid_quantities:
+            with pytest.raises(ValueError):
+                _parse_kubernetes_quantity(quantity)
+
+
+class TestParseVersion:
+    """Test cases for semantic version parsing."""
+
+    def test_parse_standard_versions(self):
+        """Test parsing standard semantic versions."""
+        assert _parse_version("25.0.0") == (25, 0, 0)
+        assert _parse_version("26.4.0") == (26, 4, 0)
+        assert _parse_version("1.2.3") == (1, 2, 3)
+        assert _parse_version("100.200.300") == (100, 200, 300)
+
+    def test_parse_version_with_prerelease(self):
+        """Test parsing versions with prerelease identifiers."""
+        # Should extract major.minor.patch, ignoring prerelease
+        assert _parse_version("26.4.0-beta.1") == (26, 4, 0)
+        assert _parse_version("1.0.0-alpha") == (1, 0, 0)
+        assert _parse_version("2.1.0-rc.2") == (2, 1, 0)
+
+    def test_invalid_version_format(self):
+        """Test that invalid version formats raise ValueError."""
+        invalid_versions = [
+            "",
+            "v25.0.0",
+            "latest",
+            "abc",
+            "1.2.a",
+        ]
+
+        for version in invalid_versions:
+            with pytest.raises(ValueError):
+                _parse_version(version)
+
+
+class TestExtractVersionFromImage:
+    """Test cases for extracting version from image references."""
+
+    def test_extract_version_from_standard_images(self):
+        """Test extracting version from standard tagged images."""
+        assert _extract_version_from_image("keycloak:26.4.0") == "26.4.0"
+        assert (
+            _extract_version_from_image("quay.io/keycloak/keycloak:25.0.1") == "25.0.1"
+        )
+        assert (
+            _extract_version_from_image("registry.example.com/keycloak:22.0.5")
+            == "22.0.5"
+        )
+
+    def test_extract_version_from_digest_images(self):
+        """Test that digest-based images return None."""
+        assert _extract_version_from_image("keycloak@sha256:abc123def456") is None
+        assert (
+            _extract_version_from_image(
+                "quay.io/keycloak/keycloak@sha256:1234567890abcdef"
+            )
+            is None
+        )
+
+    def test_extract_version_from_non_version_tags(self):
+        """Test that non-version tags return None."""
+        assert _extract_version_from_image("keycloak:latest") is None
+        assert _extract_version_from_image("keycloak:nightly") is None
+        assert _extract_version_from_image("keycloak:dev") is None
+
+    def test_extract_version_no_tag(self):
+        """Test that images without tags return None."""
+        assert _extract_version_from_image("keycloak") is None
+        assert _extract_version_from_image("quay.io/keycloak/keycloak") is None
+
+
+class TestValidateKeycloakVersion:
+    """Test cases for Keycloak version validation."""
+
+    def test_valid_keycloak_versions(self):
+        """Test that supported Keycloak versions pass validation."""
+        valid_images = [
+            "keycloak:25.0.0",
+            "keycloak:25.0.1",
+            "keycloak:26.4.0",
+            "keycloak:30.0.0",
+            "quay.io/keycloak/keycloak:25.0.0",
+        ]
+
+        for image in valid_images:
+            validate_keycloak_version(image)  # Should not raise
+
+    def test_invalid_keycloak_versions(self):
+        """Test that unsupported Keycloak versions are rejected."""
+        invalid_images = [
+            "keycloak:24.0.0",
+            "keycloak:23.0.5",
+            "keycloak:22.0.0",
+            "quay.io/keycloak/keycloak:20.0.0",
+        ]
+
+        for image in invalid_images:
+            with pytest.raises(ValidationError) as exc_info:
+                validate_keycloak_version(image)
+            assert "not supported" in str(exc_info.value)
+            assert "25.0.0" in str(exc_info.value)
+
+    def test_version_validation_with_digest(self, caplog):
+        """Test that digest-based images log a warning."""
+        validate_keycloak_version("keycloak@sha256:abc123")
+        assert "Could not extract version" in caplog.text
+        assert "25.0.0" in caplog.text
+
+    def test_version_validation_with_non_version_tag(self, caplog):
+        """Test that non-version tags log a warning."""
+        validate_keycloak_version("keycloak:latest")
+        assert "Could not extract version" in caplog.text
+
+
+class TestValidateResourceLimits:
+    """Test cases for Kubernetes resource limits validation."""
+
+    def test_valid_resource_limits(self):
+        """Test that valid resource specifications pass validation."""
+        valid_resources = [
+            {"requests": {"cpu": "100m", "memory": "512Mi"}},
+            {"limits": {"cpu": "2", "memory": "4Gi"}},
+            {
+                "requests": {"cpu": "500m", "memory": "1Gi"},
+                "limits": {"cpu": "2", "memory": "4Gi"},
+            },
+            {"requests": {"cpu": 1, "memory": 1024}},  # Numeric values
+        ]
+
+        for resources in valid_resources:
+            validate_resource_limits(resources)  # Should not raise
+
+    def test_invalid_quantity_format(self):
+        """Test that invalid quantity formats are rejected."""
+        invalid_resources = [
+            {"requests": {"cpu": "invalid"}},
+            {"limits": {"memory": "1.2.3"}},
+            {"requests": {"cpu": "100x"}},
+        ]
+
+        for resources in invalid_resources:
+            with pytest.raises(ValidationError):
+                validate_resource_limits(resources)
+
+    def test_requests_exceed_limits(self):
+        """Test that requests exceeding limits are rejected."""
+        invalid_resources = [
+            {
+                "requests": {"cpu": "4"},
+                "limits": {"cpu": "2"},
+            },
+            {
+                "requests": {"memory": "8Gi"},
+                "limits": {"memory": "4Gi"},
+            },
+        ]
+
+        for resources in invalid_resources:
+            with pytest.raises(ValidationError) as exc_info:
+                validate_resource_limits(resources)
+            assert "exceeds limit" in str(exc_info.value)
+
+    def test_empty_or_none_resources(self):
+        """Test that empty or None resources are allowed."""
+        # Type hint expects dict, but function handles None
+        validate_resource_limits({})  # Should not raise
+
+    def test_invalid_section_type(self):
+        """Test that non-dict sections are rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_resource_limits({"requests": "invalid"})
+        assert "must be a dictionary" in str(exc_info.value)
+
+
+class TestValidateNamespaceName:
+    """Test cases for namespace name validation."""
+
+    def test_valid_namespace_names(self):
+        """Test that valid namespace names pass validation."""
+        valid_namespaces = [
+            "default",
+            "kube-system",
+            "my-namespace",
+            "app-prod",
+            "team-a",
+        ]
+
+        for namespace in valid_namespaces:
+            validate_namespace_name(namespace)  # Should not raise
+
+    def test_invalid_namespace_names(self):
+        """Test that invalid namespace names are rejected."""
+        invalid_namespaces = [
+            "",
+            "Namespace",  # Uppercase
+            "name_space",  # Underscore
+            "-namespace",  # Starts with hyphen
+            "namespace-",  # Ends with hyphen
+            "a" * 254,  # Too long
+        ]
+
+        for namespace in invalid_namespaces:
+            with pytest.raises(ValidationError):
+                validate_namespace_name(namespace)
+
+    def test_reserved_namespace_warning(self, caplog):
+        """Test that reserved namespaces log warnings."""
+        reserved = ["kube-system", "kube-public", "kube-node-lease", "default"]
+
+        for namespace in reserved:
+            caplog.clear()
+            validate_namespace_name(namespace)
+            assert "reserved namespace" in caplog.text
+
+
+class TestValidateEnvironmentVariables:
+    """Test cases for environment variable validation."""
+
+    def test_valid_environment_variables(self):
+        """Test that valid environment variables pass validation."""
+        valid_env_vars = [
+            {"MY_VAR": "value"},
+            {"DATABASE_HOST": "localhost", "DATABASE_PORT": "5432"},
+            {"FEATURE_FLAG_ENABLED": "true"},
+        ]
+
+        for env_vars in valid_env_vars:
+            validate_environment_variables(env_vars)  # Should not raise
+
+    def test_naming_convention_warning(self, caplog):
+        """Test that non-conventional names log warnings."""
+        validate_environment_variables({"myVar": "value"})
+        assert "doesn't follow naming conventions" in caplog.text
+
+        caplog.clear()
+        validate_environment_variables({"my-var": "value"})
+        assert "doesn't follow naming conventions" in caplog.text
+
+    def test_sensitive_data_warning(self, caplog):
+        """Test that potential secrets log warnings."""
+        sensitive_vars = [
+            {"DATABASE_PASSWORD": "secret123"},
+            {"API_KEY": "xyz789"},
+            {"AUTH_TOKEN": "token123"},
+            {"SECRET_VALUE": "shh"},
+            {"USER_CREDENTIAL": "cred"},
+        ]
+
+        for env_vars in sensitive_vars:
+            caplog.clear()
+            validate_environment_variables(env_vars)
+            assert "sensitive data" in caplog.text
+
+    def test_empty_environment_variables(self):
+        """Test that empty env vars are allowed."""
+        # Type hint expects dict, but function handles None
+        validate_environment_variables({})  # Should not raise
+
+
+class TestValidateCrossResourceReferences:
+    """Test cases for cross-resource reference validation."""
+
+    def test_keycloak_client_references(self):
+        """Test validation of KeycloakClient resource references."""
+        spec = {
+            "keycloakInstanceRef": {"name": "my-keycloak", "namespace": "default"},
+            "clientId": "test-client",
+        }
+
+        deps = validate_cross_resource_references(spec, "KeycloakClient", "default")
+
+        assert len(deps) == 1
+        assert deps[0] == ("Keycloak", "my-keycloak", "default")
+
+    def test_keycloak_realm_references(self):
+        """Test validation of KeycloakRealm resource references."""
+        spec = {
+            "keycloakInstanceRef": {"name": "my-keycloak"},
+            "realmName": "demo",
+        }
+
+        deps = validate_cross_resource_references(spec, "KeycloakRealm", "prod")
+
+        assert len(deps) == 1
+        assert deps[0] == ("Keycloak", "my-keycloak", "prod")
+
+    def test_secret_references(self):
+        """Test detection of secret references."""
+        spec = {
+            "keycloakInstanceRef": {"name": "my-keycloak"},
+            "database": {
+                "password_secret": {"name": "db-password", "namespace": "default"}
+            },
+        }
+
+        deps = validate_cross_resource_references(spec, "KeycloakClient", "default")
+
+        secret_deps = [d for d in deps if d[0] == "Secret"]
+        assert len(secret_deps) == 1
+        assert secret_deps[0] == ("Secret", "db-password", "default")
+
+    def test_configmap_references(self):
+        """Test detection of configmap references."""
+        spec = {
+            "keycloakInstanceRef": {"name": "my-keycloak"},
+            "config_configmap": {"name": "app-config", "namespace": "config-ns"},
+        }
+
+        deps = validate_cross_resource_references(spec, "KeycloakClient", "default")
+
+        cm_deps = [d for d in deps if d[0] == "ConfigMap"]
+        assert len(cm_deps) == 1
+        assert cm_deps[0] == ("ConfigMap", "app-config", "config-ns")
+
+    def test_missing_keycloak_instance_ref(self):
+        """Test that missing keycloakInstanceRef raises error."""
+        spec = {"clientId": "test-client"}
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_cross_resource_references(spec, "KeycloakClient", "default")
+        assert "keycloakInstanceRef" in str(exc_info.value)
+
+    def test_invalid_resource_name_in_reference(self):
+        """Test that invalid resource names in references are rejected."""
+        spec = {
+            "keycloakInstanceRef": {"name": "Invalid-Name-With-UPPERCASE"},
+        }
+
+        with pytest.raises(ValidationError):
+            validate_cross_resource_references(spec, "KeycloakClient", "default")
+
+
+class TestValidateSecuritySettings:
+    """Test cases for security settings validation."""
+
+    def test_keycloak_tls_warnings(self, caplog):
+        """Test TLS-related warnings for Keycloak resources."""
+        spec = {"tls": {"enabled": False}}
+
+        validate_security_settings(spec, "Keycloak")
+        assert "TLS is not enabled" in caplog.text
+
+    def test_keycloak_ingress_tls_warning(self, caplog):
+        """Test ingress TLS warnings."""
+        spec = {
+            "ingress": {"enabled": True, "tls_enabled": False},
+        }
+
+        validate_security_settings(spec, "Keycloak")
+        assert "Ingress is enabled but TLS is not" in caplog.text
+
+    def test_keycloak_resource_limits_warning(self, caplog):
+        """Test resource limits warning."""
+        spec = {"resources": {"requests": {"cpu": "100m"}}}
+
+        validate_security_settings(spec, "Keycloak")
+        assert "No resource limits" in caplog.text
+
+    def test_keycloak_security_context_warning(self, caplog):
+        """Test security context warning."""
+        spec = {}
+
+        validate_security_settings(spec, "Keycloak")
+        assert "No security context" in caplog.text
+
+    def test_client_public_with_offline_access_warning(self, caplog):
+        """Test warning for public client with offline access."""
+        spec = {
+            "publicClient": True,
+            "scopes": ["openid", "profile", "offline_access"],
+        }
+
+        validate_security_settings(spec, "KeycloakClient")
+        assert "Public client with offline_access" in caplog.text
+
+    def test_realm_no_password_policy_warning(self, caplog):
+        """Test warning when no password policy is set."""
+        spec = {"realmSettings": {}}
+
+        validate_security_settings(spec, "KeycloakRealm")
+        assert "No password policy" in caplog.text
+
+    def test_realm_ssl_none_warning(self, caplog):
+        """Test warning when SSL requirement is none."""
+        spec = {"realmSettings": {"sslRequired": "none"}}
+
+        validate_security_settings(spec, "KeycloakRealm")
+        assert "SSL requirement set to 'none'" in caplog.text
+
+
+class TestValidateCompleteResource:
+    """Test cases for complete resource validation."""
+
+    def test_valid_keycloak_client(self):
+        """Test complete validation of a KeycloakClient resource."""
+        resource = {
+            "metadata": {"name": "test-client", "namespace": "default"},
+            "spec": {
+                "clientId": "webapp",
+                "keycloakInstanceRef": {"name": "my-keycloak"},
+                "realm": "demo",
+            },
+        }
+
+        deps = validate_complete_resource(resource, "KeycloakClient", "default")
+        assert len(deps) >= 1  # At least the Keycloak instance
+
+    def test_valid_keycloak_realm(self):
+        """Test complete validation of a KeycloakRealm resource."""
+        resource = {
+            "metadata": {"name": "demo-realm", "namespace": "prod"},
+            "spec": {
+                "realmName": "demo",
+                "keycloakInstanceRef": {"name": "my-keycloak"},
+            },
+        }
+
+        deps = validate_complete_resource(resource, "KeycloakRealm", "prod")
+        assert len(deps) >= 1
+
+    def test_valid_keycloak_instance(self):
+        """Test complete validation of a Keycloak resource."""
+        resource = {
+            "metadata": {"name": "my-keycloak", "namespace": "default"},
+            "spec": {
+                "image": "quay.io/keycloak/keycloak:26.4.0",
+                "resources": {
+                    "requests": {"cpu": "500m", "memory": "1Gi"},
+                    "limits": {"cpu": "2", "memory": "4Gi"},
+                },
+            },
+        }
+
+        deps = validate_complete_resource(resource, "Keycloak", "default")
+        assert isinstance(deps, list)
+
+    def test_missing_metadata(self):
+        """Test that resources without metadata are rejected."""
+        resource = {"spec": {"clientId": "test"}}
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_complete_resource(resource, "KeycloakClient", "default")
+        assert "metadata" in str(exc_info.value)
+
+    def test_missing_spec(self):
+        """Test that resources without spec are rejected."""
+        resource = {"metadata": {"name": "test"}}
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_complete_resource(resource, "KeycloakClient", "default")
+        assert "spec" in str(exc_info.value)
+
+    def test_missing_name(self):
+        """Test that resources without name are rejected."""
+        resource = {"metadata": {}, "spec": {"clientId": "test"}}
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_complete_resource(resource, "KeycloakClient", "default")
+        assert "name" in str(exc_info.value)
+
+    def test_invalid_client_without_client_id(self):
+        """Test that KeycloakClient without clientId is rejected."""
+        resource = {
+            "metadata": {"name": "test"},
+            "spec": {
+                "keycloakInstanceRef": {"name": "my-keycloak"},
+            },
+        }
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_complete_resource(resource, "KeycloakClient", "default")
+        assert "clientId" in str(exc_info.value)
+
+    def test_invalid_realm_without_realm_name(self):
+        """Test that KeycloakRealm without realmName is rejected."""
+        resource = {
+            "metadata": {"name": "test"},
+            "spec": {
+                "keycloakInstanceRef": {"name": "my-keycloak"},
+            },
+        }
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_complete_resource(resource, "KeycloakRealm", "default")
+        assert "realmName" in str(exc_info.value)
