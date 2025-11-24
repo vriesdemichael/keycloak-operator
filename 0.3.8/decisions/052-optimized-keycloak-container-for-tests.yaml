@@ -1,0 +1,23 @@
+number: 52
+title: Optimized Keycloak container for tests
+category: development
+decision: Integration tests use pre-built optimized Keycloak container that skips
+  runtime build step. Standard Keycloak container does long build at startup; optimized
+  container is pre-built.
+agent_instructions: Maintain separate Dockerfile for test Keycloak image with build
+  step completed. Publish to registry. Integration tests use optimized image via test
+  fixtures. Document optimization in test README. Update test image when Keycloak
+  version changes.
+rationale: Standard Keycloak container runs 'kc.sh build' at startup, taking 30-60
+  seconds. This happens for every integration test deployment. Optimized container
+  pre-runs build step, saving 30-60s per test run. Significantly faster test execution
+  (minutes saved across test suite). Better CI resource utilization. Tests start Keycloak
+  instantly instead of waiting for build.
+provenance: human
+rejected_alternatives:
+- alternative: Use standard Keycloak image in tests
+  reason: Wastes 30-60s per test waiting for build. Multiplied across parallel tests
+    = significant overhead.
+- alternative: Mock Keycloak
+  reason: Defeats purpose of integration tests. Need real Keycloak to catch actual
+    issues.
