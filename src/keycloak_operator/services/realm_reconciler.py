@@ -1124,6 +1124,57 @@ class KeycloakRealmReconciler(BaseReconciler):
                 except Exception as e:
                     self.logger.warning(f"Failed to update realm settings: {e}")
 
+            elif field_path[:2] == ("spec", "displayName"):
+                self.logger.info("Updating realm display name")
+                try:
+                    await admin_client.update_realm(
+                        realm_name, new_realm_spec.to_keycloak_config(), namespace
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update realm display name: {e}")
+
+            elif field_path[:2] == ("spec", "description"):
+                self.logger.info("Updating realm description")
+                try:
+                    await admin_client.update_realm(
+                        realm_name, new_realm_spec.to_keycloak_config(), namespace
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update realm description: {e}")
+
+            elif field_path[:2] == ("spec", "loginPageTitle"):
+                self.logger.info("Updating realm login page title")
+                try:
+                    await admin_client.update_realm(
+                        realm_name, new_realm_spec.to_keycloak_config(), namespace
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update realm login page title: {e}")
+
+            elif field_path[:2] == ("spec", "tokenSettings"):
+                self.logger.info("Updating realm token settings")
+                try:
+                    await admin_client.update_realm(
+                        realm_name, new_realm_spec.to_keycloak_config(), namespace
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update realm token settings: {e}")
+
+            elif field_path[:2] == ("spec", "smtpServer"):
+                self.logger.info("Updating realm SMTP server")
+                try:
+                    # Re-run ensure_realm_exists to inject SMTP password properly
+                    await self.ensure_realm_exists(
+                        new_realm_spec, name, namespace, **kwargs
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update realm SMTP server: {e}")
+
         if configuration_changed:
             self.logger.info(f"Successfully updated KeycloakRealm {name}")
             return {
