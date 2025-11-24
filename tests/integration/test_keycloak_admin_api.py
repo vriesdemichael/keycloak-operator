@@ -94,7 +94,7 @@ class TestKeycloakAdminAPI:
             assert updated_realm.enabled is False
 
             # Test LIST: Verify realm appears in list
-            all_realms = await keycloak_admin_client.list_realms(namespace)
+            all_realms = await keycloak_admin_client.get_realms(namespace)
             realm_names = [r.realm for r in all_realms]
             assert realm_name in realm_names
 
@@ -179,7 +179,7 @@ class TestKeycloakAdminAPI:
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io/v1",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
@@ -207,7 +207,7 @@ class TestKeycloakAdminAPI:
             assert client_repr.public_client is False
 
             # Test LIST: Verify client appears in list
-            all_clients = await keycloak_admin_client.list_clients(
+            all_clients = await keycloak_admin_client.get_realm_clients(
                 realm_name, namespace
             )
             client_ids = [c.client_id for c in all_clients]
@@ -370,7 +370,7 @@ class TestKeycloakAdminAPI:
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io/v1",
+                group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakclients",
