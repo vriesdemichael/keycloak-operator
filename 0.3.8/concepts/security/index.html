@@ -19,7 +19,7 @@
         <link rel="next" href="../../admission-webhooks/">
       
       
-      <link rel="icon" href="https://www.keycloak.org/resources/images/favicon.ico">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.20">
     
     
@@ -100,7 +100,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../.." title="Keycloak Operator" class="md-header__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
       
-  <img src="https://www.keycloak.org/resources/images/icon.svg" alt="logo">
+  <img src="../../assets/images/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -411,7 +411,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="../.." title="Keycloak Operator" class="md-nav__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
       
-  <img src="https://www.keycloak.org/resources/images/icon.svg" alt="logo">
+  <img src="../../assets/images/logo.svg" alt="logo">
 
     </a>
     Keycloak Operator
@@ -4098,19 +4098,49 @@
 </span></code></pre></div>
 <h3 id="gitops-integration">GitOps Integration<a class="headerlink" href="#gitops-integration" title="Permanent link">&para;</a></h3>
 <p><strong>Recommended structure:</strong></p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>repos/
-</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>├── infrastructure/
-</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>│   └── keycloak/
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>│       ├── operator.yaml         # Operator + instance
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>│       └── realms/
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>│           ├── api-realm.yaml    # Platform-managed realms
-</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>│           └── auth-realm.yaml
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>└── applications/
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>    ├── app-a/
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>    │   └── keycloak-client.yaml  # App-managed clients
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>    └── app-b/
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>        └── keycloak-client.yaml
-</span></code></pre></div>
+<pre class="mermaid"><code>%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
+graph TB
+    root["📁 repos/"]
+
+    infra["📁 infrastructure/"]
+    infra_kc["📁 keycloak/"]
+    operator["📄 operator.yaml&lt;br/&gt;&lt;small&gt;Operator + instance&lt;/small&gt;"]
+    realms["📁 realms/"]
+    api_realm["📄 api-realm.yaml&lt;br/&gt;&lt;small&gt;Platform-managed&lt;/small&gt;"]
+    auth_realm["📄 auth-realm.yaml&lt;br/&gt;&lt;small&gt;Platform-managed&lt;/small&gt;"]
+
+    apps["📁 applications/"]
+    app_a["📁 app-a/"]
+    client_a["📄 keycloak-client.yaml&lt;br/&gt;&lt;small&gt;App-managed clients&lt;/small&gt;"]
+    app_b["📁 app-b/"]
+    client_b["📄 keycloak-client.yaml&lt;br/&gt;&lt;small&gt;App-managed clients&lt;/small&gt;"]
+
+    root --&gt; infra
+    root --&gt; apps
+
+    infra --&gt; infra_kc
+    infra_kc --&gt; operator
+    infra_kc --&gt; realms
+    realms --&gt; api_realm
+    realms --&gt; auth_realm
+
+    apps --&gt; app_a
+    apps --&gt; app_b
+    app_a --&gt; client_a
+    app_b --&gt; client_b
+
+    style root fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style infra fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style infra_kc fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style realms fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style apps fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style app_a fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style app_b fill:#263238,stroke:#00acc1,stroke-width:2px,color:#fff
+    style operator fill:#00838f,stroke:#006064,color:#fff
+    style api_realm fill:#00838f,stroke:#006064,color:#fff
+    style auth_realm fill:#00838f,stroke:#006064,color:#fff
+    style client_a fill:#00838f,stroke:#006064,color:#fff
+    style client_b fill:#00838f,stroke:#006064,color:#fff</code></pre>
 <p><strong>Benefits:</strong>
 - Clear separation of concerns
 - Realm authorization changes go through platform repo PRs
@@ -4121,59 +4151,59 @@
 - Namespaces added/removed from grant lists
 - Client creation rate per namespace</p>
 <p><strong>Example Prometheus alert:</strong></p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">groups</span><span class="p">:</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UnauthorizedClientCreationAttempts</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">          </span><span class="no">increase(keycloak_client_reconciliation_errors{</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">            </span><span class="no">reason=&quot;NamespaceNotAuthorized&quot;</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">          </span><span class="no">}[5m]) &gt; 5</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Multiple</span><span class="nv"> </span><span class="s">unauthorized</span><span class="nv"> </span><span class="s">client</span><span class="nv"> </span><span class="s">creation</span><span class="nv"> </span><span class="s">attempts&quot;</span>
-</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Namespace</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$labels.namespace</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">attempted</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">create</span><span class="nv"> </span><span class="s">clients</span><span class="nv"> </span><span class="s">without</span><span class="nv"> </span><span class="s">authorization&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="nt">groups</span><span class="p">:</span>
+</span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
+</span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">alert</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">UnauthorizedClientCreationAttempts</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">        </span><span class="nt">expr</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a><span class="w">          </span><span class="no">increase(keycloak_client_reconciliation_errors{</span>
+</span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="w">            </span><span class="no">reason=&quot;NamespaceNotAuthorized&quot;</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">          </span><span class="no">}[5m]) &gt; 5</span>
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">        </span><span class="nt">annotations</span><span class="p">:</span>
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="w">          </span><span class="nt">summary</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Multiple</span><span class="nv"> </span><span class="s">unauthorized</span><span class="nv"> </span><span class="s">client</span><span class="nv"> </span><span class="s">creation</span><span class="nv"> </span><span class="s">attempts&quot;</span>
+</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">          </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Namespace</span><span class="nv"> </span><span class="s">{{</span><span class="nv"> </span><span class="s">$labels.namespace</span><span class="nv"> </span><span class="s">}}</span><span class="nv"> </span><span class="s">attempted</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">create</span><span class="nv"> </span><span class="s">clients</span><span class="nv"> </span><span class="s">without</span><span class="nv"> </span><span class="s">authorization&quot;</span>
 </span></code></pre></div>
 <h2 id="troubleshooting">Troubleshooting<a class="headerlink" href="#troubleshooting" title="Permanent link">&para;</a></h2>
 <h3 id="client-shows-namespace-not-authorized">Client Shows "Namespace Not Authorized"<a class="headerlink" href="#client-shows-namespace-not-authorized" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="nt">status</span><span class="p">:</span>
-</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Error</span>
-</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
-</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
-</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="w">      </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;False&quot;</span>
-</span><span id="__span-20-6"><a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a><span class="w">      </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NamespaceNotAuthorized</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">status</span><span class="p">:</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="nt">phase</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Error</span>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Ready</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">      </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;False&quot;</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">      </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">NamespaceNotAuthorized</span>
 </span></code></pre></div></p>
 <p><strong>Solution:</strong></p>
 <ol>
 <li>
 <p>Check realm's grant list:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants}&#39;</span>
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="w">  </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.spec.clientAuthorizationGrants}&#39;</span>
 </span></code></pre></div></p>
 </li>
 <li>
 <p>Add your namespace:
-   <div class="language-bash highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
-</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="s1">spec:</span>
-</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="s1">  clientAuthorizationGrants:</span>
-</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="s1">    - existing-namespace</span>
-</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="s1">    - your-namespace</span>
-</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="s1">&#39;</span>
+   <div class="language-bash highlight"><pre><span></span><code><span id="__span-21-1"><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>kubectl<span class="w"> </span>patch<span class="w"> </span>keycloakrealm<span class="w"> </span>&lt;realm-name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;realm-namespace&gt;<span class="w"> </span>--type<span class="o">=</span>merge<span class="w"> </span>-p<span class="w"> </span><span class="s1">&#39;</span>
+</span><span id="__span-21-2"><a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="s1">spec:</span>
+</span><span id="__span-21-3"><a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="s1">  clientAuthorizationGrants:</span>
+</span><span id="__span-21-4"><a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="s1">    - existing-namespace</span>
+</span><span id="__span-21-5"><a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="s1">    - your-namespace</span>
+</span><span id="__span-21-6"><a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="s1">&#39;</span>
 </span></code></pre></div></p>
 </li>
 </ol>
 <h3 id="realm-in-different-namespace">Realm in Different Namespace<a class="headerlink" href="#realm-in-different-namespace" title="Permanent link">&para;</a></h3>
 <p><strong>Symptom:</strong> Client references realm in different namespace</p>
 <p><strong>This is supported!</strong> Cross-namespace realm references are allowed:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-23-1"><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
-</span><span id="__span-23-2"><a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
-</span><span id="__span-23-3"><a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a><span class="nt">metadata</span><span class="p">:</span>
-</span><span id="__span-23-4"><a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-client</span>
-</span><span id="__span-23-5"><a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
-</span><span id="__span-23-6"><a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a><span class="nt">spec</span><span class="p">:</span>
-</span><span id="__span-23-7"><a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
-</span><span id="__span-23-8"><a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-realm</span>
-</span><span id="__span-23-9"><a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">platform</span><span class="w">  </span><span class="c1"># Different namespace ✅</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-22-1"><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
+</span><span id="__span-22-2"><a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">KeycloakClient</span>
+</span><span id="__span-22-3"><a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="nt">metadata</span><span class="p">:</span>
+</span><span id="__span-22-4"><a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-client</span>
+</span><span id="__span-22-5"><a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="w">  </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-app</span>
+</span><span id="__span-22-6"><a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="nt">spec</span><span class="p">:</span>
+</span><span id="__span-22-7"><a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="w">  </span><span class="nt">realmRef</span><span class="p">:</span>
+</span><span id="__span-22-8"><a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="w">    </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared-realm</span>
+</span><span id="__span-22-9"><a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a><span class="w">    </span><span class="nt">namespace</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">platform</span><span class="w">  </span><span class="c1"># Different namespace ✅</span>
 </span></code></pre></div>
 <p><strong>Requirement:</strong> <code>my-app</code> must be in <code>shared-realm</code>'s <code>clientAuthorizationGrants</code></p>
 <h3 id="cannot-update-existing-client">Cannot Update Existing Client<a class="headerlink" href="#cannot-update-existing-client" title="Permanent link">&para;</a></h3>
