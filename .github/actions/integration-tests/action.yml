@@ -145,11 +145,26 @@ runs:
         INTEGRATION_COVERAGE: "true"
       run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
 
+    - name: Combine and convert integration coverage to XML
+      shell: bash
+      if: always() && inputs.github-actor != 'dependabot[bot]'
+      run: |
+        if [ -d ".tmp/coverage" ] && [ "$(ls -A .tmp/coverage/.coverage.* 2>/dev/null)" ]; then
+          echo "Found coverage files, combining..."
+          uv run coverage combine .tmp/coverage/.coverage.*
+          echo "Converting to XML..."
+          uv run coverage xml -o coverage-integration.xml
+          echo "Integration coverage XML generated"
+        else
+          echo "No coverage files found to combine"
+          exit 1
+        fi
+
     - name: Upload integration coverage to Codecov
       uses: codecov/codecov-action@v5
       if: always() && inputs.github-actor != 'dependabot[bot]'
       with:
-        files: .tmp/coverage/.coverage.*
+        files: coverage-integration.xml
         flags: integration
         name: integration-tests
         token: ${{ inputs.codecov-token }}
