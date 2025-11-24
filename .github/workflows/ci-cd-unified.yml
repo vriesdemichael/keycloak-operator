@@ -49,7 +49,7 @@ jobs:
       is_main: ${{ steps.branch.outputs.is_main }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 2
 
@@ -209,7 +209,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Build operator
         uses: ./.github/actions/build-operator
@@ -228,7 +228,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Run unit tests
         uses: ./.github/actions/unit-tests
@@ -247,7 +247,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Run quality checks
         uses: ./.github/actions/code-quality
@@ -269,7 +269,7 @@ jobs:
       actions: read
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Run security scans
         uses: ./.github/actions/security-scans
@@ -288,7 +288,7 @@ jobs:
       packages: read
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -449,7 +449,7 @@ jobs:
             echo "### :warning: Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
           fi
 
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         if: steps.release.outputs.pr != ''
 
   # =====================================================
@@ -475,7 +475,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Publish operator image
         uses: ./.github/actions/publish-operator-image
@@ -502,7 +502,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -536,7 +536,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Publish chart
         uses: ./.github/actions/publish-helm-chart
@@ -566,7 +566,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Publish chart
         uses: ./.github/actions/publish-helm-chart
@@ -596,7 +596,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Publish chart
         uses: ./.github/actions/publish-helm-chart
@@ -631,7 +631,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -658,7 +658,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
