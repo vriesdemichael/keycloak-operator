@@ -823,6 +823,38 @@ def sample_client_spec() -> KeycloakClientSpec:
     )
 
 
+@pytest.fixture
+async def sample_keycloak_spec(cnpg_cluster, test_namespace) -> dict[str, Any]:
+    """Return a sample Keycloak instance specification with database config.
+
+    Uses cnpg_cluster fixture to get database connection details.
+    Returns a dict ready to use as CR spec (not Pydantic model, as KeycloakSpec
+    is complex and tests typically work with dict manifests).
+    """
+    if cnpg_cluster is None:
+        pytest.skip("CNPG not available, cannot create Keycloak instance")
+
+    return {
+        "replicas": 1,
+        "image": f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}",
+        "database": {
+            "type": cnpg_cluster["type"],
+            "host": cnpg_cluster["host"],
+            "port": cnpg_cluster["port"],
+            "database": cnpg_cluster["database"],
+            "username": cnpg_cluster["username"],
+            "passwordSecret": {
+                "name": cnpg_cluster["password_secret"],
+                "key": "password",
+            },
+        },
+        "resources": {
+            "requests": {"cpu": "200m", "memory": "512Mi"},
+            "limits": {"cpu": "500m", "memory": "1Gi"},
+        },
+    }
+
+
 def build_realm_manifest(
     spec: KeycloakRealmSpec, name: str, namespace: str
 ) -> dict[str, Any]:

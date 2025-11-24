@@ -11,6 +11,7 @@ Tests verify the reconciler correctly manages Keycloak realms:
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
 import uuid
 
@@ -249,7 +250,9 @@ class TestRealmReconciler:
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
             assert realm_repr.display_name == "Original Name"
 
-            # UPDATE: Change display name
+            # UPDATE: Change display name using Pydantic model
+            from keycloak_operator.models.realm import KeycloakRealmSpec
+
             realm_cr = await k8s_custom_objects.get_namespaced_custom_object(
                 group="vriesdemichael.github.io",
                 version="v1",
@@ -257,7 +260,13 @@ class TestRealmReconciler:
                 plural="keycloakrealms",
                 name=realm_name,
             )
-            realm_cr["spec"]["displayName"] = "Updated Name"
+
+            # Load spec into Pydantic model, modify it, dump back
+            current_spec = KeycloakRealmSpec.model_validate(realm_cr["spec"])
+            current_spec.display_name = "Updated Name"
+            realm_cr["spec"] = current_spec.model_dump(
+                by_alias=True, exclude_unset=True
+            )
 
             await k8s_custom_objects.patch_namespaced_custom_object(
                 group="vriesdemichael.github.io",
@@ -268,10 +277,29 @@ class TestRealmReconciler:
                 body=realm_cr,
             )
 
-            # Wait for reconciliation (give it a moment)
-            import asyncio
+            # Wait for reconciliation
+            await wait_for_resource_ready(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=60,
+                operator_namespace=operator_namespace,
+            )
 
-            await asyncio.sleep(10)
+            # Wait for the display name to actually update in Keycloak
+            # The reconciler needs time to detect the change and apply it
+            max_attempts = 15
+            for attempt in range(max_attempts):
+                realm_repr = await keycloak_admin_client.get_realm(
+                    realm_name, namespace
+                )
+                if realm_repr.display_name == "Updated Name":
+                    break
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(2)
 
             # Verify update in Keycloak
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
