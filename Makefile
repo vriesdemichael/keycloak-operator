@@ -156,37 +156,60 @@ test: quality test-unit test-integration ## Run complete test suite (quality + u
 
 .PHONY: test-pre-commit
 test-pre-commit: ## Complete pre-commit flow (quality + fresh cluster + unit + integration with coverage)
-	@echo "====================================="
-	@echo "Pre-commit test suite"
-	@echo "====================================="
-	@echo ""
-	@echo "Step 1/4: Running quality checks..."
-	@echo "-------------------------------------"
-	@$(MAKE) quality || { echo "❌ Quality checks failed"; exit 1; }
-	@echo "✓ Quality checks passed"
-	@echo ""
-	@echo "Step 2/4: Setting up fresh cluster..."
-	@echo "-------------------------------------"
-	@$(MAKE) kind-teardown || true
-	@$(MAKE) kind-setup || { echo "❌ Failed to setup Kind cluster"; exit 1; }
-	@echo "✓ Fresh cluster ready"
-	@echo ""
-	@echo "Step 3/4: Running unit tests with coverage..."
-	@echo "-------------------------------------"
-	@$(MAKE) test-unit || { echo "❌ Unit tests failed"; exit 1; }
-	@echo "✓ Unit tests passed"
-	@echo ""
-	@echo "Step 4/4: Running integration tests with coverage..."
-	@echo "-------------------------------------"
-	@$(MAKE) install-cnpg || { echo "❌ Failed to install CNPG"; exit 1; }
-	@$(MAKE) install-cert-manager || { echo "❌ Failed to install cert-manager"; exit 1; }
-	@mkdir -p .tmp
-	@bash -c "set -o pipefail; INTEGRATION_COVERAGE=true $(MAKE) test-integration-coverage 2>&1 | tee .tmp/latest-integration-test.log" || { echo "❌ Integration tests failed"; exit 1; }
-	@echo "✓ Integration tests passed"
-	@echo ""
-	@echo "====================================="
-	@echo "✓ All pre-commit tests passed!"
-	@echo "====================================="
+	@mkdir -p .tmp/test-logs
+	@rm -f .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] =====================================" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Pre-commit test suite" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] =====================================" | tee -a .tmp/test-pre-commit.log
+	@echo "" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 1/4: Running quality checks..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
+	@bash -c "set -o pipefail; $(MAKE) quality 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Quality checks failed" | tee -a .tmp/test-pre-commit.log; exit 1; }
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Quality checks passed" | tee -a .tmp/test-pre-commit.log
+	@echo "" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 2/4: Setting up fresh cluster..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
+	@bash -c "set -o pipefail; $(MAKE) kind-teardown 2>&1 | tee -a .tmp/test-pre-commit.log" || true
+	@bash -c "set -o pipefail; $(MAKE) kind-setup 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Failed to setup Kind cluster" | tee -a .tmp/test-pre-commit.log; exit 1; }
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Fresh cluster ready" | tee -a .tmp/test-pre-commit.log
+	@echo "" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 3/4: Running unit tests with coverage..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
+	@bash -c "set -o pipefail; $(MAKE) test-unit 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Unit tests failed" | tee -a .tmp/test-pre-commit.log; exit 1; }
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Unit tests passed" | tee -a .tmp/test-pre-commit.log
+	@echo "" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 4/4: Running integration tests with coverage..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
+	@bash -c "set -o pipefail; $(MAKE) install-cnpg 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Failed to install CNPG" | tee -a .tmp/test-pre-commit.log; exit 1; }
+	@bash -c "set -o pipefail; $(MAKE) install-cert-manager 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Failed to install cert-manager" | tee -a .tmp/test-pre-commit.log; exit 1; }
+	@bash -c "set -o pipefail; INTEGRATION_COVERAGE=true $(MAKE) test-integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log" || { \
+		echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Integration tests failed, collecting diagnostics..." | tee -a .tmp/test-pre-commit.log; \
+		$(MAKE) collect-test-logs; \
+		exit 1; \
+	}
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Integration tests passed" | tee -a .tmp/test-pre-commit.log
+	@$(MAKE) collect-test-logs
+	@echo "" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] =====================================" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ All pre-commit tests passed!" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] =====================================" | tee -a .tmp/test-pre-commit.log
+
+.PHONY: collect-test-logs
+collect-test-logs: ## Collect logs and diagnostics from test cluster
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Collecting test logs and diagnostics..."
+	@mkdir -p .tmp/test-logs
+	@kubectl cluster-info > .tmp/test-logs/cluster-info.log 2>&1 || true
+	@for pod in $$(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}' 2>/dev/null); do \
+		namespace=$$(echo $$pod | cut -d/ -f1); \
+		podname=$$(echo $$pod | cut -d/ -f2); \
+		echo "=== Logs from $$namespace/$$podname ===" >> .tmp/test-logs/operator-logs.log; \
+		kubectl logs -n $$namespace $$podname --all-containers=true --tail=2000 >> .tmp/test-logs/operator-logs.log 2>&1 || true; \
+	done
+	@kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide > .tmp/test-logs/operator-status.log 2>&1 || true
+	@kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide > .tmp/test-logs/test-resources.log 2>&1 || true
+	@kubectl get events --all-namespaces --sort-by='.lastTimestamp' > .tmp/test-logs/events.log 2>&1 || true
+	@kubectl get pods --all-namespaces -o wide > .tmp/test-logs/all-pods.log 2>&1 || true
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Test logs collected in .tmp/test-logs/"
 
 # ============================================================================
 # Test Cluster Management
