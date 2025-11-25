@@ -323,7 +323,7 @@ class TestRealmReconciler:
         k8s_custom_objects,
         test_namespace,
         operator_namespace,
-        shared_operator,
+        keycloak_ready,
     ) -> None:
         """Test realm status transitions through expected phases."""
         suffix = uuid.uuid4().hex[:8]
