@@ -323,6 +323,7 @@ class TestRealmReconciler:
         k8s_custom_objects,
         test_namespace,
         operator_namespace,
+        shared_operator,
         keycloak_ready,
     ) -> None:
         """Test realm status transitions through expected phases."""
@@ -355,7 +356,6 @@ class TestRealmReconciler:
             )
 
             # Check status progresses: Unknown -> Pending -> Ready
-            import asyncio
 
             # Wait briefly and check it's not Unknown anymore
             await asyncio.sleep(5)
