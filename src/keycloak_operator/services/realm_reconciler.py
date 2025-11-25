@@ -1124,6 +1124,31 @@ class KeycloakRealmReconciler(BaseReconciler):
                 except Exception as e:
                     self.logger.warning(f"Failed to update realm settings: {e}")
 
+            # Handle basic realm field updates (using camelCase as they appear in CRD)
+            elif field_path[:2] in [
+                ("spec", "displayName"),
+                ("spec", "description"),
+                ("spec", "loginPageTitle"),
+                ("spec", "tokenSettings"),
+                ("spec", "smtpServer"),
+            ]:
+                field_name = field_path[1] if len(field_path) > 1 else "unknown"
+                self.logger.info(f"Updating realm field: {field_name}")
+                try:
+                    if field_name == "smtpServer":
+                        # SMTP needs special handling for password injection
+                        await self.ensure_realm_exists(
+                            new_realm_spec, name, namespace, **kwargs
+                        )
+                    else:
+                        # Regular field update
+                        await admin_client.update_realm(
+                            realm_name, new_realm_spec.to_keycloak_config(), namespace
+                        )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update realm {field_name}: {e}")
+
         if configuration_changed:
             self.logger.info(f"Successfully updated KeycloakRealm {name}")
             return {

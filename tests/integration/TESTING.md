@@ -575,6 +575,9 @@ async def test_feature_name(
 # Run all integration tests
 make test-integration
 
+# Run complete pre-commit test suite (quality + fresh cluster + unit + integration with coverage)
+make test-pre-commit
+
 # Run specific test
 uv run pytest tests/integration/test_example.py::TestClass::test_method -v
 
@@ -586,6 +589,39 @@ uv run pytest tests/integration/ -n 0 -v
 
 # Run with verbose output
 uv run pytest tests/integration/ -v -s
+```
+
+### Test Logging and Diagnostics
+
+When running `make test-pre-commit`, comprehensive logging is automatically enabled:
+
+**Logs are written to:**
+- `.tmp/test-pre-commit.log` - Complete timestamped log of all test steps
+- `.tmp/test-logs/` - Diagnostic logs collected from cluster (always collected, even on success)
+
+**What's automatically collected:**
+- Cluster information (`cluster-info.log`)
+- All operator pod logs (`operator-logs.log`)
+- Operator deployment status (`operator-status.log`)
+- All Keycloak custom resources (`test-resources.log`)
+- All cluster events sorted by time (`events.log`)
+- All pods across all namespaces (`all-pods.log`)
+
+**Benefits:**
+- Fast debugging without re-running failed tests
+- Complete visibility into what happened during test runs
+- Timestamps for tracking slow steps
+- No manual log collection needed
+
+**Example usage:**
+```bash
+# Run pre-commit tests
+make test-pre-commit
+
+# If tests fail, check the logs:
+cat .tmp/test-pre-commit.log  # Full execution log with timestamps
+cat .tmp/test-logs/operator-logs.log  # Operator pod logs
+cat .tmp/test-logs/events.log  # Kubernetes events
 ```
 
 ## Debugging Failed Tests
@@ -636,6 +672,51 @@ uv run pytest tests/integration/ -v -s
 ### ❌ Wrong phase expectations
 **Symptom:** Test waits forever for "Running" phase that doesn't exist
 **Fix:** Wait for `phase == "Ready"` or `phase in ("Ready", "Degraded")`
+
+### ❌ Creating realms without proper service account setup
+**Symptom:** Realm creation fails with authentication/authorization errors when trying to create clients or users
+**Fix:** Always create realms using the Helm chart pattern which sets up required service accounts:
+
+```python
+# ❌ WRONG - Missing service account setup
+realm_manifest = {
+    "apiVersion": "vriesdemichael.github.io/v1",
+    "kind": "KeycloakRealm",
+    "metadata": {"name": realm_name, "namespace": test_namespace},
+    "spec": {
+        "keycloak_instance_ref": {
+            "name": keycloak_name,
+            "namespace": keycloak_namespace,
+        },
+        "realm": {"realm": realm_name, "enabled": True},
+    },
+}
+
+# ✅ CORRECT - Follow Helm chart pattern with service account
+from tests.integration.conftest import create_realm_with_sa
+
+realm_name = f"test-realm-{uuid.uuid4().hex[:8]}"
+realm_manifest = create_realm_with_sa(
+    realm_name=realm_name,
+    keycloak_name=keycloak_name,
+    keycloak_namespace=keycloak_namespace,
+    test_namespace=test_namespace,
+)
+
+k8s_custom_objects.create_namespaced_custom_object(
+    group="vriesdemichael.github.io",
+    version="v1",
+    namespace=test_namespace,
+    plural="keycloakrealms",
+    body=realm_manifest,
+)
+```
+
+**Why this matters:**
+- The operator needs proper service account credentials to manage resources within a realm
+- Without the service account, operations like creating clients or users will fail with authentication errors
+- The Helm chart automatically sets up these service accounts, so tests should follow the same pattern
+- The `create_realm_with_sa` helper in conftest.py encapsulates this setup
 
 ## Test Coverage Collection
 
