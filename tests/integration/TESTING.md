@@ -575,6 +575,9 @@ async def test_feature_name(
 # Run all integration tests
 make test-integration
 
+# Run complete pre-commit test suite (quality + fresh cluster + unit + integration with coverage)
+make test-pre-commit
+
 # Run specific test
 uv run pytest tests/integration/test_example.py::TestClass::test_method -v
 
@@ -586,6 +589,39 @@ uv run pytest tests/integration/ -n 0 -v
 
 # Run with verbose output
 uv run pytest tests/integration/ -v -s
+```
+
+### Test Logging and Diagnostics
+
+When running `make test-pre-commit`, comprehensive logging is automatically enabled:
+
+**Logs are written to:**
+- `.tmp/test-pre-commit.log` - Complete timestamped log of all test steps
+- `.tmp/test-logs/` - Diagnostic logs collected from cluster (always collected, even on success)
+
+**What's automatically collected:**
+- Cluster information (`cluster-info.log`)
+- All operator pod logs (`operator-logs.log`)
+- Operator deployment status (`operator-status.log`)
+- All Keycloak custom resources (`test-resources.log`)
+- All cluster events sorted by time (`events.log`)
+- All pods across all namespaces (`all-pods.log`)
+
+**Benefits:**
+- Fast debugging without re-running failed tests
+- Complete visibility into what happened during test runs
+- Timestamps for tracking slow steps
+- No manual log collection needed
+
+**Example usage:**
+```bash
+# Run pre-commit tests
+make test-pre-commit
+
+# If tests fail, check the logs:
+cat .tmp/test-pre-commit.log  # Full execution log with timestamps
+cat .tmp/test-logs/operator-logs.log  # Operator pod logs
+cat .tmp/test-logs/events.log  # Kubernetes events
 ```
 
 ## Debugging Failed Tests

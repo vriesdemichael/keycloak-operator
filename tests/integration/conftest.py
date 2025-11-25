@@ -544,17 +544,19 @@ async def test_namespace(
     k8s_core_v1, k8s_custom_objects, k8s_rbac_v1, operator_namespace, cleanup_tracker
 ) -> AsyncGenerator[str]:
     """
-    Create a test namespace with robust cleanup and RBAC setup.
+    Create a test namespace with robust cleanup and RBAC setup for realms/clients.
 
     This fixture ensures:
     - Unique namespace per test
-    - RoleBinding for operator access (new RBAC model)
+    - RoleBinding for operator access (namespace-access ClusterRole)
     - Cleanup of all Keycloak resources before namespace deletion
     - Force-delete fallback if resources get stuck
     - Tracking of cleanup failures
 
-    The RoleBinding grants the operator access to read labeled secrets
-    in this namespace, which is required by the new RBAC model.
+    The RoleBinding grants the operator access to read labeled secrets,
+    manage realms/clients in this namespace (new RBAC model).
+
+    For Keycloak instances, use test_keycloak_namespace which grants full manager permissions.
     """
     namespace_name = f"test-{os.urandom(4).hex()}"
 
@@ -625,6 +627,118 @@ async def test_namespace(
                     )
 
             # Step 2: Delete namespace (will cascade delete remaining resources)
+            success = await force_delete_namespace(
+                k8s_core_v1=k8s_core_v1,
+                namespace=namespace_name,
+                timeout=60,
+            )
+
+            if not success:
+                logger.error(f"Failed to delete namespace {namespace_name}")
+                cleanup_tracker.record_failure(
+                    resource_type="namespace",
+                    name=namespace_name,
+                    namespace="",
+                    error="Timeout during namespace deletion",
+                )
+            else:
+                logger.info(f"✓ Successfully cleaned up namespace: {namespace_name}")
+
+        except Exception as e:
+            logger.error(f"Error during namespace cleanup for {namespace_name}: {e}")
+            cleanup_tracker.record_failure(
+                resource_type="namespace",
+                name=namespace_name,
+                namespace="",
+                error=str(e),
+            )
+
+
+@pytest.fixture
+async def test_keycloak_namespace(
+    k8s_core_v1,
+    k8s_rbac_v1,
+    k8s_custom_objects,
+    operator_namespace: str,
+    cleanup_tracker,
+) -> AsyncGenerator[str]:
+    """Create a test namespace with RBAC for Keycloak instance reconciliation.
+
+    This fixture grants the operator manager-level permissions needed to manage
+    Keycloak instances (StatefulSets, Services, ConfigMaps, etc.).
+
+    Use this for tests that create Keycloak instances.
+    For tests that only create Realms/Clients, use test_namespace instead.
+    """
+    logger = logging.getLogger(__name__)
+    namespace_name = f"test-kc-{os.urandom(4).hex()}"
+
+    # Create namespace
+    namespace = client.V1Namespace(
+        metadata=client.V1ObjectMeta(
+            name=namespace_name, labels={"test": "integration", "operator": "keycloak"}
+        )
+    )
+
+    try:
+        await k8s_core_v1.create_namespace(namespace)
+        logger.info(f"Created test Keycloak namespace: {namespace_name}")
+
+        # Create RoleBinding for operator manager access
+        role_binding = client.V1RoleBinding(
+            metadata=client.V1ObjectMeta(
+                name="keycloak-operator-manager",
+                namespace=namespace_name,
+            ),
+            role_ref=client.V1RoleRef(
+                api_group="rbac.authorization.k8s.io",
+                kind="ClusterRole",
+                name="keycloak-operator-manager-role",
+            ),
+            subjects=[
+                client.RbacV1Subject(
+                    kind="ServiceAccount",
+                    name=f"keycloak-operator-{operator_namespace}",
+                    namespace=operator_namespace,
+                )
+            ],
+        )
+
+        try:
+            await k8s_rbac_v1.create_namespaced_role_binding(
+                namespace_name, role_binding
+            )
+            logger.info(f"Created manager RoleBinding in {namespace_name}")
+        except ApiException as e:
+            if e.status != 409:  # Ignore AlreadyExists
+                raise
+
+        yield namespace_name
+    finally:
+        # Cleanup
+        logger.info(f"Cleaning up test Keycloak namespace: {namespace_name}")
+
+        try:
+            # Clean up Keycloak resources first
+            success, failed_resources = await cleanup_namespace_resources(
+                k8s_custom_objects=k8s_custom_objects,
+                namespace=namespace_name,
+                timeout=120,
+            )
+
+            if not success:
+                logger.warning(
+                    f"Some resources failed to clean up in {namespace_name}: {failed_resources}"
+                )
+                for resource in failed_resources:
+                    cleanup_tracker.record_failure(
+                        resource_type="custom_resource",
+                        name=resource,
+                        namespace=namespace_name,
+                        error="Timeout during cleanup",
+                    )
+
+            # Delete namespace
             success = await force_delete_namespace(
                 k8s_core_v1=k8s_core_v1,
                 namespace=namespace_name,
