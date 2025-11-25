@@ -637,6 +637,51 @@ uv run pytest tests/integration/ -v -s
 **Symptom:** Test waits forever for "Running" phase that doesn't exist
 **Fix:** Wait for `phase == "Ready"` or `phase in ("Ready", "Degraded")`
 
+### ❌ Creating realms without proper service account setup
+**Symptom:** Realm creation fails with authentication/authorization errors when trying to create clients or users
+**Fix:** Always create realms using the Helm chart pattern which sets up required service accounts:
+
+```python
+# ❌ WRONG - Missing service account setup
+realm_manifest = {
+    "apiVersion": "vriesdemichael.github.io/v1",
+    "kind": "KeycloakRealm",
+    "metadata": {"name": realm_name, "namespace": test_namespace},
+    "spec": {
+        "keycloak_instance_ref": {
+            "name": keycloak_name,
+            "namespace": keycloak_namespace,
+        },
+        "realm": {"realm": realm_name, "enabled": True},
+    },
+}
+
+# ✅ CORRECT - Follow Helm chart pattern with service account
+from tests.integration.conftest import create_realm_with_sa
+
+realm_name = f"test-realm-{uuid.uuid4().hex[:8]}"
+realm_manifest = create_realm_with_sa(
+    realm_name=realm_name,
+    keycloak_name=keycloak_name,
+    keycloak_namespace=keycloak_namespace,
+    test_namespace=test_namespace,
+)
+
+k8s_custom_objects.create_namespaced_custom_object(
+    group="vriesdemichael.github.io",
+    version="v1",
+    namespace=test_namespace,
+    plural="keycloakrealms",
+    body=realm_manifest,
+)
+```
+
+**Why this matters:**
+- The operator needs proper service account credentials to manage resources within a realm
+- Without the service account, operations like creating clients or users will fail with authentication errors
+- The Helm chart automatically sets up these service accounts, so tests should follow the same pattern
+- The `create_realm_with_sa` helper in conftest.py encapsulates this setup
+
 ## Test Coverage Collection
 
 Integration tests support coverage collection from the operator running in Kubernetes.
