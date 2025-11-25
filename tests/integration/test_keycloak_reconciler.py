@@ -26,7 +26,7 @@ from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
 class TestKeycloakReconciler:
     """Test Keycloak instance reconciler functionality."""
 
-    @pytest.mark.timeout(600)
+    @pytest.mark.timeout(180)
     async def test_keycloak_instance_lifecycle(
         self,
         k8s_custom_objects,
@@ -67,7 +67,7 @@ class TestKeycloakReconciler:
                 namespace=namespace,
                 plural="keycloaks",
                 name=keycloak_name,
-                timeout=600,  # Keycloak startup can take 60+ seconds
+                timeout=150,  # Keycloak startup can take 60+ seconds
                 operator_namespace=operator_namespace,
             )
 
@@ -147,7 +147,7 @@ class TestKeycloakReconciler:
                     name=keycloak_name,
                 )
 
-    @pytest.mark.timeout(600)
+    @pytest.mark.timeout(180)
     async def test_keycloak_with_custom_replicas(
         self,
         k8s_custom_objects,
@@ -188,7 +188,7 @@ class TestKeycloakReconciler:
                 namespace=namespace,
                 plural="keycloaks",
                 name=keycloak_name,
-                timeout=600,
+                timeout=150,
                 operator_namespace=operator_namespace,
             )
 
