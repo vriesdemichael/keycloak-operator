@@ -32,7 +32,7 @@ class TestKeycloakReconciler:
         k8s_custom_objects,
         k8s_core_v1,
         k8s_apps_v1,
-        test_namespace,
+        test_keycloak_namespace,
         operator_namespace,
         shared_operator,
         sample_keycloak_spec,
@@ -40,7 +40,7 @@ class TestKeycloakReconciler:
         """Test complete Keycloak instance lifecycle: create, ready, delete."""
         suffix = uuid.uuid4().hex[:8]
         keycloak_name = f"test-lifecycle-{suffix}"
-        namespace = test_namespace
+        namespace = test_keycloak_namespace
 
         keycloak_manifest = {
             "apiVersion": "vriesdemichael.github.io/v1",
@@ -152,7 +152,7 @@ class TestKeycloakReconciler:
         self,
         k8s_custom_objects,
         k8s_apps_v1,
-        test_namespace,
+        test_keycloak_namespace,
         operator_namespace,
         shared_operator,
         sample_keycloak_spec,
@@ -160,7 +160,7 @@ class TestKeycloakReconciler:
         """Test Keycloak instance with custom replica count."""
         suffix = uuid.uuid4().hex[:8]
         keycloak_name = f"test-replicas-{suffix}"
-        namespace = test_namespace
+        namespace = test_keycloak_namespace
 
         # Modify spec to use 2 replicas
         custom_spec = {**sample_keycloak_spec, "replicas": 2}
