@@ -46,6 +46,7 @@ class TestRealmReconciler:
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
             display_name="Test Lifecycle Realm",
+            client_authorization_grants=[namespace],
         )
 
         realm_manifest = {
@@ -217,6 +218,7 @@ class TestRealmReconciler:
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
             display_name="Original Name",
+            client_authorization_grants=[namespace],
         )
 
         realm_manifest = {
@@ -333,6 +335,7 @@ class TestRealmReconciler:
         realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
+            client_authorization_grants=[namespace],
         )
 
         realm_manifest = {
