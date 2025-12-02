@@ -455,7 +455,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         # Count realms that reference this Keycloak operator
         try:
             custom_objects_api = client.CustomObjectsApi()
-            realm_list = await custom_objects_api.list_cluster_custom_object(
+            realm_list = custom_objects_api.list_cluster_custom_object(
                 group="vriesdemichael.github.io",
                 version="v1",
                 plural="keycloakrealms",

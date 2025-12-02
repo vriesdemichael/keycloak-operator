@@ -139,7 +139,7 @@ for ns in $TEST_NAMESPACES; do
 
     # Force delete namespace
     echo "  Deleting namespace..."
-    kubectl delete namespace "$ns" --force --grace-period=0 2>/dev/null || true
+    kubectl delete namespace "$ns" --force --grace-period=0 --wait=false 2>/dev/null || true
 
     echo "  ✓ Namespace $ns cleanup initiated"
 done

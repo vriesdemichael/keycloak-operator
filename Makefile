@@ -3,6 +3,7 @@
 # Configuration
 VERSION ?= $(shell grep '^version = ' pyproject.toml | cut -d'"' -f2)
 KEYCLOAK_VERSION ?= 26.4.1
+TEST_IMAGE_TAG ?= test
 
 # ============================================================================
 # Help
@@ -89,22 +90,22 @@ test-unit: ## Run unit tests
 .PHONY: build-test
 build-test: ## Build operator test image and load into Kind
 	@echo "Building operator test image..."
-	docker build -f images/operator/Dockerfile -t keycloak-operator:test .
+	docker build -f images/operator/Dockerfile -t keycloak-operator:$(TEST_IMAGE_TAG) .
 	@echo "✓ Operator image built"
 	@echo "Loading operator image into Kind cluster..."
-	kind load docker-image keycloak-operator:test --name keycloak-operator-test
+	kind load docker-image keycloak-operator:$(TEST_IMAGE_TAG) --name keycloak-operator-test
 	@echo "✓ Operator image loaded into Kind"
 
 .PHONY: build-test-coverage
 build-test-coverage: ## Build operator test image with coverage instrumentation
 	@echo "Building operator test image with coverage..."
-	docker build -f images/operator/Dockerfile.test -t keycloak-operator:test .
+	docker build -f images/operator/Dockerfile.test -t keycloak-operator:$(TEST_IMAGE_TAG) .
 	@echo "✓ Operator coverage image built"
 
 .PHONY: kind-load-test-coverage
 kind-load-test-coverage: build-test-coverage ## Build and load coverage-instrumented image into Kind
 	@echo "Loading coverage-instrumented operator image into Kind cluster..."
-	kind load docker-image keycloak-operator:test --name keycloak-operator-test
+	kind load docker-image keycloak-operator:$(TEST_IMAGE_TAG) --name keycloak-operator-test
 	@echo "✓ Coverage image loaded into Kind"
 
 .PHONY: build-keycloak-optimized
@@ -132,12 +133,12 @@ build-all-test: build-test kind-load-keycloak-optimized ## Build and load all te
 .PHONY: test-integration
 test-integration: ensure-test-cluster build-all-test ## Run integration tests (builds images, deploys via Helm)
 	@echo "Running integration tests (tests deploy operator via Helm)..."
-	uv run pytest tests/integration/ -v -n auto --dist=loadscope
+	TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
 .PHONY: test-integration-coverage
 test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized ## Run integration tests with coverage collection
 	@echo "Running integration tests with coverage enabled..."
-	INTEGRATION_COVERAGE=true uv run pytest tests/integration/ -v -n auto --dist=loadscope
+	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 	@echo "Combining coverage data..."
 	./scripts/combine-coverage.sh
 
@@ -152,7 +153,7 @@ test-integration-clean: kind-teardown test-integration ## Tear down cluster, the
 # Local workflow: quality -> fresh cluster -> unit tests -> integration tests
 
 .PHONY: test
-test: quality test-unit test-integration ## Run complete test suite (quality + unit + integration)
+test: test-pre-commit ## Run complete test suite (quality + unit + integration)
 
 .PHONY: test-pre-commit
 test-pre-commit: ## Complete pre-commit flow (quality + fresh cluster + unit + integration with coverage)
@@ -239,8 +240,6 @@ ensure-test-cluster: ## Ensure clean test cluster ready for integration tests (i
 		$(MAKE) kind-setup; \
 	else \
 		echo "  ✓ Cluster exists"; \
-		echo "  Resetting integration test state..."; \
-		$(MAKE) clean-integration-state; \
 	fi
 	@echo "  Ensuring CNPG operator is installed..."
 	@$(MAKE) install-cnpg

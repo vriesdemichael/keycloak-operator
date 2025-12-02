@@ -35,7 +35,7 @@ rules:
   - keycloaks
   - keycloakclients
   - keycloakrealms
-  verbs: ["get", "list", "watch"]
+  verbs: ["get", "list", "watch", "patch", "update"]
 
 # Update CRD status and finalizers (required by Kopf)
 - apiGroups: ["vriesdemichael.github.io"]
@@ -185,6 +185,7 @@ rules:
 # Note: delete is required for cascading deletion (realm deletes dependent clients)
 - apiGroups: ["vriesdemichael.github.io"]
   resources:
+  - keycloaks
   - keycloakclients
   - keycloakrealms
   verbs: ["get", "list", "watch", "patch", "delete"]
@@ -192,12 +193,14 @@ rules:
 # Update CRD status and finalizers in delegated namespaces
 - apiGroups: ["vriesdemichael.github.io"]
   resources:
+  - keycloaks/status
   - keycloakclients/status
   - keycloakrealms/status
   verbs: ["get", "update", "patch"]
 
 - apiGroups: ["vriesdemichael.github.io"]
   resources:
+  - keycloaks/finalizers
   - keycloakclients/finalizers
   - keycloakrealms/finalizers
   verbs: ["update"]

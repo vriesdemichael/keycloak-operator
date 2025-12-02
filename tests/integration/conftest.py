@@ -40,6 +40,7 @@ Recommended Usage:
 """
 
 import asyncio
+import contextlib
 import fcntl
 import logging
 import os
@@ -684,6 +685,190 @@ async def test_keycloak_namespace(
         await k8s_core_v1.create_namespace(namespace)
         logger.info(f"Created test Keycloak namespace: {namespace_name}")
 
+        # Create Role with manager permissions
+        # This mirrors the permissions in charts/keycloak-operator/templates/02_rbac.yaml
+        role = client.V1Role(
+            metadata=client.V1ObjectMeta(
+                name="keycloak-operator-manager",
+                namespace=namespace_name,
+            ),
+            rules=[
+                # CRDs
+                client.V1PolicyRule(
+                    api_groups=["vriesdemichael.github.io"],
+                    resources=["keycloaks", "keycloakclients", "keycloakrealms"],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                # Kubernetes core resource management
+                client.V1PolicyRule(
+                    api_groups=["apps"],
+                    resources=["deployments", "statefulsets", "replicasets"],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                client.V1PolicyRule(
+                    api_groups=["apps"],
+                    resources=[
+                        "deployments/status",
+                        "statefulsets/status",
+                        "replicasets/status",
+                    ],
+                    verbs=["get"],
+                ),
+                client.V1PolicyRule(
+                    api_groups=[""],
+                    resources=[
+                        "services",
+                        "configmaps",
+                        "secrets",
+                        "persistentvolumeclaims",
+                    ],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                client.V1PolicyRule(
+                    api_groups=[""],
+                    resources=["pods", "pods/log"],
+                    verbs=["get", "list", "watch"],
+                ),
+                # Networking
+                client.V1PolicyRule(
+                    api_groups=["networking.k8s.io"],
+                    resources=["ingresses", "networkpolicies"],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                # Monitoring
+                client.V1PolicyRule(
+                    api_groups=["monitoring.coreos.com"],
+                    resources=["servicemonitors"],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                # Certificate management
+                client.V1PolicyRule(
+                    api_groups=["cert-manager.io"],
+                    resources=[
+                        "certificates",
+                        "certificaterequests",
+                        "issuers",
+                        "clusterissuers",
+                    ],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                # CloudNativePG
+                client.V1PolicyRule(
+                    api_groups=["postgresql.cnpg.io"],
+                    resources=["clusters", "poolers", "backups"],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                # Webhook configuration
+                client.V1PolicyRule(
+                    api_groups=["admissionregistration.k8s.io"],
+                    resources=[
+                        "validatingwebhookconfigurations",
+                        "mutatingwebhookconfigurations",
+                    ],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                # OpenShift support
+                client.V1PolicyRule(
+                    api_groups=["route.openshift.io"],
+                    resources=["routes"],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+                # Kopf peering
+                client.V1PolicyRule(
+                    api_groups=["kopf.dev"],
+                    resources=["kopfpeerings"],
+                    verbs=[
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                    ],
+                ),
+            ],
+        )
+
+        try:
+            await k8s_rbac_v1.create_namespaced_role(namespace_name, role)
+            logger.info(f"Created manager Role in {namespace_name}")
+        except ApiException as e:
+            if e.status != 409:
+                raise
+
         # Create RoleBinding for operator manager access
         role_binding = client.V1RoleBinding(
             metadata=client.V1ObjectMeta(
@@ -692,8 +877,8 @@ async def test_keycloak_namespace(
             ),
             role_ref=client.V1RoleRef(
                 api_group="rbac.authorization.k8s.io",
-                kind="ClusterRole",
-                name="keycloak-operator-manager-role",
+                kind="Role",
+                name="keycloak-operator-manager",
             ),
             subjects=[
                 client.RbacV1Subject(
@@ -821,6 +1006,34 @@ def cnpg_installed(k8s_client) -> bool:
 
 
 @pytest.fixture
+def shared_cnpg_info(operator_namespace: str) -> dict[str, Any]:
+    """Return connection info for the shared CNPG cluster in the operator namespace.
+
+    This fixture provides access to the shared CNPG cluster that's deployed
+    alongside the operator via Helm. Use this for tests that need to create
+    Keycloak instances in separate namespaces (like test_keycloak_namespace).
+
+    The shared CNPG cluster:
+    - Is named 'keycloak-cnpg' in keycloak-test-system
+    - Has app credentials in 'keycloak-cnpg-app' secret
+    - Is accessible via FQDN from any namespace
+
+    Returns:
+        dict with type, host (FQDN), port, database, username, password_secret info
+    """
+    cluster_name = "keycloak-cnpg"
+    return {
+        "type": "postgresql",
+        "host": f"{cluster_name}-rw.{operator_namespace}.svc.cluster.local",
+        "port": 5432,
+        "database": "app",
+        "username": "app",
+        "password_secret": f"{cluster_name}-app",
+        "password_secret_namespace": operator_namespace,
+    }
+
+
+@pytest.fixture
 async def cnpg_cluster(
     k8s_client, test_namespace, cnpg_installed
 ) -> dict[str, Any] | None:
@@ -898,13 +1111,15 @@ async def cnpg_cluster(
         pytest.skip("CNPG cluster was not ready in time")
 
     # Return standard PostgreSQL connection details
+    # Use FQDN so that any namespace can reach the database
     return {
         "type": "postgresql",
-        "host": f"{cluster_name}-rw",
+        "host": f"{cluster_name}-rw.{test_namespace}.svc.cluster.local",
         "port": 5432,
         "database": db_name,
         "username": "app",
         "password_secret": f"{cluster_name}-app",
+        "password_secret_namespace": test_namespace,
     }
 
 
@@ -938,12 +1153,94 @@ def sample_client_spec() -> KeycloakClientSpec:
 
 
 @pytest.fixture
+async def sample_keycloak_spec_factory(
+    shared_cnpg_info, k8s_core_v1
+) -> AsyncGenerator[Any]:
+    """Factory to create sample Keycloak specs with proper secret copying.
+
+    This factory creates a spec using the SHARED CNPG cluster in the operator
+    namespace, and copies the database secret to the target namespace.
+
+    This is used for tests that create Keycloak instances in test_keycloak_namespace
+    and need to connect to the shared CNPG cluster.
+
+    Usage:
+        async def test_something(sample_keycloak_spec_factory, test_keycloak_namespace):
+            spec = await sample_keycloak_spec_factory(test_keycloak_namespace)
+            # Create Keycloak with spec in test_keycloak_namespace
+    """
+    copied_secrets: list[tuple[str, str]] = []  # Track (namespace, name) for cleanup
+
+    async def create_spec(target_namespace: str) -> dict[str, Any]:
+        """Create a Keycloak spec with the secret copied to target_namespace."""
+
+        source_secret_name = shared_cnpg_info["password_secret"]
+        source_namespace = shared_cnpg_info["password_secret_namespace"]
+
+        # Read the source secret from operator namespace
+        source_secret = await k8s_core_v1.read_namespaced_secret(
+            name=source_secret_name, namespace=source_namespace
+        )
+
+        # Create a copy in target namespace with required label
+        target_secret = client.V1Secret(
+            metadata=client.V1ObjectMeta(
+                name=source_secret_name,
+                namespace=target_namespace,
+                labels={
+                    "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                },
+            ),
+            data=source_secret.data,
+            type=source_secret.type,
+        )
+
+        try:
+            await k8s_core_v1.create_namespaced_secret(target_namespace, target_secret)
+            copied_secrets.append((target_namespace, source_secret_name))
+        except ApiException as e:
+            if e.status != 409:  # Ignore AlreadyExists
+                raise
+
+        return {
+            "replicas": 1,
+            "image": f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}",
+            "database": {
+                "type": shared_cnpg_info["type"],
+                "host": shared_cnpg_info["host"],
+                "port": shared_cnpg_info["port"],
+                "database": shared_cnpg_info["database"],
+                "username": shared_cnpg_info["username"],
+                "passwordSecret": {
+                    "name": source_secret_name,
+                    "key": "password",
+                },
+            },
+            "resources": {
+                "requests": {"cpu": "200m", "memory": "512Mi"},
+                "limits": {"cpu": "500m", "memory": "1Gi"},
+            },
+        }
+
+    yield create_spec
+
+    # Cleanup copied secrets
+    for namespace, name in copied_secrets:
+        with contextlib.suppress(ApiException):
+            await k8s_core_v1.delete_namespaced_secret(name, namespace)
+
+
+@pytest.fixture
 async def sample_keycloak_spec(cnpg_cluster, test_namespace) -> dict[str, Any]:
     """Return a sample Keycloak instance specification with database config.
 
     Uses cnpg_cluster fixture to get database connection details.
     Returns a dict ready to use as CR spec (not Pydantic model, as KeycloakSpec
     is complex and tests typically work with dict manifests).
+
+    NOTE: This fixture creates the CNPG in test_namespace. If you need to use
+    this spec in a different namespace (like test_keycloak_namespace), use
+    sample_keycloak_spec_factory instead to ensure secrets are copied properly.
     """
     if cnpg_cluster is None:
         pytest.skip("CNPG not available, cannot create Keycloak instance")
@@ -2510,8 +2807,147 @@ async def drift_detector(
 
 
 # ============================================================================
-# Pytest Hooks for Coverage Collection
+# Pytest Hooks for Coverage Collection and Log Collection
 # ============================================================================
+
+# Track if logs have been collected to avoid duplicate collection
+_logs_collected = False
+
+
+def _collect_operator_logs() -> None:
+    """Collect operator logs to .tmp/test-logs for debugging.
+
+    This runs at the end of pytest session to capture operator logs,
+    which are essential for debugging test failures.
+    """
+    global _logs_collected
+    if _logs_collected:
+        return
+    _logs_collected = True
+
+    import subprocess
+    import sys
+
+    print("[pytest] Collecting operator logs...", file=sys.stderr)
+
+    log_dir = Path(__file__).parent.parent.parent / ".tmp" / "test-logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # Collect cluster info
+        with open(log_dir / "cluster-info.log", "w") as f:
+            subprocess.run(
+                ["kubectl", "cluster-info"],
+                stdout=f,
+                stderr=subprocess.STDOUT,
+                timeout=10,
+            )
+
+        # Collect operator logs from all pods with the operator label
+        with open(log_dir / "operator-logs.log", "w") as log_file:
+            result = subprocess.run(
+                [
+                    "kubectl",
+                    "get",
+                    "pods",
+                    "-l",
+                    "app.kubernetes.io/name=keycloak-operator",
+                    "--all-namespaces",
+                    "-o",
+                    "jsonpath={range .items[*]}{.metadata.namespace}/{.metadata.name} {end}",
+                ],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
+            pods = result.stdout.strip().split()
+            for pod_info in pods:
+                if "/" not in pod_info:
+                    continue
+                namespace, pod_name = pod_info.split("/", 1)
+                log_file.write(f"\n{'=' * 80}\n")
+                log_file.write(f"=== Logs from {namespace}/{pod_name} ===\n")
+                log_file.write(f"{'=' * 80}\n")
+                pod_result = subprocess.run(
+                    [
+                        "kubectl",
+                        "logs",
+                        "-n",
+                        namespace,
+                        pod_name,
+                        "--all-containers=true",
+                        "--tail=2000",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                log_file.write(pod_result.stdout)
+                if pod_result.stderr:
+                    log_file.write(f"\nSTDERR:\n{pod_result.stderr}")
+
+        # Collect operator deployment status
+        with open(log_dir / "operator-status.log", "w") as f:
+            subprocess.run(
+                [
+                    "kubectl",
+                    "get",
+                    "deployment",
+                    "-l",
+                    "app.kubernetes.io/name=keycloak-operator",
+                    "--all-namespaces",
+                    "-o",
+                    "wide",
+                ],
+                stdout=f,
+                stderr=subprocess.STDOUT,
+                timeout=10,
+            )
+
+        # Collect test resources
+        with open(log_dir / "test-resources.log", "w") as f:
+            subprocess.run(
+                [
+                    "kubectl",
+                    "get",
+                    "keycloaks,keycloakrealms,keycloakclients",
+                    "--all-namespaces",
+                    "-o",
+                    "wide",
+                ],
+                stdout=f,
+                stderr=subprocess.STDOUT,
+                timeout=10,
+            )
+
+        # Collect events
+        with open(log_dir / "events.log", "w") as f:
+            subprocess.run(
+                [
+                    "kubectl",
+                    "get",
+                    "events",
+                    "--all-namespaces",
+                    "--sort-by=.lastTimestamp",
+                ],
+                stdout=f,
+                stderr=subprocess.STDOUT,
+                timeout=10,
+            )
+
+        # Collect all pods status
+        with open(log_dir / "all-pods.log", "w") as f:
+            subprocess.run(
+                ["kubectl", "get", "pods", "--all-namespaces", "-o", "wide"],
+                stdout=f,
+                stderr=subprocess.STDOUT,
+                timeout=10,
+            )
+
+        print(f"[pytest] ✓ Operator logs collected to {log_dir}", file=sys.stderr)
+
+    except Exception as e:
+        print(f"[pytest] Failed to collect operator logs: {e}", file=sys.stderr)
 
 
 def pytest_sessionfinish(session, exitstatus):
@@ -2530,6 +2966,9 @@ def pytest_sessionfinish(session, exitstatus):
     if hasattr(session.config, "workerinput"):
         # This is a worker node, skip
         return
+
+    # Always collect operator logs for debugging (before any early returns)
+    _collect_operator_logs()
 
     # Only retrieve coverage if enabled
     if os.getenv("INTEGRATION_COVERAGE", "false").lower() != "true":
