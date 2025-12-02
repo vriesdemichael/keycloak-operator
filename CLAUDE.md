@@ -273,25 +273,22 @@ Testing:
 After you are done with changes to the code, run the unit tests first.
 Only after these succeed will you run the integration test suite. This takes a LONG time, as it spins up a kind cluster to do so.
 
-For testing use `make test-unit` and `make test-integration`
+For testing use `make test-unit` and `make test` (which runs the full suite).
 
-**Fast iteration workflow (cluster reuse):**
+**Testing workflow:**
 ```bash
-# First run - creates fresh cluster
-make test-integration
-
-# Subsequent runs - reuses cluster (much faster)
-make clean-integration-state && make test-integration
+# Run full test suite (quality + unit + integration with fresh cluster)
+make test
 ```
 
-Before commiting your work you will run `make test-pre-commit`, which is a complete flow that:
+Before commiting your work you will run `make test`, which is a complete flow that:
 1. Runs code quality checks
 2. Tears down any existing cluster
 3. Creates fresh cluster
 4. Runs unit tests
 5. Runs integration tests
 
-IMPORTANT!! It is imperative that you DO NOT separate these steps to speed up the process. You MUST always run `make test-pre-commit` before committing any changes to the operator code, the test code or the charts.
+IMPORTANT!! It is imperative that you DO NOT separate these steps to speed up the process. You MUST always run `make test` before committing any changes to the operator code, the test code or the charts.
 Without running this pre-commit directive you are prohibited to make commits. Any attempt to do so will be a severe blow to your reputation and you will be caught!
 
 **Important**: Always use `uv run <command>` when running Python commands directly, or use the Makefile targets which handle dependencies automatically. When you try to run scripts with python directly you will run into issues with dependencies.
@@ -308,13 +305,11 @@ This project has comprehensive testing infrastructure with coverage collection:
 **Testing Commands (following 2025 best practices):**
 ```bash
 # Complete test suite with coverage (recommended)
-make test                        # Quality + unit + integration tests with cluster reuse
+make test                        # Quality + unit + integration tests (fresh cluster)
 
 # Individual test types
 make test-unit                   # Fast unit tests only (generates .coverage)
-make test-integration            # Integration tests (reuses existing cluster)
-make test-integration-coverage   # Integration tests with coverage collection
-make test-pre-commit             # Full flow: quality + fresh cluster + all tests with coverage
+make test-integration            # Integration tests (fresh cluster)
 make quality                     # Linting and formatting
 ```
 
@@ -349,26 +344,18 @@ open htmlcov/index.html  # or xdg-open on Linux
 
 **Cluster and Deployment Management:**
 
-The operator uses a **cluster reuse strategy** for fast iteration. Clusters are only recreated when explicitly requested.
+The operator uses a **fresh cluster strategy** for reliability. Clusters are recreated for every test run.
 
 ```bash
 # Available Make targets (run 'make help' for full list)
-make test-unit                    # Run unit tests
-make test-integration             # Run integration tests (builds images, deploys via Helm)
-make test-pre-commit              # Complete pre-commit flow (quality + fresh cluster + all tests)
-
-# Cluster management
+make test                         # Run complete test suite (fresh cluster)
 make kind-setup                   # Create fresh Kind cluster
 make kind-teardown                # Destroy Kind cluster completely
-make ensure-test-cluster          # Ensure clean test cluster ready for integration tests (idempotent)
-make clean-integration-state      # Reset Keycloak/DB state for cluster reuse (fast iteration)
 ```
 
 **Testing Flow:**
-1. `make test-integration` → Ensures cluster exists → Resets state → Builds images → Runs tests
-2. Tests deploy operator themselves via Helm (production-like setup)
-3. For fast iteration: `make clean-integration-state && make test-integration`
-4. For fresh start: `make kind-teardown && make test-integration`
+1. `make test` → Teardown → Setup → Build → Run all tests
+
 
 **Script Architecture:**
 

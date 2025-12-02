@@ -403,6 +403,7 @@ def main() -> None:
         settings_obj = kopf.OperatorSettings()
         settings_obj.admission.server = kopf.WebhookServer(
             port=operator_settings.webhook_port,
+            host="0.0.0.0",
             certfile=f"{cert_dir}/tls.crt",
             pkeyfile=f"{cert_dir}/tls.key",
         )

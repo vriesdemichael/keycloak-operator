@@ -23,10 +23,7 @@ spec:
     host: {{ .Values.keycloak.database.cnpg.clusterName }}-rw
     port: 5432
     database: app
-    username: app
-    passwordSecret:
-      name: {{ .Values.keycloak.database.cnpg.clusterName }}-app
-      key: password
+    credentialsSecret: {{ .Values.keycloak.database.cnpg.clusterName }}-app
   {{- else }}
   database:
     type: {{ .Values.keycloak.database.type }}
