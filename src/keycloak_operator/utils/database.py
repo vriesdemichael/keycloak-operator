@@ -74,24 +74,91 @@ class DatabaseConnectionManager:
 
         # Resolve credentials
         credentials_secret = getattr(db_config, "credentials_secret", None)
+        password_secret = getattr(db_config, "password_secret", None)
 
         if credentials_secret:
+            # All credentials in one secret (username + password)
             credentials = await self._get_k8s_secret_credentials(
                 credentials_secret, namespace
             )
+        elif db_config.username and password_secret:
+            # Username provided directly, password in separate secret
+            password = await self._get_password_from_secret(
+                password_secret.name, password_secret.key, namespace
+            )
+            credentials = {"username": db_config.username, "password": password}
         elif db_config.username:
-            # Username provided directly (password should be in separate secret)
+            # Username only, no password configured - allow for backward compatibility
+            # but connection testing will likely fail
             credentials = {"username": db_config.username}
         else:
             raise ExternalServiceError(
                 service="Database",
                 message="No valid credential source configured",
                 retryable=False,
-                user_action="Configure credentials_secret or username",
+                user_action="Configure credentialsSecret or username with passwordSecret",
             )
 
         connection_info.update(credentials)
         return connection_info
+
+    async def _get_password_from_secret(
+        self, secret_name: str, key: str, namespace: str
+    ) -> str:
+        """
+        Get password from a Kubernetes secret.
+
+        Args:
+            secret_name: Name of the secret
+            key: Key within the secret containing the password
+            namespace: Namespace of the secret
+
+        Returns:
+            Password string
+
+        Raises:
+            ExternalServiceError: If secret or key not found
+        """
+        core_api = client.CoreV1Api(self.k8s_client)
+
+        try:
+            secret = core_api.read_namespaced_secret(
+                name=secret_name, namespace=namespace
+            )
+
+            if not secret.data:
+                raise ExternalServiceError(
+                    service="Database",
+                    message=f"Password secret '{secret_name}' has no data",
+                    retryable=False,
+                    user_action=f"Add {key} to secret '{secret_name}'",
+                )
+
+            if key not in secret.data:
+                raise ExternalServiceError(
+                    service="Database",
+                    message=f"Secret '{secret_name}' missing key '{key}'",
+                    retryable=False,
+                    user_action=f"Ensure secret '{secret_name}' contains key '{key}'",
+                )
+
+            import base64
+
+            return base64.b64decode(secret.data[key]).decode("utf-8")
+
+        except ApiException as e:
+            if e.status == 404:
+                raise ExternalServiceError(
+                    service="Database",
+                    message=f"Password secret '{secret_name}' not found in namespace '{namespace}'",
+                    retryable=True,
+                    user_action=f"Create secret '{secret_name}' with key '{key}'",
+                ) from e
+            raise ExternalServiceError(
+                service="Database",
+                message=f"Failed to read secret '{secret_name}': {e.reason}",
+                retryable=True,
+            ) from e
 
     async def _get_k8s_secret_credentials(
         self, secret_name: str, namespace: str

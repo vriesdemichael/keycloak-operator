@@ -336,8 +336,22 @@ async def force_delete_namespace(
                     )
                     # Use kubectl proxy or raw API to finalize
                     force_triggered = True
-                    # This requires special handling - skip for now
-                    # In practice, removing resource finalizers should be enough
+
+                    try:
+                        logger.warning(
+                            f"Force removing finalizers from namespace {namespace}"
+                        )
+                        # Patch the namespace to remove finalizers
+                        # This is the standard way to unstick a Terminating namespace
+                        patch = {"metadata": {"finalizers": []}}
+                        await k8s_core_v1.patch_namespace(name=namespace, body=patch)
+                        logger.info(
+                            f"Successfully removed finalizers from namespace {namespace}"
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to remove finalizers from namespace {namespace}: {e}"
+                        )
 
                 await asyncio.sleep(2)
 

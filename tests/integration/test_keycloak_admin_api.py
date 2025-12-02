@@ -198,7 +198,7 @@ class TestKeycloakAdminAPI:
             )
 
             # Test GET: Retrieve client via admin API
-            client_repr = await keycloak_admin_client.get_client_by_client_id(
+            client_repr = await keycloak_admin_client.get_client_by_name(
                 client_name, realm_name, namespace
             )
             assert client_repr is not None
@@ -389,15 +389,15 @@ class TestKeycloakAdminAPI:
             )
 
             # Verify secret was created in Kubernetes
-            secret_name = f"{client_name}-secret"
+            secret_name = f"{client_name}-credentials"
             secret = await k8s_core_v1.read_namespaced_secret(secret_name, namespace)
 
             assert secret is not None
-            assert "clientId" in secret.data
-            assert "clientSecret" in secret.data
+            assert "client-id" in secret.data
+            assert "client-secret" in secret.data
 
             # Verify the secret value from Keycloak matches
-            client_repr = await keycloak_admin_client.get_client_by_client_id(
+            client_repr = await keycloak_admin_client.get_client_by_name(
                 client_name, realm_name, namespace
             )
             assert client_repr is not None

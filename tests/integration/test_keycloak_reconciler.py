@@ -35,18 +35,21 @@ class TestKeycloakReconciler:
         test_keycloak_namespace,
         operator_namespace,
         shared_operator,
-        sample_keycloak_spec,
+        sample_keycloak_spec_factory,
     ) -> None:
         """Test complete Keycloak instance lifecycle: create, ready, delete."""
         suffix = uuid.uuid4().hex[:8]
         keycloak_name = f"test-lifecycle-{suffix}"
         namespace = test_keycloak_namespace
 
+        # Get spec with secret copied to target namespace
+        spec = await sample_keycloak_spec_factory(namespace)
+
         keycloak_manifest = {
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
             "metadata": {"name": keycloak_name, "namespace": namespace},
-            "spec": sample_keycloak_spec,
+            "spec": spec,
         }
 
         try:
@@ -86,7 +89,7 @@ class TestKeycloakReconciler:
             assert service.spec.type == "ClusterIP"
 
             # Verify admin secret was created
-            admin_secret_name = f"{keycloak_name}-admin"
+            admin_secret_name = f"{keycloak_name}-admin-credentials"
             admin_secret = await k8s_core_v1.read_namespaced_secret(
                 admin_secret_name, namespace
             )
@@ -155,15 +158,18 @@ class TestKeycloakReconciler:
         test_keycloak_namespace,
         operator_namespace,
         shared_operator,
-        sample_keycloak_spec,
+        sample_keycloak_spec_factory,
     ) -> None:
         """Test Keycloak instance with custom replica count."""
         suffix = uuid.uuid4().hex[:8]
         keycloak_name = f"test-replicas-{suffix}"
         namespace = test_keycloak_namespace
 
+        # Get spec with secret copied to target namespace
+        base_spec = await sample_keycloak_spec_factory(namespace)
+
         # Modify spec to use 2 replicas
-        custom_spec = {**sample_keycloak_spec, "replicas": 2}
+        custom_spec = {**base_spec, "replicas": 2}
 
         keycloak_manifest = {
             "apiVersion": "vriesdemichael.github.io/v1",

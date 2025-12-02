@@ -268,6 +268,18 @@ def create_keycloak_deployment(
                             ),
                         )
                     )
+                    # Also set username from credentials secret if not explicitly provided
+                    if not spec.database.username:
+                        env_vars.append(
+                            client.V1EnvVar(
+                                name="KC_DB_USERNAME",
+                                value_from=client.V1EnvVarSource(
+                                    secret_key_ref=client.V1SecretKeySelector(
+                                        name=credentials_secret_name, key="username"
+                                    )
+                                ),
+                            )
+                        )
 
     # Container configuration
     # Use production mode with HTTP enabled for ingress TLS termination
