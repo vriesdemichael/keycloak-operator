@@ -1,6 +1,18 @@
 # syntax=docker/dockerfile:1.7
+#
+# Multi-stage Dockerfile for Keycloak Operator
+#
+# Targets:
+#   - production: Production image (default)
+#   - test: Extends production with coverage instrumentation for testing
+#
+# Usage:
+#   docker build --target production -t keycloak-operator:latest .
+#   docker build --target test -t keycloak-operator:test .
 
-# ---- Stage 1: Build / Resolve deps -----------------------------------------
+# ============================================================================
+# Stage 1: Builder - Resolve and install dependencies
+# ============================================================================
 FROM python:3.13-slim AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
@@ -18,23 +30,20 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 WORKDIR /app
 
 # Copy only files needed to resolve dependencies
-# If uv.lock does not exist yet, omit it (or create it locally with `uv lock`)
 COPY pyproject.toml uv.lock README.md LICENSE ./
 
-# First install ONLY dependencies (improves layer caching)
-# Use --no-install-project so missing src/ does not break the build
+# Install dependencies (improves layer caching)
 RUN uv sync --frozen --no-dev --no-install-project || \
     (echo "If this failed because uv.lock is absent, remove --frozen or generate the lock file." && exit 1)
 
-# Now add the application source and install the project itself
+# Add application source and install the project
 COPY src/ src/
-
-# Install the project (editable not needed inside image)
-# Re-run sync to add project to venv without re-resolving deps
 RUN uv sync --frozen --no-dev
 
-# ---- Stage 2: Runtime ------------------------------------------------------
-FROM python:3.13-slim AS runtime
+# ============================================================================
+# Stage 2: Production - Lean runtime image
+# ============================================================================
+FROM python:3.13-slim AS production
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH=/app/.venv/bin:$PATH \
@@ -52,7 +61,7 @@ RUN groupadd -r keycloak --gid=1001 && \
 
 WORKDIR /app
 
-# Copy virtual environment and source
+# Copy virtual environment and source from builder
 COPY --from=builder /app/.venv /app/.venv
 COPY --from=builder /app/src /app/src
 COPY --from=builder /app/pyproject.toml /app/pyproject.toml
@@ -68,3 +77,51 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD python -c "import requests; requests.get('http://localhost:8080/healthz', timeout=5)" || exit 1
 
 CMD ["python", "-m", "keycloak_operator.operator"]
+
+# ============================================================================
+# Stage 3: Test - Extends production with coverage instrumentation
+# ============================================================================
+# This stage adds test dependencies and coverage collection to the production
+# image, ensuring we test exactly what we ship.
+FROM production AS test
+
+# Switch to root to install test dependencies
+USER root
+
+# Copy uv for installing test dependencies
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
+# Copy lock file for reproducible test dep installation
+COPY pyproject.toml uv.lock /app/
+
+# Install test group dependencies into existing venv
+RUN uv sync --frozen --group test --no-install-project
+
+# Copy coverage configurations
+COPY .coveragerc /app/.coveragerc
+COPY images/operator/coveragerc.container /app/.coveragerc.container
+
+# Copy test injection module for auto-starting coverage
+COPY test-inject /app/test-inject
+
+# Install the .pth file to auto-import sitecustomize.py at startup
+RUN python - <<'PY'
+import sysconfig, pathlib
+sp = sysconfig.get_paths()['purelib']
+pth = pathlib.Path(sp) / "test_inject.pth"
+pth.write_text("/app/test-inject\n")
+print(f"Created {pth}")
+PY
+
+# Set coverage environment variables
+ENV COVERAGE_PROCESS_START=/app/.coveragerc.container
+ENV COVERAGE_FILE=/tmp/coverage/.coverage
+
+# Create coverage data directory with proper permissions
+RUN mkdir -p /tmp/coverage && \
+    chown -R keycloak:keycloak /app /tmp/coverage
+
+USER keycloak
+
+# Override CMD to run with coverage instrumentation
+CMD ["coverage", "run", "--parallel-mode", "--source=/app/src/keycloak_operator", "-m", "keycloak_operator.operator"]
