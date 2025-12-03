@@ -9,6 +9,7 @@ accepted by Kubernetes, enforcing:
 - Resource requirements
 """
 
+import asyncio
 import logging
 
 import kopf
@@ -18,6 +19,17 @@ from pydantic import ValidationError
 from keycloak_operator.models.keycloak import KeycloakSpec
 
 logger = logging.getLogger(__name__)
+
+
+def _sync_list_keycloaks(namespace: str) -> dict:
+    """Synchronous helper to list keycloaks (runs in thread pool)."""
+    api = client.CustomObjectsApi()
+    return api.list_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=namespace,
+        plural="keycloaks",
+    )
 
 
 async def get_keycloak_count_in_namespace(namespace: str) -> int:
@@ -31,13 +43,7 @@ async def get_keycloak_count_in_namespace(namespace: str) -> int:
         Number of existing Keycloak instances
     """
     try:
-        api = client.CustomObjectsApi()
-        keycloaks = api.list_namespaced_custom_object(
-            group="vriesdemichael.github.io",
-            version="v1",
-            namespace=namespace,
-            plural="keycloaks",
-        )
+        keycloaks = await asyncio.to_thread(_sync_list_keycloaks, namespace)
         return len(keycloaks.get("items", []))
     except Exception as e:
         logger.warning(f"Failed to count Keycloaks in namespace {namespace}: {e}")
