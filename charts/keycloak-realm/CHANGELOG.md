@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.2.0...chart-realm-v0.3.0) (2025-12-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-client+chart-operator+chart-realm:** Helm chart distribution moved to OCI registry
+
+### Features
+
+* **chart-client+chart-operator+chart-realm:** migrate to OCI registry in GHCR ([dc4f59c](https://github.com/vriesdemichael/keycloak-operator/commit/dc4f59c8f9d66be04cd7be6ae685fc714a8aad97))
+
 ## [0.2.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.1.3...chart-realm-v0.2.0) (2025-11-17)
 
 

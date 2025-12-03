@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.3.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.2.1...chart-operator-v0.3.0) (2025-12-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-client+chart-operator+chart-realm:** Helm chart distribution moved to OCI registry
+
+### Features
+
+* **chart-client+chart-operator+chart-realm:** migrate to OCI registry in GHCR ([dc4f59c](https://github.com/vriesdemichael/keycloak-operator/commit/dc4f59c8f9d66be04cd7be6ae685fc714a8aad97))
+
+
+### Bug Fixes
+
+* allow test tags in operator chart schema ([6740046](https://github.com/vriesdemichael/keycloak-operator/commit/6740046724b30ca0d694bc85a40212db826fe596))
+* allow test-* tags in operator chart schema ([8450c8f](https://github.com/vriesdemichael/keycloak-operator/commit/8450c8fa9135190af5c272b641e09327de3f4b56))
+* **chart-operator:** remove outdated authorization token instructions ([6f2c190](https://github.com/vriesdemichael/keycloak-operator/commit/6f2c1907af74134fc727e132e4a4ca40a5300130))
+* **operator:** database passwordSecret support and test fixes ([038fc18](https://github.com/vriesdemichael/keycloak-operator/commit/038fc18da190e8d99eb02222c89c59393129feee))
+* **operator:** run quality checks and tests for code OR chart changes ([a9e8ad2](https://github.com/vriesdemichael/keycloak-operator/commit/a9e8ad27ff84b7b704fdbbe9c8c353057078070c))
+* restore correct test image tag for coverage collection ([6cb1675](https://github.com/vriesdemichael/keycloak-operator/commit/6cb16758ce97572f7b98396ea3b6960fb61e122f))
+
+
+### Documentation
+
+* improve operator chart values documentation ([61e00a3](https://github.com/vriesdemichael/keycloak-operator/commit/61e00a39ab4818585d2dd15ad7b9fe90effbb6df))
+
 ## [0.2.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.2.0...chart-operator-v0.2.1) (2025-11-18)
 
 
