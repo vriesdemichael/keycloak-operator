@@ -1,5 +1,70 @@
 # Changelog
 
+## [0.4.0](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.9...v0.4.0) (2025-12-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-client+chart-operator+chart-realm:** Helm chart distribution moved to OCI registry
+
+### Features
+
+* **chart-client+chart-operator+chart-realm:** migrate to OCI registry in GHCR ([dc4f59c](https://github.com/vriesdemichael/keycloak-operator/commit/dc4f59c8f9d66be04cd7be6ae685fc714a8aad97))
+* **operator:** add build attestations for supply chain security ([85a46cc](https://github.com/vriesdemichael/keycloak-operator/commit/85a46cce26775bc13ed809623d4ac998ce6b0152))
+* **operator:** add GitHub deployment environments to workflow ([94b6b9b](https://github.com/vriesdemichael/keycloak-operator/commit/94b6b9bd3531fda63cbe6c43c088994649321d9a))
+* use SVG logo and update favicon ([a180ba2](https://github.com/vriesdemichael/keycloak-operator/commit/a180ba227d9295e9350b478ad47e83584e5da960))
+
+
+### Bug Fixes
+
+* Add clientAuthorizationGrants to realm test specs ([91e33ca](https://github.com/vriesdemichael/keycloak-operator/commit/91e33cab1b367ecc75e1f507af62f60bcfe2fde8))
+* allow test tags in operator chart schema ([6740046](https://github.com/vriesdemichael/keycloak-operator/commit/6740046724b30ca0d694bc85a40212db826fe596))
+* allow test-* tags in operator chart schema ([8450c8f](https://github.com/vriesdemichael/keycloak-operator/commit/8450c8fa9135190af5c272b641e09327de3f4b56))
+* **chart-operator:** remove outdated authorization token instructions ([6f2c190](https://github.com/vriesdemichael/keycloak-operator/commit/6f2c1907af74134fc727e132e4a4ca40a5300130))
+* combine coverage and convert to XML for Codecov ([ad10407](https://github.com/vriesdemichael/keycloak-operator/commit/ad10407ffe4b57e1ac35c958704cbb6b682d26f2))
+* consolidate documentation workflows with mike ([cd31074](https://github.com/vriesdemichael/keycloak-operator/commit/cd31074e2d0c518bc05c8a50f65313a8eeb48ea3))
+* **operator:** allow integration coverage failures during outage ([42ece4a](https://github.com/vriesdemichael/keycloak-operator/commit/42ece4ac55598db3969f5129056c4448a6504ca6))
+* **operator:** database passwordSecret support and test fixes ([038fc18](https://github.com/vriesdemichael/keycloak-operator/commit/038fc18da190e8d99eb02222c89c59393129feee))
+* **operator:** disable fail_ci_if_error for codecov uploads ([2e22069](https://github.com/vriesdemichael/keycloak-operator/commit/2e220690d61551e2abca83359eab33bf7990a14e))
+* **operator:** enforce scope for release-triggering commits ([6c7e271](https://github.com/vriesdemichael/keycloak-operator/commit/6c7e27134917df7e1c53031d86991c2ce74b9a7f))
+* **operator:** handle basic realm field updates in do_update method ([fab2804](https://github.com/vriesdemichael/keycloak-operator/commit/fab2804ad2e1b982f7e7009e11290f68fbaccf0b))
+* **operator:** handle realm deletion gracefully in client cleanup ([45b25cd](https://github.com/vriesdemichael/keycloak-operator/commit/45b25cda8c945c56daddbc2538a1c0133713324f))
+* **operator:** resolve JSON serialization and test timing issues ([fb29bcb](https://github.com/vriesdemichael/keycloak-operator/commit/fb29bcbd1859e0dbcb2d8ded643a38ecb52c5cb5))
+* **operator:** run quality checks and tests for code OR chart changes ([a9e8ad2](https://github.com/vriesdemichael/keycloak-operator/commit/a9e8ad27ff84b7b704fdbbe9c8c353057078070c))
+* **operator:** temporarily allow codecov failures during global outage ([baa2f58](https://github.com/vriesdemichael/keycloak-operator/commit/baa2f58e714c8e4b2538233fe84ba6c550926401))
+* **operator:** update all-complete job to reference new chart jobs ([be5dde3](https://github.com/vriesdemichael/keycloak-operator/commit/be5dde3d28b33a2b78ff713eb5f9ce03df6d628e))
+* **operator:** use asyncio.to_thread for webhook K8s API calls ([d635da9](https://github.com/vriesdemichael/keycloak-operator/commit/d635da9ae8a78928baf613b35686256849e78b80))
+* **operator:** use correct camelCase field names in realm update handler ([91636eb](https://github.com/vriesdemichael/keycloak-operator/commit/91636ebdb1afef442a5eb6e9bf46db69585454b8))
+* **operator:** use legacy codecov endpoint only as fallback ([c76ff4a](https://github.com/vriesdemichael/keycloak-operator/commit/c76ff4a0c120329c41266366283193cf3b82fa8e))
+* **operator:** use legacy codecov upload as fallback ([1cb9293](https://github.com/vriesdemichael/keycloak-operator/commit/1cb929309a914b58197e0d03e4fe01801826edd5))
+* restore correct test image tag for coverage collection ([6cb1675](https://github.com/vriesdemichael/keycloak-operator/commit/6cb16758ce97572f7b98396ea3b6960fb61e122f))
+* restore integration test coverage collection ([4f35596](https://github.com/vriesdemichael/keycloak-operator/commit/4f355969c0f95f0445d6cceaf9fb7b260e574723))
+* simplify coverage - always on, fail hard, let codecov combine ([d953b29](https://github.com/vriesdemichael/keycloak-operator/commit/d953b291e32e8bdc66485fc8ebe2e5e947846ce7))
+* update security scans to use test-coverage tag ([e65247b](https://github.com/vriesdemichael/keycloak-operator/commit/e65247be81106c06ece373ea6c418735cade9680))
+* upload raw coverage files instead of converting to XML ([64c98c7](https://github.com/vriesdemichael/keycloak-operator/commit/64c98c7b6db0365b820fb3fcfeb790e1364ac0e3))
+* use correct operator image tag in integration tests ([8b3d7e8](https://github.com/vriesdemichael/keycloak-operator/commit/8b3d7e82a84454d4f5cd646788e150c745887790))
+* use Dockerfile.test for coverage-instrumented image ([82f0373](https://github.com/vriesdemichael/keycloak-operator/commit/82f037384444e161cbd5013cd798bf8fe7ea4234))
+* use test-coverage tag for operator image ([2f0cce4](https://github.com/vriesdemichael/keycloak-operator/commit/2f0cce4076eb307218cd0e9cddb91bdbffa70bb0))
+
+
+### Code Refactoring
+
+* address PR review comments ([499a0c9](https://github.com/vriesdemichael/keycloak-operator/commit/499a0c93ff4f4a5074cdb5981b54a0f880a69044))
+* simplify CI/CD workflow conditionals ([45fad5c](https://github.com/vriesdemichael/keycloak-operator/commit/45fad5c6467f6f99aef82a543ad55af4b4a42931))
+* split CI/CD workflow into composite actions ([34da80d](https://github.com/vriesdemichael/keycloak-operator/commit/34da80d4cd5aaa51e07dc4fa998f86e0faccb45f))
+* split CI/CD workflow into composite actions ([6a36cb1](https://github.com/vriesdemichael/keycloak-operator/commit/6a36cb1b9fb1f19869b2cfc7ade85f9fc4a6fab7))
+* split CI/CD workflow into composite actions + add custom logo ([610417d](https://github.com/vriesdemichael/keycloak-operator/commit/610417d980cfdaa85ed384a757b8bd0d7b587479))
+
+
+### Documentation
+
+* add CI/CD and documentation issues task list ([1d09817](https://github.com/vriesdemichael/keycloak-operator/commit/1d0981719319e67cb6872b4408f42e83014edd2e))
+* add custom logo and favicon ([34da80d](https://github.com/vriesdemichael/keycloak-operator/commit/34da80d4cd5aaa51e07dc4fa998f86e0faccb45f))
+* add custom logo and favicon ([6a36cb1](https://github.com/vriesdemichael/keycloak-operator/commit/6a36cb1b9fb1f19869b2cfc7ade85f9fc4a6fab7))
+* add introductory text to FAQ page ([b3e4116](https://github.com/vriesdemichael/keycloak-operator/commit/b3e4116a9853e9eacf3880db4a1a9c136f69c581))
+* improve operator chart values documentation ([61e00a3](https://github.com/vriesdemichael/keycloak-operator/commit/61e00a39ab4818585d2dd15ad7b9fe90effbb6df))
+* replace ASCII art diagrams with Mermaid charts ([d398c4e](https://github.com/vriesdemichael/keycloak-operator/commit/d398c4e9965a1e93a995aa45a09319a92e00f9ac))
+
 ## [0.3.9](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.8...v0.3.9) (2025-11-18)
 
 
