@@ -26,7 +26,9 @@ from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
 class TestKeycloakReconciler:
     """Test Keycloak instance reconciler functionality."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(
+        270
+    )  # 1.5x of wait_for_resource_ready timeout (150s) + setup overhead
     async def test_keycloak_instance_lifecycle(
         self,
         k8s_custom_objects,
