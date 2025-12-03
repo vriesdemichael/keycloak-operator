@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/035-keycloak-25-0-version-support-requirement/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/068-always-recreate-test-cluster/">
       
       
-        <link rel="prev" href="../034-github-actions-for-ci-and-artifact-publication/">
+        <link rel="prev" href="../067-integration-test-coverage-via-sigusr1/">
       
       
-        <link rel="next" href="../036-automated-dependency-updates-with-dependabot-and-custom-workflows/">
+        <link rel="next" href="../../../faq/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>ADR-035: Keycloak 25.0+ version support requirement - Keycloak Operator</title>
+        <title>ADR-068: Always recreate test cluster - Keycloak Operator</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-035-keycloak-250-version-support-requirement" class="md-skip">
+        <a href="#adr-068-always-recreate-test-cluster" class="md-skip">
           Skip to content
         </a>
       
@@ -117,7 +117,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-035: Keycloak 25.0+ version support requirement
+              ADR-068: Always recreate test cluster
             
           </span>
         </div>
@@ -2159,32 +2159,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    ADR-035: Keycloak 25.0+ version support requirement
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../035-keycloak-25-0-version-support-requirement/" class="md-nav__link">
         
   
   
@@ -2195,86 +2173,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      Decision
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rationale
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Agent Instructions
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rejected Alternatives
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#support-all-keycloak-versions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Support all Keycloak versions
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#support-back-to-keycloak-20x" class="md-nav__link">
-    <span class="md-ellipsis">
-      Support back to Keycloak 20.x
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3020,10 +2918,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../068-always-recreate-test-cluster/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    ADR-068: Always recreate test cluster
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -3034,6 +2954,53 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      Decision
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rationale
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Agent Instructions
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3121,39 +3088,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rejected Alternatives
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#support-all-keycloak-versions" class="md-nav__link">
-    <span class="md-ellipsis">
-      Support all Keycloak versions
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#support-back-to-keycloak-20x" class="md-nav__link">
-    <span class="md-ellipsis">
-      Support back to Keycloak 20.x
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -3170,7 +3104,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/035-keycloak-25-0-version-support-requirement.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/068-always-recreate-test-cluster.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -3178,20 +3112,15 @@
   
 
 
-<h1 id="adr-035-keycloak-250-version-support-requirement">ADR-035: Keycloak 25.0+ version support requirement<a class="headerlink" href="#adr-035-keycloak-250-version-support-requirement" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> architecture
+<h1 id="adr-068-always-recreate-test-cluster">ADR-068: Always recreate test cluster<a class="headerlink" href="#adr-068-always-recreate-test-cluster" title="Permanent link">&para;</a></h1>
+<p><strong>Category:</strong> development
 <strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Require Keycloak 25.0.0 or later. Operator validates Keycloak version and rejects unsupported versions. Default to latest stable Keycloak version (currently 26.4.x).</p>
+<p>Integration tests must always run on a freshly created Kind cluster. The "cluster reuse" workflow is abandoned in favor of reproducibility and reliability. The <code>make test</code> command will alias <code>make test-pre-commit</code> which performs a full teardown and setup.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Keycloak 25.0.0 introduced separate management interface (port 9000) which is required for proper health checks and metrics without impacting user traffic. Earlier versions lack this feature. Enforcing minimum version ensures consistent behavior and allows operator to depend on modern Keycloak features. Clear version requirement reduces support burden from incompatible configurations.</p>
+<p>Cluster reuse and cleanup logic proved to be flaky and complex ("messy cleanup"). Recreating the cluster ensures a pristine environment for every test run, eliminating state leakage and "works on my machine" issues. While slower, it guarantees that test results are valid and reproducible. The build cache is enabled to mitigate some of the speed loss.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Enforce minimum Keycloak version 25.0.0 in operator code. Update DEFAULT_KEYCLOAK_VERSION in constants.py to track latest stable. Add version validation in reconcilers. Document version requirements clearly. Reject Keycloak instances with versions &lt; 25.0.0 with clear error messages.</p>
-<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="support-all-keycloak-versions">Support all Keycloak versions<a class="headerlink" href="#support-all-keycloak-versions" title="Permanent link">&para;</a></h3>
-<p>Pre-25.0 lacks management port, forcing health checks on user-facing port. Different behavior paths increase complexity.</p>
-<h3 id="support-back-to-keycloak-20x">Support back to Keycloak 20.x<a class="headerlink" href="#support-back-to-keycloak-20x" title="Permanent link">&para;</a></h3>
-<p>Significant API changes between versions. Supporting multiple API versions increases maintenance burden.</p>
+<p>Do not attempt to optimize testing by reusing existing clusters. Always expect and use the full teardown/setup cycle. The <code>make test</code> command is the single source of truth for running the full test suite.</p>
 
 
 
@@ -3227,7 +3156,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../034-github-actions-for-ci-and-artifact-publication/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-034: GitHub Actions for CI and artifact publication">
+          <a href="../067-integration-test-coverage-via-sigusr1/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-067: Integration test coverage collection via SIGUSR1 signal">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3237,20 +3166,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-034: GitHub Actions for CI and artifact publication
+                ADR-067: Integration test coverage collection via SIGUSR1 signal
               </div>
             </div>
           </a>
         
         
           
-          <a href="../036-automated-dependency-updates-with-dependabot-and-custom-workflows/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-036: Automated dependency updates with Dependabot and custom workflows">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-036: Automated dependency updates with Dependabot and custom workflows
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">
