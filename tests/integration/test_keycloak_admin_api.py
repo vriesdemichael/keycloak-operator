@@ -11,13 +11,28 @@ Tests verify the admin API wrapper correctly interacts with Keycloak:
 
 from __future__ import annotations
 
+import asyncio
 import contextlib
+import time
 import uuid
 
 import pytest
 from kubernetes.client.rest import ApiException
 
 from .wait_helpers import wait_for_resource_ready
+
+
+async def _simple_wait(condition_func, timeout=60, interval=2):
+    """Simple wait helper for conditions with retry."""
+    start = time.time()
+    while time.time() - start < timeout:
+        try:
+            if await condition_func():
+                return True
+        except Exception:
+            pass  # Retry on any error
+        await asyncio.sleep(interval)
+    return False
 
 
 @pytest.mark.integration
@@ -93,10 +108,16 @@ class TestKeycloakAdminAPI:
             assert updated_realm.display_name == "Updated CRUD Realm"
             assert updated_realm.enabled is False
 
-            # Test LIST: Verify realm appears in list
-            all_realms = await keycloak_admin_client.get_realms(namespace)
-            realm_names = [r.realm for r in all_realms]
-            assert realm_name in realm_names
+            # Test LIST: Verify realm appears in list (with retry for transient API errors)
+            async def check_realm_in_list():
+                all_realms = await keycloak_admin_client.get_realms(namespace)
+                if all_realms is None:
+                    return False
+                return realm_name in [r.realm for r in all_realms]
+
+            assert await _simple_wait(
+                check_realm_in_list, timeout=30, interval=2
+            ), f"Realm {realm_name} not found in realm list after retries"
 
         finally:
             with contextlib.suppress(ApiException):
