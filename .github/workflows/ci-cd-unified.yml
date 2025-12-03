@@ -347,6 +347,9 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**PR:** ${PR_DATA}" >> $GITHUB_STEP_SUMMARY
 
+      - uses: actions/checkout@v6
+        if: steps.release.outputs.pr != ''
+
       - name: Enable auto-merge for non-major releases
         if: steps.release.outputs.pr != ''
         env:
@@ -405,9 +408,6 @@ jobs:
           else
             echo "### :warning: Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
           fi
-
-      - uses: actions/checkout@v6
-        if: steps.release.outputs.pr != ''
 
   # =====================================================
   # PHASE 4: PUBLISH ARTIFACTS (Release commits only)
