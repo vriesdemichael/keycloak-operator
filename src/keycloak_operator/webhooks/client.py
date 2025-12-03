@@ -9,6 +9,7 @@ Kubernetes, enforcing:
 - Service account role assignments
 """
 
+import asyncio
 import logging
 
 import kopf
@@ -19,6 +20,17 @@ from keycloak_operator.constants import WEBHOOK_MAX_CLIENTS_PER_NAMESPACE
 from keycloak_operator.models.client import KeycloakClientSpec
 
 logger = logging.getLogger(__name__)
+
+
+def _sync_list_clients(namespace: str) -> dict:
+    """Synchronous helper to list clients (runs in thread pool)."""
+    api = client.CustomObjectsApi()
+    return api.list_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=namespace,
+        plural="keycloakclients",
+    )
 
 
 async def get_client_count_in_namespace(namespace: str) -> int:
@@ -32,13 +44,7 @@ async def get_client_count_in_namespace(namespace: str) -> int:
         Number of existing clients
     """
     try:
-        api = client.CustomObjectsApi()
-        clients = api.list_namespaced_custom_object(
-            group="vriesdemichael.github.io",
-            version="v1",
-            namespace=namespace,
-            plural="keycloakclients",
-        )
+        clients = await asyncio.to_thread(_sync_list_clients, namespace)
         return len(clients.get("items", []))
     except Exception as e:
         logger.warning(f"Failed to count clients in namespace {namespace}: {e}")

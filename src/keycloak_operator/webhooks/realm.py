@@ -9,6 +9,7 @@ Kubernetes, enforcing:
 - Realm configuration constraints
 """
 
+import asyncio
 import logging
 
 import kopf
@@ -19,6 +20,17 @@ from keycloak_operator.constants import WEBHOOK_MAX_REALMS_PER_NAMESPACE
 from keycloak_operator.models.realm import KeycloakRealmSpec
 
 logger = logging.getLogger(__name__)
+
+
+def _sync_list_realms(namespace: str) -> dict:
+    """Synchronous helper to list realms (runs in thread pool)."""
+    api = client.CustomObjectsApi()
+    return api.list_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=namespace,
+        plural="keycloakrealms",
+    )
 
 
 async def get_realm_count_in_namespace(namespace: str) -> int:
@@ -32,13 +44,7 @@ async def get_realm_count_in_namespace(namespace: str) -> int:
         Number of existing realms
     """
     try:
-        api = client.CustomObjectsApi()
-        realms = api.list_namespaced_custom_object(
-            group="vriesdemichael.github.io",
-            version="v1",
-            namespace=namespace,
-            plural="keycloakrealms",
-        )
+        realms = await asyncio.to_thread(_sync_list_realms, namespace)
         return len(realms.get("items", []))
     except Exception as e:
         logger.warning(f"Failed to count realms in namespace {namespace}: {e}")
