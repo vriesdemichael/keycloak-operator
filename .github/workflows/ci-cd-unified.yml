@@ -308,15 +308,28 @@ jobs:
           echo "passed=true" >> $GITHUB_OUTPUT
 
   # =====================================================
-  # PHASE 3: RELEASE-PLEASE (Non-release commits on main)
+  # PHASE 3: RELEASE-PLEASE
   # =====================================================
+  # Runs on ALL main pushes:
+  # - Normal commits: creates/updates Release PR (after quality checks)
+  # - Release commits: creates tags/releases (after publishing artifacts)
   release-please:
     name: Release Please
-    needs: [detect, all-required-checks-passed]
+    needs: [
+      detect,
+      all-required-checks-passed,
+      publish-operator-image,
+      update-operator-chart,
+      publish-chart-operator,
+      publish-chart-realm,
+      publish-chart-client,
+      publish-release-docs
+    ]
     if: |
+      always() &&
       needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release_commit == 'false' &&
-      github.event_name == 'push'
+      github.event_name == 'push' &&
+      !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
     permissions:
       contents: write
