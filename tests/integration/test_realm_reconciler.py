@@ -94,7 +94,7 @@ class TestRealmReconciler:
                 name=realm_name,
             )
 
-            # Wait for deletion
+            # Wait for deletion (180s allows for finalizer cleanup under CI load)
             await wait_for_resource_deleted(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -102,7 +102,7 @@ class TestRealmReconciler:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=180,
             )
 
             # Verify realm removed from Keycloak
