@@ -249,12 +249,6 @@ class TestFinalizersE2E:
                     name=realm_name,
                 )
 
-    @pytest.mark.skip(
-        reason="Flaky test: Client finalizer fails when realm is already deleted (404), "
-        "causing retry delays. Root cause: client cleanup attempts to get realm info "
-        "but realm CR is already gone. Exception handling in cleanup_resources not "
-        "catching the ApiException as expected. Requires deeper debugging."
-    )
     async def test_cascading_deletion_order(
         self, k8s_custom_objects, test_namespace, operator_namespace, shared_operator
     ):
@@ -272,8 +266,8 @@ class TestFinalizersE2E:
         realm_name = f"test-cascade-realm-{suffix}"
         client_name = f"test-cascade-client-{suffix}"
 
-        # Get admission token from fixture
-        admission_secret_name, _ = realm_spec = KeycloakRealmSpec(
+        # Create realm spec
+        realm_spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace=operator_namespace),
             realm_name=realm_name,
             client_authorization_grants=[

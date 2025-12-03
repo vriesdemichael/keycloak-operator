@@ -5,6 +5,7 @@ This module handles the lifecycle of Keycloak realms including
 themes, authentication flows, identity providers, and user federation.
 """
 
+import asyncio
 import json
 from typing import Any
 
@@ -1328,7 +1329,8 @@ class KeycloakRealmReconciler(BaseReconciler):
             # We remove their finalizers first so they don't try to clean up Keycloak again
             try:
                 custom_api = client.CustomObjectsApi(self.k8s_client)
-                clients = custom_api.list_namespaced_custom_object(
+                clients = await asyncio.to_thread(
+                    custom_api.list_namespaced_custom_object,
                     group="vriesdemichael.github.io",
                     version="v1",
                     namespace=namespace,
@@ -1350,7 +1352,8 @@ class KeycloakRealmReconciler(BaseReconciler):
                         try:
                             # Remove finalizers first to prevent deadlock
                             client_cr["metadata"]["finalizers"] = []
-                            custom_api.patch_namespaced_custom_object(
+                            await asyncio.to_thread(
+                                custom_api.patch_namespaced_custom_object,
                                 group="vriesdemichael.github.io",
                                 version="v1",
                                 namespace=namespace,
@@ -1359,7 +1362,8 @@ class KeycloakRealmReconciler(BaseReconciler):
                                 body=client_cr,
                             )
                             # Then delete the CR
-                            custom_api.delete_namespaced_custom_object(
+                            await asyncio.to_thread(
+                                custom_api.delete_namespaced_custom_object,
                                 group="vriesdemichael.github.io",
                                 version="v1",
                                 namespace=namespace,
