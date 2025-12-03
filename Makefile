@@ -88,9 +88,9 @@ test-unit: ## Run unit tests
 # ============================================================================
 
 .PHONY: build-test
-build-test: ## Build operator test image and load into Kind
-	@echo "Building operator test image..."
-	docker build -f images/operator/Dockerfile -t keycloak-operator:$(TEST_IMAGE_TAG) .
+build-test: ## Build operator production image and load into Kind
+	@echo "Building operator production image..."
+	docker build -f images/operator/Dockerfile --target production -t keycloak-operator:$(TEST_IMAGE_TAG) .
 	@echo "✓ Operator image built"
 	@echo "Loading operator image into Kind cluster..."
 	kind load docker-image keycloak-operator:$(TEST_IMAGE_TAG) --name keycloak-operator-test
@@ -99,7 +99,7 @@ build-test: ## Build operator test image and load into Kind
 .PHONY: build-test-coverage
 build-test-coverage: ## Build operator test image with coverage instrumentation
 	@echo "Building operator test image with coverage..."
-	docker build -f images/operator/Dockerfile.test -t keycloak-operator:$(TEST_IMAGE_TAG) .
+	docker build -f images/operator/Dockerfile --target test -t keycloak-operator:$(TEST_IMAGE_TAG) .
 	@echo "✓ Operator coverage image built"
 
 .PHONY: kind-load-test-coverage
