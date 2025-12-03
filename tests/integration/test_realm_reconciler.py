@@ -357,8 +357,30 @@ class TestRealmReconciler:
 
             # Check status progresses: Unknown -> Pending -> Ready
 
-            # Wait briefly and check it's not Unknown anymore
-            await asyncio.sleep(5)
+            # Wait for phase to be set (with retry for timing issues under load)
+            async def check_phase_set():
+                try:
+                    realm_cr = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=namespace,
+                        plural="keycloakrealms",
+                        name=realm_name,
+                    )
+                    status = realm_cr.get("status", {})
+                    phase = status.get("phase")
+                    return phase in ("Pending", "Provisioning", "Ready", "Degraded")
+                except Exception:
+                    return False
+
+            # Wait up to 30s for phase to be set
+            import time
+
+            start = time.time()
+            while time.time() - start < 30:
+                if await check_phase_set():
+                    break
+                await asyncio.sleep(2)
 
             realm_cr = await k8s_custom_objects.get_namespaced_custom_object(
                 group="vriesdemichael.github.io",
@@ -371,7 +393,12 @@ class TestRealmReconciler:
             phase = status.get("phase")
 
             # Should have progressed from Unknown
-            assert phase in ("Pending", "Provisioning", "Ready", "Degraded")
+            assert phase in (
+                "Pending",
+                "Provisioning",
+                "Ready",
+                "Degraded",
+            ), f"Expected phase to be set, got {phase}"
 
             # Wait for final Ready state
             await wait_for_resource_ready(
