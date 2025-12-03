@@ -1231,9 +1231,20 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = client_spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_resource_name = realm_ref.name
-        actual_realm_name, keycloak_namespace, keycloak_name, _ = self._get_realm_info(
-            realm_resource_name, target_namespace
-        )
+
+        try:
+            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
+                self._get_realm_info(realm_resource_name, target_namespace)
+            )
+        except ApiException as e:
+            if e.status == 404:
+                # Realm is already deleted, so client definitely doesn't exist in Keycloak
+                self.logger.info(
+                    f"Realm {realm_resource_name} not found (already deleted), "
+                    f"client {name} cannot exist in Keycloak"
+                )
+                return False
+            raise
 
         try:
             admin_client = await self.keycloak_admin_factory(
@@ -1298,27 +1309,41 @@ class KeycloakClientReconciler(BaseReconciler):
         realm_ref = client_spec.realm_ref
         target_namespace = realm_ref.namespace
         realm_resource_name = realm_ref.name
-        actual_realm_name, keycloak_namespace, keycloak_name, _ = self._get_realm_info(
-            realm_resource_name, target_namespace
-        )
 
-        # Delete client from Keycloak (if instance still exists)
+        # Try to get realm info - if realm is already deleted, just clean up K8s resources
+        realm_deleted = False
         try:
-            admin_client = await self.keycloak_admin_factory(
-                keycloak_name, keycloak_namespace
+            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
+                self._get_realm_info(realm_resource_name, target_namespace)
             )
+        except ApiException as e:
+            if e.status == 404:
+                self.logger.info(
+                    f"Realm {realm_resource_name} not found (already deleted), "
+                    f"skipping Keycloak cleanup for client {name}"
+                )
+                realm_deleted = True
+            else:
+                raise
 
-            await admin_client.delete_client(
-                client_spec.client_id, actual_realm_name, namespace
-            )
-            self.logger.info(
-                f"Deleted client {client_spec.client_id} from Keycloak realm {actual_realm_name}"
-            )
+        # Delete client from Keycloak (if realm still exists)
+        if not realm_deleted:
+            try:
+                admin_client = await self.keycloak_admin_factory(
+                    keycloak_name, keycloak_namespace
+                )
 
-        except Exception as e:
-            self.logger.warning(
-                f"Could not delete client from Keycloak (instance may be deleted): {e}"
-            )
+                await admin_client.delete_client(
+                    client_spec.client_id, actual_realm_name, namespace
+                )
+                self.logger.info(
+                    f"Deleted client {client_spec.client_id} from Keycloak realm {actual_realm_name}"
+                )
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Could not delete client from Keycloak (instance may be deleted): {e}"
+                )
 
         # Clean up Kubernetes resources associated with this client
         try:
