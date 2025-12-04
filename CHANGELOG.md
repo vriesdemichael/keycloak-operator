@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.2](https://github.com/vriesdemichael/keycloak-operator/compare/v0.4.1...v0.4.2) (2025-12-04)
+
+
+### Bug Fixes
+
+* **operator:** prevent event loop closed errors in httpx client cache ([83b8020](https://github.com/vriesdemichael/keycloak-operator/commit/83b80200c7d0df07058856e8ee99e979dba585a8))
+* **operator:** update package metadata with correct author info ([96ba785](https://github.com/vriesdemichael/keycloak-operator/commit/96ba785332f12613446cb83e5525ade6cc966e80))
+
+
+### Documentation
+
+* removed mentions of the authorization token in the readme. ([a6d8287](https://github.com/vriesdemichael/keycloak-operator/commit/a6d828700a3e08755fa960baf78ffa18da1c0184))
+
 ## [0.4.1](https://github.com/vriesdemichael/keycloak-operator/compare/v0.4.0...v0.4.1) (2025-12-04)
 
 
