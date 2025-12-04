@@ -455,6 +455,12 @@ async def check_test_environment(k8s_core_v1, k8s_custom_objects):
 @pytest.fixture(scope="session")
 def event_loop():
     """Create an event loop for the test session."""
+    # Clear any cached httpx clients from previous sessions to avoid
+    # "Event loop is closed" errors when reusing connections bound to old loops
+    from keycloak_operator.utils import keycloak_admin
+
+    keycloak_admin._httpx_client_cache.clear()
+
     loop = asyncio.new_event_loop()
     yield loop
     loop.close()
@@ -1976,6 +1982,14 @@ async def keycloak_admin_client(shared_operator, keycloak_port_forward):
     await admin_client.authenticate()
 
     yield admin_client
+
+    # Cleanup: close the admin client, catching event loop closure errors
+    # that can occur when pytest-asyncio tears down between test sessions
+    try:
+        await admin_client.close()
+    except RuntimeError as e:
+        if "Event loop is closed" not in str(e):
+            raise
 
 
 @pytest.fixture

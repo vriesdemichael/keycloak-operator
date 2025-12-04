@@ -41,8 +41,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Global cache for httpx clients - one per Keycloak instance
-# Key: (server_url, verify_ssl), Value: httpx.AsyncClient
-_httpx_client_cache: dict[tuple[str, bool], httpx.AsyncClient] = {}
+# Key: (server_url, verify_ssl), Value: (httpx.AsyncClient, event_loop_id)
+# We track the event loop ID to detect when a client was created in a different loop
+_httpx_client_cache: dict[tuple[str, bool], tuple[httpx.AsyncClient, int]] = {}
 _cache_lock = asyncio.Lock()
 
 
@@ -124,18 +125,30 @@ class KeycloakAdminClient:
         logger.info(f"Initialized Keycloak Admin client for {server_url}")
 
     async def _get_client(self) -> httpx.AsyncClient:
-        """Get or create httpx client (lazy initialization with caching)."""
+        """Get or create httpx client (lazy initialization with caching).
+
+        The client is cached per (server_url, verify_ssl) combination.
+        We also track the event loop ID to detect when a cached client was
+        created in a different event loop (which can happen in tests).
+        """
         cache_key = (self.server_url, self.verify_ssl)
+        current_loop_id = id(asyncio.get_running_loop())
 
         # Check if we have a cached client
         async with _cache_lock:
             if cache_key in _httpx_client_cache:
-                cached_client = _httpx_client_cache[cache_key]
-                if not cached_client.is_closed:
+                cached_client, loop_id = _httpx_client_cache[cache_key]
+                # Reuse client only if it's not closed AND was created in the same event loop
+                if not cached_client.is_closed and loop_id == current_loop_id:
                     return cached_client
                 else:
-                    # Remove closed client from cache
+                    # Client is closed or from a different event loop - remove from cache
+                    # Don't try to close it as that might fail if the loop is closed
                     del _httpx_client_cache[cache_key]
+                    logger.debug(
+                        f"Discarding stale httpx client for {self.server_url} "
+                        f"(closed={cached_client.is_closed}, loop_mismatch={loop_id != current_loop_id})"
+                    )
 
             # Create new httpx client with connection pooling and timeouts
             client = httpx.AsyncClient(
@@ -151,8 +164,8 @@ class KeycloakAdminClient:
                 follow_redirects=False,
             )
 
-            # Cache the client for reuse
-            _httpx_client_cache[cache_key] = client
+            # Cache the client with the current event loop ID
+            _httpx_client_cache[cache_key] = (client, current_loop_id)
             logger.debug(f"Created and cached httpx client for {self.server_url}")
             return client
 
