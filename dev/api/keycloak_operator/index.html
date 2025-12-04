@@ -22093,6 +22093,9 @@ session management, and provides a clean interface for the operator.
     <div class="doc doc-contents ">
 
         <p>Get or create httpx client (lazy initialization with caching).</p>
+<p>The client is cached per (server_url, verify_ssl) combination.
+We also track the event loop ID to detect when a cached client was
+created in a different event loop (which can happen in tests).</p>
 
 
     </div>
