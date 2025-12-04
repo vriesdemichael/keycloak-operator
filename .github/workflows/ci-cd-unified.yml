@@ -308,6 +308,10 @@ jobs:
   # Runs on ALL main pushes:
   # - Normal commits: creates/updates Release PR (after quality checks)
   # - Release commits: creates tags/releases (after publishing artifacts)
+  #
+  # NOTE: release-please can timeout on first run or after many commits
+  # due to GitHub API rate limits while backfilling commit history.
+  # We use retry logic to handle transient failures.
   release-please:
     name: Release Please
     needs: [
@@ -326,18 +330,92 @@ jobs:
       github.event_name == 'push' &&
       !contains(needs.*.result, 'failure')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: write
 
     steps:
-      - name: Run Release Please
-        id: release
+      # First attempt
+      - name: Run Release Please (attempt 1)
+        id: release-1
+        uses: googleapis/release-please-action@v4
+        continue-on-error: true
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
+
+      # Wait and retry on failure (GitHub caches partial backfill progress)
+      - name: Wait before retry
+        if: steps.release-1.outcome == 'failure'
+        run: |
+          echo "First attempt failed, waiting 60s before retry..."
+          echo "GitHub caches backfill progress, so retry should be faster."
+          sleep 60
+
+      - name: Run Release Please (attempt 2)
+        id: release-2
+        if: steps.release-1.outcome == 'failure'
+        uses: googleapis/release-please-action@v4
+        continue-on-error: true
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: .github/release-please-config.json
+          manifest-file: .github/.release-please-manifest.json
+
+      # Wait and retry again on failure
+      - name: Wait before final retry
+        if: steps.release-1.outcome == 'failure' && steps.release-2.outcome == 'failure'
+        run: |
+          echo "Second attempt failed, waiting 90s before final retry..."
+          sleep 90
+
+      - name: Run Release Please (attempt 3 - final)
+        id: release-3
+        if: steps.release-1.outcome == 'failure' && steps.release-2.outcome == 'failure'
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
+
+      # Determine which attempt succeeded and set outputs
+      - name: Set release outputs
+        id: release
+        run: |
+          # Check which attempt succeeded (in order)
+          if [[ "${{ steps.release-1.outcome }}" == "success" ]]; then
+            echo "Release Please succeeded on attempt 1"
+            echo "release_created=${{ steps.release-1.outputs.release_created }}" >> $GITHUB_OUTPUT
+            echo "releases_created=${{ steps.release-1.outputs.releases_created }}" >> $GITHUB_OUTPUT
+            echo "tag_name=${{ steps.release-1.outputs.tag_name }}" >> $GITHUB_OUTPUT
+            echo "pr=${{ steps.release-1.outputs.pr }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ steps.release-2.outcome }}" == "success" ]]; then
+            echo "Release Please succeeded on attempt 2"
+            echo "release_created=${{ steps.release-2.outputs.release_created }}" >> $GITHUB_OUTPUT
+            echo "releases_created=${{ steps.release-2.outputs.releases_created }}" >> $GITHUB_OUTPUT
+            echo "tag_name=${{ steps.release-2.outputs.tag_name }}" >> $GITHUB_OUTPUT
+            echo "pr=${{ steps.release-2.outputs.pr }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ steps.release-3.outcome }}" == "success" ]]; then
+            echo "Release Please succeeded on attempt 3"
+            echo "release_created=${{ steps.release-3.outputs.release_created }}" >> $GITHUB_OUTPUT
+            echo "releases_created=${{ steps.release-3.outputs.releases_created }}" >> $GITHUB_OUTPUT
+            echo "tag_name=${{ steps.release-3.outputs.tag_name }}" >> $GITHUB_OUTPUT
+            echo "pr=${{ steps.release-3.outputs.pr }}" >> $GITHUB_OUTPUT
+          else
+            echo "### ❌ Release Please Failed" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "All 3 attempts failed. This may be due to:" >> $GITHUB_STEP_SUMMARY
+            echo "- GitHub API rate limits during commit history backfill" >> $GITHUB_STEP_SUMMARY
+            echo "- Network issues" >> $GITHUB_STEP_SUMMARY
+            echo "- Configuration problems" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Next steps:**" >> $GITHUB_STEP_SUMMARY
+            echo "1. Re-run this workflow (backfill progress is cached)" >> $GITHUB_STEP_SUMMARY
+            echo "2. Check release-please configuration if retries keep failing" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
 
       - name: Release summary
         if: steps.release.outputs.release_created == 'true'
