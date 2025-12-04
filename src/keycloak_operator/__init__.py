@@ -9,5 +9,5 @@ This operator provides comprehensive Keycloak management capabilities with:
 """
 
 __version__ = "0.1.0"
-__author__ = "Your Name"
-__email__ = "your.email@example.com"
+__author__ = "Michaël de Vries"
+__email__ = "vriesdemichael@gmail.com"
