@@ -92,7 +92,7 @@ Create a complete OAuth2 setup:
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
-# Keycloak instance
+# Keycloak instance with PostgreSQL database
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
 metadata:
@@ -100,13 +100,19 @@ metadata:
   namespace: keycloak-system
 spec:
   replicas: 3
-  version: "26.0.0"
+  image: quay.io/keycloak/keycloak:26.0.0
   database:
-    type: cnpg
-    cluster: keycloak-postgres
+    type: postgresql
+    host: keycloak-postgres-rw
+    port: 5432
+    database: app
+    username: app
+    passwordSecret:
+      name: keycloak-postgres-app
+      key: password
 ---
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
-# Identity realm
+# Identity realm with client authorization grants
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
@@ -116,11 +122,12 @@ spec:
   realmName: my-app
   operatorRef:
     namespace: keycloak-system
-    authorizationSecretRef:
-      name: keycloak-operator-auth-token
+  # Namespaces authorized to create clients in this realm
+  clientAuthorizationGrants:
+    - my-app
 ---
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
-# OAuth2 client
+# OAuth2 client (namespace must be in realm's clientAuthorizationGrants)
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
@@ -131,8 +138,7 @@ spec:
   realmRef:
     name: my-app-realm
     namespace: my-app
-    authorizationSecretRef:
-      name: my-app-realm-realm-auth
+  publicClient: false
   redirectUris:
     - "https://my-app.example.com/callback"
 ```
@@ -170,14 +176,15 @@ Add the schema annotation as the first line of your YAML files to enable IDE fea
 
 ## 🔐 Security
 
-The operator uses a capability-based authorization model with Kubernetes secrets as bearer tokens. This enables:
+The operator uses a **namespace grant authorization model** combining Kubernetes RBAC with declarative access control:
 
+- **Realm Creation**: Controlled by standard Kubernetes RBAC (who can create `KeycloakRealm` resources)
+- **Client Creation**: Controlled by realm's `clientAuthorizationGrants` list (which namespaces can create clients)
 - **Self-service**: Teams can create realms and clients without platform team intervention
-- **Scalability**: Supports 100+ teams without RBAC complexity
-- **Security**: Cryptographically random tokens with namespace isolation
-- **Auditability**: All token access logged by Kubernetes API server
+- **GitOps Native**: All authorization is declarative and stored in Git
+- **Auditability**: All access changes tracked in Git history and Kubernetes audit logs
 
-Read the [Security Model](docs/security.md) documentation for details on why this approach is superior to traditional RBAC.
+Read the [Security Model](docs/concepts/security.md) documentation for detailed authorization architecture.
 
 ## 📈 Monitoring
 
