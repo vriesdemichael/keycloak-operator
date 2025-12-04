@@ -61,17 +61,12 @@ jobs:
         id: release-check
         env:
           COMMIT_MSG: ${{ github.event.head_commit.message || '' }}
-          COMMIT_AUTHOR: ${{ github.event.head_commit.author.username || '' }}
         run: |
-          # Check if this is a release-please commit
-          # Method A: Check bot author (works when release-please bot commits directly)
-          # Method B: Check commit message + CHANGELOG (works when user merges release PR)
+          # Check if this is a release commit by message pattern + CHANGELOG changes
+          # Matches: "chore: release", "chore(main): release", "chore: release multiple components", etc.
           IS_RELEASE=false
-          if [[ "$COMMIT_AUTHOR" == "github-actions[bot]" ]] && \
-             [[ "$COMMIT_MSG" == "chore: release"* || "$COMMIT_MSG" == "chore(main): release"* ]]; then
-            IS_RELEASE=true
-          elif [[ "$COMMIT_MSG" == "chore(main): release"* ]]; then
-            # Release commits merged by user - verify by checking CHANGELOG changes
+          if [[ "$COMMIT_MSG" == "chore: release"* || "$COMMIT_MSG" == "chore(main): release"* ]]; then
+            # Verify by checking CHANGELOG changes in this commit
             if git diff HEAD~1 HEAD --name-only | grep -E -q "^CHANGELOG.md$|^charts/.*/CHANGELOG.md$"; then
               IS_RELEASE=true
             fi
