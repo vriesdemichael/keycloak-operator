@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/vriesdemichael/keycloak-operator/compare/v0.4.0...v0.4.1) (2025-12-04)
+
+
+### Code Refactoring
+
+* **operator:** unify Dockerfile with multi-stage targets ([dd81347](https://github.com/vriesdemichael/keycloak-operator/commit/dd813478441800b2519e184e94bc249fa2a6289c))
+
 ## [0.4.0](https://github.com/vriesdemichael/keycloak-operator/compare/v0.3.9...v0.4.0) (2025-12-03)
 
 
