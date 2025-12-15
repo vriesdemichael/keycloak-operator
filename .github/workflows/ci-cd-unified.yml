@@ -445,8 +445,9 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**To fix this:**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "1. Find the release PR with 'autorelease: pending' label:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Find the release PR with 'autorelease: failed' or 'autorelease: pending' label:" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   gh pr list --state merged --label 'autorelease: failed' --json number,title,mergeCommit" >> $GITHUB_STEP_SUMMARY
             echo "   gh pr list --state merged --label 'autorelease: pending' --json number,title,mergeCommit" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -465,9 +466,11 @@ jobs:
             echo "   gh release create vX.Y.Z --title 'vX.Y.Z' --notes 'See CHANGELOG.md' --target <merge-commit-sha>" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "4. Update the PR label from 'pending' to 'tagged':" >> $GITHUB_STEP_SUMMARY
+            echo "4. Update the PR label to 'tagged':" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "   gh api repos/OWNER/REPO/issues/PR_NUMBER/labels/autorelease%3A%20pending -X DELETE" >> $GITHUB_STEP_SUMMARY
+            echo "   # Remove failed or pending label and add tagged" >> $GITHUB_STEP_SUMMARY
+            echo "   gh api repos/OWNER/REPO/issues/PR_NUMBER/labels/autorelease%3A%20failed -X DELETE 2>/dev/null || true" >> $GITHUB_STEP_SUMMARY
+            echo "   gh api repos/OWNER/REPO/issues/PR_NUMBER/labels/autorelease%3A%20pending -X DELETE 2>/dev/null || true" >> $GITHUB_STEP_SUMMARY
             echo "   gh api repos/OWNER/REPO/issues/PR_NUMBER/labels -f 'labels[]=autorelease: tagged'" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -476,6 +479,30 @@ jobs:
           fi
 
           echo "✅ No untagged release PR issues detected"
+
+      # Mark any pending release PRs as failed if we detected untagged PRs
+      # This runs even on failure to help with debugging
+      - name: Mark pending releases as failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          echo "Checking for merged release PRs with 'autorelease: pending' label..."
+
+          # Find merged PRs with pending label and change to failed
+          PENDING_PRS=$(gh pr list --state merged --label 'autorelease: pending' --json number --jq '.[].number' 2>/dev/null || echo "")
+
+          if [[ -n "$PENDING_PRS" ]]; then
+            echo "Found pending release PRs: $PENDING_PRS"
+            for pr in $PENDING_PRS; do
+              echo "Marking PR #$pr as failed..."
+              gh api repos/${{ github.repository }}/issues/$pr/labels/autorelease%3A%20pending -X DELETE 2>/dev/null || true
+              gh api repos/${{ github.repository }}/issues/$pr/labels -f 'labels[]=autorelease: failed' 2>/dev/null || true
+            done
+            echo "✅ Marked pending release PRs as failed"
+          else
+            echo "No pending release PRs found"
+          fi
 
       - name: Release summary
         if: steps.release.outputs.release_created == 'true'
