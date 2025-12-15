@@ -84,6 +84,26 @@ class BaseReconciler(ABC):
 
         # Determine resource type from class name
         resource_type = self.__class__.__name__.replace("Reconciler", "").lower()
+
+        # Extract generation from metadata for ObservedGeneration tracking
+        generation = kwargs.get("meta", {}).get("generation", 0)
+
+        # Generation-based skip: avoid redundant reconciliations on restart
+        # If resource was already successfully reconciled at this generation,
+        # skip the reconciliation to reduce Keycloak API load
+        observed_generation = getattr(status, "observedGeneration", None)
+        current_phase = getattr(status, "phase", None)
+
+        if observed_generation == generation and current_phase == "Ready":
+            self.logger.debug(
+                f"Skipping reconciliation for {name}: already reconciled "
+                f"at generation {generation} with phase Ready"
+            )
+            metrics_collector.record_reconciliation_skip(
+                resource_type=resource_type, namespace=namespace, name=name
+            )
+            return {}
+
         start_time = time.time()
 
         # Start reconciliation with correlation ID tracking
@@ -92,9 +112,6 @@ class BaseReconciler(ABC):
         )
 
         # Use metrics context manager to track reconciliation
-        # Extract generation from metadata for ObservedGeneration tracking
-        generation = kwargs.get("meta", {}).get("generation", 0)
-
         async with metrics_collector.track_reconciliation(
             resource_type=resource_type,
             namespace=namespace,
