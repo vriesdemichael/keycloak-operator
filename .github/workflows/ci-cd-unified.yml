@@ -417,6 +417,60 @@ jobs:
             exit 1
           fi
 
+      # Detect untagged merged release PRs - this is a critical error that blocks releases
+      - name: Check for untagged release PRs
+        run: |
+          # release-please returns success but sets releases_created=false when there are
+          # untagged merged release PRs. This is a blocking condition that requires manual
+          # intervention to create the missing tags AND releases.
+          #
+          # This happens when:
+          # 1. A release PR is merged
+          # 2. The release-please run that should create tags/releases fails/times out
+          # 3. All subsequent runs abort with "untagged, merged release PRs outstanding"
+
+          RELEASES_CREATED="${{ steps.release.outputs.releases_created }}"
+          PR_OUTPUT="${{ steps.release.outputs.pr }}"
+          RELEASE_CREATED="${{ steps.release.outputs.release_created }}"
+
+          echo "Debug: releases_created=$RELEASES_CREATED, pr=$PR_OUTPUT, release_created=$RELEASE_CREATED"
+
+          # If releases_created is explicitly false and we didn't create a PR or release,
+          # it means release-please aborted due to untagged merged PRs
+          if [[ "$RELEASES_CREATED" == "false" && -z "$PR_OUTPUT" && "$RELEASE_CREATED" != "true" ]]; then
+            echo "### ❌ Untagged Merged Release PRs Detected" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Release-please found merged release PRs without corresponding tags/releases." >> $GITHUB_STEP_SUMMARY
+            echo "This blocks all future releases until resolved." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**To fix this:**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. Find the untagged release PR and its merge commit:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   gh pr list --state merged --search 'chore: release' --limit 5 --json number,title,mergeCommit" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "2. Check which tags exist vs which releases exist:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   git tag --list 'v*' --sort=-version:refname | head -5" >> $GITHUB_STEP_SUMMARY
+            echo "   gh release list --limit 5" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "3. Create missing tag (if needed) and release:" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   # If tag is missing:" >> $GITHUB_STEP_SUMMARY
+            echo "   git tag -a vX.Y.Z <merge-commit-sha> -m 'Release vX.Y.Z'" >> $GITHUB_STEP_SUMMARY
+            echo "   git push origin vX.Y.Z" >> $GITHUB_STEP_SUMMARY
+            echo "   # Create the GitHub release:" >> $GITHUB_STEP_SUMMARY
+            echo "   gh release create vX.Y.Z --title 'vX.Y.Z' --notes 'See CHANGELOG.md' --target <merge-commit-sha>" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "4. Re-run this workflow" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+          echo "✅ No untagged release PR issues detected"
+
       - name: Release summary
         if: steps.release.outputs.release_created == 'true'
         run: |
