@@ -445,12 +445,12 @@ jobs:
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**To fix this:**" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "1. Find the untagged release PR and its merge commit:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Find the release PR with 'autorelease: pending' label:" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "   gh pr list --state merged --search 'chore: release' --limit 5 --json number,title,mergeCommit" >> $GITHUB_STEP_SUMMARY
+            echo "   gh pr list --state merged --label 'autorelease: pending' --json number,title,mergeCommit" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "2. Check which tags exist vs which releases exist:" >> $GITHUB_STEP_SUMMARY
+            echo "2. Check which tags/releases exist for that version:" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
             echo "   git tag --list 'v*' --sort=-version:refname | head -5" >> $GITHUB_STEP_SUMMARY
             echo "   gh release list --limit 5" >> $GITHUB_STEP_SUMMARY
@@ -465,7 +465,13 @@ jobs:
             echo "   gh release create vX.Y.Z --title 'vX.Y.Z' --notes 'See CHANGELOG.md' --target <merge-commit-sha>" >> $GITHUB_STEP_SUMMARY
             echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
-            echo "4. Re-run this workflow" >> $GITHUB_STEP_SUMMARY
+            echo "4. Update the PR label from 'pending' to 'tagged':" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
+            echo "   gh api repos/OWNER/REPO/issues/PR_NUMBER/labels/autorelease%3A%20pending -X DELETE" >> $GITHUB_STEP_SUMMARY
+            echo "   gh api repos/OWNER/REPO/issues/PR_NUMBER/labels -f 'labels[]=autorelease: tagged'" >> $GITHUB_STEP_SUMMARY
+            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "5. Re-run this workflow" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
