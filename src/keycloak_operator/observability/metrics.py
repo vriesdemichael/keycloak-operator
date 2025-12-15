@@ -242,6 +242,14 @@ DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP = Gauge(
     registry=None,
 )
 
+# Generation-based skip metrics
+RECONCILIATION_SKIPPED_TOTAL = Counter(
+    "keycloak_operator_reconciliation_skipped_total",
+    "Total number of reconciliations skipped due to generation match",
+    ["resource_type", "namespace", "name"],
+    registry=None,
+)
+
 
 def get_metrics_registry() -> CollectorRegistry:
     """Get or create the global metrics registry."""
@@ -273,6 +281,7 @@ def get_metrics_registry() -> CollectorRegistry:
             DRIFT_CHECK_DURATION,
             DRIFT_CHECK_ERRORS_TOTAL,
             DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP,
+            RECONCILIATION_SKIPPED_TOTAL,
         ]:
             # Use try-except to handle registry assignment safely
             try:
@@ -505,6 +514,26 @@ class MetricsCollector:
         LEADER_ELECTION_LEASE_DURATION.labels(
             instance_id=instance_id, namespace=namespace
         ).observe(duration)
+
+    def record_reconciliation_skip(
+        self, resource_type: str, namespace: str, name: str
+    ) -> None:
+        """
+        Record a skipped reconciliation due to generation match.
+
+        This is called when a resource is already reconciled at the current
+        generation and in Ready state, avoiding redundant API calls.
+
+        Args:
+            resource_type: Type of resource (e.g., 'keycloak', 'realm', 'client')
+            namespace: Namespace of the resource
+            name: Name of the resource
+        """
+        RECONCILIATION_SKIPPED_TOTAL.labels(
+            resource_type=resource_type,
+            namespace=namespace,
+            name=name,
+        ).inc()
 
 
 class MetricsServer:

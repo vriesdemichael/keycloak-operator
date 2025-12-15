@@ -559,3 +559,265 @@ class TestGenerationTrackingEdgeCases:
                 status, f"Completed generation {gen}", gen
             )
             assert status.observedGeneration == gen
+
+
+class TestGenerationBasedSkip:
+    """Test generation-based skip optimization for operator restart efficiency."""
+
+    @pytest.fixture
+    def base_reconciler(self):
+        """Create a base reconciler for testing."""
+        return ConcreteReconciler()
+
+    @pytest.fixture
+    def ready_status(self):
+        """Create a status object in Ready state with observedGeneration set."""
+        status = MockStatus()
+        status.phase = "Ready"
+        status.observedGeneration = 5
+        return status
+
+    @pytest.mark.asyncio
+    async def test_skip_when_generation_matches_and_ready(self, base_reconciler):
+        """Test that reconciliation is skipped when generation matches and phase is Ready."""
+        status = MockStatus()
+        status.phase = "Ready"
+        status.observedGeneration = 10
+
+        # Mock the metrics collector at the import location
+        mock_metrics = MagicMock()
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            result = await base_reconciler.reconcile(
+                spec={"test": "data"},
+                name="test-resource",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 10},  # Same as observedGeneration
+            )
+
+            # Should return empty dict without calling do_reconcile
+            assert result == {}
+
+            # Should record the skip in metrics
+            mock_metrics.record_reconciliation_skip.assert_called_once_with(
+                resource_type="concrete", namespace="test-ns", name="test-resource"
+            )
+
+            # Should NOT call track_reconciliation (no actual reconciliation)
+            mock_metrics.track_reconciliation.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_skip_when_generation_differs(self, base_reconciler):
+        """Test that reconciliation proceeds when generation differs."""
+        status = MockStatus()
+        status.phase = "Ready"
+        status.observedGeneration = 5
+
+        mock_metrics = MagicMock()
+        # Configure the async context manager
+        mock_metrics.track_reconciliation.return_value.__aenter__ = AsyncMock()
+        mock_metrics.track_reconciliation.return_value.__aexit__ = AsyncMock()
+
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            result = await base_reconciler.reconcile(
+                spec={"test": "data"},
+                name="test-resource",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 6},  # Different from observedGeneration (5)
+            )
+
+            # Should return result from do_reconcile
+            assert result == {"test": "success"}
+
+            # Should NOT record a skip
+            mock_metrics.record_reconciliation_skip.assert_not_called()
+
+            # Should track reconciliation (actual reconciliation happened)
+            mock_metrics.track_reconciliation.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_no_skip_when_phase_is_failed(self, base_reconciler):
+        """Test that reconciliation proceeds when phase is Failed even if generation matches."""
+        status = MockStatus()
+        status.phase = "Failed"
+        status.observedGeneration = 10
+
+        mock_metrics = MagicMock()
+        mock_metrics.track_reconciliation.return_value.__aenter__ = AsyncMock()
+        mock_metrics.track_reconciliation.return_value.__aexit__ = AsyncMock()
+
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            result = await base_reconciler.reconcile(
+                spec={"test": "data"},
+                name="test-resource",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 10},  # Same as observedGeneration
+            )
+
+            # Should still reconcile because phase is Failed
+            assert result == {"test": "success"}
+            mock_metrics.record_reconciliation_skip.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_skip_when_phase_is_degraded(self, base_reconciler):
+        """Test that reconciliation proceeds when phase is Degraded even if generation matches."""
+        status = MockStatus()
+        status.phase = "Degraded"
+        status.observedGeneration = 10
+
+        mock_metrics = MagicMock()
+        mock_metrics.track_reconciliation.return_value.__aenter__ = AsyncMock()
+        mock_metrics.track_reconciliation.return_value.__aexit__ = AsyncMock()
+
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            result = await base_reconciler.reconcile(
+                spec={"test": "data"},
+                name="test-resource",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 10},
+            )
+
+            # Should still reconcile because phase is Degraded
+            assert result == {"test": "success"}
+            mock_metrics.record_reconciliation_skip.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_skip_when_phase_is_reconciling(self, base_reconciler):
+        """Test that reconciliation proceeds when phase is Reconciling."""
+        status = MockStatus()
+        status.phase = "Reconciling"
+        status.observedGeneration = 10
+
+        mock_metrics = MagicMock()
+        mock_metrics.track_reconciliation.return_value.__aenter__ = AsyncMock()
+        mock_metrics.track_reconciliation.return_value.__aexit__ = AsyncMock()
+
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            result = await base_reconciler.reconcile(
+                spec={"test": "data"},
+                name="test-resource",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 10},
+            )
+
+            # Should still reconcile because phase is Reconciling
+            assert result == {"test": "success"}
+            mock_metrics.record_reconciliation_skip.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_skip_when_observed_generation_is_none(self, base_reconciler):
+        """Test that reconciliation proceeds when observedGeneration is not set."""
+        status = MockStatus()
+        status.phase = "Ready"
+        # observedGeneration is not set (None)
+
+        mock_metrics = MagicMock()
+        mock_metrics.track_reconciliation.return_value.__aenter__ = AsyncMock()
+        mock_metrics.track_reconciliation.return_value.__aexit__ = AsyncMock()
+
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            result = await base_reconciler.reconcile(
+                spec={"test": "data"},
+                name="test-resource",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 1},
+            )
+
+            # Should reconcile because observedGeneration is None
+            assert result == {"test": "success"}
+            mock_metrics.record_reconciliation_skip.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_no_skip_when_phase_is_none(self, base_reconciler):
+        """Test that reconciliation proceeds when phase is not set."""
+        status = MockStatus()
+        status.observedGeneration = 10
+        # phase is not set (None)
+
+        mock_metrics = MagicMock()
+        mock_metrics.track_reconciliation.return_value.__aenter__ = AsyncMock()
+        mock_metrics.track_reconciliation.return_value.__aexit__ = AsyncMock()
+
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            result = await base_reconciler.reconcile(
+                spec={"test": "data"},
+                name="test-resource",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 10},
+            )
+
+            # Should reconcile because phase is None
+            assert result == {"test": "success"}
+            mock_metrics.record_reconciliation_skip.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_skip_logs_debug_message(self, base_reconciler):
+        """Test that skipped reconciliations log a debug message."""
+        status = MockStatus()
+        status.phase = "Ready"
+        status.observedGeneration = 10
+
+        mock_metrics = MagicMock()
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            # Capture logger calls
+            with patch.object(base_reconciler.logger, "debug") as mock_debug:
+                await base_reconciler.reconcile(
+                    spec={"test": "data"},
+                    name="my-keycloak",
+                    namespace="production",
+                    status=status,
+                    meta={"generation": 10},
+                )
+
+                # Should log debug message about skipping
+                mock_debug.assert_called_once()
+                call_args = mock_debug.call_args[0][0]
+                assert "Skipping" in call_args
+                assert "my-keycloak" in call_args
+                assert "generation 10" in call_args
+                assert "Ready" in call_args
+
+    @pytest.mark.asyncio
+    async def test_generation_zero_is_handled_correctly(self, base_reconciler):
+        """Test that generation 0 is handled correctly (new resources)."""
+        status = MockStatus()
+        status.phase = "Ready"
+        status.observedGeneration = 0
+
+        mock_metrics = MagicMock()
+        with patch(
+            "keycloak_operator.observability.metrics.metrics_collector", mock_metrics
+        ):
+            result = await base_reconciler.reconcile(
+                spec={"test": "data"},
+                name="test-resource",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 0},
+            )
+
+            # Generation 0 with Ready phase should still be skipped
+            assert result == {}
+            mock_metrics.record_reconciliation_skip.assert_called_once()
