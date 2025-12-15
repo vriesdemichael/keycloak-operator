@@ -3664,6 +3664,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.observability.metrics.MetricsCollector.record_reconciliation_skip" class="md-nav__link">
+    <span class="md-ellipsis">
+      record_reconciliation_skip
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.observability.metrics.MetricsCollector.track_reconciliation" class="md-nav__link">
     <span class="md-ellipsis">
       track_reconciliation
@@ -8154,6 +8163,15 @@
   <a href="#keycloak_operator.observability.metrics.MetricsCollector.record_rbac_validation" class="md-nav__link">
     <span class="md-ellipsis">
       record_rbac_validation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.observability.metrics.MetricsCollector.record_reconciliation_skip" class="md-nav__link">
+    <span class="md-ellipsis">
+      record_reconciliation_skip
     </span>
   </a>
   
@@ -28440,6 +28458,91 @@ operator performance, resource reconciliation, and system health.</p>
             <td>
               <div class="doc-md-description">
                 <p>Whether the validation succeeded</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.observability.metrics.MetricsCollector.record_reconciliation_skip" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">record_reconciliation_skip</span>
+
+
+<a href="#keycloak_operator.observability.metrics.MetricsCollector.record_reconciliation_skip" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">record_reconciliation_skip</span><span class="p">(</span><span class="n">resource_type</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Record a skipped reconciliation due to generation match.</p>
+<p>This is called when a resource is already reconciled at the current
+generation and in Ready state, avoiding redundant API calls.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>resource_type</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Type of resource (e.g., 'keycloak', 'realm', 'client')</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Namespace of the resource</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the resource</p>
               </div>
             </td>
             <td>
