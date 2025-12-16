@@ -54,7 +54,7 @@ runs:
         OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://${{ inputs.registry-url }}/${{ inputs.registry-owner }}/charts 2>&1)
         echo "$OUTPUT"
         # Extract digest from output (format: "Digest: sha256:abc123...")
-        DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \Ksha256:[a-f0-9]+' || echo "")
+        DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \Ksha256:[a-fA-F0-9]+' || echo "")
         echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
         if [[ -z "$DIGEST" ]]; then
           echo "::warning::Failed to extract digest from helm push output"
