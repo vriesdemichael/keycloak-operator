@@ -57,7 +57,8 @@ runs:
         DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \Ksha256:[a-fA-F0-9]+' || echo "")
         echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
         if [[ -z "$DIGEST" ]]; then
-          echo "::warning::Failed to extract digest from helm push output"
+          echo "::error::Failed to extract digest from helm push output"
+          exit 1
         fi
 
     - name: Attest chart provenance
