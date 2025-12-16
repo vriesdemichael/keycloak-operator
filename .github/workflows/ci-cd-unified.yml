@@ -383,26 +383,53 @@ jobs:
       # Determine which attempt succeeded and set outputs
       - name: Set release outputs
         id: release
+        env:
+          # Pass outputs via environment variables to avoid shell escaping issues
+          RELEASE_1_CREATED: ${{ steps.release-1.outputs.release_created }}
+          RELEASES_1_CREATED: ${{ steps.release-1.outputs.releases_created }}
+          TAG_1_NAME: ${{ steps.release-1.outputs.tag_name }}
+          PR_1: ${{ steps.release-1.outputs.pr }}
+          RELEASE_2_CREATED: ${{ steps.release-2.outputs.release_created }}
+          RELEASES_2_CREATED: ${{ steps.release-2.outputs.releases_created }}
+          TAG_2_NAME: ${{ steps.release-2.outputs.tag_name }}
+          PR_2: ${{ steps.release-2.outputs.pr }}
+          RELEASE_3_CREATED: ${{ steps.release-3.outputs.release_created }}
+          RELEASES_3_CREATED: ${{ steps.release-3.outputs.releases_created }}
+          TAG_3_NAME: ${{ steps.release-3.outputs.tag_name }}
+          PR_3: ${{ steps.release-3.outputs.pr }}
         run: |
           # Check which attempt succeeded (in order)
+          # Use heredoc syntax for pr output to handle special characters
           if [[ "${{ steps.release-1.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 1"
-            echo "release_created=${{ steps.release-1.outputs.release_created }}" >> $GITHUB_OUTPUT
-            echo "releases_created=${{ steps.release-1.outputs.releases_created }}" >> $GITHUB_OUTPUT
-            echo "tag_name=${{ steps.release-1.outputs.tag_name }}" >> $GITHUB_OUTPUT
-            echo "pr=${{ steps.release-1.outputs.pr }}" >> $GITHUB_OUTPUT
+            echo "release_created=$RELEASE_1_CREATED" >> $GITHUB_OUTPUT
+            echo "releases_created=$RELEASES_1_CREATED" >> $GITHUB_OUTPUT
+            echo "tag_name=$TAG_1_NAME" >> $GITHUB_OUTPUT
+            {
+              echo 'pr<<EOF'
+              echo "$PR_1"
+              echo 'EOF'
+            } >> $GITHUB_OUTPUT
           elif [[ "${{ steps.release-2.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 2"
-            echo "release_created=${{ steps.release-2.outputs.release_created }}" >> $GITHUB_OUTPUT
-            echo "releases_created=${{ steps.release-2.outputs.releases_created }}" >> $GITHUB_OUTPUT
-            echo "tag_name=${{ steps.release-2.outputs.tag_name }}" >> $GITHUB_OUTPUT
-            echo "pr=${{ steps.release-2.outputs.pr }}" >> $GITHUB_OUTPUT
+            echo "release_created=$RELEASE_2_CREATED" >> $GITHUB_OUTPUT
+            echo "releases_created=$RELEASES_2_CREATED" >> $GITHUB_OUTPUT
+            echo "tag_name=$TAG_2_NAME" >> $GITHUB_OUTPUT
+            {
+              echo 'pr<<EOF'
+              echo "$PR_2"
+              echo 'EOF'
+            } >> $GITHUB_OUTPUT
           elif [[ "${{ steps.release-3.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 3"
-            echo "release_created=${{ steps.release-3.outputs.release_created }}" >> $GITHUB_OUTPUT
-            echo "releases_created=${{ steps.release-3.outputs.releases_created }}" >> $GITHUB_OUTPUT
-            echo "tag_name=${{ steps.release-3.outputs.tag_name }}" >> $GITHUB_OUTPUT
-            echo "pr=${{ steps.release-3.outputs.pr }}" >> $GITHUB_OUTPUT
+            echo "release_created=$RELEASE_3_CREATED" >> $GITHUB_OUTPUT
+            echo "releases_created=$RELEASES_3_CREATED" >> $GITHUB_OUTPUT
+            echo "tag_name=$TAG_3_NAME" >> $GITHUB_OUTPUT
+            {
+              echo 'pr<<EOF'
+              echo "$PR_3"
+              echo 'EOF'
+            } >> $GITHUB_OUTPUT
           else
             echo "### ❌ Release Please Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
