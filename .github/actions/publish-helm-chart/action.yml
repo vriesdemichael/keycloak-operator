@@ -53,9 +53,13 @@ runs:
       run: |
         OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://${{ inputs.registry-url }}/${{ inputs.registry-owner }}/charts 2>&1)
         echo "$OUTPUT"
-        # Extract digest from output
-        DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \K[a-f0-9:]+' || echo "")
+        # Extract digest from output (format: "Digest: sha256:abc123...")
+        DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \Ksha256:[a-fA-F0-9]+' || echo "")
         echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+        if [[ -z "$DIGEST" ]]; then
+          echo "::error::Failed to extract digest from helm push output"
+          exit 1
+        fi
 
     - name: Attest chart provenance
       uses: actions/attest-build-provenance@v2
