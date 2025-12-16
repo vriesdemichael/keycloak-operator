@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.3](https://github.com/vriesdemichael/keycloak-operator/compare/v0.4.2...v0.4.3) (2025-12-16)
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.4.2 ([3e05ace](https://github.com/vriesdemichael/keycloak-operator/commit/3e05ace25ee4dad3555aa6f3e94487cbdd04c09a))
+
+
+### Performance Improvements
+
+* implement generation-based skip to avoid redundant reconciliations ([af0d4c6](https://github.com/vriesdemichael/keycloak-operator/commit/af0d4c63490122a5d4893f2cb2e5cf6d63fe3f6b)), closes [#184](https://github.com/vriesdemichael/keycloak-operator/issues/184)
+
 ## [0.4.2](https://github.com/vriesdemichael/keycloak-operator/compare/v0.4.1...v0.4.2) (2025-12-04)
 
 
