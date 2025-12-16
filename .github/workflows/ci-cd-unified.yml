@@ -1,12 +1,17 @@
 name: CI/CD Pipeline (Unified)
 
-# Unified CI/CD pipeline with clear phases:
-# 1. Detection - Determine branch and release commit status
-# 2. Quality checks - Run on all commits except release commits on main (parallel, ~20-40 min)
-# 3. Release-please - Create/update release PRs (non-release commits on main after checks)
-# 4. Publish - Publish artifacts (release commits on main, skip checks)
-# 5. Documentation - Update dev docs on every main commit, versioned docs on chart-operator releases
+# Unified CI/CD pipeline with release-please as the gatekeeper:
+#
+# FLOW:
+# 1. Detection - Determine if this is main branch
+# 2. Quality checks - Run on ALL commits (CI gate)
+# 3. Release-please - THE GATEKEEPER: runs after CI passes, determines what to release
+# 4. Publish - Conditional on release-please outputs (CD phase)
+# 5. Documentation - Dev docs on main, versioned docs on chart releases
 # 6. Complete - Final status check
+#
+# KEY PRINCIPLE: release-please outputs drive the publish phase, not commit message parsing.
+# This makes the release process transparent and predictable.
 
 on:
   push:
@@ -25,29 +30,12 @@ jobs:
   # PHASE 1: DETECTION
   # =====================================================
   detect:
-    name: Detect Branch & Release Status
+    name: Detect Branch
     runs-on: ubuntu-latest
     outputs:
-      # Branch info
       is_main: ${{ steps.branch.outputs.is_main }}
-      # Release detection
-      is_release_commit: ${{ steps.release-check.outputs.is_release }}
-      # Which components are releasing (on release commits only)
-      operator_releasing: ${{ steps.release-check.outputs.operator_releasing }}
-      chart_operator_releasing: ${{ steps.release-check.outputs.chart_operator_releasing }}
-      chart_realm_releasing: ${{ steps.release-check.outputs.chart_realm_releasing }}
-      chart_client_releasing: ${{ steps.release-check.outputs.chart_client_releasing }}
-      # Version info (on release commits only)
-      operator_version: ${{ steps.release-check.outputs.operator_version }}
-      chart_operator_version: ${{ steps.release-check.outputs.chart_operator_version }}
-      chart_realm_version: ${{ steps.release-check.outputs.chart_realm_version }}
-      chart_client_version: ${{ steps.release-check.outputs.chart_client_version }}
 
     steps:
-      - uses: actions/checkout@v6
-        with:
-          fetch-depth: 2
-
       - name: Check branch
         id: branch
         run: |
@@ -57,112 +45,20 @@ jobs:
             echo "is_main=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Detect release commit
-        id: release-check
-        env:
-          COMMIT_MSG: ${{ github.event.head_commit.message || '' }}
-        run: |
-          # Check if this is a release commit by message pattern + CHANGELOG changes
-          # Matches: "chore: release", "chore(main): release", "chore: release multiple components", etc.
-          IS_RELEASE=false
-          if [[ "$COMMIT_MSG" == "chore: release"* || "$COMMIT_MSG" == "chore(main): release"* ]]; then
-            # Verify by checking CHANGELOG changes in this commit
-            if git diff HEAD~1 HEAD --name-only | grep -E -q "^CHANGELOG.md$|^charts/.*/CHANGELOG.md$"; then
-              IS_RELEASE=true
-            fi
-          fi
-
-          echo "is_release=${IS_RELEASE}" >> $GITHUB_OUTPUT
-
-          if [[ "$IS_RELEASE" == "false" ]]; then
-            echo "Not a release commit"
-            echo "operator_releasing=false" >> $GITHUB_OUTPUT
-            echo "chart_operator_releasing=false" >> $GITHUB_OUTPUT
-            echo "chart_realm_releasing=false" >> $GITHUB_OUTPUT
-            echo "chart_client_releasing=false" >> $GITHUB_OUTPUT
-            echo "operator_version=" >> $GITHUB_OUTPUT
-            echo "chart_operator_version=" >> $GITHUB_OUTPUT
-            echo "chart_realm_version=" >> $GITHUB_OUTPUT
-            echo "chart_client_version=" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-
-          echo "Release commit detected, checking manifest for version changes..."
-
-          # Parse version changes from .release-please-manifest.json
-          OPERATOR_RELEASING=false
-          CHART_OP_RELEASING=false
-          CHART_REALM_RELEASING=false
-          CHART_CLIENT_RELEASING=false
-          OPERATOR_VERSION=""
-          CHART_OP_VERSION=""
-          CHART_REALM_VERSION=""
-          CHART_CLIENT_VERSION=""
-
-          # Check if manifest changed
-          if git diff HEAD~1 HEAD --name-only | grep -q "^\.github/\.release-please-manifest\.json$"; then
-            # Get the diff of the manifest
-            MANIFEST_DIFF=$(git diff HEAD~1 HEAD .github/.release-please-manifest.json)
-
-            # Check each component for version changes (look for removed lines with exact JSON key patterns)
-            if echo "$MANIFEST_DIFF" | grep -q '^\-[ ]*"\."[ ]*:'; then
-              # Operator version changed
-              OPERATOR_RELEASING=true
-              OPERATOR_VERSION=$(jq -r '."." // ""' .github/.release-please-manifest.json)
-            fi
-
-            if echo "$MANIFEST_DIFF" | grep -q '^\-[ ]*"charts/keycloak-operator"[ ]*:'; then
-              CHART_OP_RELEASING=true
-              CHART_OP_VERSION=$(jq -r '."charts/keycloak-operator" // ""' .github/.release-please-manifest.json)
-            fi
-
-            if echo "$MANIFEST_DIFF" | grep -q '^\-[ ]*"charts/keycloak-realm"[ ]*:'; then
-              CHART_REALM_RELEASING=true
-              CHART_REALM_VERSION=$(jq -r '."charts/keycloak-realm" // ""' .github/.release-please-manifest.json)
-            fi
-
-            if echo "$MANIFEST_DIFF" | grep -q '^\-[ ]*"charts/keycloak-client"[ ]*:'; then
-              CHART_CLIENT_RELEASING=true
-              CHART_CLIENT_VERSION=$(jq -r '."charts/keycloak-client" // ""' .github/.release-please-manifest.json)
-            fi
-          fi
-
-          # Output results
-          echo "operator_releasing=${OPERATOR_RELEASING}" >> $GITHUB_OUTPUT
-          echo "chart_operator_releasing=${CHART_OP_RELEASING}" >> $GITHUB_OUTPUT
-          echo "chart_realm_releasing=${CHART_REALM_RELEASING}" >> $GITHUB_OUTPUT
-          echo "chart_client_releasing=${CHART_CLIENT_RELEASING}" >> $GITHUB_OUTPUT
-          echo "operator_version=${OPERATOR_VERSION}" >> $GITHUB_OUTPUT
-          echo "chart_operator_version=${CHART_OP_VERSION}" >> $GITHUB_OUTPUT
-          echo "chart_realm_version=${CHART_REALM_VERSION}" >> $GITHUB_OUTPUT
-          echo "chart_client_version=${CHART_CLIENT_VERSION}" >> $GITHUB_OUTPUT
-
-          # Summary
-          echo "### 🎯 Release Detection" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Components Releasing:**" >> $GITHUB_STEP_SUMMARY
-          echo "- Operator: ${OPERATOR_RELEASING} ${OPERATOR_VERSION:+(v$OPERATOR_VERSION)}" >> $GITHUB_STEP_SUMMARY
-          echo "- Chart Operator: ${CHART_OP_RELEASING} ${CHART_OP_VERSION:+(v$CHART_OP_VERSION)}" >> $GITHUB_STEP_SUMMARY
-          echo "- Chart Realm: ${CHART_REALM_RELEASING} ${CHART_REALM_VERSION:+(v$CHART_REALM_VERSION)}" >> $GITHUB_STEP_SUMMARY
-          echo "- Chart Client: ${CHART_CLIENT_RELEASING} ${CHART_CLIENT_VERSION:+(v$CHART_CLIENT_VERSION)}" >> $GITHUB_STEP_SUMMARY
-
       - name: Summary
         run: |
           echo "### 📋 Detection Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "**Is Main:** ${{ steps.branch.outputs.is_main }}" >> $GITHUB_STEP_SUMMARY
-          echo "**Is Release Commit:** ${{ steps.release-check.outputs.is_release }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Event:** ${{ github.event_name }}" >> $GITHUB_STEP_SUMMARY
 
   # =====================================================
-  # PHASE 2: QUALITY CHECKS (Skip on release commits)
+  # PHASE 2: QUALITY CHECKS (CI - runs on ALL commits)
   # =====================================================
   build-operator:
     name: Build Operator Image
     needs: detect
-    if: |
-      needs.detect.outputs.is_main == 'false' ||
-      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -175,9 +71,6 @@ jobs:
   unit-tests:
     name: Unit Tests & Coverage
     needs: [detect, build-operator]
-    if: |
-      needs.detect.outputs.is_main == 'false' ||
-      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -193,9 +86,6 @@ jobs:
   code-quality:
     name: Code Quality
     needs: [detect, build-operator]
-    if: |
-      needs.detect.outputs.is_main == 'false' ||
-      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -208,9 +98,6 @@ jobs:
   security-scans:
     name: Security Scans
     needs: [detect, build-operator, unit-tests, code-quality]
-    if: |
-      needs.detect.outputs.is_main == 'false' ||
-      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -227,9 +114,6 @@ jobs:
   integration-tests:
     name: Integration Tests
     needs: [detect, build-operator, unit-tests, code-quality]
-    if: |
-      needs.detect.outputs.is_main == 'false' ||
-      needs.detect.outputs.is_release_commit == 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -286,54 +170,58 @@ jobs:
             exit 1
           fi
 
-          # On release commits, checks are skipped - that's ok
-          # On non-release commits, checks must not be skipped
-          if [[ "${{ needs.detect.outputs.is_release_commit }}" == "false" ]]; then
-            if [[ "${{ needs.unit-tests.result }}" == "skipped" ]] || \
-               [[ "${{ needs.code-quality.result }}" == "skipped" ]] || \
-               [[ "${{ needs.security-scans.result }}" == "skipped" ]] || \
-               [[ "${{ needs.integration-tests.result }}" == "skipped" ]]; then
-              echo "⚠️ Quality checks should not skip on non-release commits" >> $GITHUB_STEP_SUMMARY
-              echo "passed=false" >> $GITHUB_OUTPUT
-              exit 1
-            fi
+          # Checks should not be skipped
+          if [[ "${{ needs.unit-tests.result }}" == "skipped" ]] || \
+             [[ "${{ needs.code-quality.result }}" == "skipped" ]] || \
+             [[ "${{ needs.security-scans.result }}" == "skipped" ]] || \
+             [[ "${{ needs.integration-tests.result }}" == "skipped" ]]; then
+            echo "⚠️ Quality checks should not be skipped" >> $GITHUB_STEP_SUMMARY
+            echo "passed=false" >> $GITHUB_OUTPUT
+            exit 1
           fi
 
-          echo "✅ All required checks passed or skipped appropriately" >> $GITHUB_STEP_SUMMARY
+          echo "✅ All required checks passed" >> $GITHUB_STEP_SUMMARY
           echo "passed=true" >> $GITHUB_OUTPUT
 
   # =====================================================
-  # PHASE 3: RELEASE-PLEASE
+  # PHASE 3: RELEASE-PLEASE (THE GATEKEEPER)
   # =====================================================
-  # Runs on ALL main pushes:
-  # - Normal commits: creates/updates Release PR (after quality checks)
-  # - Release commits: creates tags/releases (after publishing artifacts)
+  # Runs AFTER CI passes on main branch pushes.
+  # This is the single source of truth for what gets released.
+  #
+  # On normal commits: creates/updates Release PR
+  # On Release PR merge: creates GitHub releases and tags, outputs signal publish jobs
   #
   # NOTE: release-please can timeout on first run or after many commits
   # due to GitHub API rate limits while backfilling commit history.
   # We use retry logic to handle transient failures.
   release-please:
     name: Release Please
-    needs: [
-      detect,
-      all-required-checks-passed,
-      publish-operator-image,
-      update-operator-chart,
-      publish-chart-operator,
-      publish-chart-realm,
-      publish-chart-client,
-      publish-release-docs
-    ]
+    needs: [detect, all-required-checks-passed]
     if: |
-      always() &&
+      needs.all-required-checks-passed.result == 'success' &&
       needs.detect.outputs.is_main == 'true' &&
-      github.event_name == 'push' &&
-      !contains(needs.*.result, 'failure')
+      github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: write
+    outputs:
+      # Operator (Docker image)
+      operator_released: ${{ steps.release.outputs.operator_released }}
+      operator_version: ${{ steps.release.outputs.operator_version }}
+      operator_tag: ${{ steps.release.outputs.operator_tag }}
+      # Helm Charts
+      chart_operator_released: ${{ steps.release.outputs.chart_operator_released }}
+      chart_operator_version: ${{ steps.release.outputs.chart_operator_version }}
+      chart_realm_released: ${{ steps.release.outputs.chart_realm_released }}
+      chart_realm_version: ${{ steps.release.outputs.chart_realm_version }}
+      chart_client_released: ${{ steps.release.outputs.chart_client_released }}
+      chart_client_version: ${{ steps.release.outputs.chart_client_version }}
+      # PR info (for auto-merge)
+      pr: ${{ steps.release.outputs.pr }}
+      releases_created: ${{ steps.release.outputs.releases_created }}
 
     steps:
       # First attempt
@@ -380,56 +268,87 @@ jobs:
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
 
-      # Determine which attempt succeeded and set outputs
+      # Determine which attempt succeeded and extract outputs
       - name: Set release outputs
         id: release
         env:
-          # Pass outputs via environment variables to avoid shell escaping issues
-          RELEASE_1_CREATED: ${{ steps.release-1.outputs.release_created }}
-          RELEASES_1_CREATED: ${{ steps.release-1.outputs.releases_created }}
-          TAG_1_NAME: ${{ steps.release-1.outputs.tag_name }}
-          PR_1: ${{ steps.release-1.outputs.pr }}
-          RELEASE_2_CREATED: ${{ steps.release-2.outputs.release_created }}
-          RELEASES_2_CREATED: ${{ steps.release-2.outputs.releases_created }}
-          TAG_2_NAME: ${{ steps.release-2.outputs.tag_name }}
-          PR_2: ${{ steps.release-2.outputs.pr }}
-          RELEASE_3_CREATED: ${{ steps.release-3.outputs.release_created }}
-          RELEASES_3_CREATED: ${{ steps.release-3.outputs.releases_created }}
-          TAG_3_NAME: ${{ steps.release-3.outputs.tag_name }}
-          PR_3: ${{ steps.release-3.outputs.pr }}
+          # Attempt 1 outputs
+          RP1_RELEASES_CREATED: ${{ steps.release-1.outputs.releases_created }}
+          RP1_PR: ${{ steps.release-1.outputs.pr }}
+          RP1_OP_RELEASED: ${{ steps.release-1.outputs['.--release_created'] }}
+          RP1_OP_VERSION: ${{ steps.release-1.outputs['.--version'] }}
+          RP1_OP_TAG: ${{ steps.release-1.outputs['.--tag_name'] }}
+          RP1_CHART_OP_RELEASED: ${{ steps.release-1.outputs['charts/keycloak-operator--release_created'] }}
+          RP1_CHART_OP_VERSION: ${{ steps.release-1.outputs['charts/keycloak-operator--version'] }}
+          RP1_CHART_REALM_RELEASED: ${{ steps.release-1.outputs['charts/keycloak-realm--release_created'] }}
+          RP1_CHART_REALM_VERSION: ${{ steps.release-1.outputs['charts/keycloak-realm--version'] }}
+          RP1_CHART_CLIENT_RELEASED: ${{ steps.release-1.outputs['charts/keycloak-client--release_created'] }}
+          RP1_CHART_CLIENT_VERSION: ${{ steps.release-1.outputs['charts/keycloak-client--version'] }}
+          # Attempt 2 outputs
+          RP2_RELEASES_CREATED: ${{ steps.release-2.outputs.releases_created }}
+          RP2_PR: ${{ steps.release-2.outputs.pr }}
+          RP2_OP_RELEASED: ${{ steps.release-2.outputs['.--release_created'] }}
+          RP2_OP_VERSION: ${{ steps.release-2.outputs['.--version'] }}
+          RP2_OP_TAG: ${{ steps.release-2.outputs['.--tag_name'] }}
+          RP2_CHART_OP_RELEASED: ${{ steps.release-2.outputs['charts/keycloak-operator--release_created'] }}
+          RP2_CHART_OP_VERSION: ${{ steps.release-2.outputs['charts/keycloak-operator--version'] }}
+          RP2_CHART_REALM_RELEASED: ${{ steps.release-2.outputs['charts/keycloak-realm--release_created'] }}
+          RP2_CHART_REALM_VERSION: ${{ steps.release-2.outputs['charts/keycloak-realm--version'] }}
+          RP2_CHART_CLIENT_RELEASED: ${{ steps.release-2.outputs['charts/keycloak-client--release_created'] }}
+          RP2_CHART_CLIENT_VERSION: ${{ steps.release-2.outputs['charts/keycloak-client--version'] }}
+          # Attempt 3 outputs
+          RP3_RELEASES_CREATED: ${{ steps.release-3.outputs.releases_created }}
+          RP3_PR: ${{ steps.release-3.outputs.pr }}
+          RP3_OP_RELEASED: ${{ steps.release-3.outputs['.--release_created'] }}
+          RP3_OP_VERSION: ${{ steps.release-3.outputs['.--version'] }}
+          RP3_OP_TAG: ${{ steps.release-3.outputs['.--tag_name'] }}
+          RP3_CHART_OP_RELEASED: ${{ steps.release-3.outputs['charts/keycloak-operator--release_created'] }}
+          RP3_CHART_OP_VERSION: ${{ steps.release-3.outputs['charts/keycloak-operator--version'] }}
+          RP3_CHART_REALM_RELEASED: ${{ steps.release-3.outputs['charts/keycloak-realm--release_created'] }}
+          RP3_CHART_REALM_VERSION: ${{ steps.release-3.outputs['charts/keycloak-realm--version'] }}
+          RP3_CHART_CLIENT_RELEASED: ${{ steps.release-3.outputs['charts/keycloak-client--release_created'] }}
+          RP3_CHART_CLIENT_VERSION: ${{ steps.release-3.outputs['charts/keycloak-client--version'] }}
         run: |
-          # Check which attempt succeeded (in order)
-          # Use heredoc syntax for pr output to handle special characters
+          # Determine which attempt succeeded and use its outputs
           if [[ "${{ steps.release-1.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 1"
-            echo "release_created=$RELEASE_1_CREATED" >> $GITHUB_OUTPUT
-            echo "releases_created=$RELEASES_1_CREATED" >> $GITHUB_OUTPUT
-            echo "tag_name=$TAG_1_NAME" >> $GITHUB_OUTPUT
-            {
-              echo 'pr<<EOF'
-              echo "$PR_1"
-              echo 'EOF'
-            } >> $GITHUB_OUTPUT
+            RELEASES_CREATED="$RP1_RELEASES_CREATED"
+            PR="$RP1_PR"
+            OP_RELEASED="$RP1_OP_RELEASED"
+            OP_VERSION="$RP1_OP_VERSION"
+            OP_TAG="$RP1_OP_TAG"
+            CHART_OP_RELEASED="$RP1_CHART_OP_RELEASED"
+            CHART_OP_VERSION="$RP1_CHART_OP_VERSION"
+            CHART_REALM_RELEASED="$RP1_CHART_REALM_RELEASED"
+            CHART_REALM_VERSION="$RP1_CHART_REALM_VERSION"
+            CHART_CLIENT_RELEASED="$RP1_CHART_CLIENT_RELEASED"
+            CHART_CLIENT_VERSION="$RP1_CHART_CLIENT_VERSION"
           elif [[ "${{ steps.release-2.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 2"
-            echo "release_created=$RELEASE_2_CREATED" >> $GITHUB_OUTPUT
-            echo "releases_created=$RELEASES_2_CREATED" >> $GITHUB_OUTPUT
-            echo "tag_name=$TAG_2_NAME" >> $GITHUB_OUTPUT
-            {
-              echo 'pr<<EOF'
-              echo "$PR_2"
-              echo 'EOF'
-            } >> $GITHUB_OUTPUT
+            RELEASES_CREATED="$RP2_RELEASES_CREATED"
+            PR="$RP2_PR"
+            OP_RELEASED="$RP2_OP_RELEASED"
+            OP_VERSION="$RP2_OP_VERSION"
+            OP_TAG="$RP2_OP_TAG"
+            CHART_OP_RELEASED="$RP2_CHART_OP_RELEASED"
+            CHART_OP_VERSION="$RP2_CHART_OP_VERSION"
+            CHART_REALM_RELEASED="$RP2_CHART_REALM_RELEASED"
+            CHART_REALM_VERSION="$RP2_CHART_REALM_VERSION"
+            CHART_CLIENT_RELEASED="$RP2_CHART_CLIENT_RELEASED"
+            CHART_CLIENT_VERSION="$RP2_CHART_CLIENT_VERSION"
           elif [[ "${{ steps.release-3.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 3"
-            echo "release_created=$RELEASE_3_CREATED" >> $GITHUB_OUTPUT
-            echo "releases_created=$RELEASES_3_CREATED" >> $GITHUB_OUTPUT
-            echo "tag_name=$TAG_3_NAME" >> $GITHUB_OUTPUT
-            {
-              echo 'pr<<EOF'
-              echo "$PR_3"
-              echo 'EOF'
-            } >> $GITHUB_OUTPUT
+            RELEASES_CREATED="$RP3_RELEASES_CREATED"
+            PR="$RP3_PR"
+            OP_RELEASED="$RP3_OP_RELEASED"
+            OP_VERSION="$RP3_OP_VERSION"
+            OP_TAG="$RP3_OP_TAG"
+            CHART_OP_RELEASED="$RP3_CHART_OP_RELEASED"
+            CHART_OP_VERSION="$RP3_CHART_OP_VERSION"
+            CHART_REALM_RELEASED="$RP3_CHART_REALM_RELEASED"
+            CHART_REALM_VERSION="$RP3_CHART_REALM_VERSION"
+            CHART_CLIENT_RELEASED="$RP3_CHART_CLIENT_RELEASED"
+            CHART_CLIENT_VERSION="$RP3_CHART_CLIENT_VERSION"
           else
             echo "### ❌ Release Please Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
@@ -444,116 +363,43 @@ jobs:
             exit 1
           fi
 
-      # Detect untagged merged release PRs - this is a critical error that blocks releases
-      - name: Check for untagged release PRs
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-        run: |
-          # Check if there are any merged release PRs that haven't been tagged yet.
-          # These are identified by having 'autorelease: pending' or 'autorelease: failed' labels.
-          #
-          # Note: We can't rely on release-please outputs alone because:
-          # - releases_created=false + empty pr = normal "nothing to do" state
-          # - releases_created=false + empty pr = also happens with untagged PRs
-          # So we directly check for the problematic labels instead.
+          # Output all release information
+          echo "releases_created=${RELEASES_CREATED:-false}" >> $GITHUB_OUTPUT
+          {
+            echo 'pr<<EOF'
+            echo "$PR"
+            echo 'EOF'
+          } >> $GITHUB_OUTPUT
 
-          echo "Checking for merged release PRs with pending/failed labels..."
+          # Operator outputs
+          echo "operator_released=${OP_RELEASED:-false}" >> $GITHUB_OUTPUT
+          echo "operator_version=${OP_VERSION:-}" >> $GITHUB_OUTPUT
+          echo "operator_tag=${OP_TAG:-}" >> $GITHUB_OUTPUT
 
-          PENDING_PRS=$(gh pr list --state merged --label 'autorelease: pending' --json number,title --jq '.[] | "#\(.number): \(.title)"' 2>/dev/null || echo "")
-          FAILED_PRS=$(gh pr list --state merged --label 'autorelease: failed' --json number,title --jq '.[] | "#\(.number): \(.title)"' 2>/dev/null || echo "")
+          # Chart outputs
+          echo "chart_operator_released=${CHART_OP_RELEASED:-false}" >> $GITHUB_OUTPUT
+          echo "chart_operator_version=${CHART_OP_VERSION:-}" >> $GITHUB_OUTPUT
+          echo "chart_realm_released=${CHART_REALM_RELEASED:-false}" >> $GITHUB_OUTPUT
+          echo "chart_realm_version=${CHART_REALM_VERSION:-}" >> $GITHUB_OUTPUT
+          echo "chart_client_released=${CHART_CLIENT_RELEASED:-false}" >> $GITHUB_OUTPUT
+          echo "chart_client_version=${CHART_CLIENT_VERSION:-}" >> $GITHUB_OUTPUT
 
-          if [[ -n "$PENDING_PRS" || -n "$FAILED_PRS" ]]; then
-            echo "### ❌ Untagged Merged Release PRs Detected" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Found merged release PRs without corresponding tags/releases:" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-
-            if [[ -n "$PENDING_PRS" ]]; then
-              echo "**Pending PRs:**" >> $GITHUB_STEP_SUMMARY
-              echo "$PENDING_PRS" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            if [[ -n "$FAILED_PRS" ]]; then
-              echo "**Failed PRs:**" >> $GITHUB_STEP_SUMMARY
-              echo "$FAILED_PRS" >> $GITHUB_STEP_SUMMARY
-              echo "" >> $GITHUB_STEP_SUMMARY
-            fi
-
-            echo "This blocks all future releases until resolved." >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "**To fix this:**" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "1. Get the merge commit for the PR:" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "   gh pr view <PR_NUMBER> --json mergeCommit" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "2. Check which tags/releases exist:" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "   git tag --list 'v*' --sort=-version:refname | head -5" >> $GITHUB_STEP_SUMMARY
-            echo "   gh release list --limit 5" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "3. Create missing tag (if needed) and release:" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "   git tag -a vX.Y.Z <merge-commit-sha> -m 'Release vX.Y.Z'" >> $GITHUB_STEP_SUMMARY
-            echo "   git push origin vX.Y.Z" >> $GITHUB_STEP_SUMMARY
-            echo "   gh release create vX.Y.Z --title 'vX.Y.Z' --notes 'See CHANGELOG.md' --target <merge-commit-sha>" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "4. Update the PR label to 'tagged':" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`bash" >> $GITHUB_STEP_SUMMARY
-            echo "   gh api repos/${{ github.repository }}/issues/PR_NUMBER/labels/autorelease%3A%20failed -X DELETE 2>/dev/null || true" >> $GITHUB_STEP_SUMMARY
-            echo "   gh api repos/${{ github.repository }}/issues/PR_NUMBER/labels/autorelease%3A%20pending -X DELETE 2>/dev/null || true" >> $GITHUB_STEP_SUMMARY
-            echo "   gh api repos/${{ github.repository }}/issues/PR_NUMBER/labels -f 'labels[]=autorelease: tagged'" >> $GITHUB_STEP_SUMMARY
-            echo "   \`\`\`" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "5. Re-run this workflow" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-          echo "✅ No untagged release PR issues detected"
-
-      # Mark any pending release PRs as failed if we detected untagged PRs
-      # This runs even on failure to help with debugging
-      - name: Mark pending releases as failed
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-        run: |
-          echo "Checking for merged release PRs with 'autorelease: pending' label..."
-
-          # Find merged PRs with pending label and change to failed
-          PENDING_PRS=$(gh pr list --state merged --label 'autorelease: pending' --json number --jq '.[].number' 2>/dev/null || echo "")
-
-          if [[ -n "$PENDING_PRS" ]]; then
-            echo "Found pending release PRs: $PENDING_PRS"
-            for pr in $PENDING_PRS; do
-              echo "Marking PR #$pr as failed..."
-              gh api repos/${{ github.repository }}/issues/$pr/labels/autorelease%3A%20pending -X DELETE 2>/dev/null || true
-              gh api repos/${{ github.repository }}/issues/$pr/labels -f 'labels[]=autorelease: failed' 2>/dev/null || true
-            done
-            echo "✅ Marked pending release PRs as failed"
+          # Summary
+          echo "### 🎯 Release Please Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Releases Created:** ${RELEASES_CREATED:-false}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [[ "${RELEASES_CREATED:-false}" == "true" ]]; then
+            echo "**Components Released:**" >> $GITHUB_STEP_SUMMARY
+            [[ "$OP_RELEASED" == "true" ]] && echo "- ✅ Operator: v${OP_VERSION}" >> $GITHUB_STEP_SUMMARY
+            [[ "$CHART_OP_RELEASED" == "true" ]] && echo "- ✅ Chart Operator: v${CHART_OP_VERSION}" >> $GITHUB_STEP_SUMMARY
+            [[ "$CHART_REALM_RELEASED" == "true" ]] && echo "- ✅ Chart Realm: v${CHART_REALM_VERSION}" >> $GITHUB_STEP_SUMMARY
+            [[ "$CHART_CLIENT_RELEASED" == "true" ]] && echo "- ✅ Chart Client: v${CHART_CLIENT_VERSION}" >> $GITHUB_STEP_SUMMARY
+          elif [[ -n "$PR" ]]; then
+            echo "**Release PR:** Updated/Created" >> $GITHUB_STEP_SUMMARY
           else
-            echo "No pending release PRs found"
+            echo "No releases or PR updates needed." >> $GITHUB_STEP_SUMMARY
           fi
-
-      - name: Release summary
-        if: steps.release.outputs.release_created == 'true'
-        run: |
-          echo "### :rocket: Release Created" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Tag:** \`${{ steps.release.outputs.tag_name }}\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: PR summary
-        if: steps.release.outputs.pr != ''
-        env:
-          PR_DATA: ${{ steps.release.outputs.pr }}
-        run: |
-          echo "### :memo: Release PR Updated" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**PR:** ${PR_DATA}" >> $GITHUB_STEP_SUMMARY
 
       - uses: actions/checkout@v6
         if: steps.release.outputs.pr != ''
@@ -588,14 +434,10 @@ jobs:
               # Parse versions
               if [[ "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
                 CUR_MAJOR="${BASH_REMATCH[1]}"
-                CUR_MINOR="${BASH_REMATCH[2]}"
-                CUR_PATCH="${BASH_REMATCH[3]}"
               fi
 
               if [[ "$NEW_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
                 NEW_MAJOR="${BASH_REMATCH[1]}"
-                NEW_MINOR="${BASH_REMATCH[2]}"
-                NEW_PATCH="${BASH_REMATCH[3]}"
               fi
 
               # Check if it's a major release (X.0.0 where X > current major and X > 0)
@@ -609,27 +451,23 @@ jobs:
           # Enable auto-merge only if no major bumps
           if [[ "$HAS_MAJOR_BUMP" == "false" ]]; then
             if gh pr merge "$PR_NUMBER" --auto --rebase --repo ${{ github.repository }}; then
-              echo "### :white_check_mark: Auto-merge enabled" >> $GITHUB_STEP_SUMMARY
+              echo "### ✅ Auto-merge enabled for Release PR #${PR_NUMBER}" >> $GITHUB_STEP_SUMMARY
             else
-              echo "### :warning: Auto-merge failed" >> $GITHUB_STEP_SUMMARY
+              echo "### ⚠️ Auto-merge could not be enabled" >> $GITHUB_STEP_SUMMARY
             fi
           else
-            echo "### :warning: Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
+            echo "### ⚠️ Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
           fi
 
   # =====================================================
-  # PHASE 4: PUBLISH ARTIFACTS (Release commits only)
+  # PHASE 4: PUBLISH ARTIFACTS (Conditional on release-please outputs)
   # =====================================================
-  # NOTE: Publish jobs skip quality checks and only depend on [detect].
-  # This assumes quality checks passed in the release PR before merging.
-  # Release PRs should be protected by branch rules requiring status checks.
+  # These jobs ONLY run when release-please indicates a release was created.
+  # This is the CD phase - triggered by the gatekeeper's outputs.
   publish-operator-image:
     name: Publish Operator Image
-    needs: [detect]
-    if: |
-      needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release_commit == 'true' &&
-      needs.detect.outputs.operator_releasing == 'true'
+    needs: [release-please]
+    if: needs.release-please.outputs.operator_released == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
@@ -650,18 +488,16 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           image-name: ${{ env.IMAGE_NAME }}
-          operator-version: ${{ needs.detect.outputs.operator_version }}
+          operator-version: ${{ needs.release-please.outputs.operator_version }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-actor: ${{ github.actor }}
 
-  # Update operator chart version (part of publish artifacts phase)
+  # Update operator chart to use new operator version
+  # This creates a PR that will trigger a chart release in the next cycle
   update-operator-chart:
     name: Update Operator Chart Version
-    needs: [detect, publish-operator-image]
-    if: |
-      needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release_commit == 'true' &&
-      needs.detect.outputs.operator_releasing == 'true'
+    needs: [release-please, publish-operator-image]
+    if: needs.release-please.outputs.operator_released == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -672,22 +508,17 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Use RELEASE_PLEASE_TOKEN (PAT) instead of GITHUB_TOKEN so the PR triggers workflows
-      # This allows the chart update PR to trigger release-please when merged
       - name: Update chart version
         uses: ./.github/actions/update-operator-chart
         with:
-          operator-version: ${{ needs.detect.outputs.operator_version }}
+          operator-version: ${{ needs.release-please.outputs.operator_version }}
           github-token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           github-repository: ${{ github.repository }}
 
   publish-chart-operator:
     name: Publish Helm Chart (Operator)
-    needs: [detect]
-    if: |
-      needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release_commit == 'true' &&
-      needs.detect.outputs.chart_operator_releasing == 'true'
+    needs: [release-please]
+    if: needs.release-please.outputs.chart_operator_released == 'true'
     runs-on: ubuntu-latest
     environment:
       name: ghcr-chart-operator
@@ -713,11 +544,8 @@ jobs:
 
   publish-chart-realm:
     name: Publish Helm Chart (Realm)
-    needs: [detect]
-    if: |
-      needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release_commit == 'true' &&
-      needs.detect.outputs.chart_realm_releasing == 'true'
+    needs: [release-please]
+    if: needs.release-please.outputs.chart_realm_released == 'true'
     runs-on: ubuntu-latest
     environment:
       name: ghcr-chart-realm
@@ -743,11 +571,8 @@ jobs:
 
   publish-chart-client:
     name: Publish Helm Chart (Client)
-    needs: [detect]
-    if: |
-      needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release_commit == 'true' &&
-      needs.detect.outputs.chart_client_releasing == 'true'
+    needs: [release-please]
+    if: needs.release-please.outputs.chart_client_released == 'true'
     runs-on: ubuntu-latest
     environment:
       name: ghcr-chart-client
@@ -776,9 +601,12 @@ jobs:
   # =====================================================
   update-dev-docs:
     name: Update Dev Documentation
-    needs: [detect]
-    # Run on every main commit to keep docs 1-1 with branch (includes release commits)
-    if: needs.detect.outputs.is_main == 'true'
+    needs: [detect, all-required-checks-passed]
+    # Run on every main push after CI passes
+    if: |
+      needs.all-required-checks-passed.result == 'success' &&
+      needs.detect.outputs.is_main == 'true' &&
+      github.event_name == 'push'
     runs-on: ubuntu-latest
     concurrency:
       group: github-pages
@@ -801,11 +629,8 @@ jobs:
 
   publish-release-docs:
     name: Publish Release Documentation
-    needs: [detect, publish-chart-operator]
-    if: |
-      needs.detect.outputs.is_main == 'true' &&
-      needs.detect.outputs.is_release_commit == 'true' &&
-      needs.detect.outputs.chart_operator_releasing == 'true'
+    needs: [release-please, publish-chart-operator]
+    if: needs.release-please.outputs.chart_operator_released == 'true'
     runs-on: ubuntu-latest
     concurrency:
       group: github-pages

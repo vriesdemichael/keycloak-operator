@@ -1,80 +1,110 @@
 # Improvements Over Original Workflow
 
-While the refactor maintains functional parity, one critical improvement was made:
+## Major Refactor: Release-Please as the Gatekeeper (December 2024)
 
-## Fixed: Chart Update PR Not Triggering Workflows
+### The Problem
 
-### The Issue
-In the original workflow, the `update-operator-chart` job created PRs using `secrets.GITHUB_TOKEN`:
+The original workflow had a fundamental design flaw: it tried to detect release commits by parsing commit messages and manifest diffs, then conditionally run publish jobs. This caused:
 
-```yaml
-- name: Create Pull Request
-  uses: peter-evans/create-pull-request@v7
-  with:
-    token: ${{ secrets.GITHUB_TOKEN }}  # ❌ Won't trigger workflows
+1. **Fragile Detection**: Regex-based commit message parsing was brittle
+2. **Race Conditions**: Skipping CI on "release commits" meant trusting that previous CI passed
+3. **Circular Dependencies**: release-please waited for publish jobs, but publish jobs needed release info
+4. **Unpredictable Flow**: Hard to understand when releases would actually happen
+
+### The Solution: Gatekeeper Architecture
+
+The new workflow follows the **release-please as gatekeeper** pattern:
+
+```
+Push to main
+    ↓
+CI Phase (ALL commits)
+    ↓
+release-please (THE GATEKEEPER)
+    ↓ (outputs signal what to publish)
+CD Phase (conditional on outputs)
 ```
 
-**Problem:** GitHub's security model prevents `GITHUB_TOKEN` from triggering workflow runs on PRs it creates. This means:
-1. The chart update PR wouldn't run CI/CD checks
-2. When the PR merged, release-please wouldn't detect the change
-3. The chart version bump wouldn't trigger a chart release
+### Key Changes
 
-### The Fix
-Changed to use `secrets.RELEASE_PLEASE_TOKEN` (a PAT):
-
-```yaml
-- name: Update chart version
-  uses: ./.github/actions/update-operator-chart
-  with:
-    github-token: ${{ secrets.RELEASE_PLEASE_TOKEN }}  # ✅ Triggers workflows
-```
-
-**Result:**
-1. ✅ Chart update PR runs full CI/CD validation
-2. ✅ When merged, release-please detects the chart change
-3. ✅ Chart release is automatically created
-4. ✅ Consistent with release-please's own token usage
-
-### Impact
-This fix enables the complete automated release cycle:
-```
-Operator Release → Chart Update PR → CI/CD Validates → Auto-merge → Chart Release
-```
-
-Without this fix, the cycle breaks after "Chart Update PR" and requires manual intervention.
-
-## Why This Wasn't Caught Before
-The original workflow likely had auto-merge disabled or the PR wasn't being monitored for the missing CI/CD runs. This refactor surfaced the issue through careful review of token usage patterns.
-
-## Changed: Dev Docs Always Update on Main
-
-### The Change
-Dev documentation now updates on every push to main, running in parallel with initial jobs.
+#### 1. CI Runs on ALL Commits
+No more skipping quality checks for "release commits". Release PRs are just version bumps - they should pass CI quickly.
 
 **Before:**
 ```yaml
-needs: [detect, all-required-checks-passed]
-if: |
-  needs.all-required-checks-passed.outputs.passed == 'true' &&
-  needs.detect.outputs.is_main == 'true' &&
-  needs.detect.outputs.is_release == 'false' &&
-  needs.detect.outputs.docs_changed == 'true'
+if: needs.detect.outputs.is_release_commit == 'false'
 ```
 
 **After:**
 ```yaml
-needs: [detect]
-if: |
-  needs.detect.outputs.is_main == 'true' &&
-  needs.detect.outputs.is_release == 'false' &&
-  github.event_name == 'push'
+# Always runs - no condition
 ```
 
-### Benefits
-1. ✅ Dev docs stay in sync with main branch on every commit
-2. ✅ Runs in parallel with tests (no waiting for all checks)
-3. ✅ No conditional on `docs_changed` - always updates
-4. ✅ Faster feedback - docs available while tests run
+#### 2. Release-Please Runs AFTER CI Passes
+Release-please is now the gatekeeper that runs after all quality checks pass.
 
-### Why
-Development documentation should always reflect the current state of the main branch, regardless of whether specific doc files changed. Code changes can require doc updates, schema changes, etc.
+**Before:**
+```yaml
+release-please:
+  needs: [detect, all-required-checks-passed, publish-*, ...]
+  if: always() && !contains(needs.*.result, 'failure')
+```
+
+**After:**
+```yaml
+release-please:
+  needs: [detect, all-required-checks-passed]
+  if: needs.all-required-checks-passed.result == 'success' && ...
+```
+
+#### 3. Publish Jobs Use release-please Outputs Directly
+No more commit message parsing. release-please tells us exactly what was released.
+
+**Before:**
+```yaml
+publish-operator-image:
+  needs: [detect]
+  if: needs.detect.outputs.operator_releasing == 'true'
+```
+
+**After:**
+```yaml
+publish-operator-image:
+  needs: [release-please]
+  if: needs.release-please.outputs.operator_released == 'true'
+```
+
+#### 4. Simplified Detection Phase
+Removed all the complex release detection logic. Just checks if we're on main branch.
+
+**Before:** 150+ lines of bash parsing commit messages and manifest diffs
+**After:** Simple branch check
+
+### Benefits
+
+1. ✅ **Transparent**: release-please outputs are the single source of truth
+2. ✅ **Predictable**: Quality checks always run, releases happen when release-please says so
+3. ✅ **Simpler**: No complex detection logic, no race conditions
+4. ✅ **Debuggable**: Clear job dependencies, easy to trace failures
+
+### The Flow
+
+```
+Normal commit:
+  CI passes → release-please creates/updates Release PR → Done
+
+Release PR merged:
+  CI passes → release-please creates releases → publish jobs run → Done
+```
+
+---
+
+## Previous Improvements (Preserved)
+
+### Fixed: Chart Update PR Not Triggering Workflows
+
+Changed `update-operator-chart` to use `RELEASE_PLEASE_TOKEN` (PAT) instead of `GITHUB_TOKEN` so the created PR triggers workflow runs.
+
+### Dev Docs Update After CI
+
+Dev documentation now updates after CI passes on main, ensuring docs stay in sync with validated code.
