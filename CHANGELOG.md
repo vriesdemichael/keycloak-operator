@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.4.3](https://github.com/vriesdemichael/keycloak-operator/compare/v0.4.2...v0.4.3) (2025-12-17)
+
+
+### Bug Fixes
+
+* **chart-operator:** correct digest regex in helm chart publish action ([d9cb566](https://github.com/vriesdemichael/keycloak-operator/commit/d9cb5666a4840df3626382b2f92fa59a45bb3335))
+* **chart-operator:** update for operator v0.4.2 ([3e05ace](https://github.com/vriesdemichael/keycloak-operator/commit/3e05ace25ee4dad3555aa6f3e94487cbdd04c09a))
+* **chart-operator:** update for operator v0.4.3 ([59cc41b](https://github.com/vriesdemichael/keycloak-operator/commit/59cc41bceb04de3f4a5d4ebcb960c6863f29211e))
+
+
+### Performance Improvements
+
+* implement generation-based skip to avoid redundant reconciliations ([af0d4c6](https://github.com/vriesdemichael/keycloak-operator/commit/af0d4c63490122a5d4893f2cb2e5cf6d63fe3f6b)), closes [#184](https://github.com/vriesdemichael/keycloak-operator/issues/184)
+
+
+### Code Refactoring
+
+* use release-please as gatekeeper for CD phase ([8f607bb](https://github.com/vriesdemichael/keycloak-operator/commit/8f607bb6c71adcf1268d16148f55e8fb90b4a6ab))
+
 ## [0.6.0](https://github.com/vriesdemichael/keycloak-operator/compare/v0.5.0...v0.6.0) (2025-12-17)
 
 
