@@ -36,10 +36,16 @@ from pathlib import Path
 
 # Valid component scopes from release-please-config.json
 VALID_SCOPES = {
-    "operator",
+    "operator",  # Legacy alias for operator-image
+    "operator-image",
     "chart-operator",
     "chart-realm",
     "chart-client",
+}
+
+# Scopes that are aliases of each other (cannot be combined)
+SCOPE_ALIASES = {
+    frozenset({"operator", "operator-image"}),
 }
 
 # Commit types that trigger releases and REQUIRE a scope
@@ -86,6 +92,16 @@ def validate_scope(scope: str | None) -> tuple[bool, str]:
             f"Invalid scope components: {', '.join(invalid_components)}\n"
             f"Valid scopes: {', '.join(sorted(VALID_SCOPES))}"
         )
+
+    # Check for alias conflicts (e.g., operator+operator-image)
+    components_set = set(components)
+    for alias_group in SCOPE_ALIASES:
+        overlap = components_set & alias_group
+        if len(overlap) > 1:
+            return False, (
+                f"Cannot combine aliased scopes: {', '.join(sorted(overlap))}\n"
+                f"These scopes refer to the same component. Use only one."
+            )
 
     # Check if components are in alphabetical order (for consistency)
     sorted_components = sorted(components)

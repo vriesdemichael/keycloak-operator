@@ -1,0 +1,70 @@
+name: Rebase Conflicted Release PRs
+
+# When a release PR merges, other pending release PRs may have manifest conflicts.
+# This workflow automatically triggers a rebase for any conflicted release PRs.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  rebase-conflicted:
+    name: Rebase Conflicted Release PRs
+    runs-on: ubuntu-latest
+    # Only run if this push might have created conflicts (e.g., release PR merge)
+    steps:
+      - name: Check for conflicted release PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Checking for conflicted release PRs..."
+
+          # GitHub's mergeable status can be null while being computed.
+          # Retry a few times with a short delay to allow computation to complete.
+          PENDING_PRS=""
+          for attempt in 1 2 3; do
+            echo "Attempt $attempt: Fetching release PR status..."
+
+            RESPONSE=$(gh pr list \
+              --repo ${{ github.repository }} \
+              --label "autorelease: pending" \
+              --json number,title,mergeable)
+
+            # Find PRs with CONFLICTING status
+            PENDING_PRS=$(echo "$RESPONSE" | jq -r '.[] | select(.mergeable == "CONFLICTING") | .number')
+
+            # Check if any PRs still have null mergeable status
+            NULL_COUNT=$(echo "$RESPONSE" | jq '[.[] | select(.mergeable == null)] | length')
+
+            if [[ "$NULL_COUNT" -eq 0 ]]; then
+              echo "All PRs have computed mergeable status."
+              break
+            fi
+
+            if [[ "$attempt" -lt 3 ]]; then
+              echo "$NULL_COUNT PR(s) still computing mergeable status, waiting..."
+              sleep 10
+            fi
+          done
+
+          if [[ -z "$PENDING_PRS" ]]; then
+            echo "No conflicted release PRs found."
+            exit 0
+          fi
+
+          echo "Found conflicted release PRs: $PENDING_PRS"
+
+          for pr in $PENDING_PRS; do
+            echo "Adding autorebase label to PR #$pr..."
+            gh pr edit "$pr" --add-label "autorebase" --repo ${{ github.repository }} || true
+          done
+
+          echo "### 🔄 Triggered Rebase for Conflicted Release PRs" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          for pr in $PENDING_PRS; do
+            echo "- PR #$pr" >> $GITHUB_STEP_SUMMARY
+          done
