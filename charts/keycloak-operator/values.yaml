@@ -1,6 +1,8 @@
 # Default values for keycloak-operator.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
+#
+# For full documentation, see: https://vriesdemichael.github.io/keycloak-operator/
 
 # ============================================================================
 # Operator Configuration
