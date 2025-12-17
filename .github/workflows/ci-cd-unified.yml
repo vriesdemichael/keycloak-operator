@@ -412,9 +412,12 @@ jobs:
         run: |
           # With separate-pull-requests, we get an array of PRs
           # Iterate over each PR and enable auto-merge if not a major bump
+          # Using process substitution to avoid subshell issues with pipe
 
           echo "Processing release PRs..."
-          echo "$PRS_DATA" | jq -c '.[]' | while read -r pr_json; do
+          SUMMARY_OUTPUT=""
+
+          while read -r pr_json; do
             PR_NUMBER=$(echo "$pr_json" | jq -r '.number')
             PR_BRANCH=$(echo "$pr_json" | jq -r '.headBranchName')
             PR_TITLE=$(echo "$pr_json" | jq -r '.title')
@@ -422,17 +425,26 @@ jobs:
             echo "Checking PR #$PR_NUMBER: $PR_TITLE"
 
             # Fetch the PR branch to compare manifest
-            git fetch origin "$PR_BRANCH:$PR_BRANCH" 2>/dev/null || continue
+            if ! git fetch origin "$PR_BRANCH:$PR_BRANCH" 2>/dev/null; then
+              echo "⚠️ Could not fetch branch $PR_BRANCH for PR #$PR_NUMBER"
+              SUMMARY_OUTPUT+="⚠️ Skipped PR #$PR_NUMBER: could not fetch branch\n"
+              continue
+            fi
 
             # Check manifest changes to determine if this is a major release
             HAS_MAJOR_BUMP=false
 
             # Get current and new manifest
             CURRENT_MANIFEST=$(cat .github/.release-please-manifest.json)
-            NEW_MANIFEST=$(git show "$PR_BRANCH:.github/.release-please-manifest.json" 2>/dev/null) || continue
+            NEW_MANIFEST=$(git show "$PR_BRANCH:.github/.release-please-manifest.json" 2>/dev/null)
+            if [[ -z "$NEW_MANIFEST" ]]; then
+              echo "⚠️ Could not read manifest from branch $PR_BRANCH for PR #$PR_NUMBER"
+              SUMMARY_OUTPUT+="⚠️ Skipped PR #$PR_NUMBER: manifest not found in branch\n"
+              continue
+            fi
 
-            # Compare each component
-            for component in $(echo "$CURRENT_MANIFEST" | jq -r 'keys[]'); do
+            # Compare each component using jq to iterate safely
+            while read -r component; do
               CURRENT_VERSION=$(echo "$CURRENT_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
               NEW_VERSION=$(echo "$NEW_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
 
@@ -454,19 +466,24 @@ jobs:
                   HAS_MAJOR_BUMP=true
                 fi
               fi
-            done
+            done < <(echo "$CURRENT_MANIFEST" | jq -r 'keys[]')
 
             # Enable auto-merge only if no major bumps
             if [[ "$HAS_MAJOR_BUMP" == "false" ]]; then
               if gh pr merge "$PR_NUMBER" --auto --rebase --repo ${{ github.repository }}; then
-                echo "✅ Auto-merge enabled for PR #$PR_NUMBER" >> $GITHUB_STEP_SUMMARY
+                SUMMARY_OUTPUT+="✅ Auto-merge enabled for PR #$PR_NUMBER\n"
               else
-                echo "⚠️ Auto-merge could not be enabled for PR #$PR_NUMBER" >> $GITHUB_STEP_SUMMARY
+                SUMMARY_OUTPUT+="⚠️ Auto-merge could not be enabled for PR #$PR_NUMBER\n"
               fi
             else
-              echo "⚠️ Manual Review Required for PR #$PR_NUMBER (Major Release)" >> $GITHUB_STEP_SUMMARY
+              SUMMARY_OUTPUT+="⚠️ Manual Review Required for PR #$PR_NUMBER (Major Release)\n"
             fi
-          done
+          done < <(echo "$PRS_DATA" | jq -c '.[]')
+
+          # Write summary after loop completes (outside subshell)
+          if [[ -n "$SUMMARY_OUTPUT" ]]; then
+            echo -e "$SUMMARY_OUTPUT" >> $GITHUB_STEP_SUMMARY
+          fi
 
   # =====================================================
   # PHASE 4: PUBLISH ARTIFACTS (Conditional on release-please outputs)
