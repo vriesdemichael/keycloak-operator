@@ -65,6 +65,6 @@
       "include-component-in-tag": true
     }
   },
-  "group-pull-request-title-pattern": "chore: release multiple components",
-  "separate-pull-requests": false
+  "separate-pull-requests": true,
+  "pull-request-title-pattern": "chore${scope}: release ${component} ${version}"
 }
