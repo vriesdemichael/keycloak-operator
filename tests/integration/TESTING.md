@@ -725,7 +725,7 @@ Integration tests support coverage collection from the operator running in Kuber
 ### How It Works
 
 1. **Coverage-Enabled Image**: The operator is built with coverage instrumentation using `images/operator/Dockerfile.test`
-2. **Auto-Start**: Coverage collection starts automatically via `test-inject/sitecustomize.py` (imported at Python startup)
+2. **Auto-Start**: Coverage collection starts automatically via `images/operator/test-inject/sitecustomize.py` (imported at Python startup)
 3. **Data Storage**: Coverage data is stored in `/tmp/coverage/` inside the operator pod
 4. **Retrieval**: After tests complete, coverage files are copied from the pod to host
 5. **Combination**: Unit test coverage and integration test coverage are merged
@@ -768,7 +768,7 @@ start htmlcov/index.html  # Windows
 The coverage-enabled operator image includes:
 - `coverage` package installed
 - `.coveragerc` configuration file
-- `test-inject/sitecustomize.py` auto-imported at startup
+- `images/operator/test-inject/sitecustomize.py` auto-imported at startup
 - `COVERAGE_PROCESS_START=/app/.coveragerc` environment variable
 
 When tests run with `INTEGRATION_COVERAGE=true`:
