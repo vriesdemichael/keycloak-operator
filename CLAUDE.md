@@ -323,7 +323,7 @@ make quality                     # Linting and formatting
 **Coverage Configuration:**
 - Configuration: `.coveragerc` in repository root
 - Instrumentation: `images/operator/Dockerfile.test` (coverage-enabled image)
-- Auto-start: `test-inject/sitecustomize.py` (imported at Python startup)
+- Auto-start: `images/operator/test-inject/sitecustomize.py` (imported at Python startup)
 - Retrieval: `scripts/retrieve-coverage.sh` (extracts from pod)
 - Combination: `scripts/combine-coverage.sh` (merges unit + integration)
 - Reports: `coverage.xml` (Codecov), `htmlcov/` (local viewing)

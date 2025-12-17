@@ -102,7 +102,7 @@ COPY .coveragerc /app/.coveragerc
 COPY images/operator/coveragerc.container /app/.coveragerc.container
 
 # Copy test injection module for auto-starting coverage
-COPY test-inject /app/test-inject
+COPY images/operator/test-inject /app/test-inject
 
 # Install the .pth file to auto-import sitecustomize.py at startup
 RUN python - <<'PY'
