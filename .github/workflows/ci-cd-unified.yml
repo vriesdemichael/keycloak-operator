@@ -550,7 +550,7 @@ jobs:
       name: ghcr-chart-operator
       url: https://github.com/${{ github.repository }}/pkgs/container/charts%2Fkeycloak-operator
     permissions:
-      contents: read
+      contents: write
       packages: write
       id-token: write
       attestations: write
@@ -567,6 +567,29 @@ jobs:
           registry-owner: ${{ github.repository_owner }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-actor: ${{ github.actor }}
+
+      - name: Create primary version tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHART_VERSION: ${{ needs.release-please.outputs.chart_operator_version }}
+        run: |
+          # The chart-operator is the primary artifact, so we also tag it with just v{version}
+          # This allows users to reference the "main" version without the chart- prefix
+          PRIMARY_TAG="v${CHART_VERSION}"
+          COMPONENT_TAG="chart-operator-v${CHART_VERSION}"
+
+          echo "Creating primary tag $PRIMARY_TAG pointing to same commit as $COMPONENT_TAG"
+
+          # Get the commit SHA for the component tag
+          COMMIT_SHA=$(git rev-parse HEAD)
+
+          # Create the primary tag (lightweight tag pointing to same commit)
+          git tag "$PRIMARY_TAG" "$COMMIT_SHA" 2>/dev/null || echo "Tag $PRIMARY_TAG already exists"
+          git push origin "$PRIMARY_TAG" 2>/dev/null || echo "Tag $PRIMARY_TAG already pushed"
+
+          echo "### 🏷️ Primary Version Tag" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Created \`$PRIMARY_TAG\` pointing to chart-operator release" >> $GITHUB_STEP_SUMMARY
 
   publish-chart-realm:
     name: Publish Helm Chart (Realm)
