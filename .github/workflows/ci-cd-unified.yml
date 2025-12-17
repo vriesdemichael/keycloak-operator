@@ -391,10 +391,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${RELEASES_CREATED:-false}" == "true" ]]; then
             echo "**Components Released:**" >> $GITHUB_STEP_SUMMARY
-            [[ "$OP_RELEASED" == "true" ]] && echo "- ✅ Operator: v${OP_VERSION}" >> $GITHUB_STEP_SUMMARY
-            [[ "$CHART_OP_RELEASED" == "true" ]] && echo "- ✅ Chart Operator: v${CHART_OP_VERSION}" >> $GITHUB_STEP_SUMMARY
-            [[ "$CHART_REALM_RELEASED" == "true" ]] && echo "- ✅ Chart Realm: v${CHART_REALM_VERSION}" >> $GITHUB_STEP_SUMMARY
-            [[ "$CHART_CLIENT_RELEASED" == "true" ]] && echo "- ✅ Chart Client: v${CHART_CLIENT_VERSION}" >> $GITHUB_STEP_SUMMARY
+            [[ "$OP_RELEASED" == "true" ]] && echo "- ✅ Operator: v${OP_VERSION}" >> $GITHUB_STEP_SUMMARY || true
+            [[ "$CHART_OP_RELEASED" == "true" ]] && echo "- ✅ Chart Operator: v${CHART_OP_VERSION}" >> $GITHUB_STEP_SUMMARY || true
+            [[ "$CHART_REALM_RELEASED" == "true" ]] && echo "- ✅ Chart Realm: v${CHART_REALM_VERSION}" >> $GITHUB_STEP_SUMMARY || true
+            [[ "$CHART_CLIENT_RELEASED" == "true" ]] && echo "- ✅ Chart Client: v${CHART_CLIENT_VERSION}" >> $GITHUB_STEP_SUMMARY || true
           elif [[ -n "$PRS" && "$PRS" != "[]" ]]; then
             echo "**Release PRs:** Created/Updated" >> $GITHUB_STEP_SUMMARY
           else
