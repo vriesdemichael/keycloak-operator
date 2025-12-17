@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.1...chart-operator-v0.3.2) (2025-12-17)
+
+
+### Features
+
+* **chart-operator:** add documentation link to values.yaml header ([3ef4016](https://github.com/vriesdemichael/keycloak-operator/commit/3ef40163c31513868c98775d831124018152586f))
+
 ## [0.3.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.0...chart-operator-v0.3.1) (2025-12-17)
 
 
