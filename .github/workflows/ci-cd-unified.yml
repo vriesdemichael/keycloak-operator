@@ -219,8 +219,8 @@ jobs:
       chart_realm_version: ${{ steps.release.outputs.chart_realm_version }}
       chart_client_released: ${{ steps.release.outputs.chart_client_released }}
       chart_client_version: ${{ steps.release.outputs.chart_client_version }}
-      # PR info (for auto-merge)
-      pr: ${{ steps.release.outputs.pr }}
+      # PRs info (for auto-merge) - with separate-pull-requests, this is an array
+      prs: ${{ steps.release.outputs.prs }}
       releases_created: ${{ steps.release.outputs.releases_created }}
 
     steps:
@@ -274,7 +274,7 @@ jobs:
         env:
           # Attempt 1 outputs
           RP1_RELEASES_CREATED: ${{ steps.release-1.outputs.releases_created }}
-          RP1_PR: ${{ steps.release-1.outputs.pr }}
+          RP1_PRS: ${{ steps.release-1.outputs.prs }}
           RP1_OP_RELEASED: ${{ steps.release-1.outputs['.--release_created'] }}
           RP1_OP_VERSION: ${{ steps.release-1.outputs['.--version'] }}
           RP1_OP_TAG: ${{ steps.release-1.outputs['.--tag_name'] }}
@@ -286,7 +286,7 @@ jobs:
           RP1_CHART_CLIENT_VERSION: ${{ steps.release-1.outputs['charts/keycloak-client--version'] }}
           # Attempt 2 outputs
           RP2_RELEASES_CREATED: ${{ steps.release-2.outputs.releases_created }}
-          RP2_PR: ${{ steps.release-2.outputs.pr }}
+          RP2_PRS: ${{ steps.release-2.outputs.prs }}
           RP2_OP_RELEASED: ${{ steps.release-2.outputs['.--release_created'] }}
           RP2_OP_VERSION: ${{ steps.release-2.outputs['.--version'] }}
           RP2_OP_TAG: ${{ steps.release-2.outputs['.--tag_name'] }}
@@ -298,7 +298,7 @@ jobs:
           RP2_CHART_CLIENT_VERSION: ${{ steps.release-2.outputs['charts/keycloak-client--version'] }}
           # Attempt 3 outputs
           RP3_RELEASES_CREATED: ${{ steps.release-3.outputs.releases_created }}
-          RP3_PR: ${{ steps.release-3.outputs.pr }}
+          RP3_PRS: ${{ steps.release-3.outputs.prs }}
           RP3_OP_RELEASED: ${{ steps.release-3.outputs['.--release_created'] }}
           RP3_OP_VERSION: ${{ steps.release-3.outputs['.--version'] }}
           RP3_OP_TAG: ${{ steps.release-3.outputs['.--tag_name'] }}
@@ -313,7 +313,7 @@ jobs:
           if [[ "${{ steps.release-1.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 1"
             RELEASES_CREATED="$RP1_RELEASES_CREATED"
-            PR="$RP1_PR"
+            PRS="$RP1_PRS"
             OP_RELEASED="$RP1_OP_RELEASED"
             OP_VERSION="$RP1_OP_VERSION"
             OP_TAG="$RP1_OP_TAG"
@@ -326,7 +326,7 @@ jobs:
           elif [[ "${{ steps.release-2.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 2"
             RELEASES_CREATED="$RP2_RELEASES_CREATED"
-            PR="$RP2_PR"
+            PRS="$RP2_PRS"
             OP_RELEASED="$RP2_OP_RELEASED"
             OP_VERSION="$RP2_OP_VERSION"
             OP_TAG="$RP2_OP_TAG"
@@ -339,7 +339,7 @@ jobs:
           elif [[ "${{ steps.release-3.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 3"
             RELEASES_CREATED="$RP3_RELEASES_CREATED"
-            PR="$RP3_PR"
+            PRS="$RP3_PRS"
             OP_RELEASED="$RP3_OP_RELEASED"
             OP_VERSION="$RP3_OP_VERSION"
             OP_TAG="$RP3_OP_TAG"
@@ -366,8 +366,8 @@ jobs:
           # Output all release information
           echo "releases_created=${RELEASES_CREATED:-false}" >> $GITHUB_OUTPUT
           {
-            echo 'pr<<EOF'
-            echo "$PR"
+            echo 'prs<<EOF'
+            echo "$PRS"
             echo 'EOF'
           } >> $GITHUB_OUTPUT
 
@@ -395,69 +395,78 @@ jobs:
             [[ "$CHART_OP_RELEASED" == "true" ]] && echo "- ✅ Chart Operator: v${CHART_OP_VERSION}" >> $GITHUB_STEP_SUMMARY
             [[ "$CHART_REALM_RELEASED" == "true" ]] && echo "- ✅ Chart Realm: v${CHART_REALM_VERSION}" >> $GITHUB_STEP_SUMMARY
             [[ "$CHART_CLIENT_RELEASED" == "true" ]] && echo "- ✅ Chart Client: v${CHART_CLIENT_VERSION}" >> $GITHUB_STEP_SUMMARY
-          elif [[ -n "$PR" ]]; then
-            echo "**Release PR:** Updated/Created" >> $GITHUB_STEP_SUMMARY
+          elif [[ -n "$PRS" && "$PRS" != "[]" ]]; then
+            echo "**Release PRs:** Created/Updated" >> $GITHUB_STEP_SUMMARY
           else
             echo "No releases or PR updates needed." >> $GITHUB_STEP_SUMMARY
           fi
 
       - uses: actions/checkout@v6
-        if: steps.release.outputs.pr != ''
+        if: steps.release.outputs.prs != '' && steps.release.outputs.prs != '[]'
 
       - name: Enable auto-merge for non-major releases
-        if: steps.release.outputs.pr != ''
+        if: steps.release.outputs.prs != '' && steps.release.outputs.prs != '[]'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          PR_DATA: ${{ steps.release.outputs.pr }}
+          PRS_DATA: ${{ steps.release.outputs.prs }}
         run: |
-          PR_NUMBER=$(echo "$PR_DATA" | jq -r '.number')
-          PR_BRANCH=$(echo "$PR_DATA" | jq -r '.headBranchName')
+          # With separate-pull-requests, we get an array of PRs
+          # Iterate over each PR and enable auto-merge if not a major bump
 
-          # Fetch the PR branch to compare manifest
-          git fetch origin "$PR_BRANCH:$PR_BRANCH"
+          echo "Processing release PRs..."
+          echo "$PRS_DATA" | jq -c '.[]' | while read -r pr_json; do
+            PR_NUMBER=$(echo "$pr_json" | jq -r '.number')
+            PR_BRANCH=$(echo "$pr_json" | jq -r '.headBranchName')
+            PR_TITLE=$(echo "$pr_json" | jq -r '.title')
 
-          # Check manifest changes to determine if this is a major release
-          HAS_MAJOR_BUMP=false
+            echo "Checking PR #$PR_NUMBER: $PR_TITLE"
 
-          # Get current and new manifest
-          CURRENT_MANIFEST=$(cat .github/.release-please-manifest.json)
-          NEW_MANIFEST=$(git show "$PR_BRANCH:.github/.release-please-manifest.json")
+            # Fetch the PR branch to compare manifest
+            git fetch origin "$PR_BRANCH:$PR_BRANCH" 2>/dev/null || continue
 
-          # Compare each component
-          for component in $(echo "$CURRENT_MANIFEST" | jq -r 'keys[]'); do
-            CURRENT_VERSION=$(echo "$CURRENT_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
-            NEW_VERSION=$(echo "$NEW_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
+            # Check manifest changes to determine if this is a major release
+            HAS_MAJOR_BUMP=false
 
-            if [[ "$CURRENT_VERSION" != "$NEW_VERSION" ]]; then
-              echo "Component '$component': $CURRENT_VERSION -> $NEW_VERSION"
+            # Get current and new manifest
+            CURRENT_MANIFEST=$(cat .github/.release-please-manifest.json)
+            NEW_MANIFEST=$(git show "$PR_BRANCH:.github/.release-please-manifest.json" 2>/dev/null) || continue
 
-              # Parse versions
-              if [[ "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
-                CUR_MAJOR="${BASH_REMATCH[1]}"
+            # Compare each component
+            for component in $(echo "$CURRENT_MANIFEST" | jq -r 'keys[]'); do
+              CURRENT_VERSION=$(echo "$CURRENT_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
+              NEW_VERSION=$(echo "$NEW_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
+
+              if [[ "$CURRENT_VERSION" != "$NEW_VERSION" ]]; then
+                echo "  Component '$component': $CURRENT_VERSION -> $NEW_VERSION"
+
+                # Parse versions
+                if [[ "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+                  CUR_MAJOR="${BASH_REMATCH[1]}"
+                fi
+
+                if [[ "$NEW_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+                  NEW_MAJOR="${BASH_REMATCH[1]}"
+                fi
+
+                # Check if it's a major release (X.0.0 where X > current major and X > 0)
+                if [[ "$NEW_MAJOR" -gt "$CUR_MAJOR" ]] && [[ "$NEW_MAJOR" -gt 0 ]]; then
+                  echo "  ⚠️  Major version bump detected: $CURRENT_VERSION -> $NEW_VERSION"
+                  HAS_MAJOR_BUMP=true
+                fi
               fi
+            done
 
-              if [[ "$NEW_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
-                NEW_MAJOR="${BASH_REMATCH[1]}"
+            # Enable auto-merge only if no major bumps
+            if [[ "$HAS_MAJOR_BUMP" == "false" ]]; then
+              if gh pr merge "$PR_NUMBER" --auto --rebase --repo ${{ github.repository }}; then
+                echo "✅ Auto-merge enabled for PR #$PR_NUMBER" >> $GITHUB_STEP_SUMMARY
+              else
+                echo "⚠️ Auto-merge could not be enabled for PR #$PR_NUMBER" >> $GITHUB_STEP_SUMMARY
               fi
-
-              # Check if it's a major release (X.0.0 where X > current major and X > 0)
-              if [[ "$NEW_MAJOR" -gt "$CUR_MAJOR" ]] && [[ "$NEW_MAJOR" -gt 0 ]]; then
-                echo "⚠️  Major version bump detected: $CURRENT_VERSION -> $NEW_VERSION"
-                HAS_MAJOR_BUMP=true
-              fi
+            else
+              echo "⚠️ Manual Review Required for PR #$PR_NUMBER (Major Release)" >> $GITHUB_STEP_SUMMARY
             fi
           done
-
-          # Enable auto-merge only if no major bumps
-          if [[ "$HAS_MAJOR_BUMP" == "false" ]]; then
-            if gh pr merge "$PR_NUMBER" --auto --rebase --repo ${{ github.repository }}; then
-              echo "### ✅ Auto-merge enabled for Release PR #${PR_NUMBER}" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "### ⚠️ Auto-merge could not be enabled" >> $GITHUB_STEP_SUMMARY
-            fi
-          else
-            echo "### ⚠️ Manual Review Required (Major Release)" >> $GITHUB_STEP_SUMMARY
-          fi
 
   # =====================================================
   # PHASE 4: PUBLISH ARTIFACTS (Conditional on release-please outputs)
