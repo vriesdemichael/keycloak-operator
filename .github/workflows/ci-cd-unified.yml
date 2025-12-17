@@ -273,41 +273,43 @@ jobs:
         id: release
         env:
           # Attempt 1 outputs
+          # NOTE: When include-component-in-tag is true, release-please uses component names as output keys
+          # Component names: operator-image, chart-operator, chart-realm, chart-client
           RP1_RELEASES_CREATED: ${{ steps.release-1.outputs.releases_created }}
           RP1_PRS: ${{ steps.release-1.outputs.prs }}
-          RP1_OP_RELEASED: ${{ steps.release-1.outputs['.--release_created'] }}
-          RP1_OP_VERSION: ${{ steps.release-1.outputs['.--version'] }}
-          RP1_OP_TAG: ${{ steps.release-1.outputs['.--tag_name'] }}
-          RP1_CHART_OP_RELEASED: ${{ steps.release-1.outputs['charts/keycloak-operator--release_created'] }}
-          RP1_CHART_OP_VERSION: ${{ steps.release-1.outputs['charts/keycloak-operator--version'] }}
-          RP1_CHART_REALM_RELEASED: ${{ steps.release-1.outputs['charts/keycloak-realm--release_created'] }}
-          RP1_CHART_REALM_VERSION: ${{ steps.release-1.outputs['charts/keycloak-realm--version'] }}
-          RP1_CHART_CLIENT_RELEASED: ${{ steps.release-1.outputs['charts/keycloak-client--release_created'] }}
-          RP1_CHART_CLIENT_VERSION: ${{ steps.release-1.outputs['charts/keycloak-client--version'] }}
+          RP1_OP_RELEASED: ${{ steps.release-1.outputs['operator-image--release_created'] }}
+          RP1_OP_VERSION: ${{ steps.release-1.outputs['operator-image--version'] }}
+          RP1_OP_TAG: ${{ steps.release-1.outputs['operator-image--tag_name'] }}
+          RP1_CHART_OP_RELEASED: ${{ steps.release-1.outputs['chart-operator--release_created'] }}
+          RP1_CHART_OP_VERSION: ${{ steps.release-1.outputs['chart-operator--version'] }}
+          RP1_CHART_REALM_RELEASED: ${{ steps.release-1.outputs['chart-realm--release_created'] }}
+          RP1_CHART_REALM_VERSION: ${{ steps.release-1.outputs['chart-realm--version'] }}
+          RP1_CHART_CLIENT_RELEASED: ${{ steps.release-1.outputs['chart-client--release_created'] }}
+          RP1_CHART_CLIENT_VERSION: ${{ steps.release-1.outputs['chart-client--version'] }}
           # Attempt 2 outputs
           RP2_RELEASES_CREATED: ${{ steps.release-2.outputs.releases_created }}
           RP2_PRS: ${{ steps.release-2.outputs.prs }}
-          RP2_OP_RELEASED: ${{ steps.release-2.outputs['.--release_created'] }}
-          RP2_OP_VERSION: ${{ steps.release-2.outputs['.--version'] }}
-          RP2_OP_TAG: ${{ steps.release-2.outputs['.--tag_name'] }}
-          RP2_CHART_OP_RELEASED: ${{ steps.release-2.outputs['charts/keycloak-operator--release_created'] }}
-          RP2_CHART_OP_VERSION: ${{ steps.release-2.outputs['charts/keycloak-operator--version'] }}
-          RP2_CHART_REALM_RELEASED: ${{ steps.release-2.outputs['charts/keycloak-realm--release_created'] }}
-          RP2_CHART_REALM_VERSION: ${{ steps.release-2.outputs['charts/keycloak-realm--version'] }}
-          RP2_CHART_CLIENT_RELEASED: ${{ steps.release-2.outputs['charts/keycloak-client--release_created'] }}
-          RP2_CHART_CLIENT_VERSION: ${{ steps.release-2.outputs['charts/keycloak-client--version'] }}
+          RP2_OP_RELEASED: ${{ steps.release-2.outputs['operator-image--release_created'] }}
+          RP2_OP_VERSION: ${{ steps.release-2.outputs['operator-image--version'] }}
+          RP2_OP_TAG: ${{ steps.release-2.outputs['operator-image--tag_name'] }}
+          RP2_CHART_OP_RELEASED: ${{ steps.release-2.outputs['chart-operator--release_created'] }}
+          RP2_CHART_OP_VERSION: ${{ steps.release-2.outputs['chart-operator--version'] }}
+          RP2_CHART_REALM_RELEASED: ${{ steps.release-2.outputs['chart-realm--release_created'] }}
+          RP2_CHART_REALM_VERSION: ${{ steps.release-2.outputs['chart-realm--version'] }}
+          RP2_CHART_CLIENT_RELEASED: ${{ steps.release-2.outputs['chart-client--release_created'] }}
+          RP2_CHART_CLIENT_VERSION: ${{ steps.release-2.outputs['chart-client--version'] }}
           # Attempt 3 outputs
           RP3_RELEASES_CREATED: ${{ steps.release-3.outputs.releases_created }}
           RP3_PRS: ${{ steps.release-3.outputs.prs }}
-          RP3_OP_RELEASED: ${{ steps.release-3.outputs['.--release_created'] }}
-          RP3_OP_VERSION: ${{ steps.release-3.outputs['.--version'] }}
-          RP3_OP_TAG: ${{ steps.release-3.outputs['.--tag_name'] }}
-          RP3_CHART_OP_RELEASED: ${{ steps.release-3.outputs['charts/keycloak-operator--release_created'] }}
-          RP3_CHART_OP_VERSION: ${{ steps.release-3.outputs['charts/keycloak-operator--version'] }}
-          RP3_CHART_REALM_RELEASED: ${{ steps.release-3.outputs['charts/keycloak-realm--release_created'] }}
-          RP3_CHART_REALM_VERSION: ${{ steps.release-3.outputs['charts/keycloak-realm--version'] }}
-          RP3_CHART_CLIENT_RELEASED: ${{ steps.release-3.outputs['charts/keycloak-client--release_created'] }}
-          RP3_CHART_CLIENT_VERSION: ${{ steps.release-3.outputs['charts/keycloak-client--version'] }}
+          RP3_OP_RELEASED: ${{ steps.release-3.outputs['operator-image--release_created'] }}
+          RP3_OP_VERSION: ${{ steps.release-3.outputs['operator-image--version'] }}
+          RP3_OP_TAG: ${{ steps.release-3.outputs['operator-image--tag_name'] }}
+          RP3_CHART_OP_RELEASED: ${{ steps.release-3.outputs['chart-operator--release_created'] }}
+          RP3_CHART_OP_VERSION: ${{ steps.release-3.outputs['chart-operator--version'] }}
+          RP3_CHART_REALM_RELEASED: ${{ steps.release-3.outputs['chart-realm--release_created'] }}
+          RP3_CHART_REALM_VERSION: ${{ steps.release-3.outputs['chart-realm--version'] }}
+          RP3_CHART_CLIENT_RELEASED: ${{ steps.release-3.outputs['chart-client--release_created'] }}
+          RP3_CHART_CLIENT_VERSION: ${{ steps.release-3.outputs['chart-client--version'] }}
         run: |
           # Determine which attempt succeeded and use its outputs
           if [[ "${{ steps.release-1.outcome }}" == "success" ]]; then
