@@ -914,7 +914,7 @@ test = [
 
 [[package]]
 name = "kopf"
-version = "1.38.0"
+version = "1.39.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -923,9 +923,9 @@ dependencies = [
     { name = "python-json-logger" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/74/d3/2b8a63a02b3fdf68f91d15b009ad7799c3fdcd6268c3b5e20863453d5215/kopf-1.38.0.tar.gz", hash = "sha256:7b9f83240269636e00e4b11e9c7c8afbfefba3d3326ac2d2aa7904d35c4f89cd", size = 1193277, upload-time = "2025-05-12T11:23:44.442Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/6f/c1639813daa78331470b12fab46b7b2f59f4ff7418015fdf895d622e9892/kopf-1.39.0.tar.gz", hash = "sha256:a46815771315b4c6a16ff2852e1a3fb60aed9554373b2a77ad0efb4d1b49b5ef", size = 1192532, upload-time = "2025-12-08T21:15:07.158Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/df/419544157085b971e1f5e4449b95c7b399f84b3f496e6aaf4ca41e7d6c9f/kopf-1.38.0-py3-none-any.whl", hash = "sha256:2384b8021032d9f87e53a6b46097c47e566d9280c838809483698640e1b36df0", size = 209563, upload-time = "2025-05-12T11:23:42.87Z" },
+    { url = "https://files.pythonhosted.org/packages/51/34/6549eaf9e5919f8bddc870734954886e5e7db05368230f6ba93d8192a590/kopf-1.39.0-py3-none-any.whl", hash = "sha256:e8ddb0e82582877a2ec3c656895fe3b5f3a48e4d05bed8f93b547a371515989e", size = 209228, upload-time = "2025-12-08T21:15:05.009Z" },
 ]
 
 [[package]]
