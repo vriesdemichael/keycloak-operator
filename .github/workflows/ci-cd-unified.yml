@@ -273,11 +273,18 @@ jobs:
         id: release
         env:
           # Attempt 1 outputs
-          # NOTE: Release-please uses PATH as the output key, not component name
-          # Even with include-component-in-tag=true, the output keys are path-based
-          # Paths: "." (root), "charts/keycloak-operator", "charts/keycloak-realm", "charts/keycloak-client"
+          # NOTE: Release-please output format depends on number of releases:
+          # - Single release: flat keys like "release_created", "version", "tag_name"
+          # - Multiple releases: path-prefixed like ".--release_created", "charts/keycloak-operator--version"
+          # We check the "path" output to determine which component was released when using flat keys
           RP1_RELEASES_CREATED: ${{ steps.release-1.outputs.releases_created }}
           RP1_PRS: ${{ steps.release-1.outputs.prs }}
+          # Flat keys (single release)
+          RP1_SINGLE_RELEASED: ${{ steps.release-1.outputs.release_created }}
+          RP1_SINGLE_VERSION: ${{ steps.release-1.outputs.version }}
+          RP1_SINGLE_TAG: ${{ steps.release-1.outputs.tag_name }}
+          RP1_SINGLE_PATH: ${{ steps.release-1.outputs.path }}
+          # Path-prefixed keys (multiple releases)
           RP1_OP_RELEASED: ${{ steps.release-1.outputs['.--release_created'] }}
           RP1_OP_VERSION: ${{ steps.release-1.outputs['.--version'] }}
           RP1_OP_TAG: ${{ steps.release-1.outputs['.--tag_name'] }}
@@ -290,6 +297,10 @@ jobs:
           # Attempt 2 outputs
           RP2_RELEASES_CREATED: ${{ steps.release-2.outputs.releases_created }}
           RP2_PRS: ${{ steps.release-2.outputs.prs }}
+          RP2_SINGLE_RELEASED: ${{ steps.release-2.outputs.release_created }}
+          RP2_SINGLE_VERSION: ${{ steps.release-2.outputs.version }}
+          RP2_SINGLE_TAG: ${{ steps.release-2.outputs.tag_name }}
+          RP2_SINGLE_PATH: ${{ steps.release-2.outputs.path }}
           RP2_OP_RELEASED: ${{ steps.release-2.outputs['.--release_created'] }}
           RP2_OP_VERSION: ${{ steps.release-2.outputs['.--version'] }}
           RP2_OP_TAG: ${{ steps.release-2.outputs['.--tag_name'] }}
@@ -302,6 +313,10 @@ jobs:
           # Attempt 3 outputs
           RP3_RELEASES_CREATED: ${{ steps.release-3.outputs.releases_created }}
           RP3_PRS: ${{ steps.release-3.outputs.prs }}
+          RP3_SINGLE_RELEASED: ${{ steps.release-3.outputs.release_created }}
+          RP3_SINGLE_VERSION: ${{ steps.release-3.outputs.version }}
+          RP3_SINGLE_TAG: ${{ steps.release-3.outputs.tag_name }}
+          RP3_SINGLE_PATH: ${{ steps.release-3.outputs.path }}
           RP3_OP_RELEASED: ${{ steps.release-3.outputs['.--release_created'] }}
           RP3_OP_VERSION: ${{ steps.release-3.outputs['.--version'] }}
           RP3_OP_TAG: ${{ steps.release-3.outputs['.--tag_name'] }}
@@ -318,11 +333,44 @@ jobs:
           echo '${{ toJSON(steps.release-1.outputs) }}' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
+          # Helper function to map single-release outputs to per-component variables
+          # When only one release occurs, release-please uses flat keys (release_created, version, etc.)
+          # with a "path" key indicating which component. We map these to our per-component variables.
+          map_single_release() {
+            local SINGLE_RELEASED="$1"
+            local SINGLE_VERSION="$2"
+            local SINGLE_TAG="$3"
+            local SINGLE_PATH="$4"
+
+            if [[ "$SINGLE_RELEASED" == "true" ]]; then
+              case "$SINGLE_PATH" in
+                ".")
+                  OP_RELEASED="true"
+                  OP_VERSION="$SINGLE_VERSION"
+                  OP_TAG="$SINGLE_TAG"
+                  ;;
+                "charts/keycloak-operator")
+                  CHART_OP_RELEASED="true"
+                  CHART_OP_VERSION="$SINGLE_VERSION"
+                  ;;
+                "charts/keycloak-realm")
+                  CHART_REALM_RELEASED="true"
+                  CHART_REALM_VERSION="$SINGLE_VERSION"
+                  ;;
+                "charts/keycloak-client")
+                  CHART_CLIENT_RELEASED="true"
+                  CHART_CLIENT_VERSION="$SINGLE_VERSION"
+                  ;;
+              esac
+            fi
+          }
+
           # Determine which attempt succeeded and use its outputs
           if [[ "${{ steps.release-1.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 1"
             RELEASES_CREATED="$RP1_RELEASES_CREATED"
             PRS="$RP1_PRS"
+            # First try path-prefixed keys (multiple releases)
             OP_RELEASED="$RP1_OP_RELEASED"
             OP_VERSION="$RP1_OP_VERSION"
             OP_TAG="$RP1_OP_TAG"
@@ -332,6 +380,8 @@ jobs:
             CHART_REALM_VERSION="$RP1_CHART_REALM_VERSION"
             CHART_CLIENT_RELEASED="$RP1_CHART_CLIENT_RELEASED"
             CHART_CLIENT_VERSION="$RP1_CHART_CLIENT_VERSION"
+            # If single release format, map it to the correct component
+            map_single_release "$RP1_SINGLE_RELEASED" "$RP1_SINGLE_VERSION" "$RP1_SINGLE_TAG" "$RP1_SINGLE_PATH"
           elif [[ "${{ steps.release-2.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 2"
             RELEASES_CREATED="$RP2_RELEASES_CREATED"
@@ -345,6 +395,7 @@ jobs:
             CHART_REALM_VERSION="$RP2_CHART_REALM_VERSION"
             CHART_CLIENT_RELEASED="$RP2_CHART_CLIENT_RELEASED"
             CHART_CLIENT_VERSION="$RP2_CHART_CLIENT_VERSION"
+            map_single_release "$RP2_SINGLE_RELEASED" "$RP2_SINGLE_VERSION" "$RP2_SINGLE_TAG" "$RP2_SINGLE_PATH"
           elif [[ "${{ steps.release-3.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 3"
             RELEASES_CREATED="$RP3_RELEASES_CREATED"
@@ -358,6 +409,7 @@ jobs:
             CHART_REALM_VERSION="$RP3_CHART_REALM_VERSION"
             CHART_CLIENT_RELEASED="$RP3_CHART_CLIENT_RELEASED"
             CHART_CLIENT_VERSION="$RP3_CHART_CLIENT_VERSION"
+            map_single_release "$RP3_SINGLE_RELEASED" "$RP3_SINGLE_VERSION" "$RP3_SINGLE_TAG" "$RP3_SINGLE_PATH"
           else
             echo "### ❌ Release Please Failed" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
