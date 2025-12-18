@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.1...operator-image-v0.5.2) (2025-12-18)
+
+
+### Bug Fixes
+
+* **operator-image:** revert to path-based release-please output keys and add debug ([af2c5bd](https://github.com/vriesdemichael/keycloak-operator/commit/af2c5bdae851705422b0c28ee912fc0cf92ba5e5))
+
 ## [0.5.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.0...operator-image-v0.5.1) (2025-12-17)
 
 
