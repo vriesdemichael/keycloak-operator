@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.2...operator-image-v0.5.3) (2025-12-18)
+
+
+### Bug Fixes
+
+* **operator-image:** handle both single and multiple release output formats ([851d1b5](https://github.com/vriesdemichael/keycloak-operator/commit/851d1b58133694487d845476d57d649132b93164))
+
 ## [0.5.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.1...operator-image-v0.5.2) (2025-12-18)
 
 
