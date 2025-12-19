@@ -18,7 +18,7 @@ This chart creates a `KeycloakRealm` custom resource that is reconciled by the K
 
 ## Prerequisites
 
-- Kubernetes 1.26+
+- Kubernetes 1.27+
 - Helm 3.8+
 - **Keycloak Operator** installed ([keycloak-operator chart](../keycloak-operator/README.md))
 - **Operator Authorization Token** from the operator installation
