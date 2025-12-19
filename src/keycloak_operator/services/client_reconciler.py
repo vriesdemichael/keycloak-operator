@@ -694,7 +694,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
             # Create a map of existing mappers by name for easy lookup
             existing_mappers_by_name = {
-                mapper["name"]: mapper for mapper in existing_mappers
+                mapper.name: mapper for mapper in existing_mappers
             }
 
             # Process each protocol mapper from the spec
@@ -716,7 +716,7 @@ class KeycloakClientReconciler(BaseReconciler):
                         self.logger.info(f"Updating protocol mapper '{mapper_name}'")
                         success = await admin_client.update_client_protocol_mapper(
                             client_uuid,
-                            existing_mapper["id"],
+                            existing_mapper.id,
                             mapper_dict,
                             actual_realm_name,
                         )
@@ -744,16 +744,16 @@ class KeycloakClientReconciler(BaseReconciler):
                 mapper.name for mapper in spec.protocol_mappers if mapper.name
             }
             for existing_mapper in existing_mappers:
-                if existing_mapper["name"] not in desired_mapper_names:
+                if existing_mapper.name not in desired_mapper_names:
                     self.logger.info(
-                        f"Removing obsolete protocol mapper '{existing_mapper['name']}'"
+                        f"Removing obsolete protocol mapper '{existing_mapper.name}'"
                     )
                     success = await admin_client.delete_client_protocol_mapper(
-                        client_uuid, existing_mapper["id"], actual_realm_name
+                        client_uuid, existing_mapper.id, actual_realm_name
                     )
                     if not success:
                         self.logger.error(
-                            f"Failed to delete protocol mapper '{existing_mapper['name']}'"
+                            f"Failed to delete protocol mapper '{existing_mapper.name}'"
                         )
 
         except Exception as e:
@@ -827,7 +827,7 @@ class KeycloakClientReconciler(BaseReconciler):
                 return
 
             # Create a map of existing roles by name for easy lookup
-            existing_roles_by_name = {role["name"]: role for role in existing_roles}
+            existing_roles_by_name = {role.name: role for role in existing_roles}
 
             # Process each client role from the spec
             for role_name in spec.client_roles:
@@ -852,16 +852,16 @@ class KeycloakClientReconciler(BaseReconciler):
             # Remove client roles that are no longer specified
             desired_role_names = set(spec.client_roles)
             for existing_role in existing_roles:
-                if existing_role["name"] not in desired_role_names:
+                if existing_role.name not in desired_role_names:
                     self.logger.info(
-                        f"Removing obsolete client role '{existing_role['name']}'"
+                        f"Removing obsolete client role '{existing_role.name}'"
                     )
                     success = await admin_client.delete_client_role(
-                        client_uuid, existing_role["name"], actual_realm_name
+                        client_uuid, existing_role.name, actual_realm_name
                     )
                     if not success:
                         self.logger.error(
-                            f"Failed to delete client role '{existing_role['name']}'"
+                            f"Failed to delete client role '{existing_role.name}'"
                         )
 
         except Exception as e:
@@ -911,8 +911,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
         if not spec.settings.service_accounts_enabled:
             self.logger.debug(
-                "Service accounts disabled for client %s; skipping role assignment",
-                spec.client_id,
+                f"Service accounts disabled for client {spec.client_id}; skipping role assignment"
             )
             return
 

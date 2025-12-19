@@ -1229,7 +1229,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 return
 
             # Create backup data structure
-            backup_data = {
+            backup_data: dict[str, Any] = {
                 "keycloak_instance": {
                     "name": name,
                     "namespace": namespace,
@@ -1245,7 +1245,11 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
             # Backup each realm
             for realm_info in realms:
-                realm_name = realm_info.get("realm")
+                realm_name = (
+                    realm_info.realm
+                    if hasattr(realm_info, "realm")
+                    else realm_info.get("realm")
+                )
                 if not realm_name:
                     continue
 

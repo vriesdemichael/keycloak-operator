@@ -94,7 +94,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             await self.configure_identity_providers(realm_spec, name, namespace)
 
         if realm_spec.user_federation:
-            await self.configure_user_federation(realm_spec, name, namespace, namespace)
+            await self.configure_user_federation(realm_spec, name, namespace)
 
         # Setup backup preparation
         await self.manage_realm_backup(realm_spec, name, namespace)
@@ -490,7 +490,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             existing_realm = await admin_client.get_realm(realm_name, namespace)
         except KeycloakAdminError as exc:
             if getattr(exc, "status_code", None) == 404:
-                self.logger.info("Realm %s not found, creating new realm", realm_name)
+                self.logger.info(f"Realm {realm_name} not found, creating new realm")
                 existing_realm = None
             else:
                 self.logger.error(
@@ -674,9 +674,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(flow_config, "model_dump")
                     else flow_config,
                 )
-                admin_client.configure_authentication_flow(
-                    spec.realm_name, flow_dict, namespace
-                )
+                admin_client.configure_authentication_flow(spec.realm_name, flow_dict)
             except Exception as e:
                 self.logger.warning(f"Failed to configure authentication flow: {e}")
 
@@ -774,9 +772,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                     if hasattr(federation_config, "model_dump")
                     else federation_config,
                 )
-                admin_client.configure_user_federation(
-                    spec.realm_name, federation_dict, namespace
-                )
+                admin_client.configure_user_federation(spec.realm_name, federation_dict)
             except Exception as e:
                 self.logger.warning(f"Failed to configure user federation: {e}")
 
@@ -1054,7 +1050,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                             else flow_config,
                         )
                         admin_client.configure_authentication_flow(
-                            realm_name, flow_dict, namespace
+                            realm_name, flow_dict
                         )
                     configuration_changed = True
                 except Exception as e:
@@ -1109,7 +1105,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                             else federation_config,
                         )
                         admin_client.configure_user_federation(
-                            realm_name, federation_dict, namespace
+                            realm_name, federation_dict
                         )
                     configuration_changed = True
                 except Exception as e:
