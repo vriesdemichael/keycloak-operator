@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.3...operator-image-v0.5.4) (2025-12-19)
+
+
+### Bug Fixes
+
+* **operator:** add retry loop for finalizer patch in drift tests ([33a86a9](https://github.com/vriesdemichael/keycloak-operator/commit/33a86a9b3ddb8e25c97127a0b8e5f36cafeb2569))
+
 ## [0.5.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.2...operator-image-v0.5.3) (2025-12-18)
 
 
