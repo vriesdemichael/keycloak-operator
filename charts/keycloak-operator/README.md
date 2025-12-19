@@ -5,6 +5,7 @@ Official Helm chart for deploying the Keycloak Operator - a Kubernetes operator 
 ## Overview
 
 This chart installs the Keycloak Operator which enables declarative management of:
+
 - **Keycloak instances** - Deploy and configure Keycloak servers
 - **Keycloak realms** - Identity domains with users, roles, and authentication settings
 - **Keycloak clients** - OAuth2/OIDC applications with automated credential management
@@ -13,7 +14,7 @@ This chart installs the Keycloak Operator which enables declarative management o
 
 ## Prerequisites
 
-- Kubernetes 1.26+
+- Kubernetes 1.27+
 - Helm 3.8+
 - (Optional) [CloudNativePG operator](https://cloudnative-pg.io/) for managed PostgreSQL databases
 - (Optional) Prometheus Operator for monitoring
