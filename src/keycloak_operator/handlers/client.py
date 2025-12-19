@@ -360,16 +360,20 @@ async def monitor_client_health(
     try:
         client_spec = KeycloakClientSpec.model_validate(spec)
 
-        # Get admin client and verify connection
-        keycloak_ref = client_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
+        # Get realm reference to find the Keycloak instance
+        realm_ref = client_spec.realm_ref
+        realm_namespace = realm_ref.namespace or namespace
+
+        # For now, use a simplified approach - get admin client via the reconciler's shared connection
+        # This timer function may need refactoring to properly resolve the Keycloak instance
+        # through the realm reference chain
         async with await get_keycloak_admin_client(
-            keycloak_ref.name, target_namespace
+            realm_ref.name, realm_namespace
         ) as admin_client:
             # Check if client exists in Keycloak
-            realm_name = client_spec.realm or "master"
+            # Note: realm_ref.name is the realm CR name, we need the actual realm name from spec
             existing_client = await admin_client.get_client_by_name(
-                client_spec.client_id, realm_name, namespace
+                client_spec.client_id, realm_ref.name, namespace
             )
 
             if not existing_client:

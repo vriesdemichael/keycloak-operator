@@ -1,0 +1,14 @@
+# ty type checker configuration
+# See: https://github.com/astral-sh/ty
+
+[environment]
+python-version = "3.13"
+
+[rules]
+# Ignore rules that cause false positives with kopf decorators
+# kopf uses complex decorator patterns that ty doesn't understand well
+invalid-argument-type = "ignore"  # kopf decorators have complex signatures
+invalid-return-type = "ignore"    # kopf handler return types are flexible
+unknown-argument = "ignore"       # kopf passes many keyword arguments dynamically
+missing-argument = "ignore"       # kopf handlers receive args via decorators
+invalid-await = "ignore"          # kopf handlers are async but ty doesn't recognize them
