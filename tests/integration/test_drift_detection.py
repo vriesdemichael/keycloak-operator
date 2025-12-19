@@ -212,22 +212,31 @@ async def test_orphan_detection_after_realm_deletion(
     assert kc_realm is not None
 
     # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
-    realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-    )
-    realm_obj["metadata"]["finalizers"] = []
-    await k8s_custom_objects.patch_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-        body=realm_obj,
-    )
+    # Use retry loop to handle race conditions with operator updates
+    for attempt in range(5):
+        try:
+            realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_cr["metadata"]["name"],
+            )
+            realm_obj["metadata"]["finalizers"] = []
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_cr["metadata"]["name"],
+                body=realm_obj,
+            )
+            break
+        except Exception as e:
+            if "Conflict" in str(e) and attempt < 4:
+                await asyncio.sleep(0.5)
+                continue
+            raise
 
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="vriesdemichael.github.io",
@@ -329,22 +338,31 @@ async def test_orphan_detection_after_client_deletion(
     assert kc_client is not None
 
     # Remove finalizer so client won't be deleted from Keycloak when CR is deleted
-    client_obj = await k8s_custom_objects.get_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakclients",
-        name=client_cr["metadata"]["name"],
-    )
-    client_obj["metadata"]["finalizers"] = []
-    await k8s_custom_objects.patch_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakclients",
-        name=client_cr["metadata"]["name"],
-        body=client_obj,
-    )
+    # Use retry loop to handle race conditions with operator updates
+    for attempt in range(5):
+        try:
+            client_obj = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakclients",
+                name=client_cr["metadata"]["name"],
+            )
+            client_obj["metadata"]["finalizers"] = []
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakclients",
+                name=client_cr["metadata"]["name"],
+                body=client_obj,
+            )
+            break
+        except Exception as e:
+            if "Conflict" in str(e) and attempt < 4:
+                await asyncio.sleep(0.5)
+                continue
+            raise
 
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="vriesdemichael.github.io",
@@ -478,22 +496,31 @@ async def test_auto_remediation_deletes_orphans(
     assert kc_realm is not None
 
     # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
-    realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-    )
-    realm_obj["metadata"]["finalizers"] = []
-    await k8s_custom_objects.patch_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-        body=realm_obj,
-    )
+    # Use retry loop to handle race conditions with operator updates
+    for attempt in range(5):
+        try:
+            realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_cr["metadata"]["name"],
+            )
+            realm_obj["metadata"]["finalizers"] = []
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_cr["metadata"]["name"],
+                body=realm_obj,
+            )
+            break
+        except Exception as e:
+            if "Conflict" in str(e) and attempt < 4:
+                await asyncio.sleep(0.5)
+                continue
+            raise
 
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="vriesdemichael.github.io",
@@ -560,22 +587,31 @@ async def test_minimum_age_prevents_deletion(
     realm_name = realm_cr["spec"]["realmName"]
 
     # Remove finalizer so realm won't be deleted from Keycloak when CR is deleted
-    realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-    )
-    realm_obj["metadata"]["finalizers"] = []
-    await k8s_custom_objects.patch_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-        body=realm_obj,
-    )
+    # Use retry loop to handle race conditions with operator updates
+    for attempt in range(5):
+        try:
+            realm_obj = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_cr["metadata"]["name"],
+            )
+            realm_obj["metadata"]["finalizers"] = []
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_cr["metadata"]["name"],
+                body=realm_obj,
+            )
+            break
+        except Exception as e:
+            if "Conflict" in str(e) and attempt < 4:
+                await asyncio.sleep(0.5)
+                continue
+            raise
 
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="vriesdemichael.github.io",
