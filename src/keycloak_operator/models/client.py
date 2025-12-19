@@ -378,7 +378,7 @@ class KeycloakClientSpec(BaseModel):
         Returns:
             Dictionary in Keycloak Admin API format
         """
-        config = {
+        config: dict[str, Any] = {
             "clientId": self.client_id,
             "name": self.client_name or self.client_id,
             "description": self.description,
