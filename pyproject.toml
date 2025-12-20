@@ -28,6 +28,7 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic-settings>=2.6.1",
     "pyyaml>=6.0.2",
+    "urllib3>=2.6.0",  # CVE fix
 ]
 
 [project.urls]
