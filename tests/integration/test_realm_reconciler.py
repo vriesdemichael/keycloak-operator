@@ -253,31 +253,40 @@ class TestRealmReconciler:
             assert realm_repr.display_name == "Original Name"
 
             # UPDATE: Change display name using Pydantic model
+            # Use retry loop to handle race conditions with operator updates
             from keycloak_operator.models.realm import KeycloakRealmSpec
 
-            realm_cr = await k8s_custom_objects.get_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakrealms",
-                name=realm_name,
-            )
+            for attempt in range(5):
+                try:
+                    realm_cr = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=namespace,
+                        plural="keycloakrealms",
+                        name=realm_name,
+                    )
 
-            # Load spec into Pydantic model, modify it, dump back
-            current_spec = KeycloakRealmSpec.model_validate(realm_cr["spec"])
-            current_spec.display_name = "Updated Name"
-            realm_cr["spec"] = current_spec.model_dump(
-                by_alias=True, exclude_unset=True
-            )
+                    # Load spec into Pydantic model, modify it, dump back
+                    current_spec = KeycloakRealmSpec.model_validate(realm_cr["spec"])
+                    current_spec.display_name = "Updated Name"
+                    realm_cr["spec"] = current_spec.model_dump(
+                        by_alias=True, exclude_unset=True
+                    )
 
-            await k8s_custom_objects.patch_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakrealms",
-                name=realm_name,
-                body=realm_cr,
-            )
+                    await k8s_custom_objects.patch_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=namespace,
+                        plural="keycloakrealms",
+                        name=realm_name,
+                        body=realm_cr,
+                    )
+                    break
+                except ApiException as e:
+                    if e.status == 409 and attempt < 4:
+                        await asyncio.sleep(0.5)
+                        continue
+                    raise
 
             # Wait for reconciliation
             await wait_for_resource_ready(
