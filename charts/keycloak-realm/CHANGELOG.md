@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.0...chart-realm-v0.3.1) (2025-12-21)
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator+chart-realm:** update Kubernetes version requirement to 1.27+ ([26e8781](https://github.com/vriesdemichael/keycloak-operator/commit/26e87812994979d2ec22767f9ff3fb11de85f74a))
+
 ## [0.3.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.2.0...chart-realm-v0.3.0) (2025-12-03)
 
 
