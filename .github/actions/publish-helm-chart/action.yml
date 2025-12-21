@@ -61,6 +61,15 @@ runs:
           exit 1
         fi
 
+    # Docker login is required for attest-build-provenance to push attestations
+    # (Helm registry login doesn't share credentials with Docker)
+    - name: Log in to GHCR (for attestation)
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry-url }}
+        username: ${{ inputs.github-actor }}
+        password: ${{ inputs.github-token }}
+
     - name: Attest chart provenance
       uses: actions/attest-build-provenance@v2
       with:
