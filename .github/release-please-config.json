@@ -9,9 +9,16 @@
       "bump-patch-for-minor-pre-major": true,
       "include-component-in-tag": true,
       "exclude-paths": [
-        "charts/keycloak-operator",
-        "charts/keycloak-realm",
-        "charts/keycloak-client"
+        "charts",
+        "docs",
+        "examples",
+        "scripts",
+        "site",
+        "tests",
+        "htmlcov",
+        ".github",
+        ".claude",
+        "images/keycloak-optimized"
       ],
       "changelog-sections": [
         {"type": "feat", "section": "Features", "hidden": false},
