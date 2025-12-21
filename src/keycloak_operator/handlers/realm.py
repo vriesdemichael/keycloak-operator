@@ -357,11 +357,11 @@ async def monitor_realm_health(
         realm_spec = KeycloakRealmSpec.model_validate(spec)
 
         # Get admin client and verify connection
-        keycloak_ref = realm_spec.keycloak_instance_ref
-        target_namespace = keycloak_ref.namespace or namespace
+        operator_ref = realm_spec.operator_ref
+        target_namespace = operator_ref.namespace or namespace
 
         async with await get_keycloak_admin_client(
-            keycloak_ref.name, target_namespace
+            name, target_namespace
         ) as admin_client:
             # Check if realm exists in Keycloak
             realm_name = realm_spec.realm_name

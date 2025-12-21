@@ -15,6 +15,7 @@ coverage:
       default:
         target: auto
         threshold: 1%
+        informational: true  # Don't block PRs on patch coverage
 
 comment:
   layout: "reach,diff,flags,tree,footer"

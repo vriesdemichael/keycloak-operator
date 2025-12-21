@@ -2422,7 +2422,7 @@ async def helm_client(
             Release name
         """
         # Build Helm values
-        values = {
+        values: dict[str, Any] = {
             "clientId": client_id,
             "realmRef": {
                 "name": realm_name,
@@ -2621,13 +2621,13 @@ def realm_cr_factory(
         **overrides: Any other spec fields to override
     """
 
-    def _create_realm_cr(**overrides) -> dict[str, Any]:
+    def _create_realm_cr(**overrides: Any) -> dict[str, Any]:
         """Create a KeycloakRealm CR manifest with optional overrides."""
         realm_name = overrides.pop(
             "realm_name", f"drift-test-realm-{int(time.time() * 1000)}"
         )
 
-        base_manifest = {
+        base_manifest: dict[str, Any] = {
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {
@@ -2686,7 +2686,7 @@ def client_cr_factory(
         **overrides: Any other spec fields to override
     """
 
-    def _create_client_cr(realm_cr: dict, **overrides) -> dict[str, Any]:
+    def _create_client_cr(realm_cr: dict[str, Any], **overrides: Any) -> dict[str, Any]:
         """Create a KeycloakClient CR manifest with optional overrides.
 
         Args:
@@ -2705,7 +2705,7 @@ def client_cr_factory(
             "realm_token_secret", f"{test_namespace}-operator-token"
         )
 
-        base_manifest = {
+        base_manifest: dict[str, Any] = {
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakClient",
             "metadata": {

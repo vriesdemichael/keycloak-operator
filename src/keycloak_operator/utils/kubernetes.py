@@ -988,16 +988,13 @@ def get_pod_resource_usage(
             namespace=namespace, label_selector=label_selector
         )
 
-        resource_usage = {
-            "total_pods": len(pods.items),
-            "running_pods": 0,
-            "pending_pods": 0,
-            "failed_pods": 0,
-            "pods": [],
-        }
+        running_pods = 0
+        pending_pods = 0
+        failed_pods = 0
+        pods_list: list[dict[str, str | bool | int]] = []
 
         for pod in pods.items:
-            pod_info = {
+            pod_info: dict[str, str | bool | int] = {
                 "name": pod.metadata.name,
                 "phase": pod.status.phase,
                 "ready": False,
@@ -1005,22 +1002,30 @@ def get_pod_resource_usage(
             }
 
             if pod.status.phase == "Running":
-                resource_usage["running_pods"] += 1
+                running_pods += 1
             elif pod.status.phase == "Pending":
-                resource_usage["pending_pods"] += 1
+                pending_pods += 1
             elif pod.status.phase == "Failed":
-                resource_usage["failed_pods"] += 1
+                failed_pods += 1
 
             # Check container readiness and restart counts
             if pod.status.container_statuses:
                 for container_status in pod.status.container_statuses:
                     if container_status.ready:
                         pod_info["ready"] = True
-                    pod_info["restarts"] += container_status.restart_count
+                    restarts = pod_info.get("restarts", 0)
+                    if isinstance(restarts, int):
+                        pod_info["restarts"] = restarts + container_status.restart_count
 
-            resource_usage["pods"].append(pod_info)
+            pods_list.append(pod_info)
 
-        return resource_usage
+        return {
+            "total_pods": len(pods.items),
+            "running_pods": running_pods,
+            "pending_pods": pending_pods,
+            "failed_pods": failed_pods,
+            "pods": pods_list,
+        }
 
     except ApiException as e:
         logger.error(f"Failed to get resource usage: {e}")
