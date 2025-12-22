@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.5](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.4...chart-operator-v0.3.5) (2025-12-22)
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.5.5 ([2342795](https://github.com/vriesdemichael/keycloak-operator/commit/234279516192b119aa439a4de057e65c6749ba2d))
+
+## [0.3.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.3...chart-operator-v0.3.4) (2025-12-21)
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator+chart-realm:** update Kubernetes version requirement to 1.27+ ([26e8781](https://github.com/vriesdemichael/keycloak-operator/commit/26e87812994979d2ec22767f9ff3fb11de85f74a))
+
 ## [0.3.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.2...chart-operator-v0.3.3) (2025-12-18)
 
 

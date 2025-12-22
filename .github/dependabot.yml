@@ -14,7 +14,7 @@ updates:
     open-pull-requests-limit: 10
     commit-message:
       prefix: "fix(operator-image)"
-      include: "scope"
+      prefix-development: "chore(operator-image)"
     labels:
       - "dependencies"
       - "python"
@@ -42,8 +42,7 @@ updates:
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 5
     commit-message:
-      prefix: "chore(ci)"
-      include: "scope"
+      prefix: "ci"
     labels:
       - "dependencies"
       - "ci"
@@ -63,7 +62,6 @@ updates:
     open-pull-requests-limit: 3
     commit-message:
       prefix: "fix(operator-image)"
-      include: "scope"
     labels:
       - "dependencies"
       - "docker"
@@ -79,7 +77,6 @@ updates:
     open-pull-requests-limit: 3
     commit-message:
       prefix: "fix(chart-operator)"
-      include: "scope"
     labels:
       - "dependencies"
       - "helm"
