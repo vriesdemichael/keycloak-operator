@@ -1,9 +1,10 @@
 name: Auto-Rebase PRs
 
-# Only rebase when explicitly requested via label or comment
-# Prevents rebase storms and unnecessary CI runs
+# Rebase Dependabot PRs when main updates, or manually via label/comment
 
 on:
+  push:
+    branches: [main]
   issue_comment:
     types: [created]
   pull_request:
@@ -14,8 +15,45 @@ permissions:
   pull-requests: write
 
 jobs:
-  auto-rebase:
-    name: Rebase PR
+  # Rebase all open Dependabot PRs when main is updated
+  rebase-dependabot-prs:
+    name: Rebase Dependabot PRs
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rebase open Dependabot PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get all open PRs from dependabot
+          prs=$(gh pr list --author "app/dependabot" --state open --json number,headRefName --jq '.[].number')
+
+          if [ -z "$prs" ]; then
+            echo "No open Dependabot PRs to rebase"
+            exit 0
+          fi
+
+          for pr in $prs; do
+            echo "Rebasing PR #$pr..."
+            gh pr checkout "$pr"
+            if git rebase origin/main; then
+              git push --force-with-lease
+              echo "✅ PR #$pr rebased successfully"
+            else
+              echo "⚠️ PR #$pr has conflicts, skipping"
+              git rebase --abort
+            fi
+          done
+
+  # Manual rebase via comment or label
+  manual-rebase:
+    name: Manual Rebase PR
     if: |
       (github.event_name == 'issue_comment' &&
        github.event.issue.pull_request != '' &&
