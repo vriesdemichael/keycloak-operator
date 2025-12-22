@@ -27,8 +27,8 @@ class TestKeycloakReconciler:
     """Test Keycloak instance reconciler functionality."""
 
     @pytest.mark.timeout(
-        270
-    )  # 1.5x of wait_for_resource_ready timeout (150s) + setup overhead
+        360
+    )  # Allow extra time for Keycloak pod graceful shutdown and finalizers
     async def test_keycloak_instance_lifecycle(
         self,
         k8s_custom_objects,
@@ -122,7 +122,7 @@ class TestKeycloakReconciler:
                 name=keycloak_name,
             )
 
-            # Wait for complete deletion
+            # Wait for complete deletion (Keycloak pods have graceful termination)
             await wait_for_resource_deleted(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -130,7 +130,7 @@ class TestKeycloakReconciler:
                 namespace=namespace,
                 plural="keycloaks",
                 name=keycloak_name,
-                timeout=180,
+                timeout=240,
             )
 
             # Verify resources were cleaned up
