@@ -7,12 +7,12 @@ metadata:
   labels:
     {{- include "keycloak-operator.labels" . | nindent 4 }}
 spec:
-  instances: 1
+  instances: {{ .Values.keycloak.database.cnpg.instances | default 1 }}
 
   postgresql:
     parameters:
-      max_connections: "200"
-      shared_buffers: "256MB"
+      max_connections: {{ .Values.keycloak.database.cnpg.postgresql.maxConnections | default "200" | quote }}
+      shared_buffers: {{ .Values.keycloak.database.cnpg.postgresql.sharedBuffers | default "256MB" | quote }}
 
   bootstrap:
     initdb:
@@ -20,6 +20,8 @@ spec:
       owner: app
 
   storage:
-    size: 1Gi
-    storageClass: standard
+    size: {{ .Values.keycloak.database.cnpg.storage.size | default "1Gi" }}
+    {{- if .Values.keycloak.database.cnpg.storage.storageClass }}
+    storageClass: {{ .Values.keycloak.database.cnpg.storage.storageClass }}
+    {{- end }}
 {{- end }}
