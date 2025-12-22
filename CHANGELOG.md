@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.4...operator-image-v0.5.5) (2025-12-22)
+
+
+### Bug Fixes
+
+* **operator:** pin urllib3&gt;=2.6.0 to fix CVE ([038456f](https://github.com/vriesdemichael/keycloak-operator/commit/038456fbda10b42eae1c81c9fa7f22cad7d50c6e))
+* **operator:** resolve type checker warnings after dependency upgrade ([a4aecdb](https://github.com/vriesdemichael/keycloak-operator/commit/a4aecdb22253e0464e9bf5c23ab1a3b582792c0e))
+
 ## [0.5.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.3...operator-image-v0.5.4) (2025-12-19)
 
 
