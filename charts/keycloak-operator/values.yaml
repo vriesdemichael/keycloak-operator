@@ -425,6 +425,24 @@ keycloak:
       # The operator will use this cluster's primary service
       clusterName: keycloak-postgres
 
+      # Number of PostgreSQL instances in the cluster
+      # Recommended: 1 for dev, 3 for production (HA)
+      instances: 1
+
+      # Storage configuration for PostgreSQL data
+      storage:
+        # Size of the persistent volume for each instance
+        size: 1Gi
+        # StorageClass to use for persistent volumes
+        # Leave empty to use the cluster's default StorageClass
+        # Common values: "standard", "gp2", "gp3", "premium-rwo", "openebs-hostpath"
+        storageClass: ""
+
+      # PostgreSQL configuration parameters
+      postgresql:
+        maxConnections: "200"
+        sharedBuffers: "256MB"
+
   # Admin user configuration
   admin:
     # Admin username for initial Keycloak admin
