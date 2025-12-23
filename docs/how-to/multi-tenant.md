@@ -48,21 +48,18 @@ graph LR
 
 ### 1. Deploy Shared Keycloak
 
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: Keycloak
-metadata:
-  name: keycloak
-  namespace: platform
-spec:
-  replicas: 3
-  database:
-    type: cnpg
-    cluster: keycloak-db
-    namespace: platform
-  ingress:
-    enabled: true
-    hostname: keycloak.company.com
+Install the operator with Keycloak instance using Helm:
+
+```bash
+helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
+  --namespace platform \
+  --set keycloak.enabled=true \
+  --set keycloak.replicas=3 \
+  --set keycloak.database.cnpg.enabled=true \
+  --set keycloak.ingress.enabled=true \
+  --set keycloak.ingress.hosts[0].host=keycloak.company.com \
+  --set keycloak.ingress.hosts[0].paths[0].path=/ \
+  --set keycloak.ingress.hosts[0].paths[0].pathType=Prefix
 ```
 
 ### 2. Create Namespaces for Teams
@@ -139,80 +136,46 @@ done
 
 ### Create a Realm
 
-Each team creates realms in their own namespace:
+Each team creates realms in their own namespace using the Helm chart:
 
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: alpha-production
-  namespace: team-alpha
-spec:
-  realmName: alpha-production
-
-  operatorRef:
-    namespace: platform
-
-  # Grant these namespaces permission to create clients
-  clientAuthorizationGrants:
-    - team-alpha           # Our namespace
-    - team-alpha-dev       # Our dev namespace
-    - partner-namespace    # External partner (if needed)
-
-  security:
-    registrationAllowed: false
-    resetPasswordAllowed: true
-    verifyEmail: true
-
-  smtp:
-    host: smtp.company.com
-    from: noreply@team-alpha.com
-    credentialsSecret: smtp-credentials
+```bash
+helm install alpha-production oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace team-alpha \
+  --set realmName=alpha-production \
+  --set operatorRef.namespace=platform \
+  --set clientAuthorizationGrants[0]=team-alpha \
+  --set clientAuthorizationGrants[1]=team-alpha-dev \
+  --set security.registrationAllowed=false \
+  --set security.resetPasswordAllowed=true \
+  --set security.verifyEmail=true
 ```
 
 ### Create Clients in Authorized Namespaces
 
-Team Alpha can create clients in their namespace:
+Team Alpha can create clients in their namespace using the Helm chart:
 
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
-metadata:
-  name: alpha-app
-  namespace: team-alpha
-spec:
-  clientId: alpha-app
-
-  realmRef:
-    name: alpha-production
-    namespace: team-alpha
-
-  redirectUris:
-    - https://app.team-alpha.com/callback
-
-  publicClient: false
+```bash
+helm install alpha-app oci://ghcr.io/vriesdemichael/charts/keycloak-client \
+  --namespace team-alpha \
+  --set clientId=alpha-app \
+  --set realmRef.name=alpha-production \
+  --set realmRef.namespace=team-alpha \
+  --set publicClient=false \
+  --set redirectUris[0]=https://app.team-alpha.com/callback
 ```
 
 ### Cross-Namespace Client Creation
 
 If a realm grants access, other namespaces can create clients:
 
-```yaml
+```bash
 # In team-alpha-dev namespace
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
-metadata:
-  name: dev-app
-  namespace: team-alpha-dev
-spec:
-  clientId: dev-app
-
-  realmRef:
-    name: alpha-production
-    namespace: team-alpha  # Cross-namespace reference
-
-  redirectUris:
-    - https://dev.team-alpha.com/callback
+helm install dev-app oci://ghcr.io/vriesdemichael/charts/keycloak-client \
+  --namespace team-alpha-dev \
+  --set clientId=dev-app \
+  --set realmRef.name=alpha-production \
+  --set realmRef.namespace=team-alpha \
+  --set redirectUris[0]=https://dev.team-alpha.com/callback
 ```
 
 ---
@@ -223,28 +186,16 @@ spec:
 
 Platform team creates a central realm that all teams can use:
 
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: company-sso
-  namespace: platform
-spec:
-  realmName: company-sso
-
-  operatorRef:
-    namespace: platform
-
-  # Grant all team namespaces access
-  clientAuthorizationGrants:
-    - team-alpha
-    - team-beta
-    - team-gamma
-    - "*-dev"  # All dev namespaces
-
-  security:
-    registrationAllowed: false
-    resetPasswordAllowed: true
+```bash
+helm install company-sso oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace platform \
+  --set realmName=company-sso \
+  --set operatorRef.namespace=platform \
+  --set clientAuthorizationGrants[0]=team-alpha \
+  --set clientAuthorizationGrants[1]=team-beta \
+  --set clientAuthorizationGrants[2]=team-gamma \
+  --set security.registrationAllowed=false \
+  --set security.resetPasswordAllowed=true
 ```
 
 All teams can now create clients in this realm.
@@ -253,23 +204,14 @@ All teams can now create clients in this realm.
 
 Team creates realm and selectively grants access:
 
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: beta-services
-  namespace: team-beta
-spec:
-  realmName: beta-services
-
-  operatorRef:
-    namespace: platform
-
-  # Only beta team and specific partners
-  clientAuthorizationGrants:
-    - team-beta
-    - team-beta-staging
-    - partner-integration-team  # External partner
+```bash
+helm install beta-services oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace team-beta \
+  --set realmName=beta-services \
+  --set operatorRef.namespace=platform \
+  --set clientAuthorizationGrants[0]=team-beta \
+  --set clientAuthorizationGrants[1]=team-beta-staging \
+  --set clientAuthorizationGrants[2]=partner-integration-team
 ```
 
 ---
@@ -341,16 +283,13 @@ gitops-repo/
 To grant a new namespace access:
 
 ```bash
-# Update realm manifest
-kubectl patch keycloakrealm alpha-production -n team-alpha --type=merge -p '
-spec:
-  clientAuthorizationGrants:
-    - team-alpha
-    - team-alpha-dev
-    - new-namespace  # Add new namespace
-'
-
-# Or update in Git and let ArgoCD sync
+# Update realm via helm upgrade
+helm upgrade alpha-production oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace team-alpha \
+  --reuse-values \
+  --set clientAuthorizationGrants[0]=team-alpha \
+  --set clientAuthorizationGrants[1]=team-alpha-dev \
+  --set clientAuthorizationGrants[2]=new-namespace
 ```
 
 Changes apply immediately - new namespace can create clients.
@@ -361,49 +300,36 @@ Changes apply immediately - new namespace can create clients.
 
 ### Development/Staging/Production Separation
 
-```yaml
+```bash
 # Production realm - strict grants
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: prod-realm
-  namespace: team-prod
-spec:
-  clientAuthorizationGrants:
-    - team-prod  # Only production namespace
+helm install prod-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace team-prod \
+  --set realmName=prod-realm \
+  --set operatorRef.namespace=platform \
+  --set clientAuthorizationGrants[0]=team-prod
 
----
 # Staging realm - more permissive
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: staging-realm
-  namespace: team-staging
-spec:
-  clientAuthorizationGrants:
-    - team-staging
-    - team-dev
-    - qa-team  # QA can create test clients
+helm install staging-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace team-staging \
+  --set realmName=staging-realm \
+  --set operatorRef.namespace=platform \
+  --set clientAuthorizationGrants[0]=team-staging \
+  --set clientAuthorizationGrants[1]=team-dev \
+  --set clientAuthorizationGrants[2]=qa-team
 ```
 
 ### Partner Integration
 
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: partner-api
-  namespace: platform
-spec:
-  clientAuthorizationGrants:
-    - partner-a
-    - partner-b
-    - internal-gateway  # Our API gateway
-
-  # Strict security for external partners
-  security:
-    registrationAllowed: false
-    bruteForceProtected: true
+```bash
+helm install partner-api oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace platform \
+  --set realmName=partner-api \
+  --set operatorRef.namespace=platform \
+  --set clientAuthorizationGrants[0]=partner-a \
+  --set clientAuthorizationGrants[1]=partner-b \
+  --set clientAuthorizationGrants[2]=internal-gateway \
+  --set security.registrationAllowed=false \
+  --set security.bruteForceProtected=true
 ```
 
 ---

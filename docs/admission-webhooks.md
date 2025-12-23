@@ -199,19 +199,28 @@ The operator Helm chart handles this via:
 
 - **Readiness probe**: Checks both `/healthz` endpoint AND webhook port 8443
 - **Helm --wait**: Waits for operator pod to be ready before completing
-- **ArgoCD sync waves**: Operator in wave 0, Keycloak CRs in wave 1
+- **ArgoCD sync waves**: Operator in wave 0, realms in wave 1, clients in wave 2
 
-If you're deploying Keycloak CRs separately:
+When deploying with ArgoCD, use sync waves to ensure proper ordering:
 
-```bash
-# Option 1: Use Helm --wait (recommended)
-helm install keycloak-operator charts/keycloak-operator --wait
+```yaml
+# Operator application (wave 0)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: keycloak-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+# ...
 
-# Option 2: Wait manually
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=keycloak-operator -n keycloak-system --timeout=120s
-
-# Then create your Keycloak resources
-kubectl apply -f my-keycloak.yaml
+# Realm application (wave 1)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: my-realm
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+# ...
 ```
 
 ## Troubleshooting
