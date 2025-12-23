@@ -478,20 +478,23 @@ keycloak:
     #   nginx.ingress.kubernetes.io/ssl-redirect: "true"
     annotations: {}
 
-    # Hosts and paths configuration
-    hosts:
-      - host: keycloak.example.com
-        paths:
-          - path: /
-            pathType: Prefix
+    # Ingress hostname
+    # The hostname for the Keycloak ingress
+    # Example: "keycloak.example.com"
+    host: keycloak.example.com
 
-    # TLS configuration
-    # Example:
-    # tls:
-    #   - secretName: keycloak-tls
-    #     hosts:
-    #       - keycloak.example.com
-    tls: []
+    # Ingress path
+    # The path for the Keycloak ingress
+    path: /
+
+    # Enable TLS for ingress
+    # When enabled, the ingress will use HTTPS
+    tlsEnabled: true
+
+    # TLS secret name
+    # Secret containing TLS certificate and key
+    # Example: "keycloak-tls"
+    tlsSecretName: ""
 
   # Resource limits for Keycloak pods
   # Adjust based on load and number of users
