@@ -407,6 +407,33 @@ helm upgrade my-app-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
   --set 'clientAuthorizationGrants={my-app,my-new-namespace}'
 ```
 
+### Webhook timeout during fresh install
+
+**Symptom**: `Error: failed calling webhook: context deadline exceeded`
+
+This is expected behavior on fresh install - the webhook configuration is created before operator pods are ready.
+
+**Solutions:**
+1. **Wait and retry** - The operator will be ready shortly, retry your operation
+2. **Use fail-open during install** - Set `--set webhooks.failurePolicy=Ignore` during initial install, then upgrade to `Fail` after operator is running
+3. **Remove --wait flag** - Let helm complete without waiting for all resources
+
+```bash
+# Option 2: Fail-open install, then upgrade to fail-closed
+helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
+  --namespace keycloak-system \
+  --set webhooks.failurePolicy=Ignore
+
+# Wait for operator to be ready
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=keycloak-operator \
+  -n keycloak-system --timeout=120s
+
+# Upgrade to fail-closed
+helm upgrade keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
+  --namespace keycloak-system \
+  --set webhooks.failurePolicy=Fail
+```
+
 ## Support
 
 - 📚 [Full Documentation](../index.md)
