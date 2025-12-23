@@ -364,16 +364,56 @@ async def monitor_client_health(
         realm_ref = client_spec.realm_ref
         realm_namespace = realm_ref.namespace or namespace
 
-        # For now, use a simplified approach - get admin client via the reconciler's shared connection
-        # This timer function may need refactoring to properly resolve the Keycloak instance
-        # through the realm reference chain
+        # Resolve Keycloak instance from realm's status (same approach as client_reconciler)
+        # We need to fetch the realm resource to get the keycloakInstance from its status
+        try:
+            custom_api = client.CustomObjectsApi(get_kubernetes_client())
+            realm_resource = custom_api.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=realm_namespace,
+                plural="keycloakrealms",
+                name=realm_ref.name,
+            )
+
+            # Get actual Keycloak realm name from spec
+            actual_realm_name = realm_resource.get("spec", {}).get("realmName")
+            if not actual_realm_name:
+                logger.warning(
+                    f"Realm {realm_ref.name} does not have realmName in spec"
+                )
+                return
+
+            # Get Keycloak instance from realm status (format: "namespace/name")
+            realm_status = realm_resource.get("status", {})
+            keycloak_instance = realm_status.get("keycloakInstance", "")
+
+            if "/" in keycloak_instance and keycloak_instance.count("/") == 1:
+                keycloak_namespace, keycloak_name = keycloak_instance.split("/", 1)
+            else:
+                # Fallback to defaults
+                logger.warning(
+                    f"Realm {realm_ref.name} has unexpected keycloakInstance format: '{keycloak_instance}'. "
+                    f"Using default: {realm_namespace}/keycloak"
+                )
+                keycloak_namespace, keycloak_name = realm_namespace, "keycloak"
+
+        except ApiException as e:
+            if e.status == 404:
+                logger.warning(
+                    f"Realm {realm_ref.name} not found in namespace {realm_namespace}"
+                )
+            else:
+                logger.warning(f"Failed to get realm {realm_ref.name}: {e}")
+            return
+
         async with await get_keycloak_admin_client(
-            realm_ref.name, realm_namespace
+            keycloak_name, keycloak_namespace
         ) as admin_client:
             # Check if client exists in Keycloak
-            # Note: realm_ref.name is the realm CR name, we need the actual realm name from spec
+            # Use actual_realm_name (from realm spec) not realm_ref.name (CR name)
             existing_client = await admin_client.get_client_by_name(
-                client_spec.client_id, realm_ref.name, namespace
+                client_spec.client_id, actual_realm_name, namespace
             )
 
             if not existing_client:
