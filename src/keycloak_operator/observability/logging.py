@@ -14,6 +14,45 @@ from typing import Any
 # Context variable for tracking correlation IDs across async operations
 correlation_id: ContextVar[str] = ContextVar("correlation_id", default="")
 
+# Paths that should be filtered from access logs (health probes)
+HEALTH_PROBE_PATHS = frozenset({"/healthz", "/health", "/ready", "/metrics"})
+
+
+class HealthProbeFilter(logging.Filter):
+    """
+    Logging filter that suppresses health probe and metrics endpoint logs.
+
+    These endpoints are hit frequently by Kubernetes probes and monitoring
+    systems, generating excessive noise in logs during debugging.
+    """
+
+    def __init__(self, suppress_health_logs: bool = True):
+        """
+        Initialize health probe filter.
+
+        Args:
+            suppress_health_logs: If True, filter out health probe logs
+        """
+        super().__init__()
+        self.suppress_health_logs = suppress_health_logs
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """
+        Filter out health probe related log messages.
+
+        Args:
+            record: The log record to process
+
+        Returns:
+            False to suppress the record, True to allow it
+        """
+        if not self.suppress_health_logs:
+            return True
+
+        # Check if the message contains health probe paths
+        message = record.getMessage()
+        return all(path not in message for path in HEALTH_PROBE_PATHS)
+
 
 class CorrelationIDFilter(logging.Filter):
     """Logging filter that adds correlation ID to log records."""
@@ -138,6 +177,8 @@ def setup_structured_logging(
     log_level: str = "INFO",
     enable_json_formatting: bool = True,
     correlation_id_enabled: bool = True,
+    log_health_probes: bool = False,
+    webhook_log_level: str = "WARNING",
 ) -> None:
     """
     Set up structured logging for the operator.
@@ -146,6 +187,8 @@ def setup_structured_logging(
         log_level: Logging level (DEBUG, INFO, WARNING, ERROR)
         enable_json_formatting: Whether to use JSON formatting
         correlation_id_enabled: Whether to enable correlation ID tracking
+        log_health_probes: Whether to log health probe requests (default: False)
+        webhook_log_level: Log level for webhook-related loggers
     """
     # Get root logger
     root_logger = logging.getLogger()
@@ -177,13 +220,29 @@ def setup_structured_logging(
     if correlation_id_enabled:
         handler.addFilter(CorrelationIDFilter())
 
+    # Add health probe filter to suppress noisy probe logs
+    if not log_health_probes:
+        handler.addFilter(HealthProbeFilter(suppress_health_logs=True))
+
     root_logger.addHandler(handler)
     root_logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
-    # Set specific logger levels
+    # Set specific logger levels for third-party libraries
     logging.getLogger("kopf").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("kubernetes").setLevel(logging.WARNING)
+
+    # Suppress aiohttp access logs which spam with probe requests
+    logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
+    logging.getLogger("aiohttp.server").setLevel(logging.WARNING)
+    logging.getLogger("aiohttp.web").setLevel(logging.WARNING)
+
+    # Set webhook log level (for admission webhook handlers)
+    webhook_level = getattr(logging, webhook_log_level.upper(), logging.WARNING)
+    logging.getLogger("keycloak_operator.webhooks").setLevel(webhook_level)
+    logging.getLogger("keycloak_operator.webhooks.client").setLevel(webhook_level)
+    logging.getLogger("keycloak_operator.webhooks.realm").setLevel(webhook_level)
+    logging.getLogger("keycloak_operator.webhooks.keycloak").setLevel(webhook_level)
 
 
 class OperatorLogger:
