@@ -562,6 +562,13 @@ webhooks:
   # Provides immediate feedback on invalid resources and enforces quotas
   # Requires cert-manager for automatic TLS certificate generation
   # If disabled, validation happens during reconciliation (slower feedback)
+  #
+  # NOTE: On fresh install, webhook validation may timeout briefly while the
+  # operator pods start up. This is expected - the install will complete
+  # successfully once pods are ready. If timeouts occur, either:
+  # 1. Wait and retry the operation (operator will be ready shortly)
+  # 2. Set failurePolicy: Ignore for initial install, then change to Fail
+  # 3. Use --wait flag with helm install to wait for pods to be ready
   enabled: true
 
   # Webhook server port
