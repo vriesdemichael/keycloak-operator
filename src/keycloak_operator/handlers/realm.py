@@ -359,9 +359,12 @@ async def monitor_realm_health(
         # Get admin client and verify connection
         operator_ref = realm_spec.operator_ref
         target_namespace = operator_ref.namespace or namespace
+        # Use hardcoded Keycloak CR name - consistent with realm_reconciler.py
+        # The 'name' parameter here is the KeycloakRealm's metadata.name, NOT the Keycloak CR name
+        keycloak_name = "keycloak"
 
         async with await get_keycloak_admin_client(
-            name, target_namespace
+            keycloak_name, target_namespace
         ) as admin_client:
             # Check if realm exists in Keycloak
             realm_name = realm_spec.realm_name
