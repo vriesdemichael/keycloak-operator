@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.7...chart-operator-v0.3.8) (2025-12-23)
+
+
+### Features
+
+* **operator:** add quiet logging mode for health probes and webhooks ([3ef5d2c](https://github.com/vriesdemichael/keycloak-operator/commit/3ef5d2cdabd42b4dd9e3200e5b9591e6977f21db))
+
 ## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.6...chart-operator-v0.3.7) (2025-12-23)
 
 
