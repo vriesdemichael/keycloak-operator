@@ -216,8 +216,10 @@ The chart can optionally deploy a Keycloak instance:
 | `keycloak.ingress.enabled` | Enable ingress | `false` |
 | `keycloak.ingress.className` | Ingress class name | `""` |
 | `keycloak.ingress.annotations` | Ingress annotations | `{}` |
-| `keycloak.ingress.hosts` | Ingress hosts | See [values.yaml](values.yaml) |
-| `keycloak.ingress.tls` | Ingress TLS configuration | `[]` |
+| `keycloak.ingress.host` | Ingress hostname | `keycloak.example.com` |
+| `keycloak.ingress.path` | Ingress path | `/` |
+| `keycloak.ingress.tlsEnabled` | Enable TLS for ingress | `true` |
+| `keycloak.ingress.tlsSecretName` | Secret containing TLS certificate | `""` |
 | `keycloak.resources` | Keycloak resource limits/requests | See [values.yaml](values.yaml) |
 
 **Example:** Deploy Keycloak with CloudNativePG:
@@ -365,15 +367,10 @@ keycloak:
     className: nginx
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
-    hosts:
-      - host: keycloak.example.com
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - secretName: keycloak-tls
-        hosts:
-          - keycloak.example.com
+    host: keycloak.example.com
+    path: /
+    tlsEnabled: true
+    tlsSecretName: keycloak-tls
 ```
 
 ```bash
