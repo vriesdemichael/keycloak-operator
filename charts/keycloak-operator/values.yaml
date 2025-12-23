@@ -34,7 +34,7 @@ operator:
     # Overrides the image tag whose default is the chart appVersion.
     # This is automatically updated by the update-chart-versions workflow on new releases
     # Example: "v0.3.2" or "latest"
-    tag: "v0.5.5"
+    tag: "v0.5.6"
 
   # Image pull secrets for private registries
   # Example:
