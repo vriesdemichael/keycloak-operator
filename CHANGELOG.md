@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.5...operator-image-v0.5.6) (2025-12-23)
+
+
+### Documentation
+
+* fix documentation issues from user feedback ([b0d2ab7](https://github.com/vriesdemichael/keycloak-operator/commit/b0d2ab7ef8828e2d41ce11ebf71dc88476fc4fd5))
+
 ## [0.5.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.4...operator-image-v0.5.5) (2025-12-22)
 
 
