@@ -49,13 +49,14 @@ from keycloak_operator.observability.metrics import MetricsServer
 from keycloak_operator.settings import settings as operator_settings
 from keycloak_operator.utils.rate_limiter import RateLimiter
 
-# Import webhook modules to register admission webhooks
-# IMPORTANT: These MUST be imported at module level (not conditionally) so that
-# Kopf can discover the @kopf.on.validate() decorators before startup runs.
-# The startup handler will configure whether webhooks are enabled based on ENABLE_WEBHOOKS env var.
-from keycloak_operator.webhooks import client as client_webhook  # noqa: F401
-from keycloak_operator.webhooks import keycloak as keycloak_webhook  # noqa: F401
-from keycloak_operator.webhooks import realm as realm_webhook  # noqa: F401
+# Import webhook modules to register admission webhooks ONLY if webhooks are enabled
+# Note: This conditional import is required because Kopf throws an error if
+# admission handlers are registered but no admission server is configured.
+# When ENABLE_WEBHOOKS=false, we skip importing these modules entirely.
+if operator_settings.enable_webhooks:
+    from keycloak_operator.webhooks import client as client_webhook  # noqa: F401
+    from keycloak_operator.webhooks import keycloak as keycloak_webhook  # noqa: F401
+    from keycloak_operator.webhooks import realm as realm_webhook  # noqa: F401
 
 # Global reference to metrics server for cleanup
 _global_metrics_server: MetricsServer | None = None
