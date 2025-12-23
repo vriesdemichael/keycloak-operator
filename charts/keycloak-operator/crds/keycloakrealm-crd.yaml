@@ -265,8 +265,13 @@ spec:
                   properties:
                     alias:
                       type: string
+                      description: Unique identifier for this identity provider
+                    displayName:
+                      type: string
+                      description: Display name shown in login page
                     providerId:
                       type: string
+                      description: Provider type (e.g., github, google, oidc, saml)
                     enabled:
                       type: boolean
                       default: true
@@ -291,8 +296,25 @@ spec:
                       type: string
                     config:
                       type: object
+                      description: Provider-specific configuration (non-sensitive values only)
                       additionalProperties:
                         type: string
+                    configSecrets:
+                      type: object
+                      description: Secret references for sensitive config values (e.g., clientSecret). Keys are config names, values are secret references.
+                      additionalProperties:
+                        type: object
+                        description: Reference to Kubernetes secret containing sensitive value
+                        properties:
+                          name:
+                            type: string
+                            description: Secret name (must be in same namespace as KeycloakRealm)
+                          key:
+                            type: string
+                            description: Key in secret data
+                        required:
+                        - name
+                        - key
                   required:
                   - alias
                   - providerId
