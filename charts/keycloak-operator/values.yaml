@@ -137,16 +137,19 @@ operator:
 
   # Environment variables for operator customization
   # Common variables:
-  # - KEYCLOAK_OPERATOR_LOG_LEVEL: DEBUG, INFO, WARNING, ERROR (default: INFO)
-  # - KEYCLOAK_OPERATOR_JSON_LOGS: "true" for JSON structured logs (default: "false")
-  # - KEYCLOAK_OPERATOR_WORKERS: Number of concurrent reconciliation workers (default: 10)
+  # - LOG_LEVEL: DEBUG, INFO, WARNING, ERROR (default: INFO)
+  # - JSON_LOGS: "true" for JSON structured logs (default: "true")
+  # - LOG_HEALTH_PROBES: "true" to log health/ready probe requests (default: "false")
+  # - WEBHOOK_LOG_LEVEL: Log level for webhook handlers (default: "WARNING")
   env: []
-    # - name: KEYCLOAK_OPERATOR_LOG_LEVEL
+    # - name: LOG_LEVEL
     #   value: "INFO"
-    # - name: KEYCLOAK_OPERATOR_JSON_LOGS
+    # - name: JSON_LOGS
     #   value: "true"
-    # - name: KEYCLOAK_OPERATOR_WORKERS
-    #   value: "10"
+    # - name: LOG_HEALTH_PROBES
+    #   value: "false"
+    # - name: WEBHOOK_LOG_LEVEL
+    #   value: "WARNING"
 
 # ============================================================================
 # Namespace Configuration
