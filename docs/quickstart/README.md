@@ -8,8 +8,20 @@ Before you begin, ensure you have:
 
 - ✅ Kubernetes cluster (v1.26+)
 - ✅ `kubectl` configured to access your cluster
-- ✅ [Helm 3](https://helm.sh/docs/intro/install/) installed
+- ✅ [Helm 3.8+](https://helm.sh/docs/intro/install/) installed (required for OCI registry support)
 - ✅ Cluster admin permissions (for CRD installation)
+
+### Storage Class Configuration
+
+If using CloudNativePG for the database, ensure your cluster has a suitable StorageClass:
+
+```bash
+# Check available storage classes
+kubectl get storageclass
+
+# If your cluster doesn't have a 'standard' storageClass, configure it during install:
+--set keycloak.database.cnpg.storage.storageClass=<your-storage-class>
+```
 
 ## The 3-Helm-Chart Approach
 
@@ -46,20 +58,19 @@ The Keycloak operator chart can create the PostgreSQL cluster automatically usin
 Install the operator with Keycloak instance enabled:
 
 ```bash
-# Add the keycloak-operator Helm repository
-helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operator
-helm repo update
-
-# Install operator + Keycloak with CloudNativePG database
-helm install keycloak-operator keycloak-operator/keycloak-operator \
+# Install operator + Keycloak with CloudNativePG database (using OCI registry)
+helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system \
-  --create-namespace \
   --set keycloak.enabled=true \
   --set keycloak.database.cnpg.enabled=true \
   --set keycloak.database.cnpg.clusterName=keycloak-postgres \
   --set keycloak.replicas=3 \
   --wait
 ```
+
+> **Note: Namespace Creation**
+> The chart creates the namespace by default (`namespace.create=true`). Do not use `--create-namespace` flag with the default settings.
+> If you prefer to create the namespace yourself, set `--set namespace.create=false` and use `--create-namespace`.
 
 **What this installs:**
 - ✅ Keycloak operator (2 replicas for HA)
@@ -90,9 +101,9 @@ kubectl get cluster -n keycloak-system
 If you have an existing PostgreSQL database:
 
 ```bash
-helm install keycloak-operator keycloak-operator/keycloak-operator \
+helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system \
-  --create-namespace \
+  --set namespace.create=false \
   --set keycloak.enabled=true \
   --set keycloak.database.host=postgresql.database.svc \
   --set keycloak.database.port=5432 \
@@ -111,7 +122,7 @@ Create a realm for your application using the realm Helm chart:
 kubectl create namespace my-app
 
 # Install realm chart
-helm install my-app-realm keycloak-operator/keycloak-realm \
+helm install my-app-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
   --namespace my-app \
   --set realmName=my-app \
   --set displayName="My Application" \
@@ -145,7 +156,7 @@ kubectl get keycloakrealm -n my-app
 Create an OAuth2/OIDC client for your application:
 
 ```bash
-helm install my-app-client keycloak-operator/keycloak-client \
+helm install my-app-client oci://ghcr.io/vriesdemichael/charts/keycloak-client \
   --namespace my-app \
   --set clientId=my-app \
   --set name="My Application" \
@@ -317,9 +328,9 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://vriesdemichael.github.io/keycloak-operator
+    repoURL: ghcr.io/vriesdemichael/charts
     chart: keycloak-operator
-    targetRevision: 0.2.x
+    targetRevision: 0.3.x
     helm:
       values: |
         keycloak:
@@ -390,10 +401,37 @@ kubectl get keycloakrealm my-app-realm -n my-app \
   -o jsonpath='{.spec.clientAuthorizationGrants}' | jq
 
 # Add your namespace to the grant list
-helm upgrade my-app-realm keycloak-operator/keycloak-realm \
+helm upgrade my-app-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
   --namespace my-app \
   --reuse-values \
   --set 'clientAuthorizationGrants={my-app,my-new-namespace}'
+```
+
+### Webhook timeout during fresh install
+
+**Symptom**: `Error: failed calling webhook: context deadline exceeded`
+
+This is expected behavior on fresh install - the webhook configuration is created before operator pods are ready.
+
+**Solutions:**
+1. **Wait and retry** - The operator will be ready shortly, retry your operation
+2. **Use fail-open during install** - Set `--set webhooks.failurePolicy=Ignore` during initial install, then upgrade to `Fail` after operator is running
+3. **Remove --wait flag** - Let helm complete without waiting for all resources
+
+```bash
+# Option 2: Fail-open install, then upgrade to fail-closed
+helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
+  --namespace keycloak-system \
+  --set webhooks.failurePolicy=Ignore
+
+# Wait for operator to be ready
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/name=keycloak-operator \
+  -n keycloak-system --timeout=120s
+
+# Upgrade to fail-closed
+helm upgrade keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
+  --namespace keycloak-system \
+  --set webhooks.failurePolicy=Fail
 ```
 
 ## Support
