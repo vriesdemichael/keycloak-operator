@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.7...chart-operator-v0.3.8) (2025-12-23)
+
+
+### Features
+
+* **operator:** add quiet logging mode for health probes and webhooks ([3ef5d2c](https://github.com/vriesdemichael/keycloak-operator/commit/3ef5d2cdabd42b4dd9e3200e5b9591e6977f21db))
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.5.7 ([96b38c0](https://github.com/vriesdemichael/keycloak-operator/commit/96b38c0bed09d208372e6ba5610b88165976882c))
+* **chart-operator:** update for operator v0.5.8 ([8ece479](https://github.com/vriesdemichael/keycloak-operator/commit/8ece4790bab0309cfbaa6269a85dc62c744ed84b))
+* **operator:** add configSecrets field to identity provider CRD schema ([e743712](https://github.com/vriesdemichael/keycloak-operator/commit/e743712f2fffd545f5c6a3403ba9a776b3e96a23))
+
 ## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.6...chart-operator-v0.3.7) (2025-12-23)
 
 
