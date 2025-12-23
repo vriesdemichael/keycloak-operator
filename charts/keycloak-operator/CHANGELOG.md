@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.6](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.5...chart-operator-v0.3.6) (2025-12-23)
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.5.6 ([f7f3323](https://github.com/vriesdemichael/keycloak-operator/commit/f7f33239c652d72fcd8de0388135ec6fe59ae80e))
+* **chart-operator:** use values for CNPG storage configuration ([441058f](https://github.com/vriesdemichael/keycloak-operator/commit/441058f99ffda32142b6fa6bca6d433e40fff177)), closes [#233](https://github.com/vriesdemichael/keycloak-operator/issues/233)
+
+
+### Documentation
+
+* document webhook timeout behavior on fresh install ([0d8d3f0](https://github.com/vriesdemichael/keycloak-operator/commit/0d8d3f0de6c218f42197277829a82425003e959f)), closes [#240](https://github.com/vriesdemichael/keycloak-operator/issues/240)
+
 ## [0.3.5](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.4...chart-operator-v0.3.5) (2025-12-22)
 
 
