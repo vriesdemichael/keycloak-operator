@@ -16,13 +16,14 @@ Get a complete Keycloak setup running in under 10 minutes:
 
 ```bash
 # 1. Install the operator (OCI registry)
+# Note: The chart creates the namespace by default, don't use --create-namespace
 helm install keycloak-operator \
   oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
-  --namespace keycloak-system --create-namespace
+  --namespace keycloak-system
 
 # Or install from local charts:
 # helm install keycloak-operator ./charts/keycloak-operator \
-#   --namespace keycloak-system --create-namespace
+#   --namespace keycloak-system
 
 # 2. Deploy Keycloak with database
 kubectl apply -f examples/01-keycloak-instance.yaml
@@ -30,7 +31,7 @@ kubectl apply -f examples/01-keycloak-instance.yaml
 # 3. Create an identity realm
 kubectl apply -f examples/02-realm-example.yaml
 
-# 5. Create an OAuth2 client
+# 4. Create an OAuth2 client
 kubectl apply -f examples/03-client-example.yaml
 ```
 
