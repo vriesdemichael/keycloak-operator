@@ -38,8 +38,8 @@ spec:
     # Enable remember me functionality
     rememberMe: true
 
-  # Session settings
-  sessions:
+  # Token and session settings
+  tokenSettings:
     # SSO session timeout (30 minutes)
     ssoSessionIdleTimeout: 1800
 
