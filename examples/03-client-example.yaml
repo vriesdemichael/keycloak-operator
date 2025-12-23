@@ -1,8 +1,18 @@
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
 # KeycloakClient - OAuth2/OIDC client application
 #
-# This creates an OAuth2/OIDC client for your application to authenticate users.
-# The operator will generate client credentials and store them in a Kubernetes secret.
+# This file is a REFERENCE EXAMPLE showing all available configuration options.
+# For production use, deploy clients using the keycloak-client Helm chart:
+#
+#   helm install my-client oci://ghcr.io/vriesdemichael/charts/keycloak-client \
+#     --namespace my-app \
+#     --set clientId=my-app \
+#     --set realmRef.name=my-app-realm \
+#     --set realmRef.namespace=my-app
+#
+# The Helm chart automatically creates the required RBAC RoleBinding to grant
+# the operator access to your namespace. Using kubectl apply directly will
+# result in permission errors unless you manually create the RoleBinding.
 #
 # Prerequisites:
 # - KeycloakRealm must be Ready

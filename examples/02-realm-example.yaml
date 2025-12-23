@@ -1,8 +1,17 @@
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 # KeycloakRealm - Identity domain configuration
 #
-# This creates a realm (identity domain) in the Keycloak instance.
-# A realm contains users, roles, clients, and authentication settings.
+# This file is a REFERENCE EXAMPLE showing all available configuration options.
+# For production use, deploy realms using the keycloak-realm Helm chart:
+#
+#   helm install my-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+#     --namespace my-app --create-namespace \
+#     --set realmName=my-app \
+#     --set operatorRef.namespace=keycloak-system
+#
+# The Helm chart automatically creates the required RBAC RoleBinding to grant
+# the operator access to your namespace. Using kubectl apply directly will
+# result in permission errors unless you manually create the RoleBinding.
 #
 # Prerequisites:
 # - Keycloak instance must be Ready

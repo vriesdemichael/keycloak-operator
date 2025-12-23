@@ -19,20 +19,24 @@ Get a complete Keycloak setup running in under 10 minutes:
 # Note: The chart creates the namespace by default, don't use --create-namespace
 helm install keycloak-operator \
   oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
-  --namespace keycloak-system
+  --namespace keycloak-system \
+  --set keycloak.enabled=true \
+  --set keycloak.database.cnpg.enabled=true
 
-# Or install from local charts:
-# helm install keycloak-operator ./charts/keycloak-operator \
-#   --namespace keycloak-system
+# 2. Create an identity realm in your application namespace
+helm install my-app-realm \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace my-app --create-namespace \
+  --set realmName=my-app \
+  --set operatorRef.namespace=keycloak-system
 
-# 2. Deploy Keycloak with database
-kubectl apply -f examples/01-keycloak-instance.yaml
-
-# 3. Create an identity realm
-kubectl apply -f examples/02-realm-example.yaml
-
-# 4. Create an OAuth2 client
-kubectl apply -f examples/03-client-example.yaml
+# 3. Create an OAuth2 client
+helm install my-app-client \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-client \
+  --namespace my-app \
+  --set clientId=my-app \
+  --set realmRef.name=my-app-realm \
+  --set realmRef.namespace=my-app
 ```
 
 **📖 [Full Quick Start Guide →](docs/quickstart/README.md)**

@@ -1,7 +1,18 @@
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
-# Basic Keycloak instance with CloudNativePG database
+# Keycloak instance with CloudNativePG database
 #
-# This creates a production-ready Keycloak instance with:
+# This file is a REFERENCE EXAMPLE showing all available configuration options.
+# For production use, deploy Keycloak using the keycloak-operator Helm chart:
+#
+#   helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
+#     --namespace keycloak-system \
+#     --set keycloak.enabled=true \
+#     --set keycloak.database.cnpg.enabled=true \
+#     --set keycloak.replicas=3
+#
+# The Helm chart handles all RBAC, secrets, and database setup automatically.
+#
+# This example creates a production-ready Keycloak instance with:
 # - High availability (3 replicas)
 # - PostgreSQL database managed by CloudNativePG operator
 # - Automatic admin credentials generation

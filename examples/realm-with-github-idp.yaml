@@ -1,6 +1,10 @@
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakRealm.json
 # KeycloakRealm with GitHub Identity Provider
 #
+# This file is a REFERENCE EXAMPLE. For production use, deploy realms using
+# the keycloak-realm Helm chart which handles RBAC automatically.
+#
+#
 # This example shows how to configure a realm with GitHub OAuth as an identity provider.
 # Users will be able to sign in using their GitHub accounts.
 #
