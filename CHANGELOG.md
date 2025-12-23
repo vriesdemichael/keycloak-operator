@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.6...operator-image-v0.5.7) (2025-12-23)
+
+
+### Features
+
+* **operator:** add quiet logging mode for health probes and webhooks ([3ef5d2c](https://github.com/vriesdemichael/keycloak-operator/commit/3ef5d2cdabd42b4dd9e3200e5b9591e6977f21db))
+
+
+### Bug Fixes
+
+* **operator:** conditionally import webhook modules when webhooks enabled ([380eba0](https://github.com/vriesdemichael/keycloak-operator/commit/380eba070b575ede51371fb25de5984e675b3729)), closes [#237](https://github.com/vriesdemichael/keycloak-operator/issues/237)
+
 ## [0.5.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.5...operator-image-v0.5.6) (2025-12-23)
 
 
