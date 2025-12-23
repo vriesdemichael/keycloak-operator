@@ -265,4 +265,27 @@ subjects:
 - kind: ServiceAccount
   name: {{ include "keycloak-operator.serviceAccountName" . }}
   namespace: {{ include "keycloak-operator.namespace" . }}
+
+---
+# ClusterRoleBinding for cross-namespace access (realms/clients in other namespaces)
+# This grants the operator permission to manage resources in any namespace
+# that creates KeycloakRealm or KeycloakClient resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "keycloak-operator.fullname" . }}-namespace-access
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+  {{- with include "keycloak-operator.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "keycloak-operator.fullname" . }}-namespace-access
+subjects:
+- kind: ServiceAccount
+  name: {{ include "keycloak-operator.serviceAccountName" . }}
+  namespace: {{ include "keycloak-operator.namespace" . }}
 {{- end }}
