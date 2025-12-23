@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.6...chart-operator-v0.3.7) (2025-12-23)
+
+
+### Bug Fixes
+
+* **chart-operator:** align helm ingress values with keycloak CRD schema ([c0cd75b](https://github.com/vriesdemichael/keycloak-operator/commit/c0cd75b9b0bc4a19e30f91b4b06911082dbac14d))
+
 ## [0.3.6](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.5...chart-operator-v0.3.6) (2025-12-23)
 
 
