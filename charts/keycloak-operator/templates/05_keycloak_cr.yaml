@@ -46,13 +46,11 @@ spec:
     annotations:
       {{- toYaml . | nindent 6 }}
     {{- end }}
-    {{- with .Values.keycloak.ingress.hosts }}
-    hosts:
-      {{- toYaml . | nindent 6 }}
-    {{- end }}
-    {{- with .Values.keycloak.ingress.tls }}
-    tls:
-      {{- toYaml . | nindent 6 }}
+    host: {{ .Values.keycloak.ingress.host }}
+    path: {{ .Values.keycloak.ingress.path | default "/" }}
+    tlsEnabled: {{ .Values.keycloak.ingress.tlsEnabled | default true }}
+    {{- with .Values.keycloak.ingress.tlsSecretName }}
+    tlsSecretName: {{ . }}
     {{- end }}
   {{- end }}
 

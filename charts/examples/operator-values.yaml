@@ -69,15 +69,10 @@ keycloak:
     className: nginx
     annotations:
       cert-manager.io/cluster-issuer: letsencrypt-prod
-    hosts:
-      - host: keycloak.example.com
-        paths:
-          - path: /
-            pathType: Prefix
-    tls:
-      - secretName: keycloak-tls
-        hosts:
-          - keycloak.example.com
+    host: keycloak.example.com
+    path: /
+    tlsEnabled: true
+    tlsSecretName: keycloak-tls
 
   resources:
     limits:
