@@ -73,6 +73,16 @@ class Settings(BaseSettings):
         validation_alias="CORRELATION_IDS",
         description="Enable correlation IDs in logs for request tracing",
     )
+    log_health_probes: bool = Field(
+        default=False,
+        validation_alias="LOG_HEALTH_PROBES",
+        description="Log health/readiness probe requests (disabled by default to reduce noise)",
+    )
+    webhook_log_level: str = Field(
+        default="WARNING",
+        validation_alias="WEBHOOK_LOG_LEVEL",
+        description="Log level for webhook requests (DEBUG, INFO, WARNING, ERROR)",
+    )
 
     # Namespace watching
     namespaces: str = Field(
