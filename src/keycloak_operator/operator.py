@@ -68,6 +68,8 @@ def configure_logging() -> None:
         log_level=operator_settings.log_level.upper(),
         enable_json_formatting=operator_settings.json_logs,
         correlation_id_enabled=operator_settings.correlation_ids,
+        log_health_probes=operator_settings.log_health_probes,
+        webhook_log_level=operator_settings.webhook_log_level,
     )
 
 

@@ -463,6 +463,34 @@ KEYCLOAK_API_NAMESPACE_BURST=10             # Per-namespace burst capacity
 RECONCILE_JITTER_MAX_SECONDS=5.0            # Random delay to prevent thundering herd
 ```
 
+## Logging Configuration
+
+The operator provides fine-grained logging control to reduce noise during debugging.
+
+### Environment Variables
+
+```bash
+LOG_LEVEL=INFO                    # Main log level (DEBUG, INFO, WARNING, ERROR)
+JSON_LOGS=true                    # Enable JSON structured logging
+CORRELATION_IDS=true              # Enable request correlation IDs
+LOG_HEALTH_PROBES=false           # Log health/readiness probe requests (default: false)
+WEBHOOK_LOG_LEVEL=WARNING         # Log level for admission webhooks (default: WARNING)
+```
+
+### Quiet Mode for Debugging
+
+By default, the operator suppresses noisy log messages:
+- **Health probes**: `/healthz`, `/health`, `/ready`, `/metrics` endpoints are NOT logged
+- **Webhooks**: Admission webhook requests are logged at WARNING level (errors only)
+- **aiohttp access logs**: Suppressed to avoid spamming with probe requests
+
+To enable verbose logging for debugging specific components:
+```bash
+LOG_HEALTH_PROBES=true            # Log all probe requests
+WEBHOOK_LOG_LEVEL=DEBUG           # Log all webhook requests including successful validations
+LOG_LEVEL=DEBUG                   # Enable debug logging for all components
+```
+
 ### Async Pattern
 
 All Keycloak API interactions are now fully async:
