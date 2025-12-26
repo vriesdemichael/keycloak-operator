@@ -20,6 +20,13 @@
       },
       "required": ["namespace"]
     },
+    "clientAuthorizationGrants": {
+      "type": "array",
+      "description": "List of namespaces authorized to create clients in this realm",
+      "items": {
+        "type": "string"
+      }
+    },
     "security": {
       "type": "object",
       "properties": {
@@ -117,6 +124,26 @@
     "commonAnnotations": {
       "type": "object",
       "additionalProperties": {"type": "string"}
+    },
+    "rbac": {
+      "type": "object",
+      "description": "RBAC configuration for operator access to this namespace",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "Create RoleBinding for operator access to secrets in this namespace",
+          "default": true
+        },
+        "operatorClusterRoleName": {
+          "type": "string",
+          "description": "Name of the operator's ClusterRole for namespace access",
+          "default": "keycloak-operator-namespace-access"
+        },
+        "operatorServiceAccountName": {
+          "type": "string",
+          "description": "Override for operator's ServiceAccount name"
+        }
+      }
     }
   }
 }
