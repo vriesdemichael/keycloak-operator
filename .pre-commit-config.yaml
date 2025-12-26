@@ -70,6 +70,26 @@ repos:
         files: ^docs/decisions/.*\.yaml$
         pass_filenames: false
 
+  # Documentation schema validation
+  - repo: local
+    hooks:
+      - id: validate-docs
+        name: validate documentation schemas
+        entry: uv run --group dev python scripts/lib/schema_validator.py --fail-on-error
+        language: system
+        files: ^(docs/|examples/|charts/.*/values\.schema\.json|charts/.*/crds/)
+        pass_filenames: false
+
+  # CRD-Pydantic schema sync validation
+  - repo: local
+    hooks:
+      - id: validate-crd-pydantic
+        name: validate CRD-Pydantic schema sync
+        entry: uv run --group dev python scripts/lib/crd_pydantic_validator.py --fail-on-error
+        language: system
+        files: ^(src/keycloak_operator/models/|charts/.*/crds/)
+        pass_filenames: false
+
   # Commit message format checking with scope validation
   - repo: local
     hooks:

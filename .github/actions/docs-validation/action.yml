@@ -1,0 +1,27 @@
+name: 'Documentation Validation'
+description: 'Validate documentation examples against Helm and CRD schemas'
+
+inputs:
+  python-version:
+    description: 'Python version to use'
+    required: false
+    default: '3.13'
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+
+    - name: Validate documentation schemas
+      shell: bash
+      run: make validate-docs
+
+    - name: Validate CRD-Pydantic schema sync
+      shell: bash
+      run: make validate-crd-pydantic
