@@ -474,19 +474,56 @@ def detect_yaml_context(
     if parsed.keys() & realm_direct_keys:
         return ReferenceContext.CR_REALM, "spec"
 
-    # Partial client spec snippets
-    client_direct_keys = {"protocolMappers", "clientRoles"}
-    if parsed.keys() & client_direct_keys:
+    # Partial client spec snippets - extended list of client-specific fields
+    client_spec_keys = {
+        "protocolMappers",
+        "clientRoles",
+        "clientId",
+        "redirectUris",
+        "webOrigins",
+        "postLogoutRedirectUris",
+        "baseUrl",
+        "rootUrl",
+        "standardFlowEnabled",
+        "implicitFlowEnabled",
+        "directAccessGrantsEnabled",
+        "serviceAccountsEnabled",
+        "serviceAccountRoles",
+        "bearerOnly",
+        "publicClient",
+        "defaultClientScopes",
+        "optionalClientScopes",
+        "settings",  # Contains pkceCodeChallengeMethod, etc.
+    }
+    if parsed.keys() & client_spec_keys:
         return ReferenceContext.CR_CLIENT, "spec"
 
+    # Partial realm spec snippets - extended list of realm-specific fields
+    realm_spec_keys = {
+        "realmName",
+        "displayName",
+        "operatorRef",
+        "themes",
+        "tokenSettings",
+        "security",
+        "attributes",
+    }
+    if parsed.keys() & realm_spec_keys:
+        return ReferenceContext.CR_REALM, "spec"
+
     # Config snippet (nested under config key, common in IdP examples)
-    if (
-        "config" in parsed
-        and len(parsed) == 1
-        and (
-            "identity" in text_lower or "provider" in text_lower or "idp" in text_lower
-        )
-    ):
+    # Check file path and surrounding text for IdP context
+    idp_keywords = (
+        "identity" in text_lower
+        or "provider" in text_lower
+        or "idp" in text_lower
+        or "google" in text_lower
+        or "azure" in text_lower
+        or "saml" in text_lower
+        or "oidc" in text_lower
+        or "domain" in text_lower
+    )
+    if "config" in parsed and len(parsed) == 1 and idp_keywords:
         return ReferenceContext.CR_REALM, "spec.identityProviders[].config"
 
     # Check if this looks like a partial Helm values snippet

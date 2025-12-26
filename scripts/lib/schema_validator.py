@@ -289,6 +289,72 @@ class SchemaValidator:
 
         return error
 
+    def _validate_helm_values(self, ref: ExtractedReference) -> list[ValidationError]:
+        """Validate a Helm values block against the chart schema."""
+        errors: list[ValidationError] = []
+
+        chart_name = ref.metadata.get("chart_name", "unknown")
+
+        # Try to infer chart from content if unknown
+        if chart_name == "unknown":
+            content = ref.content if isinstance(ref.content, dict) else {}
+            # keycloak-operator has these top-level keys
+            operator_keys = {
+                "operator",
+                "keycloak",
+                "monitoring",
+                "webhooks",
+                "ingress",
+                "extraManifests",
+                "jvm",
+                "resources",
+            }
+            if content.keys() & operator_keys:
+                chart_name = "keycloak-operator"
+            # keycloak-client values have 'clientId' at top level
+            elif "clientId" in content:
+                chart_name = "keycloak-client"
+            # keycloak-realm values have 'realmName' at top level
+            elif "realmName" in content:
+                chart_name = "keycloak-realm"
+
+        if chart_name == "unknown":
+            return errors  # Can't determine chart, skip
+
+        # Check if we have a schema for this chart
+        validatable_charts = self._discover_validatable_charts()
+        if chart_name not in validatable_charts:
+            return errors  # External chart, skip
+
+        schema = self._load_values_schema(chart_name)
+        if schema is None:
+            return errors
+
+        content = ref.content
+        if not isinstance(content, dict):
+            return errors
+
+        # Validate each top-level key
+        for key, value in content.items():
+            error = self._validate_key_exists(key, schema, chart_name)
+            if error:
+                error.file = ref.file
+                error.line = ref.line
+                error.context = "helm-values"
+                errors.append(error)
+            elif isinstance(value, dict):
+                # Validate nested structure
+                prop_schema = self._get_property_schema(schema, key)
+                if prop_schema:
+                    nested_errors = self._validate_object_against_schema(
+                        value, prop_schema, key, ref
+                    )
+                    for e in nested_errors:
+                        e.context = "helm-values"
+                    errors.extend(nested_errors)
+
+        return errors
+
     def _validate_cr_instance(
         self, ref: ExtractedReference, kind: str
     ) -> list[ValidationError]:
@@ -652,6 +718,77 @@ class SchemaValidator:
         properties = self._get_schema_properties(schema)
         return properties.get(key)
 
+    def _validate_status_snippet(
+        self, ref: ExtractedReference
+    ) -> list[ValidationError]:
+        """
+        Validate status snippets against CRD status schemas.
+
+        Tries to match against Keycloak, KeycloakRealm, or KeycloakClient status.
+        """
+        errors: list[ValidationError] = []
+
+        content = ref.content
+        if isinstance(content, str):
+            try:
+                content = yaml.safe_load(content)
+            except yaml.YAMLError:
+                return errors
+
+        if not isinstance(content, dict):
+            return errors
+
+        # Get the status object
+        status_content = content.get("status", content)
+        if not isinstance(status_content, dict):
+            return errors
+
+        # Try to determine which CRD this status belongs to based on fields
+        # Keycloak: has deployment, service, adminSecret, databaseStatus
+        # KeycloakRealm: has realmName, internalId (for realm)
+        # KeycloakClient: has clientId, internalId, realm, credentialsSecret
+
+        crd_kind = None
+        if "clientId" in status_content or "credentialsSecret" in status_content:
+            crd_kind = "KeycloakClient"
+        elif "realmName" in status_content and "clientId" not in status_content:
+            crd_kind = "KeycloakRealm"
+        elif (
+            "deployment" in status_content
+            or "adminSecret" in status_content
+            or "databaseStatus" in status_content
+        ):
+            crd_kind = "Keycloak"
+        else:
+            # Check for common status fields that could match any CRD
+            # Default to Keycloak if we can't determine
+            if "phase" in status_content:
+                # Could be any - try Keycloak first as it's most common
+                crd_kind = "Keycloak"
+
+        if not crd_kind:
+            return errors  # Can't determine, skip
+
+        # Load CRD schema
+        schema = self._load_crd_schema(crd_kind)
+        if schema is None:
+            return errors
+
+        # Get the status schema
+        status_schema = schema.get("properties", {}).get("status", {})
+        if not status_schema:
+            return errors
+
+        # Validate status fields
+        status_errors = self._validate_object_against_schema(
+            status_content, status_schema, "status", ref
+        )
+        for e in status_errors:
+            e.context = f"status:{crd_kind}"
+        errors.extend(status_errors)
+
+        return errors
+
     def _categorize_k8s_other(self, ref: ExtractedReference) -> str:
         """Categorize a k8s-other reference for appropriate validation."""
         raw = ref.raw if isinstance(ref.raw, str) else str(ref.raw)
@@ -890,11 +1027,41 @@ class SchemaValidator:
                         total_passed += 1
 
                 elif ref.context == ReferenceContext.HELM_VALUES:
-                    # TODO: Implement helm values validation
-                    total_skipped += 1
-                    skipped_reasons["helm-values not implemented"] = (
-                        skipped_reasons.get("helm-values not implemented", 0) + 1
-                    )
+                    chart_name = ref.metadata.get("chart_name", "unknown")
+                    # Try to infer chart from content if unknown
+                    content = ref.content if isinstance(ref.content, dict) else {}
+                    if chart_name == "unknown":
+                        # keycloak-operator has these top-level keys
+                        operator_keys = {
+                            "operator",
+                            "keycloak",
+                            "monitoring",
+                            "webhooks",
+                            "ingress",
+                            "extraManifests",
+                            "jvm",
+                            "resources",
+                        }
+                        if content.keys() & operator_keys:
+                            chart_name = "keycloak-operator"
+                        elif "clientId" in content:
+                            chart_name = "keycloak-client"
+                        elif "realmName" in content:
+                            chart_name = "keycloak-realm"
+
+                    validatable_charts = self._discover_validatable_charts()
+                    if chart_name not in validatable_charts:
+                        total_skipped += 1
+                        reason = "helm-values unknown chart"
+                        skipped_reasons[reason] = skipped_reasons.get(reason, 0) + 1
+                    else:
+                        total_validated += 1
+                        helm_errors = self._validate_helm_values(ref)
+                        if helm_errors:
+                            errors.extend(helm_errors)
+                            total_failed += 1
+                        else:
+                            total_passed += 1
 
                 elif ref.context == ReferenceContext.CR_KEYCLOAK:
                     total_validated += 1
@@ -961,11 +1128,14 @@ class SchemaValidator:
                         )
 
                     elif category == "status":
-                        # Status snippets are informational, skip validation
-                        total_skipped += 1
-                        skipped_reasons["status snippet"] = (
-                            skipped_reasons.get("status snippet", 0) + 1
-                        )
+                        # Validate status snippets against CRD status schemas
+                        total_validated += 1
+                        status_errors = self._validate_status_snippet(ref)
+                        if status_errors:
+                            errors.extend(status_errors)
+                            total_failed += 1
+                        else:
+                            total_passed += 1
 
                     elif category == "k8s-core":
                         total_validated += 1
