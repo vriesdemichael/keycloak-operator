@@ -384,6 +384,318 @@ class SchemaValidator:
 
         return errors
 
+    def _validate_argocd_helm_values(
+        self, ref: ExtractedReference
+    ) -> list[ValidationError]:
+        """
+        Validate ArgoCD Application resources that contain Helm values.
+
+        Extracts the helm values from the ArgoCD Application spec and validates
+        against the appropriate chart schema.
+        """
+        errors: list[ValidationError] = []
+
+        if not isinstance(ref.content, dict):
+            return errors
+
+        # Navigate to spec.source.helm.values or spec.source.helm.valuesObject
+        spec = ref.content.get("spec", {})
+        source = spec.get("source", {})
+        helm = source.get("helm", {})
+
+        # Get the chart path to determine which chart this is for
+        chart_path = source.get("path", "")
+        # repoURL not currently used for validation
+
+        # Determine chart name from path
+        chart_name = None
+        if "keycloak-operator" in chart_path:
+            chart_name = "keycloak-operator"
+        elif "keycloak-realm" in chart_path:
+            chart_name = "keycloak-realm"
+        elif "keycloak-client" in chart_path:
+            chart_name = "keycloak-client"
+
+        if not chart_name:
+            # Can't determine chart, skip validation
+            return errors
+
+        # Get values - can be string (YAML) or object
+        values_str = helm.get("values", "")
+        values_obj = helm.get("valuesObject", {})
+
+        values_to_validate = None
+        if values_obj:
+            values_to_validate = values_obj
+        elif values_str:
+            try:
+                values_to_validate = yaml.safe_load(values_str)
+            except yaml.YAMLError:
+                return errors  # Can't parse, skip
+
+        if not values_to_validate or not isinstance(values_to_validate, dict):
+            return errors
+
+        # Load schema and validate
+        schema = self._load_values_schema(chart_name)
+        if schema is None:
+            return errors
+
+        # Validate each top-level key
+        for key, value in values_to_validate.items():
+            error = self._validate_key_exists(key, schema, chart_name)
+            if error:
+                error.file = ref.file
+                error.line = ref.line
+                error.context = "argocd-helm-values"
+                errors.append(error)
+            elif isinstance(value, dict):
+                # Validate nested structure
+                prop_schema = self._get_property_schema(schema, key)
+                if prop_schema:
+                    nested_errors = self._validate_object_against_schema(
+                        value, prop_schema, key, ref
+                    )
+                    for e in nested_errors:
+                        e.context = "argocd-helm-values"
+                    errors.extend(nested_errors)
+
+        return errors
+
+    def _validate_rbac_resource(self, ref: ExtractedReference) -> list[ValidationError]:
+        """
+        Validate RBAC resources (Role, ClusterRole, RoleBinding, ClusterRoleBinding).
+
+        Performs basic structural validation without needing the full K8s schema.
+        """
+        errors: list[ValidationError] = []
+
+        if not isinstance(ref.content, dict):
+            return errors
+
+        kind = ref.content.get("kind", "")
+        if kind not in ("Role", "ClusterRole", "RoleBinding", "ClusterRoleBinding"):
+            return errors
+
+        # Validate Role/ClusterRole rules
+        if kind in ("Role", "ClusterRole"):
+            rules = ref.content.get("rules", [])
+            if not isinstance(rules, list):
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="rbac",
+                        message=f"{kind}.rules must be an array",
+                    )
+                )
+            else:
+                for i, rule in enumerate(rules):
+                    if not isinstance(rule, dict):
+                        continue
+                    # Check required fields
+                    if "verbs" not in rule:
+                        errors.append(
+                            ValidationError(
+                                file=ref.file,
+                                line=ref.line,
+                                context="rbac",
+                                message=f"{kind}.rules[{i}] missing required 'verbs'",
+                            )
+                        )
+                    # Check for valid verb values
+                    verbs = rule.get("verbs", [])
+                    valid_verbs = {
+                        "get",
+                        "list",
+                        "watch",
+                        "create",
+                        "update",
+                        "patch",
+                        "delete",
+                        "deletecollection",
+                        "*",
+                    }
+                    for verb in verbs:
+                        if verb not in valid_verbs:
+                            errors.append(
+                                ValidationError(
+                                    file=ref.file,
+                                    line=ref.line,
+                                    context="rbac",
+                                    message=f"Unknown verb '{verb}' in {kind}.rules[{i}]",
+                                    suggestion=f"Valid verbs: {', '.join(sorted(valid_verbs))}",
+                                )
+                            )
+
+        # Validate RoleBinding/ClusterRoleBinding
+        if kind in ("RoleBinding", "ClusterRoleBinding"):
+            # Check roleRef
+            role_ref = ref.content.get("roleRef", {})
+            if not role_ref:
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="rbac",
+                        message=f"{kind} missing required 'roleRef'",
+                    )
+                )
+            else:
+                for field in ("apiGroup", "kind", "name"):
+                    if field not in role_ref:
+                        errors.append(
+                            ValidationError(
+                                file=ref.file,
+                                line=ref.line,
+                                context="rbac",
+                                message=f"{kind}.roleRef missing required '{field}'",
+                            )
+                        )
+            # Check subjects
+            subjects = ref.content.get("subjects", [])
+            if not subjects:
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="rbac",
+                        message=f"{kind} missing required 'subjects'",
+                    )
+                )
+
+        return errors
+
+    def _validate_env_array(self, ref: ExtractedReference) -> list[ValidationError]:
+        """
+        Validate partial env: array snippets.
+
+        Checks that each env item has the required structure (name + value/valueFrom).
+        """
+        errors: list[ValidationError] = []
+
+        # Handle both raw string and parsed content
+        content = ref.content
+        if isinstance(content, str):
+            try:
+                content = yaml.safe_load(content)
+            except yaml.YAMLError:
+                return errors
+
+        if not isinstance(content, dict):
+            return errors
+
+        env_list = content.get("env", [])
+        if not isinstance(env_list, list):
+            return errors
+
+        for i, env_item in enumerate(env_list):
+            if not isinstance(env_item, dict):
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="env-var",
+                        message=f"env[{i}] must be an object",
+                    )
+                )
+                continue
+
+            # Must have name
+            if "name" not in env_item:
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="env-var",
+                        message=f"env[{i}] missing required 'name'",
+                    )
+                )
+
+            # Must have value or valueFrom
+            if "value" not in env_item and "valueFrom" not in env_item:
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="env-var",
+                        message=f"env[{i}] (name={env_item.get('name', '?')}) must have 'value' or 'valueFrom'",
+                    )
+                )
+
+            # If valueFrom, check structure
+            value_from = env_item.get("valueFrom", {})
+            if value_from:
+                valid_sources = {
+                    "secretKeyRef",
+                    "configMapKeyRef",
+                    "fieldRef",
+                    "resourceFieldRef",
+                }
+                sources_found = [k for k in value_from if k in valid_sources]
+                if not sources_found:
+                    errors.append(
+                        ValidationError(
+                            file=ref.file,
+                            line=ref.line,
+                            context="env-var",
+                            message=f"env[{i}].valueFrom must have one of: {', '.join(sorted(valid_sources))}",
+                        )
+                    )
+
+        return errors
+
+    def _get_property_schema(
+        self, schema: dict[str, Any], key: str
+    ) -> dict[str, Any] | None:
+        """Get the schema for a specific property."""
+        properties = self._get_schema_properties(schema)
+        return properties.get(key)
+
+    def _categorize_k8s_other(self, ref: ExtractedReference) -> str:
+        """Categorize a k8s-other reference for appropriate validation."""
+        raw = ref.raw if isinstance(ref.raw, str) else str(ref.raw)
+        content = ref.content if isinstance(ref.content, dict) else {}
+
+        # Check for ArgoCD
+        if "argoproj.io" in raw:
+            return "argocd"
+
+        # Check for RBAC
+        kind = content.get("kind", "")
+        if kind in ("Role", "ClusterRole", "RoleBinding", "ClusterRoleBinding"):
+            return "rbac"
+        if "rbac.authorization.k8s.io" in raw:
+            return "rbac"
+
+        # Check for env snippet (may have comments before env:)
+        # Strip comments and check for env:
+        raw_no_comments = "\n".join(
+            line for line in raw.split("\n") if not line.strip().startswith("#")
+        )
+        if raw_no_comments.strip().startswith("env:"):
+            return "env"
+        # Also check if content has env key
+        if isinstance(content, dict) and "env" in content:
+            return "env"
+
+        # Check for status snippets (informational, skip validation)
+        if raw.strip().startswith("status:"):
+            return "status"
+        if (
+            isinstance(content, dict)
+            and "status" in content
+            and "phase" in content.get("status", {})
+        ):
+            return "status"
+
+        # Check for CNPG
+        api_version = content.get("apiVersion", "")
+        if "cnpg.io" in api_version or "postgresql.cnpg.io" in api_version:
+            return "cnpg"
+
+        return "other"
+
     def validate_references(self, results: list[ExtractionResult]) -> ValidationResult:
         """Validate all extracted references."""
         errors: list[ValidationError] = []
@@ -449,10 +761,54 @@ class SchemaValidator:
                         total_passed += 1
 
                 elif ref.context == ReferenceContext.K8S_OTHER:
-                    total_skipped += 1
-                    skipped_reasons["k8s-other"] = (
-                        skipped_reasons.get("k8s-other", 0) + 1
-                    )
+                    # Categorize and validate k8s-other references
+                    category = self._categorize_k8s_other(ref)
+
+                    if category == "argocd":
+                        total_validated += 1
+                        argocd_errors = self._validate_argocd_helm_values(ref)
+                        if argocd_errors:
+                            errors.extend(argocd_errors)
+                            total_failed += 1
+                        else:
+                            total_passed += 1
+
+                    elif category == "rbac":
+                        total_validated += 1
+                        rbac_errors = self._validate_rbac_resource(ref)
+                        if rbac_errors:
+                            errors.extend(rbac_errors)
+                            total_failed += 1
+                        else:
+                            total_passed += 1
+
+                    elif category == "env":
+                        total_validated += 1
+                        env_errors = self._validate_env_array(ref)
+                        if env_errors:
+                            errors.extend(env_errors)
+                            total_failed += 1
+                        else:
+                            total_passed += 1
+
+                    elif category == "cnpg":
+                        total_skipped += 1
+                        skipped_reasons["external: cnpg"] = (
+                            skipped_reasons.get("external: cnpg", 0) + 1
+                        )
+
+                    elif category == "status":
+                        # Status snippets are informational, skip validation
+                        total_skipped += 1
+                        skipped_reasons["status snippet"] = (
+                            skipped_reasons.get("status snippet", 0) + 1
+                        )
+
+                    else:
+                        total_skipped += 1
+                        skipped_reasons["k8s-other"] = (
+                            skipped_reasons.get("k8s-other", 0) + 1
+                        )
 
                 elif ref.context == ReferenceContext.UNKNOWN:
                     total_skipped += 1
