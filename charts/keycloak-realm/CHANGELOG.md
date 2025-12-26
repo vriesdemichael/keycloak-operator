@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.1...chart-realm-v0.3.2) (2025-12-26)
+
+
+### Features
+
+* **chart-realm:** add rbac and clientAuthorizationGrants to schema ([cbdbc9d](https://github.com/vriesdemichael/keycloak-operator/commit/cbdbc9d0ad58afb8ede5bdf8db640cf7d75e649a))
+
 ## [0.3.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.0...chart-realm-v0.3.1) (2025-12-21)
 
 
