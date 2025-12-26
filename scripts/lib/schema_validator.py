@@ -694,7 +694,170 @@ class SchemaValidator:
         if "cnpg.io" in api_version or "postgresql.cnpg.io" in api_version:
             return "cnpg"
 
+        # Check for known K8s core resources
+        k8s_core_kinds = {
+            "Service",
+            "ConfigMap",
+            "Secret",
+            "Namespace",
+            "PersistentVolumeClaim",
+            "PersistentVolume",
+            "StorageClass",
+            "NetworkPolicy",
+            "PodDisruptionBudget",
+            "Ingress",
+            "IngressClass",
+            "ServiceAccount",
+            "LimitRange",
+            "ResourceQuota",
+            "HorizontalPodAutoscaler",
+        }
+        if kind in k8s_core_kinds:
+            return "k8s-core"
+
+        # Check for external operators/tools
+        external_apis = {
+            "kustomize.toolkit.fluxcd.io": "fluxcd",
+            "monitoring.coreos.com": "prometheus",
+            "cert-manager.io": "cert-manager",
+        }
+        for api_prefix, name in external_apis.items():
+            if api_prefix in api_version:
+                return f"external:{name}"
+
+        # Partial snippets (no apiVersion/kind) - categorize by content
+        if not api_version and not kind:
+            # Check for common partial config patterns
+            partial_patterns = {
+                "affinity": "partial:affinity",
+                "tolerations": "partial:tolerations",
+                "nodeSelector": "partial:nodeSelector",
+                "resources": "partial:resources",
+                "bootstrap": "partial:cnpg",
+                "backup": "partial:cnpg",
+                "postgresql": "partial:cnpg",
+                "retentionPolicy": "partial:cnpg",
+                "certificates": "partial:cnpg",  # CNPG TLS config
+                "groups": "partial:prometheus",
+                "spring": "partial:app-config",  # Spring Boot config
+            }
+            for key in partial_patterns:
+                if key in content or raw.strip().startswith(f"{key}:"):
+                    return partial_patterns[key]
+
+            # Check for spec: without apiVersion (partial CNPG or other)
+            if raw.strip().startswith("spec:"):
+                # Likely a partial resource spec
+                if "certificates" in raw or "tls" in raw.lower():
+                    return "partial:cnpg"
+                return "partial:spec"
+
+            # Single annotation/label
+            if "vriesdemichael.github.io" in raw:
+                return "partial:annotation"
+
         return "other"
+
+    def _validate_k8s_core_resource(
+        self, ref: ExtractedReference
+    ) -> list[ValidationError]:
+        """
+        Validate basic structure of core K8s resources.
+
+        Performs structural validation without the full K8s schema.
+        """
+        errors: list[ValidationError] = []
+
+        if not isinstance(ref.content, dict):
+            return errors
+
+        kind = ref.content.get("kind", "")
+        api_version = ref.content.get("apiVersion", "")
+
+        # All K8s resources need apiVersion and kind
+        if not api_version:
+            errors.append(
+                ValidationError(
+                    file=ref.file,
+                    line=ref.line,
+                    context="k8s-core",
+                    message=f"{kind} missing required 'apiVersion'",
+                )
+            )
+
+        # Most need metadata.name
+        metadata = ref.content.get("metadata", {})
+        if not metadata.get("name") and kind not in ("Namespace",):
+            # Some examples might omit metadata, that's ok for docs
+            pass
+
+        # Kind-specific validation
+        if kind == "Service":
+            spec = ref.content.get("spec", {})
+            if not spec.get("ports") and spec.get("clusterIP") != "None":
+                # Headless services don't need ports
+                pass
+            if spec.get("type") not in (
+                None,
+                "ClusterIP",
+                "NodePort",
+                "LoadBalancer",
+                "ExternalName",
+            ):
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="k8s-core",
+                        message=f"Invalid Service type: {spec.get('type')}",
+                    )
+                )
+
+        elif kind == "NetworkPolicy":
+            spec = ref.content.get("spec", {})
+            if "podSelector" not in spec:
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="k8s-core",
+                        message="NetworkPolicy missing required 'spec.podSelector'",
+                    )
+                )
+
+        elif kind == "PodDisruptionBudget":
+            spec = ref.content.get("spec", {})
+            if "selector" not in spec:
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="k8s-core",
+                        message="PodDisruptionBudget missing required 'spec.selector'",
+                    )
+                )
+            if "minAvailable" not in spec and "maxUnavailable" not in spec:
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="k8s-core",
+                        message="PodDisruptionBudget needs 'minAvailable' or 'maxUnavailable'",
+                    )
+                )
+
+        elif kind == "StorageClass":
+            if "provisioner" not in ref.content:
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context="k8s-core",
+                        message="StorageClass missing required 'provisioner'",
+                    )
+                )
+
+        return errors
 
     def validate_references(self, results: list[ExtractionResult]) -> ValidationResult:
         """Validate all extracted references."""
@@ -803,6 +966,25 @@ class SchemaValidator:
                         skipped_reasons["status snippet"] = (
                             skipped_reasons.get("status snippet", 0) + 1
                         )
+
+                    elif category == "k8s-core":
+                        total_validated += 1
+                        k8s_errors = self._validate_k8s_core_resource(ref)
+                        if k8s_errors:
+                            errors.extend(k8s_errors)
+                            total_failed += 1
+                        else:
+                            total_passed += 1
+
+                    elif category.startswith("external:"):
+                        # External operators (FluxCD, Prometheus, cert-manager)
+                        total_skipped += 1
+                        skipped_reasons[category] = skipped_reasons.get(category, 0) + 1
+
+                    elif category.startswith("partial:"):
+                        # Partial config snippets - informational
+                        total_skipped += 1
+                        skipped_reasons[category] = skipped_reasons.get(category, 0) + 1
 
                     else:
                         total_skipped += 1
