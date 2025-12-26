@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.9](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.8...operator-image-v0.5.9) (2025-12-26)
+
+
+### Features
+
+* **operator:** align Pydantic models with CRD schemas ([4f96f7c](https://github.com/vriesdemichael/keycloak-operator/commit/4f96f7c491a62c8d74c9a50d3e5fc16e98427da2))
+
+
+### Documentation
+
+* extend doc validation with external schemas and K8s resources ([7e7ce80](https://github.com/vriesdemichael/keycloak-operator/commit/7e7ce80f2f3d0c6c3d9ced00aba0560c8a757862))
+
 ## [0.5.8](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.7...operator-image-v0.5.8) (2025-12-23)
 
 
