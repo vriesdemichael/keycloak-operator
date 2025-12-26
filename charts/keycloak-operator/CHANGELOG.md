@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.9](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.8...chart-operator-v0.3.9) (2025-12-26)
+
+
+### Features
+
+* **chart-operator:** add CNPG and connection pool schema fields ([9ffaa57](https://github.com/vriesdemichael/keycloak-operator/commit/9ffaa57a87fa1b1ac49df603a72efbe5dcdc797c))
+
 ## [0.3.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.7...chart-operator-v0.3.8) (2025-12-23)
 
 
