@@ -95,6 +95,22 @@ class KeycloakIngressConfig(BaseModel):
     )
 
 
+class ConnectionPoolConfig(BaseModel):
+    """Database connection pool configuration."""
+
+    model_config = {"populate_by_name": True}
+
+    max_connections: int = Field(
+        20, alias="maxConnections", description="Maximum number of connections"
+    )
+    min_connections: int = Field(
+        5, alias="minConnections", description="Minimum number of connections"
+    )
+    connection_timeout: str = Field(
+        "30s", alias="connectionTimeout", description="Connection timeout"
+    )
+
+
 class KeycloakResourceRequirements(BaseModel):
     """Resource requirements for Keycloak pods."""
 
@@ -148,12 +164,8 @@ class KeycloakDatabaseConfig(BaseModel):
         alias="connectionParams",
         description="Additional database connection parameters",
     )
-    connection_pool: dict[str, Any] = Field(
-        default_factory=lambda: {
-            "maxConnections": 20,
-            "minConnections": 5,
-            "connectionTimeout": "30s",
-        },
+    connection_pool: ConnectionPoolConfig = Field(
+        default_factory=ConnectionPoolConfig,
         alias="connectionPool",
         description="Database connection pool configuration",
     )
