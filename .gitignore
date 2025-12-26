@@ -226,3 +226,5 @@ docs/decisions/generated-markdown/
 *.bak
 *~
 *.orig
+# External schema cache
+scripts/schemas/.cache/

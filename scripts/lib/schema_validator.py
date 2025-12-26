@@ -29,6 +29,13 @@ from scripts.lib.doc_extractor import (
     ReferenceContext,
     extract_all_references,
 )
+from scripts.schemas.external_schemas import (
+    get_cnpg_cluster_schema,
+    get_k8s_affinity_schema,
+    get_k8s_node_selector_schema,
+    get_k8s_resources_schema,
+    get_k8s_tolerations_schema,
+)
 
 
 @dataclass
@@ -864,6 +871,20 @@ class SchemaValidator:
 
         # Partial snippets (no apiVersion/kind) - categorize by content
         if not api_version and not kind:
+            # Check for CNPG-specific affinity keys (must check before generic affinity)
+            cnpg_affinity_keys = {
+                "podAntiAffinityType",
+                "enablePodAntiAffinity",
+                "additionalPodAffinity",
+                "additionalPodAntiAffinity",
+            }
+            if "affinity" in content or raw.strip().startswith("affinity:"):
+                # Check if it has CNPG-specific keys
+                affinity_content = content.get("affinity", content)
+                if isinstance(affinity_content, dict):
+                    if affinity_content.keys() & cnpg_affinity_keys:
+                        return "partial:cnpg"
+
             # Check for common partial config patterns
             partial_patterns = {
                 "affinity": "partial:affinity",
@@ -996,6 +1017,154 @@ class SchemaValidator:
 
         return errors
 
+    def _validate_partial_k8s(
+        self, ref: ExtractedReference, partial_type: str
+    ) -> list[ValidationError]:
+        """
+        Validate partial K8s snippets (affinity, resources, tolerations, nodeSelector)
+        against official K8s JSON schemas.
+        """
+        errors: list[ValidationError] = []
+
+        if not isinstance(ref.content, dict):
+            return errors
+
+        # Get the appropriate schema
+        schema_getters = {
+            "affinity": get_k8s_affinity_schema,
+            "resources": get_k8s_resources_schema,
+            "tolerations": get_k8s_tolerations_schema,
+            "nodeSelector": get_k8s_node_selector_schema,
+        }
+
+        if partial_type not in schema_getters:
+            return errors
+
+        schema = schema_getters[partial_type]()
+        if not schema:
+            # Schema unavailable, skip validation
+            return errors
+
+        # The content may have the key as top-level, or be the value directly
+        content_to_validate = ref.content
+        if partial_type in ref.content:
+            content_to_validate = ref.content[partial_type]
+
+        # Validate structure against schema
+        validation_errors = self._validate_against_schema(
+            content_to_validate, schema, partial_type, ref
+        )
+        errors.extend(validation_errors)
+
+        return errors
+
+    def _validate_against_schema(
+        self,
+        content: Any,
+        schema: dict[str, Any],
+        path: str,
+        ref: ExtractedReference,
+    ) -> list[ValidationError]:
+        """Validate content against a JSON schema structure."""
+        errors: list[ValidationError] = []
+
+        if schema.get("type") == "object":
+            if not isinstance(content, dict):
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context=f"partial:{path}",
+                        message=f"Expected object at '{path}', got {type(content).__name__}",
+                    )
+                )
+                return errors
+
+            # Check for unknown keys
+            allowed_props = set(schema.get("properties", {}).keys())
+            if allowed_props and not schema.get("additionalProperties", True):
+                for key in content:
+                    if key not in allowed_props:
+                        suggestion = self._suggest_correction(key, allowed_props)
+                        errors.append(
+                            ValidationError(
+                                file=ref.file,
+                                line=ref.line,
+                                context=f"partial:{path}",
+                                message=f"Unknown key '{key}' at '{path}'",
+                                suggestion=suggestion,
+                            )
+                        )
+
+            # Recursively validate known properties
+            for prop, prop_schema in schema.get("properties", {}).items():
+                if prop in content:
+                    prop_errors = self._validate_against_schema(
+                        content[prop], prop_schema, f"{path}.{prop}", ref
+                    )
+                    errors.extend(prop_errors)
+
+        elif schema.get("type") == "array":
+            if not isinstance(content, list):
+                errors.append(
+                    ValidationError(
+                        file=ref.file,
+                        line=ref.line,
+                        context=f"partial:{path}",
+                        message=f"Expected array at '{path}', got {type(content).__name__}",
+                    )
+                )
+                return errors
+
+            # Validate array items
+            items_schema = schema.get("items", {})
+            for i, item in enumerate(content):
+                item_errors = self._validate_against_schema(
+                    item, items_schema, f"{path}[{i}]", ref
+                )
+                errors.extend(item_errors)
+
+        return errors
+
+    def _validate_cnpg_cluster(self, ref: ExtractedReference) -> list[ValidationError]:
+        """Validate CNPG Cluster resources against the official CRD schema."""
+        errors: list[ValidationError] = []
+
+        if not isinstance(ref.content, dict):
+            return errors
+
+        # Only validate Cluster resources - other CNPG types have different schemas
+        kind = ref.content.get("kind", "")
+        if kind and kind != "Cluster":
+            # ScheduledBackup, Backup, etc. have different schemas - skip for now
+            return errors
+
+        schema = get_cnpg_cluster_schema()
+        if not schema:
+            # Schema unavailable, skip
+            return errors
+
+        # Get the spec portion
+        spec = ref.content.get("spec", ref.content)
+
+        # Validate top-level spec keys
+        allowed_props = set(schema.get("properties", {}).keys())
+        if allowed_props:
+            for key in spec:
+                if key not in allowed_props:
+                    suggestion = self._suggest_correction(key, allowed_props)
+                    errors.append(
+                        ValidationError(
+                            file=ref.file,
+                            line=ref.line,
+                            context="cnpg",
+                            message=f"Unknown CNPG Cluster spec key '{key}'",
+                            suggestion=suggestion,
+                        )
+                    )
+
+        return errors
+
     def validate_references(self, results: list[ExtractionResult]) -> ValidationResult:
         """Validate all extracted references."""
         errors: list[ValidationError] = []
@@ -1122,10 +1291,14 @@ class SchemaValidator:
                             total_passed += 1
 
                     elif category == "cnpg":
-                        total_skipped += 1
-                        skipped_reasons["external: cnpg"] = (
-                            skipped_reasons.get("external: cnpg", 0) + 1
-                        )
+                        # Validate CNPG Cluster resources against official CRD
+                        total_validated += 1
+                        cnpg_errors = self._validate_cnpg_cluster(ref)
+                        if cnpg_errors:
+                            errors.extend(cnpg_errors)
+                            total_failed += 1
+                        else:
+                            total_passed += 1
 
                     elif category == "status":
                         # Validate status snippets against CRD status schemas
@@ -1152,9 +1325,32 @@ class SchemaValidator:
                         skipped_reasons[category] = skipped_reasons.get(category, 0) + 1
 
                     elif category.startswith("partial:"):
-                        # Partial config snippets - informational
-                        total_skipped += 1
-                        skipped_reasons[category] = skipped_reasons.get(category, 0) + 1
+                        # Extract the partial type (affinity, resources, etc.)
+                        partial_type = category.split(":", 1)[1]
+
+                        # Validate K8s partial types we have schemas for
+                        k8s_partial_types = {
+                            "affinity",
+                            "resources",
+                            "tolerations",
+                            "nodeSelector",
+                        }
+                        if partial_type in k8s_partial_types:
+                            total_validated += 1
+                            partial_errors = self._validate_partial_k8s(
+                                ref, partial_type
+                            )
+                            if partial_errors:
+                                errors.extend(partial_errors)
+                                total_failed += 1
+                            else:
+                                total_passed += 1
+                        else:
+                            # Other partial types (cnpg, prometheus, app-config) - skip
+                            total_skipped += 1
+                            skipped_reasons[category] = (
+                                skipped_reasons.get(category, 0) + 1
+                            )
 
                     else:
                         total_skipped += 1
