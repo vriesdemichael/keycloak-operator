@@ -117,28 +117,32 @@ status:
 
 ```yaml
 status:
+  phase: Ready
   realmName: my-realm  # Actual realm name in Keycloak
+  internalId: "a1b2c3d4-5678-90ab"  # UUID in Keycloak
   keycloakInstance: default/keycloak  # Referenced Keycloak instance
-  features:
-    userRegistration: true
-    passwordReset: true
-    identityProviders: 2
-    userFederationProviders: 1
-    customThemes: true
+  observedGeneration: 3
+  endpoints:
+    issuer: https://keycloak.example.com/realms/my-realm
+    auth: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/auth
+    token: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/token
 ```
 
 ### KeycloakClient Status
 
 ```yaml
 status:
-  client_id: my-client  # Client ID
-  client_uuid: abc-123  # UUID in Keycloak
+  phase: Ready
+  clientId: my-client  # Client ID
+  internalId: abc-123  # UUID in Keycloak
   realm: my-realm  # Realm name
-  keycloak_instance: default/keycloak  # Keycloak instance reference
-  credentials_secret: my-client-credentials  # Client credentials secret
-  public_client: false  # Whether this is a public client
+  keycloakInstance: default/keycloak  # Keycloak instance reference
+  credentialsSecret: my-client-credentials  # Client credentials secret
+  publicClient: false  # Whether this is a public client
+  observedGeneration: 2
   endpoints:
-    auth: https://keycloak.example.com/realms/my-realm
+    issuer: https://keycloak.example.com/realms/my-realm
+    auth: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/auth
     token: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/token
     userinfo: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/userinfo
 ```

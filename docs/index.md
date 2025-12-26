@@ -150,9 +150,13 @@ status:
       reason: ReconciliationSucceeded
       message: "Realm is healthy and synchronized"
   observedGeneration: 5
-  realmId: "a1b2c3d4-5678-90ab-cdef-1234567890ab"
-  internalUrl: "http://keycloak.keycloak-system.svc:8080/realms/my-app"
-  publicUrl: "https://keycloak.example.com/realms/my-app"
+  realmName: my-app
+  internalId: "a1b2c3d4-5678-90ab-cdef-1234567890ab"
+  keycloakInstance: keycloak-system/keycloak
+  endpoints:
+    issuer: "https://keycloak.example.com/realms/my-app"
+    auth: "https://keycloak.example.com/realms/my-app/protocol/openid-connect/auth"
+    token: "https://keycloak.example.com/realms/my-app/protocol/openid-connect/token"
 ```
 
 **📖 [Observability Guide →](guides/observability.md)**
