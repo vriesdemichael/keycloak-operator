@@ -41,8 +41,7 @@ helm install keycloak-operator keycloak-operator/keycloak-operator \
 helm install my-realm keycloak-operator/keycloak-realm \
   --namespace my-app --create-namespace \
   --set realmName=my-app \
-  --set instanceRef.name=keycloak \
-  --set instanceRef.namespace=keycloak-system \
+  --set operatorRef.namespace=keycloak-system \
   --set 'clientAuthorizationGrants={my-app}'
 
 # 4. Create OAuth2 client

@@ -101,8 +101,10 @@ See: [Architecture](concepts/architecture.md)
 **Can be increased:**
 ```bash
 helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --set env.KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS=100 \
-  --set env.KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS=10
+  --set 'operator.env[0].name=KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS' \
+  --set 'operator.env[0].value=100' \
+  --set 'operator.env[1].name=KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS' \
+  --set 'operator.env[1].value=10'
 ```
 
 **Metrics available:**

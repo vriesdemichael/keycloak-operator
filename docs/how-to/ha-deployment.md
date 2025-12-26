@@ -77,7 +77,7 @@ spec:
   ingress:
     enabled: true
     className: nginx
-    hostname: keycloak.example.com
+    host: keycloak.example.com
 ```
 
 ### PostgreSQL HA
@@ -147,7 +147,7 @@ ingress:
     nginx.ingress.kubernetes.io/affinity: cookie
     nginx.ingress.kubernetes.io/session-cookie-name: keycloak-affinity
     nginx.ingress.kubernetes.io/session-cookie-hash: sha1
-  hostname: keycloak.example.com
+  host: keycloak.example.com
 ```
 
 **Service LoadBalancer** (Cloud):
