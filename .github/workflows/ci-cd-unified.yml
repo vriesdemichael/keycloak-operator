@@ -95,9 +95,21 @@ jobs:
       - name: Run quality checks
         uses: ./.github/actions/code-quality
 
+  docs-validation:
+    name: Documentation Validation
+    needs: [detect]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate documentation
+        uses: ./.github/actions/docs-validation
+
   security-scans:
     name: Security Scans
-    needs: [detect, build-operator, unit-tests, code-quality]
+    needs: [detect, build-operator, unit-tests, code-quality, docs-validation]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -113,7 +125,7 @@ jobs:
 
   integration-tests:
     name: Integration Tests
-    needs: [detect, build-operator, unit-tests, code-quality]
+    needs: [detect, build-operator, unit-tests, code-quality, docs-validation]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
@@ -142,7 +154,7 @@ jobs:
   # =====================================================
   all-required-checks-passed:
     name: All Required Checks Passed
-    needs: [detect, unit-tests, code-quality, security-scans, integration-tests]
+    needs: [detect, unit-tests, code-quality, docs-validation, security-scans, integration-tests]
     if: always()
     runs-on: ubuntu-latest
     outputs:
@@ -156,6 +168,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Code Quality: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Docs Validation: ${{ needs.docs-validation.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Scans: ${{ needs.security-scans.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -163,6 +176,7 @@ jobs:
           # Check if any required job failed
           if [[ "${{ needs.unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.code-quality.result }}" == "failure" ]] || \
+             [[ "${{ needs.docs-validation.result }}" == "failure" ]] || \
              [[ "${{ needs.security-scans.result }}" == "failure" ]] || \
              [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
             echo "❌ Required checks failed" >> $GITHUB_STEP_SUMMARY
@@ -173,6 +187,7 @@ jobs:
           # Checks should not be skipped
           if [[ "${{ needs.unit-tests.result }}" == "skipped" ]] || \
              [[ "${{ needs.code-quality.result }}" == "skipped" ]] || \
+             [[ "${{ needs.docs-validation.result }}" == "skipped" ]] || \
              [[ "${{ needs.security-scans.result }}" == "skipped" ]] || \
              [[ "${{ needs.integration-tests.result }}" == "skipped" ]]; then
             echo "⚠️ Quality checks should not be skipped" >> $GITHUB_STEP_SUMMARY

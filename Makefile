@@ -58,6 +58,14 @@ validate-decisions: ## Validate Decision Records (Architecture/Development)
 		echo "No decision record files found"; \
 	fi
 
+.PHONY: validate-docs
+validate-docs: ## Validate documentation examples against schemas
+	uv run --group dev python scripts/lib/schema_validator.py --fail-on-error
+
+.PHONY: validate-crd-pydantic
+validate-crd-pydantic: ## Validate CRD schemas match Pydantic models
+	uv run --group dev python scripts/lib/crd_pydantic_validator.py --fail-on-error
+
 # ============================================================================
 # Documentation
 # ============================================================================
@@ -156,30 +164,35 @@ test-integration-clean: kind-teardown test-integration ## Tear down cluster, the
 test: test-pre-commit ## Run complete test suite (quality + unit + integration)
 
 .PHONY: test-pre-commit
-test-pre-commit: ## Complete pre-commit flow (quality + fresh cluster + unit + integration with coverage)
+test-pre-commit: ## Complete pre-commit flow (quality + docs validation + fresh cluster + unit + integration with coverage)
 	@mkdir -p .tmp/test-logs
 	@rm -f .tmp/test-pre-commit.log
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] =====================================" | tee -a .tmp/test-pre-commit.log
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Pre-commit test suite" | tee -a .tmp/test-pre-commit.log
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] =====================================" | tee -a .tmp/test-pre-commit.log
 	@echo "" | tee -a .tmp/test-pre-commit.log
-	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 1/4: Running quality checks..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 1/5: Running quality checks..." | tee -a .tmp/test-pre-commit.log
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
 	@bash -c "set -o pipefail; $(MAKE) quality 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Quality checks failed" | tee -a .tmp/test-pre-commit.log; exit 1; }
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Quality checks passed" | tee -a .tmp/test-pre-commit.log
 	@echo "" | tee -a .tmp/test-pre-commit.log
-	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 2/4: Setting up fresh cluster..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 2/5: Validating documentation..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
+	@bash -c "set -o pipefail; $(MAKE) validate-docs 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Documentation validation failed" | tee -a .tmp/test-pre-commit.log; exit 1; }
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Documentation validation passed" | tee -a .tmp/test-pre-commit.log
+	@echo "" | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 3/5: Setting up fresh cluster..." | tee -a .tmp/test-pre-commit.log
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
 	@bash -c "set -o pipefail; $(MAKE) kind-teardown 2>&1 | tee -a .tmp/test-pre-commit.log" || true
 	@bash -c "set -o pipefail; $(MAKE) kind-setup 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Failed to setup Kind cluster" | tee -a .tmp/test-pre-commit.log; exit 1; }
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Fresh cluster ready" | tee -a .tmp/test-pre-commit.log
 	@echo "" | tee -a .tmp/test-pre-commit.log
-	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 3/4: Running unit tests with coverage..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 4/5: Running unit tests with coverage..." | tee -a .tmp/test-pre-commit.log
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
 	@bash -c "set -o pipefail; $(MAKE) test-unit 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Unit tests failed" | tee -a .tmp/test-pre-commit.log; exit 1; }
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Unit tests passed" | tee -a .tmp/test-pre-commit.log
 	@echo "" | tee -a .tmp/test-pre-commit.log
-	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 4/4: Running integration tests with coverage..." | tee -a .tmp/test-pre-commit.log
+	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] Step 5/5: Running integration tests with coverage..." | tee -a .tmp/test-pre-commit.log
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
 	@bash -c "set -o pipefail; $(MAKE) install-cnpg 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Failed to install CNPG" | tee -a .tmp/test-pre-commit.log; exit 1; }
 	@bash -c "set -o pipefail; $(MAKE) install-cert-manager 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Failed to install cert-manager" | tee -a .tmp/test-pre-commit.log; exit 1; }
