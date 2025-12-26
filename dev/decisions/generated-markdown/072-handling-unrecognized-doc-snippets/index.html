@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/042-pytest-xdist-for-parallel-integration-tests/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/072-handling-unrecognized-doc-snippets/">
       
       
-        <link rel="prev" href="../041-shared-operator-fixture-in-tests/">
+        <link rel="prev" href="../071-crd-pydantic-schema-sync/">
       
       
-        <link rel="next" href="../043-wait-helpers-with-debug-logging-in-tests/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-042: pytest-xdist for parallel integration tests - Keycloak Operator</title>
+        <title>ADR-072: Handling unrecognized documentation snippets - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-042-pytest-xdist-for-parallel-integration-tests" class="md-skip">
+        <a href="#adr-072-handling-unrecognized-documentation-snippets" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-042: pytest-xdist for parallel integration tests
+              ADR-072: Handling unrecognized documentation snippets
             
           </span>
         </div>
@@ -2715,37 +2715,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-042: pytest-xdist for parallel integration tests
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../042-pytest-xdist-for-parallel-integration-tests/" class="md-nav__link">
         
   
   
@@ -2761,98 +2734,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#sequential-test-execution" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Sequential test execution
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#custom-parallel-test-runner" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Custom parallel test runner
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3674,10 +3555,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../072-handling-unrecognized-doc-snippets/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-072: Handling unrecognized documentation snippets
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -3693,6 +3601,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#validate-everything-or-reject-unvalidatable-snippets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validate everything or reject unvalidatable snippets
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#skip-validation-for-all-partial-snippets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skip validation for all partial snippets
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3804,10 +3804,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#sequential-test-execution" class="md-nav__link">
+  <a href="#validate-everything-or-reject-unvalidatable-snippets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Sequential test execution
+        Validate everything or reject unvalidatable snippets
       
     </span>
   </a>
@@ -3815,10 +3815,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#custom-parallel-test-runner" class="md-nav__link">
+  <a href="#skip-validation-for-all-partial-snippets" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Custom parallel test runner
+        Skip validation for all partial snippets
       
     </span>
   </a>
@@ -3847,7 +3847,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/042-pytest-xdist-for-parallel-integration-tests.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/072-handling-unrecognized-doc-snippets.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -3855,20 +3855,48 @@
   
 
 
-<h1 id="adr-042-pytest-xdist-for-parallel-integration-tests">ADR-042: pytest-xdist for parallel integration tests<a class="headerlink" href="#adr-042-pytest-xdist-for-parallel-integration-tests" title="Permanent link">&para;</a></h1>
+<h1 id="adr-072-handling-unrecognized-documentation-snippets">ADR-072: Handling unrecognized documentation snippets<a class="headerlink" href="#adr-072-handling-unrecognized-documentation-snippets" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> development
-<strong>Provenance:</strong> human</p>
+<strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use pytest-xdist to run integration tests in parallel across multiple workers. Significantly reduces total test time.</p>
+<p>When adding new code snippets to documentation, ensure they can be validated programmatically. The validation script categorizes snippets and validates them against appropriate schemas. Unrecognized snippets are flagged as warnings. For snippets that cannot be validated automatically, manually verify correctness before committing.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Integration tests are I/O bound (waiting for Kubernetes resources). Running in parallel utilizes CPU cores during wait times. pytest-xdist distributes tests across workers. 'auto' mode uses all available cores. Dramatically reduces total test time (e.g., 20 tests * 30s = 10min sequential vs 2min parallel with 10 cores). Better CI resource utilization. Tests must be designed for isolation anyway (different namespaces), making parallelization straightforward.</p>
+<p>Documentation drift causes user confusion when examples use incorrect field names or outdated structures. Programmatic validation catches most issues, but some snippets (external tools, partial configs) cannot be validated automatically. For these, we accept the limitation and require manual verification. The key is distinguishing between "intentionally skipped" (external/known) and "unrecognized" (potentially a validation gap).</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Run integration tests with 'pytest -n auto' to use all CPU cores. Design tests to be parallel-safe (isolated namespaces, no shared state). Use xdist's worker-scoped fixtures when needed. Configure in pyproject.toml or pytest.ini.</p>
+<p>When adding documentation examples:
+1. <strong>Validatable snippets</strong> - Add sufficient context for auto-detection:
+   - K8s resources: Include <code>apiVersion</code> and <code>kind</code>
+   - Helm values: Include recognizable top-level keys (operator, keycloak, etc.)
+   - CR examples: Include <code>apiVersion: vriesdemichael.github.io/v1</code> and <code>kind</code></p>
+<ol>
+<li><strong>Partial snippets</strong> - Add detection hints when possible:</li>
+<li>For env arrays: Keep the <code>env:</code> key as wrapper</li>
+<li>For spec sections: Include the <code>spec:</code> wrapper</li>
+<li>
+<p>For config fragments: Include parent key context</p>
+</li>
+<li>
+<p><strong>External/third-party snippets</strong> - These are intentionally skipped:</p>
+</li>
+<li>CNPG partial configs (bootstrap, backup, certificates)</li>
+<li>FluxCD, Prometheus, cert-manager resources</li>
+<li>ingress-nginx Helm values</li>
+<li>
+<p>Spring/application config examples</p>
+</li>
+<li>
+<p><strong>Manual validation required</strong> - For snippets that can't be auto-validated:</p>
+</li>
+<li>Verify against official documentation before committing</li>
+<li>Document the source/reference in a comment if helpful</li>
+<li>Consider if the snippet can be restructured for validation</li>
+</ol>
+<p>Run <code>make validate-docs</code> or <code>uv run --group dev python scripts/lib/schema_validator.py</code> to check validation status. The script will warn about new unrecognized snippets.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="sequential-test-execution">Sequential test execution<a class="headerlink" href="#sequential-test-execution" title="Permanent link">&para;</a></h3>
-<p>Wastes time and CI resources. Tests spend most time waiting for Kubernetes, not CPU bound.</p>
-<h3 id="custom-parallel-test-runner">Custom parallel test runner<a class="headerlink" href="#custom-parallel-test-runner" title="Permanent link">&para;</a></h3>
-<p>Reinvents wheel. pytest-xdist is mature, well-maintained, handles edge cases.</p>
+<h3 id="validate-everything-or-reject-unvalidatable-snippets">Validate everything or reject unvalidatable snippets<a class="headerlink" href="#validate-everything-or-reject-unvalidatable-snippets" title="Permanent link">&para;</a></h3>
+<p>Some documentation necessarily shows external tool configs (CNPG, FluxCD) that we don't control schemas for. Removing these would make docs incomplete.</p>
+<h3 id="skip-validation-for-all-partial-snippets">Skip validation for all partial snippets<a class="headerlink" href="#skip-validation-for-all-partial-snippets" title="Permanent link">&para;</a></h3>
+<p>Many partial snippets (env arrays, K8s affinity/resources) can be validated with proper schema extraction. Blanket skipping would miss validation opportunities.</p>
 
 
 
@@ -3904,7 +3932,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../041-shared-operator-fixture-in-tests/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-041: Shared operator fixture in tests">
+          <a href="../071-crd-pydantic-schema-sync/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-071: CRD-Pydantic schema synchronization validation">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3914,20 +3942,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-041: Shared operator fixture in tests
+                ADR-071: CRD-Pydantic schema synchronization validation
               </div>
             </div>
           </a>
         
         
           
-          <a href="../043-wait-helpers-with-debug-logging-in-tests/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-043: Wait helpers with debug logging in tests">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-043: Wait helpers with debug logging in tests
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">
