@@ -140,23 +140,25 @@ helm install keycloak-operator ./charts/keycloak-operator \
 
 **Ingress (Recommended)**:
 ```yaml
-ingress:
-  enabled: true
-  className: nginx
-  annotations:
-    nginx.ingress.kubernetes.io/affinity: cookie
-    nginx.ingress.kubernetes.io/session-cookie-name: keycloak-affinity
-    nginx.ingress.kubernetes.io/session-cookie-hash: sha1
-  host: keycloak.example.com
+keycloak:
+  ingress:
+    enabled: true
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/affinity: cookie
+      nginx.ingress.kubernetes.io/session-cookie-name: keycloak-affinity
+      nginx.ingress.kubernetes.io/session-cookie-hash: sha1
+    host: keycloak.example.com
 ```
 
 **Service LoadBalancer** (Cloud):
 ```yaml
-service:
-  type: LoadBalancer
-  annotations:
-    service.beta.kubernetes.io/aws-load-balancer-type: nlb
-    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+keycloak:
+  service:
+    type: LoadBalancer
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: nlb
+      service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
 ```
 
 ### 3. Pod Disruption Budget
@@ -178,20 +180,19 @@ spec:
 
 **Keycloak**:
 ```yaml
-resources:
-  requests:
-    cpu: 500m
-    memory: 1Gi
-  limits:
-    cpu: 2000m
-    memory: 2Gi
-
-jvm:
-  heapSize: "1536m"
+keycloak:
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
 ```
 
-**PostgreSQL**:
+**PostgreSQL** (CNPG):
 ```yaml
+# These are CNPG Cluster values, not keycloak-operator Helm values
 resources:
   requests:
     cpu: 1000m
