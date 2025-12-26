@@ -368,17 +368,23 @@ class TestConnectionPooling:
     @pytest.mark.asyncio
     async def test_custom_connection_pool_settings(self, db_manager):
         """Test custom connection pool settings."""
+        from keycloak_operator.models.keycloak import ConnectionPoolConfig
+
         db_config = KeycloakDatabaseConfig(
             type="postgresql",
             host="localhost",
             port=5432,
             database="keycloak",
             username="admin",
-            connection_pool={"min_size": 5, "max_size": 20, "timeout": 30},
+            connection_pool=ConnectionPoolConfig(
+                max_connections=50,
+                min_connections=10,
+                connection_timeout="60s",
+            ),
         )
 
         result = await db_manager.resolve_database_connection(db_config, "default")
 
-        assert result["connection_pool"]["min_size"] == 5
-        assert result["connection_pool"]["max_size"] == 20
-        assert result["connection_pool"]["timeout"] == 30
+        assert result["connection_pool"]["maxConnections"] == 50
+        assert result["connection_pool"]["minConnections"] == 10
+        assert result["connection_pool"]["connectionTimeout"] == "60s"

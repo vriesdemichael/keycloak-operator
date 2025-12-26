@@ -31,6 +31,18 @@ class DatabaseConnectionManager:
         """
         self.k8s_client = k8s_client
 
+    def _get_connection_pool_dict(
+        self, db_config: KeycloakDatabaseConfig
+    ) -> dict[str, Any]:
+        """Convert connection pool config to dictionary."""
+        pool = getattr(db_config, "connection_pool", None)
+        if pool is None:
+            return {}
+        if isinstance(pool, dict):
+            return pool
+        # It's a ConnectionPoolConfig model, convert to dict
+        return pool.model_dump(by_alias=True)
+
     async def resolve_database_connection(
         self, db_config: KeycloakDatabaseConfig, namespace: str
     ) -> dict[str, Any]:
@@ -69,7 +81,7 @@ class DatabaseConnectionManager:
             "database": db_config.database,
             "ssl_mode": getattr(db_config, "ssl_mode", "require"),
             "connection_params": getattr(db_config, "connection_params", {}),
-            "connection_pool": getattr(db_config, "connection_pool", {}),
+            "connection_pool": self._get_connection_pool_dict(db_config),
         }
 
         # Resolve credentials

@@ -31,12 +31,16 @@ class KeycloakRealmTheme(BaseModel):
 class KeycloakRealmLocalization(BaseModel):
     """Localization configuration for a realm."""
 
-    default_locale: str = Field("en", description="Default locale")
-    supported_locales: list[str] = Field(
-        default_factory=lambda: ["en"], description="Supported locales"
+    model_config = {"populate_by_name": True}
+
+    enabled: bool = Field(True, description="Enable internationalization")
+    default_locale: str = Field(
+        "en", alias="defaultLocale", description="Default locale"
     )
-    internationalization_enabled: bool = Field(
-        True, description="Enable internationalization"
+    supported_locales: list[str] = Field(
+        default_factory=lambda: ["en"],
+        alias="supportedLocales",
+        description="Supported locales",
     )
 
 
@@ -94,6 +98,18 @@ class KeycloakRealmTokenSettings(BaseModel):
         0,
         alias="clientSessionMaxLifespan",
         description="Client session max lifespan in seconds",
+    )
+
+    # Client offline session settings
+    client_offline_session_idle_timeout: int = Field(
+        0,
+        alias="clientOfflineSessionIdleTimeout",
+        description="Client offline session idle timeout in seconds",
+    )
+    client_offline_session_max_lifespan: int = Field(
+        0,
+        alias="clientOfflineSessionMaxLifespan",
+        description="Client offline session max lifespan in seconds",
     )
 
     @field_validator(
@@ -249,54 +265,92 @@ class KeycloakAuthenticationFlow(BaseModel):
 class KeycloakRealmSecurity(BaseModel):
     """Security settings for a realm."""
 
-    # Password policy
-    password_policy: str | None = Field(None, description="Password policy string")
+    model_config = {"populate_by_name": True}
+
+    # SSL settings
+    ssl_required: str = Field(
+        "external",
+        alias="sslRequired",
+        description="SSL requirement (all, external, none)",
+    )
 
     # Brute force protection
     brute_force_protected: bool = Field(
-        False, description="Enable brute force protection"
+        False, alias="bruteForceProtected", description="Enable brute force protection"
     )
     permanent_lockout: bool = Field(
-        False, description="Permanent lockout after max failures"
+        False,
+        alias="permanentLockout",
+        description="Permanent lockout after max failures",
     )
-    max_failure_wait_seconds: int = Field(
-        900, description="Max wait time after failures in seconds"
+    failure_factor: int = Field(
+        30, alias="failureFactor", description="Number of failures before lockout"
     )
-    minimum_quick_login_wait_seconds: int = Field(
-        60, description="Minimum quick login wait in seconds"
+    max_failure_wait: int = Field(
+        900,
+        alias="maxFailureWait",
+        description="Max wait time after failures in seconds",
     )
-    wait_increment_seconds: int = Field(
-        60, description="Wait increment per failure in seconds"
+    minimum_quick_login_wait: int = Field(
+        60,
+        alias="minimumQuickLoginWait",
+        description="Minimum quick login wait in seconds",
     )
-    quick_login_check_milli_seconds: int = Field(
-        1000, description="Quick login check interval in milliseconds"
+    wait_increment: int = Field(
+        60, alias="waitIncrement", description="Wait increment per failure in seconds"
     )
-    max_delta_time_seconds: int = Field(
+    quick_login_check_millis: int = Field(
+        1000,
+        alias="quickLoginCheckMillis",
+        description="Quick login check interval in milliseconds",
+    )
+    max_delta_time: int = Field(
         43200,
+        alias="maxDeltaTime",
         description="Max delta time for failures in seconds",  # 12 hours
     )
-    failure_reset_time_seconds: int = Field(
-        43200,
-        description="Failure reset time in seconds",  # 12 hours
+
+    # Token revocation
+    revoke_refresh_token: bool = Field(
+        False, alias="revokeRefreshToken", description="Revoke refresh tokens on use"
+    )
+    refresh_token_max_reuse: int = Field(
+        0, alias="refreshTokenMaxReuse", description="Maximum refresh token reuse count"
     )
 
     # Registration settings
-    registration_allowed: bool = Field(False, description="Allow user registration")
+    registration_allowed: bool = Field(
+        False, alias="registrationAllowed", description="Allow user registration"
+    )
     registration_email_as_username: bool = Field(
-        False, description="Use email as username for registration"
+        False,
+        alias="registrationEmailAsUsername",
+        description="Use email as username for registration",
     )
     edit_username_allowed: bool = Field(
-        False, description="Allow users to edit their username"
+        False,
+        alias="editUsernameAllowed",
+        description="Allow users to edit their username",
     )
-    reset_password_allowed: bool = Field(True, description="Allow password reset")
-    remember_me: bool = Field(False, description="Enable remember me")
-    verify_email: bool = Field(False, description="Require email verification")
-    login_with_email_allowed: bool = Field(True, description="Allow login with email")
+    reset_password_allowed: bool = Field(
+        True, alias="resetPasswordAllowed", description="Allow password reset"
+    )
+    remember_me: bool = Field(
+        False, alias="rememberMe", description="Enable remember me"
+    )
+    verify_email: bool = Field(
+        False, alias="verifyEmail", description="Require email verification"
+    )
+    login_with_email_allowed: bool = Field(
+        True, alias="loginWithEmailAllowed", description="Allow login with email"
+    )
     duplicate_emails_allowed: bool = Field(
-        False, description="Allow duplicate email addresses"
+        False,
+        alias="duplicateEmailsAllowed",
+        description="Allow duplicate email addresses",
     )
 
-    @field_validator("max_failure_wait_seconds", "minimum_quick_login_wait_seconds")
+    @field_validator("max_failure_wait", "minimum_quick_login_wait")
     @classmethod
     def validate_positive_seconds(cls, v):
         if v < 0:
@@ -614,7 +668,7 @@ class KeycloakRealmSpec(BaseModel):
                 {
                     "defaultLocale": self.localization.default_locale,
                     "supportedLocales": self.localization.supported_locales,
-                    "internationalizationEnabled": self.localization.internationalization_enabled,
+                    "internationalizationEnabled": self.localization.enabled,
                 }
             )
 
@@ -637,15 +691,17 @@ class KeycloakRealmSpec(BaseModel):
         security = self.security
         config.update(
             {
-                "passwordPolicy": security.password_policy,
+                "sslRequired": security.ssl_required,
                 "bruteForceProtected": security.brute_force_protected,
                 "permanentLockout": security.permanent_lockout,
-                "maxFailureWaitSeconds": security.max_failure_wait_seconds,
-                "minimumQuickLoginWaitSeconds": security.minimum_quick_login_wait_seconds,
-                "waitIncrementSeconds": security.wait_increment_seconds,
-                "quickLoginCheckMilliSeconds": security.quick_login_check_milli_seconds,
-                "maxDeltaTimeSeconds": security.max_delta_time_seconds,
-                "failureResetTimeSeconds": security.failure_reset_time_seconds,
+                "failureFactor": security.failure_factor,
+                "maxFailureWaitSeconds": security.max_failure_wait,
+                "minimumQuickLoginWaitSeconds": security.minimum_quick_login_wait,
+                "waitIncrementSeconds": security.wait_increment,
+                "quickLoginCheckMilliSeconds": security.quick_login_check_millis,
+                "maxDeltaTimeSeconds": security.max_delta_time,
+                "revokeRefreshToken": security.revoke_refresh_token,
+                "refreshTokenMaxReuse": security.refresh_token_max_reuse,
                 "registrationAllowed": security.registration_allowed,
                 "registrationEmailAsUsername": security.registration_email_as_username,
                 "editUsernameAllowed": security.edit_username_allowed,
