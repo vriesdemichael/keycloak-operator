@@ -126,16 +126,9 @@ helm install my-app-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
   --namespace my-app \
   --set realmName=my-app \
   --set displayName="My Application" \
-  --set instanceRef.name=keycloak \
-  --set instanceRef.namespace=keycloak-system \
-  --set 'clientAuthorizationGrants={my-app,my-app-staging}'
+  --set operatorRef.namespace=keycloak-system \
+  --set 'clientAuthorizationGrants={my-app}'
 ```
-
-**Understanding `clientAuthorizationGrants`:**
-- Lists which namespaces can create clients in this realm
-- In this example: `my-app` and `my-app-staging` can create clients
-- This is the authorization model - no tokens required!
-- Fully declarative and GitOps-friendly
 
 Wait for the realm to become ready:
 

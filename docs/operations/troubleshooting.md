@@ -88,8 +88,8 @@ kubectl top nodes
 # Increase operator resources
 helm upgrade keycloak-operator ./charts/keycloak-operator \
   --namespace keycloak-operator-system \
-  --set resources.requests.cpu=200m \
-  --set resources.requests.memory=512Mi
+  --set operator.resources.requests.cpu=200m \
+  --set operator.resources.requests.memory=512Mi
 ```
 
 ---
@@ -125,7 +125,7 @@ kubectl top pod -n keycloak-operator-system
 # Increase memory limits
 helm upgrade keycloak-operator ./charts/keycloak-operator \
   --namespace keycloak-operator-system \
-  --set resources.limits.memory=1Gi
+  --set operator.resources.limits.memory=1Gi
 ```
 
 **Reconciliation Loops:**
@@ -148,7 +148,8 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
 # Increase rate limits if needed
 helm upgrade keycloak-operator ./charts/keycloak-operator \
   --namespace keycloak-operator-system \
-  --set env.KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS=100
+  --set 'operator.env[0].name=KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS' \
+  --set 'operator.env[0].value=100'
 ```
 
 ---
@@ -1050,7 +1051,7 @@ spec:
   ingress:
     enabled: true
     className: nginx
-    hostname: keycloak.example.com
+    host: keycloak.example.com
 '
 ```
 
