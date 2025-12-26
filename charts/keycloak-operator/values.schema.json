@@ -548,6 +548,45 @@
                   "type": "string",
                   "description": "CNPG cluster name",
                   "default": "keycloak-postgres"
+                },
+                "instances": {
+                  "type": "integer",
+                  "description": "Number of PostgreSQL instances in the cluster (1 for dev, 3 for production HA)",
+                  "default": 1
+                },
+                "storage": {
+                  "type": "object",
+                  "description": "Storage configuration for PostgreSQL data",
+                  "properties": {
+                    "size": {
+                      "type": "string",
+                      "description": "Size of the persistent volume for each instance",
+                      "default": "1Gi"
+                    },
+                    "storageClass": {
+                      "type": "string",
+                      "description": "StorageClass to use for persistent volumes"
+                    }
+                  }
+                },
+                "postgresql": {
+                  "type": "object",
+                  "description": "PostgreSQL configuration parameters",
+                  "properties": {
+                    "maxConnections": {
+                      "type": "string",
+                      "description": "Maximum number of connections",
+                      "default": "200"
+                    },
+                    "sharedBuffers": {
+                      "type": "string",
+                      "description": "Shared buffer size",
+                      "default": "256MB"
+                    }
+                  },
+                  "additionalProperties": {
+                    "type": "string"
+                  }
                 }
               }
             }
