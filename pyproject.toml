@@ -125,5 +125,6 @@ dev = [
     { include-group = "quality" },
     { include-group = "test" },
     { include-group = "security" },
-    "datamodel-code-generator[http]>=0.25.0",  # For generating Pydantic models from OpenAPI specs
+    "datamodel-code-generator[http]>=0.25.0", # For generating Pydantic models from OpenAPI specs
+    "jsonschema>=4.25.1",
 ]

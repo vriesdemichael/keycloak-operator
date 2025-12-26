@@ -35,6 +35,7 @@ repos:
         exclude: ^charts/.*/(crds|templates)/.*\.yaml$  # Exclude Helm templates
       - id: check-added-large-files
         args: [--maxkb=1000]
+        exclude: ^scripts/schemas/external/  # External schemas can be large
       - id: check-merge-conflict
       - id: check-case-conflict
       - id: mixed-line-ending
