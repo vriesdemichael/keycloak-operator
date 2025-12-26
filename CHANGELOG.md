@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.8](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.7...operator-image-v0.5.8) (2025-12-23)
+
+
+### Bug Fixes
+
+* **operator:** use correct Keycloak CR name in health check timers ([8b174cc](https://github.com/vriesdemichael/keycloak-operator/commit/8b174cc8fbbfedb6f862cdb0e76a08cade05458a))
+
 ## [0.5.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.6...operator-image-v0.5.7) (2025-12-23)
 
 
