@@ -1,23 +1,35 @@
 name: Rebase Conflicted Release PRs
 
 # When a release PR merges, other pending release PRs may have manifest conflicts.
-# This workflow automatically triggers a rebase for any conflicted release PRs.
+# This workflow automatically rebases and resolves predictable conflicts
+# (e.g., version manifest conflicts where we take the higher version).
 
 on:
   push:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
   rebase-conflicted:
     name: Rebase Conflicted Release PRs
     runs-on: ubuntu-latest
-    # Only run if this push might have created conflicts (e.g., release PR merge)
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Check for conflicted release PRs
+        id: check-conflicts
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -32,7 +44,7 @@ jobs:
             RESPONSE=$(gh pr list \
               --repo ${{ github.repository }} \
               --label "autorelease: pending" \
-              --json number,title,mergeable)
+              --json number,title,mergeable,headRefName)
 
             # Find PRs with CONFLICTING status
             PENDING_PRS=$(echo "$RESPONSE" | jq -r '.[] | select(.mergeable == "CONFLICTING") | .number')
@@ -53,18 +65,123 @@ jobs:
 
           if [[ -z "$PENDING_PRS" ]]; then
             echo "No conflicted release PRs found."
+            echo "has_conflicts=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           echo "Found conflicted release PRs: $PENDING_PRS"
+          echo "has_conflicts=true" >> $GITHUB_OUTPUT
+          echo "prs=$PENDING_PRS" >> $GITHUB_OUTPUT
 
-          for pr in $PENDING_PRS; do
-            echo "Adding autorebase label to PR #$pr..."
-            gh pr edit "$pr" --add-label "autorebase" --repo ${{ github.repository }} || true
+      - name: Configure git
+        if: steps.check-conflicts.outputs.has_conflicts == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Rebase and resolve conflicts
+        if: steps.check-conflicts.outputs.has_conflicts == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RESOLVED_PRS=""
+          FAILED_PRS=""
+
+          # Read space-separated PR numbers into array
+          read -r -a prs_array <<< "${{ steps.check-conflicts.outputs.prs }}"
+
+          for pr in "${prs_array[@]}"; do
+            echo "Processing PR #$pr..."
+
+            # Checkout the PR branch
+            gh pr checkout "$pr"
+
+            # Attempt rebase
+            if git rebase origin/main; then
+              echo "✅ PR #$pr rebased without conflicts"
+              if git push --force-with-lease; then
+                RESOLVED_PRS="$RESOLVED_PRS $pr"
+              else
+                echo "❌ PR #$pr push failed"
+                FAILED_PRS="$FAILED_PRS $pr"
+              fi
+              git checkout -f main
+              continue
+            fi
+
+            echo "Rebase has conflicts, attempting resolution..."
+
+            # Check which files have conflicts
+            CONFLICTED_FILES=$(git diff --name-only --diff-filter=U)
+            echo "Conflicted files: $CONFLICTED_FILES"
+
+            RESOLVABLE=true
+            for file in $CONFLICTED_FILES; do
+              case "$file" in
+                .github/.release-please-manifest.json)
+                  echo "Resolving release-please manifest conflict..."
+                  python scripts/resolve-release-please-conflicts.py "$file"
+                  RESOLVE_EXIT_CODE=$?
+                  if [[ $RESOLVE_EXIT_CODE -eq 0 ]]; then
+                    git add "$file"
+                  else
+                    echo "❌ Failed to resolve $file"
+                    RESOLVABLE=false
+                  fi
+                  ;;
+                *)
+                  echo "❌ Unknown conflict in $file, cannot auto-resolve"
+                  RESOLVABLE=false
+                  ;;
+              esac
+            done
+
+            if [[ "$RESOLVABLE" == "true" ]]; then
+              # Continue rebase after resolving conflicts
+              # Use GIT_EDITOR=true to skip interactive commit message editing
+              if GIT_EDITOR=true git rebase --continue; then
+                if git push --force-with-lease; then
+                  echo "✅ PR #$pr rebased with resolved conflicts"
+                  RESOLVED_PRS="$RESOLVED_PRS $pr"
+                else
+                  echo "❌ PR #$pr push failed after rebase"
+                  FAILED_PRS="$FAILED_PRS $pr"
+                fi
+              else
+                echo "❌ PR #$pr rebase --continue failed"
+                git rebase --abort
+                FAILED_PRS="$FAILED_PRS $pr"
+              fi
+            else
+              echo "⚠️ PR #$pr has unresolvable conflicts, aborting"
+              git rebase --abort
+              FAILED_PRS="$FAILED_PRS $pr"
+            fi
+
+            # Return to main for next PR (force to handle any leftover state)
+            if ! git checkout -f main; then
+              echo "❌ Failed to checkout main, resetting"
+              git reset --hard HEAD
+              git checkout -f main || break
+            fi
           done
 
-          echo "### 🔄 Triggered Rebase for Conflicted Release PRs" >> $GITHUB_STEP_SUMMARY
+          # Summary
+          echo "### 🔄 Release PR Rebase Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          for pr in $PENDING_PRS; do
-            echo "- PR #$pr" >> $GITHUB_STEP_SUMMARY
-          done
+          if [[ -n "$RESOLVED_PRS" ]]; then
+            echo "**✅ Successfully rebased:**" >> $GITHUB_STEP_SUMMARY
+            for pr in $RESOLVED_PRS; do
+              echo "- PR #$pr" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+          if [[ -n "$FAILED_PRS" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**❌ Failed to resolve (manual intervention needed):**" >> $GITHUB_STEP_SUMMARY
+            for pr in $FAILED_PRS; do
+              echo "- PR #$pr" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+          if [[ -z "$RESOLVED_PRS" && -z "$FAILED_PRS" ]]; then
+            echo "_No conflicted release PRs were processed in this run._" >> $GITHUB_STEP_SUMMARY
+          fi
