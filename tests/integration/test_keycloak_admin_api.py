@@ -115,9 +115,9 @@ class TestKeycloakAdminAPI:
                     return False
                 return realm_name in [r.realm for r in all_realms]
 
-            assert await _simple_wait(
-                check_realm_in_list, timeout=30, interval=2
-            ), f"Realm {realm_name} not found in realm list after retries"
+            assert await _simple_wait(check_realm_in_list, timeout=30, interval=2), (
+                f"Realm {realm_name} not found in realm list after retries"
+            )
 
         finally:
             with contextlib.suppress(ApiException):
