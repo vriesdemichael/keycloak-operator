@@ -2,110 +2,110 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/admission-webhooks/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/development/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/faq/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/rbac-implementation/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/versioning/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/api/keycloak_operator/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/concepts/architecture/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/concepts/security/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/decisions/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/development/test-cleanup-strategy/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/development/testing/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/guides/drift-detection/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/guides/identity-providers/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/guides/observability/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/how-to/backup-restore/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/how-to/database-setup/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/how-to/end-to-end-setup/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/how-to/ha-deployment/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/how-to/multi-tenant/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/how-to/smtp-configuration/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/operations/migration/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/operations/troubleshooting/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/quickstart/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/reference/keycloak-client-crd/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/reference/keycloak-crd/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/0.3.9/reference/keycloak-realm-crd/</loc>
-         <lastmod>2025-12-26</lastmod>
+         <lastmod>2025-12-27</lastmod>
     </url>
 </urlset>
