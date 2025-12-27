@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.1...chart-client-v0.3.2) (2025-12-27)
+
+
+### Features
+
+* **chart-client:** add rbac configuration to schema ([6e5a5cb](https://github.com/vriesdemichael/keycloak-operator/commit/6e5a5cbc935cabda4b5f4f51cbd3926b4e88b557))
+
 ## [0.3.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.0...chart-client-v0.3.1) (2025-12-21)
 
 
