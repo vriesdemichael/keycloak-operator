@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.2...chart-realm-v0.3.3) (2025-12-27)
+
+
+### Documentation
+
+* extend doc validation with external schemas and K8s resources ([7e7ce80](https://github.com/vriesdemichael/keycloak-operator/commit/7e7ce80f2f3d0c6c3d9ced00aba0560c8a757862))
+
 ## [0.3.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.1...chart-realm-v0.3.2) (2025-12-26)
 
 
