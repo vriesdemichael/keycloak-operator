@@ -270,3 +270,187 @@ class TestHelmClientDeployment:
                 print(f"Failed to get final client state: {e}")
 
         assert result, "Client did not reach Ready phase"
+
+
+@pytest.mark.asyncio
+class TestHelmRealmAdvancedFields:
+    """Test Helm chart realm deployment with advanced CRD fields."""
+
+    @pytest.mark.timeout(300)
+    async def test_helm_realm_with_roles(
+        self,
+        helm_realm,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+    ):
+        """Test deploying a realm with roles via Helm."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"helm-roles-{uuid.uuid4().hex[:8]}"
+        release_name = f"helm-roles-{uuid.uuid4().hex[:8]}"
+
+        # Deploy realm with roles
+        await helm_realm(
+            release_name=release_name,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            roles={
+                "realmRoles": [
+                    {"name": "admin", "description": "Administrator role"},
+                    {"name": "user", "description": "Regular user role"},
+                ]
+            },
+        )
+
+        realm_cr_name = f"{release_name}-keycloak-realm"
+
+        # Wait for realm to be ready using proper wait helper
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify roles are in spec
+        realm = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+        )
+        spec = realm.get("spec", {})
+        roles = spec.get("roles", {})
+        realm_roles = roles.get("realmRoles", [])
+
+        assert len(realm_roles) == 2, f"Expected 2 roles, got {len(realm_roles)}"
+        role_names = {r.get("name") for r in realm_roles}
+        assert "admin" in role_names, "admin role should be present"
+        assert "user" in role_names, "user role should be present"
+
+    @pytest.mark.timeout(300)
+    async def test_helm_realm_with_events_config(
+        self,
+        helm_realm,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+    ):
+        """Test deploying a realm with events configuration via Helm."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"helm-events-{uuid.uuid4().hex[:8]}"
+        release_name = f"helm-events-{uuid.uuid4().hex[:8]}"
+
+        # Deploy realm with events config
+        await helm_realm(
+            release_name=release_name,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            eventsConfig={
+                "eventsEnabled": True,
+                "adminEventsEnabled": True,
+                "eventsListeners": ["jboss-logging"],
+            },
+        )
+
+        realm_cr_name = f"{release_name}-keycloak-realm"
+
+        # Wait for realm to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify events config is in spec
+        realm = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+        )
+        spec = realm.get("spec", {})
+        events_config = spec.get("eventsConfig", {})
+
+        assert (
+            events_config.get("eventsEnabled") is True
+        ), "eventsEnabled should be True"
+        assert (
+            events_config.get("adminEventsEnabled") is True
+        ), "adminEventsEnabled should be True"
+        assert "jboss-logging" in events_config.get(
+            "eventsListeners", []
+        ), "jboss-logging should be in eventsListeners"
+
+    @pytest.mark.timeout(300)
+    async def test_helm_realm_with_description_and_login_title(
+        self,
+        helm_realm,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+    ):
+        """Test deploying a realm with description and loginPageTitle via Helm."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"helm-desc-{uuid.uuid4().hex[:8]}"
+        release_name = f"helm-desc-{uuid.uuid4().hex[:8]}"
+
+        description = "Test realm for Helm chart deployment"
+        login_title = "Welcome to Test Realm"
+
+        # Deploy realm with description and loginPageTitle
+        await helm_realm(
+            release_name=release_name,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            description=description,
+            loginPageTitle=login_title,
+        )
+
+        realm_cr_name = f"{release_name}-keycloak-realm"
+
+        # Wait for realm to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify description and loginPageTitle are in spec
+        realm = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+        )
+        spec = realm.get("spec", {})
+
+        assert (
+            spec.get("description") == description
+        ), f"Expected description '{description}', got '{spec.get('description')}'"
+        assert (
+            spec.get("loginPageTitle") == login_title
+        ), f"Expected loginPageTitle '{login_title}', got '{spec.get('loginPageTitle')}'"
