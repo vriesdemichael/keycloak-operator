@@ -1,0 +1,314 @@
+name: Manual Release
+
+# Manual workflow to publish artifacts for tagged commits.
+# Use this to recover from failed automated releases or to re-publish artifacts.
+#
+# For any selected commit, this workflow checks which version tags exist and
+# publishes the corresponding artifacts to OCI registries.
+# OCI registries handle already-existing versions gracefully (idempotent push).
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to release (tag, branch, or SHA). Leave empty to use the selected branch.'
+        required: false
+        default: ''
+      dry_run:
+        description: 'Dry run - detect tags but do not publish'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  detect-releases:
+    name: Detect Tagged Releases
+    runs-on: ubuntu-latest
+    outputs:
+      operator_version: ${{ steps.detect.outputs.operator_version }}
+      chart_operator_version: ${{ steps.detect.outputs.chart_operator_version }}
+      chart_realm_version: ${{ steps.detect.outputs.chart_realm_version }}
+      chart_client_version: ${{ steps.detect.outputs.chart_client_version }}
+      has_releases: ${{ steps.detect.outputs.has_releases }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+          fetch-depth: 0
+
+      - name: Detect version tags for current commit
+        id: detect
+        run: |
+          COMMIT_SHA=$(git rev-parse HEAD)
+          echo "Checking tags for commit: $COMMIT_SHA"
+
+          # Get all tags pointing to this commit
+          TAGS=$(git tag --points-at "$COMMIT_SHA")
+          echo "Tags found:"
+          echo "$TAGS"
+
+          HAS_RELEASES=false
+
+          # Check for operator-image tag
+          OPERATOR_TAG=$(echo "$TAGS" | grep -E '^operator-image-v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          if [[ -n "$OPERATOR_TAG" ]]; then
+            VERSION=$(echo "$OPERATOR_TAG" | sed 's/operator-image-v//')
+            echo "operator_version=$VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Operator image: v$VERSION"
+            HAS_RELEASES=true
+          else
+            echo "operator_version=" >> $GITHUB_OUTPUT
+            echo "⏭️ No operator-image tag"
+          fi
+
+          # Check for chart-operator tag
+          CHART_OP_TAG=$(echo "$TAGS" | grep -E '^chart-operator-v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          if [[ -n "$CHART_OP_TAG" ]]; then
+            VERSION=$(echo "$CHART_OP_TAG" | sed 's/chart-operator-v//')
+            echo "chart_operator_version=$VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Chart operator: v$VERSION"
+            HAS_RELEASES=true
+          else
+            echo "chart_operator_version=" >> $GITHUB_OUTPUT
+            echo "⏭️ No chart-operator tag"
+          fi
+
+          # Check for chart-realm tag
+          CHART_REALM_TAG=$(echo "$TAGS" | grep -E '^chart-realm-v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          if [[ -n "$CHART_REALM_TAG" ]]; then
+            VERSION=$(echo "$CHART_REALM_TAG" | sed 's/chart-realm-v//')
+            echo "chart_realm_version=$VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Chart realm: v$VERSION"
+            HAS_RELEASES=true
+          else
+            echo "chart_realm_version=" >> $GITHUB_OUTPUT
+            echo "⏭️ No chart-realm tag"
+          fi
+
+          # Check for chart-client tag
+          CHART_CLIENT_TAG=$(echo "$TAGS" | grep -E '^chart-client-v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+          if [[ -n "$CHART_CLIENT_TAG" ]]; then
+            VERSION=$(echo "$CHART_CLIENT_TAG" | sed 's/chart-client-v//')
+            echo "chart_client_version=$VERSION" >> $GITHUB_OUTPUT
+            echo "✅ Chart client: v$VERSION"
+            HAS_RELEASES=true
+          else
+            echo "chart_client_version=" >> $GITHUB_OUTPUT
+            echo "⏭️ No chart-client tag"
+          fi
+
+          echo "has_releases=$HAS_RELEASES" >> $GITHUB_OUTPUT
+
+          # Summary
+          echo "### 🏷️ Release Detection" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`$COMMIT_SHA\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Ref:** ${{ inputs.ref || github.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Detected releases:**" >> $GITHUB_STEP_SUMMARY
+          [[ -n "$OPERATOR_TAG" ]] && echo "- ✅ Operator image: v$(echo $OPERATOR_TAG | sed 's/operator-image-v//')" >> $GITHUB_STEP_SUMMARY
+          [[ -n "$CHART_OP_TAG" ]] && echo "- ✅ Chart operator: v$(echo $CHART_OP_TAG | sed 's/chart-operator-v//')" >> $GITHUB_STEP_SUMMARY
+          [[ -n "$CHART_REALM_TAG" ]] && echo "- ✅ Chart realm: v$(echo $CHART_REALM_TAG | sed 's/chart-realm-v//')" >> $GITHUB_STEP_SUMMARY
+          [[ -n "$CHART_CLIENT_TAG" ]] && echo "- ✅ Chart client: v$(echo $CHART_CLIENT_TAG | sed 's/chart-client-v//')" >> $GITHUB_STEP_SUMMARY
+          [[ "$HAS_RELEASES" == "false" ]] && echo "- ⚠️ No release tags found for this commit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          [[ "${{ inputs.dry_run }}" == "true" ]] && echo "**🔍 Dry run mode - no artifacts will be published**" >> $GITHUB_STEP_SUMMARY
+
+  publish-operator-image:
+    name: Publish Operator Image
+    needs: [detect-releases]
+    if: needs.detect-releases.outputs.operator_version != '' && inputs.dry_run != true
+    runs-on: ubuntu-latest
+    environment:
+      name: ghcr-production
+      url: https://github.com/${{ github.repository }}/pkgs/container/keycloak-operator
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: operator-image-v${{ needs.detect-releases.outputs.operator_version }}
+
+      - name: Publish operator image
+        uses: ./.github/actions/publish-operator-image
+        with:
+          registry: ${{ env.REGISTRY }}
+          image-name: ${{ env.IMAGE_NAME }}
+          operator-version: ${{ needs.detect-releases.outputs.operator_version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-actor: ${{ github.actor }}
+
+  publish-chart-operator:
+    name: Publish Helm Chart (Operator)
+    needs: [detect-releases]
+    if: needs.detect-releases.outputs.chart_operator_version != '' && inputs.dry_run != true
+    runs-on: ubuntu-latest
+    environment:
+      name: ghcr-chart-operator
+      url: https://github.com/${{ github.repository }}/pkgs/container/charts%2Fkeycloak-operator
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: chart-operator-v${{ needs.detect-releases.outputs.chart_operator_version }}
+
+      - name: Publish chart
+        uses: ./.github/actions/publish-helm-chart
+        with:
+          chart-name: keycloak-operator
+          chart-path: charts/keycloak-operator
+          registry-url: ${{ env.REGISTRY }}
+          registry-owner: ${{ github.repository_owner }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-actor: ${{ github.actor }}
+
+  publish-chart-realm:
+    name: Publish Helm Chart (Realm)
+    needs: [detect-releases]
+    if: needs.detect-releases.outputs.chart_realm_version != '' && inputs.dry_run != true
+    runs-on: ubuntu-latest
+    environment:
+      name: ghcr-chart-realm
+      url: https://github.com/${{ github.repository }}/pkgs/container/charts%2Fkeycloak-realm
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: chart-realm-v${{ needs.detect-releases.outputs.chart_realm_version }}
+
+      - name: Publish chart
+        uses: ./.github/actions/publish-helm-chart
+        with:
+          chart-name: keycloak-realm
+          chart-path: charts/keycloak-realm
+          registry-url: ${{ env.REGISTRY }}
+          registry-owner: ${{ github.repository_owner }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-actor: ${{ github.actor }}
+
+  publish-chart-client:
+    name: Publish Helm Chart (Client)
+    needs: [detect-releases]
+    if: needs.detect-releases.outputs.chart_client_version != '' && inputs.dry_run != true
+    runs-on: ubuntu-latest
+    environment:
+      name: ghcr-chart-client
+      url: https://github.com/${{ github.repository }}/pkgs/container/charts%2Fkeycloak-client
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: chart-client-v${{ needs.detect-releases.outputs.chart_client_version }}
+
+      - name: Publish chart
+        uses: ./.github/actions/publish-helm-chart
+        with:
+          chart-name: keycloak-client
+          chart-path: charts/keycloak-client
+          registry-url: ${{ env.REGISTRY }}
+          registry-owner: ${{ github.repository_owner }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-actor: ${{ github.actor }}
+
+  summary:
+    name: Release Summary
+    needs: [detect-releases, publish-operator-image, publish-chart-operator, publish-chart-realm, publish-chart-client]
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Generate summary
+        run: |
+          echo "### 📦 Manual Release Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ "${{ inputs.dry_run }}" == "true" ]]; then
+            echo "**Mode:** 🔍 Dry run (no artifacts published)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Mode:** 🚀 Live release" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Artifact | Version | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|---------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Operator image
+          if [[ -n "${{ needs.detect-releases.outputs.operator_version }}" ]]; then
+            if [[ "${{ needs.publish-operator-image.result }}" == "success" ]]; then
+              echo "| Operator Image | v${{ needs.detect-releases.outputs.operator_version }} | ✅ Published |" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              echo "| Operator Image | v${{ needs.detect-releases.outputs.operator_version }} | 🔍 Detected |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Operator Image | v${{ needs.detect-releases.outputs.operator_version }} | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| Operator Image | - | ⏭️ No tag |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Chart operator
+          if [[ -n "${{ needs.detect-releases.outputs.chart_operator_version }}" ]]; then
+            if [[ "${{ needs.publish-chart-operator.result }}" == "success" ]]; then
+              echo "| Chart Operator | v${{ needs.detect-releases.outputs.chart_operator_version }} | ✅ Published |" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              echo "| Chart Operator | v${{ needs.detect-releases.outputs.chart_operator_version }} | 🔍 Detected |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Chart Operator | v${{ needs.detect-releases.outputs.chart_operator_version }} | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| Chart Operator | - | ⏭️ No tag |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Chart realm
+          if [[ -n "${{ needs.detect-releases.outputs.chart_realm_version }}" ]]; then
+            if [[ "${{ needs.publish-chart-realm.result }}" == "success" ]]; then
+              echo "| Chart Realm | v${{ needs.detect-releases.outputs.chart_realm_version }} | ✅ Published |" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              echo "| Chart Realm | v${{ needs.detect-releases.outputs.chart_realm_version }} | 🔍 Detected |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Chart Realm | v${{ needs.detect-releases.outputs.chart_realm_version }} | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| Chart Realm | - | ⏭️ No tag |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Chart client
+          if [[ -n "${{ needs.detect-releases.outputs.chart_client_version }}" ]]; then
+            if [[ "${{ needs.publish-chart-client.result }}" == "success" ]]; then
+              echo "| Chart Client | v${{ needs.detect-releases.outputs.chart_client_version }} | ✅ Published |" >> $GITHUB_STEP_SUMMARY
+            elif [[ "${{ inputs.dry_run }}" == "true" ]]; then
+              echo "| Chart Client | v${{ needs.detect-releases.outputs.chart_client_version }} | 🔍 Detected |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| Chart Client | v${{ needs.detect-releases.outputs.chart_client_version }} | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "| Chart Client | - | ⏭️ No tag |" >> $GITHUB_STEP_SUMMARY
+          fi
