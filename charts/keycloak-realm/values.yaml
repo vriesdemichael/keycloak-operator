@@ -8,6 +8,12 @@ realmName: ""
 # Display name for the realm
 displayName: ""
 
+# Realm description (optional)
+description: ""
+
+# HTML title for login pages (optional)
+loginPageTitle: ""
+
 # Operator reference (REQUIRED)
 # Reference to the Keycloak operator managing this realm
 operatorRef:
@@ -111,6 +117,57 @@ smtpServer:
 # Additional attributes (optional)
 # Free-form key-value pairs for custom realm attributes
 attributes: {}
+
+# Identity Providers (optional)
+# Configure external identity providers (OIDC, SAML, social logins)
+# See CRD documentation for full schema
+identityProviders: []
+  # Example OIDC provider:
+  # - alias: azure-ad
+  #   providerId: oidc
+  #   displayName: "Azure AD"
+  #   enabled: true
+  #   trustEmail: true
+  #   config:
+  #     clientId: "my-client-id"
+  #     authorizationUrl: "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize"
+  #     tokenUrl: "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token"
+  #     userInfoUrl: "https://graph.microsoft.com/oidc/userinfo"
+  #     defaultScope: "openid profile email"
+  #   configSecrets:
+  #     clientSecret:
+  #       name: azure-ad-credentials
+  #       key: client-secret
+  #
+  # Example GitHub provider:
+  # - alias: github
+  #   providerId: github
+  #   displayName: "GitHub"
+  #   enabled: true
+  #   config:
+  #     clientId: "my-github-client-id"
+  #   configSecrets:
+  #     clientSecret:
+  #       name: github-credentials
+  #       key: client-secret
+
+# Realm roles (optional)
+# Define realm-level roles
+roles:
+  realmRoles: []
+    # - name: admin
+    #   description: "Administrator role"
+    # - name: user
+    #   description: "Regular user role"
+
+# Event logging configuration (optional)
+eventsConfig:
+  eventsEnabled: false
+  eventsListeners: []
+  enabledEventTypes: []
+  # eventsExpiration: 86400  # seconds
+  adminEventsEnabled: false
+  adminEventsDetailsEnabled: false
 
 # Extra Kubernetes manifests to deploy
 # Useful for deploying ExternalSecrets, SealedSecrets, ConfigMaps, etc.
