@@ -17,6 +17,14 @@ spec:
   displayName: {{ . }}
   {{- end }}
 
+  {{- with .Values.description }}
+  description: {{ . }}
+  {{- end }}
+
+  {{- with .Values.loginPageTitle }}
+  loginPageTitle: {{ . }}
+  {{- end }}
+
   # Operator reference
   operatorRef:
     namespace: {{ required "operatorRef.namespace is required" .Values.operatorRef.namespace }}
@@ -90,4 +98,20 @@ spec:
   {{- with .Values.attributes }}
   attributes:
     {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.identityProviders }}
+  identityProviders:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- if .Values.roles.realmRoles }}
+  roles:
+    realmRoles:
+      {{- toYaml .Values.roles.realmRoles | nindent 6 }}
+  {{- end }}
+
+  {{- if or .Values.eventsConfig.eventsEnabled .Values.eventsConfig.adminEventsEnabled }}
+  eventsConfig:
+    {{- toYaml .Values.eventsConfig | nindent 4 }}
   {{- end }}
