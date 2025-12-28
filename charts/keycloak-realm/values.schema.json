@@ -109,6 +109,143 @@
       "type": "object",
       "additionalProperties": {"type": "string"}
     },
+    "description": {
+      "type": "string",
+      "description": "Realm description"
+    },
+    "loginPageTitle": {
+      "type": "string",
+      "description": "HTML title for login pages"
+    },
+    "identityProviders": {
+      "type": "array",
+      "description": "External identity providers (OIDC, SAML, social logins)",
+      "items": {
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string",
+            "description": "Identity provider alias (unique identifier)"
+          },
+          "providerId": {
+            "type": "string",
+            "description": "Provider type (e.g., oidc, saml, github, google)"
+          },
+          "displayName": {
+            "type": "string",
+            "description": "Display name for the identity provider"
+          },
+          "enabled": {
+            "type": "boolean",
+            "description": "Whether the provider is enabled"
+          },
+          "trustEmail": {
+            "type": "boolean",
+            "description": "Trust email from identity provider"
+          },
+          "storeToken": {
+            "type": "boolean",
+            "description": "Store identity provider tokens"
+          },
+          "linkOnly": {
+            "type": "boolean",
+            "description": "Link existing users only"
+          },
+          "firstBrokerLoginFlowAlias": {
+            "type": "string",
+            "description": "First broker login flow alias"
+          },
+          "postBrokerLoginFlowAlias": {
+            "type": "string",
+            "description": "Post broker login flow alias"
+          },
+          "config": {
+            "type": "object",
+            "description": "Provider-specific configuration",
+            "additionalProperties": true
+          },
+          "configSecrets": {
+            "type": "object",
+            "description": "Secret references for sensitive config values",
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Secret name"
+                },
+                "key": {
+                  "type": "string",
+                  "description": "Key in secret data"
+                }
+              },
+              "required": ["name", "key"]
+            }
+          }
+        },
+        "required": ["alias", "providerId"]
+      }
+    },
+    "roles": {
+      "type": "object",
+      "description": "Realm role definitions",
+      "properties": {
+        "realmRoles": {
+          "type": "array",
+          "description": "List of realm roles",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Role name"
+              },
+              "description": {
+                "type": "string",
+                "description": "Role description"
+              },
+              "composite": {
+                "type": "boolean",
+                "description": "Is composite role"
+              }
+            },
+            "required": ["name"]
+          }
+        }
+      }
+    },
+    "eventsConfig": {
+      "type": "object",
+      "description": "Event logging configuration",
+      "properties": {
+        "eventsEnabled": {
+          "type": "boolean",
+          "description": "Enable event logging"
+        },
+        "adminEventsEnabled": {
+          "type": "boolean",
+          "description": "Enable admin event logging"
+        },
+        "adminEventsDetailsEnabled": {
+          "type": "boolean",
+          "description": "Include details in admin events"
+        },
+        "eventsListeners": {
+          "type": "array",
+          "description": "Event listeners",
+          "items": {"type": "string"}
+        },
+        "enabledEventTypes": {
+          "type": "array",
+          "description": "Enabled event types",
+          "items": {"type": "string"}
+        },
+        "eventsExpiration": {
+          "type": "integer",
+          "description": "Event expiration in seconds"
+        }
+      }
+    },
     "extraManifests": {
       "type": "array",
       "description": "Extra Kubernetes manifests to deploy (e.g., ExternalSecrets, SealedSecrets, ConfigMaps)",
