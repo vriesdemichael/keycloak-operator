@@ -105,9 +105,24 @@ class TestRealmReconciler:
                 timeout=180,
             )
 
+            # Wait for realm to be removed from Keycloak
+            # The finalizer deletes the realm, but there can be a delay
+            async def realm_deleted_from_keycloak() -> bool:
+                realm_repr = await keycloak_admin_client.get_realm(
+                    realm_name, namespace
+                )
+                return realm_repr is None
+
+            for _ in range(30):  # 30 * 2s = 60s max
+                if await realm_deleted_from_keycloak():
+                    break
+                await asyncio.sleep(2)
+
             # Verify realm removed from Keycloak
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
-            assert realm_repr is None
+            assert (
+                realm_repr is None
+            ), f"Realm {realm_name} should be deleted from Keycloak after CR deletion"
 
         finally:
             with contextlib.suppress(ApiException):
