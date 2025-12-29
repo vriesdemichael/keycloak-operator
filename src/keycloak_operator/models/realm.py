@@ -10,6 +10,12 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from keycloak_operator.models.types import (
+    AuthenticationExecutionList,
+    KeycloakConfigMap,
+    KubernetesMetadata,
+)
+
 
 class OperatorRef(BaseModel):
     """Reference to the operator managing this realm."""
@@ -147,7 +153,7 @@ class KeycloakIdentityProvider(BaseModel):
     enabled: bool = Field(True, description="Whether the provider is enabled")
 
     # Provider-specific configuration
-    config: dict[str, Any] = Field(
+    config: KeycloakConfigMap = Field(
         default_factory=dict, description="Provider-specific configuration"
     )
 
@@ -220,7 +226,7 @@ class KeycloakUserFederation(BaseModel):
     enabled: bool = Field(True, description="Whether federation is enabled")
 
     # Provider-specific configuration
-    config: dict[str, Any] = Field(
+    config: KeycloakConfigMap = Field(
         default_factory=dict, description="Federation-specific configuration"
     )
 
@@ -250,7 +256,7 @@ class KeycloakAuthenticationFlow(BaseModel):
     built_in: bool = Field(False, description="Whether this is a built-in flow")
 
     # Flow executions
-    authentication_executions: list[dict[str, Any]] = Field(
+    authentication_executions: AuthenticationExecutionList = Field(
         default_factory=list, description="Authentication executions"
     )
 
@@ -895,7 +901,7 @@ class KeycloakRealm(BaseModel):
 
     api_version: str = Field("vriesdemichael.github.io/v1", alias="apiVersion")
     kind: str = Field("KeycloakRealm")
-    metadata: dict[str, Any] = Field(..., description="Kubernetes metadata")
+    metadata: KubernetesMetadata = Field(..., description="Kubernetes metadata")
     spec: KeycloakRealmSpec = Field(..., description="Realm specification")
     status: KeycloakRealmStatus | None = Field(
         None, description="Realm status (managed by operator)"

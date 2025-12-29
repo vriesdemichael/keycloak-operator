@@ -20,6 +20,7 @@ from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
+from keycloak_operator.models.keycloak import KeycloakSpec
 from keycloak_operator.settings import settings
 
 logger = logging.getLogger(__name__)
@@ -114,7 +115,7 @@ def validate_keycloak_reference(
 def create_keycloak_deployment(
     name: str,
     namespace: str,
-    spec: Any,  # KeycloakSpec type
+    spec: KeycloakSpec,
     k8s_client: client.ApiClient,
     db_connection_info: dict[str, Any] | None = None,
 ) -> client.V1Deployment:
@@ -401,7 +402,7 @@ def create_keycloak_deployment(
 def create_keycloak_service(
     name: str,
     namespace: str,
-    spec: Any,  # KeycloakSpec type
+    spec: KeycloakSpec,
     k8s_client: client.ApiClient,
 ) -> client.V1Service:
     """
@@ -732,7 +733,7 @@ def create_persistent_volume_claim(
 def create_keycloak_ingress(
     name: str,
     namespace: str,
-    spec: Any,  # KeycloakSpec type
+    spec: KeycloakSpec,
     k8s_client: client.ApiClient,
 ) -> client.V1Ingress:
     """
@@ -757,9 +758,9 @@ def create_keycloak_ingress(
 
     # Build ingress rules
     rules = []
-    if spec.ingress.hostname:
+    if spec.ingress.host:
         rule = client.V1IngressRule(
-            host=spec.ingress.hostname,
+            host=spec.ingress.host,
             http=client.V1HTTPIngressRuleValue(
                 paths=[
                     client.V1HTTPIngressPath(
@@ -779,10 +780,10 @@ def create_keycloak_ingress(
 
     # Configure TLS if specified
     tls = []
-    if getattr(spec.ingress, "tls", {}).get("enabled", False):
+    if spec.ingress.tls_enabled:
         tls_config = client.V1IngressTLS(
-            hosts=[spec.ingress.hostname] if spec.ingress.hostname else [],
-            secret_name=getattr(spec.ingress.tls, "secret_name", f"{name}-tls"),
+            hosts=[spec.ingress.host] if spec.ingress.host else [],
+            secret_name=spec.ingress.tls_secret_name or f"{name}-tls",
         )
         tls.append(tls_config)
 
@@ -823,7 +824,7 @@ def create_keycloak_ingress(
 def backup_keycloak_data(
     name: str,
     namespace: str,
-    spec: Any,  # KeycloakSpec type
+    spec: KeycloakSpec,
     k8s_client: client.ApiClient,
 ) -> client.V1Job:
     """
