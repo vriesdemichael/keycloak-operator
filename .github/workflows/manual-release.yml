@@ -112,13 +112,13 @@ jobs:
           echo "**Ref:** ${{ inputs.ref || github.ref }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Detected releases:**" >> $GITHUB_STEP_SUMMARY
-          [[ -n "$OPERATOR_TAG" ]] && echo "- ✅ Operator image: v$(echo $OPERATOR_TAG | sed 's/operator-image-v//')" >> $GITHUB_STEP_SUMMARY
-          [[ -n "$CHART_OP_TAG" ]] && echo "- ✅ Chart operator: v$(echo $CHART_OP_TAG | sed 's/chart-operator-v//')" >> $GITHUB_STEP_SUMMARY
-          [[ -n "$CHART_REALM_TAG" ]] && echo "- ✅ Chart realm: v$(echo $CHART_REALM_TAG | sed 's/chart-realm-v//')" >> $GITHUB_STEP_SUMMARY
-          [[ -n "$CHART_CLIENT_TAG" ]] && echo "- ✅ Chart client: v$(echo $CHART_CLIENT_TAG | sed 's/chart-client-v//')" >> $GITHUB_STEP_SUMMARY
-          [[ "$HAS_RELEASES" == "false" ]] && echo "- ⚠️ No release tags found for this commit" >> $GITHUB_STEP_SUMMARY
+          [[ -n "$OPERATOR_TAG" ]] && echo "- ✅ Operator image: v$(echo $OPERATOR_TAG | sed 's/operator-image-v//')" >> $GITHUB_STEP_SUMMARY || true
+          [[ -n "$CHART_OP_TAG" ]] && echo "- ✅ Chart operator: v$(echo $CHART_OP_TAG | sed 's/chart-operator-v//')" >> $GITHUB_STEP_SUMMARY || true
+          [[ -n "$CHART_REALM_TAG" ]] && echo "- ✅ Chart realm: v$(echo $CHART_REALM_TAG | sed 's/chart-realm-v//')" >> $GITHUB_STEP_SUMMARY || true
+          [[ -n "$CHART_CLIENT_TAG" ]] && echo "- ✅ Chart client: v$(echo $CHART_CLIENT_TAG | sed 's/chart-client-v//')" >> $GITHUB_STEP_SUMMARY || true
+          [[ "$HAS_RELEASES" == "false" ]] && echo "- ⚠️ No release tags found for this commit" >> $GITHUB_STEP_SUMMARY || true
           echo "" >> $GITHUB_STEP_SUMMARY
-          [[ "${{ inputs.dry_run }}" == "true" ]] && echo "**🔍 Dry run mode - no artifacts will be published**" >> $GITHUB_STEP_SUMMARY
+          [[ "${{ inputs.dry_run }}" == "true" ]] && echo "**🔍 Dry run mode - no artifacts will be published**" >> $GITHUB_STEP_SUMMARY || true
 
   publish-operator-image:
     name: Publish Operator Image
