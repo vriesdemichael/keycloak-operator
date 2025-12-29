@@ -10,6 +10,11 @@ from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
+from keycloak_operator.models.types import (
+    KeycloakConfigMap,
+    KubernetesMetadata,
+)
+
 
 class RealmRef(BaseModel):
     """Reference to a parent KeycloakRealm."""
@@ -34,7 +39,7 @@ class KeycloakClientProtocolMapper(BaseModel):
     name: str = Field(..., description="Mapper name")
     protocol: str = Field("openid-connect", description="Protocol type")
     protocol_mapper: str = Field(..., alias="protocolMapper", description="Mapper type")
-    config: dict[str, Any] = Field(
+    config: KeycloakConfigMap = Field(
         default_factory=dict, description="Mapper configuration"
     )
 
@@ -564,7 +569,7 @@ class KeycloakClient(BaseModel):
 
     api_version: str = Field("vriesdemichael.github.io/v1", alias="apiVersion")
     kind: str = Field("KeycloakClient")
-    metadata: dict[str, Any] = Field(..., description="Kubernetes metadata")
+    metadata: KubernetesMetadata = Field(..., description="Kubernetes metadata")
     spec: KeycloakClientSpec = Field(..., description="Client specification")
     status: KeycloakClientStatus | None = Field(
         None, description="Client status (managed by operator)"
