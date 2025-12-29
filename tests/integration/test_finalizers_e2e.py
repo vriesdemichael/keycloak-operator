@@ -35,14 +35,20 @@ class TestFinalizersE2E:
     """
 
     async def test_realm_finalizer_behavior(
-        self, k8s_custom_objects, shared_operator, operator_namespace, sample_realm_spec
+        self,
+        k8s_custom_objects,
+        shared_operator,
+        operator_namespace,
+        sample_realm_spec,
+        test_namespace,
     ):
         """Test finalizer behavior for Keycloak realm resources using shared instance."""
         import uuid
 
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
-        namespace = shared_operator.namespace
+        # Use dedicated test namespace for isolation from other parallel tests
+        namespace = test_namespace
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"test-realm-finalizer-{suffix}"
 
@@ -100,6 +106,29 @@ class TestFinalizersE2E:
                 name=realm_name,
             )
 
+            # First, verify K8s accepted the delete (deletionTimestamp is set)
+            # This ensures the delete request was processed before we start waiting
+            async def check_deletion_timestamp_set():
+                try:
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=namespace,
+                        plural="keycloakrealms",
+                        name=realm_name,
+                    )
+                    return (
+                        resource.get("metadata", {}).get("deletionTimestamp")
+                        is not None
+                    )
+                except ApiException as e:
+                    # Already deleted is fine
+                    return e.status == 404
+
+            assert await _simple_wait(
+                check_deletion_timestamp_set, timeout=30
+            ), "K8s did not set deletionTimestamp on realm"
+
             # Wait for realm cleanup to complete
             async def check_realm_deleted():
                 try:
@@ -128,6 +157,7 @@ class TestFinalizersE2E:
         operator_namespace,
         sample_realm_spec,
         sample_client_spec,
+        test_namespace,
     ):
         """Test finalizer behavior for Keycloak client resources using shared instance."""
         import uuid
@@ -135,7 +165,8 @@ class TestFinalizersE2E:
         from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
         from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
 
-        namespace = shared_operator.namespace
+        # Use dedicated test namespace for isolation from other parallel tests
+        namespace = test_namespace
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"test-client-finalizer-realm-{suffix}"
         client_name = f"test-client-finalizer-{suffix}"
@@ -216,6 +247,28 @@ class TestFinalizersE2E:
                 plural="keycloakclients",
                 name=client_name,
             )
+
+            # First, verify K8s accepted the delete (deletionTimestamp is set)
+            async def check_client_deletion_timestamp_set():
+                try:
+                    resource = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=namespace,
+                        plural="keycloakclients",
+                        name=client_name,
+                    )
+                    return (
+                        resource.get("metadata", {}).get("deletionTimestamp")
+                        is not None
+                    )
+                except ApiException as e:
+                    # Already deleted is fine
+                    return e.status == 404
+
+            assert await _simple_wait(
+                check_client_deletion_timestamp_set, timeout=30
+            ), "K8s did not set deletionTimestamp on client"
 
             # Wait for client cleanup to complete
             async def check_client_deleted():
