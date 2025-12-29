@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.10](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.9...operator-image-v0.5.10) (2025-12-29)
+
+
+### Bug Fixes
+
+* **operator:** resolve ingress hostname bug and improve type safety ([eb69b8a](https://github.com/vriesdemichael/keycloak-operator/commit/eb69b8aa61893c39b7143cc8101e39febc63a113))
+
 ## [0.5.9](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.8...operator-image-v0.5.9) (2025-12-26)
 
 
