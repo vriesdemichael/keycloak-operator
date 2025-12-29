@@ -6,9 +6,14 @@ and status. These models ensure proper validation and provide IDE support
 for the operator development.
 """
 
-from typing import Any
-
 from pydantic import BaseModel, Field, field_validator, model_validator
+
+from keycloak_operator.models.types import (
+    KubernetesMetadata,
+    KubernetesProbeConfig,
+    KubernetesSecurityContext,
+    OperationalStats,
+)
 
 
 class SecretReference(BaseModel):
@@ -336,7 +341,7 @@ class KeycloakSpec(BaseModel):
     )
 
     # Operational settings
-    startup_probe: dict[str, Any] = Field(
+    startup_probe: KubernetesProbeConfig = Field(
         default_factory=lambda: {
             "httpGet": {"path": "/health/started", "port": 9000},
             "initialDelaySeconds": 30,
@@ -347,7 +352,7 @@ class KeycloakSpec(BaseModel):
         alias="startupProbe",
         description="Startup probe configuration",
     )
-    liveness_probe: dict[str, Any] = Field(
+    liveness_probe: KubernetesProbeConfig = Field(
         default_factory=lambda: {
             "httpGet": {"path": "/health/live", "port": 9000},
             "initialDelaySeconds": 60,
@@ -358,7 +363,7 @@ class KeycloakSpec(BaseModel):
         alias="livenessProbe",
         description="Liveness probe configuration",
     )
-    readiness_probe: dict[str, Any] = Field(
+    readiness_probe: KubernetesProbeConfig = Field(
         default_factory=lambda: {
             "httpGet": {"path": "/health/ready", "port": 9000},
             "initialDelaySeconds": 30,
@@ -371,12 +376,12 @@ class KeycloakSpec(BaseModel):
     )
 
     # Security and RBAC
-    pod_security_context: dict[str, Any] = Field(
+    pod_security_context: KubernetesSecurityContext = Field(
         default_factory=dict,
         alias="podSecurityContext",
         description="Pod security context",
     )
-    security_context: dict[str, Any] = Field(
+    security_context: KubernetesSecurityContext = Field(
         default_factory=dict,
         alias="securityContext",
         description="Container security context",
@@ -533,7 +538,7 @@ class KeycloakStatus(BaseModel):
     )
 
     # Statistics (optional)
-    stats: dict[str, Any] = Field(
+    stats: OperationalStats = Field(
         default_factory=dict, description="Operational statistics"
     )
 
@@ -548,7 +553,7 @@ class Keycloak(BaseModel):
 
     api_version: str = Field("vriesdemichael.github.io/v1", alias="apiVersion")
     kind: str = Field("Keycloak")
-    metadata: dict[str, Any] = Field(..., description="Kubernetes metadata")
+    metadata: KubernetesMetadata = Field(..., description="Kubernetes metadata")
     spec: KeycloakSpec = Field(..., description="Keycloak specification")
     status: KeycloakStatus | None = Field(
         None, description="Keycloak status (managed by operator)"
