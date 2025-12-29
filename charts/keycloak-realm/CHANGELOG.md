@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.3...chart-realm-v0.3.4) (2025-12-29)
+
+
+### Features
+
+* **chart-realm:** add missing CRD fields to Helm chart ([c9e5eaa](https://github.com/vriesdemichael/keycloak-operator/commit/c9e5eaaaa1e68a2585f7c25f06bd4dd5cbc0f01b)), closes [#274](https://github.com/vriesdemichael/keycloak-operator/issues/274)
+
+
+### Bug Fixes
+
+* **chart-realm:** add new fields to values.schema.json ([9b9f1cd](https://github.com/vriesdemichael/keycloak-operator/commit/9b9f1cdb7e140d8db481f81f1e35a4dd9155bbce))
+
 ## [0.3.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.2...chart-realm-v0.3.3) (2025-12-27)
 
 
