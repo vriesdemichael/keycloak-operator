@@ -19,7 +19,7 @@ import uuid
 import pytest
 from kubernetes.client.rest import ApiException
 
-from .wait_helpers import wait_for_resource_ready
+from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
 
 
 async def _simple_wait(condition_func, timeout=60, interval=2):
@@ -33,6 +33,37 @@ async def _simple_wait(condition_func, timeout=60, interval=2):
             pass  # Retry on any error
         await asyncio.sleep(interval)
     return False
+
+
+async def _cleanup_resource(
+    k8s_custom_objects,
+    group: str,
+    version: str,
+    namespace: str,
+    plural: str,
+    name: str,
+    timeout: int = 60,
+) -> None:
+    """Helper to delete a resource and wait for deletion to complete."""
+    with contextlib.suppress(ApiException):
+        await k8s_custom_objects.delete_namespaced_custom_object(
+            group=group,
+            version=version,
+            namespace=namespace,
+            plural=plural,
+            name=name,
+        )
+    # Wait for resource to be fully deleted (ignore if already gone)
+    with contextlib.suppress(Exception):
+        await wait_for_resource_deleted(
+            k8s_custom_objects=k8s_custom_objects,
+            group=group,
+            version=version,
+            namespace=namespace,
+            plural=plural,
+            name=name,
+            timeout=timeout,
+        )
 
 
 @pytest.mark.integration
@@ -115,19 +146,19 @@ class TestKeycloakAdminAPI:
                     return False
                 return realm_name in [r.realm for r in all_realms]
 
-            assert await _simple_wait(check_realm_in_list, timeout=30, interval=2), (
-                f"Realm {realm_name} not found in realm list after retries"
-            )
+            assert await _simple_wait(
+                check_realm_in_list, timeout=30, interval=2
+            ), f"Realm {realm_name} not found in realm list after retries"
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_client_crud_operations(
@@ -235,22 +266,23 @@ class TestKeycloakAdminAPI:
             assert client_name in client_ids
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakclients",
-                    name=client_name,
-                )
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            # Delete client first (depends on realm), then realm
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+            )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_admin_client_authentication(
@@ -426,19 +458,20 @@ class TestKeycloakAdminAPI:
             assert len(client_repr.secret) > 0
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakclients",
-                    name=client_name,
-                )
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            # Delete client first (depends on realm), then realm
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+            )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
