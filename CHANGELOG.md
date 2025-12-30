@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.11](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.10...operator-image-v0.5.11) (2025-12-30)
+
+
+### Bug Fixes
+
+* **operator:** raise error instead of returning 'unknown' client UUID ([35d2d3e](https://github.com/vriesdemichael/keycloak-operator/commit/35d2d3eea75e1db284483006de8845824c7a246f))
+
 ## [0.5.10](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.9...operator-image-v0.5.10) (2025-12-29)
 
 
