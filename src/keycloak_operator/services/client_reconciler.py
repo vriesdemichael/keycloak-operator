@@ -460,7 +460,18 @@ class KeycloakClientReconciler(BaseReconciler):
                 created_client = await admin_client.get_client_by_name(
                     spec.client_id, actual_realm_name, namespace
                 )
-                return created_client.id if created_client else "unknown"
+                if created_client and created_client.id:
+                    return created_client.id
+                else:
+                    # Client creation failed - raise error instead of returning
+                    # invalid UUID to prevent subsequent API calls with bad UUID
+                    from ..errors import TemporaryError
+
+                    raise TemporaryError(
+                        f"Failed to create client '{spec.client_id}' in realm "
+                        f"'{actual_realm_name}'. The realm may be missing or "
+                        f"Keycloak may be unavailable."
+                    )
 
     async def configure_oauth_settings(
         self, spec: KeycloakClientSpec, client_uuid: str, name: str, namespace: str
