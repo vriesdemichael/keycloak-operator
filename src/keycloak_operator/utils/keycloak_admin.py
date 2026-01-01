@@ -25,12 +25,15 @@ import httpx
 from pydantic import BaseModel
 
 from keycloak_operator.models.keycloak_api import (
+    AuthenticationExecutionInfoRepresentation,
     AuthenticationFlowRepresentation,
+    AuthenticatorConfigRepresentation,
     ClientRepresentation,
     ComponentRepresentation,
     IdentityProviderRepresentation,
     ProtocolMapperRepresentation,
     RealmRepresentation,
+    RequiredActionProviderRepresentation,
     RoleRepresentation,
     UserRepresentation,
 )
@@ -1348,60 +1351,839 @@ class KeycloakAdminClient:
             logger.error(f"Failed to update realm themes: {e}")
             return False
 
-    async def configure_authentication_flow(
+    # =========================================================================
+    # Authentication Flow Management Methods
+    # =========================================================================
+
+    async def get_authentication_flows(
         self,
         realm_name: str,
-        flow_config: AuthenticationFlowRepresentation | dict[str, Any],
-    ) -> bool:
+        namespace: str,
+    ) -> list[AuthenticationFlowRepresentation]:
         """
-        Configure authentication flow for a realm.
+        Get all authentication flows for a realm.
 
         Args:
             realm_name: Name of the realm
-            flow_config: Authentication flow configuration as AuthenticationFlowRepresentation or dict
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            List of authentication flows
+        """
+        logger.debug(f"Getting authentication flows for realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/authentication/flows",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                flows_data = response.json()
+                return [
+                    AuthenticationFlowRepresentation.model_validate(flow)
+                    for flow in flows_data
+                ]
+            else:
+                logger.warning(
+                    f"Failed to get authentication flows: {response.status_code}"
+                )
+                return []
+
+        except KeycloakAdminError:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get authentication flows: {e}")
+            return []
+
+    async def get_authentication_flow_by_alias(
+        self,
+        realm_name: str,
+        flow_alias: str,
+        namespace: str,
+    ) -> AuthenticationFlowRepresentation | None:
+        """
+        Get a specific authentication flow by alias.
+
+        Args:
+            realm_name: Name of the realm
+            flow_alias: Alias of the flow
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            Authentication flow or None if not found
+        """
+        logger.debug(
+            f"Getting authentication flow '{flow_alias}' for realm '{realm_name}'"
+        )
+
+        flows = await self.get_authentication_flows(realm_name, namespace)
+        for flow in flows:
+            if flow.alias == flow_alias:
+                return flow
+        return None
+
+    async def create_authentication_flow(
+        self,
+        realm_name: str,
+        flow_config: AuthenticationFlowRepresentation | dict[str, Any],
+        namespace: str,
+    ) -> bool:
+        """
+        Create a new authentication flow for a realm.
+
+        Args:
+            realm_name: Name of the realm
+            flow_config: Authentication flow configuration
+            namespace: Origin namespace for rate limiting
 
         Returns:
             True if successful, False otherwise
-
-        Example:
-            from keycloak_operator.models.keycloak_api import AuthenticationFlowRepresentation
-
-            flow = AuthenticationFlowRepresentation(
-                alias="browser-custom",
-                description="Custom browser flow"
-            )
-            success = admin_client.configure_authentication_flow("my-realm", flow)
         """
-        # Convert dict to model if needed
         if isinstance(flow_config, dict):
             flow_config = AuthenticationFlowRepresentation.model_validate(flow_config)
 
         flow_alias = flow_config.alias or "unknown"
         logger.info(
-            f"Configuring authentication flow '{flow_alias}' for realm '{realm_name}'"
+            f"Creating authentication flow '{flow_alias}' for realm '{realm_name}'"
         )
 
         try:
             response = await self._make_validated_request(
                 "POST",
                 f"realms/{realm_name}/authentication/flows",
+                namespace,
                 request_model=flow_config,
             )
 
             if response.status_code in [201, 204]:
+                logger.info(f"Successfully created authentication flow '{flow_alias}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to create authentication flow: {response.status_code}"
+                )
+                return False
+
+        except KeycloakAdminError as e:
+            if e.status_code == 409:
+                logger.warning(f"Authentication flow '{flow_alias}' already exists")
+                return False
+            raise
+        except Exception as e:
+            logger.error(f"Failed to create authentication flow: {e}")
+            return False
+
+    async def delete_authentication_flow(
+        self,
+        realm_name: str,
+        flow_id: str,
+        namespace: str,
+    ) -> bool:
+        """
+        Delete an authentication flow.
+
+        Args:
+            realm_name: Name of the realm
+            flow_id: ID of the flow to delete
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Deleting authentication flow '{flow_id}' from realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/authentication/flows/{flow_id}",
+                namespace,
+            )
+
+            if response.status_code in [204, 200]:
+                logger.info(f"Successfully deleted authentication flow '{flow_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to delete authentication flow: {response.status_code}"
+                )
+                return False
+
+        except KeycloakAdminError as e:
+            if e.status_code == 404:
+                logger.warning(f"Authentication flow '{flow_id}' not found")
+                return True  # Already deleted
+            raise
+        except Exception as e:
+            logger.error(f"Failed to delete authentication flow: {e}")
+            return False
+
+    async def copy_authentication_flow(
+        self,
+        realm_name: str,
+        source_flow_alias: str,
+        new_flow_alias: str,
+        namespace: str,
+    ) -> bool:
+        """
+        Copy an existing authentication flow under a new name.
+
+        Args:
+            realm_name: Name of the realm
+            source_flow_alias: Alias of the flow to copy
+            new_flow_alias: Alias for the new flow
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Copying authentication flow '{source_flow_alias}' "
+            f"to '{new_flow_alias}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/authentication/flows/{source_flow_alias}/copy",
+                namespace,
+                json={"newName": new_flow_alias},
+            )
+
+            if response.status_code in [201, 204]:
                 logger.info(
-                    f"Successfully configured authentication flow '{flow_alias}'"
+                    f"Successfully copied authentication flow to '{new_flow_alias}'"
                 )
                 return True
             else:
                 logger.error(
-                    f"Failed to configure authentication flow: {response.status_code}"
+                    f"Failed to copy authentication flow: {response.status_code}"
+                )
+                return False
+
+        except KeycloakAdminError as e:
+            if e.status_code == 409:
+                logger.warning(f"Authentication flow '{new_flow_alias}' already exists")
+                return False
+            raise
+        except Exception as e:
+            logger.error(f"Failed to copy authentication flow: {e}")
+            return False
+
+    async def get_flow_executions(
+        self,
+        realm_name: str,
+        flow_alias: str,
+        namespace: str,
+    ) -> list[AuthenticationExecutionInfoRepresentation]:
+        """
+        Get all executions for an authentication flow.
+
+        Args:
+            realm_name: Name of the realm
+            flow_alias: Alias of the flow
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            List of execution info representations
+        """
+        logger.debug(
+            f"Getting executions for flow '{flow_alias}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/authentication/flows/{flow_alias}/executions",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                executions_data = response.json()
+                return [
+                    AuthenticationExecutionInfoRepresentation.model_validate(ex)
+                    for ex in executions_data
+                ]
+            else:
+                logger.warning(f"Failed to get flow executions: {response.status_code}")
+                return []
+
+        except KeycloakAdminError:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get flow executions: {e}")
+            return []
+
+    async def add_execution_to_flow(
+        self,
+        realm_name: str,
+        flow_alias: str,
+        provider_id: str,
+        namespace: str,
+    ) -> str | None:
+        """
+        Add a new authenticator execution to a flow.
+
+        Args:
+            realm_name: Name of the realm
+            flow_alias: Alias of the parent flow
+            provider_id: Authenticator provider ID (e.g., 'auth-cookie')
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            Execution ID if successful, None otherwise
+        """
+        logger.info(
+            f"Adding execution '{provider_id}' to flow '{flow_alias}' "
+            f"in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/authentication/flows/{flow_alias}/executions/execution",
+                namespace,
+                json={"provider": provider_id},
+            )
+
+            if response.status_code in [201, 204]:
+                # Extract execution ID from Location header
+                location = response.headers.get("Location", "")
+                execution_id = location.rsplit("/", 1)[-1] if location else None
+                logger.info(f"Successfully added execution '{provider_id}'")
+                return execution_id
+            else:
+                logger.error(f"Failed to add execution: {response.status_code}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to add execution to flow: {e}")
+            return None
+
+    async def add_subflow_to_flow(
+        self,
+        realm_name: str,
+        parent_flow_alias: str,
+        subflow_alias: str,
+        provider_id: str,
+        description: str | None,
+        namespace: str,
+    ) -> str | None:
+        """
+        Add a new sub-flow execution to a flow.
+
+        Args:
+            realm_name: Name of the realm
+            parent_flow_alias: Alias of the parent flow
+            subflow_alias: Alias for the new sub-flow
+            provider_id: Flow provider ('basic-flow' or 'client-flow')
+            description: Description for the sub-flow
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            Execution ID if successful, None otherwise
+        """
+        logger.info(
+            f"Adding sub-flow '{subflow_alias}' to flow '{parent_flow_alias}' "
+            f"in realm '{realm_name}'"
+        )
+
+        try:
+            payload = {
+                "alias": subflow_alias,
+                "type": provider_id,
+                "provider": "registration-page-form",
+            }
+            if description:
+                payload["description"] = description
+
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/authentication/flows/{parent_flow_alias}/executions/flow",
+                namespace,
+                json=payload,
+            )
+
+            if response.status_code in [201, 204]:
+                location = response.headers.get("Location", "")
+                execution_id = location.rsplit("/", 1)[-1] if location else None
+                logger.info(f"Successfully added sub-flow '{subflow_alias}'")
+                return execution_id
+            else:
+                logger.error(f"Failed to add sub-flow: {response.status_code}")
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to add sub-flow to flow: {e}")
+            return None
+
+    async def update_execution_requirement(
+        self,
+        realm_name: str,
+        flow_alias: str,
+        execution_id: str,
+        requirement: str,
+        namespace: str,
+    ) -> bool:
+        """
+        Update the requirement level of an execution.
+
+        Args:
+            realm_name: Name of the realm
+            flow_alias: Alias of the parent flow
+            execution_id: ID of the execution to update
+            requirement: New requirement level (REQUIRED, ALTERNATIVE, DISABLED, CONDITIONAL)
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Updating execution '{execution_id}' requirement to '{requirement}' "
+            f"in flow '{flow_alias}'"
+        )
+
+        try:
+            # First get current execution info
+            executions = await self.get_flow_executions(
+                realm_name, flow_alias, namespace
+            )
+            current_execution = None
+            for ex in executions:
+                if ex.id == execution_id:
+                    current_execution = ex
+                    break
+
+            if not current_execution:
+                logger.error(f"Execution '{execution_id}' not found in flow")
+                return False
+
+            # Update the requirement
+            update_payload = {
+                "id": execution_id,
+                "requirement": requirement,
+            }
+
+            response = await self._make_request(
+                "PUT",
+                f"realms/{realm_name}/authentication/flows/{flow_alias}/executions",
+                namespace,
+                json=update_payload,
+            )
+
+            if response.status_code in [200, 202, 204]:
+                logger.info(
+                    f"Successfully updated execution requirement to '{requirement}'"
+                )
+                return True
+            else:
+                logger.error(
+                    f"Failed to update execution requirement: {response.status_code}"
                 )
                 return False
 
         except Exception as e:
-            logger.error(f"Failed to configure authentication flow: {e}")
+            logger.error(f"Failed to update execution requirement: {e}")
             return False
+
+    async def delete_execution(
+        self,
+        realm_name: str,
+        execution_id: str,
+        namespace: str,
+    ) -> bool:
+        """
+        Delete an execution from a flow.
+
+        Args:
+            realm_name: Name of the realm
+            execution_id: ID of the execution to delete
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Deleting execution '{execution_id}' from realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/authentication/executions/{execution_id}",
+                namespace,
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info(f"Successfully deleted execution '{execution_id}'")
+                return True
+            else:
+                logger.error(f"Failed to delete execution: {response.status_code}")
+                return False
+
+        except KeycloakAdminError as e:
+            if e.status_code == 404:
+                logger.warning(f"Execution '{execution_id}' not found")
+                return True  # Already deleted
+            raise
+        except Exception as e:
+            logger.error(f"Failed to delete execution: {e}")
+            return False
+
+    async def get_authenticator_config(
+        self,
+        realm_name: str,
+        config_id: str,
+        namespace: str,
+    ) -> AuthenticatorConfigRepresentation | None:
+        """
+        Get authenticator configuration by ID.
+
+        Args:
+            realm_name: Name of the realm
+            config_id: ID of the authenticator config
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            Authenticator config or None if not found
+        """
+        logger.debug(
+            f"Getting authenticator config '{config_id}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/authentication/config/{config_id}",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                return AuthenticatorConfigRepresentation.model_validate(response.json())
+            else:
+                return None
+
+        except KeycloakAdminError as e:
+            if e.status_code == 404:
+                return None
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get authenticator config: {e}")
+            return None
+
+    async def create_authenticator_config(
+        self,
+        realm_name: str,
+        execution_id: str,
+        config: AuthenticatorConfigRepresentation | dict[str, Any],
+        namespace: str,
+    ) -> str | None:
+        """
+        Create a new authenticator configuration for an execution.
+
+        Args:
+            realm_name: Name of the realm
+            execution_id: ID of the execution to configure
+            config: Authenticator configuration
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            Config ID if successful, None otherwise
+        """
+        if isinstance(config, dict):
+            config = AuthenticatorConfigRepresentation.model_validate(config)
+
+        config_alias = config.alias or "unknown"
+        logger.info(
+            f"Creating authenticator config '{config_alias}' for execution "
+            f"'{execution_id}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_validated_request(
+                "POST",
+                f"realms/{realm_name}/authentication/executions/{execution_id}/config",
+                namespace,
+                request_model=config,
+            )
+
+            if response.status_code in [201, 204]:
+                # Extract config ID from Location header
+                location = response.headers.get("Location", "")
+                config_id = location.rsplit("/", 1)[-1] if location else None
+                logger.info(
+                    f"Successfully created authenticator config '{config_alias}'"
+                )
+                return config_id
+            else:
+                logger.error(
+                    f"Failed to create authenticator config: {response.status_code}"
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to create authenticator config: {e}")
+            return None
+
+    async def update_authenticator_config(
+        self,
+        realm_name: str,
+        config_id: str,
+        config: AuthenticatorConfigRepresentation | dict[str, Any],
+        namespace: str,
+    ) -> bool:
+        """
+        Update an authenticator configuration.
+
+        Args:
+            realm_name: Name of the realm
+            config_id: ID of the config to update
+            config: Updated authenticator configuration
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if isinstance(config, dict):
+            config = AuthenticatorConfigRepresentation.model_validate(config)
+
+        logger.info(
+            f"Updating authenticator config '{config_id}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_validated_request(
+                "PUT",
+                f"realms/{realm_name}/authentication/config/{config_id}",
+                namespace,
+                request_model=config,
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info(f"Successfully updated authenticator config '{config_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to update authenticator config: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to update authenticator config: {e}")
+            return False
+
+    # =========================================================================
+    # Required Actions Management Methods
+    # =========================================================================
+
+    async def get_required_actions(
+        self,
+        realm_name: str,
+        namespace: str,
+    ) -> list[RequiredActionProviderRepresentation]:
+        """
+        Get all required actions for a realm.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            List of required action provider representations
+        """
+        logger.debug(f"Getting required actions for realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/authentication/required-actions",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                actions_data = response.json()
+                return [
+                    RequiredActionProviderRepresentation.model_validate(action)
+                    for action in actions_data
+                ]
+            else:
+                logger.warning(
+                    f"Failed to get required actions: {response.status_code}"
+                )
+                return []
+
+        except Exception as e:
+            logger.error(f"Failed to get required actions: {e}")
+            return []
+
+    async def get_required_action(
+        self,
+        realm_name: str,
+        action_alias: str,
+        namespace: str,
+    ) -> RequiredActionProviderRepresentation | None:
+        """
+        Get a specific required action by alias.
+
+        Args:
+            realm_name: Name of the realm
+            action_alias: Alias of the required action
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            Required action provider or None if not found
+        """
+        logger.debug(
+            f"Getting required action '{action_alias}' for realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/authentication/required-actions/{action_alias}",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                return RequiredActionProviderRepresentation.model_validate(
+                    response.json()
+                )
+            else:
+                return None
+
+        except KeycloakAdminError as e:
+            if e.status_code == 404:
+                return None
+            raise
+        except Exception as e:
+            logger.error(f"Failed to get required action: {e}")
+            return None
+
+    async def update_required_action(
+        self,
+        realm_name: str,
+        action_alias: str,
+        action_config: RequiredActionProviderRepresentation | dict[str, Any],
+        namespace: str,
+    ) -> bool:
+        """
+        Update a required action configuration.
+
+        Args:
+            realm_name: Name of the realm
+            action_alias: Alias of the required action to update
+            action_config: Updated action configuration
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if isinstance(action_config, dict):
+            action_config = RequiredActionProviderRepresentation.model_validate(
+                action_config
+            )
+
+        logger.info(
+            f"Updating required action '{action_alias}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_validated_request(
+                "PUT",
+                f"realms/{realm_name}/authentication/required-actions/{action_alias}",
+                namespace,
+                request_model=action_config,
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info(f"Successfully updated required action '{action_alias}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to update required action: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to update required action: {e}")
+            return False
+
+    async def register_required_action(
+        self,
+        realm_name: str,
+        provider_id: str,
+        name: str,
+        namespace: str,
+    ) -> bool:
+        """
+        Register a new required action provider.
+
+        Args:
+            realm_name: Name of the realm
+            provider_id: Provider ID for the required action
+            name: Display name for the action
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Registering required action '{provider_id}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/authentication/register-required-action",
+                namespace,
+                json={"providerId": provider_id, "name": name},
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info(f"Successfully registered required action '{provider_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to register required action: {response.status_code}"
+                )
+                return False
+
+        except KeycloakAdminError as e:
+            if e.status_code == 409:
+                logger.warning(f"Required action '{provider_id}' already registered")
+                return True  # Already exists is OK
+            raise
+        except Exception as e:
+            logger.error(f"Failed to register required action: {e}")
+            return False
+
+    # Legacy method - kept for backward compatibility
+    async def configure_authentication_flow(
+        self,
+        realm_name: str,
+        flow_config: AuthenticationFlowRepresentation | dict[str, Any],
+        namespace: str | None = None,
+    ) -> bool:
+        """
+        Configure authentication flow for a realm (legacy method).
+
+        This method is kept for backward compatibility. For new code, use
+        create_authentication_flow() or the more specific flow management methods.
+
+        Args:
+            realm_name: Name of the realm
+            flow_config: Authentication flow configuration
+            namespace: Origin namespace for rate limiting (optional for backward compat)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        # Default namespace for backward compatibility
+        if namespace is None:
+            namespace = "default"
+
+        return await self.create_authentication_flow(realm_name, flow_config, namespace)
 
     async def configure_identity_provider(
         self,
