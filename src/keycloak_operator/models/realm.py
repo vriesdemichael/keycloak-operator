@@ -6,12 +6,11 @@ and status. These models enable comprehensive realm management including
 authentication flows, identity providers, and user federation.
 """
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
 from keycloak_operator.models.types import (
-    AuthenticationExecutionList,
     KeycloakConfigMap,
     KubernetesMetadata,
 )
@@ -246,18 +245,209 @@ class KeycloakUserFederation(BaseModel):
         return v
 
 
+# =============================================================================
+# Authentication Flow Types
+# =============================================================================
+# These types match the Keycloak Admin API representations for authentication
+# management. Field names use camelCase aliases to match API conventions.
+
+# Valid requirement values for authentication executions
+AuthenticationExecutionRequirement = Literal[
+    "REQUIRED", "ALTERNATIVE", "DISABLED", "CONDITIONAL"
+]
+
+
+class AuthenticatorConfigInfo(BaseModel):
+    """
+    Configuration for a configurable authenticator execution.
+
+    Maps to AuthenticatorConfigRepresentation in Keycloak API.
+    Used for authenticators that have configuration options (e.g., OTP settings).
+    """
+
+    model_config = {"populate_by_name": True}
+
+    alias: str | None = Field(None, description="Configuration alias for reference")
+    config: dict[str, str] = Field(
+        default_factory=dict,
+        description="Authenticator-specific configuration key-value pairs",
+    )
+
+
+class AuthenticationExecutionExport(BaseModel):
+    """
+    Authentication execution step configuration.
+
+    Maps to AuthenticationExecutionExportRepresentation in Keycloak API.
+    Represents a single step in an authentication flow.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    # For authenticator executions (e.g., auth-cookie, auth-otp-form)
+    authenticator: str | None = Field(
+        None,
+        description="Authenticator provider ID (e.g., 'auth-cookie', 'auth-otp-form')",
+    )
+
+    # For sub-flow references
+    flow_alias: str | None = Field(
+        None,
+        alias="flowAlias",
+        description="Alias of sub-flow (when authenticatorFlow=true)",
+    )
+    authenticator_flow: bool = Field(
+        False,
+        alias="authenticatorFlow",
+        description="True if this execution references a sub-flow",
+    )
+
+    # Execution requirement level
+    requirement: AuthenticationExecutionRequirement = Field(
+        "DISABLED",
+        description="Execution requirement: REQUIRED, ALTERNATIVE, DISABLED, CONDITIONAL",
+    )
+
+    # Execution order
+    priority: int = Field(
+        0,
+        description="Execution priority (lower = earlier in flow)",
+    )
+
+    # Configuration for configurable authenticators
+    authenticator_config: str | None = Field(
+        None,
+        alias="authenticatorConfig",
+        description="Reference to authenticator configuration alias",
+    )
+
+    # Whether user can set up this authenticator during login
+    user_setup_allowed: bool | None = Field(
+        None,
+        alias="userSetupAllowed",
+        description="Allow user to set up authenticator during login",
+    )
+
+    @field_validator("authenticator", "flow_alias")
+    @classmethod
+    def validate_execution_type(cls, v, info):
+        """Ensure at least one of authenticator or flow_alias is provided."""
+        # This validation happens per-field, full validation in model_post_init
+        return v
+
+    def model_post_init(self, __context):
+        """Validate that execution has either authenticator or flow reference."""
+        if not self.authenticator and not self.flow_alias:
+            raise ValueError(
+                "Execution must specify either 'authenticator' or 'flowAlias'"
+            )
+        if self.authenticator and self.flow_alias:
+            raise ValueError(
+                "Execution cannot specify both 'authenticator' and 'flowAlias'"
+            )
+        # Auto-set authenticator_flow based on flow_alias
+        if self.flow_alias and not self.authenticator_flow:
+            object.__setattr__(self, "authenticator_flow", True)
+
+
 class KeycloakAuthenticationFlow(BaseModel):
-    """Authentication flow configuration."""
+    """
+    Authentication flow configuration.
 
-    alias: str = Field(..., description="Flow alias")
+    Maps to AuthenticationFlowRepresentation in Keycloak API.
+    Defines a complete authentication flow with its executions.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    alias: str = Field(..., description="Unique flow alias/name")
     description: str | None = Field(None, description="Flow description")
-    provider_id: str = Field("basic-flow", description="Flow provider ID")
-    top_level: bool = Field(True, description="Whether this is a top-level flow")
-    built_in: bool = Field(False, description="Whether this is a built-in flow")
+    provider_id: str = Field(
+        "basic-flow",
+        alias="providerId",
+        description="Flow provider: 'basic-flow' or 'client-flow'",
+    )
+    top_level: bool = Field(
+        True,
+        alias="topLevel",
+        description="True for top-level flows, false for sub-flows",
+    )
+    built_in: bool = Field(
+        False,
+        alias="builtIn",
+        description="Whether this is a built-in flow (read-only)",
+    )
 
-    # Flow executions
-    authentication_executions: AuthenticationExecutionList = Field(
-        default_factory=list, description="Authentication executions"
+    # Flow executions (steps)
+    authentication_executions: list[AuthenticationExecutionExport] = Field(
+        default_factory=list,
+        alias="authenticationExecutions",
+        description="Ordered list of authentication executions",
+    )
+
+    # Authenticator configurations referenced by executions
+    authenticator_config: list[AuthenticatorConfigInfo] = Field(
+        default_factory=list,
+        alias="authenticatorConfig",
+        description="Configurations for configurable authenticators",
+    )
+
+    # Operator-specific: copy from existing built-in flow
+    copy_from: str | None = Field(
+        None,
+        alias="copyFrom",
+        description="Copy from existing flow alias before applying modifications",
+    )
+
+    @field_validator("alias")
+    @classmethod
+    def validate_alias(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Alias must be a non-empty string")
+        return v
+
+    @field_validator("provider_id")
+    @classmethod
+    def validate_provider_id(cls, v):
+        valid_providers = ["basic-flow", "client-flow"]
+        if v not in valid_providers:
+            raise ValueError(f"provider_id must be one of {valid_providers}")
+        return v
+
+
+class RequiredActionProvider(BaseModel):
+    """
+    Required action configuration.
+
+    Maps to RequiredActionProviderRepresentation in Keycloak API.
+    Required actions are actions users must perform (e.g., verify email, configure OTP).
+    """
+
+    model_config = {"populate_by_name": True}
+
+    alias: str = Field(
+        ...,
+        description="Required action alias (e.g., 'CONFIGURE_TOTP', 'VERIFY_EMAIL')",
+    )
+    name: str | None = Field(None, description="Display name for the action")
+    provider_id: str | None = Field(
+        None,
+        alias="providerId",
+        description="Provider ID (usually same as alias)",
+    )
+    enabled: bool = Field(True, description="Whether this action is enabled")
+    default_action: bool = Field(
+        False,
+        alias="defaultAction",
+        description="Add to new users by default",
+    )
+    priority: int = Field(
+        0,
+        description="Order priority (lower = earlier)",
+    )
+    config: dict[str, str] = Field(
+        default_factory=dict,
+        description="Action-specific configuration",
     )
 
     @field_validator("alias")
@@ -557,6 +747,50 @@ class KeycloakRealmSpec(BaseModel):
         description="Custom authentication flows",
     )
 
+    # Authentication flow bindings (assign flows to realm authentication types)
+    browser_flow: str | None = Field(
+        None,
+        alias="browserFlow",
+        description="Flow alias for browser authentication",
+    )
+    registration_flow: str | None = Field(
+        None,
+        alias="registrationFlow",
+        description="Flow alias for user registration",
+    )
+    direct_grant_flow: str | None = Field(
+        None,
+        alias="directGrantFlow",
+        description="Flow alias for direct access grants (Resource Owner Password)",
+    )
+    reset_credentials_flow: str | None = Field(
+        None,
+        alias="resetCredentialsFlow",
+        description="Flow alias for password reset",
+    )
+    client_authentication_flow: str | None = Field(
+        None,
+        alias="clientAuthenticationFlow",
+        description="Flow alias for client authentication",
+    )
+    docker_authentication_flow: str | None = Field(
+        None,
+        alias="dockerAuthenticationFlow",
+        description="Flow alias for Docker registry authentication",
+    )
+    first_broker_login_flow: str | None = Field(
+        None,
+        alias="firstBrokerLoginFlow",
+        description="Flow alias for first login via identity provider",
+    )
+
+    # Required actions
+    required_actions: list[RequiredActionProvider] = Field(
+        default_factory=list,
+        alias="requiredActions",
+        description="Required action configurations (e.g., CONFIGURE_TOTP, VERIFY_EMAIL)",
+    )
+
     # Identity providers
     identity_providers: list[KeycloakIdentityProvider] = Field(
         default_factory=list,
@@ -641,9 +875,14 @@ class KeycloakRealmSpec(BaseModel):
 
         return v
 
-    def to_keycloak_config(self) -> dict[str, Any]:
+    def to_keycloak_config(self, include_flow_bindings: bool = True) -> dict[str, Any]:
         """
         Convert the realm specification to Keycloak API format.
+
+        Args:
+            include_flow_bindings: Whether to include flow binding fields.
+                                   Set to False when creating realm initially
+                                   (flows don't exist yet).
 
         Returns:
             Dictionary in Keycloak Admin API format
@@ -756,6 +995,23 @@ class KeycloakRealmSpec(BaseModel):
                 "adminEventsDetailsEnabled": events.admin_events_details_enabled,
             }
         )
+
+        # Add authentication flow bindings (only if specified and requested)
+        if include_flow_bindings:
+            if self.browser_flow:
+                config["browserFlow"] = self.browser_flow
+            if self.registration_flow:
+                config["registrationFlow"] = self.registration_flow
+            if self.direct_grant_flow:
+                config["directGrantFlow"] = self.direct_grant_flow
+            if self.reset_credentials_flow:
+                config["resetCredentialsFlow"] = self.reset_credentials_flow
+            if self.client_authentication_flow:
+                config["clientAuthenticationFlow"] = self.client_authentication_flow
+            if self.docker_authentication_flow:
+                config["dockerAuthenticationFlow"] = self.docker_authentication_flow
+            if self.first_broker_login_flow:
+                config["firstBrokerLoginFlow"] = self.first_broker_login_flow
 
         return config
 

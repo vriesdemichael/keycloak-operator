@@ -244,17 +244,134 @@ spec:
                   properties:
                     alias:
                       type: string
+                      description: Unique flow alias/name
                     description:
                       type: string
+                      description: Flow description
                     providerId:
                       type: string
+                      description: "Flow provider: 'basic-flow' or 'client-flow'"
+                      default: basic-flow
+                      enum:
+                      - basic-flow
+                      - client-flow
                     topLevel:
                       type: boolean
+                      description: True for top-level flows, false for sub-flows
+                      default: true
                     builtIn:
                       type: boolean
-                    executionConfig:
+                      description: Whether this is a built-in flow (read-only)
+                      default: false
+                    copyFrom:
+                      type: string
+                      description: Copy from existing flow alias before applying modifications
+                    authenticationExecutions:
+                      type: array
+                      description: Ordered list of authentication executions
+                      items:
+                        type: object
+                        properties:
+                          authenticator:
+                            type: string
+                            description: "Authenticator provider ID (e.g., 'auth-cookie', 'auth-otp-form')"
+                          flowAlias:
+                            type: string
+                            description: Alias of sub-flow (when authenticatorFlow=true)
+                          authenticatorFlow:
+                            type: boolean
+                            description: True if this execution references a sub-flow
+                            default: false
+                          requirement:
+                            type: string
+                            description: "Execution requirement: REQUIRED, ALTERNATIVE, DISABLED, CONDITIONAL"
+                            enum:
+                            - REQUIRED
+                            - ALTERNATIVE
+                            - DISABLED
+                            - CONDITIONAL
+                            default: DISABLED
+                          priority:
+                            type: integer
+                            description: Execution priority (lower = earlier in flow)
+                            default: 0
+                          authenticatorConfig:
+                            type: string
+                            description: Reference to authenticator configuration alias
+                          userSetupAllowed:
+                            type: boolean
+                            description: Allow user to set up authenticator during login
+                    authenticatorConfig:
+                      type: array
+                      description: Configurations for configurable authenticators
+                      items:
+                        type: object
+                        properties:
+                          alias:
+                            type: string
+                            description: Configuration alias for reference
+                          config:
+                            type: object
+                            description: Authenticator-specific configuration key-value pairs
+                            additionalProperties:
+                              type: string
+                  required:
+                  - alias
+              # Authentication flow bindings (assign flows to realm authentication types)
+              browserFlow:
+                type: string
+                description: Flow alias for browser authentication
+              registrationFlow:
+                type: string
+                description: Flow alias for user registration
+              directGrantFlow:
+                type: string
+                description: Flow alias for direct access grants (Resource Owner Password)
+              resetCredentialsFlow:
+                type: string
+                description: Flow alias for password reset
+              clientAuthenticationFlow:
+                type: string
+                description: Flow alias for client authentication
+              dockerAuthenticationFlow:
+                type: string
+                description: Flow alias for Docker registry authentication
+              firstBrokerLoginFlow:
+                type: string
+                description: Flow alias for first login via identity provider
+              # Required actions configuration
+              requiredActions:
+                type: array
+                description: "Required action configurations (e.g., CONFIGURE_TOTP, VERIFY_EMAIL)"
+                items:
+                  type: object
+                  properties:
+                    alias:
+                      type: string
+                      description: "Required action alias (e.g., 'CONFIGURE_TOTP', 'VERIFY_EMAIL')"
+                    name:
+                      type: string
+                      description: Display name for the action
+                    providerId:
+                      type: string
+                      description: Provider ID (usually same as alias)
+                    enabled:
+                      type: boolean
+                      description: Whether this action is enabled
+                      default: true
+                    defaultAction:
+                      type: boolean
+                      description: Add to new users by default
+                      default: false
+                    priority:
+                      type: integer
+                      description: Order priority (lower = earlier)
+                      default: 0
+                    config:
                       type: object
-                      additionalProperties: true
+                      description: Action-specific configuration
+                      additionalProperties:
+                        type: string
                   required:
                   - alias
               identityProviders:

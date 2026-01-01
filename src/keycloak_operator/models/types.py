@@ -83,21 +83,9 @@ Expected structure:
 # =============================================================================
 # Authentication Flow Types
 # =============================================================================
-
-type AuthenticationExecution = dict[str, str | int | bool]
-"""
-Single authentication execution step in a flow.
-
-Expected structure:
-- authenticator: str (e.g., "auth-cookie", "auth-spnego")
-- requirement: str (REQUIRED, ALTERNATIVE, DISABLED, CONDITIONAL)
-- priority: int
-- authenticatorFlow: bool
-- flowAlias: str (if authenticatorFlow is True)
-"""
-
-type AuthenticationExecutionList = list[AuthenticationExecution]
-"""List of authentication execution steps in order of priority."""
+# NOTE: Authentication execution types have been moved to proper Pydantic models
+# in realm.py (AuthenticatorConfigInfo, AuthenticationExecutionExport) to match
+# the Keycloak Admin API representations.
 
 # =============================================================================
 # Operational Types

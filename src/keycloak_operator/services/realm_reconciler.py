@@ -90,6 +90,14 @@ class KeycloakRealmReconciler(BaseReconciler):
         if realm_spec.authentication_flows:
             await self.configure_authentication(realm_spec, name, namespace)
 
+        if realm_spec.required_actions:
+            await self.configure_required_actions(realm_spec, name, namespace)
+
+        # Apply flow bindings AFTER authentication flows are created
+        # This must happen after configure_authentication so the flows exist
+        if self._has_flow_bindings(realm_spec):
+            await self.apply_flow_bindings(realm_spec, name, namespace)
+
         if realm_spec.identity_providers:
             await self.configure_identity_providers(realm_spec, name, namespace)
 
@@ -430,44 +438,75 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Check if realm already exists
         realm_name = spec.realm_name
-        realm_payload = spec.to_keycloak_config()
 
-        # Inject SMTP password from secret if configured
-        if spec.smtp_server:
-            if spec.smtp_server.password_secret:
-                # Fetch password from Kubernetes secret
-                password = await self._fetch_secret_value(
-                    namespace=namespace,
-                    secret_name=spec.smtp_server.password_secret.name,
-                    secret_key=spec.smtp_server.password_secret.key,
-                )
-                if "smtpServer" not in realm_payload:
-                    realm_payload["smtpServer"] = {}
-                realm_payload["smtpServer"]["password"] = password
-                self.logger.debug(
-                    "Injected SMTP password from secret into realm config"
-                )
-            elif spec.smtp_server.password:
-                # Direct password (discouraged but supported)
-                if "smtpServer" not in realm_payload:
-                    realm_payload["smtpServer"] = {}
-                realm_payload["smtpServer"]["password"] = spec.smtp_server.password
-                self.logger.warning(
-                    "Using direct SMTP password from spec. "
-                    "Consider using password_secret for better security."
-                )
+        # Generate realm payload - we'll determine whether to include flow bindings
+        # based on whether this is a create or update operation
+        # For creates, flows don't exist yet so we can't bind to them
+        realm_payload_without_bindings = spec.to_keycloak_config(
+            include_flow_bindings=False
+        )
+        realm_payload_with_bindings = spec.to_keycloak_config(
+            include_flow_bindings=True
+        )
 
-        # Add ownership metadata to realm attributes
-        from ..utils.ownership import create_ownership_attributes
+        # Helper to inject SMTP and ownership into a payload
+        def inject_common_fields(payload: dict[str, Any]) -> None:
+            # Inject SMTP password from secret if configured
+            if spec.smtp_server:
+                if spec.smtp_server.password_secret:
+                    # Note: password injection handled below after async fetch
+                    pass
+                elif spec.smtp_server.password:
+                    # Direct password (discouraged but supported)
+                    if "smtpServer" not in payload:
+                        payload["smtpServer"] = {}
+                    payload["smtpServer"]["password"] = spec.smtp_server.password
 
-        if "attributes" not in realm_payload:
-            realm_payload["attributes"] = {}
+            # Add ownership metadata to realm attributes
+            from ..utils.ownership import create_ownership_attributes
 
-        # Add new ownership attributes for drift detection
-        ownership_attrs = create_ownership_attributes(namespace, name)
-        realm_payload["attributes"].update(ownership_attrs)
+            if "attributes" not in payload:
+                payload["attributes"] = {}
+            ownership_attrs = create_ownership_attributes(namespace, name)
+            payload["attributes"].update(ownership_attrs)
 
-        payload_json = json.dumps(realm_payload, default=str)
+        # Inject SMTP password from secret if configured (async operation)
+        smtp_password = None
+        if spec.smtp_server and spec.smtp_server.password_secret:
+            smtp_password = await self._fetch_secret_value(
+                namespace=namespace,
+                secret_name=spec.smtp_server.password_secret.name,
+                secret_key=spec.smtp_server.password_secret.key,
+            )
+            self.logger.debug("Injected SMTP password from secret into realm config")
+
+        # Apply common fields to both payloads
+        inject_common_fields(realm_payload_without_bindings)
+        inject_common_fields(realm_payload_with_bindings)
+
+        # Inject SMTP password if fetched from secret
+        if smtp_password:
+            for payload in [
+                realm_payload_without_bindings,
+                realm_payload_with_bindings,
+            ]:
+                if "smtpServer" not in payload:
+                    payload["smtpServer"] = {}
+                payload["smtpServer"]["password"] = smtp_password
+
+        # Log warning for direct password usage
+        if (
+            spec.smtp_server
+            and spec.smtp_server.password
+            and not spec.smtp_server.password_secret
+        ):
+            self.logger.warning(
+                "Using direct SMTP password from spec. "
+                "Consider using password_secret for better security."
+            )
+
+        # Use payload with bindings for logging preview (more complete)
+        payload_json = json.dumps(realm_payload_with_bindings, default=str)
         payload_preview = (
             payload_json
             if len(payload_json) <= 2048
@@ -524,7 +563,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                 )
                 try:
                     await admin_client.update_realm(
-                        realm_name, realm_payload, namespace
+                        realm_name, realm_payload_with_bindings, namespace
                     )
                     self.logger.info(f"Successfully adopted realm {realm_name}")
                 except KeycloakAdminError as exc:
@@ -541,7 +580,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                 self.logger.info(f"Updating realm {realm_name} (owned by this CR)")
                 try:
                     await admin_client.update_realm(
-                        realm_name, realm_payload, namespace
+                        realm_name, realm_payload_with_bindings, namespace
                     )
                 except KeycloakAdminError as exc:
                     self.logger.error(
@@ -571,7 +610,8 @@ class KeycloakRealmReconciler(BaseReconciler):
                 )
                 raise PermanentError(error_msg)
         else:
-            # Realm doesn't exist - create it
+            # Realm doesn't exist - create it WITHOUT flow bindings
+            # (flows don't exist yet, will be created and bound later)
             self.logger.info(
                 f"Creating new realm {realm_name}",
                 keycloak_instance=keycloak_name,
@@ -579,7 +619,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                 cr_uid=cr_uid,
             )
             try:
-                await admin_client.create_realm(realm_payload, namespace)
+                await admin_client.create_realm(
+                    realm_payload_without_bindings, namespace
+                )
                 self.logger.info(f"Successfully created realm {realm_name}")
             except KeycloakAdminError as exc:
                 # Handle 409 conflict (race condition - realm created between GET and CREATE)
@@ -647,6 +689,13 @@ class KeycloakRealmReconciler(BaseReconciler):
         """
         Configure authentication flows and security settings.
 
+        This method handles:
+        - Creating new authentication flows
+        - Copying from built-in flows (when copyFrom is specified)
+        - Adding executions to flows
+        - Configuring execution requirements
+        - Setting up authenticator configurations
+
         Args:
             spec: Keycloak realm specification
             name: Resource name
@@ -664,19 +713,524 @@ class KeycloakRealmReconciler(BaseReconciler):
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
         )
 
+        realm_name = spec.realm_name
+
         for flow_config in spec.authentication_flows:
             try:
-                from typing import cast
+                flow_alias = flow_config.alias
+                self.logger.info(f"Processing authentication flow '{flow_alias}'")
 
-                flow_dict = cast(
-                    dict[str, Any],
-                    flow_config.model_dump()
-                    if hasattr(flow_config, "model_dump")
-                    else flow_config,
+                # Check if flow already exists
+                existing_flow = await admin_client.get_authentication_flow_by_alias(
+                    realm_name, flow_alias, namespace
                 )
-                admin_client.configure_authentication_flow(spec.realm_name, flow_dict)
+
+                if existing_flow:
+                    self.logger.info(
+                        f"Authentication flow '{flow_alias}' already exists, "
+                        f"updating executions"
+                    )
+                    # Flow exists - update executions if needed
+                    await self._sync_flow_executions(
+                        admin_client,
+                        realm_name,
+                        flow_alias,
+                        flow_config,
+                        namespace,
+                    )
+                else:
+                    # Flow doesn't exist - create it
+                    if flow_config.copy_from:
+                        # Copy from existing built-in flow
+                        self.logger.info(
+                            f"Copying flow '{flow_config.copy_from}' to '{flow_alias}'"
+                        )
+                        success = await admin_client.copy_authentication_flow(
+                            realm_name,
+                            flow_config.copy_from,
+                            flow_alias,
+                            namespace,
+                        )
+                        if not success:
+                            self.logger.error(
+                                f"Failed to copy flow '{flow_config.copy_from}' "
+                                f"to '{flow_alias}'"
+                            )
+                            continue
+
+                        # After copying, sync executions to match desired state
+                        await self._sync_flow_executions(
+                            admin_client,
+                            realm_name,
+                            flow_alias,
+                            flow_config,
+                            namespace,
+                        )
+                    else:
+                        # Create new flow from scratch
+                        from keycloak_operator.models.keycloak_api import (
+                            AuthenticationFlowRepresentation,
+                        )
+
+                        flow_repr = AuthenticationFlowRepresentation(
+                            alias=flow_alias,
+                            description=flow_config.description,
+                            provider_id=flow_config.provider_id,
+                            top_level=flow_config.top_level,
+                            built_in=False,
+                        )
+
+                        success = await admin_client.create_authentication_flow(
+                            realm_name, flow_repr, namespace
+                        )
+
+                        if not success:
+                            self.logger.error(
+                                f"Failed to create authentication flow '{flow_alias}'"
+                            )
+                            continue
+
+                        # Add executions to the new flow
+                        await self._add_flow_executions(
+                            admin_client,
+                            realm_name,
+                            flow_alias,
+                            flow_config,
+                            namespace,
+                        )
+
+                # Set up authenticator configurations
+                if flow_config.authenticator_config:
+                    await self._configure_authenticator_configs(
+                        admin_client,
+                        realm_name,
+                        flow_alias,
+                        flow_config,
+                        namespace,
+                    )
+
             except Exception as e:
-                self.logger.warning(f"Failed to configure authentication flow: {e}")
+                self.logger.warning(
+                    f"Failed to configure authentication flow '{flow_config.alias}': {e}"
+                )
+
+    async def _add_flow_executions(
+        self,
+        admin_client,
+        realm_name: str,
+        flow_alias: str,
+        flow_config,
+        namespace: str,
+    ) -> None:
+        """
+        Add executions to a newly created flow.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            flow_alias: Alias of the flow
+            flow_config: Flow configuration with executions
+            namespace: Origin namespace for rate limiting
+        """
+        for execution in flow_config.authentication_executions:
+            try:
+                if execution.authenticator_flow and execution.flow_alias:
+                    # This is a sub-flow reference
+                    execution_id = await admin_client.add_subflow_to_flow(
+                        realm_name,
+                        flow_alias,
+                        execution.flow_alias,
+                        "basic-flow",
+                        None,
+                        namespace,
+                    )
+                elif execution.authenticator:
+                    # This is an authenticator execution
+                    execution_id = await admin_client.add_execution_to_flow(
+                        realm_name,
+                        flow_alias,
+                        execution.authenticator,
+                        namespace,
+                    )
+                else:
+                    self.logger.warning(
+                        "Execution has neither authenticator nor flowAlias, skipping"
+                    )
+                    continue
+
+                # Update requirement if execution was added successfully
+                if execution_id and execution.requirement != "DISABLED":
+                    await admin_client.update_execution_requirement(
+                        realm_name,
+                        flow_alias,
+                        execution_id,
+                        execution.requirement,
+                        namespace,
+                    )
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to add execution to flow '{flow_alias}': {e}"
+                )
+
+    async def _sync_flow_executions(
+        self,
+        admin_client,
+        realm_name: str,
+        flow_alias: str,
+        flow_config,
+        namespace: str,
+    ) -> None:
+        """
+        Synchronize executions for an existing flow.
+
+        This updates execution requirements to match the desired state.
+        Note: Adding/removing executions from existing flows is complex
+        and not fully implemented - we only update requirements for now.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            flow_alias: Alias of the flow
+            flow_config: Flow configuration with desired executions
+            namespace: Origin namespace for rate limiting
+        """
+        if not flow_config.authentication_executions:
+            return
+
+        try:
+            # Get current executions
+            current_executions = await admin_client.get_flow_executions(
+                realm_name, flow_alias, namespace
+            )
+
+            # Build a map of current executions by provider ID or alias
+            execution_map: dict[str, Any] = {}
+            for ex in current_executions:
+                key = ex.provider_id or ex.alias or ex.display_name
+                if key:
+                    execution_map[key] = ex
+
+            # Update requirements for matching executions
+            for desired_execution in flow_config.authentication_executions:
+                # Find matching execution
+                match_key = (
+                    desired_execution.authenticator or desired_execution.flow_alias
+                )
+                if not match_key:
+                    continue
+
+                matching_execution = execution_map.get(match_key)
+                if matching_execution and matching_execution.id:
+                    # Check if requirement needs updating
+                    if matching_execution.requirement != desired_execution.requirement:
+                        self.logger.info(
+                            f"Updating execution '{match_key}' requirement "
+                            f"from '{matching_execution.requirement}' "
+                            f"to '{desired_execution.requirement}'"
+                        )
+                        await admin_client.update_execution_requirement(
+                            realm_name,
+                            flow_alias,
+                            matching_execution.id,
+                            desired_execution.requirement,
+                            namespace,
+                        )
+                else:
+                    self.logger.debug(
+                        f"Execution '{match_key}' not found in flow, skipping update"
+                    )
+
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to sync executions for flow '{flow_alias}': {e}"
+            )
+
+    async def _configure_authenticator_configs(
+        self,
+        admin_client,
+        realm_name: str,
+        flow_alias: str,
+        flow_config,
+        namespace: str,
+    ) -> None:
+        """
+        Configure authenticator configurations for executions in a flow.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            flow_alias: Alias of the flow
+            flow_config: Flow configuration with authenticator configs
+            namespace: Origin namespace for rate limiting
+        """
+        if not flow_config.authenticator_config:
+            return
+
+        try:
+            # Get current executions to find which need configuration
+            executions = await admin_client.get_flow_executions(
+                realm_name, flow_alias, namespace
+            )
+
+            # Build map of config alias to config
+            config_map = {
+                cfg.alias: cfg for cfg in flow_config.authenticator_config if cfg.alias
+            }
+
+            # Find executions that reference these configs
+            for execution in flow_config.authentication_executions:
+                if not execution.authenticator_config:
+                    continue
+
+                config_alias = execution.authenticator_config
+                if config_alias not in config_map:
+                    self.logger.warning(
+                        f"Authenticator config '{config_alias}' referenced "
+                        f"but not defined in authenticatorConfig list"
+                    )
+                    continue
+
+                config = config_map[config_alias]
+
+                # Find the execution ID for this authenticator
+                exec_id = None
+                for ex in executions:
+                    if ex.provider_id == execution.authenticator:
+                        exec_id = ex.id
+                        break
+
+                if not exec_id:
+                    self.logger.warning(
+                        f"Could not find execution for authenticator "
+                        f"'{execution.authenticator}' to apply config"
+                    )
+                    continue
+
+                # Check if config already exists
+                if ex.authentication_config:
+                    # Update existing config
+                    from keycloak_operator.models.keycloak_api import (
+                        AuthenticatorConfigRepresentation,
+                    )
+
+                    config_repr = AuthenticatorConfigRepresentation(
+                        id=ex.authentication_config,
+                        alias=config.alias,
+                        config=config.config,
+                    )
+                    await admin_client.update_authenticator_config(
+                        realm_name,
+                        ex.authentication_config,
+                        config_repr,
+                        namespace,
+                    )
+                else:
+                    # Create new config
+                    from keycloak_operator.models.keycloak_api import (
+                        AuthenticatorConfigRepresentation,
+                    )
+
+                    config_repr = AuthenticatorConfigRepresentation(
+                        alias=config.alias,
+                        config=config.config,
+                    )
+                    await admin_client.create_authenticator_config(
+                        realm_name,
+                        exec_id,
+                        config_repr,
+                        namespace,
+                    )
+
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to configure authenticator configs for flow '{flow_alias}': {e}"
+            )
+
+    async def configure_required_actions(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure required actions for the realm.
+
+        Required actions are actions users must perform, such as:
+        - CONFIGURE_TOTP: Set up two-factor authentication
+        - VERIFY_EMAIL: Verify email address
+        - UPDATE_PASSWORD: Change password
+        - UPDATE_PROFILE: Update user profile
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Configuring required actions for realm {spec.realm_name}")
+
+        if not spec.required_actions:
+            return
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        for action_config in spec.required_actions:
+            try:
+                action_alias = action_config.alias
+                self.logger.info(f"Configuring required action '{action_alias}'")
+
+                # Check if the action already exists
+                existing_action = await admin_client.get_required_action(
+                    realm_name, action_alias, namespace
+                )
+
+                if existing_action:
+                    # Update existing action
+                    from keycloak_operator.models.keycloak_api import (
+                        RequiredActionProviderRepresentation,
+                    )
+
+                    action_repr = RequiredActionProviderRepresentation(
+                        alias=action_alias,
+                        name=action_config.name or existing_action.name,
+                        provider_id=action_config.provider_id or action_alias,
+                        enabled=action_config.enabled,
+                        default_action=action_config.default_action,
+                        priority=action_config.priority,
+                        config=action_config.config or None,
+                    )
+
+                    success = await admin_client.update_required_action(
+                        realm_name, action_alias, action_repr, namespace
+                    )
+
+                    if success:
+                        self.logger.info(
+                            f"Successfully updated required action '{action_alias}'"
+                        )
+                    else:
+                        self.logger.warning(
+                            f"Failed to update required action '{action_alias}'"
+                        )
+                else:
+                    # Action doesn't exist - try to register it
+                    self.logger.info(
+                        f"Required action '{action_alias}' not found, "
+                        f"attempting to register"
+                    )
+
+                    success = await admin_client.register_required_action(
+                        realm_name,
+                        action_config.provider_id or action_alias,
+                        action_config.name or action_alias,
+                        namespace,
+                    )
+
+                    if success:
+                        # Now update the configuration
+                        from keycloak_operator.models.keycloak_api import (
+                            RequiredActionProviderRepresentation,
+                        )
+
+                        action_repr = RequiredActionProviderRepresentation(
+                            alias=action_alias,
+                            name=action_config.name,
+                            provider_id=action_config.provider_id or action_alias,
+                            enabled=action_config.enabled,
+                            default_action=action_config.default_action,
+                            priority=action_config.priority,
+                            config=action_config.config or None,
+                        )
+
+                        await admin_client.update_required_action(
+                            realm_name, action_alias, action_repr, namespace
+                        )
+
+                        self.logger.info(
+                            f"Successfully registered required action '{action_alias}'"
+                        )
+                    else:
+                        self.logger.warning(
+                            f"Failed to register required action '{action_alias}'"
+                        )
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to configure required action '{action_config.alias}': {e}"
+                )
+
+    def _has_flow_bindings(self, spec: KeycloakRealmSpec) -> bool:
+        """Check if the realm spec has any flow bindings configured."""
+        return any(
+            [
+                spec.browser_flow,
+                spec.registration_flow,
+                spec.direct_grant_flow,
+                spec.reset_credentials_flow,
+                spec.client_authentication_flow,
+                spec.docker_authentication_flow,
+                spec.first_broker_login_flow,
+            ]
+        )
+
+    async def apply_flow_bindings(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Apply authentication flow bindings to the realm.
+
+        This must be called AFTER authentication flows are created,
+        as flow bindings reference flows by alias.
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Applying flow bindings for realm {spec.realm_name}")
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"  # Default Keycloak instance name
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # Build payload with only flow binding fields
+        flow_binding_payload: dict[str, Any] = {"realm": realm_name}
+
+        if spec.browser_flow:
+            flow_binding_payload["browserFlow"] = spec.browser_flow
+        if spec.registration_flow:
+            flow_binding_payload["registrationFlow"] = spec.registration_flow
+        if spec.direct_grant_flow:
+            flow_binding_payload["directGrantFlow"] = spec.direct_grant_flow
+        if spec.reset_credentials_flow:
+            flow_binding_payload["resetCredentialsFlow"] = spec.reset_credentials_flow
+        if spec.client_authentication_flow:
+            flow_binding_payload["clientAuthenticationFlow"] = (
+                spec.client_authentication_flow
+            )
+        if spec.docker_authentication_flow:
+            flow_binding_payload["dockerAuthenticationFlow"] = (
+                spec.docker_authentication_flow
+            )
+        if spec.first_broker_login_flow:
+            flow_binding_payload["firstBrokerLoginFlow"] = spec.first_broker_login_flow
+
+        try:
+            await admin_client.update_realm(realm_name, flow_binding_payload, namespace)
+            self.logger.info(
+                f"Successfully applied flow bindings for realm {realm_name}"
+            )
+        except Exception as e:
+            self.logger.warning(f"Failed to apply flow bindings: {e}")
 
     async def configure_identity_providers(
         self, spec: KeycloakRealmSpec, name: str, namespace: str
