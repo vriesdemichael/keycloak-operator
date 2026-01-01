@@ -1596,16 +1596,16 @@ class KeycloakRealmReconciler(BaseReconciler):
             elif field_path[:2] == ("spec", "authenticationFlows"):
                 self.logger.info("Updating authentication flows")
                 try:
-                    for flow_config in new_realm_spec.authentication_flows or []:
-                        flow_dict = cast(
-                            dict[str, Any],
-                            flow_config.model_dump()
-                            if hasattr(flow_config, "model_dump")
-                            else flow_config,
-                        )
-                        admin_client.configure_authentication_flow(
-                            realm_name, flow_dict
-                        )
+                    # Use the full configure_authentication method which handles:
+                    # - copyFrom logic for copying built-in flows
+                    # - creating new flows with executions
+                    # - updating existing flow executions
+                    await self.configure_authentication(new_realm_spec, name, namespace)
+
+                    # Also apply flow bindings if any are specified
+                    if self._has_flow_bindings(new_realm_spec):
+                        await self.apply_flow_bindings(new_realm_spec, name, namespace)
+
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update authentication flows: {e}")
@@ -1651,19 +1651,22 @@ class KeycloakRealmReconciler(BaseReconciler):
             elif field_path[:2] == ("spec", "userFederation"):
                 self.logger.info("Updating user federation")
                 try:
-                    for federation_config in new_realm_spec.user_federation or []:
-                        federation_dict = cast(
-                            dict[str, Any],
-                            federation_config.model_dump()
-                            if hasattr(federation_config, "model_dump")
-                            else federation_config,
-                        )
-                        admin_client.configure_user_federation(
-                            realm_name, federation_dict
-                        )
+                    await self.configure_user_federation(
+                        new_realm_spec, name, namespace
+                    )
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update user federation: {e}")
+
+            elif field_path[:2] == ("spec", "requiredActions"):
+                self.logger.info("Updating required actions")
+                try:
+                    await self.configure_required_actions(
+                        new_realm_spec, name, namespace
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update required actions: {e}")
 
             elif field_path[:2] == ("spec", "settings"):
                 self.logger.info("Updating realm settings")
@@ -1682,6 +1685,13 @@ class KeycloakRealmReconciler(BaseReconciler):
                 ("spec", "loginPageTitle"),
                 ("spec", "tokenSettings"),
                 ("spec", "smtpServer"),
+                ("spec", "browserFlow"),
+                ("spec", "directGrantFlow"),
+                ("spec", "registrationFlow"),
+                ("spec", "resetCredentialsFlow"),
+                ("spec", "clientAuthenticationFlow"),
+                ("spec", "dockerAuthenticationFlow"),
+                ("spec", "firstBrokerLoginFlow"),
             ]:
                 field_name = field_path[1] if len(field_path) > 1 else "unknown"
                 self.logger.info(f"Updating realm field: {field_name}")

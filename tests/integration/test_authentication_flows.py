@@ -871,11 +871,6 @@ class TestAuthenticationFlows:
                     name=realm_name,
                 )
 
-    @pytest.mark.skip(
-        reason="Update handler for authentication flows needs to be implemented. "
-        "Issue: update handler uses sync configure_authentication_flow() instead "
-        "of the new async methods. Works for initial creation."
-    )
     @pytest.mark.timeout(180)
     async def test_realm_update_adds_new_flow(
         self,
