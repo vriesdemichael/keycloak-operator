@@ -1,6 +1,6 @@
 """Unit tests for KeycloakAdminClient authentication flow methods."""
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -26,27 +26,29 @@ class MockResponse:
 
 @pytest.fixture
 def mock_admin_client():
-    """Create a mock KeycloakAdminClient client for testing.
+    """Create a mock KeycloakAdminClient for testing.
 
-    Patches __init__ to bypass normal initialization, then sets required
-    attributes directly.
+    Uses object.__new__ to create an uninitialized instance, then sets
+    required attributes directly. This avoids calling __init__ entirely,
+    which satisfies both the runtime behavior and static analysis.
     """
     from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 
-    with patch.object(KeycloakAdminClient, "__init__", lambda self: None):
-        client = KeycloakAdminClient()
-        client.server_url = "http://keycloak:8080"
-        client.username = "admin"
-        client.password = "admin"
-        client.admin_realm = "master"
-        client.client_id = "admin-cli"
-        client.verify_ssl = True
-        client.timeout = 60
-        client.rate_limiter = None
-        client.access_token = "test-token"
-        client.refresh_token = None
-        client.token_expires_at = 9999999999.0
-        return client
+    # Create instance without calling __init__
+    client = object.__new__(KeycloakAdminClient)
+    # Set required attributes that __init__ would normally set
+    client.server_url = "http://keycloak:8080"
+    client.username = "admin"
+    client.password = "admin"
+    client.admin_realm = "master"
+    client.client_id = "admin-cli"
+    client.verify_ssl = True
+    client.timeout = 60
+    client.rate_limiter = None
+    client.access_token = "test-token"
+    client.refresh_token = None
+    client.token_expires_at = 9999999999.0
+    return client
 
 
 class TestGetAuthenticationFlows:
