@@ -185,6 +185,47 @@ def get_cr_reference(
     return (namespace, name)
 
 
+def is_owned_by_cr(
+    attributes: dict[str, str | list[str]] | None,
+    cr_namespace: str,
+    cr_name: str,
+) -> bool:
+    """
+    Check if a Keycloak resource is owned by a specific CR.
+
+    This is used during finalizer cleanup to verify that the CR being deleted
+    actually owns the Keycloak resource before deleting it. This prevents
+    accidental deletion of shared resources when multiple CRs reference the
+    same Keycloak resource.
+
+    Args:
+        attributes: Keycloak resource attributes (may be None or empty)
+        cr_namespace: Namespace of the CR being deleted
+        cr_name: Name of the CR being deleted
+
+    Returns:
+        True if the resource is owned by the specified CR, False otherwise
+
+    Example:
+        >>> realm = keycloak_admin.get_realm("my-realm")
+        >>> if is_owned_by_cr(realm.attributes, "production", "my-realm-cr"):
+        ...     # Safe to delete - this CR owns the resource
+        ...     keycloak_admin.delete_realm("my-realm")
+        ... else:
+        ...     # Skip deletion - owned by another CR
+        ...     logger.warning("Skipping deletion: owned by another CR")
+    """
+    cr_ref = get_cr_reference(attributes)
+
+    if cr_ref is None:
+        # No ownership info - resource is unmanaged or legacy
+        # Conservative approach: don't delete unmanaged resources
+        return False
+
+    owner_namespace, owner_name = cr_ref
+    return owner_namespace == cr_namespace and owner_name == cr_name
+
+
 def get_resource_age_hours(
     attributes: dict[str, str | list[str]] | None,
 ) -> float | None:

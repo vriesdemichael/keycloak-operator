@@ -190,6 +190,13 @@ class TestRealmFinalizers:
         admin.delete_realm = AsyncMock()
         admin.export_realm = AsyncMock(return_value={"realm": "test"})
         admin.get_realm_clients = AsyncMock(return_value=[])
+        # Mock get_realm to return a realm owned by the CR being deleted
+        mock_realm = MagicMock()
+        mock_realm.attributes = {
+            "io.kubernetes.cr-namespace": "test-namespace",
+            "io.kubernetes.cr-name": "test-realm",
+        }
+        admin.get_realm = AsyncMock(return_value=mock_realm)
         return admin
 
     @pytest.mark.asyncio
@@ -239,9 +246,16 @@ class TestClientFinalizers:
 
     @pytest.fixture
     def mock_keycloak_admin(self):
-        admin = MagicMock()
-        admin.delete_client = MagicMock()
-        admin.get_client_secret = MagicMock(return_value="secret-value")
+        admin = AsyncMock()
+        admin.delete_client = AsyncMock()
+        admin.get_client_secret = AsyncMock(return_value="secret-value")
+        # Mock get_client_by_name to return a client owned by the CR being deleted
+        mock_client = MagicMock()
+        mock_client.attributes = {
+            "io.kubernetes.cr-namespace": "test-namespace",
+            "io.kubernetes.cr-name": "test-client",
+        }
+        admin.get_client_by_name = AsyncMock(return_value=mock_client)
         return admin
 
     @pytest.fixture

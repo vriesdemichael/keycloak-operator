@@ -13,6 +13,7 @@ from kubernetes.client.rest import ApiException
 from ..errors import KeycloakAdminError, ReconciliationError, ValidationError
 from ..models.client import KeycloakClientSpec
 from ..utils.keycloak_admin import get_keycloak_admin_client
+from ..utils.ownership import get_cr_reference, is_owned_by_cr
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 
@@ -1336,19 +1337,54 @@ class KeycloakClientReconciler(BaseReconciler):
             else:
                 raise
 
-        # Delete client from Keycloak (if realm still exists)
+        # Delete client from Keycloak (if realm still exists and we own it)
         if not realm_deleted:
             try:
                 admin_client = await self.keycloak_admin_factory(
                     keycloak_name, keycloak_namespace
                 )
 
-                await admin_client.delete_client(
+                # Check if client exists in Keycloak
+                existing_client = await admin_client.get_client_by_name(
                     client_spec.client_id, actual_realm_name, namespace
                 )
-                self.logger.info(
-                    f"Deleted client {client_spec.client_id} from Keycloak realm {actual_realm_name}"
-                )
+
+                if existing_client is None:
+                    # Client doesn't exist in Keycloak - nothing to delete
+                    self.logger.info(
+                        f"Client {client_spec.client_id} does not exist in Keycloak "
+                        f"realm {actual_realm_name}, skipping Keycloak cleanup"
+                    )
+                else:
+                    # Client exists - check ownership before deleting
+                    client_attributes = (
+                        existing_client.attributes
+                        if hasattr(existing_client, "attributes")
+                        else None
+                    )
+
+                    if not is_owned_by_cr(client_attributes, namespace, name):
+                        # This CR doesn't own the client - don't delete it
+                        owner_ref = get_cr_reference(client_attributes)
+                        if owner_ref:
+                            owner_ns, owner_name = owner_ref
+                            self.logger.warning(
+                                f"Skipping deletion of client {client_spec.client_id}: "
+                                f"owned by {owner_ns}/{owner_name}, not by {namespace}/{name}"
+                            )
+                        else:
+                            self.logger.warning(
+                                f"Skipping deletion of client {client_spec.client_id}: "
+                                f"no ownership attributes found (unmanaged resource)"
+                            )
+                    else:
+                        # This CR owns the client - proceed with deletion
+                        await admin_client.delete_client(
+                            client_spec.client_id, actual_realm_name, namespace
+                        )
+                        self.logger.info(
+                            f"Deleted client {client_spec.client_id} from Keycloak realm {actual_realm_name}"
+                        )
 
             except Exception as e:
                 self.logger.warning(
