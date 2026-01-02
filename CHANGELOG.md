@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.12](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.11...operator-image-v0.5.12) (2026-01-02)
+
+
+### Features
+
+* **chart-realm+operator:** add authentication flow and required action support ([f653969](https://github.com/vriesdemichael/keycloak-operator/commit/f653969fd08b30d25af45a1b6465bc6e5ec22c2e)), closes [#180](https://github.com/vriesdemichael/keycloak-operator/issues/180)
+
+
+### Bug Fixes
+
+* **operator:** address PR review comments and expand documentation ([c05075f](https://github.com/vriesdemichael/keycloak-operator/commit/c05075ff6765aa708c4aad41972521b35e6f822d))
+* **operator:** fix async update handler for authentication flows ([e4c7fc4](https://github.com/vriesdemichael/keycloak-operator/commit/e4c7fc42ec694090b0d04f608682eb8f94085771))
+
+
+### Code Refactoring
+
+* address CodeQL false positive and remove unused method ([66e8faf](https://github.com/vriesdemichael/keycloak-operator/commit/66e8faf9fb9acab4f3206b76e025b52b84c8a79a))
+
 ## [0.5.11](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.10...operator-image-v0.5.11) (2025-12-30)
 
 
