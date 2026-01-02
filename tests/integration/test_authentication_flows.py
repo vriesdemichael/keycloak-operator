@@ -26,6 +26,37 @@ from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
 logger = logging.getLogger(__name__)
 
 
+async def _cleanup_resource(
+    k8s_custom_objects,
+    group: str,
+    version: str,
+    namespace: str,
+    plural: str,
+    name: str,
+    timeout: int = 60,
+) -> None:
+    """Helper to delete a resource and wait for deletion to complete."""
+    with contextlib.suppress(ApiException):
+        await k8s_custom_objects.delete_namespaced_custom_object(
+            group=group,
+            version=version,
+            namespace=namespace,
+            plural=plural,
+            name=name,
+        )
+    # Wait for resource to be fully deleted (ignore if already gone)
+    with contextlib.suppress(Exception):
+        await wait_for_resource_deleted(
+            k8s_custom_objects=k8s_custom_objects,
+            group=group,
+            version=version,
+            namespace=namespace,
+            plural=plural,
+            name=name,
+            timeout=timeout,
+        )
+
+
 @pytest.mark.integration
 @pytest.mark.requires_cluster
 class TestAuthenticationFlows:
@@ -159,15 +190,14 @@ class TestAuthenticationFlows:
             )
 
         finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_copied_flow(
@@ -275,15 +305,14 @@ class TestAuthenticationFlows:
             )
 
         finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_flow_binding(
@@ -377,15 +406,14 @@ class TestAuthenticationFlows:
             logger.info(f"✓ Browser flow correctly bound to '{custom_flow_alias}'")
 
         finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_required_actions(
@@ -513,15 +541,14 @@ class TestAuthenticationFlows:
             logger.info("✓ Successfully verified required actions in realm")
 
         finally:
-            # Cleanup
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_authentication_flow_cleanup(
@@ -634,15 +661,14 @@ class TestAuthenticationFlows:
             logger.info("✓ Realm and flows successfully cleaned up")
 
         finally:
-            # Cleanup (in case test failed before deletion)
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_multiple_flow_bindings(
@@ -747,14 +773,14 @@ class TestAuthenticationFlows:
             logger.info("✓ Multiple flow bindings correctly applied")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_required_action_default_action_flag(
@@ -862,14 +888,14 @@ class TestAuthenticationFlows:
             logger.info("✓ defaultAction flags correctly applied")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_update_adds_new_flow(
@@ -996,14 +1022,14 @@ class TestAuthenticationFlows:
             logger.info("✓ Flow successfully added via realm update")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_inline_flow_executions(
@@ -1123,14 +1149,14 @@ class TestAuthenticationFlows:
             )
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_disabled_required_action(
@@ -1219,14 +1245,14 @@ class TestAuthenticationFlows:
             logger.info("✓ Required action correctly disabled")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_nested_subflow(
@@ -1364,14 +1390,14 @@ class TestAuthenticationFlows:
             )
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_authenticator_config(
@@ -1505,14 +1531,14 @@ class TestAuthenticationFlows:
             logger.info(f"✓ Flow {flow_alias} created with authenticator config")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(240)
     async def test_realm_update_modifies_flow_executions(
@@ -1663,14 +1689,14 @@ class TestAuthenticationFlows:
             )
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_all_flow_binding_types(
@@ -1797,14 +1823,14 @@ class TestAuthenticationFlows:
             logger.info("✓ All 7 flow bindings correctly configured")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_required_action_priority_ordering(
@@ -1939,14 +1965,14 @@ class TestAuthenticationFlows:
             logger.info("✓ All required actions configured with correct properties")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_flow_with_subflow_executions(
@@ -2040,14 +2066,14 @@ class TestAuthenticationFlows:
             )
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_with_update_authenticator_config(
@@ -2202,14 +2228,14 @@ class TestAuthenticationFlows:
             logger.info("✓ Authenticator config update test completed")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_direct_delete_authentication_flow(
@@ -2305,14 +2331,14 @@ class TestAuthenticationFlows:
             logger.info(f"✓ Successfully deleted flow {flow_alias} directly")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_direct_execution_operations(
@@ -2438,14 +2464,14 @@ class TestAuthenticationFlows:
             logger.info("✓ Direct execution add/delete operations successful")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
 
     @pytest.mark.timeout(180)
     async def test_realm_required_action_update_from_existing(
@@ -2572,11 +2598,11 @@ class TestAuthenticationFlows:
             logger.info("✓ Successfully updated existing required action")
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )

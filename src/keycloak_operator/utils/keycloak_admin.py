@@ -1439,7 +1439,10 @@ class KeycloakAdminClient:
             namespace: Origin namespace for rate limiting
 
         Returns:
-            True if successful, False otherwise
+            True if the flow was created successfully.
+            False if the flow already exists (409 conflict) or creation failed.
+            For idempotent operations, callers should check if the flow exists
+            separately when False is returned, as the flow may already be present.
         """
         if isinstance(flow_config, dict):
             flow_config = AuthenticationFlowRepresentation.model_validate(flow_config)

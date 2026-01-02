@@ -454,7 +454,10 @@ class KeycloakRealmReconciler(BaseReconciler):
             # Inject SMTP password from secret if configured
             if spec.smtp_server:
                 if spec.smtp_server.password_secret:
-                    # Note: password injection handled below after async fetch
+                    # Intentionally a no-op: when a password_secret is configured,
+                    # the SMTP password is fetched asynchronously and injected in
+                    # the "Inject SMTP password from secret if configured" section
+                    # below. Doing anything here would duplicate that logic.
                     pass
                 elif spec.smtp_server.password:
                     # Direct password (discouraged but supported)
@@ -993,35 +996,37 @@ class KeycloakRealmReconciler(BaseReconciler):
 
                 config = config_map[config_alias]
 
-                # Find the execution ID for this authenticator
-                exec_id = None
+                # Find the execution for this authenticator
+                found_execution = None
                 for ex in executions:
                     if ex.provider_id == execution.authenticator:
-                        exec_id = ex.id
+                        found_execution = ex
                         break
 
-                if not exec_id:
+                if not found_execution:
                     self.logger.warning(
                         f"Could not find execution for authenticator "
                         f"'{execution.authenticator}' to apply config"
                     )
                     continue
 
+                exec_id = found_execution.id
+
                 # Check if config already exists
-                if ex.authentication_config:
+                if found_execution.authentication_config:
                     # Update existing config
                     from keycloak_operator.models.keycloak_api import (
                         AuthenticatorConfigRepresentation,
                     )
 
                     config_repr = AuthenticatorConfigRepresentation(
-                        id=ex.authentication_config,
+                        id=found_execution.authentication_config,
                         alias=config.alias,
                         config=config.config,
                     )
                     await admin_client.update_authenticator_config(
                         realm_name,
-                        ex.authentication_config,
+                        found_execution.authentication_config,
                         config_repr,
                         namespace,
                     )

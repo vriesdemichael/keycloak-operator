@@ -268,26 +268,144 @@ spec:
 
 ### Authentication Flows
 
-Define custom authentication flows.
+Define custom authentication flows with executions.
+
+#### Flow Configuration
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `authenticationFlows[].alias` | `string` | **Yes** | - | Flow alias (unique identifier) |
 | `authenticationFlows[].description` | `string` | No | - | Flow description |
-| `authenticationFlows[].providerId` | `string` | No | - | Provider ID for the flow |
-| `authenticationFlows[].topLevel` | boolean | No | - | Whether this is a top-level flow |
-| `authenticationFlows[].builtIn` | boolean | No | - | Whether this is a built-in flow |
-| `authenticationFlows[].executionConfig` | object | No | - | Execution configuration |
+| `authenticationFlows[].providerId` | `string` | No | `basic-flow` | Provider ID for the flow |
+| `authenticationFlows[].topLevel` | boolean | No | `true` | Whether this is a top-level flow |
+| `authenticationFlows[].builtIn` | boolean | No | `false` | Whether this is a built-in flow |
+| `authenticationFlows[].executions` | []object | No | - | List of executions in this flow |
 
-**Example:**
+#### Execution Configuration
+
+Executions define the individual steps within an authentication flow. Each execution must specify either an `authenticator` (for built-in authenticators) or a `flowAlias` (to reference a sub-flow).
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `executions[].authenticator` | `string` | No* | - | Authenticator provider ID (e.g., `auth-username-password-form`) |
+| `executions[].flowAlias` | `string` | No* | - | Reference to a sub-flow by its alias |
+| `executions[].requirement` | `string` | No | `DISABLED` | Execution requirement: `REQUIRED`, `ALTERNATIVE`, `CONDITIONAL`, `DISABLED` |
+| `executions[].priority` | integer | No | `0` | Order of execution (lower = first) |
+| `executions[].authenticatorFlow` | boolean | No | `false` | True if this execution references a sub-flow |
+| `executions[].authenticatorConfig` | object | No | - | Configuration for the authenticator |
+
+\* Either `authenticator` or `flowAlias` must be specified, but not both.
+
+#### Authenticator Config
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `authenticatorConfig.alias` | `string` | **Yes** | - | Configuration alias (unique identifier) |
+| `authenticatorConfig.config` | map[`string`]`string` | No | `{}` | Key-value configuration parameters |
+
+#### Common Authenticators
+
+| Authenticator ID | Description |
+|------------------|-------------|
+| `auth-cookie` | Cookie-based authentication |
+| `auth-username-password-form` | Username/password form |
+| `auth-otp-form` | One-time password (OTP) form |
+| `identity-provider-redirector` | Redirect to identity provider |
+| `reset-credentials-choose-user` | Password reset: choose user |
+| `reset-credential-email` | Password reset: send email |
+| `reset-password` | Password reset: set new password |
+| `conditional-user-configured` | Conditional: check if user has authenticator configured |
+| `auth-conditional-otp-form` | Conditional OTP form |
+
+**Example - Simple Flow:**
 ```yaml
 spec:
   authenticationFlows:
-    - alias: browser-with-mfa
-      description: "Browser flow with MFA"
+    - alias: my-browser-flow
+      description: "Custom browser flow"
       providerId: basic-flow
       topLevel: true
       builtIn: false
+      executions:
+        - authenticator: auth-cookie
+          requirement: ALTERNATIVE
+          priority: 10
+        - authenticator: auth-username-password-form
+          requirement: REQUIRED
+          priority: 20
+```
+
+**Example - Flow with OTP:**
+```yaml
+spec:
+  authenticationFlows:
+    - alias: browser-with-otp
+      description: "Browser flow with mandatory OTP"
+      providerId: basic-flow
+      topLevel: true
+      executions:
+        - authenticator: auth-cookie
+          requirement: ALTERNATIVE
+          priority: 10
+        - authenticator: auth-username-password-form
+          requirement: REQUIRED
+          priority: 20
+        - authenticator: auth-otp-form
+          requirement: REQUIRED
+          priority: 30
+```
+
+**Example - Flow with Sub-flow:**
+```yaml
+spec:
+  authenticationFlows:
+    # Main browser flow
+    - alias: custom-browser
+      description: "Custom browser flow with conditional OTP"
+      providerId: basic-flow
+      topLevel: true
+      executions:
+        - authenticator: auth-cookie
+          requirement: ALTERNATIVE
+          priority: 10
+        - authenticator: auth-username-password-form
+          requirement: REQUIRED
+          priority: 20
+        - flowAlias: conditional-otp-subflow
+          requirement: CONDITIONAL
+          priority: 30
+          authenticatorFlow: true
+
+    # Sub-flow for conditional OTP
+    - alias: conditional-otp-subflow
+      description: "Conditional OTP sub-flow"
+      providerId: basic-flow
+      topLevel: false
+      executions:
+        - authenticator: conditional-user-configured
+          requirement: REQUIRED
+          priority: 10
+        - authenticator: auth-otp-form
+          requirement: REQUIRED
+          priority: 20
+```
+
+**Example - Identity Provider Redirector with Config:**
+```yaml
+spec:
+  authenticationFlows:
+    - alias: idp-redirector-flow
+      description: "Auto-redirect to Azure AD"
+      providerId: basic-flow
+      topLevel: true
+      executions:
+        - authenticator: identity-provider-redirector
+          requirement: REQUIRED
+          priority: 10
+          authenticatorConfig:
+            alias: azure-redirector-config
+            config:
+              defaultProvider: azure-ad
 ```
 
 ### Identity Providers

@@ -328,13 +328,6 @@ class AuthenticationExecutionExport(BaseModel):
         description="Allow user to set up authenticator during login",
     )
 
-    @field_validator("authenticator", "flow_alias")
-    @classmethod
-    def validate_execution_type(cls, v, info):
-        """Ensure at least one of authenticator or flow_alias is provided."""
-        # This validation happens per-field, full validation in model_post_init
-        return v
-
     def model_post_init(self, __context):
         """Validate that execution has either authenticator or flow reference."""
         if not self.authenticator and not self.flow_alias:
