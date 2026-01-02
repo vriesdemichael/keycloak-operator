@@ -2158,33 +2158,6 @@ class KeycloakAdminClient:
             logger.error(f"Failed to register required action: {e}")
             return False
 
-    # Legacy method - kept for backward compatibility
-    async def configure_authentication_flow(
-        self,
-        realm_name: str,
-        flow_config: AuthenticationFlowRepresentation | dict[str, Any],
-        namespace: str | None = None,
-    ) -> bool:
-        """
-        Configure authentication flow for a realm (legacy method).
-
-        This method is kept for backward compatibility. For new code, use
-        create_authentication_flow() or the more specific flow management methods.
-
-        Args:
-            realm_name: Name of the realm
-            flow_config: Authentication flow configuration
-            namespace: Origin namespace for rate limiting (optional for backward compat)
-
-        Returns:
-            True if successful, False otherwise
-        """
-        # Default namespace for backward compatibility
-        if namespace is None:
-            namespace = "default"
-
-        return await self.create_authentication_flow(realm_name, flow_config, namespace)
-
     async def configure_identity_provider(
         self,
         realm_name: str,
