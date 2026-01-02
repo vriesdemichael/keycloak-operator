@@ -1004,3 +1004,226 @@ class TestAuthenticationFlows:
                     plural="keycloakrealms",
                     name=realm_name,
                 )
+
+    @pytest.mark.timeout(180)
+    async def test_realm_with_inline_flow_executions(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test creating a flow with inline executions (not copyFrom).
+
+        This tests the _add_flow_executions code path:
+        - Create a new flow from scratch (not copying)
+        - Add executions with specific requirements
+        - Verify executions exist with correct settings
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"inline-exec-{suffix}"
+        flow_alias = f"inline-flow-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.realm import (
+            AuthenticationExecutionExport,
+            KeycloakAuthenticationFlow,
+            KeycloakRealmSpec,
+            OperatorRef,
+        )
+
+        # Create a flow from scratch with inline executions
+        inline_flow = KeycloakAuthenticationFlow(
+            alias=flow_alias,
+            description="Flow with inline executions",
+            provider_id="basic-flow",
+            top_level=True,
+            built_in=False,
+            # No copyFrom - create from scratch
+            authentication_executions=[
+                AuthenticationExecutionExport(
+                    authenticator="auth-cookie",
+                    requirement="ALTERNATIVE",
+                    priority=10,
+                ),
+                AuthenticationExecutionExport(
+                    authenticator="identity-provider-redirector",
+                    requirement="ALTERNATIVE",
+                    priority=20,
+                ),
+            ],
+        )
+
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Inline Executions Test Realm",
+            client_authorization_grants=[namespace],
+            authentication_flows=[inline_flow],
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            logger.info(
+                f"Created realm CR: {realm_name} with inline flow: {flow_alias}"
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify the flow was created
+            flow = await keycloak_admin_client.get_authentication_flow_by_alias(
+                realm_name, flow_alias, namespace
+            )
+            assert flow is not None, f"Flow {flow_alias} should exist"
+            assert flow.alias == flow_alias
+            assert flow.built_in is False
+
+            # Verify executions were added
+            executions = await keycloak_admin_client.get_flow_executions(
+                realm_name, flow_alias, namespace
+            )
+
+            # Should have at least 2 executions
+            assert (
+                len(executions) >= 2
+            ), f"Flow should have at least 2 executions, got {len(executions)}"
+
+            # Check authenticators are present
+            authenticator_ids = [ex.provider_id for ex in executions if ex.provider_id]
+            assert (
+                "auth-cookie" in authenticator_ids
+            ), "auth-cookie should be in flow executions"
+
+            logger.info(
+                f"✓ Flow {flow_alias} created with {len(executions)} inline executions"
+            )
+
+        finally:
+            with contextlib.suppress(ApiException):
+                await k8s_custom_objects.delete_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakrealms",
+                    name=realm_name,
+                )
+
+    @pytest.mark.timeout(180)
+    async def test_realm_with_disabled_required_action(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test that required actions can be disabled.
+
+        This tests the enabled=False path:
+        - Configure a required action with enabled=False
+        - Verify it's disabled in Keycloak
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"disabled-action-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.realm import (
+            KeycloakRealmSpec,
+            OperatorRef,
+            RequiredActionProvider,
+        )
+
+        # Disable UPDATE_PASSWORD action
+        required_actions = [
+            RequiredActionProvider(
+                alias="UPDATE_PASSWORD",
+                name="Update Password",
+                enabled=False,  # Explicitly disabled
+                default_action=False,
+                priority=10,
+            ),
+        ]
+
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Disabled Action Test Realm",
+            client_authorization_grants=[namespace],
+            required_actions=required_actions,
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Allow time for required actions to be configured
+            await asyncio.sleep(2)
+
+            # Verify required action is disabled
+            actions = await keycloak_admin_client.get_required_actions(
+                realm_name, namespace
+            )
+            action_map = {action.alias: action for action in actions}
+
+            update_pwd = action_map.get("UPDATE_PASSWORD")
+            assert update_pwd is not None, "UPDATE_PASSWORD should exist"
+            assert update_pwd.enabled is False, "UPDATE_PASSWORD should be disabled"
+
+            logger.info("✓ Required action correctly disabled")
+
+        finally:
+            with contextlib.suppress(ApiException):
+                await k8s_custom_objects.delete_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakrealms",
+                    name=realm_name,
+                )
