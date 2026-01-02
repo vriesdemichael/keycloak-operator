@@ -204,6 +204,31 @@ class TestDeleteAuthenticationFlow:
 
         assert result is True  # Idempotent delete
 
+    @pytest.mark.asyncio
+    async def test_returns_false_on_error_response(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.delete_authentication_flow(
+            "test-realm", "flow-123", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.delete_authentication_flow(
+            "test-realm", "flow-123", "default"
+        )
+
+        assert result is False
+
 
 class TestCopyAuthenticationFlow:
     """Tests for copy_authentication_flow method."""
@@ -229,6 +254,31 @@ class TestCopyAuthenticationFlow:
 
         result = await mock_admin_client.copy_authentication_flow(
             "test-realm", "browser", "existing-flow", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_error_response(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.copy_authentication_flow(
+            "test-realm", "browser", "my-copy", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.copy_authentication_flow(
+            "test-realm", "browser", "my-copy", "default"
         )
 
         assert result is False
@@ -331,6 +381,38 @@ class TestUpdateExecutionRequirement:
 
         assert result is False
 
+    @pytest.mark.asyncio
+    async def test_returns_false_on_error_response(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_admin_client.get_flow_executions = AsyncMock(
+            return_value=[
+                MagicMock(
+                    id="exec-123", provider_id="auth-cookie", requirement="DISABLED"
+                )
+            ]
+        )
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.update_execution_requirement(
+            "test-realm", "browser", "exec-123", "REQUIRED", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False on unexpected exception."""
+        mock_admin_client.get_flow_executions = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.update_execution_requirement(
+            "test-realm", "browser", "exec-123", "REQUIRED", "default"
+        )
+
+        assert result is False
+
 
 class TestDeleteExecution:
     """Tests for delete_execution method."""
@@ -359,6 +441,31 @@ class TestDeleteExecution:
         )
 
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_error_response(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.delete_execution(
+            "test-realm", "exec-123", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.delete_execution(
+            "test-realm", "exec-123", "default"
+        )
+
+        assert result is False
 
 
 class TestRequiredActionMethods:
@@ -521,6 +628,429 @@ class TestAuthenticatorConfigMethods:
             AuthenticatorConfigRepresentation(
                 alias="otp-config", config={"otpType": "hotp"}
             ),
+            "default",
+        )
+
+        assert result is True
+
+
+class TestAddSubflowToFlow:
+    """Tests for add_subflow_to_flow method."""
+
+    @pytest.mark.asyncio
+    async def test_returns_execution_id_on_success(self, mock_admin_client):
+        """Should return execution ID when subflow is added."""
+        mock_response = MockResponse(
+            201, headers={"Location": "http://kc/executions/subflow-exec-789"}
+        )
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        exec_id = await mock_admin_client.add_subflow_to_flow(
+            "test-realm",
+            "parent-flow",
+            "my-subflow",
+            "basic-flow",
+            "Test subflow",
+            "default",
+        )
+
+        assert exec_id == "subflow-exec-789"
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_error_response(self, mock_admin_client):
+        """Should return None on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        exec_id = await mock_admin_client.add_subflow_to_flow(
+            "test-realm",
+            "parent-flow",
+            "my-subflow",
+            "basic-flow",
+            None,
+            "default",
+        )
+
+        assert exec_id is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        exec_id = await mock_admin_client.add_subflow_to_flow(
+            "test-realm",
+            "parent-flow",
+            "my-subflow",
+            "basic-flow",
+            "Test subflow",
+            "default",
+        )
+
+        assert exec_id is None
+
+
+class TestGetFlowExecutionsEdgeCases:
+    """Additional tests for get_flow_executions error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_non_200(self, mock_admin_client):
+        """Should return empty list on non-200 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.get_flow_executions(
+            "test-realm", "browser", "default"
+        )
+
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_exception(self, mock_admin_client):
+        """Should return empty list on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.get_flow_executions(
+            "test-realm", "browser", "default"
+        )
+
+        assert result == []
+
+
+class TestGetAuthenticationFlowsEdgeCases:
+    """Additional tests for get_authentication_flows error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_non_200(self, mock_admin_client):
+        """Should return empty list on non-200 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.get_authentication_flows(
+            "test-realm", "default"
+        )
+
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_exception(self, mock_admin_client):
+        """Should return empty list on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.get_authentication_flows(
+            "test-realm", "default"
+        )
+
+        assert result == []
+
+
+class TestAddExecutionToFlowEdgeCases:
+    """Additional tests for add_execution_to_flow error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_non_201(self, mock_admin_client):
+        """Should return None on non-201 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.add_execution_to_flow(
+            "test-realm", "browser", "auth-cookie", "default"
+        )
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.add_execution_to_flow(
+            "test-realm", "browser", "auth-cookie", "default"
+        )
+
+        assert result is None
+
+
+class TestCreateAuthenticatorConfigEdgeCases:
+    """Additional tests for create_authenticator_config error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_non_201(self, mock_admin_client):
+        """Should return None on non-201 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        result = await mock_admin_client.create_authenticator_config(
+            "test-realm",
+            "exec-123",
+            AuthenticatorConfigRepresentation(alias="config", config={}),
+            "default",
+        )
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None on unexpected exception."""
+        mock_admin_client._make_validated_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.create_authenticator_config(
+            "test-realm",
+            "exec-123",
+            AuthenticatorConfigRepresentation(alias="config", config={}),
+            "default",
+        )
+
+        assert result is None
+
+
+class TestUpdateAuthenticatorConfigEdgeCases:
+    """Additional tests for update_authenticator_config error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_non_204(self, mock_admin_client):
+        """Should return False on non-204 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        result = await mock_admin_client.update_authenticator_config(
+            "test-realm",
+            "config-123",
+            AuthenticatorConfigRepresentation(alias="config", config={}),
+            "default",
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False on unexpected exception."""
+        mock_admin_client._make_validated_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.update_authenticator_config(
+            "test-realm",
+            "config-123",
+            AuthenticatorConfigRepresentation(alias="config", config={}),
+            "default",
+        )
+
+        assert result is False
+
+
+class TestGetAuthenticatorConfigEdgeCases:
+    """Additional tests for get_authenticator_config error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_non_200(self, mock_admin_client):
+        """Should return None on non-200 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.get_authenticator_config(
+            "test-realm", "config-123", "default"
+        )
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.get_authenticator_config(
+            "test-realm", "config-123", "default"
+        )
+
+        assert result is None
+
+
+class TestGetRequiredActionsEdgeCases:
+    """Additional tests for get_required_actions error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_non_200(self, mock_admin_client):
+        """Should return empty list on non-200 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.get_required_actions("test-realm", "default")
+
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_exception(self, mock_admin_client):
+        """Should return empty list on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.get_required_actions("test-realm", "default")
+
+        assert result == []
+
+
+class TestGetRequiredActionEdgeCases:
+    """Additional tests for get_required_action error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_non_200(self, mock_admin_client):
+        """Should return None on non-200 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.get_required_action(
+            "test-realm", "CONFIGURE_TOTP", "default"
+        )
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.get_required_action(
+            "test-realm", "CONFIGURE_TOTP", "default"
+        )
+
+        assert result is None
+
+
+class TestUpdateRequiredActionEdgeCases:
+    """Additional tests for update_required_action error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_non_204(self, mock_admin_client):
+        """Should return False on non-204 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        result = await mock_admin_client.update_required_action(
+            "test-realm",
+            "CONFIGURE_TOTP",
+            RequiredActionProviderRepresentation(
+                alias="CONFIGURE_TOTP", enabled=True, default_action=False
+            ),
+            "default",
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False on unexpected exception."""
+        mock_admin_client._make_validated_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.update_required_action(
+            "test-realm",
+            "CONFIGURE_TOTP",
+            RequiredActionProviderRepresentation(
+                alias="CONFIGURE_TOTP", enabled=True, default_action=False
+            ),
+            "default",
+        )
+
+        assert result is False
+
+
+class TestRegisterRequiredActionEdgeCases:
+    """Additional tests for register_required_action error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_non_204(self, mock_admin_client):
+        """Should return False on non-204 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.register_required_action(
+            "test-realm", "custom-action", "Custom Action", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False on unexpected exception."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.register_required_action(
+            "test-realm", "custom-action", "Custom Action", "default"
+        )
+
+        assert result is False
+
+
+class TestCreateAuthenticationFlowEdgeCases:
+    """Additional tests for create_authentication_flow error paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_non_201(self, mock_admin_client):
+        """Should return False on non-201 response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        result = await mock_admin_client.create_authentication_flow(
+            "test-realm",
+            AuthenticationFlowRepresentation(alias="my-flow", provider_id="basic-flow"),
+            "default",
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False on unexpected exception."""
+        mock_admin_client._make_validated_request = AsyncMock(
+            side_effect=RuntimeError("Network error")
+        )
+
+        result = await mock_admin_client.create_authentication_flow(
+            "test-realm",
+            AuthenticationFlowRepresentation(alias="my-flow", provider_id="basic-flow"),
+            "default",
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_handles_dict_input(self, mock_admin_client):
+        """Should handle dict input by converting to model."""
+        mock_response = MockResponse(201)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        result = await mock_admin_client.create_authentication_flow(
+            "test-realm",
+            {"alias": "dict-flow", "providerId": "basic-flow"},
             "default",
         )
 
