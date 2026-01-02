@@ -385,3 +385,323 @@ class TestKeycloakRealmModels:
             )
             assert ref.name == "my-realm"
             assert ref.namespace == "default"
+
+
+class TestAuthenticationFlowModels:
+    """Test cases for authentication flow models."""
+
+    def test_authentication_execution_export_with_authenticator(self):
+        """Test AuthenticationExecutionExport with authenticator."""
+        from keycloak_operator.models.realm import AuthenticationExecutionExport
+
+        execution = AuthenticationExecutionExport(
+            authenticator="auth-cookie",
+            requirement="ALTERNATIVE",
+            priority=10,
+        )
+        assert execution.authenticator == "auth-cookie"
+        assert execution.requirement == "ALTERNATIVE"
+        assert execution.priority == 10
+        assert execution.authenticator_flow is False
+
+    def test_authentication_execution_export_with_flow_alias(self):
+        """Test AuthenticationExecutionExport with sub-flow reference."""
+        from keycloak_operator.models.realm import AuthenticationExecutionExport
+
+        execution = AuthenticationExecutionExport(
+            flow_alias="my-subflow",
+            requirement="REQUIRED",
+            priority=20,
+        )
+        assert execution.flow_alias == "my-subflow"
+        assert execution.authenticator_flow is True  # Auto-set
+        assert execution.requirement == "REQUIRED"
+
+    def test_authentication_execution_export_validation_neither(self):
+        """Test that execution fails without authenticator or flowAlias."""
+        from keycloak_operator.models.realm import AuthenticationExecutionExport
+
+        with pytest.raises(ValueError, match="must specify either"):
+            AuthenticationExecutionExport(
+                requirement="REQUIRED",
+                priority=10,
+            )
+
+    def test_authentication_execution_export_validation_both(self):
+        """Test that execution fails with both authenticator and flowAlias."""
+        from keycloak_operator.models.realm import AuthenticationExecutionExport
+
+        with pytest.raises(ValueError, match="cannot specify both"):
+            AuthenticationExecutionExport(
+                authenticator="auth-cookie",
+                flow_alias="my-subflow",
+                requirement="REQUIRED",
+            )
+
+    def test_authentication_execution_export_requirement_values(self):
+        """Test valid requirement values."""
+        from keycloak_operator.models.realm import AuthenticationExecutionExport
+
+        for req in ["REQUIRED", "ALTERNATIVE", "DISABLED", "CONDITIONAL"]:
+            execution = AuthenticationExecutionExport(
+                authenticator="auth-cookie",
+                requirement=req,
+            )
+            assert execution.requirement == req
+
+    def test_keycloak_authentication_flow_basic(self):
+        """Test KeycloakAuthenticationFlow with basic config."""
+        from keycloak_operator.models.realm import KeycloakAuthenticationFlow
+
+        flow = KeycloakAuthenticationFlow(
+            alias="my-browser-flow",
+            description="Custom browser flow",
+            provider_id="basic-flow",
+            top_level=True,
+        )
+        assert flow.alias == "my-browser-flow"
+        assert flow.description == "Custom browser flow"
+        assert flow.provider_id == "basic-flow"
+        assert flow.top_level is True
+        assert flow.built_in is False
+        assert flow.copy_from is None
+
+    def test_keycloak_authentication_flow_with_copy_from(self):
+        """Test KeycloakAuthenticationFlow with copyFrom."""
+        from keycloak_operator.models.realm import KeycloakAuthenticationFlow
+
+        flow = KeycloakAuthenticationFlow(
+            alias="custom-browser",
+            copy_from="browser",
+        )
+        assert flow.alias == "custom-browser"
+        assert flow.copy_from == "browser"
+
+    def test_keycloak_authentication_flow_with_executions(self):
+        """Test KeycloakAuthenticationFlow with executions."""
+        from keycloak_operator.models.realm import (
+            AuthenticationExecutionExport,
+            KeycloakAuthenticationFlow,
+        )
+
+        flow = KeycloakAuthenticationFlow(
+            alias="my-flow",
+            authentication_executions=[
+                AuthenticationExecutionExport(
+                    authenticator="auth-cookie",
+                    requirement="ALTERNATIVE",
+                    priority=10,
+                ),
+                AuthenticationExecutionExport(
+                    authenticator="auth-spnego",
+                    requirement="DISABLED",
+                    priority=20,
+                ),
+            ],
+        )
+        assert len(flow.authentication_executions) == 2
+        assert flow.authentication_executions[0].authenticator == "auth-cookie"
+        assert flow.authentication_executions[1].authenticator == "auth-spnego"
+
+    def test_keycloak_authentication_flow_provider_id_validation(self):
+        """Test that provider_id must be valid."""
+        from keycloak_operator.models.realm import KeycloakAuthenticationFlow
+
+        with pytest.raises(ValueError, match="must be one of"):
+            KeycloakAuthenticationFlow(
+                alias="my-flow",
+                provider_id="invalid-provider",
+            )
+
+    def test_keycloak_authentication_flow_alias_validation(self):
+        """Test that alias must be non-empty."""
+        from keycloak_operator.models.realm import KeycloakAuthenticationFlow
+
+        with pytest.raises(ValueError, match="non-empty string"):
+            KeycloakAuthenticationFlow(
+                alias="",
+            )
+
+    def test_required_action_provider_basic(self):
+        """Test RequiredActionProvider with basic config."""
+        from keycloak_operator.models.realm import RequiredActionProvider
+
+        action = RequiredActionProvider(
+            alias="CONFIGURE_TOTP",
+            name="Configure OTP",
+            enabled=True,
+            default_action=False,
+            priority=10,
+        )
+        assert action.alias == "CONFIGURE_TOTP"
+        assert action.name == "Configure OTP"
+        assert action.enabled is True
+        assert action.default_action is False
+        assert action.priority == 10
+
+    def test_required_action_provider_defaults(self):
+        """Test RequiredActionProvider default values."""
+        from keycloak_operator.models.realm import RequiredActionProvider
+
+        action = RequiredActionProvider(alias="VERIFY_EMAIL")
+        assert action.alias == "VERIFY_EMAIL"
+        assert action.enabled is True  # Default
+        assert action.default_action is False  # Default
+        assert action.priority == 0  # Default
+
+    def test_required_action_provider_with_config(self):
+        """Test RequiredActionProvider with config dict."""
+        from keycloak_operator.models.realm import RequiredActionProvider
+
+        action = RequiredActionProvider(
+            alias="webauthn-register",
+            name="WebAuthn Register",
+            config={"attestationConveyancePreference": "direct"},
+        )
+        assert action.config == {"attestationConveyancePreference": "direct"}
+
+    def test_authenticator_config_info(self):
+        """Test AuthenticatorConfigInfo."""
+        from keycloak_operator.models.realm import AuthenticatorConfigInfo
+
+        config = AuthenticatorConfigInfo(
+            alias="otp-config",
+            config={
+                "otpType": "totp",
+                "otpHashAlgorithm": "HmacSHA256",
+                "otpLength": "6",
+            },
+        )
+        assert config.alias == "otp-config"
+        assert config.config["otpType"] == "totp"
+        assert config.config["otpHashAlgorithm"] == "HmacSHA256"
+
+    def test_keycloak_realm_spec_with_authentication_flows(self):
+        """Test KeycloakRealmSpec with authentication flows."""
+        from keycloak_operator.models.realm import (
+            KeycloakAuthenticationFlow,
+            KeycloakRealmSpec,
+            OperatorRef,
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            authentication_flows=[
+                KeycloakAuthenticationFlow(
+                    alias="custom-browser",
+                    copy_from="browser",
+                )
+            ],
+            browser_flow="custom-browser",
+        )
+        assert len(spec.authentication_flows) == 1
+        assert spec.browser_flow == "custom-browser"
+
+    def test_keycloak_realm_spec_with_required_actions(self):
+        """Test KeycloakRealmSpec with required actions."""
+        from keycloak_operator.models.realm import (
+            KeycloakRealmSpec,
+            OperatorRef,
+            RequiredActionProvider,
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            required_actions=[
+                RequiredActionProvider(
+                    alias="CONFIGURE_TOTP",
+                    enabled=True,
+                    default_action=True,
+                )
+            ],
+        )
+        assert len(spec.required_actions) == 1
+        assert spec.required_actions[0].default_action is True
+
+    def test_keycloak_realm_spec_all_flow_bindings(self):
+        """Test KeycloakRealmSpec with all flow binding fields."""
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            browser_flow="my-browser",
+            registration_flow="my-registration",
+            direct_grant_flow="my-direct-grant",
+            reset_credentials_flow="my-reset-creds",
+            client_authentication_flow="my-client-auth",
+            docker_authentication_flow="my-docker",
+            first_broker_login_flow="my-first-broker",
+        )
+        assert spec.browser_flow == "my-browser"
+        assert spec.registration_flow == "my-registration"
+        assert spec.direct_grant_flow == "my-direct-grant"
+        assert spec.reset_credentials_flow == "my-reset-creds"
+        assert spec.client_authentication_flow == "my-client-auth"
+        assert spec.docker_authentication_flow == "my-docker"
+        assert spec.first_broker_login_flow == "my-first-broker"
+
+    def test_to_keycloak_config_with_flow_bindings(self):
+        """Test to_keycloak_config includes flow bindings."""
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            browser_flow="custom-browser",
+            direct_grant_flow="custom-direct",
+        )
+        config = spec.to_keycloak_config(include_flow_bindings=True)
+        assert config["browserFlow"] == "custom-browser"
+        assert config["directGrantFlow"] == "custom-direct"
+
+    def test_to_keycloak_config_without_flow_bindings(self):
+        """Test to_keycloak_config excludes flow bindings when requested."""
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            browser_flow="custom-browser",
+            direct_grant_flow="custom-direct",
+        )
+        config = spec.to_keycloak_config(include_flow_bindings=False)
+        assert "browserFlow" not in config
+        assert "directGrantFlow" not in config
+
+    def test_authentication_execution_camel_case_alias(self):
+        """Test that AuthenticationExecutionExport uses camelCase aliases."""
+        from keycloak_operator.models.realm import AuthenticationExecutionExport
+
+        execution = AuthenticationExecutionExport(
+            flow_alias="my-subflow",
+            authenticator_flow=True,
+            authenticator_config="my-config",
+            user_setup_allowed=True,
+            requirement="REQUIRED",
+        )
+        # Export with by_alias should use camelCase
+        data = execution.model_dump(by_alias=True)
+        assert "flowAlias" in data
+        assert "authenticatorFlow" in data
+        assert "authenticatorConfig" in data
+        assert "userSetupAllowed" in data
+
+    def test_keycloak_authentication_flow_camel_case_alias(self):
+        """Test that KeycloakAuthenticationFlow uses camelCase aliases."""
+        from keycloak_operator.models.realm import KeycloakAuthenticationFlow
+
+        flow = KeycloakAuthenticationFlow(
+            alias="my-flow",
+            provider_id="basic-flow",
+            top_level=True,
+            built_in=False,
+            copy_from="browser",
+        )
+        data = flow.model_dump(by_alias=True)
+        assert "providerId" in data
+        assert "topLevel" in data
+        assert "builtIn" in data
+        assert "copyFrom" in data
