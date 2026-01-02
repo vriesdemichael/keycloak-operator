@@ -368,3 +368,94 @@ class TestGetResourceAgeHours:
 
         assert age_hours is not None
         assert 719 < age_hours < 721  # Approximately 30 * 24 = 720 hours
+
+
+class TestIsOwnedByCr:
+    """Test cases for CR ownership verification during finalizer cleanup."""
+
+    def test_owned_by_matching_cr(self):
+        """Test returns True when CR namespace and name match."""
+        attributes = {
+            ownership.ATTR_CR_NAMESPACE: "production",
+            ownership.ATTR_CR_NAME: "my-realm-cr",
+        }
+
+        assert ownership.is_owned_by_cr(attributes, "production", "my-realm-cr") is True
+
+    def test_not_owned_by_different_namespace(self):
+        """Test returns False when namespace doesn't match."""
+        attributes = {
+            ownership.ATTR_CR_NAMESPACE: "production",
+            ownership.ATTR_CR_NAME: "my-realm-cr",
+        }
+
+        assert ownership.is_owned_by_cr(attributes, "staging", "my-realm-cr") is False
+
+    def test_not_owned_by_different_name(self):
+        """Test returns False when name doesn't match."""
+        attributes = {
+            ownership.ATTR_CR_NAMESPACE: "production",
+            ownership.ATTR_CR_NAME: "my-realm-cr",
+        }
+
+        assert (
+            ownership.is_owned_by_cr(attributes, "production", "other-realm-cr")
+            is False
+        )
+
+    def test_not_owned_by_both_different(self):
+        """Test returns False when both namespace and name don't match."""
+        attributes = {
+            ownership.ATTR_CR_NAMESPACE: "production",
+            ownership.ATTR_CR_NAME: "my-realm-cr",
+        }
+
+        assert (
+            ownership.is_owned_by_cr(attributes, "staging", "other-realm-cr") is False
+        )
+
+    def test_not_owned_when_attributes_none(self):
+        """Test returns False when attributes is None."""
+        assert ownership.is_owned_by_cr(None, "production", "my-realm-cr") is False
+
+    def test_not_owned_when_attributes_empty(self):
+        """Test returns False when attributes is empty."""
+        assert ownership.is_owned_by_cr({}, "production", "my-realm-cr") is False
+
+    def test_not_owned_when_missing_namespace(self):
+        """Test returns False when namespace attribute is missing."""
+        attributes = {
+            ownership.ATTR_CR_NAME: "my-realm-cr",
+        }
+
+        assert (
+            ownership.is_owned_by_cr(attributes, "production", "my-realm-cr") is False
+        )
+
+    def test_not_owned_when_missing_name(self):
+        """Test returns False when name attribute is missing."""
+        attributes = {
+            ownership.ATTR_CR_NAMESPACE: "production",
+        }
+
+        assert (
+            ownership.is_owned_by_cr(attributes, "production", "my-realm-cr") is False
+        )
+
+    def test_owned_with_list_values(self):
+        """Test handles Keycloak's list attribute format."""
+        attributes = {
+            ownership.ATTR_CR_NAMESPACE: ["production"],
+            ownership.ATTR_CR_NAME: ["my-realm-cr"],
+        }
+
+        assert ownership.is_owned_by_cr(attributes, "production", "my-realm-cr") is True
+
+    def test_not_owned_with_list_values_mismatch(self):
+        """Test handles list format with mismatched values."""
+        attributes = {
+            ownership.ATTR_CR_NAMESPACE: ["production"],
+            ownership.ATTR_CR_NAME: ["my-realm-cr"],
+        }
+
+        assert ownership.is_owned_by_cr(attributes, "staging", "my-realm-cr") is False

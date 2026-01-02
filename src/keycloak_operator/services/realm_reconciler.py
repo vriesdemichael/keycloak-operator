@@ -16,6 +16,7 @@ from keycloak_operator.settings import settings
 from ..errors import ValidationError
 from ..models.realm import KeycloakRealmSpec
 from ..utils.keycloak_admin import KeycloakAdminError, get_keycloak_admin_client
+from ..utils.ownership import get_cr_reference, is_owned_by_cr
 from ..utils.rbac import get_secret_with_validation
 from .base_reconciler import BaseReconciler, StatusProtocol
 
@@ -1838,57 +1839,97 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Get admin client for the target Keycloak instance
 
-        # Delete realm from Keycloak (if instance still exists)
+        # Delete realm from Keycloak (if instance still exists and we own it)
         try:
             keycloak_name = "keycloak"  # Default Keycloak instance name
             admin_client = await self.keycloak_admin_factory(
                 keycloak_name, target_namespace, rate_limiter=self.rate_limiter
             )
 
-            # Backup realm data if requested (only if spec parsed successfully)
-            if realm_spec and getattr(realm_spec, "backup_on_delete", False):
-                self.logger.info(f"Backing up realm {realm_name} before deletion")
-                try:
-                    await self._create_realm_backup(
-                        realm_spec, name, namespace, backup_type="deletion"
+            # Check if realm exists in Keycloak
+            existing_realm = await admin_client.get_realm(realm_name, namespace)
+
+            if existing_realm is None:
+                # Realm doesn't exist in Keycloak - nothing to delete
+                self.logger.info(
+                    f"Realm {realm_name} does not exist in Keycloak, "
+                    f"skipping Keycloak cleanup"
+                )
+            else:
+                # Realm exists - check ownership before deleting
+                realm_attributes = (
+                    existing_realm.attributes
+                    if hasattr(existing_realm, "attributes")
+                    else None
+                )
+
+                if not is_owned_by_cr(realm_attributes, namespace, name):
+                    # This CR doesn't own the realm - don't delete it
+                    owner_ref = get_cr_reference(realm_attributes)
+                    if owner_ref:
+                        owner_ns, owner_name = owner_ref
+                        self.logger.warning(
+                            f"Skipping deletion of realm {realm_name}: "
+                            f"owned by {owner_ns}/{owner_name}, not by {namespace}/{name}"
+                        )
+                    else:
+                        self.logger.warning(
+                            f"Skipping deletion of realm {realm_name}: "
+                            f"no ownership attributes found (unmanaged resource)"
+                        )
+                else:
+                    # This CR owns the realm - proceed with deletion
+                    self.logger.info(
+                        f"Realm {realm_name} is owned by {namespace}/{name}, "
+                        f"proceeding with deletion"
                     )
-                except Exception as e:
-                    self.logger.warning(f"Realm backup failed: {e}")
 
-            # Clean up all clients in this realm from Keycloak FIRST
-            # This prevents client finalizers from trying to access the realm during deletion
-            # Skip built-in Keycloak clients which cannot be deleted
-            BUILTIN_CLIENTS = {
-                "admin-cli",
-                "broker",
-                "realm-management",
-                "security-admin-console",
-                "account",
-                "account-console",
-            }
-            try:
-                realm_clients = await admin_client.get_realm_clients(
-                    realm_name, namespace
-                )
-                for client_config in realm_clients:
-                    client_id = client_config.client_id
-                    if client_id and client_id not in BUILTIN_CLIENTS:
+                    # Backup realm data if requested (only if spec parsed successfully)
+                    if realm_spec and getattr(realm_spec, "backup_on_delete", False):
                         self.logger.info(
-                            f"Cleaning up client {client_id} from realm {realm_name} in Keycloak"
+                            f"Backing up realm {realm_name} before deletion"
                         )
-                        await admin_client.delete_client(client_id, realm_name)
-                    elif client_id in BUILTIN_CLIENTS:
-                        self.logger.debug(
-                            f"Skipping built-in client {client_id} (cannot be deleted)"
-                        )
-            except Exception as e:
-                self.logger.warning(
-                    f"Failed to clean up realm clients from Keycloak: {e}"
-                )
+                        try:
+                            await self._create_realm_backup(
+                                realm_spec, name, namespace, backup_type="deletion"
+                            )
+                        except Exception as e:
+                            self.logger.warning(f"Realm backup failed: {e}")
 
-            # Delete the realm itself from Keycloak
-            await admin_client.delete_realm(realm_name, namespace)
-            self.logger.info(f"Deleted realm {realm_name} from Keycloak")
+                    # Clean up all clients in this realm from Keycloak FIRST
+                    # This prevents client finalizers from trying to access the realm during deletion
+                    # Skip built-in Keycloak clients which cannot be deleted
+                    BUILTIN_CLIENTS = {
+                        "admin-cli",
+                        "broker",
+                        "realm-management",
+                        "security-admin-console",
+                        "account",
+                        "account-console",
+                    }
+                    try:
+                        realm_clients = await admin_client.get_realm_clients(
+                            realm_name, namespace
+                        )
+                        for client_config in realm_clients:
+                            client_id = client_config.client_id
+                            if client_id and client_id not in BUILTIN_CLIENTS:
+                                self.logger.info(
+                                    f"Cleaning up client {client_id} from realm {realm_name} in Keycloak"
+                                )
+                                await admin_client.delete_client(client_id, realm_name)
+                            elif client_id in BUILTIN_CLIENTS:
+                                self.logger.debug(
+                                    f"Skipping built-in client {client_id} (cannot be deleted)"
+                                )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to clean up realm clients from Keycloak: {e}"
+                        )
+
+                    # Delete the realm itself from Keycloak
+                    await admin_client.delete_realm(realm_name, namespace)
+                    self.logger.info(f"Deleted realm {realm_name} from Keycloak")
 
             # Now delete KeycloakClient CRs (after Keycloak cleanup to avoid deadlock)
             # We remove their finalizers first so they don't try to clean up Keycloak again
