@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.13](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.12...chart-operator-v0.3.13) (2026-01-02)
+
+
+### Features
+
+* **chart-realm+operator:** add authentication flow and required action support ([f653969](https://github.com/vriesdemichael/keycloak-operator/commit/f653969fd08b30d25af45a1b6465bc6e5ec22c2e)), closes [#180](https://github.com/vriesdemichael/keycloak-operator/issues/180)
+
 ## [0.3.12](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.11...chart-operator-v0.3.12) (2025-12-30)
 
 
