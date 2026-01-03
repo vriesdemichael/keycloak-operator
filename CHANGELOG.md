@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.13](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.12...operator-image-v0.5.13) (2026-01-03)
+
+
+### Bug Fixes
+
+* **operator:** identity provider updates use PUT instead of POST ([d57b6ca](https://github.com/vriesdemichael/keycloak-operator/commit/d57b6cabbdbb61b95005a874a60bc461ba20a2da))
+* **operator:** verify ownership before deleting Keycloak resources ([b601a80](https://github.com/vriesdemichael/keycloak-operator/commit/b601a80a0626fe332e59fbd0cd01067b689b5eb2))
+
 ## [0.5.12](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.11...operator-image-v0.5.12) (2026-01-02)
 
 

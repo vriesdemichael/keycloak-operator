@@ -2161,6 +2161,107 @@ class KeycloakAdminClient:
             logger.error(f"Failed to register required action: {e}")
             return False
 
+    async def get_identity_provider(
+        self,
+        realm_name: str,
+        alias: str,
+        namespace: str,
+    ) -> IdentityProviderRepresentation | None:
+        """
+        Get an identity provider by alias.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            IdentityProviderRepresentation if found, None otherwise
+
+        Example:
+            idp = await admin_client.get_identity_provider("my-realm", "github", "default")
+            if idp:
+                print(f"IdP: {idp.alias}, Enabled: {idp.enabled}")
+        """
+        logger.debug(f"Looking up identity provider '{alias}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/identity-provider/instances/{alias}",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                return IdentityProviderRepresentation.model_validate(response.json())
+            elif response.status_code == 404:
+                logger.debug(f"Identity provider '{alias}' not found")
+                return None
+            else:
+                logger.warning(
+                    f"Unexpected response getting identity provider: {response.status_code}"
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to get identity provider '{alias}': {e}")
+            return None
+
+    async def update_identity_provider(
+        self,
+        realm_name: str,
+        alias: str,
+        provider_config: IdentityProviderRepresentation | dict[str, Any],
+        namespace: str,
+    ) -> bool:
+        """
+        Update an existing identity provider.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            provider_config: Updated identity provider configuration
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+
+        Example:
+            idp = await admin_client.get_identity_provider("my-realm", "github", "default")
+            idp.enabled = False
+            success = await admin_client.update_identity_provider(
+                "my-realm", "github", idp, "default"
+            )
+        """
+        # Convert dict to model if needed
+        if isinstance(provider_config, dict):
+            provider_config = IdentityProviderRepresentation.model_validate(
+                provider_config
+            )
+
+        logger.info(f"Updating identity provider '{alias}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_validated_request(
+                "PUT",
+                f"realms/{realm_name}/identity-provider/instances/{alias}",
+                namespace,
+                request_model=provider_config,
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info(f"Successfully updated identity provider '{alias}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to update identity provider: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to update identity provider '{alias}': {e}")
+            return False
+
     async def configure_identity_provider(
         self,
         realm_name: str,
@@ -2168,7 +2269,11 @@ class KeycloakAdminClient:
         namespace: str,
     ) -> bool:
         """
-        Configure identity provider for a realm.
+        Configure identity provider for a realm (create or update).
+
+        This method checks if the identity provider already exists:
+        - If it exists, updates it using PUT
+        - If it doesn't exist, creates it using POST
 
         Args:
             realm_name: Name of the realm
@@ -2199,6 +2304,19 @@ class KeycloakAdminClient:
             f"Configuring identity provider '{provider_alias}' for realm '{realm_name}'"
         )
 
+        # Check if identity provider already exists
+        existing_idp = await self.get_identity_provider(
+            realm_name, provider_alias, namespace
+        )
+
+        if existing_idp:
+            # Update existing identity provider
+            logger.info(f"Identity provider '{provider_alias}' exists, updating")
+            return await self.update_identity_provider(
+                realm_name, provider_alias, provider_config, namespace
+            )
+
+        # Create new identity provider
         try:
             response = await self._make_validated_request(
                 "POST",
@@ -2209,17 +2327,17 @@ class KeycloakAdminClient:
 
             if response.status_code in [201, 204]:
                 logger.info(
-                    f"Successfully configured identity provider '{provider_alias}'"
+                    f"Successfully created identity provider '{provider_alias}'"
                 )
                 return True
             else:
                 logger.error(
-                    f"Failed to configure identity provider: {response.status_code}"
+                    f"Failed to create identity provider: {response.status_code}"
                 )
                 return False
 
         except Exception as e:
-            logger.error(f"Failed to configure identity provider: {e}")
+            logger.error(f"Failed to create identity provider: {e}")
             return False
 
     async def configure_user_federation(
