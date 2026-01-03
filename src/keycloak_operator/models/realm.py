@@ -651,20 +651,116 @@ class KeycloakGroup(BaseModel):
 class KeycloakEventsConfig(BaseModel):
     """Event logging configuration."""
 
-    events_enabled: bool = Field(False, description="Enable event logging")
+    model_config = {"populate_by_name": True}
+
+    events_enabled: bool = Field(
+        False, alias="eventsEnabled", description="Enable event logging"
+    )
     events_listeners: list[str] = Field(
-        default_factory=list, description="Event listeners"
+        default_factory=list, alias="eventsListeners", description="Event listeners"
     )
     enabled_event_types: list[str] = Field(
-        default_factory=list, description="Enabled event types"
+        default_factory=list,
+        alias="enabledEventTypes",
+        description="Enabled event types",
     )
     events_expiration: int | None = Field(
-        None, description="Event expiration in seconds", ge=1
+        None, alias="eventsExpiration", description="Event expiration in seconds", ge=1
     )
-    admin_events_enabled: bool = Field(False, description="Enable admin event logging")
+    admin_events_enabled: bool = Field(
+        False, alias="adminEventsEnabled", description="Enable admin event logging"
+    )
     admin_events_details_enabled: bool = Field(
-        False, description="Include details in admin events"
+        False,
+        alias="adminEventsDetailsEnabled",
+        description="Include details in admin events",
     )
+
+
+class KeycloakPasswordPolicy(BaseModel):
+    """
+    Password policy configuration for a realm.
+
+    Enforces password requirements for users. The policy is converted to
+    Keycloak's "and"-separated policy string format.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    length: int | None = Field(None, ge=1, description="Minimum password length")
+    upper_case: int | None = Field(
+        None, alias="upperCase", ge=0, description="Minimum uppercase characters"
+    )
+    lower_case: int | None = Field(
+        None, alias="lowerCase", ge=0, description="Minimum lowercase characters"
+    )
+    digits: int | None = Field(None, ge=0, description="Minimum digit characters")
+    special_chars: int | None = Field(
+        None, alias="specialChars", ge=0, description="Minimum special characters"
+    )
+    not_username: bool = Field(
+        False, alias="notUsername", description="Password cannot equal username"
+    )
+    not_email: bool = Field(
+        False, alias="notEmail", description="Password cannot equal email"
+    )
+    hash_iterations: int | None = Field(
+        None, alias="hashIterations", ge=1, description="PBKDF2 hash iterations"
+    )
+    password_history: int | None = Field(
+        None,
+        alias="passwordHistory",
+        ge=0,
+        description="Number of previous passwords to check",
+    )
+    force_expired_password_change: int | None = Field(
+        None,
+        alias="forceExpiredPasswordChange",
+        ge=0,
+        description="Days until password expires and must be changed (0 = expires immediately; unset = never expires)",
+    )
+    max_length: int | None = Field(
+        None, alias="maxLength", ge=1, description="Maximum password length"
+    )
+    regex_pattern: str | None = Field(
+        None, alias="regexPattern", description="Custom regex pattern"
+    )
+
+    def to_policy_string(self) -> str:
+        """
+        Convert to Keycloak password policy string format.
+
+        Returns:
+            Policy string with " and " separator (e.g., "length(12) and upperCase(1) and notUsername")
+        """
+        policies = []
+        if self.length is not None:
+            policies.append(f"length({self.length})")
+        if self.upper_case is not None:
+            policies.append(f"upperCase({self.upper_case})")
+        if self.lower_case is not None:
+            policies.append(f"lowerCase({self.lower_case})")
+        if self.digits is not None:
+            policies.append(f"digits({self.digits})")
+        if self.special_chars is not None:
+            policies.append(f"specialChars({self.special_chars})")
+        if self.not_username:
+            policies.append("notUsername")
+        if self.not_email:
+            policies.append("notEmail")
+        if self.hash_iterations is not None:
+            policies.append(f"hashIterations({self.hash_iterations})")
+        if self.password_history is not None:
+            policies.append(f"passwordHistory({self.password_history})")
+        if self.force_expired_password_change is not None:
+            policies.append(
+                f"forceExpiredPasswordChange({self.force_expired_password_change})"
+            )
+        if self.max_length is not None:
+            policies.append(f"maxLength({self.max_length})")
+        if self.regex_pattern is not None:
+            policies.append(f"regexPattern({self.regex_pattern})")
+        return " and ".join(policies)
 
 
 class KeycloakSMTPPasswordSecret(BaseModel):
@@ -865,6 +961,13 @@ class KeycloakRealmSpec(BaseModel):
         default_factory=dict, description="Additional realm attributes"
     )
 
+    # Password policy
+    password_policy: KeycloakPasswordPolicy | None = Field(
+        None,
+        alias="passwordPolicy",
+        description="Password policy configuration",
+    )
+
     # Events and logging
     events_config: KeycloakEventsConfig = Field(
         default_factory=KeycloakEventsConfig,
@@ -1017,6 +1120,12 @@ class KeycloakRealmSpec(BaseModel):
             # Password is injected by reconciler, not included here
 
             config["smtpServer"] = smtp_config
+
+        # Add password policy
+        if self.password_policy:
+            policy_string = self.password_policy.to_policy_string()
+            if policy_string:
+                config["passwordPolicy"] = policy_string
 
         # Add events configuration
         events = self.events_config

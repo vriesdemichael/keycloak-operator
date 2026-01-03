@@ -548,6 +548,55 @@ spec:
                 description: Additional realm attributes
                 additionalProperties:
                   type: string
+              passwordPolicy:
+                type: object
+                description: Password policy configuration
+                properties:
+                  length:
+                    type: integer
+                    minimum: 1
+                    description: Minimum password length
+                  upperCase:
+                    type: integer
+                    minimum: 0
+                    description: Minimum uppercase characters
+                  lowerCase:
+                    type: integer
+                    minimum: 0
+                    description: Minimum lowercase characters
+                  digits:
+                    type: integer
+                    minimum: 0
+                    description: Minimum digit characters
+                  specialChars:
+                    type: integer
+                    minimum: 0
+                    description: Minimum special characters
+                  notUsername:
+                    type: boolean
+                    description: Password cannot equal username
+                  notEmail:
+                    type: boolean
+                    description: Password cannot equal email
+                  hashIterations:
+                    type: integer
+                    minimum: 1
+                    description: PBKDF2 hash iterations
+                  passwordHistory:
+                    type: integer
+                    minimum: 0
+                    description: Number of previous passwords to check
+                  forceExpiredPasswordChange:
+                    type: integer
+                    minimum: 0
+                    description: Days until password expires and must be changed
+                  maxLength:
+                    type: integer
+                    minimum: 1
+                    description: Maximum password length
+                  regexPattern:
+                    type: string
+                    description: Custom regex pattern for password validation
               eventsConfig:
                 type: object
                 description: Event logging configuration
