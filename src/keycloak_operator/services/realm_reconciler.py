@@ -1242,7 +1242,13 @@ class KeycloakRealmReconciler(BaseReconciler):
         self, spec: KeycloakRealmSpec, name: str, namespace: str
     ) -> None:
         """
-        Configure external identity providers.
+        Configure external identity providers with full lifecycle management.
+
+        This method:
+        1. Creates new identity providers
+        2. Updates existing identity providers
+        3. Deletes identity providers removed from spec
+        4. Manages IDP mappers for each identity provider
 
         Args:
             spec: Keycloak realm specification
@@ -1251,15 +1257,42 @@ class KeycloakRealmReconciler(BaseReconciler):
         """
         self.logger.info(f"Configuring identity providers for realm {spec.realm_name}")
 
-        if not spec.identity_providers:
-            return
-
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
         admin_client = await self.keycloak_admin_factory(
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
         )
+
+        # Get existing IDPs from Keycloak
+        existing_idps = await admin_client.get_identity_providers(
+            spec.realm_name, namespace
+        )
+        existing_aliases = {idp.alias for idp in existing_idps if idp.alias}
+
+        # Build set of desired aliases
+        desired_aliases: set[str] = set()
+        if spec.identity_providers:
+            desired_aliases = {idp.alias for idp in spec.identity_providers}
+
+        # Delete IDPs that are no longer in spec
+        for alias in existing_aliases - desired_aliases:
+            self.logger.info(
+                f"Deleting identity provider '{alias}' from realm '{spec.realm_name}' "
+                f"(no longer in spec)"
+            )
+            try:
+                await admin_client.delete_identity_provider(
+                    spec.realm_name, alias, namespace
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to delete identity provider '{alias}': {e}"
+                )
+
+        # Configure desired IDPs
+        if not spec.identity_providers:
+            return
 
         for idp_config in spec.identity_providers:
             try:
@@ -1289,15 +1322,95 @@ class KeycloakRealmReconciler(BaseReconciler):
                             f"from secret '{secret_ref.name}'"
                         )
 
-                # Remove configSecrets from payload (not part of Keycloak API)
+                # Remove fields not part of Keycloak API
                 idp_dict.pop("configSecrets", None)
                 idp_dict.pop("config_secrets", None)
+                idp_dict.pop("mappers", None)  # Mappers handled separately
 
                 await admin_client.configure_identity_provider(
                     spec.realm_name, idp_dict, namespace
                 )
+
+                # Configure mappers for this IDP
+                await self._configure_identity_provider_mappers(
+                    admin_client=admin_client,
+                    realm_name=spec.realm_name,
+                    idp_alias=idp_config.alias,
+                    desired_mappers=idp_config.mappers,
+                    namespace=namespace,
+                )
+
             except Exception as e:
                 self.logger.warning(f"Failed to configure identity provider: {e}")
+
+    async def _configure_identity_provider_mappers(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        idp_alias: str,
+        desired_mappers: list[Any],
+        namespace: str,
+    ) -> None:
+        """
+        Configure mappers for an identity provider with full lifecycle management.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            idp_alias: Identity provider alias
+            desired_mappers: List of desired mapper configurations
+            namespace: Origin namespace for rate limiting
+        """
+        # Get existing mappers from Keycloak
+        existing_mappers = await admin_client.get_identity_provider_mappers(
+            realm_name, idp_alias, namespace
+        )
+
+        # Build set of desired mapper names
+        desired_mapper_names: set[str] = set()
+        if desired_mappers:
+            desired_mapper_names = {m.name for m in desired_mappers}
+
+        # Delete mappers that are no longer in spec
+        for mapper in existing_mappers:
+            if mapper.name and mapper.name not in desired_mapper_names:
+                self.logger.info(
+                    f"Deleting mapper '{mapper.name}' from IDP '{idp_alias}' "
+                    f"(no longer in spec)"
+                )
+                if mapper.id:
+                    try:
+                        await admin_client.delete_identity_provider_mapper(
+                            realm_name, idp_alias, mapper.id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to delete mapper '{mapper.name}': {e}"
+                        )
+
+        # Configure desired mappers
+        if not desired_mappers:
+            return
+
+        from keycloak_operator.models.keycloak_api import (
+            IdentityProviderMapperRepresentation,
+        )
+
+        for mapper_config in desired_mappers:
+            try:
+                mapper_repr = IdentityProviderMapperRepresentation(
+                    name=mapper_config.name,
+                    identity_provider_alias=idp_alias,
+                    identity_provider_mapper=mapper_config.identity_provider_mapper,
+                    config=mapper_config.config,
+                )
+                await admin_client.configure_identity_provider_mapper(
+                    realm_name, idp_alias, mapper_repr, namespace
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to configure mapper '{mapper_config.name}': {e}"
+                )
 
     async def configure_user_federation(
         self, spec: KeycloakRealmSpec, name: str, namespace: str
