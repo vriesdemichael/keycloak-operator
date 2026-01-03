@@ -111,6 +111,13 @@ spec:
       {{- toYaml .Values.roles.realmRoles | nindent 6 }}
   {{- end }}
 
+  {{- with .Values.passwordPolicy }}
+  {{- if or .length .upperCase .lowerCase .digits .specialChars .notUsername .notEmail .hashIterations .passwordHistory .forceExpiredPasswordChange .maxLength .regexPattern }}
+  passwordPolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- end }}
+
   {{- if or .Values.eventsConfig.eventsEnabled .Values.eventsConfig.adminEventsEnabled }}
   eventsConfig:
     {{- toYaml .Values.eventsConfig | nindent 4 }}

@@ -454,3 +454,69 @@ class TestHelmRealmAdvancedFields:
         assert (
             spec.get("loginPageTitle") == login_title
         ), f"Expected loginPageTitle '{login_title}', got '{spec.get('loginPageTitle')}'"
+
+    @pytest.mark.timeout(300)
+    async def test_helm_realm_with_password_policy(
+        self,
+        helm_realm,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+    ):
+        """Test deploying a realm with password policy via Helm."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"helm-policy-{uuid.uuid4().hex[:8]}"
+        release_name = f"helm-policy-{uuid.uuid4().hex[:8]}"
+
+        # Deploy realm with password policy
+        await helm_realm(
+            release_name=release_name,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            passwordPolicy={
+                "length": 12,
+                "upperCase": 1,
+                "lowerCase": 1,
+                "digits": 1,
+                "specialChars": 1,
+                "notUsername": True,
+                "hashIterations": 210000,
+            },
+        )
+
+        realm_cr_name = f"{release_name}-keycloak-realm"
+
+        # Wait for realm to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify password policy is in spec
+        realm = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+        )
+        spec = realm.get("spec", {})
+        password_policy = spec.get("passwordPolicy", {})
+
+        assert password_policy.get("length") == 12, "length should be 12"
+        assert password_policy.get("upperCase") == 1, "upperCase should be 1"
+        assert password_policy.get("lowerCase") == 1, "lowerCase should be 1"
+        assert password_policy.get("digits") == 1, "digits should be 1"
+        assert password_policy.get("specialChars") == 1, "specialChars should be 1"
+        assert password_policy.get("notUsername") is True, "notUsername should be True"
+        assert (
+            password_policy.get("hashIterations") == 210000
+        ), "hashIterations should be 210000"
