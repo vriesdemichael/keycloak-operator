@@ -118,6 +118,38 @@ smtpServer:
 # Free-form key-value pairs for custom realm attributes
 attributes: {}
 
+# Password policy configuration (optional)
+# Enforces password requirements for users in this realm
+# Uncomment fields to enable specific policies
+passwordPolicy: {}
+  # Minimum password length (recommended: 12+)
+  # length: 12
+
+  # Character requirements
+  # upperCase: 1
+  # lowerCase: 1
+  # digits: 1
+  # specialChars: 1
+
+  # Content restrictions
+  # notUsername: true
+  # notEmail: true
+
+  # Hash iterations (OWASP recommends 210000 for PBKDF2-SHA256)
+  # hashIterations: 210000
+
+  # Password history (prevent reuse of N previous passwords)
+  # passwordHistory: 5
+
+  # Password expiration in days
+  # forceExpiredPasswordChange: 90
+
+  # Maximum password length
+  # maxLength: 128
+
+  # Custom regex pattern
+  # regexPattern: ""
+
 # Identity Providers (optional)
 # Configure external identity providers (OIDC, SAML, social logins)
 # See CRD documentation for full schema

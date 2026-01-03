@@ -1811,6 +1811,8 @@ class KeycloakRealmReconciler(BaseReconciler):
                 ("spec", "clientAuthenticationFlow"),
                 ("spec", "dockerAuthenticationFlow"),
                 ("spec", "firstBrokerLoginFlow"),
+                ("spec", "eventsConfig"),
+                ("spec", "passwordPolicy"),
             ]:
                 field_name = field_path[1] if len(field_path) > 1 else "unknown"
                 self.logger.info(f"Updating realm field: {field_name}")
