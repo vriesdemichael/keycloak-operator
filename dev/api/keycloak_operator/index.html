@@ -4113,6 +4113,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_identity_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_identity_provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_realm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4260,6 +4271,17 @@
     <span class="md-ellipsis">
       
         update_execution_requirement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.update_identity_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_identity_provider
       
     </span>
   </a>
@@ -9989,6 +10011,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_identity_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_identity_provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_realm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10136,6 +10169,17 @@
     <span class="md-ellipsis">
       
         update_execution_requirement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.update_identity_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_identity_provider
       
     </span>
   </a>
@@ -26520,7 +26564,10 @@ The cached client will be reused until the operator shuts down.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Configure identity provider for a realm.</p>
+        <p>Configure identity provider for a realm (create or update).</p>
+<p>This method checks if the identity provider already exists:
+- If it exists, updates it using PUT
+- If it doesn't exist, creates it using POST</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -29439,6 +29486,123 @@ for role in roles:
 <div class="doc doc-object doc-function">
 
 
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_identity_provider" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_identity_provider</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_identity_provider" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_identity_provider</span><span class="p">(</span><span class="n">realm_name</span><span class="p">,</span> <span class="n">alias</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get an identity provider by alias.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>alias</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Identity provider alias</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Origin namespace for rate limiting</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="keycloak_operator.models.keycloak_api.IdentityProviderRepresentation">IdentityProviderRepresentation</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>IdentityProviderRepresentation if found, None otherwise</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>idp = await admin_client.get_identity_provider("my-realm", "github", "default")
+if idp:
+    print(f"IdP: {idp.alias}, Enabled: {idp.enabled}")</p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_realm" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">get_realm</span>
 
@@ -31126,6 +31290,143 @@ success = admin_client.update_client_role(
       </tbody>
     </table>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.update_identity_provider" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">update_identity_provider</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.update_identity_provider" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">update_identity_provider</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">alias</span><span class="p">,</span> <span class="n">provider_config</span><span class="p">,</span> <span class="n">namespace</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Update an existing identity provider.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>alias</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Identity provider alias</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>provider_config</code>
+            </td>
+            <td>
+                  <code><span title="keycloak_operator.models.keycloak_api.IdentityProviderRepresentation">IdentityProviderRepresentation</span> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Updated identity provider configuration</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Origin namespace for rate limiting</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True if successful, False otherwise</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>idp = await admin_client.get_identity_provider("my-realm", "github", "default")
+idp.enabled = False
+success = await admin_client.update_identity_provider(
+    "my-realm", "github", idp, "default"
+)</p>
+</details>
 
     </div>
 
