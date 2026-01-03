@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.14](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.13...operator-image-v0.5.14) (2026-01-03)
+
+
+### Features
+
+* **operator:** complete identity provider lifecycle and mapper support ([db0ad09](https://github.com/vriesdemichael/keycloak-operator/commit/db0ad0994271e9d4c5ef15bdbef796a85e983d16)), closes [#178](https://github.com/vriesdemichael/keycloak-operator/issues/178)
+
 ## [0.5.13](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.12...operator-image-v0.5.13) (2026-01-03)
 
 
