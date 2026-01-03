@@ -30,6 +30,7 @@ from keycloak_operator.models.keycloak_api import (
     AuthenticatorConfigRepresentation,
     ClientRepresentation,
     ComponentRepresentation,
+    IdentityProviderMapperRepresentation,
     IdentityProviderRepresentation,
     ProtocolMapperRepresentation,
     RealmRepresentation,
@@ -2339,6 +2340,397 @@ class KeycloakAdminClient:
         except Exception as e:
             logger.error(f"Failed to create identity provider: {e}")
             return False
+
+    async def get_identity_providers(
+        self,
+        realm_name: str,
+        namespace: str,
+    ) -> list[IdentityProviderRepresentation]:
+        """
+        Get all identity providers for a realm.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            List of IdentityProviderRepresentation objects
+
+        Example:
+            idps = await admin_client.get_identity_providers("my-realm", "default")
+            for idp in idps:
+                print(f"IdP: {idp.alias}, Enabled: {idp.enabled}")
+        """
+        logger.debug(f"Listing identity providers in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/identity-provider/instances",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                return [
+                    IdentityProviderRepresentation.model_validate(idp)
+                    for idp in response.json()
+                ]
+            else:
+                logger.warning(
+                    f"Failed to list identity providers: {response.status_code}"
+                )
+                return []
+
+        except Exception as e:
+            logger.error(f"Failed to list identity providers: {e}")
+            return []
+
+    async def delete_identity_provider(
+        self,
+        realm_name: str,
+        alias: str,
+        namespace: str,
+    ) -> bool:
+        """
+        Delete an identity provider by alias.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful or not found, False on error
+
+        Example:
+            success = await admin_client.delete_identity_provider("my-realm", "github", "default")
+        """
+        logger.info(f"Deleting identity provider '{alias}' from realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/identity-provider/instances/{alias}",
+                namespace,
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info(f"Successfully deleted identity provider '{alias}'")
+                return True
+            elif response.status_code == 404:
+                logger.debug(
+                    f"Identity provider '{alias}' not found, nothing to delete"
+                )
+                return True
+            else:
+                logger.error(
+                    f"Failed to delete identity provider: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to delete identity provider '{alias}': {e}")
+            return False
+
+    # =========================================================================
+    # Identity Provider Mapper Methods
+    # =========================================================================
+
+    async def get_identity_provider_mappers(
+        self,
+        realm_name: str,
+        alias: str,
+        namespace: str,
+    ) -> list[IdentityProviderMapperRepresentation]:
+        """
+        Get all mappers for an identity provider.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            List of IdentityProviderMapperRepresentation objects
+
+        Example:
+            mappers = await admin_client.get_identity_provider_mappers(
+                "my-realm", "github", "default"
+            )
+            for mapper in mappers:
+                print(f"Mapper: {mapper.name}, Type: {mapper.identity_provider_mapper}")
+        """
+        logger.debug(
+            f"Listing mappers for identity provider '{alias}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/identity-provider/instances/{alias}/mappers",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                return [
+                    IdentityProviderMapperRepresentation.model_validate(mapper)
+                    for mapper in response.json()
+                ]
+            else:
+                logger.warning(
+                    f"Failed to list identity provider mappers: {response.status_code}"
+                )
+                return []
+
+        except Exception as e:
+            logger.error(f"Failed to list identity provider mappers: {e}")
+            return []
+
+    async def get_identity_provider_mapper(
+        self,
+        realm_name: str,
+        alias: str,
+        mapper_id: str,
+        namespace: str,
+    ) -> IdentityProviderMapperRepresentation | None:
+        """
+        Get a specific mapper by ID.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            mapper_id: Mapper ID
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            IdentityProviderMapperRepresentation if found, None otherwise
+        """
+        logger.debug(f"Getting mapper '{mapper_id}' for identity provider '{alias}'")
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/identity-provider/instances/{alias}/mappers/{mapper_id}",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                return IdentityProviderMapperRepresentation.model_validate(
+                    response.json()
+                )
+            elif response.status_code == 404:
+                return None
+            else:
+                logger.warning(
+                    f"Failed to get identity provider mapper: {response.status_code}"
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to get identity provider mapper: {e}")
+            return None
+
+    async def create_identity_provider_mapper(
+        self,
+        realm_name: str,
+        alias: str,
+        mapper: IdentityProviderMapperRepresentation | dict[str, Any],
+        namespace: str,
+    ) -> bool:
+        """
+        Create a mapper for an identity provider.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            mapper: Mapper configuration
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+
+        Example:
+            mapper = IdentityProviderMapperRepresentation(
+                name="email-mapper",
+                identity_provider_alias="github",
+                identity_provider_mapper="hardcoded-user-session-attribute-idp-mapper",
+                config={"attribute": "email", "attribute.value": "${CLAIM.email}"}
+            )
+            success = await admin_client.create_identity_provider_mapper(
+                "my-realm", "github", mapper, "default"
+            )
+        """
+        if isinstance(mapper, dict):
+            mapper = IdentityProviderMapperRepresentation.model_validate(mapper)
+
+        mapper_name = mapper.name or "unknown"
+        logger.info(f"Creating mapper '{mapper_name}' for identity provider '{alias}'")
+
+        try:
+            response = await self._make_validated_request(
+                "POST",
+                f"realms/{realm_name}/identity-provider/instances/{alias}/mappers",
+                namespace,
+                request_model=mapper,
+            )
+
+            if response.status_code in [201, 204]:
+                logger.info(f"Successfully created mapper '{mapper_name}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to create identity provider mapper: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to create identity provider mapper: {e}")
+            return False
+
+    async def update_identity_provider_mapper(
+        self,
+        realm_name: str,
+        alias: str,
+        mapper_id: str,
+        mapper: IdentityProviderMapperRepresentation | dict[str, Any],
+        namespace: str,
+    ) -> bool:
+        """
+        Update an existing mapper.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            mapper_id: Mapper ID
+            mapper: Updated mapper configuration
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if isinstance(mapper, dict):
+            mapper = IdentityProviderMapperRepresentation.model_validate(mapper)
+
+        mapper_name = mapper.name or mapper_id
+        logger.info(f"Updating mapper '{mapper_name}' for identity provider '{alias}'")
+
+        try:
+            response = await self._make_validated_request(
+                "PUT",
+                f"realms/{realm_name}/identity-provider/instances/{alias}/mappers/{mapper_id}",
+                namespace,
+                request_model=mapper,
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info(f"Successfully updated mapper '{mapper_name}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to update identity provider mapper: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to update identity provider mapper: {e}")
+            return False
+
+    async def delete_identity_provider_mapper(
+        self,
+        realm_name: str,
+        alias: str,
+        mapper_id: str,
+        namespace: str,
+    ) -> bool:
+        """
+        Delete a mapper from an identity provider.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            mapper_id: Mapper ID
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful or not found, False on error
+        """
+        logger.info(f"Deleting mapper '{mapper_id}' from identity provider '{alias}'")
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/identity-provider/instances/{alias}/mappers/{mapper_id}",
+                namespace,
+            )
+
+            if response.status_code in [200, 204]:
+                logger.info(f"Successfully deleted mapper '{mapper_id}'")
+                return True
+            elif response.status_code == 404:
+                logger.debug(f"Mapper '{mapper_id}' not found, nothing to delete")
+                return True
+            else:
+                logger.error(
+                    f"Failed to delete identity provider mapper: {response.status_code}"
+                )
+                return False
+
+        except Exception as e:
+            logger.error(f"Failed to delete identity provider mapper: {e}")
+            return False
+
+    async def configure_identity_provider_mapper(
+        self,
+        realm_name: str,
+        alias: str,
+        mapper: IdentityProviderMapperRepresentation | dict[str, Any],
+        namespace: str,
+    ) -> bool:
+        """
+        Configure an identity provider mapper (create or update).
+
+        This method finds existing mappers by name and updates them,
+        or creates new ones if they don't exist.
+
+        Args:
+            realm_name: Name of the realm
+            alias: Identity provider alias
+            mapper: Mapper configuration
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if isinstance(mapper, dict):
+            mapper = IdentityProviderMapperRepresentation.model_validate(mapper)
+
+        mapper_name = mapper.name or "unknown"
+        logger.info(
+            f"Configuring mapper '{mapper_name}' for identity provider '{alias}'"
+        )
+
+        # Get existing mappers to find by name
+        existing_mappers = await self.get_identity_provider_mappers(
+            realm_name, alias, namespace
+        )
+
+        # Find existing mapper by name
+        existing_mapper = next(
+            (m for m in existing_mappers if m.name == mapper_name),
+            None,
+        )
+
+        if existing_mapper and existing_mapper.id:
+            # Update existing mapper - ensure ID is set
+            mapper.id = existing_mapper.id
+            return await self.update_identity_provider_mapper(
+                realm_name, alias, existing_mapper.id, mapper, namespace
+            )
+        else:
+            # Create new mapper
+            return await self.create_identity_provider_mapper(
+                realm_name, alias, mapper, namespace
+            )
 
     async def configure_user_federation(
         self,

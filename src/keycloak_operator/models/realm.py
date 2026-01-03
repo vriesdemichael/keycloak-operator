@@ -139,6 +139,42 @@ class KeycloakIdentityProviderSecretRef(BaseModel):
     key: str = Field(..., description="Key in secret data")
 
 
+class KeycloakIdentityProviderMapper(BaseModel):
+    """
+    Identity provider mapper configuration.
+
+    Mappers transform claims/attributes from the identity provider
+    into Keycloak user attributes, roles, or session attributes.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Mapper name (unique within IDP)")
+    identity_provider_mapper: str = Field(
+        ...,
+        alias="identityProviderMapper",
+        description="Mapper type (e.g., 'oidc-user-attribute-idp-mapper')",
+    )
+    config: dict[str, str] = Field(
+        default_factory=dict,
+        description="Mapper-specific configuration",
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Mapper name must be a non-empty string")
+        return v
+
+    @field_validator("identity_provider_mapper")
+    @classmethod
+    def validate_mapper_type(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Mapper type must be a non-empty string")
+        return v
+
+
 class KeycloakIdentityProvider(BaseModel):
     """Identity provider configuration."""
 
@@ -178,6 +214,12 @@ class KeycloakIdentityProvider(BaseModel):
     )
     trust_email: bool = Field(
         False, alias="trustEmail", description="Trust email from identity provider"
+    )
+
+    # IDP Mappers for claim/attribute transformation
+    mappers: list[KeycloakIdentityProviderMapper] = Field(
+        default_factory=list,
+        description="Identity provider mappers for claim/attribute transformation",
     )
 
     @field_validator("alias")
