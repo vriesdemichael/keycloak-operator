@@ -130,6 +130,15 @@ jobs:
                     RESOLVABLE=false
                   fi
                   ;;
+                charts/*/Chart.yaml|charts/*/values.yaml)
+                  echo "Resolving YAML version conflict in $file..."
+                  if python scripts/resolve-yaml-version-conflicts.py "$file"; then
+                    git add "$file"
+                  else
+                    echo "❌ Failed to resolve $file"
+                    RESOLVABLE=false
+                  fi
+                  ;;
                 *)
                   echo "❌ Unknown conflict in $file, cannot auto-resolve"
                   RESOLVABLE=false
