@@ -513,6 +513,18 @@ spec:
                           default: false
                         containerId:
                           type: string
+                        attributes:
+                          type: object
+                          description: Role attributes
+                          additionalProperties:
+                            type: array
+                            items:
+                              type: string
+                        compositeRoles:
+                          type: array
+                          description: Names of roles to include in this composite role
+                          items:
+                            type: string
                       required:
                       - name
               groups:
@@ -541,8 +553,19 @@ spec:
                         type: array
                         items:
                           type: string
+                    subGroups:
+                      type: array
+                      description: Subgroups of this group
+                      items:
+                        type: object
+                        x-kubernetes-preserve-unknown-fields: true
                   required:
                   - name
+              defaultGroups:
+                type: array
+                description: Group names or paths to automatically assign to new users
+                items:
+                  type: string
               attributes:
                 type: object
                 description: Additional realm attributes

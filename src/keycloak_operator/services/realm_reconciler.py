@@ -105,6 +105,18 @@ class KeycloakRealmReconciler(BaseReconciler):
         if realm_spec.user_federation:
             await self.configure_user_federation(realm_spec, name, namespace)
 
+        # Configure realm roles (must be before groups since groups reference roles)
+        if realm_spec.roles and realm_spec.roles.realm_roles:
+            await self.configure_realm_roles(realm_spec, name, namespace)
+
+        # Configure groups (including role assignments and subgroups)
+        if realm_spec.groups:
+            await self.configure_groups(realm_spec, name, namespace)
+
+        # Configure default groups
+        if realm_spec.default_groups:
+            await self.configure_default_groups(realm_spec, name, namespace)
+
         # Setup backup preparation
         await self.manage_realm_backup(realm_spec, name, namespace)
 
@@ -134,7 +146,14 @@ class KeycloakRealmReconciler(BaseReconciler):
             "identityProviders": len(realm_spec.identity_providers or []),
             "userFederationProviders": len(realm_spec.user_federation or []),
             "customThemes": bool(realm_spec.themes),
+            "realmRoles": len(realm_spec.roles.realm_roles) if realm_spec.roles else 0,
+            "groups": len(realm_spec.groups or []),
         }
+
+        # Update realm roles count in status
+        status.realmRolesCount = (
+            len(realm_spec.roles.realm_roles) if realm_spec.roles else 0
+        )
 
         # Populate OIDC endpoint discovery
         try:
@@ -1448,6 +1467,589 @@ class KeycloakRealmReconciler(BaseReconciler):
                 admin_client.configure_user_federation(spec.realm_name, federation_dict)
             except Exception as e:
                 self.logger.warning(f"Failed to configure user federation: {e}")
+
+    async def configure_realm_roles(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure realm-level roles with full lifecycle management.
+
+        This method:
+        1. Creates new realm roles
+        2. Updates existing realm roles
+        3. Deletes realm roles removed from spec (except built-in roles)
+        4. Manages composite role memberships
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Configuring realm roles for realm {spec.realm_name}")
+
+        if not spec.roles or not spec.roles.realm_roles:
+            return
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # Built-in Keycloak roles that should not be deleted
+        BUILTIN_ROLES = {
+            "offline_access",
+            "uma_authorization",
+            "default-roles-" + realm_name.lower(),
+        }
+
+        # Get existing roles from Keycloak
+        existing_roles = await admin_client.get_realm_roles(realm_name, namespace)
+        existing_role_names = {role.name for role in existing_roles if role.name}
+
+        # Build set of desired role names
+        desired_role_names = {role.name for role in spec.roles.realm_roles}
+
+        # Delete roles that are no longer in spec (except built-in roles)
+        for role_name in existing_role_names - desired_role_names:
+            if role_name in BUILTIN_ROLES or role_name.startswith("default-roles-"):
+                self.logger.debug(f"Skipping built-in role '{role_name}'")
+                continue
+
+            self.logger.info(
+                f"Deleting realm role '{role_name}' from realm '{realm_name}' "
+                f"(no longer in spec)"
+            )
+            try:
+                await admin_client.delete_realm_role(realm_name, role_name, namespace)
+            except Exception as e:
+                self.logger.warning(f"Failed to delete realm role '{role_name}': {e}")
+
+        # Create or update roles
+        for role_config in spec.roles.realm_roles:
+            try:
+                role_name = role_config.name
+
+                # Check if role exists
+                existing_role = await admin_client.get_realm_role_by_name(
+                    realm_name, role_name, namespace
+                )
+
+                from keycloak_operator.models.keycloak_api import RoleRepresentation
+
+                role_repr = RoleRepresentation(
+                    name=role_name,
+                    description=role_config.description,
+                    composite=role_config.composite
+                    or bool(role_config.composite_roles),
+                    attributes=role_config.attributes,
+                )
+
+                if existing_role:
+                    # Update existing role
+                    self.logger.info(f"Updating realm role '{role_name}'")
+                    await admin_client.update_realm_role(
+                        realm_name, role_name, role_repr, namespace
+                    )
+                else:
+                    # Create new role
+                    self.logger.info(f"Creating realm role '{role_name}'")
+                    await admin_client.create_realm_role(
+                        realm_name, role_repr, namespace
+                    )
+
+                # Handle composite roles
+                if role_config.composite_roles:
+                    await self._configure_composite_roles(
+                        admin_client,
+                        realm_name,
+                        role_name,
+                        role_config.composite_roles,
+                        namespace,
+                    )
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to configure realm role '{role_config.name}': {e}"
+                )
+
+    async def _configure_composite_roles(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        parent_role_name: str,
+        desired_child_names: list[str],
+        namespace: str,
+    ) -> None:
+        """
+        Configure composite role memberships.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            parent_role_name: Name of the parent composite role
+            desired_child_names: List of child role names to include
+            namespace: Origin namespace for rate limiting
+        """
+        self.logger.info(
+            f"Configuring composite role '{parent_role_name}' with "
+            f"{len(desired_child_names)} child roles"
+        )
+
+        try:
+            # Get current composites
+            current_composites = await admin_client.get_realm_role_composites(
+                realm_name, parent_role_name, namespace
+            )
+            current_child_names = {
+                role.name for role in current_composites if role.name
+            }
+
+            # Determine roles to add and remove
+            to_add = set(desired_child_names) - current_child_names
+            to_remove = current_child_names - set(desired_child_names)
+
+            # Add new composites
+            if to_add:
+                roles_to_add = []
+                for child_name in to_add:
+                    child_role = await admin_client.get_realm_role_by_name(
+                        realm_name, child_name, namespace
+                    )
+                    if child_role:
+                        roles_to_add.append(child_role)
+                    else:
+                        self.logger.warning(
+                            f"Child role '{child_name}' not found, skipping"
+                        )
+
+                if roles_to_add:
+                    await admin_client.add_realm_role_composites(
+                        realm_name, parent_role_name, roles_to_add, namespace
+                    )
+
+            # Remove old composites
+            if to_remove:
+                roles_to_remove = [
+                    role for role in current_composites if role.name in to_remove
+                ]
+                if roles_to_remove:
+                    await admin_client.remove_realm_role_composites(
+                        realm_name, parent_role_name, roles_to_remove, namespace
+                    )
+
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to configure composite roles for '{parent_role_name}': {e}"
+            )
+
+    async def configure_groups(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure groups with full lifecycle management.
+
+        This method:
+        1. Creates new groups (including nested subgroups)
+        2. Updates existing groups
+        3. Deletes groups removed from spec
+        4. Manages group role assignments (realm and client roles)
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Configuring groups for realm {spec.realm_name}")
+
+        if not spec.groups:
+            return
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # Get existing groups from Keycloak
+        existing_groups = await admin_client.get_groups(realm_name, namespace)
+
+        # Build map of existing groups by path/name
+        existing_group_map: dict[str, Any] = {}
+        self._build_group_map(existing_groups, existing_group_map)
+
+        # Build set of desired group paths
+        desired_group_paths: set[str] = set()
+        self._collect_group_paths(spec.groups, desired_group_paths)
+
+        # Delete groups that are no longer in spec
+        for group_path, group_info in existing_group_map.items():
+            if group_path not in desired_group_paths:
+                self.logger.info(
+                    f"Deleting group '{group_path}' from realm '{realm_name}' "
+                    f"(no longer in spec)"
+                )
+                try:
+                    await admin_client.delete_group(
+                        realm_name, group_info["id"], namespace
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Failed to delete group '{group_path}': {e}")
+
+        # Create or update groups (top-level first, then subgroups)
+        for group_config in spec.groups:
+            await self._configure_group_recursive(
+                admin_client,
+                realm_name,
+                group_config,
+                parent_id=None,
+                namespace=namespace,
+            )
+
+    def _build_group_map(
+        self,
+        groups: list[Any],
+        group_map: dict[str, Any],
+        parent_path: str = "",
+    ) -> None:
+        """Build a map of group paths to group info (including subgroups)."""
+        for group in groups:
+            path = group.path or f"{parent_path}/{group.name}"
+            group_map[path] = {"id": group.id, "name": group.name, "group": group}
+            if group.sub_groups:
+                self._build_group_map(group.sub_groups, group_map, path)
+
+    def _collect_group_paths(
+        self, groups: list[Any], paths: set[str], parent_path: str = ""
+    ) -> None:
+        """Collect all group paths from the spec (including subgroups)."""
+        for group in groups:
+            path = group.path or f"{parent_path}/{group.name}"
+            # Normalize path to start with /
+            if not path.startswith("/"):
+                path = "/" + path
+            paths.add(path)
+            if hasattr(group, "subgroups") and group.subgroups:
+                self._collect_group_paths(group.subgroups, paths, path)
+
+    async def _configure_group_recursive(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        group_config: Any,
+        parent_id: str | None,
+        namespace: str,
+        parent_path: str = "",
+    ) -> str | None:
+        """
+        Configure a group and its subgroups recursively.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            group_config: Group configuration
+            parent_id: ID of parent group (None for top-level)
+            namespace: Origin namespace for rate limiting
+            parent_path: Path of parent group
+
+        Returns:
+            Group ID if created/updated successfully, None otherwise
+        """
+        group_name = group_config.name
+        group_path = group_config.path or f"{parent_path}/{group_name}"
+        if not group_path.startswith("/"):
+            group_path = "/" + group_path
+
+        try:
+            from keycloak_operator.models.keycloak_api import GroupRepresentation
+
+            # Check if group exists
+            existing_group = await admin_client.get_group_by_path(
+                realm_name, group_path, namespace
+            )
+
+            group_repr = GroupRepresentation(
+                name=group_name,
+                path=group_path,
+                attributes=group_config.attributes or {},
+            )
+
+            group_id: str | None = None
+
+            if existing_group:
+                # Update existing group
+                group_id = existing_group.id
+                self.logger.info(f"Updating group '{group_path}'")
+                await admin_client.update_group(
+                    realm_name, group_id, group_repr, namespace
+                )
+            else:
+                # Create new group
+                self.logger.info(f"Creating group '{group_path}'")
+                if parent_id:
+                    group_id = await admin_client.create_subgroup(
+                        realm_name, parent_id, group_repr, namespace
+                    )
+                else:
+                    group_id = await admin_client.create_group(
+                        realm_name, group_repr, namespace
+                    )
+
+            if not group_id:
+                # Try to get the group if creation returned None (e.g., 409 conflict)
+                existing_group = await admin_client.get_group_by_path(
+                    realm_name, group_path, namespace
+                )
+                group_id = existing_group.id if existing_group else None
+
+            if group_id:
+                # Configure realm role mappings
+                if group_config.realm_roles:
+                    await self._configure_group_realm_roles(
+                        admin_client,
+                        realm_name,
+                        group_id,
+                        group_config.realm_roles,
+                        namespace,
+                    )
+
+                # Configure client role mappings
+                if group_config.client_roles:
+                    await self._configure_group_client_roles(
+                        admin_client,
+                        realm_name,
+                        group_id,
+                        group_config.client_roles,
+                        namespace,
+                    )
+
+                # Configure subgroups recursively
+                if hasattr(group_config, "subgroups") and group_config.subgroups:
+                    for subgroup in group_config.subgroups:
+                        await self._configure_group_recursive(
+                            admin_client,
+                            realm_name,
+                            subgroup,
+                            parent_id=group_id,
+                            namespace=namespace,
+                            parent_path=group_path,
+                        )
+
+            return group_id
+
+        except Exception as e:
+            self.logger.warning(f"Failed to configure group '{group_path}': {e}")
+            return None
+
+    async def _configure_group_realm_roles(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        group_id: str,
+        desired_role_names: list[str],
+        namespace: str,
+    ) -> None:
+        """
+        Configure realm role assignments for a group.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            group_id: ID of the group
+            desired_role_names: List of realm role names to assign
+            namespace: Origin namespace for rate limiting
+        """
+        try:
+            # Get current role mappings
+            current_roles = await admin_client.get_group_realm_role_mappings(
+                realm_name, group_id, namespace
+            )
+            current_role_names = {role.name for role in current_roles if role.name}
+
+            # Determine roles to add and remove
+            to_add = set(desired_role_names) - current_role_names
+            to_remove = current_role_names - set(desired_role_names)
+
+            # Add new role assignments
+            if to_add:
+                roles_to_add = []
+                for role_name in to_add:
+                    role = await admin_client.get_realm_role_by_name(
+                        realm_name, role_name, namespace
+                    )
+                    if role:
+                        roles_to_add.append(role)
+                    else:
+                        self.logger.warning(
+                            f"Realm role '{role_name}' not found, skipping"
+                        )
+
+                if roles_to_add:
+                    await admin_client.assign_realm_roles_to_group(
+                        realm_name, group_id, roles_to_add, namespace
+                    )
+
+            # Remove old role assignments
+            if to_remove:
+                roles_to_remove = [
+                    role for role in current_roles if role.name in to_remove
+                ]
+                if roles_to_remove:
+                    await admin_client.remove_realm_roles_from_group(
+                        realm_name, group_id, roles_to_remove, namespace
+                    )
+
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to configure realm roles for group '{group_id}': {e}"
+            )
+
+    async def _configure_group_client_roles(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        group_id: str,
+        client_roles: dict[str, list[str]],
+        namespace: str,
+    ) -> None:
+        """
+        Configure client role assignments for a group.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            group_id: ID of the group
+            client_roles: Dict mapping client IDs to list of role names
+            namespace: Origin namespace for rate limiting
+        """
+        for client_id, role_names in client_roles.items():
+            try:
+                # Get client UUID
+                client_uuid = await admin_client.get_client_uuid(
+                    realm_name, client_id, namespace
+                )
+                if not client_uuid:
+                    self.logger.warning(
+                        f"Client '{client_id}' not found, skipping role assignment"
+                    )
+                    continue
+
+                # Get current role mappings
+                current_roles = await admin_client.get_group_client_role_mappings(
+                    realm_name, group_id, client_uuid, namespace
+                )
+                current_role_names = {role.name for role in current_roles if role.name}
+
+                # Determine roles to add
+                to_add = set(role_names) - current_role_names
+
+                # Add new role assignments
+                if to_add:
+                    roles_to_add = []
+                    for role_name in to_add:
+                        role = await admin_client.get_client_role(
+                            realm_name, client_uuid, role_name
+                        )
+                        if role:
+                            roles_to_add.append(role)
+
+                    if roles_to_add:
+                        await admin_client.assign_client_roles_to_group(
+                            realm_name, group_id, client_uuid, roles_to_add, namespace
+                        )
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to configure client roles for group '{group_id}' "
+                    f"and client '{client_id}': {e}"
+                )
+
+    async def configure_default_groups(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure default groups for the realm.
+
+        Default groups are automatically assigned to new users.
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Configuring default groups for realm {spec.realm_name}")
+
+        if not spec.default_groups:
+            return
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # Get current default groups
+        current_defaults = await admin_client.get_default_groups(realm_name, namespace)
+        current_default_paths = {
+            group.path or f"/{group.name}" for group in current_defaults
+        }
+
+        # Normalize desired paths
+        desired_default_paths: set[str] = set()
+        for group_ref in spec.default_groups:
+            # Handle both group names and paths
+            if group_ref.startswith("/"):
+                desired_default_paths.add(group_ref)
+            else:
+                desired_default_paths.add(f"/{group_ref}")
+
+        # Determine groups to add and remove
+        to_add = desired_default_paths - current_default_paths
+        to_remove = current_default_paths - desired_default_paths
+
+        # Add new default groups
+        for group_path in to_add:
+            try:
+                group = await admin_client.get_group_by_path(
+                    realm_name, group_path, namespace
+                )
+                if group and group.id:
+                    await admin_client.add_default_group(
+                        realm_name, group.id, namespace
+                    )
+                    self.logger.info(f"Added '{group_path}' as default group")
+                else:
+                    self.logger.warning(
+                        f"Group '{group_path}' not found, cannot add as default"
+                    )
+            except Exception as e:
+                self.logger.warning(f"Failed to add default group '{group_path}': {e}")
+
+        # Remove old default groups
+        for group_path in to_remove:
+            try:
+                # Find the group in current defaults
+                for group in current_defaults:
+                    current_path = group.path or f"/{group.name}"
+                    if current_path == group_path and group.id:
+                        await admin_client.remove_default_group(
+                            realm_name, group.id, namespace
+                        )
+                        self.logger.info(f"Removed '{group_path}' from default groups")
+                        break
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to remove default group '{group_path}': {e}"
+                )
 
     async def manage_realm_backup(
         self, spec: KeycloakRealmSpec, name: str, namespace: str

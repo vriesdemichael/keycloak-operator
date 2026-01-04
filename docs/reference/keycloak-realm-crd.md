@@ -522,35 +522,69 @@ Define realm-level roles.
 | `roles.realmRoles[].name` | `string` | **Yes** | - | Role name |
 | `roles.realmRoles[].description` | `string` | No | - | Role description |
 | `roles.realmRoles[].composite` | boolean | No | `false` | Whether this is a composite role |
+| `roles.realmRoles[].compositeRoles` | []`string` | No | - | Names of roles to include in this composite role |
 | `roles.realmRoles[].clientRole` | boolean | No | `false` | Whether this is a client role |
 | `roles.realmRoles[].containerId` | `string` | No | - | Container ID (for composite roles) |
+| `roles.realmRoles[].attributes` | map[string][]string | No | - | Role attributes as key-value pairs where values are arrays |
 
-**Example:**
+**Example - Basic Roles:**
 ```yaml
 spec:
   roles:
     realmRoles:
       - name: admin
         description: "Administrator role"
+        attributes:
+          department: ["IT"]
+          level: ["senior"]
       - name: user
         description: "Standard user role"
       - name: viewer
         description: "Read-only viewer role"
 ```
 
+**Example - Composite Roles:**
+```yaml
+spec:
+  roles:
+    realmRoles:
+      # Base roles
+      - name: user
+        description: "Standard user role"
+      - name: developer
+        description: "Developer role with code access"
+      - name: reviewer
+        description: "Code reviewer role"
+      # Composite role that includes other roles
+      - name: senior-developer
+        description: "Senior developer with all developer permissions"
+        composite: true
+        compositeRoles:
+          - developer
+          - reviewer
+      # Manager composite role
+      - name: engineering-manager
+        description: "Engineering manager with full access"
+        composite: true
+        compositeRoles:
+          - user
+          - senior-developer
+```
+
 ### Groups
 
-Define user groups.
+Define user groups with role assignments and hierarchical subgroups.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `groups[].name` | `string` | **Yes** | - | Group name |
-| `groups[].path` | `string` | No | - | Group path (for subgroups) |
+| `groups[].path` | `string` | No | - | Group path (auto-generated if not specified) |
 | `groups[].attributes` | map[`string`][]`string` | No | `{}` | Group attributes |
-| `groups[].realmRoles` | []`string` | No | - | Realm roles assigned to group |
-| `groups[].clientRoles` | map[`string`][]`string` | No | `{}` | Client roles assigned to group |
+| `groups[].realmRoles` | []`string` | No | - | Realm roles assigned to group members |
+| `groups[].clientRoles` | map[`string`][]`string` | No | `{}` | Client roles assigned to group members |
+| `groups[].subGroups` | []group | No | - | Nested subgroups |
 
-**Example:**
+**Example - Basic Groups:**
 ```yaml
 spec:
   groups:
@@ -559,10 +593,87 @@ spec:
         department: ["Engineering"]
       realmRoles:
         - user
-    - name: engineering/backend
-      path: /engineering/backend
+    - name: admins
       realmRoles:
-        - developer
+        - admin
+```
+
+**Example - Nested Groups:**
+```yaml
+spec:
+  groups:
+    - name: engineering
+      attributes:
+        department: ["Engineering"]
+      realmRoles:
+        - user
+      subGroups:
+        - name: backend
+          attributes:
+            team: ["Backend"]
+          realmRoles:
+            - developer
+        - name: frontend
+          attributes:
+            team: ["Frontend"]
+          realmRoles:
+            - developer
+        - name: platform
+          attributes:
+            team: ["Platform"]
+          realmRoles:
+            - developer
+            - admin  # Platform team has admin access
+    - name: product
+      attributes:
+        department: ["Product"]
+      realmRoles:
+        - user
+      subGroups:
+        - name: managers
+          realmRoles:
+            - reviewer
+```
+
+**Example - Groups with Client Roles:**
+```yaml
+spec:
+  groups:
+    - name: api-consumers
+      clientRoles:
+        my-api-client:
+          - api-read
+          - api-write
+        admin-portal:
+          - view-dashboard
+```
+
+### Default Groups
+
+Specify groups that are automatically assigned to new users when they register or are created.
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `defaultGroups` | []`string` | No | `[]` | Group names or paths to automatically assign to new users |
+
+**Example:**
+```yaml
+spec:
+  # Define groups first
+  groups:
+    - name: users
+      realmRoles:
+        - user
+    - name: engineering
+      subGroups:
+        - name: new-hires
+          realmRoles:
+            - trainee
+
+  # Assign default groups
+  defaultGroups:
+    - /users                    # All new users get the 'users' group
+    - /engineering/new-hires    # New engineering users start in new-hires
 ```
 
 ### Custom Attributes

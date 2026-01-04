@@ -617,23 +617,38 @@ class KeycloakClientScope(BaseModel):
 class KeycloakRealmRole(BaseModel):
     """Realm role definition."""
 
+    model_config = {"populate_by_name": True}
+
     name: str = Field(..., description="Role name")
     description: str | None = Field(None, description="Role description")
     composite: bool = Field(False, description="Is composite role")
-    client_role: bool = Field(False, description="Is client role")
-    container_id: str | None = Field(None, description="Container ID")
+    client_role: bool = Field(False, alias="clientRole", description="Is client role")
+    container_id: str | None = Field(
+        None, alias="containerId", description="Container ID"
+    )
+    attributes: dict[str, list[str]] | None = Field(None, description="Role attributes")
+    # Composite role children - list of role names to include
+    composite_roles: list[str] = Field(
+        default_factory=list,
+        alias="compositeRoles",
+        description="Names of roles to include in this composite role",
+    )
 
 
 class KeycloakRoles(BaseModel):
     """Realm and client role definitions."""
 
+    model_config = {"populate_by_name": True}
+
     realm_roles: list[KeycloakRealmRole] = Field(
-        default_factory=list, description="Realm roles"
+        default_factory=list, alias="realmRoles", description="Realm roles"
     )
 
 
 class KeycloakGroup(BaseModel):
     """Group definition."""
+
+    model_config = {"populate_by_name": True}
 
     name: str = Field(..., description="Group name")
     path: str | None = Field(None, description="Group path")
@@ -641,10 +656,18 @@ class KeycloakGroup(BaseModel):
         default_factory=dict, description="Group attributes"
     )
     realm_roles: list[str] = Field(
-        default_factory=list, description="Assigned realm roles"
+        default_factory=list, alias="realmRoles", description="Assigned realm roles"
     )
     client_roles: dict[str, list[str]] = Field(
-        default_factory=dict, description="Assigned client roles by client ID"
+        default_factory=dict,
+        alias="clientRoles",
+        description="Assigned client roles by client ID",
+    )
+    # Support for nested groups
+    subgroups: list["KeycloakGroup"] = Field(
+        default_factory=list,
+        alias="subGroups",
+        description="Subgroups of this group",
     )
 
 
@@ -949,6 +972,13 @@ class KeycloakRealmSpec(BaseModel):
     # Groups
     groups: list[KeycloakGroup] = Field(
         default_factory=list, description="Group definitions"
+    )
+
+    # Default groups - group names that are automatically assigned to new users
+    default_groups: list[str] = Field(
+        default_factory=list,
+        alias="defaultGroups",
+        description="Group names (or paths) to automatically assign to new users",
     )
 
     # SMTP configuration
