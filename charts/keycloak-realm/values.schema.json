@@ -207,11 +207,69 @@
               "composite": {
                 "type": "boolean",
                 "description": "Is composite role"
+              },
+              "compositeRoles": {
+                "type": "array",
+                "description": "Names of roles to include in this composite role",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": ["name"]
           }
         }
+      }
+    },
+    "groups": {
+      "type": "array",
+      "description": "Group definitions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Group name"
+          },
+          "path": {
+            "type": "string",
+            "description": "Group path (e.g., /parent/child)"
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Group attributes",
+            "additionalProperties": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          },
+          "realmRoles": {
+            "type": "array",
+            "description": "Realm roles assigned to this group",
+            "items": {"type": "string"}
+          },
+          "clientRoles": {
+            "type": "object",
+            "description": "Client roles assigned to this group (clientId -> role names)",
+            "additionalProperties": {
+              "type": "array",
+              "items": {"type": "string"}
+            }
+          },
+          "subGroups": {
+            "type": "array",
+            "description": "Subgroups of this group",
+            "items": {"type": "object"}
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "defaultGroups": {
+      "type": "array",
+      "description": "Group names or paths to automatically assign to new users",
+      "items": {
+        "type": "string"
       }
     },
     "eventsConfig": {

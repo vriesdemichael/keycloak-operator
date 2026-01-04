@@ -187,10 +187,49 @@ identityProviders: []
 # Define realm-level roles
 roles:
   realmRoles: []
+    # Example roles:
     # - name: admin
     #   description: "Administrator role"
+    #   attributes:
+    #     department: ["IT"]
+    #     level: ["senior"]
     # - name: user
     #   description: "Regular user role"
+    # - name: manager
+    #   description: "Manager role with composite roles"
+    #   composite: true
+    #   compositeRoles:
+    #     - user  # This role includes the 'user' role
+
+# Groups (optional)
+# Define user groups with role mappings
+groups: []
+  # Example groups:
+  # - name: engineering
+  #   attributes:
+  #     department: ["Engineering"]
+  #   realmRoles:
+  #     - user
+  #   subGroups:
+  #     - name: backend
+  #       realmRoles:
+  #         - developer
+  #     - name: frontend
+  #       realmRoles:
+  #         - developer
+  # - name: admins
+  #   realmRoles:
+  #     - admin
+  #   clientRoles:
+  #     my-client:
+  #       - manage-users
+
+# Default groups (optional)
+# Groups that are automatically assigned to new users
+defaultGroups: []
+  # Example:
+  # - /engineering  # Group path
+  # - users         # Group name (will be converted to /users)
 
 # Event logging configuration (optional)
 eventsConfig:
