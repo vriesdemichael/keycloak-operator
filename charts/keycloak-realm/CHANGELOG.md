@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.5](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.4...chart-realm-v0.3.5) (2026-01-04)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add password policy and improve events config ([3d60b5e](https://github.com/vriesdemichael/keycloak-operator/commit/3d60b5eeddd7f2a5c63416a55e195e07f6804d92)), closes [#311](https://github.com/vriesdemichael/keycloak-operator/issues/311)
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.5.12 ([b30cc9b](https://github.com/vriesdemichael/keycloak-operator/commit/b30cc9b5ada6c5dfa182e80fdfc3123a27e74396))
+
 ## [0.3.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.3...chart-realm-v0.3.4) (2025-12-29)
 
 
