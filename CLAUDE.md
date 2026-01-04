@@ -43,6 +43,28 @@ When you think the moment is right to open a PR:
 
 Opening or pushing to a PR branch triggers automated Copilot review comments - only do this when ready for actual review.
 
+### Handling Diverged Branches (After Remote Rebase)
+If pre-commit fails with "Branch has DIVERGED from its remote", this means the branch was rebased remotely (e.g., by the auto-rebase workflow) while you have local commits.
+
+**To fix this:**
+```bash
+# If you have NO local changes to keep:
+git fetch origin
+git reset --hard origin/<branch-name>
+
+# If you have LOCAL CHANGES to preserve:
+git stash
+git fetch origin
+git reset --hard origin/<branch-name>
+git stash pop
+
+# If you have LOCAL COMMITS to preserve:
+git log --oneline -5             # Note your commit SHAs
+git fetch origin
+git reset --hard origin/<branch-name>
+git cherry-pick <sha1> <sha2>    # Re-apply your commits
+```
+
 ### Handling Review Comments
 When you see review comments on the PR (check with `gh pr view <number> --comments`):
 
