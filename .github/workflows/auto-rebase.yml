@@ -1,84 +1,225 @@
 name: Auto-Rebase PRs
 
-# Rebase Dependabot PRs when main updates, or manually via label/comment
+# Rebase all open non-draft PRs when main is updated.
+# Uses PAT to ensure rebased PRs trigger CI workflows.
 
 on:
   push:
     branches: [main]
-  issue_comment:
-    types: [created]
-  pull_request:
-    types: [labeled]
+  workflow_dispatch:
 
 permissions:
   contents: write
   pull-requests: write
 
 jobs:
-  # Rebase all open Dependabot PRs when main is updated
-  rebase-dependabot-prs:
-    name: Rebase Dependabot PRs
-    if: github.event_name == 'push'
+  rebase-all-prs:
+    name: Rebase All Open PRs
     runs-on: ubuntu-latest
     steps:
+      - name: Wait for GitHub to compute mergeable status
+        run: sleep 30
+
       - name: Checkout code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
-      - name: Rebase open Dependabot PRs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Configure git
         run: |
-          # Get all open PRs from dependabot
-          prs=$(gh pr list --author "app/dependabot" --state open --json number,headRefName --jq '.[].number')
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Rebase open PRs
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          REBASED_PRS=""
+          CONFLICT_PRS=""
+          FAILED_PRS=""
+          SKIPPED_PRS=""
+
+          # Get all open non-draft PRs
+          prs=$(gh pr list --state open --json number,isDraft --jq '.[] | select(.isDraft == false) | .number')
 
           if [ -z "$prs" ]; then
-            echo "No open Dependabot PRs to rebase"
+            echo "No open non-draft PRs to process"
             exit 0
           fi
 
+          echo "Found PRs to process: $prs"
+
           for pr in $prs; do
-            echo "Rebasing PR #$pr..."
-            gh pr checkout "$pr"
-            if git rebase origin/main; then
-              git push --force-with-lease
-              echo "✅ PR #$pr rebased successfully"
-            else
-              echo "⚠️ PR #$pr has conflicts, skipping"
-              git rebase --abort
+            echo ""
+            echo "=========================================="
+            echo "Processing PR #$pr..."
+            echo "=========================================="
+
+            # Get PR details
+            PR_INFO=$(gh pr view "$pr" --json headRefName,baseRefName,mergeable)
+            HEAD_BRANCH=$(echo "$PR_INFO" | jq -r '.headRefName')
+            BASE_BRANCH=$(echo "$PR_INFO" | jq -r '.baseRefName')
+            MERGEABLE=$(echo "$PR_INFO" | jq -r '.mergeable')
+
+            echo "Head branch: $HEAD_BRANCH"
+            echo "Base branch: $BASE_BRANCH"
+            echo "Mergeable status: $MERGEABLE"
+
+            # Only process PRs targeting main
+            if [[ "$BASE_BRANCH" != "main" ]]; then
+              echo "⏭️ PR #$pr targets $BASE_BRANCH, not main. Skipping."
+              SKIPPED_PRS="$SKIPPED_PRS $pr"
+              continue
             fi
+
+            # Checkout the PR branch
+            if ! gh pr checkout "$pr"; then
+              echo "❌ Failed to checkout PR #$pr"
+              FAILED_PRS="$FAILED_PRS $pr"
+              git checkout -f main 2>/dev/null || true
+              continue
+            fi
+
+            # Check if PR is behind main
+            git fetch origin main
+            BEHIND_COUNT=$(git rev-list --count HEAD..origin/main)
+            echo "PR is $BEHIND_COUNT commits behind main"
+
+            if [[ "$BEHIND_COUNT" -eq 0 ]]; then
+              echo "✅ PR #$pr is up to date with main"
+              git checkout -f main
+              continue
+            fi
+
+            # Attempt rebase
+            echo "Rebasing PR #$pr onto main..."
+            if git rebase origin/main; then
+              echo "Rebase successful, pushing..."
+              if git push --force-with-lease; then
+                echo "✅ PR #$pr rebased successfully"
+                REBASED_PRS="$REBASED_PRS $pr"
+              else
+                echo "❌ PR #$pr push failed"
+                FAILED_PRS="$FAILED_PRS $pr"
+              fi
+              git checkout -f main
+              continue
+            fi
+
+            echo "Rebase has conflicts, attempting resolution..."
+
+            # Check which files have conflicts
+            CONFLICTED_FILES=$(git diff --name-only --diff-filter=U)
+            echo "Conflicted files: $CONFLICTED_FILES"
+
+            RESOLVABLE=true
+            for file in $CONFLICTED_FILES; do
+              case "$file" in
+                .github/.release-please-manifest.json)
+                  echo "Resolving release-please manifest conflict..."
+                  if python scripts/resolve-release-please-conflicts.py "$file"; then
+                    git add "$file"
+                  else
+                    echo "❌ Failed to resolve $file"
+                    RESOLVABLE=false
+                  fi
+                  ;;
+                *)
+                  echo "❌ Unknown conflict in $file, cannot auto-resolve"
+                  RESOLVABLE=false
+                  ;;
+              esac
+            done
+
+            if [[ "$RESOLVABLE" == "true" ]]; then
+              # Continue rebase after resolving conflicts
+              if GIT_EDITOR=true git rebase --continue; then
+                if git push --force-with-lease; then
+                  echo "✅ PR #$pr rebased with resolved conflicts"
+                  REBASED_PRS="$REBASED_PRS $pr"
+                else
+                  echo "❌ PR #$pr push failed after conflict resolution"
+                  FAILED_PRS="$FAILED_PRS $pr"
+                fi
+              else
+                echo "❌ PR #$pr rebase --continue failed"
+                git rebase --abort
+                CONFLICT_PRS="$CONFLICT_PRS $pr"
+              fi
+            else
+              echo "⚠️ PR #$pr has unresolvable conflicts"
+              git rebase --abort
+              CONFLICT_PRS="$CONFLICT_PRS $pr"
+            fi
+
+            # Return to main for next PR
+            git checkout -f main 2>/dev/null || git reset --hard HEAD && git checkout -f main
           done
 
-  # Manual rebase via comment or label
-  manual-rebase:
-    name: Manual Rebase PR
-    if: |
-      (github.event_name == 'issue_comment' &&
-       github.event.issue.pull_request != '' &&
-       contains(github.event.comment.body, '/rebase')) ||
-      (github.event_name == 'pull_request' &&
-       github.event.label.name == 'autorebase')
-    runs-on: ubuntu-latest
+          # Wait for GitHub to process the pushes and update mergeable status
+          if [[ -n "$REBASED_PRS" ]]; then
+            echo ""
+            echo "Waiting for GitHub to update PR statuses..."
+            sleep 10
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+            # Verify rebased PRs are now mergeable
+            echo ""
+            echo "Verifying rebased PRs..."
+            for pr in $REBASED_PRS; do
+              for attempt in 1 2 3; do
+                MERGEABLE=$(gh pr view "$pr" --json mergeable --jq '.mergeable')
+                echo "PR #$pr mergeable status: $MERGEABLE (attempt $attempt)"
 
-      - name: Automatic Rebase
-        uses: cirrus-actions/rebase@1.8
-        with:
-          autosquash: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                if [[ "$MERGEABLE" == "MERGEABLE" ]]; then
+                  echo "✅ PR #$pr verified as mergeable"
+                  break
+                elif [[ "$MERGEABLE" == "CONFLICTING" ]]; then
+                  echo "⚠️ PR #$pr still has conflicts after rebase"
+                  break
+                else
+                  # Status might still be computing
+                  if [[ "$attempt" -lt 3 ]]; then
+                    sleep 5
+                  fi
+                fi
+              done
+            done
+          fi
 
-      - name: Add reaction to comment
-        if: github.event_name == 'issue_comment'
-        uses: peter-evans/create-or-update-comment@v5
-        with:
-          comment-id: ${{ github.event.comment.id }}
-          reactions: '+1'
+          # Summary
+          echo ""
+          echo "### 🔄 Auto-Rebase Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [[ -n "$REBASED_PRS" ]]; then
+            echo "**✅ Successfully rebased:**" >> $GITHUB_STEP_SUMMARY
+            for pr in $REBASED_PRS; do
+              echo "- PR #$pr" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+          if [[ -n "$CONFLICT_PRS" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**⚠️ Unresolvable conflicts (manual intervention needed):**" >> $GITHUB_STEP_SUMMARY
+            for pr in $CONFLICT_PRS; do
+              echo "- PR #$pr" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+          if [[ -n "$FAILED_PRS" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**❌ Failed:**" >> $GITHUB_STEP_SUMMARY
+            for pr in $FAILED_PRS; do
+              echo "- PR #$pr" >> $GITHUB_STEP_SUMMARY
+            done
+          fi
+
+          if [[ -z "$REBASED_PRS" && -z "$CONFLICT_PRS" && -z "$FAILED_PRS" ]]; then
+            echo "_All PRs are up to date with main._" >> $GITHUB_STEP_SUMMARY
+          fi
