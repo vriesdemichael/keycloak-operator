@@ -111,6 +111,16 @@ spec:
       {{- toYaml .Values.roles.realmRoles | nindent 6 }}
   {{- end }}
 
+  {{- with .Values.groups }}
+  groups:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.defaultGroups }}
+  defaultGroups:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- with .Values.passwordPolicy }}
   {{- if or .length .upperCase .lowerCase .digits .specialChars .notUsername .notEmail .hashIterations .passwordHistory .forceExpiredPasswordChange .maxLength .regexPattern }}
   passwordPolicy:

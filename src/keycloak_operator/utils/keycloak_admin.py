@@ -30,6 +30,7 @@ from keycloak_operator.models.keycloak_api import (
     AuthenticatorConfigRepresentation,
     ClientRepresentation,
     ComponentRepresentation,
+    GroupRepresentation,
     IdentityProviderMapperRepresentation,
     IdentityProviderRepresentation,
     ProtocolMapperRepresentation,
@@ -3224,6 +3225,943 @@ class KeycloakAdminClient:
                 return False
         except Exception as e:
             logger.error(f"Failed to delete client role: {e}")
+            return False
+
+    # =========================================================================
+    # Realm Roles API methods
+    # =========================================================================
+
+    async def get_realm_roles(
+        self, realm_name: str, namespace: str = "default"
+    ) -> list[RoleRepresentation]:
+        """
+        Get all realm-level roles.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of realm role configurations as RoleRepresentation
+        """
+        logger.debug(f"Fetching realm roles for realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/roles", namespace
+            )
+
+            if response.status_code == 200:
+                roles_data = response.json()
+                return [RoleRepresentation.model_validate(role) for role in roles_data]
+            else:
+                logger.error(f"Failed to get realm roles: {response.status_code}")
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get realm roles: {e}")
+            return []
+
+    async def get_realm_role_by_name(
+        self, realm_name: str, role_name: str, namespace: str = "default"
+    ) -> RoleRepresentation | None:
+        """
+        Get a specific realm role by name.
+
+        Args:
+            realm_name: Name of the realm
+            role_name: Name of the role
+            namespace: Namespace for rate limiting
+
+        Returns:
+            RoleRepresentation if found, None otherwise
+        """
+        logger.debug(f"Fetching realm role '{role_name}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/roles/{role_name}", namespace
+            )
+
+            if response.status_code == 200:
+                return RoleRepresentation.model_validate(response.json())
+            elif response.status_code == 404:
+                return None
+            else:
+                logger.error(f"Failed to get realm role: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get realm role: {e}")
+            return None
+
+    async def create_realm_role(
+        self,
+        realm_name: str,
+        role_config: RoleRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Create a realm-level role.
+
+        Args:
+            realm_name: Name of the realm
+            role_config: Role configuration as RoleRepresentation or dict
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if isinstance(role_config, dict):
+            role_config = RoleRepresentation.model_validate(role_config)
+
+        role_name = role_config.name or "unknown"
+        logger.info(f"Creating realm role '{role_name}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_validated_request(
+                "POST",
+                f"realms/{realm_name}/roles",
+                request_model=role_config,
+            )
+
+            if response.status_code == 201:
+                logger.info(f"Successfully created realm role '{role_name}'")
+                return True
+            elif response.status_code == 409:
+                logger.info(f"Realm role '{role_name}' already exists")
+                return True
+            else:
+                logger.error(f"Failed to create realm role: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to create realm role: {e}")
+            return False
+
+    async def update_realm_role(
+        self,
+        realm_name: str,
+        role_name: str,
+        role_config: RoleRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an existing realm-level role.
+
+        Args:
+            realm_name: Name of the realm
+            role_name: Name of the existing role
+            role_config: Updated role configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if isinstance(role_config, dict):
+            role_config = RoleRepresentation.model_validate(role_config)
+
+        logger.info(f"Updating realm role '{role_name}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_validated_request(
+                "PUT",
+                f"realms/{realm_name}/roles/{role_name}",
+                request_model=role_config,
+            )
+
+            if response.status_code in (200, 204):
+                logger.info(f"Successfully updated realm role '{role_name}'")
+                return True
+            else:
+                logger.error(f"Failed to update realm role: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update realm role: {e}")
+            return False
+
+    async def delete_realm_role(
+        self, realm_name: str, role_name: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Delete a realm-level role.
+
+        Args:
+            realm_name: Name of the realm
+            role_name: Name of the role to delete
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Deleting realm role '{role_name}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "DELETE", f"realms/{realm_name}/roles/{role_name}", namespace
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully deleted realm role '{role_name}'")
+                return True
+            elif response.status_code == 404:
+                logger.info(f"Realm role '{role_name}' not found (already deleted)")
+                return True
+            else:
+                logger.error(f"Failed to delete realm role: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to delete realm role: {e}")
+            return False
+
+    async def get_realm_role_composites(
+        self, realm_name: str, role_name: str, namespace: str = "default"
+    ) -> list[RoleRepresentation]:
+        """
+        Get composite roles (child roles) of a realm role.
+
+        Args:
+            realm_name: Name of the realm
+            role_name: Name of the composite role
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of child role configurations
+        """
+        logger.debug(
+            f"Fetching composite roles for realm role '{role_name}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/roles/{role_name}/composites", namespace
+            )
+
+            if response.status_code == 200:
+                roles_data = response.json()
+                return [RoleRepresentation.model_validate(role) for role in roles_data]
+            else:
+                logger.error(f"Failed to get composite roles: {response.status_code}")
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get composite roles: {e}")
+            return []
+
+    async def add_realm_role_composites(
+        self,
+        realm_name: str,
+        role_name: str,
+        child_roles: list[RoleRepresentation] | list[dict[str, Any]],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Add composite (child) roles to a realm role.
+
+        Args:
+            realm_name: Name of the realm
+            role_name: Name of the parent role
+            child_roles: List of roles to add as composites
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Adding {len(child_roles)} composite roles to realm role '{role_name}'"
+        )
+
+        try:
+            roles_data = []
+            for role in child_roles:
+                if isinstance(role, dict):
+                    roles_data.append(role)
+                else:
+                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/roles/{role_name}/composites",
+                namespace,
+                json=roles_data,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully added composite roles to '{role_name}'")
+                return True
+            else:
+                logger.error(f"Failed to add composite roles: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to add composite roles: {e}")
+            return False
+
+    async def remove_realm_role_composites(
+        self,
+        realm_name: str,
+        role_name: str,
+        child_roles: list[RoleRepresentation] | list[dict[str, Any]],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Remove composite (child) roles from a realm role.
+
+        Args:
+            realm_name: Name of the realm
+            role_name: Name of the parent role
+            child_roles: List of roles to remove from composites
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Removing {len(child_roles)} composite roles from realm role '{role_name}'"
+        )
+
+        try:
+            roles_data = []
+            for role in child_roles:
+                if isinstance(role, dict):
+                    roles_data.append(role)
+                else:
+                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/roles/{role_name}/composites",
+                namespace,
+                json=roles_data,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully removed composite roles from '{role_name}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to remove composite roles: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to remove composite roles: {e}")
+            return False
+
+    # =========================================================================
+    # Groups API methods
+    # =========================================================================
+
+    async def get_groups(
+        self,
+        realm_name: str,
+        namespace: str = "default",
+        briefRepresentation: bool = False,
+    ) -> list[GroupRepresentation]:
+        """
+        Get all top-level groups in a realm.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+            briefRepresentation: If true, returns only basic group info
+
+        Returns:
+            List of group configurations
+        """
+        logger.debug(f"Fetching groups for realm '{realm_name}'")
+
+        try:
+            params = {"briefRepresentation": str(briefRepresentation).lower()}
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/groups", namespace, params=params
+            )
+
+            if response.status_code == 200:
+                groups_data = response.json()
+                return [
+                    GroupRepresentation.model_validate(group) for group in groups_data
+                ]
+            else:
+                logger.error(f"Failed to get groups: {response.status_code}")
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get groups: {e}")
+            return []
+
+    async def get_group_by_id(
+        self, realm_name: str, group_id: str, namespace: str = "default"
+    ) -> GroupRepresentation | None:
+        """
+        Get a specific group by its ID.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group
+            namespace: Namespace for rate limiting
+
+        Returns:
+            GroupRepresentation if found, None otherwise
+        """
+        logger.debug(f"Fetching group '{group_id}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/groups/{group_id}", namespace
+            )
+
+            if response.status_code == 200:
+                return GroupRepresentation.model_validate(response.json())
+            elif response.status_code == 404:
+                return None
+            else:
+                logger.error(f"Failed to get group: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get group: {e}")
+            return None
+
+    async def get_group_by_path(
+        self, realm_name: str, path: str, namespace: str = "default"
+    ) -> GroupRepresentation | None:
+        """
+        Get a group by its path (e.g., /parent/child).
+
+        Args:
+            realm_name: Name of the realm
+            path: Group path (e.g., "/parent/child")
+            namespace: Namespace for rate limiting
+
+        Returns:
+            GroupRepresentation if found, None otherwise
+        """
+        logger.debug(f"Fetching group by path '{path}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/group-by-path/{path}", namespace
+            )
+
+            if response.status_code == 200:
+                return GroupRepresentation.model_validate(response.json())
+            elif response.status_code == 404:
+                return None
+            else:
+                logger.error(f"Failed to get group by path: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get group by path: {e}")
+            return None
+
+    async def create_group(
+        self,
+        realm_name: str,
+        group_config: GroupRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> str | None:
+        """
+        Create a top-level group.
+
+        Args:
+            realm_name: Name of the realm
+            group_config: Group configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Group ID if successful, None otherwise
+        """
+        if isinstance(group_config, dict):
+            group_config = GroupRepresentation.model_validate(group_config)
+
+        group_name = group_config.name or "unknown"
+        logger.info(f"Creating group '{group_name}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_validated_request(
+                "POST",
+                f"realms/{realm_name}/groups",
+                request_model=group_config,
+            )
+
+            if response.status_code == 201:
+                # Extract group ID from Location header
+                location = response.headers.get("Location", "")
+                group_id = location.split("/")[-1] if location else None
+                logger.info(
+                    f"Successfully created group '{group_name}' with ID {group_id}"
+                )
+                return group_id
+            elif response.status_code == 409:
+                logger.info(f"Group '{group_name}' already exists")
+                # Try to find the existing group
+                existing_group = await self.get_group_by_path(
+                    realm_name, f"/{group_name}", namespace
+                )
+                return existing_group.id if existing_group else None
+            else:
+                logger.error(f"Failed to create group: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to create group: {e}")
+            return None
+
+    async def create_subgroup(
+        self,
+        realm_name: str,
+        parent_group_id: str,
+        group_config: GroupRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> str | None:
+        """
+        Create a subgroup under a parent group.
+
+        Args:
+            realm_name: Name of the realm
+            parent_group_id: ID of the parent group
+            group_config: Subgroup configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Subgroup ID if successful, None otherwise
+        """
+        if isinstance(group_config, dict):
+            group_config = GroupRepresentation.model_validate(group_config)
+
+        group_name = group_config.name or "unknown"
+        logger.info(
+            f"Creating subgroup '{group_name}' under parent '{parent_group_id}' "
+            f"in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_validated_request(
+                "POST",
+                f"realms/{realm_name}/groups/{parent_group_id}/children",
+                request_model=group_config,
+            )
+
+            if response.status_code == 201:
+                location = response.headers.get("Location", "")
+                group_id = location.split("/")[-1] if location else None
+                logger.info(
+                    f"Successfully created subgroup '{group_name}' with ID {group_id}"
+                )
+                return group_id
+            elif response.status_code == 409:
+                logger.info(f"Subgroup '{group_name}' already exists")
+                return None
+            else:
+                logger.error(f"Failed to create subgroup: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to create subgroup: {e}")
+            return None
+
+    async def update_group(
+        self,
+        realm_name: str,
+        group_id: str,
+        group_config: GroupRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an existing group.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group to update
+            group_config: Updated group configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if isinstance(group_config, dict):
+            group_config = GroupRepresentation.model_validate(group_config)
+
+        logger.info(f"Updating group '{group_id}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_validated_request(
+                "PUT",
+                f"realms/{realm_name}/groups/{group_id}",
+                request_model=group_config,
+            )
+
+            if response.status_code in (200, 204):
+                logger.info(f"Successfully updated group '{group_id}'")
+                return True
+            else:
+                logger.error(f"Failed to update group: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update group: {e}")
+            return False
+
+    async def delete_group(
+        self, realm_name: str, group_id: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Delete a group.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group to delete
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Deleting group '{group_id}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "DELETE", f"realms/{realm_name}/groups/{group_id}", namespace
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully deleted group '{group_id}'")
+                return True
+            elif response.status_code == 404:
+                logger.info(f"Group '{group_id}' not found (already deleted)")
+                return True
+            else:
+                logger.error(f"Failed to delete group: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to delete group: {e}")
+            return False
+
+    async def get_group_realm_role_mappings(
+        self, realm_name: str, group_id: str, namespace: str = "default"
+    ) -> list[RoleRepresentation]:
+        """
+        Get realm role mappings for a group.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of assigned realm roles
+        """
+        logger.debug(
+            f"Fetching realm role mappings for group '{group_id}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                roles_data = response.json()
+                return [RoleRepresentation.model_validate(role) for role in roles_data]
+            else:
+                logger.error(
+                    f"Failed to get group realm role mappings: {response.status_code}"
+                )
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get group realm role mappings: {e}")
+            return []
+
+    async def assign_realm_roles_to_group(
+        self,
+        realm_name: str,
+        group_id: str,
+        roles: list[RoleRepresentation] | list[dict[str, Any]],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Assign realm roles to a group.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group
+            roles: List of roles to assign
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Assigning {len(roles)} realm roles to group '{group_id}' "
+            f"in realm '{realm_name}'"
+        )
+
+        try:
+            roles_data = []
+            for role in roles:
+                if isinstance(role, dict):
+                    roles_data.append(role)
+                else:
+                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
+                namespace,
+                json=roles_data,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully assigned realm roles to group '{group_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to assign realm roles to group: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to assign realm roles to group: {e}")
+            return False
+
+    async def remove_realm_roles_from_group(
+        self,
+        realm_name: str,
+        group_id: str,
+        roles: list[RoleRepresentation] | list[dict[str, Any]],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Remove realm roles from a group.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group
+            roles: List of roles to remove
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Removing {len(roles)} realm roles from group '{group_id}' "
+            f"in realm '{realm_name}'"
+        )
+
+        try:
+            roles_data = []
+            for role in roles:
+                if isinstance(role, dict):
+                    roles_data.append(role)
+                else:
+                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
+                namespace,
+                json=roles_data,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully removed realm roles from group '{group_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to remove realm roles from group: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to remove realm roles from group: {e}")
+            return False
+
+    async def get_group_client_role_mappings(
+        self,
+        realm_name: str,
+        group_id: str,
+        client_uuid: str,
+        namespace: str = "default",
+    ) -> list[RoleRepresentation]:
+        """
+        Get client role mappings for a group.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group
+            client_uuid: UUID of the client
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of assigned client roles
+        """
+        logger.debug(
+            f"Fetching client role mappings for group '{group_id}' "
+            f"and client '{client_uuid}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/groups/{group_id}/role-mappings/clients/{client_uuid}",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                roles_data = response.json()
+                return [RoleRepresentation.model_validate(role) for role in roles_data]
+            else:
+                logger.error(
+                    f"Failed to get group client role mappings: {response.status_code}"
+                )
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get group client role mappings: {e}")
+            return []
+
+    async def assign_client_roles_to_group(
+        self,
+        realm_name: str,
+        group_id: str,
+        client_uuid: str,
+        roles: list[RoleRepresentation] | list[dict[str, Any]],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Assign client roles to a group.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group
+            client_uuid: UUID of the client
+            roles: List of roles to assign
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Assigning {len(roles)} client roles to group '{group_id}' "
+            f"for client '{client_uuid}' in realm '{realm_name}'"
+        )
+
+        try:
+            roles_data = []
+            for role in roles:
+                if isinstance(role, dict):
+                    roles_data.append(role)
+                else:
+                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/groups/{group_id}/role-mappings/clients/{client_uuid}",
+                namespace,
+                json=roles_data,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully assigned client roles to group '{group_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to assign client roles to group: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to assign client roles to group: {e}")
+            return False
+
+    async def get_default_groups(
+        self, realm_name: str, namespace: str = "default"
+    ) -> list[GroupRepresentation]:
+        """
+        Get the default groups for a realm.
+
+        Default groups are automatically assigned to new users.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of default groups
+        """
+        logger.debug(f"Fetching default groups for realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/default-groups", namespace
+            )
+
+            if response.status_code == 200:
+                groups_data = response.json()
+                return [
+                    GroupRepresentation.model_validate(group) for group in groups_data
+                ]
+            else:
+                logger.error(f"Failed to get default groups: {response.status_code}")
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get default groups: {e}")
+            return []
+
+    async def add_default_group(
+        self, realm_name: str, group_id: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Add a group to the default groups.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group to add as default
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(f"Adding group '{group_id}' as default in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "PUT", f"realms/{realm_name}/default-groups/{group_id}", namespace
+            )
+
+            if response.status_code in (200, 204):
+                logger.info(f"Successfully added group '{group_id}' as default")
+                return True
+            else:
+                logger.error(f"Failed to add default group: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to add default group: {e}")
+            return False
+
+    async def remove_default_group(
+        self, realm_name: str, group_id: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Remove a group from the default groups.
+
+        Args:
+            realm_name: Name of the realm
+            group_id: ID of the group to remove from defaults
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Removing group '{group_id}' from defaults in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "DELETE", f"realms/{realm_name}/default-groups/{group_id}", namespace
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully removed group '{group_id}' from defaults")
+                return True
+            elif response.status_code == 404:
+                logger.info(
+                    f"Group '{group_id}' was not a default group (already removed)"
+                )
+                return True
+            else:
+                logger.error(f"Failed to remove default group: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to remove default group: {e}")
             return False
 
 
