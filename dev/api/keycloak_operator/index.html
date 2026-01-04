@@ -1858,6 +1858,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakPasswordPolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakPasswordPolicy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="KeycloakPasswordPolicy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakPasswordPolicy.to_policy_string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_policy_string
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.realm.KeycloakProtocolMapper" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -7866,6 +7894,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakPasswordPolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakPasswordPolicy
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="KeycloakPasswordPolicy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakPasswordPolicy.to_policy_string" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_policy_string
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.realm.KeycloakProtocolMapper" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -12740,6 +12796,98 @@ Cross-namespace secret references are not supported for security reasons.</p>
 
 
 
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.realm.KeycloakPasswordPolicy" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">KeycloakPasswordPolicy</span>
+
+
+<a href="#keycloak_operator.models.realm.KeycloakPasswordPolicy" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>Password policy configuration for a realm.</p>
+<p>Enforces password requirements for users. The policy is converted to
+Keycloak's "and"-separated policy string format.</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.models.realm.KeycloakPasswordPolicy.to_policy_string" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_policy_string</span>
+
+
+<a href="#keycloak_operator.models.realm.KeycloakPasswordPolicy.to_policy_string" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_policy_string</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert to Keycloak password policy string format.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Policy string with " and " separator (e.g., "length(12) and upperCase(1) and notUsername")</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
 
 
 
