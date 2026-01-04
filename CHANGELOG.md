@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.15](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.14...operator-image-v0.5.15) (2026-01-04)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add password policy and improve events config ([3d60b5e](https://github.com/vriesdemichael/keycloak-operator/commit/3d60b5eeddd7f2a5c63416a55e195e07f6804d92)), closes [#311](https://github.com/vriesdemichael/keycloak-operator/issues/311)
+
 ## [0.5.14](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.13...operator-image-v0.5.14) (2026-01-03)
 
 
