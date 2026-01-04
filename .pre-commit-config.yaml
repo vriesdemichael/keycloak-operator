@@ -3,6 +3,18 @@
 # Run manually: uv run pre-commit run --all-files
 
 repos:
+  # Check if branch has diverged from remote (e.g., after remote rebase)
+  # This runs first to catch issues early and provide clear fix instructions
+  - repo: local
+    hooks:
+      - id: check-branch-sync
+        name: check branch sync with remote
+        entry: bash scripts/check-branch-sync.sh
+        language: system
+        always_run: true
+        pass_filenames: false
+        stages: [pre-commit]
+
   # Ruff - Python linting and formatting
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4
