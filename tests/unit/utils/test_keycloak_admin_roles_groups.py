@@ -1362,3 +1362,124 @@ class TestRemoveRealmRolesFromGroupWithDict:
         )
 
         assert result is True
+
+
+# =============================================================================
+# Additional Coverage Tests for Error Paths
+# =============================================================================
+
+
+class TestGetGroupByPathErrorPaths:
+    """Tests for get_group_by_path error handling paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_server_error(self, mock_admin_client):
+        """Should return None on server error (500)."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        group = await mock_admin_client.get_group_by_path(
+            "test-realm", "/engineering", "default"
+        )
+
+        assert group is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_forbidden(self, mock_admin_client):
+        """Should return None on forbidden (403)."""
+        mock_response = MockResponse(403)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        group = await mock_admin_client.get_group_by_path(
+            "test-realm", "/engineering", "default"
+        )
+
+        assert group is None
+
+
+class TestCreateSubgroupConflict:
+    """Tests for create_subgroup conflict handling."""
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_conflict(self, mock_admin_client):
+        """Should return None when subgroup already exists (409)."""
+        mock_response = MockResponse(409)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        group_config = GroupRepresentation(name="existing-subgroup")
+        result = await mock_admin_client.create_subgroup(
+            "test-realm", "parent-id", group_config, "default"
+        )
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_server_error(self, mock_admin_client):
+        """Should return None on server error (500)."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        group_config = GroupRepresentation(name="new-subgroup")
+        result = await mock_admin_client.create_subgroup(
+            "test-realm", "parent-id", group_config, "default"
+        )
+
+        assert result is None
+
+
+class TestUpdateGroupErrorPaths:
+    """Tests for update_group error handling paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_server_error(self, mock_admin_client):
+        """Should return False on server error."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.update_group(
+            "test-realm",
+            "group-id",
+            GroupRepresentation(id="group-id", name="updated-group"),
+            "default",
+        )
+
+        assert result is False
+
+
+class TestDeleteGroupErrorPaths:
+    """Tests for delete_group error handling paths."""
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_server_error(self, mock_admin_client):
+        """Should return False on server error."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.delete_group(
+            "test-realm", "group-id", "default"
+        )
+
+        assert result is False
+
+
+class TestGroupRealmRoleMappingsErrorPaths:
+    """Tests for group realm role mappings error handling."""
+
+    @pytest.mark.asyncio
+    async def test_remove_realm_roles_returns_false_on_server_error(
+        self, mock_admin_client
+    ):
+        """Should return False on server error when removing roles."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = [RoleRepresentation(name="admin", id="role-id")]
+        result = await mock_admin_client.remove_realm_roles_from_group(
+            "test-realm", "group-id", roles, "default"
+        )
+
+        assert result is False
