@@ -20,7 +20,11 @@ import uuid
 import pytest
 from kubernetes.client.rest import ApiException
 
-from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
+from .wait_helpers import (
+    wait_for_reconciliation_complete,
+    wait_for_resource_deleted,
+    wait_for_resource_ready,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -1099,6 +1103,18 @@ class TestRealmRolesUpdateDelete:
             assert role is not None
             assert role.description == "Initial description"
 
+            # Get current generation before update
+            current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = current_resource.get("metadata", {}).get(
+                "generation", 1
+            )
+
             # Update the CR with modified role and new role
             updated_spec = KeycloakRealmSpec(
                 operator_ref=OperatorRef(namespace=operator_namespace),
@@ -1136,22 +1152,20 @@ class TestRealmRolesUpdateDelete:
                 body=updated_manifest,
             )
 
-            # Wait for reconciliation
-            await wait_for_resource_ready(
+            # Wait for reconciliation to complete with new generation
+            await wait_for_reconciliation_complete(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
+                min_generation=current_generation + 1,
                 timeout=120,
                 operator_namespace=operator_namespace,
             )
 
-            # Wait a bit for changes to propagate
-            await asyncio.sleep(5)
-
-            # Verify role was updated
+            # Verify role was updated - poll to ensure Keycloak state is consistent
             async def check_role_updated():
                 updated_role = await keycloak_admin_client.get_realm_role_by_name(
                     realm_name, "mutable-role", namespace
@@ -1162,7 +1176,7 @@ class TestRealmRolesUpdateDelete:
                 )
 
             assert await _simple_wait(
-                check_role_updated, timeout=60, interval=3
+                check_role_updated, timeout=30, interval=2
             ), "Role description should be updated"
 
             # Verify new role was added
@@ -1257,6 +1271,18 @@ class TestRealmRolesUpdateDelete:
             assert "keep-role" in role_names
             assert "delete-role" in role_names
 
+            # Get current generation before update
+            current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = current_resource.get("metadata", {}).get(
+                "generation", 1
+            )
+
             # Update CR to remove delete-role
             updated_spec = KeycloakRealmSpec(
                 operator_ref=OperatorRef(namespace=operator_namespace),
@@ -1287,21 +1313,20 @@ class TestRealmRolesUpdateDelete:
                 body=updated_manifest,
             )
 
-            await wait_for_resource_ready(
+            # Wait for reconciliation to complete with new generation
+            await wait_for_reconciliation_complete(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
+                min_generation=current_generation + 1,
                 timeout=120,
                 operator_namespace=operator_namespace,
             )
 
-            # Wait for reconciliation
-            await asyncio.sleep(5)
-
-            # Verify delete-role was removed
+            # Verify delete-role was removed - poll to ensure Keycloak state is consistent
             async def check_role_deleted():
                 deleted_role = await keycloak_admin_client.get_realm_role_by_name(
                     realm_name, "delete-role", namespace
@@ -1309,7 +1334,7 @@ class TestRealmRolesUpdateDelete:
                 return deleted_role is None
 
             assert await _simple_wait(
-                check_role_deleted, timeout=60, interval=3
+                check_role_deleted, timeout=30, interval=2
             ), "delete-role should be removed"
 
             # Verify keep-role still exists
@@ -1409,6 +1434,18 @@ class TestGroupsUpdateDelete:
             assert group is not None
             assert group.attributes.get("version") == ["v1"]
 
+            # Get current generation before update
+            current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = current_resource.get("metadata", {}).get(
+                "generation", 1
+            )
+
             # Update CR with modified attributes and add subgroup
             updated_spec = KeycloakRealmSpec(
                 operator_ref=OperatorRef(namespace=operator_namespace),
@@ -1442,20 +1479,20 @@ class TestGroupsUpdateDelete:
                 body=updated_manifest,
             )
 
-            await wait_for_resource_ready(
+            # Wait for reconciliation to complete with new generation
+            await wait_for_reconciliation_complete(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
+                min_generation=current_generation + 1,
                 timeout=120,
                 operator_namespace=operator_namespace,
             )
 
-            await asyncio.sleep(5)
-
-            # Verify attributes were updated
+            # Verify attributes were updated - poll to ensure Keycloak state is consistent
             async def check_group_updated():
                 updated_group = await keycloak_admin_client.get_group_by_path(
                     realm_name, "/mutable-group", namespace
@@ -1465,7 +1502,7 @@ class TestGroupsUpdateDelete:
                 ) == ["v2"]
 
             assert await _simple_wait(
-                check_group_updated, timeout=60, interval=3
+                check_group_updated, timeout=30, interval=2
             ), "Group attributes should be updated"
 
             # Verify subgroup was added
@@ -1556,6 +1593,18 @@ class TestGroupsUpdateDelete:
             assert "keep-group" in group_names
             assert "delete-group" in group_names
 
+            # Get current generation before update
+            current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = current_resource.get("metadata", {}).get(
+                "generation", 1
+            )
+
             # Update CR to remove delete-group
             updated_spec = KeycloakRealmSpec(
                 operator_ref=OperatorRef(namespace=operator_namespace),
@@ -1584,20 +1633,20 @@ class TestGroupsUpdateDelete:
                 body=updated_manifest,
             )
 
-            await wait_for_resource_ready(
+            # Wait for reconciliation to complete with new generation
+            await wait_for_reconciliation_complete(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
+                min_generation=current_generation + 1,
                 timeout=120,
                 operator_namespace=operator_namespace,
             )
 
-            await asyncio.sleep(5)
-
-            # Verify delete-group was removed
+            # Verify delete-group was removed - poll to ensure Keycloak state is consistent
             async def check_group_deleted():
                 deleted_group = await keycloak_admin_client.get_group_by_path(
                     realm_name, "/delete-group", namespace
@@ -1605,7 +1654,7 @@ class TestGroupsUpdateDelete:
                 return deleted_group is None
 
             assert await _simple_wait(
-                check_group_deleted, timeout=60, interval=3
+                check_group_deleted, timeout=30, interval=2
             ), "delete-group should be removed"
 
             # Verify keep-group still exists
@@ -1698,6 +1747,18 @@ class TestGroupsUpdateDelete:
             assert "/group1" in default_paths
             assert "/group2" not in default_paths
 
+            # Get current generation before update
+            current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = current_resource.get("metadata", {}).get(
+                "generation", 1
+            )
+
             # Update CR to change default groups
             updated_spec = KeycloakRealmSpec(
                 operator_ref=OperatorRef(namespace=operator_namespace),
@@ -1727,20 +1788,20 @@ class TestGroupsUpdateDelete:
                 body=updated_manifest,
             )
 
-            await wait_for_resource_ready(
+            # Wait for reconciliation to complete with new generation
+            await wait_for_reconciliation_complete(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
+                min_generation=current_generation + 1,
                 timeout=120,
                 operator_namespace=operator_namespace,
             )
 
-            await asyncio.sleep(5)
-
-            # Verify default groups were updated
+            # Verify default groups were updated - poll to ensure Keycloak state is consistent
             async def check_default_groups_updated():
                 updated_defaults = await keycloak_admin_client.get_default_groups(
                     realm_name, namespace
@@ -1749,7 +1810,7 @@ class TestGroupsUpdateDelete:
                 return "/group2" in updated_paths and "/group1" not in updated_paths
 
             assert await _simple_wait(
-                check_default_groups_updated, timeout=60, interval=3
+                check_default_groups_updated, timeout=30, interval=2
             ), "Default groups should be updated"
 
             logger.info("✓ Successfully verified default groups update via CR")

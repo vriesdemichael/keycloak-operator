@@ -430,3 +430,75 @@ async def wait_for_resource_deleted(
     raise ResourceNotReadyError(
         f"Resource {plural}/{name} was not deleted within {timeout}s"
     )
+
+
+async def wait_for_reconciliation_complete(
+    k8s_custom_objects,
+    group: str,
+    version: str,
+    namespace: str,
+    plural: str,
+    name: str,
+    min_generation: int | None = None,
+    timeout: int = 120,
+    interval: int = 3,
+    operator_namespace: str | None = None,
+) -> dict[str, Any]:
+    """Wait for a resource to complete reconciliation after an update.
+
+    This function waits for:
+    1. status.observedGeneration >= min_generation (or metadata.generation if not provided)
+    2. status.phase to be "Ready" or "Degraded"
+
+    This is more robust than wait_for_resource_ready when you need to ensure
+    a new reconciliation cycle has completed after patching a resource.
+
+    Args:
+        k8s_custom_objects: Kubernetes CustomObjectsApi client
+        group: API group (e.g., "vriesdemichael.github.io")
+        version: API version (e.g., "v1")
+        namespace: Resource namespace
+        plural: Resource plural name (e.g., "keycloakrealms")
+        name: Resource name
+        min_generation: Minimum generation to wait for. If None, uses current
+                        metadata.generation from the resource.
+        timeout: Maximum wait time in seconds
+        interval: Check interval in seconds
+        operator_namespace: Namespace where operator is running (for log collection)
+
+    Returns:
+        The resource dict when reconciliation is complete
+
+    Raises:
+        ResourceNotReadyError: When timeout is reached, includes debugging info
+    """
+
+    def _condition(resource: dict[str, Any]) -> bool:
+        metadata = resource.get("metadata", {})
+        status = resource.get("status", {}) or {}
+        generation = metadata.get("generation", 0)
+        observed_generation = status.get("observedGeneration", 0)
+        phase = status.get("phase")
+
+        # If min_generation is provided, use it; otherwise use current generation
+        target_generation = min_generation if min_generation is not None else generation
+
+        # Must have processed at least the target generation AND be in a ready state
+        return observed_generation >= target_generation and phase in (
+            "Ready",
+            "Degraded",
+        )
+
+    return await wait_for_resource_condition(
+        k8s_custom_objects=k8s_custom_objects,
+        group=group,
+        version=version,
+        namespace=namespace,
+        plural=plural,
+        name=name,
+        condition_func=_condition,
+        timeout=timeout,
+        interval=interval,
+        operator_namespace=operator_namespace,
+        expected_phases=("Ready", "Degraded"),
+    )
