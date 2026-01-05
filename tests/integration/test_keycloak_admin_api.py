@@ -12,14 +12,13 @@ Tests verify the admin API wrapper correctly interacts with Keycloak:
 from __future__ import annotations
 
 import asyncio
-import contextlib
 import time
 import uuid
 
 import pytest
-from kubernetes.client.rest import ApiException
 
-from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
+from .cleanup_utils import delete_custom_resource_with_retry
+from .wait_helpers import wait_for_resource_ready
 
 
 async def _simple_wait(condition_func, timeout=60, interval=2):
@@ -44,26 +43,20 @@ async def _cleanup_resource(
     name: str,
     timeout: int = 60,
 ) -> None:
-    """Helper to delete a resource and wait for deletion to complete."""
-    with contextlib.suppress(ApiException):
-        await k8s_custom_objects.delete_namespaced_custom_object(
-            group=group,
-            version=version,
-            namespace=namespace,
-            plural=plural,
-            name=name,
-        )
-    # Wait for resource to be fully deleted (ignore if already gone)
-    with contextlib.suppress(Exception):
-        await wait_for_resource_deleted(
-            k8s_custom_objects=k8s_custom_objects,
-            group=group,
-            version=version,
-            namespace=namespace,
-            plural=plural,
-            name=name,
-            timeout=timeout,
-        )
+    """Helper to delete a resource and wait for deletion to complete.
+
+    Uses robust cleanup with automatic finalizer removal for stuck resources.
+    """
+    await delete_custom_resource_with_retry(
+        k8s_custom_objects=k8s_custom_objects,
+        group=group,
+        version=version,
+        namespace=namespace,
+        plural=plural,
+        name=name,
+        timeout=timeout,
+        force_after=30,
+    )
 
 
 @pytest.mark.integration
