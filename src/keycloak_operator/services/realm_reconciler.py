@@ -1540,22 +1540,29 @@ class KeycloakRealmReconciler(BaseReconciler):
 
                 from keycloak_operator.models.keycloak_api import RoleRepresentation
 
-                role_repr = RoleRepresentation(
-                    name=role_name,
-                    description=role_config.description,
-                    composite=role_config.composite
-                    or bool(role_config.composite_roles),
-                    attributes=role_config.attributes,
-                )
-
                 if existing_role:
-                    # Update existing role
+                    # Update existing role - include id for Keycloak API
+                    role_repr = RoleRepresentation(
+                        id=existing_role.id,
+                        name=role_name,
+                        description=role_config.description,
+                        composite=role_config.composite
+                        or bool(role_config.composite_roles),
+                        attributes=role_config.attributes,
+                    )
                     self.logger.info(f"Updating realm role '{role_name}'")
                     await admin_client.update_realm_role(
                         realm_name, role_name, role_repr, namespace
                     )
                 else:
                     # Create new role
+                    role_repr = RoleRepresentation(
+                        name=role_name,
+                        description=role_config.description,
+                        composite=role_config.composite
+                        or bool(role_config.composite_roles),
+                        attributes=role_config.attributes,
+                    )
                     self.logger.info(f"Creating realm role '{role_name}'")
                     await admin_client.create_realm_role(
                         realm_name, role_repr, namespace
@@ -1774,23 +1781,29 @@ class KeycloakRealmReconciler(BaseReconciler):
                 realm_name, group_path, namespace
             )
 
-            group_repr = GroupRepresentation(
-                name=group_name,
-                path=group_path,
-                attributes=group_config.attributes or {},
-            )
-
             group_id: str | None = None
 
             if existing_group:
                 # Update existing group
                 group_id = existing_group.id
                 self.logger.info(f"Updating group '{group_path}'")
+                # Include id in the update request - required by Keycloak API
+                group_repr = GroupRepresentation(
+                    id=group_id,
+                    name=group_name,
+                    path=group_path,
+                    attributes=group_config.attributes or {},
+                )
                 await admin_client.update_group(
                     realm_name, group_id, group_repr, namespace
                 )
             else:
                 # Create new group
+                group_repr = GroupRepresentation(
+                    name=group_name,
+                    path=group_path,
+                    attributes=group_config.attributes or {},
+                )
                 self.logger.info(f"Creating group '{group_path}'")
                 if parent_id:
                     group_id = await admin_client.create_subgroup(
