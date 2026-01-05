@@ -2446,6 +2446,33 @@ class KeycloakRealmReconciler(BaseReconciler):
                 except Exception as e:
                     self.logger.warning(f"Failed to update realm {field_name}: {e}")
 
+            # Handle roles updates
+            elif field_path[:2] == ("spec", "roles"):
+                self.logger.info("Updating realm roles")
+                try:
+                    await self.configure_realm_roles(new_realm_spec, name, namespace)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update realm roles: {e}")
+
+            # Handle groups updates
+            elif field_path[:2] == ("spec", "groups"):
+                self.logger.info("Updating groups")
+                try:
+                    await self.configure_groups(new_realm_spec, name, namespace)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update groups: {e}")
+
+            # Handle default groups updates
+            elif field_path[:2] == ("spec", "defaultGroups"):
+                self.logger.info("Updating default groups")
+                try:
+                    await self.configure_default_groups(new_realm_spec, name, namespace)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update default groups: {e}")
+
         if configuration_changed:
             self.logger.info(f"Successfully updated KeycloakRealm {name}")
             return {
