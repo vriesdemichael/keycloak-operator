@@ -3779,12 +3779,21 @@ class KeycloakAdminClient:
 
         logger.info(f"Updating group '{group_id}' in realm '{realm_name}'")
 
+        # Build update payload excluding read-only fields that Keycloak
+        # doesn't accept during updates (causes 500 errors)
+        update_payload = group_config.model_dump(
+            exclude_none=True,
+            by_alias=True,
+            mode="json",
+            exclude={"sub_group_count", "access", "path"},
+        )
+
         try:
-            response = await self._make_validated_request(
+            response = await self._make_request(
                 "PUT",
                 f"realms/{realm_name}/groups/{group_id}",
                 namespace,
-                request_model=group_config,
+                json=update_payload,
             )
 
             if response.status_code in (200, 204):
