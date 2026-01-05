@@ -1029,3 +1029,761 @@ class TestClientRoleMappings:
         await reconciler.configure_groups(spec, "test-realm", "default")
 
         admin_mock.create_group.assert_called_once()
+
+
+# =============================================================================
+# Exception Path Coverage Tests
+# =============================================================================
+
+
+class TestExceptionCoverage:
+    """Tests to cover exception handling paths."""
+
+    @pytest.mark.asyncio
+    async def test_delete_realm_role_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when deleting a realm role fails."""
+        existing_roles = [
+            RoleRepresentation(name="custom-role-to-delete", id="role-id"),
+        ]
+        admin_mock.get_realm_roles = AsyncMock(return_value=existing_roles)
+        admin_mock.delete_realm_role = AsyncMock(side_effect=Exception("Delete failed"))
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            roles=KeycloakRoles(realm_roles=[KeycloakRealmRole(name="other-role")]),
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_realm_roles(spec, "test-realm", "default")
+
+        admin_mock.delete_realm_role.assert_called_once()
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_role_configuration_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when role configuration fails."""
+        admin_mock.get_realm_roles = AsyncMock(return_value=[])
+        admin_mock.get_realm_role_by_name = AsyncMock(return_value=None)
+        admin_mock.create_realm_role = AsyncMock(side_effect=Exception("Create failed"))
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            roles=KeycloakRoles(realm_roles=[KeycloakRealmRole(name="new-role")]),
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_realm_roles(spec, "test-realm", "default")
+
+        admin_mock.create_realm_role.assert_called_once()
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_composite_role_configuration_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when composite role configuration fails."""
+        parent_role = RoleRepresentation(name="parent", id="parent-id")
+        admin_mock.get_realm_roles = AsyncMock(return_value=[parent_role])
+        admin_mock.get_realm_role_by_name = AsyncMock(return_value=parent_role)
+        admin_mock.get_realm_role_composites = AsyncMock(
+            side_effect=Exception("Failed to get composites")
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            roles=KeycloakRoles(
+                realm_roles=[
+                    KeycloakRealmRole(
+                        name="parent",
+                        composite_roles=["child"],
+                    )
+                ]
+            ),
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_realm_roles(spec, "test-realm", "default")
+
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_group_configuration_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when group configuration fails."""
+        admin_mock.get_groups = AsyncMock(return_value=[])
+        admin_mock.get_group_by_path = AsyncMock(return_value=None)
+        admin_mock.create_group = AsyncMock(
+            side_effect=Exception("Create group failed")
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            groups=[KeycloakGroup(name="new-group")],
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_groups(spec, "test-realm", "default")
+
+        admin_mock.create_group.assert_called_once()
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_delete_group_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when deleting a group fails."""
+        existing_groups = [
+            GroupRepresentation(id="group-id", name="old-group", path="/old-group"),
+        ]
+        admin_mock.get_groups = AsyncMock(return_value=existing_groups)
+        admin_mock.delete_group = AsyncMock(side_effect=Exception("Delete failed"))
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            groups=[KeycloakGroup(name="other-group")],
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_groups(spec, "test-realm", "default")
+
+        admin_mock.delete_group.assert_called_once()
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_group_realm_roles_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when configuring group realm roles fails."""
+        admin_mock.get_groups = AsyncMock(return_value=[])
+        admin_mock.get_group_by_path = AsyncMock(return_value=None)
+        admin_mock.create_group = AsyncMock(return_value="group-id")
+        admin_mock.get_group_realm_role_mappings = AsyncMock(
+            side_effect=Exception("Failed to get role mappings")
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            groups=[
+                KeycloakGroup(
+                    name="test-group",
+                    realm_roles=["admin"],
+                )
+            ],
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_groups(spec, "test-realm", "default")
+
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_client_not_found_for_group_roles(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test handling when client is not found for group client roles."""
+        admin_mock.get_groups = AsyncMock(return_value=[])
+        admin_mock.get_group_by_path = AsyncMock(return_value=None)
+        admin_mock.create_group = AsyncMock(return_value="group-id")
+        admin_mock.get_client_uuid = AsyncMock(return_value=None)  # Client not found
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            groups=[
+                KeycloakGroup(
+                    name="test-group",
+                    client_roles={"nonexistent-client": ["role"]},
+                )
+            ],
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_groups(spec, "test-realm", "default")
+
+        admin_mock.get_client_uuid.assert_called_once()
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_client_role_assignment_with_existing_roles(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test client role assignment when some roles already exist."""
+        admin_mock.get_groups = AsyncMock(return_value=[])
+        admin_mock.get_group_by_path = AsyncMock(return_value=None)
+        admin_mock.create_group = AsyncMock(return_value="group-id")
+        admin_mock.get_client_uuid = AsyncMock(return_value="client-uuid")
+        admin_mock.get_group_client_role_mappings = AsyncMock(
+            return_value=[RoleRepresentation(name="existing-role", id="existing-id")]
+        )
+        admin_mock.get_client_role = AsyncMock(
+            return_value=RoleRepresentation(name="new-role", id="new-id")
+        )
+        admin_mock.assign_client_roles_to_group = AsyncMock(return_value=True)
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            groups=[
+                KeycloakGroup(
+                    name="test-group",
+                    client_roles={"my-client": ["existing-role", "new-role"]},
+                )
+            ],
+        )
+
+        await reconciler.configure_groups(spec, "test-realm", "default")
+
+        # Should only add new-role, not existing-role
+        admin_mock.assign_client_roles_to_group.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_client_role_configuration_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when client role configuration fails."""
+        admin_mock.get_groups = AsyncMock(return_value=[])
+        admin_mock.get_group_by_path = AsyncMock(return_value=None)
+        admin_mock.create_group = AsyncMock(return_value="group-id")
+        admin_mock.get_client_uuid = AsyncMock(return_value="client-uuid")
+        admin_mock.get_group_client_role_mappings = AsyncMock(
+            side_effect=Exception("Failed to get client role mappings")
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            groups=[
+                KeycloakGroup(
+                    name="test-group",
+                    client_roles={"my-client": ["role"]},
+                )
+            ],
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_groups(spec, "test-realm", "default")
+
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_default_group_add_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when adding default group fails."""
+        admin_mock.get_default_groups = AsyncMock(return_value=[])
+        admin_mock.get_group_by_path = AsyncMock(
+            return_value=GroupRepresentation(id="group-id", name="users", path="/users")
+        )
+        admin_mock.add_default_group = AsyncMock(
+            side_effect=Exception("Add default failed")
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            default_groups=["/users"],
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_default_groups(spec, "test-realm", "default")
+
+        admin_mock.add_default_group.assert_called_once()
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_default_group_remove_exception(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test exception handling when removing default group fails."""
+        admin_mock.get_default_groups = AsyncMock(
+            return_value=[
+                GroupRepresentation(id="old-id", name="old-group", path="/old-group")
+            ]
+        )
+        admin_mock.remove_default_group = AsyncMock(
+            side_effect=Exception("Remove default failed")
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            default_groups=["/new-group"],  # Different group, so old is removed
+        )
+
+        # Need to mock get_group_by_path for the new group
+        admin_mock.get_group_by_path = AsyncMock(
+            return_value=GroupRepresentation(
+                id="new-id", name="new-group", path="/new-group"
+            )
+        )
+        admin_mock.add_default_group = AsyncMock(return_value=True)
+
+        # Should not raise, just log warning
+        await reconciler.configure_default_groups(spec, "test-realm", "default")
+
+        admin_mock.remove_default_group.assert_called_once()
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_default_group_not_found(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test handling when default group to add is not found."""
+        admin_mock.get_default_groups = AsyncMock(return_value=[])
+        admin_mock.get_group_by_path = AsyncMock(return_value=None)  # Group not found
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            default_groups=["/nonexistent-group"],
+        )
+
+        # Should not raise, just log warning
+        await reconciler.configure_default_groups(spec, "test-realm", "default")
+
+        admin_mock.get_group_by_path.assert_called_once()
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_no_default_groups_early_return(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test early return when no default groups specified."""
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            # Don't specify default_groups at all - it will use default empty list
+        )
+
+        await reconciler.configure_default_groups(spec, "test-realm", "default")
+
+        # Should return early without calling admin client (empty list)
+        admin_mock.get_default_groups.assert_not_called()
+
+
+class TestGroupPathCollectionCoverage:
+    """Tests for group path collection helper methods."""
+
+    @pytest.mark.asyncio
+    async def test_collect_group_paths_with_nested_groups(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test that nested group paths are collected correctly."""
+        admin_mock.get_groups = AsyncMock(return_value=[])
+        admin_mock.get_group_by_path = AsyncMock(return_value=None)
+        admin_mock.create_group = AsyncMock(return_value="parent-id")
+        admin_mock.create_subgroup = AsyncMock(return_value="child-id")
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            groups=[
+                KeycloakGroup(
+                    name="parent",
+                    subgroups=[
+                        KeycloakGroup(
+                            name="child",
+                            subgroups=[KeycloakGroup(name="grandchild")],
+                        )
+                    ],
+                )
+            ],
+        )
+
+        await reconciler.configure_groups(spec, "test-realm", "default")
+
+        # Should create parent, child, and grandchild
+        admin_mock.create_group.assert_called_once()
+        assert admin_mock.create_subgroup.call_count == 2
+
+
+class TestGroupMapBuildingCoverage:
+    """Tests for group map building helper methods."""
+
+    @pytest.mark.asyncio
+    async def test_build_group_map_with_nested_existing_groups(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test that existing nested groups are mapped correctly."""
+        child_group = GroupRepresentation(
+            id="child-id", name="child", path="/parent/child"
+        )
+        parent_group = GroupRepresentation(
+            id="parent-id",
+            name="parent",
+            path="/parent",
+            sub_groups=[child_group],
+        )
+        admin_mock.get_groups = AsyncMock(return_value=[parent_group])
+        # Mock get_group_by_path to return existing groups
+        admin_mock.get_group_by_path = AsyncMock(
+            side_effect=lambda realm, path, ns: parent_group
+            if path == "/parent"
+            else child_group
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            groups=[
+                KeycloakGroup(
+                    name="parent",
+                    subgroups=[KeycloakGroup(name="child")],
+                )
+            ],
+        )
+
+        await reconciler.configure_groups(spec, "test-realm", "default")
+
+        # Should update existing groups, not create new ones
+        admin_mock.update_group.assert_called()
+
+
+class TestCompositeRoleCoverage:
+    """Additional tests for composite role edge cases."""
+
+    @pytest.mark.asyncio
+    async def test_remove_composite_roles_none_to_remove(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test when there are no composite roles to remove."""
+        parent_role = RoleRepresentation(name="parent", id="parent-id", composite=True)
+        child_role = RoleRepresentation(name="child", id="child-id")
+
+        admin_mock.get_realm_roles = AsyncMock(return_value=[parent_role, child_role])
+        admin_mock.get_realm_role_by_name = AsyncMock(
+            side_effect=lambda realm, name, ns: parent_role
+            if name == "parent"
+            else child_role
+        )
+        admin_mock.get_realm_role_composites = AsyncMock(
+            return_value=[child_role]  # Current composites match desired
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            roles=KeycloakRoles(
+                realm_roles=[
+                    KeycloakRealmRole(
+                        name="parent",
+                        composite_roles=["child"],  # Same as current
+                    )
+                ]
+            ),
+        )
+
+        await reconciler.configure_realm_roles(spec, "test-realm", "default")
+
+        # Should not try to remove any composites
+        admin_mock.remove_realm_role_composites.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_add_composite_roles_none_to_add(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Test when there are no composite roles to add (all exist)."""
+        parent_role = RoleRepresentation(name="parent", id="parent-id", composite=True)
+        child_role = RoleRepresentation(name="child", id="child-id")
+
+        admin_mock.get_realm_roles = AsyncMock(return_value=[parent_role, child_role])
+        admin_mock.get_realm_role_by_name = AsyncMock(
+            side_effect=lambda realm, name, ns: parent_role
+            if name == "parent"
+            else child_role
+        )
+        admin_mock.get_realm_role_composites = AsyncMock(
+            return_value=[child_role]  # Already has child
+        )
+
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            roles=KeycloakRoles(
+                realm_roles=[
+                    KeycloakRealmRole(
+                        name="parent",
+                        composite_roles=["child"],
+                    )
+                ]
+            ),
+        )
+
+        await reconciler.configure_realm_roles(spec, "test-realm", "default")
+
+        # Should not try to add any composites (already there)
+        admin_mock.add_realm_role_composites.assert_not_called()
+
+
+# =============================================================================
+# do_update Method Tests for Roles/Groups Changes
+# =============================================================================
+
+
+class TestDoUpdateRolesGroups:
+    """Tests for do_update method handling role and group changes."""
+
+    @pytest.fixture
+    def mock_status(self) -> MagicMock:
+        """Create a mock status object."""
+        status = MagicMock()
+        status.phase = "Ready"
+        status.message = ""
+        return status
+
+    @pytest.mark.asyncio
+    async def test_do_update_handles_roles_change(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+        mock_status: MagicMock,
+    ) -> None:
+        """Test do_update handles roles changes."""
+        old_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "roles": {"realmRoles": []},
+        }
+        new_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "roles": {"realmRoles": [{"name": "new-role"}]},
+        }
+        diff = [("change", ("spec", "roles", "realmRoles"), [], [{"name": "new-role"}])]
+
+        result = await reconciler.do_update(
+            old_spec, new_spec, diff, "test-realm", "default", mock_status
+        )
+
+        assert result is not None
+        assert result["phase"] == "Ready"
+        admin_mock.get_realm_roles.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_do_update_handles_groups_change(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+        mock_status: MagicMock,
+    ) -> None:
+        """Test do_update handles groups changes."""
+        old_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "groups": [],
+        }
+        new_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "groups": [{"name": "new-group"}],
+        }
+        diff = [("change", ("spec", "groups"), [], [{"name": "new-group"}])]
+
+        result = await reconciler.do_update(
+            old_spec, new_spec, diff, "test-realm", "default", mock_status
+        )
+
+        assert result is not None
+        assert result["phase"] == "Ready"
+        admin_mock.get_groups.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_do_update_handles_default_groups_change(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+        mock_status: MagicMock,
+    ) -> None:
+        """Test do_update handles default groups changes."""
+        old_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "defaultGroups": [],
+        }
+        new_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "defaultGroups": ["/users"],
+        }
+        diff = [("change", ("spec", "defaultGroups"), [], ["/users"])]
+
+        admin_mock.get_group_by_path = AsyncMock(
+            return_value=GroupRepresentation(id="group-id", name="users", path="/users")
+        )
+
+        result = await reconciler.do_update(
+            old_spec, new_spec, diff, "test-realm", "default", mock_status
+        )
+
+        assert result is not None
+        assert result["phase"] == "Ready"
+        admin_mock.get_default_groups.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_do_update_roles_exception_handled(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+        mock_status: MagicMock,
+    ) -> None:
+        """Test do_update handles exceptions in roles configuration."""
+        old_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "roles": {"realmRoles": []},
+        }
+        new_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "roles": {"realmRoles": [{"name": "new-role"}]},
+        }
+        diff = [
+            ("change", ("spec", "roles"), [], {"realmRoles": [{"name": "new-role"}]})
+        ]
+
+        admin_mock.get_realm_roles = AsyncMock(side_effect=Exception("API error"))
+
+        # Should not raise, just log warning
+        result = await reconciler.do_update(
+            old_spec, new_spec, diff, "test-realm", "default", mock_status
+        )
+
+        # Exception caught, no changes made, returns None
+        assert result is None
+        # Verify warning was logged
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_do_update_groups_exception_handled(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+        mock_status: MagicMock,
+    ) -> None:
+        """Test do_update handles exceptions in groups configuration."""
+        old_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "groups": [],
+        }
+        new_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "groups": [{"name": "new-group"}],
+        }
+        diff = [("change", ("spec", "groups"), [], [{"name": "new-group"}])]
+
+        admin_mock.get_groups = AsyncMock(side_effect=Exception("API error"))
+
+        # Should not raise, just log warning
+        result = await reconciler.do_update(
+            old_spec, new_spec, diff, "test-realm", "default", mock_status
+        )
+
+        # Exception caught, no changes made, returns None
+        assert result is None
+        # Verify warning was logged
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_do_update_default_groups_exception_handled(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+        mock_status: MagicMock,
+    ) -> None:
+        """Test do_update handles exceptions in default groups configuration."""
+        old_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "defaultGroups": [],
+        }
+        new_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+            "defaultGroups": ["/users"],
+        }
+        diff = [("change", ("spec", "defaultGroups"), [], ["/users"])]
+
+        admin_mock.get_default_groups = AsyncMock(side_effect=Exception("API error"))
+
+        # Should not raise, just log warning
+        result = await reconciler.do_update(
+            old_spec, new_spec, diff, "test-realm", "default", mock_status
+        )
+
+        # Exception caught, no changes made, returns None
+        assert result is None
+        # Verify warning was logged
+        reconciler.logger.warning.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_do_update_no_changes(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+        mock_status: MagicMock,
+    ) -> None:
+        """Test do_update returns None when no relevant changes."""
+        old_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+        }
+        new_spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "realmName": "test-realm",
+        }
+        # Empty diff - no changes
+        diff = []
+
+        result = await reconciler.do_update(
+            old_spec, new_spec, diff, "test-realm", "default", mock_status
+        )
+
+        # No changes, returns None
+        assert result is None
