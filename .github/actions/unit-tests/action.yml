@@ -26,7 +26,7 @@ runs:
 
     - name: Run unit tests
       shell: bash
-      run: uv run --group test pytest tests/unit --cov=keycloak_operator --cov-report=xml --cov-report=term
+      run: uv run --group test pytest tests/unit --disable-socket --allow-unix-socket --cov=keycloak_operator --cov-report=xml --cov-report=term
 
     - name: Upload unit coverage artifact for combining
       uses: actions/upload-artifact@v5
