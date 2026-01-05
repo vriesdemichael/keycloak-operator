@@ -3320,6 +3320,7 @@ class KeycloakAdminClient:
             response = await self._make_validated_request(
                 "POST",
                 f"realms/{realm_name}/roles",
+                namespace,
                 request_model=role_config,
             )
 
@@ -3364,6 +3365,7 @@ class KeycloakAdminClient:
             response = await self._make_validated_request(
                 "PUT",
                 f"realms/{realm_name}/roles/{role_name}",
+                namespace,
                 request_model=role_config,
             )
 
@@ -3550,7 +3552,7 @@ class KeycloakAdminClient:
         self,
         realm_name: str,
         namespace: str = "default",
-        briefRepresentation: bool = False,
+        brief_representation: bool = False,
     ) -> list[GroupRepresentation]:
         """
         Get all top-level groups in a realm.
@@ -3558,7 +3560,7 @@ class KeycloakAdminClient:
         Args:
             realm_name: Name of the realm
             namespace: Namespace for rate limiting
-            briefRepresentation: If true, returns only basic group info
+            brief_representation: If true, returns only basic group info
 
         Returns:
             List of group configurations
@@ -3566,7 +3568,7 @@ class KeycloakAdminClient:
         logger.debug(f"Fetching groups for realm '{realm_name}'")
 
         try:
-            params = {"briefRepresentation": str(briefRepresentation).lower()}
+            params = {"briefRepresentation": str(brief_representation).lower()}
             response = await self._make_request(
                 "GET", f"realms/{realm_name}/groups", namespace, params=params
             )
@@ -3674,6 +3676,7 @@ class KeycloakAdminClient:
             response = await self._make_validated_request(
                 "POST",
                 f"realms/{realm_name}/groups",
+                namespace,
                 request_model=group_config,
             )
 
@@ -3731,6 +3734,7 @@ class KeycloakAdminClient:
             response = await self._make_validated_request(
                 "POST",
                 f"realms/{realm_name}/groups/{parent_group_id}/children",
+                namespace,
                 request_model=group_config,
             )
 
@@ -3779,6 +3783,7 @@ class KeycloakAdminClient:
             response = await self._make_validated_request(
                 "PUT",
                 f"realms/{realm_name}/groups/{group_id}",
+                namespace,
                 request_model=group_config,
             )
 
