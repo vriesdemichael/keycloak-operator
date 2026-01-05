@@ -442,9 +442,7 @@ class TestUpdateGroup:
     async def test_updates_group_successfully(self, mock_admin_client):
         """Should update group and return True on success."""
         mock_response = MockResponse(204)
-        mock_admin_client._make_validated_request = AsyncMock(
-            return_value=mock_response
-        )
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
 
         group = GroupRepresentation(name="engineering", attributes={"updated": ["yes"]})
         result = await mock_admin_client.update_group(
