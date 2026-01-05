@@ -81,6 +81,17 @@ class TestGetRealmRoles:
 
         assert roles == []
 
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_exception(self, mock_admin_client):
+        """Should return empty list when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        roles = await mock_admin_client.get_realm_roles("test-realm", "default")
+
+        assert roles == []
+
 
 class TestGetRealmRoleByName:
     """Tests for get_realm_role_by_name method."""
@@ -115,6 +126,31 @@ class TestGetRealmRoleByName:
 
         assert role is None
 
+    @pytest.mark.asyncio
+    async def test_returns_none_on_other_error(self, mock_admin_client):
+        """Should return None on non-404 error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        role = await mock_admin_client.get_realm_role_by_name(
+            "test-realm", "admin", "default"
+        )
+
+        assert role is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        role = await mock_admin_client.get_realm_role_by_name(
+            "test-realm", "admin", "default"
+        )
+
+        assert role is None
+
 
 class TestCreateRealmRole:
     """Tests for create_realm_role method."""
@@ -134,6 +170,21 @@ class TestCreateRealmRole:
 
         assert result is True
         mock_admin_client._make_validated_request.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_creates_role_from_dict(self, mock_admin_client):
+        """Should create role from dict input."""
+        mock_response = MockResponse(201)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        role_dict = {"name": "admin", "description": "Administrator"}
+        result = await mock_admin_client.create_realm_role(
+            "test-realm", role_dict, "default"
+        )
+
+        assert result is True
 
     @pytest.mark.asyncio
     async def test_returns_true_on_conflict(self, mock_admin_client):
@@ -165,6 +216,20 @@ class TestCreateRealmRole:
 
         assert result is False
 
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_validated_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        role = RoleRepresentation(name="admin")
+        result = await mock_admin_client.create_realm_role(
+            "test-realm", role, "default"
+        )
+
+        assert result is False
+
 
 class TestUpdateRealmRole:
     """Tests for update_realm_role method."""
@@ -185,11 +250,55 @@ class TestUpdateRealmRole:
         assert result is True
 
     @pytest.mark.asyncio
+    async def test_updates_role_with_200_response(self, mock_admin_client):
+        """Should update role and return True on 200 response."""
+        mock_response = MockResponse(200)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        role = RoleRepresentation(name="admin", description="Updated")
+        result = await mock_admin_client.update_realm_role(
+            "test-realm", "admin", role, "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_updates_role_from_dict(self, mock_admin_client):
+        """Should update role from dict input."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        role_dict = {"name": "admin", "description": "Updated description"}
+        result = await mock_admin_client.update_realm_role(
+            "test-realm", "admin", role_dict, "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
     async def test_returns_false_on_error(self, mock_admin_client):
         """Should return False on error response."""
         mock_response = MockResponse(500)
         mock_admin_client._make_validated_request = AsyncMock(
             return_value=mock_response
+        )
+
+        role = RoleRepresentation(name="admin")
+        result = await mock_admin_client.update_realm_role(
+            "test-realm", "admin", role, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_validated_request = AsyncMock(
+            side_effect=Exception("Connection error")
         )
 
         role = RoleRepresentation(name="admin")
@@ -227,6 +336,31 @@ class TestDeleteRealmRole:
 
         assert result is True
 
+    @pytest.mark.asyncio
+    async def test_returns_false_on_error(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.delete_realm_role(
+            "test-realm", "admin", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        result = await mock_admin_client.delete_realm_role(
+            "test-realm", "admin", "default"
+        )
+
+        assert result is False
+
 
 class TestRealmRoleComposites:
     """Tests for composite role methods."""
@@ -251,6 +385,31 @@ class TestRealmRoleComposites:
         assert roles[0].name == "user"
 
     @pytest.mark.asyncio
+    async def test_get_composites_returns_empty_on_error(self, mock_admin_client):
+        """Should return empty list on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = await mock_admin_client.get_realm_role_composites(
+            "test-realm", "admin", "default"
+        )
+
+        assert roles == []
+
+    @pytest.mark.asyncio
+    async def test_get_composites_returns_empty_on_exception(self, mock_admin_client):
+        """Should return empty list when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        roles = await mock_admin_client.get_realm_role_composites(
+            "test-realm", "admin", "default"
+        )
+
+        assert roles == []
+
+    @pytest.mark.asyncio
     async def test_add_composites_successfully(self, mock_admin_client):
         """Should add composite roles and return True."""
         mock_response = MockResponse(204)
@@ -264,6 +423,33 @@ class TestRealmRoleComposites:
         assert result is True
 
     @pytest.mark.asyncio
+    async def test_add_composites_returns_false_on_error(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        child_roles = [RoleRepresentation(name="user", id="user-id")]
+        result = await mock_admin_client.add_realm_role_composites(
+            "test-realm", "admin", child_roles, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_add_composites_returns_false_on_exception(self, mock_admin_client):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        child_roles = [RoleRepresentation(name="user", id="user-id")]
+        result = await mock_admin_client.add_realm_role_composites(
+            "test-realm", "admin", child_roles, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
     async def test_remove_composites_successfully(self, mock_admin_client):
         """Should remove composite roles and return True."""
         mock_response = MockResponse(204)
@@ -275,6 +461,35 @@ class TestRealmRoleComposites:
         )
 
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_remove_composites_returns_false_on_error(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        child_roles = [RoleRepresentation(name="user", id="user-id")]
+        result = await mock_admin_client.remove_realm_role_composites(
+            "test-realm", "admin", child_roles, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_remove_composites_returns_false_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        child_roles = [RoleRepresentation(name="user", id="user-id")]
+        result = await mock_admin_client.remove_realm_role_composites(
+            "test-realm", "admin", child_roles, "default"
+        )
+
+        assert result is False
 
 
 # =============================================================================
@@ -308,6 +523,17 @@ class TestGetGroups:
         """Should return empty list on error response."""
         mock_response = MockResponse(500)
         mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        groups = await mock_admin_client.get_groups("test-realm", "default")
+
+        assert groups == []
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_exception(self, mock_admin_client):
+        """Should return empty list when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
 
         groups = await mock_admin_client.get_groups("test-realm", "default")
 
@@ -351,6 +577,33 @@ class TestGetGroupById:
 
         assert group is None
 
+    @pytest.mark.asyncio
+    async def test_returns_none_on_other_error(self, mock_admin_client):
+        """Should return None on non-404 error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        group = await mock_admin_client.get_group_by_id(
+            "test-realm", "group-1", "default"
+        )
+
+        assert group is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        group = await mock_admin_client.get_group_by_id(
+            "test-realm", "group-1", "default"
+        )
+
+        assert group is None
+
+        assert group is None
+
 
 class TestGetGroupByPath:
     """Tests for get_group_by_path method."""
@@ -376,6 +629,31 @@ class TestGetGroupByPath:
         assert group.name == "backend"
         assert group.path == "/engineering/backend"
 
+    @pytest.mark.asyncio
+    async def test_returns_none_when_not_found(self, mock_admin_client):
+        """Should return None when path doesn't exist."""
+        mock_response = MockResponse(404)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        group = await mock_admin_client.get_group_by_path(
+            "test-realm", "/nonexistent", "default"
+        )
+
+        assert group is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        group = await mock_admin_client.get_group_by_path(
+            "test-realm", "/engineering", "default"
+        )
+
+        assert group is None
+
 
 class TestCreateGroup:
     """Tests for create_group method."""
@@ -396,6 +674,23 @@ class TestCreateGroup:
         assert group_id == "new-group-id"
 
     @pytest.mark.asyncio
+    async def test_creates_group_from_dict(self, mock_admin_client):
+        """Should create group from dict input."""
+        mock_response = MockResponse(
+            201, headers={"Location": "http://keycloak/groups/new-group-id"}
+        )
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        group_dict = {"name": "engineering"}
+        group_id = await mock_admin_client.create_group(
+            "test-realm", group_dict, "default"
+        )
+
+        assert group_id == "new-group-id"
+
+    @pytest.mark.asyncio
     async def test_returns_existing_id_on_conflict(self, mock_admin_client):
         """Should return existing group ID when group already exists."""
         mock_conflict_response = MockResponse(409)
@@ -412,6 +707,31 @@ class TestCreateGroup:
         group_id = await mock_admin_client.create_group("test-realm", group, "default")
 
         assert group_id == "existing-id"
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_error(self, mock_admin_client):
+        """Should return None on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        group = GroupRepresentation(name="engineering")
+        group_id = await mock_admin_client.create_group("test-realm", group, "default")
+
+        assert group_id is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None when exception is raised."""
+        mock_admin_client._make_validated_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        group = GroupRepresentation(name="engineering")
+        group_id = await mock_admin_client.create_group("test-realm", group, "default")
+
+        assert group_id is None
 
 
 class TestCreateSubgroup:
@@ -434,6 +754,52 @@ class TestCreateSubgroup:
 
         assert group_id == "sub-group-id"
 
+    @pytest.mark.asyncio
+    async def test_creates_subgroup_from_dict(self, mock_admin_client):
+        """Should create subgroup from dict input."""
+        mock_response = MockResponse(
+            201, headers={"Location": "http://keycloak/groups/sub-group-id"}
+        )
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        subgroup_dict = {"name": "backend"}
+        group_id = await mock_admin_client.create_subgroup(
+            "test-realm", "parent-id", subgroup_dict, "default"
+        )
+
+        assert group_id == "sub-group-id"
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_error(self, mock_admin_client):
+        """Should return None on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_validated_request = AsyncMock(
+            return_value=mock_response
+        )
+
+        subgroup = GroupRepresentation(name="backend")
+        group_id = await mock_admin_client.create_subgroup(
+            "test-realm", "parent-id", subgroup, "default"
+        )
+
+        assert group_id is None
+
+    @pytest.mark.asyncio
+    async def test_returns_none_on_exception(self, mock_admin_client):
+        """Should return None when exception is raised."""
+        mock_admin_client._make_validated_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        subgroup = GroupRepresentation(name="backend")
+        group_id = await mock_admin_client.create_subgroup(
+            "test-realm", "parent-id", subgroup, "default"
+        )
+
+        assert group_id is None
+
 
 class TestUpdateGroup:
     """Tests for update_group method."""
@@ -450,6 +816,46 @@ class TestUpdateGroup:
         )
 
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_updates_group_from_dict(self, mock_admin_client):
+        """Should update group from dict input."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        group_dict = {"name": "engineering", "attributes": {"updated": ["yes"]}}
+        result = await mock_admin_client.update_group(
+            "test-realm", "group-id", group_dict, "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_error(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        group = GroupRepresentation(name="engineering")
+        result = await mock_admin_client.update_group(
+            "test-realm", "group-id", group, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        group = GroupRepresentation(name="engineering")
+        result = await mock_admin_client.update_group(
+            "test-realm", "group-id", group, "default"
+        )
+
+        assert result is False
 
 
 class TestDeleteGroup:
@@ -479,6 +885,31 @@ class TestDeleteGroup:
 
         assert result is True
 
+    @pytest.mark.asyncio
+    async def test_returns_false_on_error(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.delete_group(
+            "test-realm", "group-id", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_exception(self, mock_admin_client):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        result = await mock_admin_client.delete_group(
+            "test-realm", "group-id", "default"
+        )
+
+        assert result is False
+
 
 class TestGroupRoleMappings:
     """Tests for group role mapping methods."""
@@ -503,6 +934,35 @@ class TestGroupRoleMappings:
         assert roles[0].name == "user"
 
     @pytest.mark.asyncio
+    async def test_get_group_realm_role_mappings_returns_empty_on_error(
+        self, mock_admin_client
+    ):
+        """Should return empty list on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = await mock_admin_client.get_group_realm_role_mappings(
+            "test-realm", "group-id", "default"
+        )
+
+        assert roles == []
+
+    @pytest.mark.asyncio
+    async def test_get_group_realm_role_mappings_returns_empty_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return empty list when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        roles = await mock_admin_client.get_group_realm_role_mappings(
+            "test-realm", "group-id", "default"
+        )
+
+        assert roles == []
+
+    @pytest.mark.asyncio
     async def test_assign_realm_roles_to_group(self, mock_admin_client):
         """Should assign realm roles to group and return True."""
         mock_response = MockResponse(204)
@@ -516,6 +976,37 @@ class TestGroupRoleMappings:
         assert result is True
 
     @pytest.mark.asyncio
+    async def test_assign_realm_roles_to_group_returns_false_on_error(
+        self, mock_admin_client
+    ):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = [RoleRepresentation(name="user", id="role-id")]
+        result = await mock_admin_client.assign_realm_roles_to_group(
+            "test-realm", "group-id", roles, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_assign_realm_roles_to_group_returns_false_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        roles = [RoleRepresentation(name="user", id="role-id")]
+        result = await mock_admin_client.assign_realm_roles_to_group(
+            "test-realm", "group-id", roles, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
     async def test_remove_realm_roles_from_group(self, mock_admin_client):
         """Should remove realm roles from group and return True."""
         mock_response = MockResponse(204)
@@ -527,6 +1018,37 @@ class TestGroupRoleMappings:
         )
 
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_remove_realm_roles_from_group_returns_false_on_error(
+        self, mock_admin_client
+    ):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = [RoleRepresentation(name="user", id="role-id")]
+        result = await mock_admin_client.remove_realm_roles_from_group(
+            "test-realm", "group-id", roles, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_remove_realm_roles_from_group_returns_false_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        roles = [RoleRepresentation(name="user", id="role-id")]
+        result = await mock_admin_client.remove_realm_roles_from_group(
+            "test-realm", "group-id", roles, "default"
+        )
+
+        assert result is False
 
 
 class TestDefaultGroups:
@@ -549,6 +1071,29 @@ class TestDefaultGroups:
         assert groups[0].name == "users"
 
     @pytest.mark.asyncio
+    async def test_get_default_groups_returns_empty_on_error(self, mock_admin_client):
+        """Should return empty list on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        groups = await mock_admin_client.get_default_groups("test-realm", "default")
+
+        assert groups == []
+
+    @pytest.mark.asyncio
+    async def test_get_default_groups_returns_empty_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return empty list when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        groups = await mock_admin_client.get_default_groups("test-realm", "default")
+
+        assert groups == []
+
+    @pytest.mark.asyncio
     async def test_add_default_group(self, mock_admin_client):
         """Should add group to defaults and return True."""
         mock_response = MockResponse(204)
@@ -559,6 +1104,33 @@ class TestDefaultGroups:
         )
 
         assert result is True
+
+    @pytest.mark.asyncio
+    async def test_add_default_group_returns_false_on_error(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.add_default_group(
+            "test-realm", "group-id", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_add_default_group_returns_false_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        result = await mock_admin_client.add_default_group(
+            "test-realm", "group-id", "default"
+        )
+
+        assert result is False
 
     @pytest.mark.asyncio
     async def test_remove_default_group(self, mock_admin_client):
@@ -582,6 +1154,211 @@ class TestDefaultGroups:
 
         result = await mock_admin_client.remove_default_group(
             "test-realm", "nonexistent", "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_remove_default_group_returns_false_on_error(self, mock_admin_client):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.remove_default_group(
+            "test-realm", "group-id", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_remove_default_group_returns_false_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        result = await mock_admin_client.remove_default_group(
+            "test-realm", "group-id", "default"
+        )
+
+        assert result is False
+
+
+# =============================================================================
+# Client Role Mappings Tests
+# =============================================================================
+
+
+class TestGroupClientRoleMappings:
+    """Tests for group client role mapping methods."""
+
+    @pytest.mark.asyncio
+    async def test_get_group_client_role_mappings(self, mock_admin_client):
+        """Should return list of assigned client roles."""
+        mock_response = MockResponse(
+            200,
+            [
+                {"name": "view", "id": "role-1"},
+                {"name": "edit", "id": "role-2"},
+            ],
+        )
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = await mock_admin_client.get_group_client_role_mappings(
+            "test-realm", "group-id", "client-uuid", "default"
+        )
+
+        assert len(roles) == 2
+        assert roles[0].name == "view"
+
+    @pytest.mark.asyncio
+    async def test_get_group_client_role_mappings_returns_empty_on_error(
+        self, mock_admin_client
+    ):
+        """Should return empty list on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = await mock_admin_client.get_group_client_role_mappings(
+            "test-realm", "group-id", "client-uuid", "default"
+        )
+
+        assert roles == []
+
+    @pytest.mark.asyncio
+    async def test_get_group_client_role_mappings_returns_empty_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return empty list when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        roles = await mock_admin_client.get_group_client_role_mappings(
+            "test-realm", "group-id", "client-uuid", "default"
+        )
+
+        assert roles == []
+
+    @pytest.mark.asyncio
+    async def test_assign_client_roles_to_group(self, mock_admin_client):
+        """Should assign client roles to group and return True."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = [RoleRepresentation(name="view", id="role-id")]
+        result = await mock_admin_client.assign_client_roles_to_group(
+            "test-realm", "group-id", "client-uuid", roles, "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_assign_client_roles_to_group_from_dict(self, mock_admin_client):
+        """Should assign client roles from dict input."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = [{"name": "view", "id": "role-id"}]
+        result = await mock_admin_client.assign_client_roles_to_group(
+            "test-realm", "group-id", "client-uuid", roles, "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_assign_client_roles_to_group_returns_false_on_error(
+        self, mock_admin_client
+    ):
+        """Should return False on error response."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = [RoleRepresentation(name="view", id="role-id")]
+        result = await mock_admin_client.assign_client_roles_to_group(
+            "test-realm", "group-id", "client-uuid", roles, "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_assign_client_roles_to_group_returns_false_on_exception(
+        self, mock_admin_client
+    ):
+        """Should return False when exception is raised."""
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=Exception("Connection error")
+        )
+
+        roles = [RoleRepresentation(name="view", id="role-id")]
+        result = await mock_admin_client.assign_client_roles_to_group(
+            "test-realm", "group-id", "client-uuid", roles, "default"
+        )
+
+        assert result is False
+
+
+class TestRealmRoleCompositesWithDict:
+    """Tests for composite role methods with dict input."""
+
+    @pytest.mark.asyncio
+    async def test_add_composites_with_dict_input(self, mock_admin_client):
+        """Should add composite roles from dict input."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        child_roles = [{"name": "user", "id": "user-id"}]
+        result = await mock_admin_client.add_realm_role_composites(
+            "test-realm", "admin", child_roles, "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_remove_composites_with_dict_input(self, mock_admin_client):
+        """Should remove composite roles from dict input."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        child_roles = [{"name": "user", "id": "user-id"}]
+        result = await mock_admin_client.remove_realm_role_composites(
+            "test-realm", "admin", child_roles, "default"
+        )
+
+        assert result is True
+
+
+class TestAssignRealmRolesToGroupWithDict:
+    """Tests for assign_realm_roles_to_group with dict input."""
+
+    @pytest.mark.asyncio
+    async def test_assign_realm_roles_from_dict(self, mock_admin_client):
+        """Should assign realm roles from dict input."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = [{"name": "user", "id": "role-id"}]
+        result = await mock_admin_client.assign_realm_roles_to_group(
+            "test-realm", "group-id", roles, "default"
+        )
+
+        assert result is True
+
+
+class TestRemoveRealmRolesFromGroupWithDict:
+    """Tests for remove_realm_roles_from_group with dict input."""
+
+    @pytest.mark.asyncio
+    async def test_remove_realm_roles_from_dict(self, mock_admin_client):
+        """Should remove realm roles from dict input."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        roles = [{"name": "user", "id": "role-id"}]
+        result = await mock_admin_client.remove_realm_roles_from_group(
+            "test-realm", "group-id", roles, "default"
         )
 
         assert result is True

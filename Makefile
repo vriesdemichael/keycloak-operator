@@ -88,8 +88,8 @@ docs-clean: ## Clean generated documentation
 # ============================================================================
 
 .PHONY: test-unit
-test-unit: ## Run unit tests
-	uv run --group test pytest tests/unit/ -v
+test-unit: ## Run unit tests (with network disabled to catch accidental external calls)
+	uv run --group test pytest tests/unit/ -v --disable-socket --allow-unix-socket
 
 # ============================================================================
 # Integration Testing - Test Images
