@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.5.16](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.15...operator-image-v0.5.16) (2026-01-05)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add complete realm role and group management ([d55d6d9](https://github.com/vriesdemichael/keycloak-operator/commit/d55d6d99e94264225275d3fcc026f6cf900a9c44))
+
+
+### Bug Fixes
+
+* **operator-image:** bump aiohttp in the patch-updates group ([f3c604d](https://github.com/vriesdemichael/keycloak-operator/commit/f3c604d55b2e60e6317cd6ddebefa4be7098b4ea))
+* **operator:** add missing namespace parameters to API calls ([45bf910](https://github.com/vriesdemichael/keycloak-operator/commit/45bf9107989639ea8413b52ac030f4b9a425f102))
+* **operator:** exclude read-only fields from group update requests ([145020e](https://github.com/vriesdemichael/keycloak-operator/commit/145020ec919d6e37b93eaad9a1b55403a532d167))
+* **operator:** include id field in update requests for roles and groups ([2c2f483](https://github.com/vriesdemichael/keycloak-operator/commit/2c2f4833e6f5c1a82fc3d07eec429df39a4ebdfc))
+
 ## [0.5.15](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.14...operator-image-v0.5.15) (2026-01-04)
 
 
