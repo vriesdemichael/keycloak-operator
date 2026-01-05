@@ -1015,3 +1015,751 @@ class TestRealmRolesAndGroupsAPI:
                 plural="keycloakrealms",
                 name=realm_name,
             )
+
+
+@pytest.mark.integration
+@pytest.mark.requires_cluster
+class TestRealmRolesUpdateDelete:
+    """Test realm role update and delete via operator reconciliation."""
+
+    @pytest.mark.timeout(240)
+    async def test_realm_role_update_via_cr(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test updating realm roles by modifying the CR.
+
+        This test verifies that:
+        - Updating a role's description in the CR updates it in Keycloak
+        - Adding new roles to the CR creates them in Keycloak
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"roles-update-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.realm import (
+            KeycloakRealmRole,
+            KeycloakRealmSpec,
+            KeycloakRoles,
+            OperatorRef,
+        )
+
+        # Initial spec with one role
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Update Roles Test Realm",
+            client_authorization_grants=[namespace],
+            roles=KeycloakRoles(
+                realm_roles=[
+                    KeycloakRealmRole(
+                        name="mutable-role",
+                        description="Initial description",
+                    ),
+                ]
+            ),
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            # Create initial realm
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify initial role
+            role = await keycloak_admin_client.get_realm_role_by_name(
+                realm_name, "mutable-role", namespace
+            )
+            assert role is not None
+            assert role.description == "Initial description"
+
+            # Update the CR with modified role and new role
+            updated_spec = KeycloakRealmSpec(
+                operator_ref=OperatorRef(namespace=operator_namespace),
+                realm_name=realm_name,
+                display_name="Update Roles Test Realm",
+                client_authorization_grants=[namespace],
+                roles=KeycloakRoles(
+                    realm_roles=[
+                        KeycloakRealmRole(
+                            name="mutable-role",
+                            description="Updated description",
+                        ),
+                        KeycloakRealmRole(
+                            name="new-role",
+                            description="Newly added role",
+                        ),
+                    ]
+                ),
+            )
+
+            updated_manifest = {
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "KeycloakRealm",
+                "metadata": {"name": realm_name, "namespace": namespace},
+                "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True),
+            }
+
+            # Patch the CR
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                body=updated_manifest,
+            )
+
+            # Wait for reconciliation
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Wait a bit for changes to propagate
+            await asyncio.sleep(5)
+
+            # Verify role was updated
+            async def check_role_updated():
+                updated_role = await keycloak_admin_client.get_realm_role_by_name(
+                    realm_name, "mutable-role", namespace
+                )
+                return (
+                    updated_role is not None
+                    and updated_role.description == "Updated description"
+                )
+
+            assert await _simple_wait(
+                check_role_updated, timeout=60, interval=3
+            ), "Role description should be updated"
+
+            # Verify new role was added
+            new_role = await keycloak_admin_client.get_realm_role_by_name(
+                realm_name, "new-role", namespace
+            )
+            assert new_role is not None
+            assert new_role.description == "Newly added role"
+
+            logger.info("✓ Successfully verified role update via CR")
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
+    @pytest.mark.timeout(240)
+    async def test_realm_role_delete_via_cr(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test deleting realm roles by removing them from the CR.
+
+        This test verifies that:
+        - Removing a role from the CR deletes it from Keycloak
+        - Other roles remain intact
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"roles-delete-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.realm import (
+            KeycloakRealmRole,
+            KeycloakRealmSpec,
+            KeycloakRoles,
+            OperatorRef,
+        )
+
+        # Initial spec with two roles
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Delete Roles Test Realm",
+            client_authorization_grants=[namespace],
+            roles=KeycloakRoles(
+                realm_roles=[
+                    KeycloakRealmRole(name="keep-role"),
+                    KeycloakRealmRole(name="delete-role"),
+                ]
+            ),
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify both roles exist
+            roles = await keycloak_admin_client.get_realm_roles(realm_name, namespace)
+            role_names = {role.name for role in roles}
+            assert "keep-role" in role_names
+            assert "delete-role" in role_names
+
+            # Update CR to remove delete-role
+            updated_spec = KeycloakRealmSpec(
+                operator_ref=OperatorRef(namespace=operator_namespace),
+                realm_name=realm_name,
+                display_name="Delete Roles Test Realm",
+                client_authorization_grants=[namespace],
+                roles=KeycloakRoles(
+                    realm_roles=[
+                        KeycloakRealmRole(name="keep-role"),
+                        # delete-role removed
+                    ]
+                ),
+            )
+
+            updated_manifest = {
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "KeycloakRealm",
+                "metadata": {"name": realm_name, "namespace": namespace},
+                "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True),
+            }
+
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                body=updated_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Wait for reconciliation
+            await asyncio.sleep(5)
+
+            # Verify delete-role was removed
+            async def check_role_deleted():
+                deleted_role = await keycloak_admin_client.get_realm_role_by_name(
+                    realm_name, "delete-role", namespace
+                )
+                return deleted_role is None
+
+            assert await _simple_wait(
+                check_role_deleted, timeout=60, interval=3
+            ), "delete-role should be removed"
+
+            # Verify keep-role still exists
+            keep_role = await keycloak_admin_client.get_realm_role_by_name(
+                realm_name, "keep-role", namespace
+            )
+            assert keep_role is not None, "keep-role should still exist"
+
+            logger.info("✓ Successfully verified role deletion via CR")
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
+
+@pytest.mark.integration
+@pytest.mark.requires_cluster
+class TestGroupsUpdateDelete:
+    """Test group update and delete via operator reconciliation."""
+
+    @pytest.mark.timeout(240)
+    async def test_group_update_via_cr(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test updating groups by modifying the CR.
+
+        This test verifies that:
+        - Updating group attributes in the CR updates them in Keycloak
+        - Adding subgroups to existing groups works
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"groups-update-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.realm import (
+            KeycloakGroup,
+            KeycloakRealmSpec,
+            OperatorRef,
+        )
+
+        # Initial spec with one group
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Update Groups Test Realm",
+            client_authorization_grants=[namespace],
+            groups=[
+                KeycloakGroup(
+                    name="mutable-group",
+                    attributes={"version": ["v1"]},
+                ),
+            ],
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify initial group
+            group = await keycloak_admin_client.get_group_by_path(
+                realm_name, "/mutable-group", namespace
+            )
+            assert group is not None
+            assert group.attributes.get("version") == ["v1"]
+
+            # Update CR with modified attributes and add subgroup
+            updated_spec = KeycloakRealmSpec(
+                operator_ref=OperatorRef(namespace=operator_namespace),
+                realm_name=realm_name,
+                display_name="Update Groups Test Realm",
+                client_authorization_grants=[namespace],
+                groups=[
+                    KeycloakGroup(
+                        name="mutable-group",
+                        attributes={"version": ["v2"]},
+                        subgroups=[
+                            KeycloakGroup(name="new-subgroup"),
+                        ],
+                    ),
+                ],
+            )
+
+            updated_manifest = {
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "KeycloakRealm",
+                "metadata": {"name": realm_name, "namespace": namespace},
+                "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True),
+            }
+
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                body=updated_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            await asyncio.sleep(5)
+
+            # Verify attributes were updated
+            async def check_group_updated():
+                updated_group = await keycloak_admin_client.get_group_by_path(
+                    realm_name, "/mutable-group", namespace
+                )
+                return updated_group is not None and updated_group.attributes.get(
+                    "version"
+                ) == ["v2"]
+
+            assert await _simple_wait(
+                check_group_updated, timeout=60, interval=3
+            ), "Group attributes should be updated"
+
+            # Verify subgroup was added
+            subgroup = await keycloak_admin_client.get_group_by_path(
+                realm_name, "/mutable-group/new-subgroup", namespace
+            )
+            assert subgroup is not None, "Subgroup should be created"
+
+            logger.info("✓ Successfully verified group update via CR")
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
+    @pytest.mark.timeout(240)
+    async def test_group_delete_via_cr(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test deleting groups by removing them from the CR.
+
+        This test verifies that:
+        - Removing a group from the CR deletes it from Keycloak
+        - Other groups remain intact
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"groups-delete-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.realm import (
+            KeycloakGroup,
+            KeycloakRealmSpec,
+            OperatorRef,
+        )
+
+        # Initial spec with two groups
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Delete Groups Test Realm",
+            client_authorization_grants=[namespace],
+            groups=[
+                KeycloakGroup(name="keep-group"),
+                KeycloakGroup(name="delete-group"),
+            ],
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify both groups exist
+            groups = await keycloak_admin_client.get_groups(realm_name, namespace)
+            group_names = {group.name for group in groups}
+            assert "keep-group" in group_names
+            assert "delete-group" in group_names
+
+            # Update CR to remove delete-group
+            updated_spec = KeycloakRealmSpec(
+                operator_ref=OperatorRef(namespace=operator_namespace),
+                realm_name=realm_name,
+                display_name="Delete Groups Test Realm",
+                client_authorization_grants=[namespace],
+                groups=[
+                    KeycloakGroup(name="keep-group"),
+                    # delete-group removed
+                ],
+            )
+
+            updated_manifest = {
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "KeycloakRealm",
+                "metadata": {"name": realm_name, "namespace": namespace},
+                "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True),
+            }
+
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                body=updated_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            await asyncio.sleep(5)
+
+            # Verify delete-group was removed
+            async def check_group_deleted():
+                deleted_group = await keycloak_admin_client.get_group_by_path(
+                    realm_name, "/delete-group", namespace
+                )
+                return deleted_group is None
+
+            assert await _simple_wait(
+                check_group_deleted, timeout=60, interval=3
+            ), "delete-group should be removed"
+
+            # Verify keep-group still exists
+            keep_group = await keycloak_admin_client.get_group_by_path(
+                realm_name, "/keep-group", namespace
+            )
+            assert keep_group is not None, "keep-group should still exist"
+
+            logger.info("✓ Successfully verified group deletion via CR")
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
+    @pytest.mark.timeout(240)
+    async def test_default_groups_update_via_cr(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test updating default groups by modifying the CR.
+
+        This test verifies that:
+        - Adding/removing default groups via CR works
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"default-groups-update-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.realm import (
+            KeycloakGroup,
+            KeycloakRealmSpec,
+            OperatorRef,
+        )
+
+        # Initial spec with group1 as default
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Default Groups Update Test",
+            client_authorization_grants=[namespace],
+            groups=[
+                KeycloakGroup(name="group1"),
+                KeycloakGroup(name="group2"),
+            ],
+            default_groups=["/group1"],
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify initial default groups
+            default_groups = await keycloak_admin_client.get_default_groups(
+                realm_name, namespace
+            )
+            default_paths = {g.path or f"/{g.name}" for g in default_groups}
+            assert "/group1" in default_paths
+            assert "/group2" not in default_paths
+
+            # Update CR to change default groups
+            updated_spec = KeycloakRealmSpec(
+                operator_ref=OperatorRef(namespace=operator_namespace),
+                realm_name=realm_name,
+                display_name="Default Groups Update Test",
+                client_authorization_grants=[namespace],
+                groups=[
+                    KeycloakGroup(name="group1"),
+                    KeycloakGroup(name="group2"),
+                ],
+                default_groups=["/group2"],  # Changed from group1 to group2
+            )
+
+            updated_manifest = {
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "KeycloakRealm",
+                "metadata": {"name": realm_name, "namespace": namespace},
+                "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True),
+            }
+
+            await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                body=updated_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            await asyncio.sleep(5)
+
+            # Verify default groups were updated
+            async def check_default_groups_updated():
+                updated_defaults = await keycloak_admin_client.get_default_groups(
+                    realm_name, namespace
+                )
+                updated_paths = {g.path or f"/{g.name}" for g in updated_defaults}
+                return "/group2" in updated_paths and "/group1" not in updated_paths
+
+            assert await _simple_wait(
+                check_default_groups_updated, timeout=60, interval=3
+            ), "Default groups should be updated"
+
+            logger.info("✓ Successfully verified default groups update via CR")
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
