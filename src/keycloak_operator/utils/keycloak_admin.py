@@ -3765,6 +3765,10 @@ class KeycloakAdminClient:
         """
         Update an existing group.
 
+        Note: Keycloak's PUT endpoint ignores subGroups - they must be managed
+        separately via create_subgroup(). Read-only fields (path, subGroupCount,
+        access) are excluded from the update payload to prevent 500 errors.
+
         Args:
             realm_name: Name of the realm
             group_id: ID of the group to update
@@ -3779,13 +3783,14 @@ class KeycloakAdminClient:
 
         logger.info(f"Updating group '{group_id}' in realm '{realm_name}'")
 
-        # Build update payload excluding read-only fields that Keycloak
-        # doesn't accept during updates (causes 500 errors)
+        # Build update payload excluding:
+        # - Read-only fields (path, sub_group_count, access) that cause 500 errors
+        # - sub_groups: Keycloak ignores these in PUT; use /children endpoint instead
         update_payload = group_config.model_dump(
             exclude_none=True,
             by_alias=True,
             mode="json",
-            exclude={"sub_group_count", "access", "path"},
+            exclude={"sub_group_count", "sub_groups", "access", "path"},
         )
 
         try:
