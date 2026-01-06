@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.16](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.15...chart-operator-v0.3.16) (2026-01-06)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add complete realm role and group management ([d55d6d9](https://github.com/vriesdemichael/keycloak-operator/commit/d55d6d99e94264225275d3fcc026f6cf900a9c44))
+
 ## [0.3.15](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.14...chart-operator-v0.3.15) (2026-01-04)
 
 
