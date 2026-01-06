@@ -105,6 +105,16 @@ class KeycloakRealmReconciler(BaseReconciler):
         if realm_spec.user_federation:
             await self.configure_user_federation(realm_spec, name, namespace)
 
+        # Configure client scopes (must be before default/optional scope assignments)
+        if realm_spec.client_scopes:
+            await self.configure_client_scopes(realm_spec, name, namespace)
+
+        # Configure realm-level default and optional client scopes
+        if realm_spec.default_client_scopes or realm_spec.optional_client_scopes:
+            await self.configure_realm_default_client_scopes(
+                realm_spec, name, namespace
+            )
+
         # Configure realm roles (must be before groups since groups reference roles)
         if realm_spec.roles and realm_spec.roles.realm_roles:
             await self.configure_realm_roles(realm_spec, name, namespace)
@@ -148,12 +158,16 @@ class KeycloakRealmReconciler(BaseReconciler):
             "customThemes": bool(realm_spec.themes),
             "realmRoles": len(realm_spec.roles.realm_roles) if realm_spec.roles else 0,
             "groups": len(realm_spec.groups or []),
+            "clientScopes": len(realm_spec.client_scopes or []),
         }
 
         # Update realm roles count in status
         status.realmRolesCount = (
             len(realm_spec.roles.realm_roles) if realm_spec.roles else 0
         )
+
+        # Update client scopes count in status
+        status.clientScopesCount = len(realm_spec.client_scopes or [])
 
         # Populate OIDC endpoint discovery
         try:
@@ -1468,6 +1482,354 @@ class KeycloakRealmReconciler(BaseReconciler):
             except Exception as e:
                 self.logger.warning(f"Failed to configure user federation: {e}")
 
+    async def configure_client_scopes(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure client scopes with full lifecycle management.
+
+        This method:
+        1. Creates new client scopes
+        2. Updates existing client scopes
+        3. Deletes client scopes removed from spec (except built-in scopes)
+        4. Manages protocol mappers for each client scope
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Configuring client scopes for realm {spec.realm_name}")
+
+        if not spec.client_scopes:
+            return
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # Built-in Keycloak client scopes that should not be deleted
+        BUILTIN_SCOPES = {
+            "profile",
+            "email",
+            "address",
+            "phone",
+            "offline_access",
+            "roles",
+            "web-origins",
+            "microprofile-jwt",
+            "acr",
+            "basic",
+            "role_list",  # SAML scope
+        }
+
+        # Get existing client scopes from Keycloak
+        existing_scopes = await admin_client.get_client_scopes(realm_name, namespace)
+        existing_scope_names = {scope.name for scope in existing_scopes if scope.name}
+        existing_scope_map = {
+            scope.name: scope for scope in existing_scopes if scope.name
+        }
+
+        # Build set of desired scope names
+        desired_scope_names = {scope.name for scope in spec.client_scopes}
+
+        # Delete scopes that are no longer in spec (except built-in scopes)
+        for scope_name in existing_scope_names - desired_scope_names:
+            if scope_name in BUILTIN_SCOPES:
+                self.logger.debug(f"Skipping built-in scope '{scope_name}'")
+                continue
+
+            existing_scope = existing_scope_map.get(scope_name)
+            if existing_scope and existing_scope.id:
+                self.logger.info(
+                    f"Deleting client scope '{scope_name}' from realm '{realm_name}' "
+                    f"(no longer in spec)"
+                )
+                try:
+                    await admin_client.delete_client_scope(
+                        realm_name, existing_scope.id, namespace
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to delete client scope '{scope_name}': {e}"
+                    )
+
+        # Create or update scopes
+        for scope_config in spec.client_scopes:
+            try:
+                scope_name = scope_config.name
+
+                # Check if scope exists
+                existing_scope = existing_scope_map.get(scope_name)
+
+                from keycloak_operator.models.keycloak_api import (
+                    ClientScopeRepresentation,
+                    ProtocolMapperRepresentation,
+                )
+
+                if existing_scope and existing_scope.id:
+                    # Update existing scope
+                    scope_repr = ClientScopeRepresentation(
+                        id=existing_scope.id,
+                        name=scope_name,
+                        description=scope_config.description,
+                        protocol=scope_config.protocol,
+                        attributes=scope_config.attributes or {},
+                    )
+                    self.logger.info(f"Updating client scope '{scope_name}'")
+                    await admin_client.update_client_scope(
+                        realm_name, existing_scope.id, scope_repr, namespace
+                    )
+
+                    # Sync protocol mappers for existing scope
+                    await self._sync_client_scope_protocol_mappers(
+                        admin_client,
+                        realm_name,
+                        existing_scope.id,
+                        scope_config.protocol_mappers,
+                        namespace,
+                    )
+                else:
+                    # Create new scope
+                    scope_repr = ClientScopeRepresentation(
+                        name=scope_name,
+                        description=scope_config.description,
+                        protocol=scope_config.protocol,
+                        attributes=scope_config.attributes or {},
+                    )
+                    self.logger.info(f"Creating client scope '{scope_name}'")
+                    scope_id = await admin_client.create_client_scope(
+                        realm_name, scope_repr, namespace
+                    )
+
+                    # Add protocol mappers to new scope
+                    if scope_id and scope_config.protocol_mappers:
+                        for mapper_config in scope_config.protocol_mappers:
+                            mapper_repr = ProtocolMapperRepresentation(
+                                name=mapper_config.name,
+                                protocol=mapper_config.protocol,
+                                protocol_mapper=mapper_config.protocol_mapper,
+                                config=mapper_config.config or {},
+                            )
+                            await admin_client.create_client_scope_protocol_mapper(
+                                realm_name, scope_id, mapper_repr, namespace
+                            )
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to configure client scope '{scope_config.name}': {e}"
+                )
+
+    async def _sync_client_scope_protocol_mappers(
+        self,
+        admin_client,
+        realm_name: str,
+        scope_id: str,
+        desired_mappers: list,
+        namespace: str,
+    ) -> None:
+        """
+        Synchronize protocol mappers for a client scope.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            scope_id: ID of the client scope
+            desired_mappers: List of desired mapper configurations
+            namespace: Origin namespace for rate limiting
+        """
+        from keycloak_operator.models.keycloak_api import ProtocolMapperRepresentation
+
+        # Get current mappers
+        current_mappers = await admin_client.get_client_scope_protocol_mappers(
+            realm_name, scope_id, namespace
+        )
+        current_mapper_names = {m.name for m in current_mappers if m.name}
+        current_mapper_map = {m.name: m for m in current_mappers if m.name}
+
+        # Build set of desired mapper names
+        desired_mapper_names = (
+            {m.name for m in desired_mappers} if desired_mappers else set()
+        )
+
+        # Delete mappers no longer in spec
+        for mapper_name in current_mapper_names - desired_mapper_names:
+            mapper = current_mapper_map.get(mapper_name)
+            if mapper and mapper.id:
+                self.logger.info(f"Deleting protocol mapper '{mapper_name}' from scope")
+                try:
+                    await admin_client.delete_client_scope_protocol_mapper(
+                        realm_name, scope_id, mapper.id, namespace
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to delete protocol mapper '{mapper_name}': {e}"
+                    )
+
+        # Create or update mappers
+        if not desired_mappers:
+            return
+
+        for mapper_config in desired_mappers:
+            try:
+                mapper_name = mapper_config.name
+                existing_mapper = current_mapper_map.get(mapper_name)
+
+                mapper_repr = ProtocolMapperRepresentation(
+                    name=mapper_name,
+                    protocol=mapper_config.protocol,
+                    protocol_mapper=mapper_config.protocol_mapper,
+                    config=mapper_config.config or {},
+                )
+
+                if existing_mapper and existing_mapper.id:
+                    # Update existing mapper
+                    self.logger.info(f"Updating protocol mapper '{mapper_name}'")
+                    await admin_client.update_client_scope_protocol_mapper(
+                        realm_name, scope_id, existing_mapper.id, mapper_repr, namespace
+                    )
+                else:
+                    # Create new mapper
+                    self.logger.info(f"Creating protocol mapper '{mapper_name}'")
+                    await admin_client.create_client_scope_protocol_mapper(
+                        realm_name, scope_id, mapper_repr, namespace
+                    )
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to configure protocol mapper '{mapper_config.name}': {e}"
+                )
+
+    async def configure_realm_default_client_scopes(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure realm-level default and optional client scopes.
+
+        Default scopes are automatically assigned to new clients.
+        Optional scopes are available for clients to request.
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(
+            f"Configuring realm default/optional client scopes for {spec.realm_name}"
+        )
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # Get all client scopes to build name-to-id mapping
+        all_scopes = await admin_client.get_client_scopes(realm_name, namespace)
+        scope_name_to_id = {
+            scope.name: scope.id for scope in all_scopes if scope.name and scope.id
+        }
+
+        # Configure default client scopes
+        if spec.default_client_scopes:
+            current_defaults = await admin_client.get_realm_default_client_scopes(
+                realm_name, namespace
+            )
+            current_default_names = {s.name for s in current_defaults if s.name}
+            current_default_map = {
+                s.name: s.id for s in current_defaults if s.name and s.id
+            }
+
+            desired_default_names = set(spec.default_client_scopes)
+
+            # Add new default scopes
+            for scope_name in desired_default_names - current_default_names:
+                scope_id = scope_name_to_id.get(scope_name)
+                if scope_id:
+                    self.logger.info(f"Adding '{scope_name}' as realm default scope")
+                    try:
+                        await admin_client.add_realm_default_client_scope(
+                            realm_name, scope_id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to add default scope '{scope_name}': {e}"
+                        )
+                else:
+                    self.logger.warning(
+                        f"Client scope '{scope_name}' not found, cannot add as default"
+                    )
+
+            # Remove scopes no longer in default list
+            for scope_name in current_default_names - desired_default_names:
+                scope_id = current_default_map.get(scope_name)
+                if scope_id:
+                    self.logger.info(
+                        f"Removing '{scope_name}' from realm default scopes"
+                    )
+                    try:
+                        await admin_client.remove_realm_default_client_scope(
+                            realm_name, scope_id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to remove default scope '{scope_name}': {e}"
+                        )
+
+        # Configure optional client scopes
+        if spec.optional_client_scopes:
+            current_optionals = await admin_client.get_realm_optional_client_scopes(
+                realm_name, namespace
+            )
+            current_optional_names = {s.name for s in current_optionals if s.name}
+            current_optional_map = {
+                s.name: s.id for s in current_optionals if s.name and s.id
+            }
+
+            desired_optional_names = set(spec.optional_client_scopes)
+
+            # Add new optional scopes
+            for scope_name in desired_optional_names - current_optional_names:
+                scope_id = scope_name_to_id.get(scope_name)
+                if scope_id:
+                    self.logger.info(f"Adding '{scope_name}' as realm optional scope")
+                    try:
+                        await admin_client.add_realm_optional_client_scope(
+                            realm_name, scope_id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to add optional scope '{scope_name}': {e}"
+                        )
+                else:
+                    self.logger.warning(
+                        f"Client scope '{scope_name}' not found, cannot add as optional"
+                    )
+
+            # Remove scopes no longer in optional list
+            for scope_name in current_optional_names - desired_optional_names:
+                scope_id = current_optional_map.get(scope_name)
+                if scope_id:
+                    self.logger.info(
+                        f"Removing '{scope_name}' from realm optional scopes"
+                    )
+                    try:
+                        await admin_client.remove_realm_optional_client_scope(
+                            realm_name, scope_id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to remove optional scope '{scope_name}': {e}"
+                        )
+
     async def configure_realm_roles(
         self, spec: KeycloakRealmSpec, name: str, namespace: str
     ) -> None:
@@ -2391,6 +2753,34 @@ class KeycloakRealmReconciler(BaseReconciler):
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update user federation: {e}")
+
+            elif field_path[:2] == ("spec", "clientScopes"):
+                self.logger.info("Updating client scopes")
+                try:
+                    await self.configure_client_scopes(new_realm_spec, name, namespace)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update client scopes: {e}")
+
+            elif field_path[:2] == ("spec", "defaultClientScopes"):
+                self.logger.info("Updating realm default client scopes")
+                try:
+                    await self.configure_realm_default_client_scopes(
+                        new_realm_spec, name, namespace
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update default client scopes: {e}")
+
+            elif field_path[:2] == ("spec", "optionalClientScopes"):
+                self.logger.info("Updating realm optional client scopes")
+                try:
+                    await self.configure_realm_default_client_scopes(
+                        new_realm_spec, name, namespace
+                    )
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update optional client scopes: {e}")
 
             elif field_path[:2] == ("spec", "requiredActions"):
                 self.logger.info("Updating required actions")

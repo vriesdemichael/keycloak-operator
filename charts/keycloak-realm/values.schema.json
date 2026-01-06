@@ -186,6 +186,75 @@
         "required": ["alias", "providerId"]
       }
     },
+    "clientScopes": {
+      "type": "array",
+      "description": "Client scope definitions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Scope name (unique identifier)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Scope description"
+          },
+          "protocol": {
+            "type": "string",
+            "description": "Protocol (openid-connect or saml)",
+            "enum": ["openid-connect", "saml"]
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Scope attributes",
+            "additionalProperties": {"type": "string"}
+          },
+          "protocolMappers": {
+            "type": "array",
+            "description": "Protocol mappers for this scope",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Mapper name"
+                },
+                "protocol": {
+                  "type": "string",
+                  "description": "Protocol (openid-connect or saml)"
+                },
+                "protocolMapper": {
+                  "type": "string",
+                  "description": "Mapper type (e.g., oidc-audience-mapper)"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "Mapper configuration",
+                  "additionalProperties": {"type": "string"}
+                }
+              },
+              "required": ["name", "protocolMapper"]
+            }
+          }
+        },
+        "required": ["name"]
+      }
+    },
+    "defaultClientScopes": {
+      "type": "array",
+      "description": "Client scope names to automatically assign as default to new clients",
+      "items": {
+        "type": "string"
+      }
+    },
+    "optionalClientScopes": {
+      "type": "array",
+      "description": "Client scope names available as optional for clients",
+      "items": {
+        "type": "string"
+      }
+    },
     "roles": {
       "type": "object",
       "description": "Realm role definitions",

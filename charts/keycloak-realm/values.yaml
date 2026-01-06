@@ -183,6 +183,50 @@ identityProviders: []
   #       name: github-credentials
   #       key: client-secret
 
+# Client Scopes (optional)
+# Define reusable client scopes with protocol mappers
+clientScopes: []
+  # Example client scopes:
+  # - name: api.read
+  #   description: "Read access to API"
+  #   protocol: openid-connect
+  #   attributes:
+  #     display.on.consent.screen: "true"
+  #     consent.screen.text: "Read access to API"
+  #   protocolMappers:
+  #     - name: audience-mapper
+  #       protocol: openid-connect
+  #       protocolMapper: oidc-audience-mapper
+  #       config:
+  #         included.custom.audience: api
+  #         access.token.claim: "true"
+  #
+  # - name: api.write
+  #   description: "Write access to API"
+  #   protocol: openid-connect
+  #   protocolMappers:
+  #     - name: write-scope-claim
+  #       protocol: openid-connect
+  #       protocolMapper: oidc-hardcoded-claim-mapper
+  #       config:
+  #         claim.name: scope
+  #         claim.value: api:write
+
+# Default client scopes (optional)
+# Scope names that are automatically assigned as default to new clients
+defaultClientScopes: []
+  # Example:
+  # - profile
+  # - email
+  # - api.read
+
+# Optional client scopes (optional)
+# Scope names available as optional for clients
+optionalClientScopes: []
+  # Example:
+  # - api.write
+  # - offline_access
+
 # Realm roles (optional)
 # Define realm-level roles
 roles:

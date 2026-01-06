@@ -492,6 +492,16 @@ spec:
                         - protocolMapper
                   required:
                   - name
+              defaultClientScopes:
+                type: array
+                description: Client scope names to automatically assign as default to new clients
+                items:
+                  type: string
+              optionalClientScopes:
+                type: array
+                description: Client scope names available as optional for clients
+                items:
+                  type: string
               roles:
                 type: object
                 description: Realm and client role definitions
@@ -755,6 +765,10 @@ spec:
                 minimum: 0
               realmRolesCount:
                 type: integer
+                minimum: 0
+              clientScopesCount:
+                type: integer
+                description: Number of custom client scopes configured
                 minimum: 0
               authorizedClientNamespaces:
                 type: array
