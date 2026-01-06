@@ -15,10 +15,12 @@ The client handles:
 import asyncio
 import logging
 import time
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
+from functools import wraps
 
 # Import RateLimiter - use TYPE_CHECKING to avoid circular import
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 from urllib.parse import urljoin
 
 import httpx
@@ -45,6 +47,180 @@ if TYPE_CHECKING:
     from keycloak_operator.utils.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
+
+# Type variables for decorators
+P = ParamSpec("P")
+T = TypeVar("T")
+
+
+# =============================================================================
+# API Error Handling Decorators
+# =============================================================================
+# These decorators centralize error handling patterns for Keycloak API methods,
+# ensuring consistent logging and behavior while reducing code duplication.
+
+
+def api_get_single(
+    resource_name: str,
+) -> Callable[[Callable[P, Awaitable[T | None]]], Callable[P, Awaitable[T | None]]]:
+    """
+    Decorator for GET single resource operations.
+
+    Handles common error cases:
+    - Returns None on any exception (resource not found or error)
+    - Logs errors with consistent format
+
+    Args:
+        resource_name: Human-readable resource name for logging (e.g., "client scope")
+    """
+
+    def decorator(
+        func: Callable[P, Awaitable[T | None]],
+    ) -> Callable[P, Awaitable[T | None]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T | None:
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Failed to get {resource_name}: {e}")
+                return None
+
+        return wrapper
+
+    return decorator
+
+
+def api_get_list(
+    resource_name: str,
+) -> Callable[[Callable[P, Awaitable[list[T]]]], Callable[P, Awaitable[list[T]]]]:
+    """
+    Decorator for GET list operations.
+
+    Handles common error cases:
+    - Returns empty list on any exception
+    - Logs errors with consistent format
+
+    Args:
+        resource_name: Human-readable resource name for logging (e.g., "client scopes")
+    """
+
+    def decorator(
+        func: Callable[P, Awaitable[list[T]]],
+    ) -> Callable[P, Awaitable[list[T]]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> list[T]:
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Failed to get {resource_name}: {e}")
+                return []
+
+        return wrapper
+
+    return decorator
+
+
+def api_create(
+    resource_name: str,
+    conflict_is_success: bool = True,
+) -> Callable[[Callable[P, Awaitable[str | None]]], Callable[P, Awaitable[str | None]]]:
+    """
+    Decorator for CREATE operations.
+
+    Handles common error cases:
+    - 409 Conflict: Optionally treated as success (resource exists)
+    - Other errors: Returns None
+
+    Args:
+        resource_name: Human-readable resource name for logging
+        conflict_is_success: If True, 409 returns None gracefully (idempotent create)
+    """
+
+    def decorator(
+        func: Callable[P, Awaitable[str | None]],
+    ) -> Callable[P, Awaitable[str | None]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> str | None:
+            try:
+                return await func(*args, **kwargs)
+            except KeycloakAdminError as e:
+                if e.status_code == 409 and conflict_is_success:
+                    logger.warning(f"{resource_name} already exists")
+                    return None  # Caller should look up existing resource if needed
+                logger.error(f"Failed to create {resource_name}: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Failed to create {resource_name}: {e}")
+                return None
+
+        return wrapper
+
+    return decorator
+
+
+def api_update(
+    resource_name: str,
+) -> Callable[[Callable[P, Awaitable[bool]]], Callable[P, Awaitable[bool]]]:
+    """
+    Decorator for UPDATE operations.
+
+    Handles common error cases:
+    - Returns False on any exception
+    - Logs errors with consistent format
+
+    Args:
+        resource_name: Human-readable resource name for logging
+    """
+
+    def decorator(func: Callable[P, Awaitable[bool]]) -> Callable[P, Awaitable[bool]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> bool:
+            try:
+                return await func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Failed to update {resource_name}: {e}")
+                return False
+
+        return wrapper
+
+    return decorator
+
+
+def api_delete(
+    resource_name: str,
+    not_found_is_success: bool = True,
+) -> Callable[[Callable[P, Awaitable[bool]]], Callable[P, Awaitable[bool]]]:
+    """
+    Decorator for DELETE operations.
+
+    Handles common error cases:
+    - 404 Not Found: Optionally treated as success (idempotent delete)
+    - Other errors: Returns False
+
+    Args:
+        resource_name: Human-readable resource name for logging
+        not_found_is_success: If True, 404 returns True (idempotent delete)
+    """
+
+    def decorator(func: Callable[P, Awaitable[bool]]) -> Callable[P, Awaitable[bool]]:
+        @wraps(func)
+        async def wrapper(*args: P.args, **kwargs: P.kwargs) -> bool:
+            try:
+                return await func(*args, **kwargs)
+            except KeycloakAdminError as e:
+                if e.status_code == 404 and not_found_is_success:
+                    logger.warning(f"{resource_name} not found, already deleted")
+                    return True
+                logger.error(f"Failed to delete {resource_name}: {e}")
+                return False
+            except Exception as e:
+                logger.error(f"Failed to delete {resource_name}: {e}")
+                return False
+
+        return wrapper
+
+    return decorator
+
 
 # Global cache for httpx clients - one per Keycloak instance
 # Key: (server_url, verify_ssl), Value: (httpx.AsyncClient, event_loop_id)
@@ -2859,9 +3035,10 @@ class KeycloakAdminClient:
             return None
 
     # Protocol Mappers API methods
+    @api_get_list("client protocol mappers")
     async def get_client_protocol_mappers(
         self, client_uuid: str, realm_name: str = "master", namespace: str = "default"
-    ) -> list[ProtocolMapperRepresentation] | None:
+    ) -> list[ProtocolMapperRepresentation]:
         """
         Get all protocol mappers for a client.
 
@@ -2870,7 +3047,7 @@ class KeycloakAdminClient:
             realm_name: Name of the realm
 
         Returns:
-            List of protocol mapper configurations as ProtocolMapperRepresentation or None on error
+            List of protocol mapper configurations as ProtocolMapperRepresentation
 
         Example:
             mappers = admin_client.get_client_protocol_mappers(client_uuid, "my-realm")
@@ -2881,30 +3058,28 @@ class KeycloakAdminClient:
             f"Fetching protocol mappers for client {client_uuid} in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models",
-                namespace,
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            mappers_data = response.json()
+            return [
+                ProtocolMapperRepresentation.model_validate(mapper)
+                for mapper in mappers_data
+            ]
+        elif response.status_code == 404:
+            logger.warning(f"Client {client_uuid} not found in realm {realm_name}")
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                mappers_data = response.json()
-                # Validate each mapper with Pydantic
-                return [
-                    ProtocolMapperRepresentation.model_validate(mapper)
-                    for mapper in mappers_data
-                ]
-            elif response.status_code == 404:
-                logger.warning(f"Client {client_uuid} not found in realm {realm_name}")
-                return []
-            else:
-                logger.error(f"Failed to get protocol mappers: {response.status_code}")
-                return None
-        except Exception as e:
-            logger.error(f"Failed to get client protocol mappers: {e}")
-            return None
-
+    @api_get_single("client protocol mapper")
     async def create_client_protocol_mapper(
         self,
         client_uuid: str,
@@ -2943,25 +3118,22 @@ class KeycloakAdminClient:
             f"Creating protocol mapper '{mapper_name}' for client {client_uuid} in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_validated_request(
-                "POST",
-                f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models",
-                request_model=mapper_config,
+        response = await self._make_validated_request(
+            "POST",
+            f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models",
+            request_model=mapper_config,
+        )
+
+        if response.status_code == 201:
+            logger.info(f"Successfully created protocol mapper '{mapper_name}'")
+            return mapper_config
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 201:
-                logger.info(f"Successfully created protocol mapper '{mapper_name}'")
-                return mapper_config
-            else:
-                logger.error(
-                    f"Failed to create protocol mapper: {response.status_code}"
-                )
-                return None
-        except Exception as e:
-            logger.error(f"Failed to create protocol mapper: {e}")
-            return None
-
+    @api_update("client protocol mapper")
     async def update_client_protocol_mapper(
         self,
         client_uuid: str,
@@ -2998,25 +3170,22 @@ class KeycloakAdminClient:
             f"Updating protocol mapper '{mapper_name}' for client {client_uuid} in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_validated_request(
-                "PUT",
-                f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}",
-                request_model=mapper_config,
+        response = await self._make_validated_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}",
+            request_model=mapper_config,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully updated protocol mapper '{mapper_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully updated protocol mapper '{mapper_name}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to update protocol mapper: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to update protocol mapper: {e}")
-            return False
-
+    @api_delete("client protocol mapper")
     async def delete_client_protocol_mapper(
         self,
         client_uuid: str,
@@ -3038,24 +3207,21 @@ class KeycloakAdminClient:
         await self._ensure_authenticated()
         endpoint = f"realms/{realm_name}/clients/{client_uuid}/protocol-mappers/models/{mapper_id}"
 
-        try:
-            response = await self._make_request("DELETE", endpoint, namespace)
-            if response.status_code == 204:
-                logger.info(f"Successfully deleted protocol mapper {mapper_id}")
-                return True
-            else:
-                logger.error(
-                    f"Failed to delete protocol mapper: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to delete protocol mapper: {e}")
-            return False
+        response = await self._make_request("DELETE", endpoint, namespace)
+        if response.status_code == 204:
+            logger.info(f"Successfully deleted protocol mapper {mapper_id}")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     # Client Roles API methods
+    @api_get_list("client roles")
     async def get_client_roles(
         self, client_uuid: str, realm_name: str = "master", namespace: str = "default"
-    ) -> list[RoleRepresentation] | None:
+    ) -> list[RoleRepresentation]:
         """
         Get all roles for a client.
 
@@ -3064,7 +3230,7 @@ class KeycloakAdminClient:
             realm_name: Name of the realm
 
         Returns:
-            List of client role configurations as RoleRepresentation or None on error
+            List of client role configurations as RoleRepresentation
 
         Example:
             roles = admin_client.get_client_roles(client_uuid, "my-realm")
@@ -3073,25 +3239,23 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching roles for client {client_uuid} in realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/clients/{client_uuid}/roles", namespace
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/clients/{client_uuid}/roles", namespace
+        )
+
+        if response.status_code == 200:
+            roles_data = response.json()
+            return [RoleRepresentation.model_validate(role) for role in roles_data]
+        elif response.status_code == 404:
+            logger.warning(f"Client {client_uuid} not found in realm {realm_name}")
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                roles_data = response.json()
-                # Validate each role with Pydantic
-                return [RoleRepresentation.model_validate(role) for role in roles_data]
-            elif response.status_code == 404:
-                logger.warning(f"Client {client_uuid} not found in realm {realm_name}")
-                return []
-            else:
-                logger.error(f"Failed to get client roles: {response.status_code}")
-                return None
-        except Exception as e:
-            logger.error(f"Failed to get client roles: {e}")
-            return None
-
+    @api_update("client role")
     async def create_client_role(
         self,
         client_uuid: str,
@@ -3127,23 +3291,22 @@ class KeycloakAdminClient:
             f"Creating client role '{role_name}' for client {client_uuid} in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_validated_request(
-                "POST",
-                f"realms/{realm_name}/clients/{client_uuid}/roles",
-                request_model=role_config,
+        response = await self._make_validated_request(
+            "POST",
+            f"realms/{realm_name}/clients/{client_uuid}/roles",
+            request_model=role_config,
+        )
+
+        if response.status_code == 201:
+            logger.info(f"Successfully created client role '{role_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 201:
-                logger.info(f"Successfully created client role '{role_name}'")
-                return True
-            else:
-                logger.error(f"Failed to create client role: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to create client role: {e}")
-            return False
-
+    @api_update("client role")
     async def update_client_role(
         self,
         client_uuid: str,
@@ -3178,23 +3341,22 @@ class KeycloakAdminClient:
             f"Updating client role '{role_name}' for client {client_uuid} in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_validated_request(
-                "PUT",
-                f"realms/{realm_name}/clients/{client_uuid}/roles/{role_name}",
-                request_model=role_config,
+        response = await self._make_validated_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/roles/{role_name}",
+            request_model=role_config,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully updated client role '{role_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully updated client role '{role_name}'")
-                return True
-            else:
-                logger.error(f"Failed to update client role: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to update client role: {e}")
-            return False
-
+    @api_delete("client role")
     async def delete_client_role(
         self,
         client_uuid: str,
@@ -3216,22 +3378,21 @@ class KeycloakAdminClient:
         await self._ensure_authenticated()
         endpoint = f"realms/{realm_name}/clients/{client_uuid}/roles/{role_name}"
 
-        try:
-            response = await self._make_request("DELETE", endpoint, namespace)
-            if response.status_code == 204:
-                logger.info(f"Successfully deleted client role '{role_name}'")
-                return True
-            else:
-                logger.error(f"Failed to delete client role: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to delete client role: {e}")
-            return False
+        response = await self._make_request("DELETE", endpoint, namespace)
+        if response.status_code == 204:
+            logger.info(f"Successfully deleted client role '{role_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     # =========================================================================
     # Realm Roles API methods
     # =========================================================================
 
+    @api_get_list("realm roles")
     async def get_realm_roles(
         self, realm_name: str, namespace: str = "default"
     ) -> list[RoleRepresentation]:
@@ -3247,21 +3408,20 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching realm roles for realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/roles", namespace
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/roles", namespace
+        )
+
+        if response.status_code == 200:
+            roles_data = response.json()
+            return [RoleRepresentation.model_validate(role) for role in roles_data]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                roles_data = response.json()
-                return [RoleRepresentation.model_validate(role) for role in roles_data]
-            else:
-                logger.error(f"Failed to get realm roles: {response.status_code}")
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get realm roles: {e}")
-            return []
-
+    @api_get_single("realm role")
     async def get_realm_role_by_name(
         self, realm_name: str, role_name: str, namespace: str = "default"
     ) -> RoleRepresentation | None:
@@ -3278,21 +3438,19 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching realm role '{role_name}' in realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/roles/{role_name}", namespace
-            )
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/roles/{role_name}", namespace
+        )
 
-            if response.status_code == 200:
-                return RoleRepresentation.model_validate(response.json())
-            elif response.status_code == 404:
-                return None
-            else:
-                logger.error(f"Failed to get realm role: {response.status_code}")
-                return None
-        except Exception as e:
-            logger.error(f"Failed to get realm role: {e}")
+        if response.status_code == 200:
+            return RoleRepresentation.model_validate(response.json())
+        elif response.status_code == 404:
             return None
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     async def create_realm_role(
         self,
@@ -3338,6 +3496,7 @@ class KeycloakAdminClient:
             logger.error(f"Failed to create realm role: {e}")
             return False
 
+    @api_update("realm role")
     async def update_realm_role(
         self,
         realm_name: str,
@@ -3362,24 +3521,23 @@ class KeycloakAdminClient:
 
         logger.info(f"Updating realm role '{role_name}' in realm '{realm_name}'")
 
-        try:
-            response = await self._make_validated_request(
-                "PUT",
-                f"realms/{realm_name}/roles/{role_name}",
-                namespace,
-                request_model=role_config,
+        response = await self._make_validated_request(
+            "PUT",
+            f"realms/{realm_name}/roles/{role_name}",
+            namespace,
+            request_model=role_config,
+        )
+
+        if response.status_code in (200, 204):
+            logger.info(f"Successfully updated realm role '{role_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code in (200, 204):
-                logger.info(f"Successfully updated realm role '{role_name}'")
-                return True
-            else:
-                logger.error(f"Failed to update realm role: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to update realm role: {e}")
-            return False
-
+    @api_delete("realm role")
     async def delete_realm_role(
         self, realm_name: str, role_name: str, namespace: str = "default"
     ) -> bool:
@@ -3396,24 +3554,23 @@ class KeycloakAdminClient:
         """
         logger.info(f"Deleting realm role '{role_name}' in realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "DELETE", f"realms/{realm_name}/roles/{role_name}", namespace
+        response = await self._make_request(
+            "DELETE", f"realms/{realm_name}/roles/{role_name}", namespace
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully deleted realm role '{role_name}'")
+            return True
+        elif response.status_code == 404:
+            logger.info(f"Realm role '{role_name}' not found (already deleted)")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully deleted realm role '{role_name}'")
-                return True
-            elif response.status_code == 404:
-                logger.info(f"Realm role '{role_name}' not found (already deleted)")
-                return True
-            else:
-                logger.error(f"Failed to delete realm role: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to delete realm role: {e}")
-            return False
-
+    @api_get_list("realm role composites")
     async def get_realm_role_composites(
         self, realm_name: str, role_name: str, namespace: str = "default"
     ) -> list[RoleRepresentation]:
@@ -3432,21 +3589,20 @@ class KeycloakAdminClient:
             f"Fetching composite roles for realm role '{role_name}' in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/roles/{role_name}/composites", namespace
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/roles/{role_name}/composites", namespace
+        )
+
+        if response.status_code == 200:
+            roles_data = response.json()
+            return [RoleRepresentation.model_validate(role) for role in roles_data]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                roles_data = response.json()
-                return [RoleRepresentation.model_validate(role) for role in roles_data]
-            else:
-                logger.error(f"Failed to get composite roles: {response.status_code}")
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get composite roles: {e}")
-            return []
-
+    @api_update("realm role composites")
     async def add_realm_role_composites(
         self,
         realm_name: str,
@@ -3470,31 +3626,30 @@ class KeycloakAdminClient:
             f"Adding {len(child_roles)} composite roles to realm role '{role_name}'"
         )
 
-        try:
-            roles_data = []
-            for role in child_roles:
-                if isinstance(role, dict):
-                    roles_data.append(role)
-                else:
-                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+        roles_data = []
+        for role in child_roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
+            else:
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
 
-            response = await self._make_request(
-                "POST",
-                f"realms/{realm_name}/roles/{role_name}/composites",
-                namespace,
-                json=roles_data,
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/roles/{role_name}/composites",
+            namespace,
+            json=roles_data,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully added composite roles to '{role_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully added composite roles to '{role_name}'")
-                return True
-            else:
-                logger.error(f"Failed to add composite roles: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to add composite roles: {e}")
-            return False
-
+    @api_delete("realm role composites")
     async def remove_realm_role_composites(
         self,
         realm_name: str,
@@ -3518,37 +3673,34 @@ class KeycloakAdminClient:
             f"Removing {len(child_roles)} composite roles from realm role '{role_name}'"
         )
 
-        try:
-            roles_data = []
-            for role in child_roles:
-                if isinstance(role, dict):
-                    roles_data.append(role)
-                else:
-                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
-
-            response = await self._make_request(
-                "DELETE",
-                f"realms/{realm_name}/roles/{role_name}/composites",
-                namespace,
-                json=roles_data,
-            )
-
-            if response.status_code == 204:
-                logger.info(f"Successfully removed composite roles from '{role_name}'")
-                return True
+        roles_data = []
+        for role in child_roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
             else:
-                logger.error(
-                    f"Failed to remove composite roles: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to remove composite roles: {e}")
-            return False
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/roles/{role_name}/composites",
+            namespace,
+            json=roles_data,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully removed composite roles from '{role_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     # =========================================================================
     # Client Scopes API methods
     # =========================================================================
 
+    @api_get_list("client scopes")
     async def get_client_scopes(
         self, realm_name: str, namespace: str = "default"
     ) -> list[ClientScopeRepresentation]:
@@ -3564,24 +3716,22 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching client scopes for realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/client-scopes", namespace
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/client-scopes", namespace
+        )
+
+        if response.status_code == 200:
+            scopes_data = response.json()
+            return [
+                ClientScopeRepresentation.model_validate(scope) for scope in scopes_data
+            ]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                scopes_data = response.json()
-                return [
-                    ClientScopeRepresentation.model_validate(scope)
-                    for scope in scopes_data
-                ]
-            else:
-                logger.error(f"Failed to get client scopes: {response.status_code}")
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get client scopes: {e}")
-            return []
-
+    @api_get_single("client scope by name")
     async def get_client_scope_by_name(
         self, realm_name: str, scope_name: str, namespace: str = "default"
     ) -> ClientScopeRepresentation | None:
@@ -3598,51 +3748,11 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching client scope '{scope_name}' in realm '{realm_name}'")
 
-        try:
-            scopes = await self.get_client_scopes(realm_name, namespace)
-            for scope in scopes:
-                if scope.name == scope_name:
-                    return scope
-            return None
-        except Exception as e:
-            logger.error(f"Failed to get client scope by name: {e}")
-            return None
-
-    async def get_client_scope_by_id(
-        self, realm_name: str, scope_id: str, namespace: str = "default"
-    ) -> ClientScopeRepresentation | None:
-        """
-        Get a specific client scope by ID.
-
-        Args:
-            realm_name: Name of the realm
-            scope_id: ID of the client scope
-            namespace: Namespace for rate limiting
-
-        Returns:
-            ClientScopeRepresentation if found, None otherwise
-        """
-        logger.debug(
-            f"Fetching client scope by ID '{scope_id}' in realm '{realm_name}'"
-        )
-
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/client-scopes/{scope_id}", namespace
-            )
-
-            if response.status_code == 200:
-                return ClientScopeRepresentation.model_validate(response.json())
-            elif response.status_code == 404:
-                return None
-            else:
-                logger.error(
-                    f"Failed to get client scope by ID: {response.status_code}"
-                )
-                return None
-        except Exception as e:
-            logger.error(f"Failed to get client scope by ID: {e}")
-            return None
+        scopes = await self.get_client_scopes(realm_name, namespace)
+        for scope in scopes:
+            if scope.name == scope_name:
+                return scope
+        return None
 
     async def create_client_scope(
         self,
@@ -3690,7 +3800,7 @@ class KeycloakAdminClient:
                 logger.warning(f"Client scope '{scope_name}' already exists")
                 # Return existing scope ID
                 existing = await self.get_client_scope_by_name(
-                    realm_name, scope_name, namespace
+                    realm_name, scope_name or "", namespace
                 )
                 return existing.id if existing else None
             logger.error(f"Failed to create client scope: {e}")
@@ -3699,6 +3809,7 @@ class KeycloakAdminClient:
             logger.error(f"Failed to create client scope: {e}")
             return None
 
+    @api_update("client scope")
     async def update_client_scope(
         self,
         realm_name: str,
@@ -3724,28 +3835,27 @@ class KeycloakAdminClient:
         scope_name = scope_config.name
         logger.info(f"Updating client scope '{scope_name}' in realm '{realm_name}'")
 
-        try:
-            payload = scope_config.model_dump(by_alias=True, exclude_none=True)
-            # Ensure ID is included in payload
-            payload["id"] = scope_id
+        payload = scope_config.model_dump(by_alias=True, exclude_none=True)
+        # Ensure ID is included in payload
+        payload["id"] = scope_id
 
-            response = await self._make_request(
-                "PUT",
-                f"realms/{realm_name}/client-scopes/{scope_id}",
-                namespace,
-                json=payload,
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/client-scopes/{scope_id}",
+            namespace,
+            json=payload,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully updated client scope '{scope_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully updated client scope '{scope_name}'")
-                return True
-            else:
-                logger.error(f"Failed to update client scope: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to update client scope: {e}")
-            return False
-
+    @api_delete("client scope")
     async def delete_client_scope(
         self, realm_name: str, scope_id: str, namespace: str = "default"
     ) -> bool:
@@ -3762,33 +3872,26 @@ class KeycloakAdminClient:
         """
         logger.info(f"Deleting client scope '{scope_id}' from realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "DELETE",
-                f"realms/{realm_name}/client-scopes/{scope_id}",
-                namespace,
-            )
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/client-scopes/{scope_id}",
+            namespace,
+        )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully deleted client scope '{scope_id}'")
-                return True
-            else:
-                logger.error(f"Failed to delete client scope: {response.status_code}")
-                return False
-        except KeycloakAdminError as e:
-            if e.status_code == 404:
-                logger.warning(f"Client scope '{scope_id}' not found, already deleted")
-                return True
-            logger.error(f"Failed to delete client scope: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Failed to delete client scope: {e}")
-            return False
+        if response.status_code == 204:
+            logger.info(f"Successfully deleted client scope '{scope_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     # =========================================================================
     # Realm Default/Optional Client Scopes API methods
     # =========================================================================
 
+    @api_get_list("realm default client scopes")
     async def get_realm_default_client_scopes(
         self, realm_name: str, namespace: str = "default"
     ) -> list[ClientScopeRepresentation]:
@@ -3806,28 +3909,24 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching realm default client scopes for '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/default-default-client-scopes",
-                namespace,
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/default-default-client-scopes",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            scopes_data = response.json()
+            return [
+                ClientScopeRepresentation.model_validate(scope) for scope in scopes_data
+            ]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                scopes_data = response.json()
-                return [
-                    ClientScopeRepresentation.model_validate(scope)
-                    for scope in scopes_data
-                ]
-            else:
-                logger.error(
-                    f"Failed to get realm default client scopes: {response.status_code}"
-                )
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get realm default client scopes: {e}")
-            return []
-
+    @api_update("realm default client scope")
     async def add_realm_default_client_scope(
         self, realm_name: str, scope_id: str, namespace: str = "default"
     ) -> bool:
@@ -3846,31 +3945,22 @@ class KeycloakAdminClient:
             f"Adding scope '{scope_id}' to realm default scopes in '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "PUT",
-                f"realms/{realm_name}/default-default-client-scopes/{scope_id}",
-                namespace,
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/default-default-client-scopes/{scope_id}",
+            namespace,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully added default client scope '{scope_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully added default client scope '{scope_id}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to add default client scope: {response.status_code}"
-                )
-                return False
-        except KeycloakAdminError as e:
-            if e.status_code == 409:
-                logger.warning(f"Default client scope '{scope_id}' already assigned")
-                return True
-            logger.error(f"Failed to add default client scope: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Failed to add default client scope: {e}")
-            return False
-
+    @api_delete("realm default client scope")
     async def remove_realm_default_client_scope(
         self, realm_name: str, scope_id: str, namespace: str = "default"
     ) -> bool:
@@ -3889,31 +3979,22 @@ class KeycloakAdminClient:
             f"Removing scope '{scope_id}' from realm default scopes in '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "DELETE",
-                f"realms/{realm_name}/default-default-client-scopes/{scope_id}",
-                namespace,
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/default-default-client-scopes/{scope_id}",
+            namespace,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully removed default client scope '{scope_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully removed default client scope '{scope_id}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to remove default client scope: {response.status_code}"
-                )
-                return False
-        except KeycloakAdminError as e:
-            if e.status_code == 404:
-                logger.warning(f"Default client scope '{scope_id}' not found")
-                return True
-            logger.error(f"Failed to remove default client scope: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Failed to remove default client scope: {e}")
-            return False
-
+    @api_get_list("realm optional client scopes")
     async def get_realm_optional_client_scopes(
         self, realm_name: str, namespace: str = "default"
     ) -> list[ClientScopeRepresentation]:
@@ -3931,28 +4012,24 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching realm optional client scopes for '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/default-optional-client-scopes",
-                namespace,
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/default-optional-client-scopes",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            scopes_data = response.json()
+            return [
+                ClientScopeRepresentation.model_validate(scope) for scope in scopes_data
+            ]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                scopes_data = response.json()
-                return [
-                    ClientScopeRepresentation.model_validate(scope)
-                    for scope in scopes_data
-                ]
-            else:
-                logger.error(
-                    f"Failed to get realm optional client scopes: {response.status_code}"
-                )
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get realm optional client scopes: {e}")
-            return []
-
+    @api_update("realm optional client scope")
     async def add_realm_optional_client_scope(
         self, realm_name: str, scope_id: str, namespace: str = "default"
     ) -> bool:
@@ -3971,31 +4048,22 @@ class KeycloakAdminClient:
             f"Adding scope '{scope_id}' to realm optional scopes in '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "PUT",
-                f"realms/{realm_name}/default-optional-client-scopes/{scope_id}",
-                namespace,
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/default-optional-client-scopes/{scope_id}",
+            namespace,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully added optional client scope '{scope_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully added optional client scope '{scope_id}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to add optional client scope: {response.status_code}"
-                )
-                return False
-        except KeycloakAdminError as e:
-            if e.status_code == 409:
-                logger.warning(f"Optional client scope '{scope_id}' already assigned")
-                return True
-            logger.error(f"Failed to add optional client scope: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Failed to add optional client scope: {e}")
-            return False
-
+    @api_delete("realm optional client scope")
     async def remove_realm_optional_client_scope(
         self, realm_name: str, scope_id: str, namespace: str = "default"
     ) -> bool:
@@ -4014,30 +4082,20 @@ class KeycloakAdminClient:
             f"Removing scope '{scope_id}' from realm optional scopes in '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "DELETE",
-                f"realms/{realm_name}/default-optional-client-scopes/{scope_id}",
-                namespace,
-            )
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/default-optional-client-scopes/{scope_id}",
+            namespace,
+        )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully removed optional client scope '{scope_id}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to remove optional client scope: {response.status_code}"
-                )
-                return False
-        except KeycloakAdminError as e:
-            if e.status_code == 404:
-                logger.warning(f"Optional client scope '{scope_id}' not found")
-                return True
-            logger.error(f"Failed to remove optional client scope: {e}")
-            return False
-        except Exception as e:
-            logger.error(f"Failed to remove optional client scope: {e}")
-            return False
+        if response.status_code == 204:
+            logger.info(f"Successfully removed optional client scope '{scope_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     # =========================================================================
     # Client-level Default/Optional Client Scopes API methods
@@ -4500,6 +4558,7 @@ class KeycloakAdminClient:
     # Groups API methods
     # =========================================================================
 
+    @api_get_list("groups")
     async def get_groups(
         self,
         realm_name: str,
@@ -4519,24 +4578,21 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching groups for realm '{realm_name}'")
 
-        try:
-            params = {"briefRepresentation": str(brief_representation).lower()}
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/groups", namespace, params=params
+        params = {"briefRepresentation": str(brief_representation).lower()}
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/groups", namespace, params=params
+        )
+
+        if response.status_code == 200:
+            groups_data = response.json()
+            return [GroupRepresentation.model_validate(group) for group in groups_data]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                groups_data = response.json()
-                return [
-                    GroupRepresentation.model_validate(group) for group in groups_data
-                ]
-            else:
-                logger.error(f"Failed to get groups: {response.status_code}")
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get groups: {e}")
-            return []
-
+    @api_get_single("group")
     async def get_group_by_id(
         self, realm_name: str, group_id: str, namespace: str = "default"
     ) -> GroupRepresentation | None:
@@ -4553,22 +4609,21 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching group '{group_id}' in realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/groups/{group_id}", namespace
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/groups/{group_id}", namespace
+        )
+
+        if response.status_code == 200:
+            return GroupRepresentation.model_validate(response.json())
+        elif response.status_code == 404:
+            return None
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                return GroupRepresentation.model_validate(response.json())
-            elif response.status_code == 404:
-                return None
-            else:
-                logger.error(f"Failed to get group: {response.status_code}")
-                return None
-        except Exception as e:
-            logger.error(f"Failed to get group: {e}")
-            return None
-
+    @api_get_single("group by path")
     async def get_group_by_path(
         self, realm_name: str, path: str, namespace: str = "default"
     ) -> GroupRepresentation | None:
@@ -4585,21 +4640,19 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching group by path '{path}' in realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/group-by-path/{path}", namespace
-            )
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/group-by-path/{path}", namespace
+        )
 
-            if response.status_code == 200:
-                return GroupRepresentation.model_validate(response.json())
-            elif response.status_code == 404:
-                return None
-            else:
-                logger.error(f"Failed to get group by path: {response.status_code}")
-                return None
-        except Exception as e:
-            logger.error(f"Failed to get group by path: {e}")
+        if response.status_code == 200:
+            return GroupRepresentation.model_validate(response.json())
+        elif response.status_code == 404:
             return None
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     async def create_group(
         self,
@@ -4707,6 +4760,7 @@ class KeycloakAdminClient:
             logger.error(f"Failed to create subgroup: {e}")
             return None
 
+    @api_update("group")
     async def update_group(
         self,
         realm_name: str,
@@ -4745,24 +4799,23 @@ class KeycloakAdminClient:
             exclude={"sub_group_count", "sub_groups", "access", "path"},
         )
 
-        try:
-            response = await self._make_request(
-                "PUT",
-                f"realms/{realm_name}/groups/{group_id}",
-                namespace,
-                json=update_payload,
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/groups/{group_id}",
+            namespace,
+            json=update_payload,
+        )
+
+        if response.status_code in (200, 204):
+            logger.info(f"Successfully updated group '{group_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code in (200, 204):
-                logger.info(f"Successfully updated group '{group_id}'")
-                return True
-            else:
-                logger.error(f"Failed to update group: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to update group: {e}")
-            return False
-
+    @api_delete("group")
     async def delete_group(
         self, realm_name: str, group_id: str, namespace: str = "default"
     ) -> bool:
@@ -4779,24 +4832,23 @@ class KeycloakAdminClient:
         """
         logger.info(f"Deleting group '{group_id}' in realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "DELETE", f"realms/{realm_name}/groups/{group_id}", namespace
+        response = await self._make_request(
+            "DELETE", f"realms/{realm_name}/groups/{group_id}", namespace
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully deleted group '{group_id}'")
+            return True
+        elif response.status_code == 404:
+            logger.info(f"Group '{group_id}' not found (already deleted)")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully deleted group '{group_id}'")
-                return True
-            elif response.status_code == 404:
-                logger.info(f"Group '{group_id}' not found (already deleted)")
-                return True
-            else:
-                logger.error(f"Failed to delete group: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to delete group: {e}")
-            return False
-
+    @api_get_list("group realm role mappings")
     async def get_group_realm_role_mappings(
         self, realm_name: str, group_id: str, namespace: str = "default"
     ) -> list[RoleRepresentation]:
@@ -4815,25 +4867,22 @@ class KeycloakAdminClient:
             f"Fetching realm role mappings for group '{group_id}' in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
-                namespace,
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            roles_data = response.json()
+            return [RoleRepresentation.model_validate(role) for role in roles_data]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                roles_data = response.json()
-                return [RoleRepresentation.model_validate(role) for role in roles_data]
-            else:
-                logger.error(
-                    f"Failed to get group realm role mappings: {response.status_code}"
-                )
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get group realm role mappings: {e}")
-            return []
-
+    @api_update("realm roles to group")
     async def assign_realm_roles_to_group(
         self,
         realm_name: str,
@@ -4858,33 +4907,30 @@ class KeycloakAdminClient:
             f"in realm '{realm_name}'"
         )
 
-        try:
-            roles_data = []
-            for role in roles:
-                if isinstance(role, dict):
-                    roles_data.append(role)
-                else:
-                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+        roles_data = []
+        for role in roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
+            else:
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
 
-            response = await self._make_request(
-                "POST",
-                f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
-                namespace,
-                json=roles_data,
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
+            namespace,
+            json=roles_data,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully assigned realm roles to group '{group_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully assigned realm roles to group '{group_id}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to assign realm roles to group: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to assign realm roles to group: {e}")
-            return False
-
+    @api_delete("realm roles from group")
     async def remove_realm_roles_from_group(
         self,
         realm_name: str,
@@ -4909,33 +4955,30 @@ class KeycloakAdminClient:
             f"in realm '{realm_name}'"
         )
 
-        try:
-            roles_data = []
-            for role in roles:
-                if isinstance(role, dict):
-                    roles_data.append(role)
-                else:
-                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+        roles_data = []
+        for role in roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
+            else:
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
 
-            response = await self._make_request(
-                "DELETE",
-                f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
-                namespace,
-                json=roles_data,
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/groups/{group_id}/role-mappings/realm",
+            namespace,
+            json=roles_data,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully removed realm roles from group '{group_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully removed realm roles from group '{group_id}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to remove realm roles from group: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to remove realm roles from group: {e}")
-            return False
-
+    @api_get_list("group client role mappings")
     async def get_group_client_role_mappings(
         self,
         realm_name: str,
@@ -4960,25 +5003,22 @@ class KeycloakAdminClient:
             f"and client '{client_uuid}' in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/groups/{group_id}/role-mappings/clients/{client_uuid}",
-                namespace,
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/groups/{group_id}/role-mappings/clients/{client_uuid}",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            roles_data = response.json()
+            return [RoleRepresentation.model_validate(role) for role in roles_data]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                roles_data = response.json()
-                return [RoleRepresentation.model_validate(role) for role in roles_data]
-            else:
-                logger.error(
-                    f"Failed to get group client role mappings: {response.status_code}"
-                )
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get group client role mappings: {e}")
-            return []
-
+    @api_update("client roles to group")
     async def assign_client_roles_to_group(
         self,
         realm_name: str,
@@ -5005,33 +5045,30 @@ class KeycloakAdminClient:
             f"for client '{client_uuid}' in realm '{realm_name}'"
         )
 
-        try:
-            roles_data = []
-            for role in roles:
-                if isinstance(role, dict):
-                    roles_data.append(role)
-                else:
-                    roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+        roles_data = []
+        for role in roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
+            else:
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
 
-            response = await self._make_request(
-                "POST",
-                f"realms/{realm_name}/groups/{group_id}/role-mappings/clients/{client_uuid}",
-                namespace,
-                json=roles_data,
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/groups/{group_id}/role-mappings/clients/{client_uuid}",
+            namespace,
+            json=roles_data,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully assigned client roles to group '{group_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully assigned client roles to group '{group_id}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to assign client roles to group: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to assign client roles to group: {e}")
-            return False
-
+    @api_get_list("default groups")
     async def get_default_groups(
         self, realm_name: str, namespace: str = "default"
     ) -> list[GroupRepresentation]:
@@ -5049,23 +5086,20 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching default groups for realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "GET", f"realms/{realm_name}/default-groups", namespace
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/default-groups", namespace
+        )
+
+        if response.status_code == 200:
+            groups_data = response.json()
+            return [GroupRepresentation.model_validate(group) for group in groups_data]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                groups_data = response.json()
-                return [
-                    GroupRepresentation.model_validate(group) for group in groups_data
-                ]
-            else:
-                logger.error(f"Failed to get default groups: {response.status_code}")
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get default groups: {e}")
-            return []
-
+    @api_update("default group")
     async def add_default_group(
         self, realm_name: str, group_id: str, namespace: str = "default"
     ) -> bool:
@@ -5082,21 +5116,20 @@ class KeycloakAdminClient:
         """
         logger.info(f"Adding group '{group_id}' as default in realm '{realm_name}'")
 
-        try:
-            response = await self._make_request(
-                "PUT", f"realms/{realm_name}/default-groups/{group_id}", namespace
+        response = await self._make_request(
+            "PUT", f"realms/{realm_name}/default-groups/{group_id}", namespace
+        )
+
+        if response.status_code in (200, 204):
+            logger.info(f"Successfully added group '{group_id}' as default")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code in (200, 204):
-                logger.info(f"Successfully added group '{group_id}' as default")
-                return True
-            else:
-                logger.error(f"Failed to add default group: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to add default group: {e}")
-            return False
-
+    @api_delete("default group")
     async def remove_default_group(
         self, realm_name: str, group_id: str, namespace: str = "default"
     ) -> bool:
@@ -5115,25 +5148,21 @@ class KeycloakAdminClient:
             f"Removing group '{group_id}' from defaults in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "DELETE", f"realms/{realm_name}/default-groups/{group_id}", namespace
-            )
+        response = await self._make_request(
+            "DELETE", f"realms/{realm_name}/default-groups/{group_id}", namespace
+        )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully removed group '{group_id}' from defaults")
-                return True
-            elif response.status_code == 404:
-                logger.info(
-                    f"Group '{group_id}' was not a default group (already removed)"
-                )
-                return True
-            else:
-                logger.error(f"Failed to remove default group: {response.status_code}")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to remove default group: {e}")
-            return False
+        if response.status_code == 204:
+            logger.info(f"Successfully removed group '{group_id}' from defaults")
+            return True
+        elif response.status_code == 404:
+            logger.info(f"Group '{group_id}' was not a default group (already removed)")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
 
 async def get_keycloak_admin_client(
