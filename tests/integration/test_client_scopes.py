@@ -811,3 +811,152 @@ class TestClientScopeAssignments:
                 plural="keycloakrealms",
                 name=realm_name,
             )
+
+    @pytest.mark.asyncio
+    async def test_client_with_nonexistent_scope_reference(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test client referencing a nonexistent scope gracefully handles the error.
+
+        This test verifies that:
+        - A client referencing a nonexistent scope doesn't fail reconciliation
+        - The operator logs a warning but continues
+        - Other valid scopes are still assigned
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"missing-scope-{suffix}"
+        client_name = f"bad-scope-client-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.client import (
+            KeycloakClientSpec,
+            RealmRef,
+        )
+        from keycloak_operator.models.realm import (
+            KeycloakClientScope,
+            KeycloakRealmSpec,
+            OperatorRef,
+        )
+
+        # Create realm with one scope
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Missing Scope Test",
+            client_authorization_grants=[namespace],
+            client_scopes=[
+                KeycloakClientScope(
+                    name="valid-scope",
+                    description="This scope exists",
+                    protocol="openid-connect",
+                ),
+            ],
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            # Create realm
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Create client referencing both valid and nonexistent scope
+            client_spec = KeycloakClientSpec(
+                realm_ref=RealmRef(name=realm_name, namespace=namespace),
+                client_id=client_name,
+                default_client_scopes=[
+                    "valid-scope",  # This exists
+                    "nonexistent-scope",  # This does NOT exist
+                ],
+                optional_client_scopes=[
+                    "also-nonexistent",  # This does NOT exist
+                ],
+            )
+
+            client_manifest = {
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "KeycloakClient",
+                "metadata": {"name": client_name, "namespace": namespace},
+                "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
+            }
+
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                body=client_manifest,
+            )
+
+            # Client should still become ready (nonexistent scopes logged as warnings)
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify the valid scope was assigned
+            client_uuid = await keycloak_admin_client.get_client_uuid(
+                client_name, realm_name, namespace
+            )
+            assert client_uuid is not None, "Client should exist"
+
+            client_defaults = await keycloak_admin_client.get_client_default_scopes(
+                realm_name, client_uuid, namespace
+            )
+            default_names = {s.name for s in client_defaults if s.name}
+
+            # The valid scope should be assigned
+            assert "valid-scope" in default_names, "valid-scope should be assigned"
+
+            # The nonexistent scope should NOT cause a crash
+            logger.info("✓ Client handles nonexistent scope references gracefully")
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+            )
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
