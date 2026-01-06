@@ -387,15 +387,15 @@ class TestHelmRealmAdvancedFields:
         spec = realm.get("spec", {})
         events_config = spec.get("eventsConfig", {})
 
-        assert (
-            events_config.get("eventsEnabled") is True
-        ), "eventsEnabled should be True"
-        assert (
-            events_config.get("adminEventsEnabled") is True
-        ), "adminEventsEnabled should be True"
-        assert "jboss-logging" in events_config.get(
-            "eventsListeners", []
-        ), "jboss-logging should be in eventsListeners"
+        assert events_config.get("eventsEnabled") is True, (
+            "eventsEnabled should be True"
+        )
+        assert events_config.get("adminEventsEnabled") is True, (
+            "adminEventsEnabled should be True"
+        )
+        assert "jboss-logging" in events_config.get("eventsListeners", []), (
+            "jboss-logging should be in eventsListeners"
+        )
 
     @pytest.mark.timeout(300)
     async def test_helm_realm_with_description_and_login_title(
@@ -448,12 +448,12 @@ class TestHelmRealmAdvancedFields:
         )
         spec = realm.get("spec", {})
 
-        assert (
-            spec.get("description") == description
-        ), f"Expected description '{description}', got '{spec.get('description')}'"
-        assert (
-            spec.get("loginPageTitle") == login_title
-        ), f"Expected loginPageTitle '{login_title}', got '{spec.get('loginPageTitle')}'"
+        assert spec.get("description") == description, (
+            f"Expected description '{description}', got '{spec.get('description')}'"
+        )
+        assert spec.get("loginPageTitle") == login_title, (
+            f"Expected loginPageTitle '{login_title}', got '{spec.get('loginPageTitle')}'"
+        )
 
     @pytest.mark.timeout(300)
     async def test_helm_realm_with_password_policy(
@@ -517,6 +517,6 @@ class TestHelmRealmAdvancedFields:
         assert password_policy.get("digits") == 1, "digits should be 1"
         assert password_policy.get("specialChars") == 1, "specialChars should be 1"
         assert password_policy.get("notUsername") is True, "notUsername should be True"
-        assert (
-            password_policy.get("hashIterations") == 210000
-        ), "hashIterations should be 210000"
+        assert password_policy.get("hashIterations") == 210000, (
+            "hashIterations should be 210000"
+        )

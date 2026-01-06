@@ -281,9 +281,9 @@ class TestClientScopes:
             )
             mapper_names = {m.name for m in mappers if m.name}
 
-            assert (
-                "custom-audience" in mapper_names
-            ), "custom-audience mapper should exist"
+            assert "custom-audience" in mapper_names, (
+                "custom-audience mapper should exist"
+            )
 
             # Verify mapper configuration
             custom_mapper = next(
@@ -535,9 +535,9 @@ class TestRealmDefaultOptionalScopes:
             )
             default_scope_names = {s.name for s in default_scopes if s.name}
 
-            assert (
-                "api.read" in default_scope_names
-            ), "api.read should be a default scope"
+            assert "api.read" in default_scope_names, (
+                "api.read should be a default scope"
+            )
             assert "profile" in default_scope_names, "profile should be a default scope"
             assert "email" in default_scope_names, "email should be a default scope"
 
@@ -629,9 +629,9 @@ class TestRealmDefaultOptionalScopes:
             optional_scope_names = {s.name for s in optional_scopes if s.name}
 
             assert "api.admin" in optional_scope_names, "api.admin should be optional"
-            assert (
-                "offline_access" in optional_scope_names
-            ), "offline_access should be optional"
+            assert "offline_access" in optional_scope_names, (
+                "offline_access should be optional"
+            )
 
             logger.info("✓ Successfully verified realm optional client scopes")
 
@@ -786,9 +786,9 @@ class TestClientScopeAssignments:
             optional_names = {s.name for s in client_optionals if s.name}
 
             assert "api.write" in optional_names, "api.write should be client optional"
-            assert (
-                "offline_access" in optional_names
-            ), "offline_access should be client optional"
+            assert "offline_access" in optional_names, (
+                "offline_access should be client optional"
+            )
 
             logger.info("✓ Successfully verified client scope assignments")
 

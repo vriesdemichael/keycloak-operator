@@ -99,6 +99,9 @@ async def ensure_keycloak_realm(
     Realms can be created in Keycloak instances across namespaces,
     subject to RBAC permissions.
 
+    Note: Deletion is handled by the @kopf.on.delete handler (delete_keycloak_realm).
+    Do not add deletion logic here to avoid race conditions with the delete handler.
+
     Args:
         spec: KeycloakRealm resource specification
         name: Name of the KeycloakRealm resource
@@ -110,42 +113,16 @@ async def ensure_keycloak_realm(
         Dictionary with status information for the resource
 
     """
-    # Check if resource is being deleted (deletionTimestamp is set)
+    # Check if resource is being deleted - if so, skip reconciliation
+    # The @kopf.on.delete handler (delete_keycloak_realm) handles cleanup
     meta = kwargs.get("meta", {})
     deletion_timestamp = meta.get("deletionTimestamp")
 
     if deletion_timestamp:
-        logger.info(f"KeycloakRealm {name} has deletionTimestamp, triggering cleanup")
-        # Resource is being deleted, trigger cleanup logic
-        current_finalizers = meta.get("finalizers", [])
-        if REALM_FINALIZER in current_finalizers:
-            try:
-                # Add jitter to prevent thundering herd
-
-                jitter = random.uniform(0, RECONCILE_JITTER_MAX)
-
-                await asyncio.sleep(jitter)
-
-                reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
-                status_wrapper = StatusWrapper(status)
-                await reconciler.cleanup_resources(
-                    name=name, namespace=namespace, spec=spec, status=status_wrapper
-                )
-
-                # Remove finalizer to complete deletion
-                logger.info(
-                    f"Cleanup completed successfully, removing finalizer {REALM_FINALIZER}"
-                )
-                current_finalizers = list(current_finalizers)
-                current_finalizers.remove(REALM_FINALIZER)
-                patch.metadata["finalizers"] = current_finalizers
-                logger.info(f"Successfully deleted KeycloakRealm {name}")
-            except Exception as e:
-                logger.error(f"Error during KeycloakRealm deletion: {e}")
-                raise kopf.TemporaryError(
-                    f"Failed to delete KeycloakRealm {name}: {e}",
-                    delay=30,
-                ) from e
+        logger.debug(
+            f"KeycloakRealm {name} has deletionTimestamp, "
+            f"skipping reconciliation (delete handler will manage cleanup)"
+        )
         return None
 
     logger.info(f"Ensuring KeycloakRealm {name} in namespace {namespace}")

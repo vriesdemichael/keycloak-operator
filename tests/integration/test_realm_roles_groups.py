@@ -780,9 +780,9 @@ class TestGroups:
             }
 
             assert "/users" in default_group_paths, "users should be a default group"
-            assert (
-                "/guests" not in default_group_paths
-            ), "guests should NOT be a default group"
+            assert "/guests" not in default_group_paths, (
+                "guests should NOT be a default group"
+            )
 
             logger.info("✓ Successfully verified default groups")
 
@@ -1175,9 +1175,9 @@ class TestRealmRolesUpdateDelete:
                     and updated_role.description == "Updated description"
                 )
 
-            assert await _simple_wait(
-                check_role_updated, timeout=30, interval=2
-            ), "Role description should be updated"
+            assert await _simple_wait(check_role_updated, timeout=30, interval=2), (
+                "Role description should be updated"
+            )
 
             # Verify new role was added
             new_role = await keycloak_admin_client.get_realm_role_by_name(
@@ -1333,9 +1333,9 @@ class TestRealmRolesUpdateDelete:
                 )
                 return deleted_role is None
 
-            assert await _simple_wait(
-                check_role_deleted, timeout=30, interval=2
-            ), "delete-role should be removed"
+            assert await _simple_wait(check_role_deleted, timeout=30, interval=2), (
+                "delete-role should be removed"
+            )
 
             # Verify keep-role still exists
             keep_role = await keycloak_admin_client.get_realm_role_by_name(
@@ -1501,9 +1501,9 @@ class TestGroupsUpdateDelete:
                     "version"
                 ) == ["v2"]
 
-            assert await _simple_wait(
-                check_group_updated, timeout=30, interval=2
-            ), "Group attributes should be updated"
+            assert await _simple_wait(check_group_updated, timeout=30, interval=2), (
+                "Group attributes should be updated"
+            )
 
             # Verify subgroup was added
             subgroup = await keycloak_admin_client.get_group_by_path(
@@ -1653,9 +1653,9 @@ class TestGroupsUpdateDelete:
                 )
                 return deleted_group is None
 
-            assert await _simple_wait(
-                check_group_deleted, timeout=30, interval=2
-            ), "delete-group should be removed"
+            assert await _simple_wait(check_group_deleted, timeout=30, interval=2), (
+                "delete-group should be removed"
+            )
 
             # Verify keep-group still exists
             keep_group = await keycloak_admin_client.get_group_by_path(
