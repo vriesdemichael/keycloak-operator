@@ -689,3 +689,130 @@ class TestKeycloakAdminAPI:
                 plural="keycloakrealms",
                 name=realm_name,
             )
+
+    @pytest.mark.asyncio
+    async def test_client_scope_idempotency(
+        self,
+        k8s_custom_objects,
+        test_namespace,
+        operator_namespace,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test client scope operations are idempotent (double-create, double-delete)."""
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"test-scope-idemp-{suffix}"
+        scope_name = f"idemp-scope-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.keycloak_api import ClientScopeRepresentation
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        # Create realm first
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            client_authorization_grants=[namespace],
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Test double-create (409 conflict handling)
+            scope_config = ClientScopeRepresentation(
+                name=scope_name,
+                description="Test scope",
+                protocol="openid-connect",
+            )
+
+            # First create
+            scope_id_1 = await keycloak_admin_client.create_client_scope(
+                realm_name, scope_config, namespace
+            )
+            assert scope_id_1 is not None, "First create should succeed"
+
+            # Second create (same name) - should return existing ID
+            scope_id_2 = await keycloak_admin_client.create_client_scope(
+                realm_name, scope_config, namespace
+            )
+            assert scope_id_2 == scope_id_1, "Double-create should return same ID"
+
+            # Test double-delete (404 handling)
+            # First delete
+            delete_1 = await keycloak_admin_client.delete_client_scope(
+                realm_name, scope_id_1, namespace
+            )
+            assert delete_1 is True, "First delete should succeed"
+
+            # Second delete (already gone) - should still return True
+            delete_2 = await keycloak_admin_client.delete_client_scope(
+                realm_name, scope_id_1, namespace
+            )
+            assert delete_2 is True, "Double-delete should succeed (idempotent)"
+
+            # Test double-add to realm defaults
+            # Create a new scope for this test
+            scope_config_2 = ClientScopeRepresentation(
+                name=f"{scope_name}-2",
+                protocol="openid-connect",
+            )
+            scope_id = await keycloak_admin_client.create_client_scope(
+                realm_name, scope_config_2, namespace
+            )
+            assert scope_id is not None
+
+            # Add to defaults twice
+            add_1 = await keycloak_admin_client.add_realm_default_client_scope(
+                realm_name, scope_id, namespace
+            )
+            assert add_1 is True
+
+            add_2 = await keycloak_admin_client.add_realm_default_client_scope(
+                realm_name, scope_id, namespace
+            )
+            assert add_2 is True, "Double-add to defaults should succeed"
+
+            # Remove from defaults twice
+            remove_1 = await keycloak_admin_client.remove_realm_default_client_scope(
+                realm_name, scope_id, namespace
+            )
+            assert remove_1 is True
+
+            remove_2 = await keycloak_admin_client.remove_realm_default_client_scope(
+                realm_name, scope_id, namespace
+            )
+            assert remove_2 is True, "Double-remove from defaults should succeed"
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )

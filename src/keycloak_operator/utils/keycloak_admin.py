@@ -3682,16 +3682,19 @@ class KeycloakAdminClient:
                 scope_id = location.split("/")[-1] if location else None
                 logger.info(f"Successfully created client scope '{scope_name}'")
                 return scope_id
-            elif response.status_code == 409:
+            else:
+                logger.error(f"Failed to create client scope: {response.status_code}")
+                return None
+        except KeycloakAdminError as e:
+            if e.status_code == 409:
                 logger.warning(f"Client scope '{scope_name}' already exists")
                 # Return existing scope ID
                 existing = await self.get_client_scope_by_name(
                     realm_name, scope_name, namespace
                 )
                 return existing.id if existing else None
-            else:
-                logger.error(f"Failed to create client scope: {response.status_code}")
-                return None
+            logger.error(f"Failed to create client scope: {e}")
+            return None
         except Exception as e:
             logger.error(f"Failed to create client scope: {e}")
             return None
@@ -3769,12 +3772,15 @@ class KeycloakAdminClient:
             if response.status_code == 204:
                 logger.info(f"Successfully deleted client scope '{scope_id}'")
                 return True
-            elif response.status_code == 404:
-                logger.warning(f"Client scope '{scope_id}' not found, already deleted")
-                return True
             else:
                 logger.error(f"Failed to delete client scope: {response.status_code}")
                 return False
+        except KeycloakAdminError as e:
+            if e.status_code == 404:
+                logger.warning(f"Client scope '{scope_id}' not found, already deleted")
+                return True
+            logger.error(f"Failed to delete client scope: {e}")
+            return False
         except Exception as e:
             logger.error(f"Failed to delete client scope: {e}")
             return False
@@ -3855,6 +3861,12 @@ class KeycloakAdminClient:
                     f"Failed to add default client scope: {response.status_code}"
                 )
                 return False
+        except KeycloakAdminError as e:
+            if e.status_code == 409:
+                logger.warning(f"Default client scope '{scope_id}' already assigned")
+                return True
+            logger.error(f"Failed to add default client scope: {e}")
+            return False
         except Exception as e:
             logger.error(f"Failed to add default client scope: {e}")
             return False
@@ -3887,14 +3899,17 @@ class KeycloakAdminClient:
             if response.status_code == 204:
                 logger.info(f"Successfully removed default client scope '{scope_id}'")
                 return True
-            elif response.status_code == 404:
-                logger.warning(f"Default client scope '{scope_id}' not found")
-                return True
             else:
                 logger.error(
                     f"Failed to remove default client scope: {response.status_code}"
                 )
                 return False
+        except KeycloakAdminError as e:
+            if e.status_code == 404:
+                logger.warning(f"Default client scope '{scope_id}' not found")
+                return True
+            logger.error(f"Failed to remove default client scope: {e}")
+            return False
         except Exception as e:
             logger.error(f"Failed to remove default client scope: {e}")
             return False
@@ -3971,6 +3986,12 @@ class KeycloakAdminClient:
                     f"Failed to add optional client scope: {response.status_code}"
                 )
                 return False
+        except KeycloakAdminError as e:
+            if e.status_code == 409:
+                logger.warning(f"Optional client scope '{scope_id}' already assigned")
+                return True
+            logger.error(f"Failed to add optional client scope: {e}")
+            return False
         except Exception as e:
             logger.error(f"Failed to add optional client scope: {e}")
             return False
@@ -4003,14 +4024,17 @@ class KeycloakAdminClient:
             if response.status_code == 204:
                 logger.info(f"Successfully removed optional client scope '{scope_id}'")
                 return True
-            elif response.status_code == 404:
-                logger.warning(f"Optional client scope '{scope_id}' not found")
-                return True
             else:
                 logger.error(
                     f"Failed to remove optional client scope: {response.status_code}"
                 )
                 return False
+        except KeycloakAdminError as e:
+            if e.status_code == 404:
+                logger.warning(f"Optional client scope '{scope_id}' not found")
+                return True
+            logger.error(f"Failed to remove optional client scope: {e}")
+            return False
         except Exception as e:
             logger.error(f"Failed to remove optional client scope: {e}")
             return False
