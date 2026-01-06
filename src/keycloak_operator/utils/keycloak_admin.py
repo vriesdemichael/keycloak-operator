@@ -160,16 +160,19 @@ def api_create(
 
 def api_update(
     resource_name: str,
+    conflict_is_success: bool = False,
 ) -> Callable[[Callable[P, Awaitable[bool]]], Callable[P, Awaitable[bool]]]:
     """
     Decorator for UPDATE operations.
 
     Handles common error cases:
-    - Returns False on any exception
+    - 409 Conflict: Optionally treated as success (idempotent add)
+    - Other errors: Returns False
     - Logs errors with consistent format
 
     Args:
         resource_name: Human-readable resource name for logging
+        conflict_is_success: If True, treat 409 Conflict as success (already exists)
     """
 
     def decorator(func: Callable[P, Awaitable[bool]]) -> Callable[P, Awaitable[bool]]:
@@ -177,6 +180,12 @@ def api_update(
         async def wrapper(*args: P.args, **kwargs: P.kwargs) -> bool:
             try:
                 return await func(*args, **kwargs)
+            except KeycloakAdminError as e:
+                if e.status_code == 409 and conflict_is_success:
+                    logger.warning(f"{resource_name} already exists/assigned")
+                    return True  # Idempotent success
+                logger.error(f"Failed to update {resource_name}: {e}")
+                return False
             except Exception as e:
                 logger.error(f"Failed to update {resource_name}: {e}")
                 return False
@@ -3926,7 +3935,7 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
-    @api_update("realm default client scope")
+    @api_update("realm default client scope", conflict_is_success=True)
     async def add_realm_default_client_scope(
         self, realm_name: str, scope_id: str, namespace: str = "default"
     ) -> bool:
@@ -4029,7 +4038,7 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
-    @api_update("realm optional client scope")
+    @api_update("realm optional client scope", conflict_is_success=True)
     async def add_realm_optional_client_scope(
         self, realm_name: str, scope_id: str, namespace: str = "default"
     ) -> bool:
@@ -4137,7 +4146,7 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
-    @api_update("client default scope")
+    @api_update("client default scope", conflict_is_success=True)
     async def add_client_default_scope(
         self,
         realm_name: str,
@@ -4251,7 +4260,7 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
-    @api_update("client optional scope")
+    @api_update("client optional scope", conflict_is_success=True)
     async def add_client_optional_scope(
         self,
         realm_name: str,
@@ -4843,7 +4852,7 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
-    @api_update("realm roles to group")
+    @api_update("realm roles to group", conflict_is_success=True)
     async def assign_realm_roles_to_group(
         self,
         realm_name: str,
@@ -4979,7 +4988,7 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
-    @api_update("client roles to group")
+    @api_update("client roles to group", conflict_is_success=True)
     async def assign_client_roles_to_group(
         self,
         realm_name: str,
@@ -5060,7 +5069,7 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
-    @api_update("default group")
+    @api_update("default group", conflict_is_success=True)
     async def add_default_group(
         self, realm_name: str, group_id: str, namespace: str = "default"
     ) -> bool:
