@@ -4101,6 +4101,7 @@ class KeycloakAdminClient:
     # Client-level Default/Optional Client Scopes API methods
     # =========================================================================
 
+    @api_get_list("client default scopes")
     async def get_client_default_scopes(
         self, realm_name: str, client_uuid: str, namespace: str = "default"
     ) -> list[ClientScopeRepresentation]:
@@ -4119,28 +4120,24 @@ class KeycloakAdminClient:
             f"Fetching default scopes for client '{client_uuid}' in '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes",
-                namespace,
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            scopes_data = response.json()
+            return [
+                ClientScopeRepresentation.model_validate(scope) for scope in scopes_data
+            ]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                scopes_data = response.json()
-                return [
-                    ClientScopeRepresentation.model_validate(scope)
-                    for scope in scopes_data
-                ]
-            else:
-                logger.error(
-                    f"Failed to get client default scopes: {response.status_code}"
-                )
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get client default scopes: {e}")
-            return []
-
+    @api_update("client default scope")
     async def add_client_default_scope(
         self,
         realm_name: str,
@@ -4164,25 +4161,22 @@ class KeycloakAdminClient:
             f"Adding scope '{scope_id}' to client '{client_uuid}' default scopes"
         )
 
-        try:
-            response = await self._make_request(
-                "PUT",
-                f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes/{scope_id}",
-                namespace,
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes/{scope_id}",
+            namespace,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully added default scope '{scope_id}' to client")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully added default scope '{scope_id}' to client")
-                return True
-            else:
-                logger.error(
-                    f"Failed to add client default scope: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to add client default scope: {e}")
-            return False
-
+    @api_delete("client default scope")
     async def remove_client_default_scope(
         self,
         realm_name: str,
@@ -4206,30 +4200,22 @@ class KeycloakAdminClient:
             f"Removing scope '{scope_id}' from client '{client_uuid}' default scopes"
         )
 
-        try:
-            response = await self._make_request(
-                "DELETE",
-                f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes/{scope_id}",
-                namespace,
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes/{scope_id}",
+            namespace,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully removed default scope '{scope_id}' from client")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(
-                    f"Successfully removed default scope '{scope_id}' from client"
-                )
-                return True
-            elif response.status_code == 404:
-                logger.warning(f"Client default scope '{scope_id}' not found")
-                return True
-            else:
-                logger.error(
-                    f"Failed to remove client default scope: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to remove client default scope: {e}")
-            return False
-
+    @api_get_list("client optional scopes")
     async def get_client_optional_scopes(
         self, realm_name: str, client_uuid: str, namespace: str = "default"
     ) -> list[ClientScopeRepresentation]:
@@ -4248,28 +4234,24 @@ class KeycloakAdminClient:
             f"Fetching optional scopes for client '{client_uuid}' in '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes",
-                namespace,
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            scopes_data = response.json()
+            return [
+                ClientScopeRepresentation.model_validate(scope) for scope in scopes_data
+            ]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 200:
-                scopes_data = response.json()
-                return [
-                    ClientScopeRepresentation.model_validate(scope)
-                    for scope in scopes_data
-                ]
-            else:
-                logger.error(
-                    f"Failed to get client optional scopes: {response.status_code}"
-                )
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get client optional scopes: {e}")
-            return []
-
+    @api_update("client optional scope")
     async def add_client_optional_scope(
         self,
         realm_name: str,
@@ -4293,25 +4275,22 @@ class KeycloakAdminClient:
             f"Adding scope '{scope_id}' to client '{client_uuid}' optional scopes"
         )
 
-        try:
-            response = await self._make_request(
-                "PUT",
-                f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes/{scope_id}",
-                namespace,
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes/{scope_id}",
+            namespace,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully added optional scope '{scope_id}' to client")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully added optional scope '{scope_id}' to client")
-                return True
-            else:
-                logger.error(
-                    f"Failed to add client optional scope: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to add client optional scope: {e}")
-            return False
-
+    @api_delete("client optional scope")
     async def remove_client_optional_scope(
         self,
         realm_name: str,
@@ -4335,34 +4314,26 @@ class KeycloakAdminClient:
             f"Removing scope '{scope_id}' from client '{client_uuid}' optional scopes"
         )
 
-        try:
-            response = await self._make_request(
-                "DELETE",
-                f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes/{scope_id}",
-                namespace,
-            )
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes/{scope_id}",
+            namespace,
+        )
 
-            if response.status_code == 204:
-                logger.info(
-                    f"Successfully removed optional scope '{scope_id}' from client"
-                )
-                return True
-            elif response.status_code == 404:
-                logger.warning(f"Client optional scope '{scope_id}' not found")
-                return True
-            else:
-                logger.error(
-                    f"Failed to remove client optional scope: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to remove client optional scope: {e}")
-            return False
+        if response.status_code == 204:
+            logger.info(f"Successfully removed optional scope '{scope_id}' from client")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     # =========================================================================
     # Client Scope Protocol Mappers API methods
     # =========================================================================
 
+    @api_get_list("scope protocol mappers")
     async def get_client_scope_protocol_mappers(
         self, realm_name: str, scope_id: str, namespace: str = "default"
     ) -> list[ProtocolMapperRepresentation]:
@@ -4381,27 +4352,23 @@ class KeycloakAdminClient:
             f"Fetching protocol mappers for scope '{scope_id}' in realm '{realm_name}'"
         )
 
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models",
-                namespace,
-            )
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models",
+            namespace,
+        )
 
-            if response.status_code == 200:
-                mappers_data = response.json()
-                return [
-                    ProtocolMapperRepresentation.model_validate(mapper)
-                    for mapper in mappers_data
-                ]
-            else:
-                logger.error(
-                    f"Failed to get scope protocol mappers: {response.status_code}"
-                )
-                return []
-        except Exception as e:
-            logger.error(f"Failed to get scope protocol mappers: {e}")
-            return []
+        if response.status_code == 200:
+            mappers_data = response.json()
+            return [
+                ProtocolMapperRepresentation.model_validate(mapper)
+                for mapper in mappers_data
+            ]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     async def create_client_scope_protocol_mapper(
         self,
@@ -4442,7 +4409,13 @@ class KeycloakAdminClient:
                 mapper_id = location.split("/")[-1] if location else None
                 logger.info(f"Successfully created protocol mapper '{mapper_name}'")
                 return mapper_id
-            elif response.status_code == 409:
+            else:
+                logger.error(
+                    f"Failed to create protocol mapper: {response.status_code}"
+                )
+                return None
+        except KeycloakAdminError as e:
+            if e.status_code == 409:
                 logger.warning(f"Protocol mapper '{mapper_name}' already exists")
                 # Find and return existing mapper ID
                 mappers = await self.get_client_scope_protocol_mappers(
@@ -4452,15 +4425,13 @@ class KeycloakAdminClient:
                     if mapper.name == mapper_name:
                         return mapper.id
                 return None
-            else:
-                logger.error(
-                    f"Failed to create protocol mapper: {response.status_code}"
-                )
-                return None
+            logger.error(f"Failed to create protocol mapper: {e}")
+            return None
         except Exception as e:
             logger.error(f"Failed to create protocol mapper: {e}")
             return None
 
+    @api_update("scope protocol mapper")
     async def update_client_scope_protocol_mapper(
         self,
         realm_name: str,
@@ -4488,29 +4459,26 @@ class KeycloakAdminClient:
         mapper_name = mapper_config.name
         logger.info(f"Updating protocol mapper '{mapper_name}' in scope '{scope_id}'")
 
-        try:
-            payload = mapper_config.model_dump(by_alias=True, exclude_none=True)
-            payload["id"] = mapper_id
+        payload = mapper_config.model_dump(by_alias=True, exclude_none=True)
+        payload["id"] = mapper_id
 
-            response = await self._make_request(
-                "PUT",
-                f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models/{mapper_id}",
-                namespace,
-                json=payload,
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models/{mapper_id}",
+            namespace,
+            json=payload,
+        )
+
+        if response.status_code == 204:
+            logger.info(f"Successfully updated protocol mapper '{mapper_name}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
             )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully updated protocol mapper '{mapper_name}'")
-                return True
-            else:
-                logger.error(
-                    f"Failed to update protocol mapper: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to update protocol mapper: {e}")
-            return False
-
+    @api_delete("scope protocol mapper")
     async def delete_client_scope_protocol_mapper(
         self,
         realm_name: str,
@@ -4532,27 +4500,20 @@ class KeycloakAdminClient:
         """
         logger.info(f"Deleting protocol mapper '{mapper_id}' from scope '{scope_id}'")
 
-        try:
-            response = await self._make_request(
-                "DELETE",
-                f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models/{mapper_id}",
-                namespace,
-            )
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models/{mapper_id}",
+            namespace,
+        )
 
-            if response.status_code == 204:
-                logger.info(f"Successfully deleted protocol mapper '{mapper_id}'")
-                return True
-            elif response.status_code == 404:
-                logger.warning(f"Protocol mapper '{mapper_id}' not found")
-                return True
-            else:
-                logger.error(
-                    f"Failed to delete protocol mapper: {response.status_code}"
-                )
-                return False
-        except Exception as e:
-            logger.error(f"Failed to delete protocol mapper: {e}")
-            return False
+        if response.status_code == 204:
+            logger.info(f"Successfully deleted protocol mapper '{mapper_id}'")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
 
     # =========================================================================
     # Groups API methods
