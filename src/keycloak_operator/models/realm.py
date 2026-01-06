@@ -1341,6 +1341,9 @@ class KeycloakRealmStatus(BaseModel):
     realm_roles_count: int | None = Field(
         None, alias="realmRolesCount", description="Number of realm roles"
     )
+    client_scopes_count: int | None = Field(
+        None, alias="clientScopesCount", description="Number of custom client scopes"
+    )
 
 
 class KeycloakRealm(BaseModel):
