@@ -1,0 +1,19 @@
+number: 19
+title: Drift detection and continuous reconciliation
+category: architecture
+decision: Operator reconciles CRD specs with actual Keycloak state. Drift detection
+  is opt-in via environment variables and tracks ownership to prevent conflicts with
+  manual resources or other operators.
+agent_instructions: 'Reconcilers compare CRD spec with Keycloak state during reconciliation.
+  Drift detection configured via environment variables (DRIFT_DETECTION_ENABLED, DRIFT_DETECTION_AUTO_REMEDIATE,
+  DRIFT_DETECTION_MINIMUM_AGE_HOURS). Use ownership tracking from src/keycloak_operator/utils/ownership.py
+  to mark resources with operator instance ID. Only remediate drift for resources
+  owned by this operator instance. Status.phase reflects state: Unknown, Pending,
+  Provisioning, Ready, Degraded, Failed. See src/keycloak_operator/services/drift_detection_service.py.'
+rationale: 'Opt-in drift detection prevents interference with manually managed resources
+  or resources from other operator instances. Ownership tracking via Keycloak resource
+  attributes (io.kubernetes.operator-instance, io.kubernetes.cr-namespace, io.kubernetes.cr-name)
+  enables multi-operator deployments. CRD remains source of truth for owned resources.
+  Configurable auto-remediation allows teams to choose between detection-only or automatic
+  correction.'
+provenance: guided-ai
