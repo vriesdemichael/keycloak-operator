@@ -16,14 +16,19 @@ repos:
         stages: [pre-commit]
 
   # Ruff - Python linting and formatting
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.4
+  # Uses uv to ensure same version as make quality commands
+  - repo: local
     hooks:
-      # Run the linter
-      - id: ruff
-        args: [--fix]
-      # Run the formatter
+      - id: ruff-check
+        name: ruff check
+        entry: uv run --group quality ruff check --fix
+        language: system
+        types: [python]
       - id: ruff-format
+        name: ruff format
+        entry: uv run --group quality ruff format
+        language: system
+        types: [python]
 
   # Type checking with ty (wraps Basedpyright) - MUST pass, not optional
   - repo: local

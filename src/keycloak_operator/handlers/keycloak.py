@@ -138,6 +138,9 @@ async def ensure_keycloak_instance(
     It implements idempotent logic that works for both initial creation
     and operator restarts (resume).
 
+    Note: Deletion is handled by the @kopf.on.delete handler (delete_keycloak_instance).
+    Do not add deletion logic here to avoid race conditions with the delete handler.
+
     Args:
         spec: Keycloak resource specification
         name: Name of the Keycloak resource
@@ -149,44 +152,16 @@ async def ensure_keycloak_instance(
         Dictionary with status information for the resource
 
     """
-    # Check if resource is being deleted (deletionTimestamp is set)
-    # This can happen when operator restarts while resource is being deleted
+    # Check if resource is being deleted - if so, skip reconciliation
+    # The @kopf.on.delete handler (delete_keycloak_instance) handles cleanup
     meta = kwargs.get("meta", {})
     deletion_timestamp = meta.get("deletionTimestamp")
 
     if deletion_timestamp:
-        logger.info(
-            f"Keycloak instance {name} has deletionTimestamp, triggering cleanup"
+        logger.debug(
+            f"Keycloak instance {name} has deletionTimestamp, "
+            f"skipping reconciliation (delete handler will manage cleanup)"
         )
-        # Resource is being deleted, trigger cleanup logic
-        current_finalizers = meta.get("finalizers", [])
-        if KEYCLOAK_FINALIZER in current_finalizers:
-            try:
-                # Add jitter to prevent thundering herd
-
-                jitter = random.uniform(0, RECONCILE_JITTER_MAX)
-
-                await asyncio.sleep(jitter)
-
-                reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
-                await reconciler.cleanup_resources(
-                    name=name, namespace=namespace, spec=spec
-                )
-
-                # Remove finalizer to complete deletion
-                logger.info(
-                    f"Cleanup completed successfully, removing finalizer {KEYCLOAK_FINALIZER}"
-                )
-                current_finalizers = list(current_finalizers)
-                current_finalizers.remove(KEYCLOAK_FINALIZER)
-                patch.metadata["finalizers"] = current_finalizers
-                logger.info(f"Successfully deleted Keycloak instance {name}")
-            except Exception as e:
-                logger.error(f"Error during Keycloak deletion: {e}")
-                raise kopf.TemporaryError(
-                    f"Failed to delete Keycloak instance {name}: {e}",
-                    delay=30,
-                ) from e
         return None
 
     logger.info(f"Ensuring Keycloak instance {name} in namespace {namespace}")
