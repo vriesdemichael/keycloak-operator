@@ -3043,43 +3043,28 @@ class KeycloakRealmReconciler(BaseReconciler):
                         except Exception as e:
                             self.logger.warning(f"Realm backup failed: {e}")
 
-                    # Clean up all clients in this realm from Keycloak FIRST
-                    # This prevents client finalizers from trying to access the realm during deletion
-                    # Skip built-in Keycloak clients which cannot be deleted
-                    BUILTIN_CLIENTS = {
-                        "admin-cli",
-                        "broker",
-                        "realm-management",
-                        "security-admin-console",
-                        "account",
-                        "account-console",
-                    }
-                    try:
-                        realm_clients = await admin_client.get_realm_clients(
-                            realm_name, namespace
-                        )
-                        for client_config in realm_clients:
-                            client_id = client_config.client_id
-                            if client_id and client_id not in BUILTIN_CLIENTS:
-                                self.logger.info(
-                                    f"Cleaning up client {client_id} from realm {realm_name} in Keycloak"
-                                )
-                                await admin_client.delete_client(client_id, realm_name)
-                            elif client_id in BUILTIN_CLIENTS:
-                                self.logger.debug(
-                                    f"Skipping built-in client {client_id} (cannot be deleted)"
-                                )
-                    except Exception as e:
-                        self.logger.warning(
-                            f"Failed to clean up realm clients from Keycloak: {e}"
-                        )
-
-                    # Delete the realm itself from Keycloak
+                    # Delete the realm from Keycloak
+                    # Keycloak automatically cascade-deletes all clients, scopes, etc.
+                    # within the realm - no need to delete them individually
                     await admin_client.delete_realm(realm_name, namespace)
-                    self.logger.info(f"Deleted realm {realm_name} from Keycloak")
+                    self.logger.info(
+                        f"Deleted realm {realm_name} from Keycloak "
+                        f"(Keycloak cascade-deleted all child resources)",
+                        extra={
+                            "resource_type": "realm",
+                            "resource_name": name,
+                            "namespace": namespace,
+                            "cleanup_phase": "keycloak_realm_deleted",
+                        },
+                    )
 
-            # Now delete KeycloakClient CRs (after Keycloak cleanup to avoid deadlock)
-            # We remove their finalizers first so they don't try to clean up Keycloak again
+            # Trigger deletion of KeycloakClient CRs that reference this realm.
+            # Since the realm is now deleted from Keycloak, the client delete handlers
+            # will find their resources already gone and will:
+            # 1. Skip Keycloak cleanup (check_resource_exists returns False)
+            # 2. Clean up K8s resources (credentials secrets, configmaps)
+            # 3. Remove their finalizers
+            # We just trigger the delete - don't force-remove finalizers.
             try:
                 custom_api = client.CustomObjectsApi(self.k8s_client)
                 clients = await asyncio.to_thread(
@@ -3098,23 +3083,37 @@ class KeycloakRealmReconciler(BaseReconciler):
                         and realm_ref.get("namespace") == namespace
                     ):
                         client_cr_name = client_cr["metadata"]["name"]
+                        client_meta = client_cr.get("metadata", {})
+
+                        # Check if client is already being deleted
+                        deletion_timestamp = client_meta.get("deletionTimestamp")
+                        if deletion_timestamp:
+                            self.logger.info(
+                                f"Cascading delete: KeycloakClient CR {client_cr_name} "
+                                f"already being deleted, skipping",
+                                extra={
+                                    "resource_type": "client",
+                                    "resource_name": client_cr_name,
+                                    "namespace": namespace,
+                                    "cleanup_phase": "skipped_already_deleting",
+                                },
+                            )
+                            continue
+
                         self.logger.info(
-                            f"Cascading delete: Removing KeycloakClient CR {client_cr_name} "
-                            f"that references realm {realm_name}"
+                            f"Cascading delete: Triggering deletion of KeycloakClient CR "
+                            f"{client_cr_name} (realm {realm_name} already deleted)",
+                            extra={
+                                "resource_type": "client",
+                                "resource_name": client_cr_name,
+                                "namespace": namespace,
+                                "cleanup_phase": "cascade_delete_triggered",
+                            },
                         )
                         try:
-                            # Remove finalizers first to prevent deadlock
-                            client_cr["metadata"]["finalizers"] = []
-                            await asyncio.to_thread(
-                                custom_api.patch_namespaced_custom_object,
-                                group="vriesdemichael.github.io",
-                                version="v1",
-                                namespace=namespace,
-                                plural="keycloakclients",
-                                name=client_cr_name,
-                                body=client_cr,
-                            )
-                            # Then delete the CR
+                            # Just delete the CR - let the client's delete handler
+                            # do its cleanup (it will find the client gone from Keycloak
+                            # and proceed to clean up K8s resources)
                             await asyncio.to_thread(
                                 custom_api.delete_namespaced_custom_object,
                                 group="vriesdemichael.github.io",
@@ -3125,23 +3124,70 @@ class KeycloakRealmReconciler(BaseReconciler):
                             )
                         except Exception as delete_error:
                             self.logger.warning(
-                                f"Failed to delete KeycloakClient CR {client_cr_name}: {delete_error}"
+                                f"Failed to trigger deletion of KeycloakClient CR "
+                                f"{client_cr_name}: {delete_error}",
+                                extra={
+                                    "resource_type": "client",
+                                    "resource_name": client_cr_name,
+                                    "namespace": namespace,
+                                    "error_type": type(delete_error).__name__,
+                                    "cleanup_phase": "cascade_delete_failed",
+                                },
                             )
             except Exception as e:
-                self.logger.warning(f"Failed to cascade delete KeycloakClient CRs: {e}")
+                self.logger.warning(
+                    f"Failed to cascade delete KeycloakClient CRs: {e}",
+                    extra={
+                        "resource_type": "realm",
+                        "resource_name": name,
+                        "namespace": namespace,
+                        "error_type": type(e).__name__,
+                        "cleanup_phase": "cascade_delete_error",
+                    },
+                )
 
         except Exception as e:
             self.logger.warning(
-                f"Could not delete realm from Keycloak (instance may be deleted): {e}"
+                f"Could not delete realm from Keycloak (instance may be deleted): {e}",
+                extra={
+                    "resource_type": "realm",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "error_type": type(e).__name__,
+                    "cleanup_phase": "keycloak_cleanup_warning",
+                },
             )
 
         # Clean up Kubernetes resources associated with this realm
+        self.log_cleanup_step(
+            "Cleaning up K8s resources",
+            resource_type="realm",
+            name=name,
+            namespace=namespace,
+        )
         try:
             await self._delete_realm_k8s_resources(name, namespace, realm_name)
         except Exception as e:
-            self.logger.warning(f"Failed to clean up Kubernetes resources: {e}")
+            self.logger.warning(
+                f"Failed to clean up Kubernetes resources: {e}",
+                extra={
+                    "resource_type": "realm",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "error_type": type(e).__name__,
+                    "cleanup_phase": "k8s_cleanup_warning",
+                },
+            )
 
-        self.logger.info(f"Successfully completed cleanup of KeycloakRealm {name}")
+        self.logger.info(
+            f"Successfully completed cleanup of KeycloakRealm {name}",
+            extra={
+                "resource_type": "realm",
+                "resource_name": name,
+                "namespace": namespace,
+                "cleanup_phase": "cleanup_completed",
+            },
+        )
 
     async def _create_realm_backup(
         self,
