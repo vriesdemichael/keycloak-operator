@@ -120,9 +120,9 @@ class TestRealmReconciler:
 
             # Verify realm removed from Keycloak
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
-            assert (
-                realm_repr is None
-            ), f"Realm {realm_name} should be deleted from Keycloak after CR deletion"
+            assert realm_repr is None, (
+                f"Realm {realm_name} should be deleted from Keycloak after CR deletion"
+            )
 
         finally:
             with contextlib.suppress(ApiException):

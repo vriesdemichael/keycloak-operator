@@ -172,18 +172,18 @@ class TestAuthenticationFlows:
             )
 
             # Should have at least 2 executions (auth-cookie and identity-provider-redirector)
-            assert (
-                len(executions) >= 2
-            ), f"Flow should have at least 2 executions, got {len(executions)}"
+            assert len(executions) >= 2, (
+                f"Flow should have at least 2 executions, got {len(executions)}"
+            )
 
             # Check that expected authenticators are present
             authenticator_ids = [ex.provider_id for ex in executions if ex.provider_id]
-            assert (
-                "auth-cookie" in authenticator_ids
-            ), "auth-cookie should be in flow executions"
-            assert (
-                "identity-provider-redirector" in authenticator_ids
-            ), "identity-provider-redirector should be in flow executions"
+            assert "auth-cookie" in authenticator_ids, (
+                "auth-cookie should be in flow executions"
+            )
+            assert "identity-provider-redirector" in authenticator_ids, (
+                "identity-provider-redirector should be in flow executions"
+            )
 
             logger.info(
                 f"✓ Flow has {len(executions)} executions with correct authenticators"
@@ -287,17 +287,17 @@ class TestAuthenticationFlows:
             )
             assert flow is not None, f"Copied flow {new_flow_alias} should exist"
             assert flow.alias == new_flow_alias
-            assert (
-                flow.built_in is False
-            ), "Copied flow should not be marked as built-in"
+            assert flow.built_in is False, (
+                "Copied flow should not be marked as built-in"
+            )
 
             # Verify the copied flow has executions (inherited from browser flow)
             executions = await keycloak_admin_client.get_flow_executions(
                 realm_name, new_flow_alias, namespace
             )
-            assert (
-                len(executions) > 0
-            ), "Copied flow should have executions from browser flow"
+            assert len(executions) > 0, (
+                "Copied flow should have executions from browser flow"
+            )
 
             logger.info(
                 f"✓ Successfully copied flow '{new_flow_alias}' with "
@@ -529,9 +529,9 @@ class TestAuthenticationFlows:
             verify_email = action_map.get("VERIFY_EMAIL")
             assert verify_email is not None, "VERIFY_EMAIL should exist"
             assert verify_email.enabled is True, "VERIFY_EMAIL should be enabled"
-            assert (
-                verify_email.default_action is True
-            ), "VERIFY_EMAIL should be a default action"
+            assert verify_email.default_action is True, (
+                "VERIFY_EMAIL should be a default action"
+            )
 
             # Check UPDATE_PASSWORD
             update_pwd = action_map.get("UPDATE_PASSWORD")
@@ -654,9 +654,9 @@ class TestAuthenticationFlows:
 
             # Verify realm (and thus flows) are deleted from Keycloak
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
-            assert (
-                realm_repr is None
-            ), f"Realm {realm_name} should be deleted from Keycloak"
+            assert realm_repr is None, (
+                f"Realm {realm_name} should be deleted from Keycloak"
+            )
 
             logger.info("✓ Realm and flows successfully cleaned up")
 
@@ -874,16 +874,16 @@ class TestAuthenticationFlows:
             # CONFIGURE_TOTP should be a default action
             totp = action_map.get("CONFIGURE_TOTP")
             assert totp is not None, "CONFIGURE_TOTP should exist"
-            assert (
-                totp.default_action is True
-            ), "CONFIGURE_TOTP should be a default action"
+            assert totp.default_action is True, (
+                "CONFIGURE_TOTP should be a default action"
+            )
 
             # VERIFY_EMAIL should NOT be a default action
             verify_email = action_map.get("VERIFY_EMAIL")
             assert verify_email is not None, "VERIFY_EMAIL should exist"
-            assert (
-                verify_email.default_action is False
-            ), "VERIFY_EMAIL should NOT be a default action"
+            assert verify_email.default_action is False, (
+                "VERIFY_EMAIL should NOT be a default action"
+            )
 
             logger.info("✓ defaultAction flags correctly applied")
 
@@ -1134,15 +1134,15 @@ class TestAuthenticationFlows:
             )
 
             # Should have at least 2 executions
-            assert (
-                len(executions) >= 2
-            ), f"Flow should have at least 2 executions, got {len(executions)}"
+            assert len(executions) >= 2, (
+                f"Flow should have at least 2 executions, got {len(executions)}"
+            )
 
             # Check authenticators are present
             authenticator_ids = [ex.provider_id for ex in executions if ex.provider_id]
-            assert (
-                "auth-cookie" in authenticator_ids
-            ), "auth-cookie should be in flow executions"
+            assert "auth-cookie" in authenticator_ids, (
+                "auth-cookie should be in flow executions"
+            )
 
             logger.info(
                 f"✓ Flow {flow_alias} created with {len(executions)} inline executions"
@@ -1378,12 +1378,12 @@ class TestAuthenticationFlows:
                     subflow_exec = ex
                     break
 
-            assert (
-                subflow_exec is not None
-            ), f"Sub-flow {subflow_alias} should be in executions"
-            assert (
-                subflow_exec.authentication_flow is True
-            ), "Should be marked as authentication flow"
+            assert subflow_exec is not None, (
+                f"Sub-flow {subflow_alias} should be in executions"
+            )
+            assert subflow_exec.authentication_flow is True, (
+                "Should be marked as authentication flow"
+            )
 
             logger.info(
                 f"✓ Flow {flow_alias} created with nested sub-flow {subflow_alias}"
@@ -1680,9 +1680,9 @@ class TestAuthenticationFlows:
                     break
 
             assert updated_spnego is not None, "auth-spnego execution should exist"
-            assert (
-                updated_spnego.requirement == "ALTERNATIVE"
-            ), f"auth-spnego should be ALTERNATIVE, got {updated_spnego.requirement}"
+            assert updated_spnego.requirement == "ALTERNATIVE", (
+                f"auth-spnego should be ALTERNATIVE, got {updated_spnego.requirement}"
+            )
 
             logger.info(
                 f"✓ Execution requirement updated from {initial_requirement} to ALTERNATIVE"
@@ -1801,24 +1801,24 @@ class TestAuthenticationFlows:
 
             # Check all flow bindings
             assert realm.browser_flow == f"browser-{suffix}", "browserFlow binding"
-            assert (
-                realm.registration_flow == f"registration-{suffix}"
-            ), "registrationFlow binding"
-            assert (
-                realm.direct_grant_flow == f"direct-grant-{suffix}"
-            ), "directGrantFlow binding"
-            assert (
-                realm.reset_credentials_flow == f"reset-creds-{suffix}"
-            ), "resetCredentialsFlow binding"
-            assert (
-                realm.client_authentication_flow == f"client-auth-{suffix}"
-            ), "clientAuthenticationFlow binding"
-            assert (
-                realm.docker_authentication_flow == f"docker-{suffix}"
-            ), "dockerAuthenticationFlow binding"
-            assert (
-                realm.first_broker_login_flow == f"first-broker-{suffix}"
-            ), "firstBrokerLoginFlow binding"
+            assert realm.registration_flow == f"registration-{suffix}", (
+                "registrationFlow binding"
+            )
+            assert realm.direct_grant_flow == f"direct-grant-{suffix}", (
+                "directGrantFlow binding"
+            )
+            assert realm.reset_credentials_flow == f"reset-creds-{suffix}", (
+                "resetCredentialsFlow binding"
+            )
+            assert realm.client_authentication_flow == f"client-auth-{suffix}", (
+                "clientAuthenticationFlow binding"
+            )
+            assert realm.docker_authentication_flow == f"docker-{suffix}", (
+                "dockerAuthenticationFlow binding"
+            )
+            assert realm.first_broker_login_flow == f"first-broker-{suffix}", (
+                "firstBrokerLoginFlow binding"
+            )
 
             logger.info("✓ All 7 flow bindings correctly configured")
 
@@ -1945,17 +1945,17 @@ class TestAuthenticationFlows:
             update_pwd = action_map.get("UPDATE_PASSWORD")
             assert update_pwd is not None, "UPDATE_PASSWORD should exist"
             assert update_pwd.enabled is True, "UPDATE_PASSWORD should be enabled"
-            assert (
-                update_pwd.default_action is False
-            ), "UPDATE_PASSWORD should not be default"
+            assert update_pwd.default_action is False, (
+                "UPDATE_PASSWORD should not be default"
+            )
 
             # Check CONFIGURE_TOTP
             config_totp = action_map.get("CONFIGURE_TOTP")
             assert config_totp is not None, "CONFIGURE_TOTP should exist"
             assert config_totp.enabled is True, "CONFIGURE_TOTP should be enabled"
-            assert (
-                config_totp.default_action is True
-            ), "CONFIGURE_TOTP should be default"
+            assert config_totp.default_action is True, (
+                "CONFIGURE_TOTP should be default"
+            )
 
             # Check UPDATE_PROFILE is disabled
             update_profile = action_map.get("UPDATE_PROFILE")

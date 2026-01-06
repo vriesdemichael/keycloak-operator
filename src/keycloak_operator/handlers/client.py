@@ -103,6 +103,9 @@ async def ensure_keycloak_client(
     It can create clients in Keycloak instances located in any namespace,
     subject to RBAC permissions.
 
+    Note: Deletion is handled by the @kopf.on.delete handler (delete_keycloak_client).
+    Do not add deletion logic here to avoid race conditions with the delete handler.
+
     Args:
         spec: KeycloakClient resource specification
         name: Name of the KeycloakClient resource
@@ -114,42 +117,16 @@ async def ensure_keycloak_client(
         Dictionary with status information for the resource
 
     """
-    # Check if resource is being deleted (deletionTimestamp is set)
+    # Check if resource is being deleted - if so, skip reconciliation
+    # The @kopf.on.delete handler (delete_keycloak_client) handles cleanup
     meta = kwargs.get("meta", {})
     deletion_timestamp = meta.get("deletionTimestamp")
 
     if deletion_timestamp:
-        logger.info(f"KeycloakClient {name} has deletionTimestamp, triggering cleanup")
-        # Resource is being deleted, trigger cleanup logic
-        current_finalizers = meta.get("finalizers", [])
-        if CLIENT_FINALIZER in current_finalizers:
-            try:
-                # Add jitter to prevent thundering herd
-
-                jitter = random.uniform(0, RECONCILE_JITTER_MAX)
-
-                await asyncio.sleep(jitter)
-
-                reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
-                status_wrapper = StatusWrapper(status)
-                await reconciler.cleanup_resources(
-                    name=name, namespace=namespace, spec=spec, status=status_wrapper
-                )
-
-                # Remove finalizer to complete deletion
-                logger.info(
-                    f"Cleanup completed successfully, removing finalizer {CLIENT_FINALIZER}"
-                )
-                current_finalizers = list(current_finalizers)
-                current_finalizers.remove(CLIENT_FINALIZER)
-                patch.metadata["finalizers"] = current_finalizers
-                logger.info(f"Successfully deleted KeycloakClient {name}")
-            except Exception as e:
-                logger.error(f"Error during KeycloakClient deletion: {e}")
-                raise kopf.TemporaryError(
-                    f"Failed to delete KeycloakClient {name}: {e}",
-                    delay=30,
-                ) from e
+        logger.debug(
+            f"KeycloakClient {name} has deletionTimestamp, "
+            f"skipping reconciliation (delete handler will manage cleanup)"
+        )
         return None
 
     logger.info(f"Ensuring KeycloakClient {name} in namespace {namespace}")
