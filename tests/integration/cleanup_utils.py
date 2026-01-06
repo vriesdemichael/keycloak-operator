@@ -56,11 +56,15 @@ async def delete_custom_resource_with_retry(
     namespace: str,
     plural: str,
     name: str,
-    timeout: int = 60,
-    force_after: int = 30,
+    timeout: int = 120,
+    force_after: int | None = None,
 ) -> bool:
     """
-    Delete a custom resource with retry and force-delete fallback.
+    Delete a custom resource with retry.
+
+    Force-deletion (removing finalizers) is disabled by default. Finalizers
+    should complete within the timeout if the operator is working correctly.
+    If deletion fails, this indicates a real bug that should be investigated.
 
     Args:
         k8s_custom_objects: Kubernetes custom objects API client
@@ -70,7 +74,9 @@ async def delete_custom_resource_with_retry(
         plural: Resource plural name (e.g., 'keycloakrealms')
         name: Resource name
         timeout: Total timeout for deletion (seconds)
-        force_after: Seconds to wait before force-deleting (removing finalizers)
+        force_after: Seconds to wait before force-deleting (removing finalizers).
+                     If None (default), force-deletion is disabled.
+                     Only use for emergency cleanup, not in regular test teardown.
 
     Returns:
         True if deleted successfully, False otherwise
@@ -107,12 +113,26 @@ async def delete_custom_resource_with_retry(
                     name=name,
                 )
 
-                # Check if we should force-delete
                 elapsed = asyncio.get_event_loop().time() - start_time
-                if elapsed > force_after and not force_delete_triggered:
-                    logger.warning(
-                        f"Graceful deletion taking too long for {plural}/{name}, "
-                        f"attempting to remove finalizers"
+
+                # Log progress every 30 seconds
+                if int(elapsed) % 30 == 0 and int(elapsed) > 0:
+                    finalizers = resource.get("metadata", {}).get("finalizers", [])
+                    phase = resource.get("status", {}).get("phase", "Unknown")
+                    logger.info(
+                        f"Still waiting for {plural}/{name} deletion after {elapsed:.0f}s "
+                        f"(phase={phase}, finalizers={finalizers})"
+                    )
+
+                # Check if we should force-delete (only if explicitly enabled)
+                if (
+                    force_after is not None
+                    and elapsed > force_after
+                    and not force_delete_triggered
+                ):
+                    logger.error(
+                        f"FORCE DELETION triggered for {plural}/{name} after {elapsed:.0f}s. "
+                        f"This indicates a finalizer bug that should be investigated!"
                     )
                     await force_remove_finalizers(
                         k8s_custom_objects,
@@ -129,13 +149,20 @@ async def delete_custom_resource_with_retry(
 
             except ApiException as e:
                 if e.status == 404:
-                    logger.info(f"Resource {plural}/{name} deleted successfully")
+                    elapsed = asyncio.get_event_loop().time() - start_time
+                    logger.info(
+                        f"Resource {plural}/{name} deleted successfully after {elapsed:.0f}s"
+                    )
                     return True
                 logger.warning(f"Error checking resource deletion: {e}")
                 await asyncio.sleep(2)
 
         # Timeout reached
-        logger.error(f"Timeout waiting for {plural}/{name} deletion")
+        elapsed = asyncio.get_event_loop().time() - start_time
+        logger.error(
+            f"Timeout waiting for {plural}/{name} deletion after {elapsed:.0f}s. "
+            f"This indicates a finalizer bug!"
+        )
         return False
 
     except Exception as e:

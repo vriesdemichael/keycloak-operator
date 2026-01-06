@@ -21,6 +21,9 @@ from ..errors import (
 )
 from ..observability.logging import OperatorLogger
 
+# Default timeout for cleanup operations (seconds)
+DEFAULT_CLEANUP_TIMEOUT = 60
+
 
 class StatusProtocol(Protocol):
     """Protocol for kopf Status objects that allow dynamic attribute assignment."""
@@ -857,3 +860,131 @@ class BaseReconciler(ABC):
                 f"Failed to validate namespace isolation policies: {e}. "
                 f"Proceeding with RBAC validation only."
             )
+
+    async def cleanup_with_timeout(
+        self,
+        cleanup_func,
+        resource_type: str,
+        name: str,
+        namespace: str,
+        timeout: float = DEFAULT_CLEANUP_TIMEOUT,
+        retry_count: int = 0,
+    ) -> None:
+        """
+        Execute cleanup with timeout and structured logging.
+
+        This wrapper provides:
+        - Timeout protection to prevent hanging finalizers
+        - Structured logging with cleanup context
+        - Retry count tracking for debugging
+
+        Args:
+            cleanup_func: Async function to execute for cleanup
+            resource_type: Type of resource being cleaned up (e.g., 'realm', 'client')
+            name: Name of the resource
+            namespace: Namespace of the resource
+            timeout: Maximum time to wait for cleanup (seconds)
+            retry_count: Current retry attempt number (for logging)
+
+        Raises:
+            TemporaryError: If cleanup times out or fails
+        """
+        start_time = time.time()
+
+        self.logger.info(
+            f"Cleanup started for {resource_type}/{name}",
+            extra={
+                "resource_type": resource_type,
+                "resource_name": name,
+                "namespace": namespace,
+                "retry_count": retry_count,
+                "timeout_seconds": timeout,
+                "cleanup_phase": "started",
+            },
+        )
+
+        try:
+            async with asyncio.timeout(timeout):
+                await cleanup_func()
+
+            duration = time.time() - start_time
+            self.logger.info(
+                f"Cleanup completed for {resource_type}/{name} in {duration:.2f}s",
+                extra={
+                    "resource_type": resource_type,
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "duration_seconds": duration,
+                    "cleanup_phase": "completed",
+                },
+            )
+
+        except TimeoutError:
+            duration = time.time() - start_time
+            self.logger.error(
+                f"Cleanup timeout for {resource_type}/{name} after {duration:.2f}s "
+                f"(limit: {timeout}s, retry: {retry_count})",
+                extra={
+                    "resource_type": resource_type,
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "duration_seconds": duration,
+                    "timeout_seconds": timeout,
+                    "retry_count": retry_count,
+                    "cleanup_phase": "timeout",
+                },
+            )
+            raise TemporaryError(
+                f"Cleanup timeout for {resource_type}/{name} after {timeout}s",
+                delay=30,
+            ) from None
+
+        except Exception as e:
+            duration = time.time() - start_time
+            self.logger.error(
+                f"Cleanup failed for {resource_type}/{name} after {duration:.2f}s: {e}",
+                extra={
+                    "resource_type": resource_type,
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "duration_seconds": duration,
+                    "retry_count": retry_count,
+                    "error_type": type(e).__name__,
+                    "error_message": str(e),
+                    "cleanup_phase": "failed",
+                },
+                exc_info=True,
+            )
+            raise
+
+    def log_cleanup_step(
+        self,
+        step: str,
+        resource_type: str,
+        name: str,
+        namespace: str,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        """
+        Log a cleanup step with structured context.
+
+        Args:
+            step: Description of the cleanup step
+            resource_type: Type of resource being cleaned up
+            name: Name of the resource
+            namespace: Namespace of the resource
+            details: Optional additional details to include
+        """
+        extra = {
+            "resource_type": resource_type,
+            "resource_name": name,
+            "namespace": namespace,
+            "cleanup_phase": "in_progress",
+            "cleanup_step": step,
+        }
+        if details:
+            extra.update(details)
+
+        self.logger.info(
+            f"Cleanup step: {step} for {resource_type}/{name}", extra=extra
+        )
