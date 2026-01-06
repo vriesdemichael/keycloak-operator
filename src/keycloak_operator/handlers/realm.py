@@ -217,6 +217,7 @@ async def delete_keycloak_realm(
     status: dict[str, Any],
     patch: kopf.Patch,
     memo: kopf.Memo,
+    retry: int,
     **kwargs: Any,
 ) -> None:
     """
@@ -232,8 +233,20 @@ async def delete_keycloak_realm(
         namespace: Namespace where the resource exists
         status: Current status of the resource
         patch: Kopf patch object for modifying the resource
+        retry: Kopf retry info (iteration count, started timestamp)
     """
-    logger.info(f"Starting deletion of KeycloakRealm {name} in namespace {namespace}")
+    retry_count = retry if retry else 0
+    logger.info(
+        f"Starting deletion of KeycloakRealm {name} in namespace {namespace} "
+        f"(attempt {retry_count + 1})",
+        extra={
+            "resource_type": "realm",
+            "resource_name": name,
+            "namespace": namespace,
+            "retry_count": retry_count,
+            "cleanup_phase": "handler_started",
+        },
+    )
 
     # Check if our finalizer is present
     meta = kwargs.get("meta", {})
@@ -244,10 +257,8 @@ async def delete_keycloak_realm(
 
     try:
         # Delegate cleanup to the reconciler service layer
-        # Add jitter to prevent thundering herd
-
+        # Add jitter to prevent thundering herd on mass deletion
         jitter = random.uniform(0, RECONCILE_JITTER_MAX)
-
         await asyncio.sleep(jitter)
 
         reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
@@ -259,41 +270,93 @@ async def delete_keycloak_realm(
         )
 
         if resource_exists:
-            # Resource exists in Keycloak, perform cleanup
-            logger.info(f"Realm {name} exists in Keycloak, performing cleanup")
-            await reconciler.cleanup_resources(
-                name=name, namespace=namespace, spec=spec, status=status_wrapper
+            # Resource exists in Keycloak, perform cleanup with timeout
+            logger.info(
+                f"Realm {name} exists in Keycloak, performing cleanup",
+                extra={
+                    "resource_type": "realm",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "cleanup_phase": "keycloak_cleanup_starting",
+                },
             )
-            logger.info(f"Cleanup completed successfully for KeycloakRealm {name}")
+
+            async def do_cleanup():
+                await reconciler.cleanup_resources(
+                    name=name, namespace=namespace, spec=spec, status=status_wrapper
+                )
+
+            await reconciler.cleanup_with_timeout(
+                cleanup_func=do_cleanup,
+                resource_type="realm",
+                name=name,
+                namespace=namespace,
+                timeout=60,
+                retry_count=retry_count,
+            )
         else:
             # Resource never materialized in Keycloak, no cleanup needed
             logger.info(
                 f"Realm {name} does not exist in Keycloak, "
-                f"skipping cleanup (resource never materialized)"
+                f"skipping cleanup (resource never materialized)",
+                extra={
+                    "resource_type": "realm",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "cleanup_phase": "skipped_not_materialized",
+                },
             )
 
         # Remove finalizer to complete deletion
-        logger.info(f"Removing finalizer {REALM_FINALIZER} from KeycloakRealm {name}")
+        logger.info(
+            f"Removing finalizer {REALM_FINALIZER} from KeycloakRealm {name}",
+            extra={
+                "resource_type": "realm",
+                "resource_name": name,
+                "namespace": namespace,
+                "cleanup_phase": "removing_finalizer",
+            },
+        )
         current_finalizers = list(current_finalizers)  # Make a copy
         if REALM_FINALIZER in current_finalizers:
             current_finalizers.remove(REALM_FINALIZER)
             patch.metadata["finalizers"] = current_finalizers
 
-        logger.info(f"Successfully deleted KeycloakRealm {name}")
+        logger.info(
+            f"Successfully deleted KeycloakRealm {name}",
+            extra={
+                "resource_type": "realm",
+                "resource_name": name,
+                "namespace": namespace,
+                "cleanup_phase": "completed",
+            },
+        )
 
     except Exception as e:
-        logger.error(f"Error during KeycloakRealm deletion: {e}")
+        logger.error(
+            f"Error during KeycloakRealm deletion (attempt {retry_count + 1}): {e}",
+            extra={
+                "resource_type": "realm",
+                "resource_name": name,
+                "namespace": namespace,
+                "retry_count": retry_count,
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "cleanup_phase": "failed",
+            },
+            exc_info=True,
+        )
         # Update status to indicate deletion failure
         try:
             status["phase"] = "Failed"
-            status["message"] = f"Deletion failed: {str(e)}"
+            status["message"] = f"Deletion failed (attempt {retry_count + 1}): {str(e)}"
         except Exception:
             pass  # Status update might fail if resource is being deleted
 
         # Re-raise the exception to trigger retry
         # Kopf will retry the deletion with exponential backoff
         raise kopf.TemporaryError(
-            f"Failed to delete KeycloakRealm {name}: {e}",
+            f"Failed to delete KeycloakRealm {name} (attempt {retry_count + 1}): {e}",
             delay=30,  # Wait 30 seconds before retry
         ) from e
 

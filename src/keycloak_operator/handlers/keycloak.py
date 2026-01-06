@@ -260,6 +260,7 @@ async def delete_keycloak_instance(
     status: StatusProtocol,
     patch: kopf.Patch,
     memo: kopf.Memo,
+    retry: int,
     **kwargs: KopfHandlerKwargs,
 ) -> None:
     """
@@ -275,9 +276,19 @@ async def delete_keycloak_instance(
         namespace: Namespace where the resource exists
         status: Current status of the resource
         patch: Kopf patch object for modifying the resource
+        retry: Kopf retry info (iteration count, started timestamp)
     """
+    retry_count = retry if retry else 0
     logger.info(
-        f"Starting deletion of Keycloak instance {name} in namespace {namespace}"
+        f"Starting deletion of Keycloak instance {name} in namespace {namespace} "
+        f"(attempt {retry_count + 1})",
+        extra={
+            "resource_type": "keycloak",
+            "resource_name": name,
+            "namespace": namespace,
+            "retry_count": retry_count,
+            "cleanup_phase": "handler_started",
+        },
     )
 
     # Check if our finalizer is present
@@ -291,33 +302,72 @@ async def delete_keycloak_instance(
 
     try:
         # Delegate cleanup to the reconciler service layer
-        # Add jitter to prevent thundering herd
-
+        # Add jitter to prevent thundering herd on mass deletion
         jitter = random.uniform(0, RECONCILE_JITTER_MAX)
-
         await asyncio.sleep(jitter)
 
         reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
-        await reconciler.cleanup_resources(name=name, namespace=namespace, spec=spec)
+
+        async def do_cleanup():
+            await reconciler.cleanup_resources(
+                name=name, namespace=namespace, spec=spec
+            )
+
+        await reconciler.cleanup_with_timeout(
+            cleanup_func=do_cleanup,
+            resource_type="keycloak",
+            name=name,
+            namespace=namespace,
+            timeout=120,  # Keycloak cleanup may take longer
+            retry_count=retry_count,
+        )
 
         # If cleanup succeeded, remove our finalizer to complete deletion
         logger.info(
-            f"Cleanup completed successfully, removing finalizer {KEYCLOAK_FINALIZER}"
+            f"Cleanup completed successfully, removing finalizer {KEYCLOAK_FINALIZER}",
+            extra={
+                "resource_type": "keycloak",
+                "resource_name": name,
+                "namespace": namespace,
+                "cleanup_phase": "removing_finalizer",
+            },
         )
         current_finalizers = list(current_finalizers)  # Make a copy
         if KEYCLOAK_FINALIZER in current_finalizers:
             current_finalizers.remove(KEYCLOAK_FINALIZER)
             patch.metadata["finalizers"] = current_finalizers
 
-        logger.info(f"Successfully deleted Keycloak instance {name}")
+        logger.info(
+            f"Successfully deleted Keycloak instance {name}",
+            extra={
+                "resource_type": "keycloak",
+                "resource_name": name,
+                "namespace": namespace,
+                "cleanup_phase": "completed",
+            },
+        )
 
     except Exception as e:
-        logger.error(f"Error during Keycloak deletion: {e}")
+        logger.error(
+            f"Error during Keycloak deletion (attempt {retry_count + 1}): {e}",
+            extra={
+                "resource_type": "keycloak",
+                "resource_name": name,
+                "namespace": namespace,
+                "retry_count": retry_count,
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "cleanup_phase": "failed",
+            },
+            exc_info=True,
+        )
         # Update status to indicate deletion failure
         try:
             status_wrapper = StatusWrapper(status)
             status_wrapper.phase = "Failed"
-            status_wrapper.message = f"Deletion failed: {str(e)}"
+            status_wrapper.message = (
+                f"Deletion failed (attempt {retry_count + 1}): {str(e)}"
+            )
             for k, v in status_wrapper.to_dict().items():
                 patch.status[k] = v
         except Exception:
@@ -326,7 +376,7 @@ async def delete_keycloak_instance(
         # Re-raise the exception to trigger retry
         # Kopf will retry the deletion with exponential backoff
         raise kopf.TemporaryError(
-            f"Failed to delete Keycloak instance {name}: {e}",
+            f"Failed to delete Keycloak instance {name} (attempt {retry_count + 1}): {e}",
             delay=30,  # Wait 30 seconds before retry
         ) from e
 
