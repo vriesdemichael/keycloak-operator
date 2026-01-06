@@ -306,6 +306,209 @@ class TestClientScopes:
                 name=realm_name,
             )
 
+    @pytest.mark.timeout(240)
+    async def test_protocol_mapper_update_and_delete(
+        self,
+        k8s_custom_objects,
+        test_namespace: str,
+        operator_namespace: str,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test updating and deleting protocol mappers within a client scope.
+
+        This test verifies that:
+        - Protocol mappers can be updated when config changes
+        - Protocol mappers are deleted when removed from spec
+        """
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"mapper-update-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.realm import (
+            KeycloakClientScope,
+            KeycloakProtocolMapper,
+            KeycloakRealmSpec,
+            OperatorRef,
+        )
+
+        # Create realm with scope containing two mappers
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            display_name="Mapper Update Test",
+            client_authorization_grants=[namespace],
+            client_scopes=[
+                KeycloakClientScope(
+                    name="update-test-scope",
+                    description="Scope for mapper update testing",
+                    protocol="openid-connect",
+                    protocol_mappers=[
+                        KeycloakProtocolMapper(
+                            name="audience-mapper",
+                            protocol="openid-connect",
+                            protocol_mapper="oidc-audience-mapper",
+                            config={
+                                "included.custom.audience": "initial-audience",
+                                "access.token.claim": "true",
+                            },
+                        ),
+                        KeycloakProtocolMapper(
+                            name="delete-me-mapper",
+                            protocol="openid-connect",
+                            protocol_mapper="oidc-audience-mapper",
+                            config={
+                                "included.custom.audience": "delete-this",
+                                "access.token.claim": "true",
+                            },
+                        ),
+                    ],
+                ),
+            ],
+        )
+
+        realm_manifest: dict = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            # Create realm with initial mappers
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify both mappers exist
+            scope = await keycloak_admin_client.get_client_scope_by_name(
+                realm_name, "update-test-scope", namespace
+            )
+            assert scope is not None and scope.id is not None
+
+            mappers = await keycloak_admin_client.get_client_scope_protocol_mappers(
+                realm_name, scope.id, namespace
+            )
+            mapper_names = {m.name for m in mappers if m.name}
+            assert "audience-mapper" in mapper_names
+            assert "delete-me-mapper" in mapper_names
+
+            # Get resourceVersion for update
+            resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_gen = resource["metadata"].get("generation", 1)
+            resource_version = resource["metadata"]["resourceVersion"]
+
+            # Update: change config of one mapper and remove the other
+            updated_spec = KeycloakRealmSpec(
+                operator_ref=OperatorRef(namespace=operator_namespace),
+                realm_name=realm_name,
+                display_name="Mapper Update Test",
+                client_authorization_grants=[namespace],
+                client_scopes=[
+                    KeycloakClientScope(
+                        name="update-test-scope",
+                        description="Scope for mapper update testing",
+                        protocol="openid-connect",
+                        protocol_mappers=[
+                            KeycloakProtocolMapper(
+                                name="audience-mapper",
+                                protocol="openid-connect",
+                                protocol_mapper="oidc-audience-mapper",
+                                config={
+                                    "included.custom.audience": "updated-audience",  # Changed!
+                                    "access.token.claim": "true",
+                                },
+                            ),
+                            # delete-me-mapper is removed
+                        ],
+                    ),
+                ],
+            )
+
+            realm_manifest["metadata"]["resourceVersion"] = resource_version
+            realm_manifest["spec"] = updated_spec.model_dump(
+                by_alias=True, exclude_unset=True
+            )
+
+            await k8s_custom_objects.replace_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                body=realm_manifest,
+            )
+
+            # Wait for reconciliation to complete
+            await wait_for_reconciliation_complete(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                min_generation=current_gen + 1,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify mapper was updated and deleted
+            mappers = await keycloak_admin_client.get_client_scope_protocol_mappers(
+                realm_name, scope.id, namespace
+            )
+            mapper_names = {m.name for m in mappers if m.name}
+
+            assert "audience-mapper" in mapper_names, (
+                "audience-mapper should still exist"
+            )
+            assert "delete-me-mapper" not in mapper_names, (
+                "delete-me-mapper should be deleted"
+            )
+
+            # Verify the updated config
+            updated_mapper = next(
+                (m for m in mappers if m.name == "audience-mapper"), None
+            )
+            assert updated_mapper is not None
+            assert updated_mapper.config is not None
+            assert (
+                updated_mapper.config.get("included.custom.audience")
+                == "updated-audience"
+            )
+
+            logger.info("✓ Successfully verified protocol mapper update and deletion")
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
     @pytest.mark.timeout(180)
     async def test_client_scope_deletion(
         self,
