@@ -169,7 +169,7 @@ class TestConfigureClientScopes:
         reconciler: KeycloakRealmReconciler,
         admin_mock: MagicMock,
     ) -> None:
-        """Built-in scopes should not be deleted."""
+        """Built-in scopes should not be deleted when custom scopes exist."""
         builtin_scope = ClientScopeRepresentation(
             id="builtin-scope-id",
             name="profile",  # Built-in scope
@@ -177,14 +177,18 @@ class TestConfigureClientScopes:
         )
         admin_mock.get_client_scopes = AsyncMock(return_value=[builtin_scope])
 
+        # Spec has a custom scope to trigger the logic, but built-in "profile" is not in spec
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
-            client_scopes=[],  # No custom scopes
+            client_scopes=[
+                KeycloakClientScope(name="custom-scope", protocol="openid-connect"),
+            ],
         )
 
         await reconciler.configure_client_scopes(spec, "test-realm", "default")
 
+        # Built-in "profile" scope should NOT be deleted even though it's not in spec
         admin_mock.delete_client_scope.assert_not_called()
 
     @pytest.mark.asyncio
