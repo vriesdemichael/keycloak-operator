@@ -29,6 +29,7 @@ from keycloak_operator.models.keycloak_api import (
     AuthenticationFlowRepresentation,
     AuthenticatorConfigRepresentation,
     ClientRepresentation,
+    ClientScopeRepresentation,
     ComponentRepresentation,
     GroupRepresentation,
     IdentityProviderMapperRepresentation,
@@ -3542,6 +3543,933 @@ class KeycloakAdminClient:
                 return False
         except Exception as e:
             logger.error(f"Failed to remove composite roles: {e}")
+            return False
+
+    # =========================================================================
+    # Client Scopes API methods
+    # =========================================================================
+
+    async def get_client_scopes(
+        self, realm_name: str, namespace: str = "default"
+    ) -> list[ClientScopeRepresentation]:
+        """
+        Get all client scopes in a realm.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of client scopes as ClientScopeRepresentation
+        """
+        logger.debug(f"Fetching client scopes for realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/client-scopes", namespace
+            )
+
+            if response.status_code == 200:
+                scopes_data = response.json()
+                return [
+                    ClientScopeRepresentation.model_validate(scope)
+                    for scope in scopes_data
+                ]
+            else:
+                logger.error(f"Failed to get client scopes: {response.status_code}")
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get client scopes: {e}")
+            return []
+
+    async def get_client_scope_by_name(
+        self, realm_name: str, scope_name: str, namespace: str = "default"
+    ) -> ClientScopeRepresentation | None:
+        """
+        Get a specific client scope by name.
+
+        Args:
+            realm_name: Name of the realm
+            scope_name: Name of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            ClientScopeRepresentation if found, None otherwise
+        """
+        logger.debug(f"Fetching client scope '{scope_name}' in realm '{realm_name}'")
+
+        try:
+            scopes = await self.get_client_scopes(realm_name, namespace)
+            for scope in scopes:
+                if scope.name == scope_name:
+                    return scope
+            return None
+        except Exception as e:
+            logger.error(f"Failed to get client scope by name: {e}")
+            return None
+
+    async def get_client_scope_by_id(
+        self, realm_name: str, scope_id: str, namespace: str = "default"
+    ) -> ClientScopeRepresentation | None:
+        """
+        Get a specific client scope by ID.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            ClientScopeRepresentation if found, None otherwise
+        """
+        logger.debug(
+            f"Fetching client scope by ID '{scope_id}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/client-scopes/{scope_id}", namespace
+            )
+
+            if response.status_code == 200:
+                return ClientScopeRepresentation.model_validate(response.json())
+            elif response.status_code == 404:
+                return None
+            else:
+                logger.error(
+                    f"Failed to get client scope by ID: {response.status_code}"
+                )
+                return None
+        except Exception as e:
+            logger.error(f"Failed to get client scope by ID: {e}")
+            return None
+
+    async def create_client_scope(
+        self,
+        realm_name: str,
+        scope_config: ClientScopeRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> str | None:
+        """
+        Create a new client scope.
+
+        Args:
+            realm_name: Name of the realm
+            scope_config: Client scope configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            ID of the created client scope, or None if creation failed
+        """
+        if isinstance(scope_config, dict):
+            scope_config = ClientScopeRepresentation.model_validate(scope_config)
+
+        scope_name = scope_config.name
+        logger.info(f"Creating client scope '{scope_name}' in realm '{realm_name}'")
+
+        try:
+            payload = scope_config.model_dump(by_alias=True, exclude_none=True)
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/client-scopes",
+                namespace,
+                json=payload,
+            )
+
+            if response.status_code == 201:
+                # Extract ID from Location header
+                location = response.headers.get("Location", "")
+                scope_id = location.split("/")[-1] if location else None
+                logger.info(f"Successfully created client scope '{scope_name}'")
+                return scope_id
+            elif response.status_code == 409:
+                logger.warning(f"Client scope '{scope_name}' already exists")
+                # Return existing scope ID
+                existing = await self.get_client_scope_by_name(
+                    realm_name, scope_name, namespace
+                )
+                return existing.id if existing else None
+            else:
+                logger.error(f"Failed to create client scope: {response.status_code}")
+                return None
+        except Exception as e:
+            logger.error(f"Failed to create client scope: {e}")
+            return None
+
+    async def update_client_scope(
+        self,
+        realm_name: str,
+        scope_id: str,
+        scope_config: ClientScopeRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an existing client scope.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope to update
+            scope_config: Updated client scope configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if update successful, False otherwise
+        """
+        if isinstance(scope_config, dict):
+            scope_config = ClientScopeRepresentation.model_validate(scope_config)
+
+        scope_name = scope_config.name
+        logger.info(f"Updating client scope '{scope_name}' in realm '{realm_name}'")
+
+        try:
+            payload = scope_config.model_dump(by_alias=True, exclude_none=True)
+            # Ensure ID is included in payload
+            payload["id"] = scope_id
+
+            response = await self._make_request(
+                "PUT",
+                f"realms/{realm_name}/client-scopes/{scope_id}",
+                namespace,
+                json=payload,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully updated client scope '{scope_name}'")
+                return True
+            else:
+                logger.error(f"Failed to update client scope: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update client scope: {e}")
+            return False
+
+    async def delete_client_scope(
+        self, realm_name: str, scope_id: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Delete a client scope.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope to delete
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if deletion successful, False otherwise
+        """
+        logger.info(f"Deleting client scope '{scope_id}' from realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully deleted client scope '{scope_id}'")
+                return True
+            elif response.status_code == 404:
+                logger.warning(f"Client scope '{scope_id}' not found, already deleted")
+                return True
+            else:
+                logger.error(f"Failed to delete client scope: {response.status_code}")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to delete client scope: {e}")
+            return False
+
+    # =========================================================================
+    # Realm Default/Optional Client Scopes API methods
+    # =========================================================================
+
+    async def get_realm_default_client_scopes(
+        self, realm_name: str, namespace: str = "default"
+    ) -> list[ClientScopeRepresentation]:
+        """
+        Get realm default client scopes.
+
+        These scopes are assigned to all new clients by default.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of default client scopes
+        """
+        logger.debug(f"Fetching realm default client scopes for '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/default-default-client-scopes",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                scopes_data = response.json()
+                return [
+                    ClientScopeRepresentation.model_validate(scope)
+                    for scope in scopes_data
+                ]
+            else:
+                logger.error(
+                    f"Failed to get realm default client scopes: {response.status_code}"
+                )
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get realm default client scopes: {e}")
+            return []
+
+    async def add_realm_default_client_scope(
+        self, realm_name: str, scope_id: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Add a client scope to realm default client scopes.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope to add
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Adding scope '{scope_id}' to realm default scopes in '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "PUT",
+                f"realms/{realm_name}/default-default-client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully added default client scope '{scope_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to add default client scope: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to add default client scope: {e}")
+            return False
+
+    async def remove_realm_default_client_scope(
+        self, realm_name: str, scope_id: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Remove a client scope from realm default client scopes.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope to remove
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Removing scope '{scope_id}' from realm default scopes in '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/default-default-client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully removed default client scope '{scope_id}'")
+                return True
+            elif response.status_code == 404:
+                logger.warning(f"Default client scope '{scope_id}' not found")
+                return True
+            else:
+                logger.error(
+                    f"Failed to remove default client scope: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to remove default client scope: {e}")
+            return False
+
+    async def get_realm_optional_client_scopes(
+        self, realm_name: str, namespace: str = "default"
+    ) -> list[ClientScopeRepresentation]:
+        """
+        Get realm optional client scopes.
+
+        These scopes are available for clients to request optionally.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of optional client scopes
+        """
+        logger.debug(f"Fetching realm optional client scopes for '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/default-optional-client-scopes",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                scopes_data = response.json()
+                return [
+                    ClientScopeRepresentation.model_validate(scope)
+                    for scope in scopes_data
+                ]
+            else:
+                logger.error(
+                    f"Failed to get realm optional client scopes: {response.status_code}"
+                )
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get realm optional client scopes: {e}")
+            return []
+
+    async def add_realm_optional_client_scope(
+        self, realm_name: str, scope_id: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Add a client scope to realm optional client scopes.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope to add
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Adding scope '{scope_id}' to realm optional scopes in '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "PUT",
+                f"realms/{realm_name}/default-optional-client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully added optional client scope '{scope_id}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to add optional client scope: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to add optional client scope: {e}")
+            return False
+
+    async def remove_realm_optional_client_scope(
+        self, realm_name: str, scope_id: str, namespace: str = "default"
+    ) -> bool:
+        """
+        Remove a client scope from realm optional client scopes.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope to remove
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Removing scope '{scope_id}' from realm optional scopes in '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/default-optional-client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully removed optional client scope '{scope_id}'")
+                return True
+            elif response.status_code == 404:
+                logger.warning(f"Optional client scope '{scope_id}' not found")
+                return True
+            else:
+                logger.error(
+                    f"Failed to remove optional client scope: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to remove optional client scope: {e}")
+            return False
+
+    # =========================================================================
+    # Client-level Default/Optional Client Scopes API methods
+    # =========================================================================
+
+    async def get_client_default_scopes(
+        self, realm_name: str, client_uuid: str, namespace: str = "default"
+    ) -> list[ClientScopeRepresentation]:
+        """
+        Get default client scopes assigned to a specific client.
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: UUID of the client
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of default client scopes for this client
+        """
+        logger.debug(
+            f"Fetching default scopes for client '{client_uuid}' in '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                scopes_data = response.json()
+                return [
+                    ClientScopeRepresentation.model_validate(scope)
+                    for scope in scopes_data
+                ]
+            else:
+                logger.error(
+                    f"Failed to get client default scopes: {response.status_code}"
+                )
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get client default scopes: {e}")
+            return []
+
+    async def add_client_default_scope(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        scope_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Add a client scope to a client's default scopes.
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: UUID of the client
+            scope_id: ID of the client scope to add
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Adding scope '{scope_id}' to client '{client_uuid}' default scopes"
+        )
+
+        try:
+            response = await self._make_request(
+                "PUT",
+                f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully added default scope '{scope_id}' to client")
+                return True
+            else:
+                logger.error(
+                    f"Failed to add client default scope: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to add client default scope: {e}")
+            return False
+
+    async def remove_client_default_scope(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        scope_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Remove a client scope from a client's default scopes.
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: UUID of the client
+            scope_id: ID of the client scope to remove
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Removing scope '{scope_id}' from client '{client_uuid}' default scopes"
+        )
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/clients/{client_uuid}/default-client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(
+                    f"Successfully removed default scope '{scope_id}' from client"
+                )
+                return True
+            elif response.status_code == 404:
+                logger.warning(f"Client default scope '{scope_id}' not found")
+                return True
+            else:
+                logger.error(
+                    f"Failed to remove client default scope: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to remove client default scope: {e}")
+            return False
+
+    async def get_client_optional_scopes(
+        self, realm_name: str, client_uuid: str, namespace: str = "default"
+    ) -> list[ClientScopeRepresentation]:
+        """
+        Get optional client scopes assigned to a specific client.
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: UUID of the client
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of optional client scopes for this client
+        """
+        logger.debug(
+            f"Fetching optional scopes for client '{client_uuid}' in '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                scopes_data = response.json()
+                return [
+                    ClientScopeRepresentation.model_validate(scope)
+                    for scope in scopes_data
+                ]
+            else:
+                logger.error(
+                    f"Failed to get client optional scopes: {response.status_code}"
+                )
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get client optional scopes: {e}")
+            return []
+
+    async def add_client_optional_scope(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        scope_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Add a client scope to a client's optional scopes.
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: UUID of the client
+            scope_id: ID of the client scope to add
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Adding scope '{scope_id}' to client '{client_uuid}' optional scopes"
+        )
+
+        try:
+            response = await self._make_request(
+                "PUT",
+                f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully added optional scope '{scope_id}' to client")
+                return True
+            else:
+                logger.error(
+                    f"Failed to add client optional scope: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to add client optional scope: {e}")
+            return False
+
+    async def remove_client_optional_scope(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        scope_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Remove a client scope from a client's optional scopes.
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: UUID of the client
+            scope_id: ID of the client scope to remove
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Removing scope '{scope_id}' from client '{client_uuid}' optional scopes"
+        )
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/clients/{client_uuid}/optional-client-scopes/{scope_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(
+                    f"Successfully removed optional scope '{scope_id}' from client"
+                )
+                return True
+            elif response.status_code == 404:
+                logger.warning(f"Client optional scope '{scope_id}' not found")
+                return True
+            else:
+                logger.error(
+                    f"Failed to remove client optional scope: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to remove client optional scope: {e}")
+            return False
+
+    # =========================================================================
+    # Client Scope Protocol Mappers API methods
+    # =========================================================================
+
+    async def get_client_scope_protocol_mappers(
+        self, realm_name: str, scope_id: str, namespace: str = "default"
+    ) -> list[ProtocolMapperRepresentation]:
+        """
+        Get protocol mappers for a client scope.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of protocol mappers
+        """
+        logger.debug(
+            f"Fetching protocol mappers for scope '{scope_id}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models",
+                namespace,
+            )
+
+            if response.status_code == 200:
+                mappers_data = response.json()
+                return [
+                    ProtocolMapperRepresentation.model_validate(mapper)
+                    for mapper in mappers_data
+                ]
+            else:
+                logger.error(
+                    f"Failed to get scope protocol mappers: {response.status_code}"
+                )
+                return []
+        except Exception as e:
+            logger.error(f"Failed to get scope protocol mappers: {e}")
+            return []
+
+    async def create_client_scope_protocol_mapper(
+        self,
+        realm_name: str,
+        scope_id: str,
+        mapper_config: ProtocolMapperRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> str | None:
+        """
+        Create a protocol mapper in a client scope.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope
+            mapper_config: Protocol mapper configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            ID of the created mapper, or None if creation failed
+        """
+        if isinstance(mapper_config, dict):
+            mapper_config = ProtocolMapperRepresentation.model_validate(mapper_config)
+
+        mapper_name = mapper_config.name
+        logger.info(f"Creating protocol mapper '{mapper_name}' in scope '{scope_id}'")
+
+        try:
+            payload = mapper_config.model_dump(by_alias=True, exclude_none=True)
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models",
+                namespace,
+                json=payload,
+            )
+
+            if response.status_code == 201:
+                location = response.headers.get("Location", "")
+                mapper_id = location.split("/")[-1] if location else None
+                logger.info(f"Successfully created protocol mapper '{mapper_name}'")
+                return mapper_id
+            elif response.status_code == 409:
+                logger.warning(f"Protocol mapper '{mapper_name}' already exists")
+                # Find and return existing mapper ID
+                mappers = await self.get_client_scope_protocol_mappers(
+                    realm_name, scope_id, namespace
+                )
+                for mapper in mappers:
+                    if mapper.name == mapper_name:
+                        return mapper.id
+                return None
+            else:
+                logger.error(
+                    f"Failed to create protocol mapper: {response.status_code}"
+                )
+                return None
+        except Exception as e:
+            logger.error(f"Failed to create protocol mapper: {e}")
+            return None
+
+    async def update_client_scope_protocol_mapper(
+        self,
+        realm_name: str,
+        scope_id: str,
+        mapper_id: str,
+        mapper_config: ProtocolMapperRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update a protocol mapper in a client scope.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope
+            mapper_id: ID of the mapper to update
+            mapper_config: Updated protocol mapper configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if update successful, False otherwise
+        """
+        if isinstance(mapper_config, dict):
+            mapper_config = ProtocolMapperRepresentation.model_validate(mapper_config)
+
+        mapper_name = mapper_config.name
+        logger.info(f"Updating protocol mapper '{mapper_name}' in scope '{scope_id}'")
+
+        try:
+            payload = mapper_config.model_dump(by_alias=True, exclude_none=True)
+            payload["id"] = mapper_id
+
+            response = await self._make_request(
+                "PUT",
+                f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models/{mapper_id}",
+                namespace,
+                json=payload,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully updated protocol mapper '{mapper_name}'")
+                return True
+            else:
+                logger.error(
+                    f"Failed to update protocol mapper: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update protocol mapper: {e}")
+            return False
+
+    async def delete_client_scope_protocol_mapper(
+        self,
+        realm_name: str,
+        scope_id: str,
+        mapper_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Delete a protocol mapper from a client scope.
+
+        Args:
+            realm_name: Name of the realm
+            scope_id: ID of the client scope
+            mapper_id: ID of the mapper to delete
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if deletion successful, False otherwise
+        """
+        logger.info(f"Deleting protocol mapper '{mapper_id}' from scope '{scope_id}'")
+
+        try:
+            response = await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/client-scopes/{scope_id}/protocol-mappers/models/{mapper_id}",
+                namespace,
+            )
+
+            if response.status_code == 204:
+                logger.info(f"Successfully deleted protocol mapper '{mapper_id}'")
+                return True
+            elif response.status_code == 404:
+                logger.warning(f"Protocol mapper '{mapper_id}' not found")
+                return True
+            else:
+                logger.error(
+                    f"Failed to delete protocol mapper: {response.status_code}"
+                )
+                return False
+        except Exception as e:
+            logger.error(f"Failed to delete protocol mapper: {e}")
             return False
 
     # =========================================================================

@@ -181,6 +181,12 @@ class KeycloakClientReconciler(BaseReconciler):
                 client_spec, client_uuid, name, namespace
             )
 
+        # Configure client-level scope assignments
+        if client_spec.default_client_scopes or client_spec.optional_client_scopes:
+            await self.configure_client_scopes(
+                client_spec, client_uuid, name, namespace
+            )
+
         # Manage client roles
         if client_spec.client_roles:
             await self.manage_client_roles(client_spec, client_uuid, name, namespace)
@@ -797,6 +803,135 @@ class KeycloakClientReconciler(BaseReconciler):
                 return True
 
         return False
+
+    async def configure_client_scopes(
+        self, spec: KeycloakClientSpec, client_uuid: str, name: str, namespace: str
+    ) -> None:
+        """
+        Configure client-level default and optional scope assignments.
+
+        Args:
+            spec: Keycloak client specification
+            client_uuid: Client UUID in Keycloak
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Configuring client scopes for client {spec.client_id}")
+
+        # Get the realm info for the admin client
+        realm_ref = spec.realm_ref
+        target_namespace = realm_ref.namespace
+        realm_resource_name = realm_ref.name
+
+        actual_realm_name, keycloak_namespace, keycloak_name, _ = self._get_realm_info(
+            realm_resource_name, target_namespace
+        )
+
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, keycloak_namespace, rate_limiter=self.rate_limiter
+        )
+
+        # Get all available client scopes to build name-to-id mapping
+        all_scopes = await admin_client.get_client_scopes(actual_realm_name, namespace)
+        scope_name_to_id = {
+            scope.name: scope.id for scope in all_scopes if scope.name and scope.id
+        }
+
+        # Configure default client scopes for this client
+        if spec.default_client_scopes:
+            current_defaults = await admin_client.get_client_default_scopes(
+                actual_realm_name, client_uuid, namespace
+            )
+            current_default_names = {s.name for s in current_defaults if s.name}
+            current_default_map = {
+                s.name: s.id for s in current_defaults if s.name and s.id
+            }
+
+            desired_default_names = set(spec.default_client_scopes)
+
+            # Add new default scopes
+            for scope_name in desired_default_names - current_default_names:
+                scope_id = scope_name_to_id.get(scope_name)
+                if scope_id:
+                    self.logger.info(
+                        f"Adding '{scope_name}' as default scope for client {spec.client_id}"
+                    )
+                    try:
+                        await admin_client.add_client_default_scope(
+                            actual_realm_name, client_uuid, scope_id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to add client default scope '{scope_name}': {e}"
+                        )
+                else:
+                    self.logger.warning(
+                        f"Client scope '{scope_name}' not found in realm"
+                    )
+
+            # Remove scopes no longer in default list
+            for scope_name in current_default_names - desired_default_names:
+                scope_id = current_default_map.get(scope_name)
+                if scope_id:
+                    self.logger.info(
+                        f"Removing '{scope_name}' from client {spec.client_id} default scopes"
+                    )
+                    try:
+                        await admin_client.remove_client_default_scope(
+                            actual_realm_name, client_uuid, scope_id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to remove client default scope '{scope_name}': {e}"
+                        )
+
+        # Configure optional client scopes for this client
+        if spec.optional_client_scopes:
+            current_optionals = await admin_client.get_client_optional_scopes(
+                actual_realm_name, client_uuid, namespace
+            )
+            current_optional_names = {s.name for s in current_optionals if s.name}
+            current_optional_map = {
+                s.name: s.id for s in current_optionals if s.name and s.id
+            }
+
+            desired_optional_names = set(spec.optional_client_scopes)
+
+            # Add new optional scopes
+            for scope_name in desired_optional_names - current_optional_names:
+                scope_id = scope_name_to_id.get(scope_name)
+                if scope_id:
+                    self.logger.info(
+                        f"Adding '{scope_name}' as optional scope for client {spec.client_id}"
+                    )
+                    try:
+                        await admin_client.add_client_optional_scope(
+                            actual_realm_name, client_uuid, scope_id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to add client optional scope '{scope_name}': {e}"
+                        )
+                else:
+                    self.logger.warning(
+                        f"Client scope '{scope_name}' not found in realm"
+                    )
+
+            # Remove scopes no longer in optional list
+            for scope_name in current_optional_names - desired_optional_names:
+                scope_id = current_optional_map.get(scope_name)
+                if scope_id:
+                    self.logger.info(
+                        f"Removing '{scope_name}' from client {spec.client_id} optional scopes"
+                    )
+                    try:
+                        await admin_client.remove_client_optional_scope(
+                            actual_realm_name, client_uuid, scope_id, namespace
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to remove client optional scope '{scope_name}': {e}"
+                        )
 
     async def manage_client_roles(
         self, spec: KeycloakClientSpec, client_uuid: str, name: str, namespace: str
