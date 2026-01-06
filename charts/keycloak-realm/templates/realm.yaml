@@ -105,6 +105,21 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.clientScopes }}
+  clientScopes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.defaultClientScopes }}
+  defaultClientScopes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.optionalClientScopes }}
+  optionalClientScopes:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- if .Values.roles.realmRoles }}
   roles:
     realmRoles:

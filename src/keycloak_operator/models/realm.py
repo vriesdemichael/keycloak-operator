@@ -592,9 +592,13 @@ class KeycloakRealmSecurity(BaseModel):
 class KeycloakProtocolMapper(BaseModel):
     """Protocol mapper for client scopes."""
 
+    model_config = {"populate_by_name": True}
+
     name: str = Field(..., description="Mapper name")
-    protocol: str = Field(..., description="Protocol (openid-connect, saml)")
-    protocol_mapper: str = Field(..., description="Mapper type")
+    protocol: str = Field(
+        "openid-connect", description="Protocol (openid-connect, saml)"
+    )
+    protocol_mapper: str = Field(..., alias="protocolMapper", description="Mapper type")
     config: dict[str, str] = Field(
         default_factory=dict, description="Mapper configuration"
     )
@@ -603,6 +607,8 @@ class KeycloakProtocolMapper(BaseModel):
 class KeycloakClientScope(BaseModel):
     """Client scope definition."""
 
+    model_config = {"populate_by_name": True}
+
     name: str = Field(..., description="Scope name")
     description: str | None = Field(None, description="Scope description")
     protocol: str = Field("openid-connect", description="Protocol")
@@ -610,7 +616,9 @@ class KeycloakClientScope(BaseModel):
         default_factory=dict, description="Scope attributes"
     )
     protocol_mappers: list[KeycloakProtocolMapper] = Field(
-        default_factory=list, description="Protocol mappers"
+        default_factory=list,
+        alias="protocolMappers",
+        description="Protocol mappers",
     )
 
 
@@ -964,6 +972,20 @@ class KeycloakRealmSpec(BaseModel):
         default_factory=list,
         alias="clientScopes",
         description="Client scope definitions",
+    )
+
+    # Default client scopes - scope names assigned to all new clients by default
+    default_client_scopes: list[str] = Field(
+        default_factory=list,
+        alias="defaultClientScopes",
+        description="Client scope names to automatically assign as default to new clients",
+    )
+
+    # Optional client scopes - scope names available as optional for clients
+    optional_client_scopes: list[str] = Field(
+        default_factory=list,
+        alias="optionalClientScopes",
+        description="Client scope names available as optional for clients",
     )
 
     # Roles
