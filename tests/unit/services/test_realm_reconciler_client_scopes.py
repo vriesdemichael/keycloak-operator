@@ -25,7 +25,6 @@ def admin_mock() -> MagicMock:
     # Client scope methods
     mock.get_client_scopes = AsyncMock(return_value=[])
     mock.get_client_scope_by_name = AsyncMock(return_value=None)
-    mock.get_client_scope_by_id = AsyncMock(return_value=None)
     mock.create_client_scope = AsyncMock(return_value="new-scope-id")
     mock.update_client_scope = AsyncMock(return_value=True)
     mock.delete_client_scope = AsyncMock(return_value=True)

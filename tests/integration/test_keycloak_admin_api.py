@@ -550,12 +550,12 @@ class TestKeycloakAdminAPI:
             assert scope.name == scope_name
             assert scope.id == scope_id
 
-            # 4. Get scope by ID
-            scope_by_id = await keycloak_admin_client.get_client_scope_by_id(
-                realm_name, scope_id, namespace
+            # 4. Get scope by name (verify it exists)
+            scope_by_name = await keycloak_admin_client.get_client_scope_by_name(
+                realm_name, scope_name, namespace
             )
-            assert scope_by_id is not None
-            assert scope_by_id.name == scope_name
+            assert scope_by_name is not None
+            assert scope_by_name.id == scope_id
 
             # 5. Update scope
             updated_config = ClientScopeRepresentation(
@@ -570,8 +570,8 @@ class TestKeycloakAdminAPI:
             assert update_result is True
 
             # Verify update
-            updated_scope = await keycloak_admin_client.get_client_scope_by_id(
-                realm_name, scope_id, namespace
+            updated_scope = await keycloak_admin_client.get_client_scope_by_name(
+                realm_name, scope_name, namespace
             )
             assert updated_scope is not None
             assert updated_scope.description == "Updated description"
@@ -675,8 +675,8 @@ class TestKeycloakAdminAPI:
             assert delete_result is True
 
             # Verify deletion
-            deleted_scope = await keycloak_admin_client.get_client_scope_by_id(
-                realm_name, scope_id, namespace
+            deleted_scope = await keycloak_admin_client.get_client_scope_by_name(
+                realm_name, scope_name, namespace
             )
             assert deleted_scope is None, "Scope should be deleted"
 
