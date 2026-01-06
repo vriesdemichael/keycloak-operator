@@ -468,3 +468,224 @@ class TestKeycloakAdminAPI:
                 plural="keycloakrealms",
                 name=realm_name,
             )
+
+    @pytest.mark.asyncio
+    async def test_client_scope_crud_operations(
+        self,
+        k8s_custom_objects,
+        test_namespace,
+        operator_namespace,
+        shared_operator,
+        keycloak_admin_client,
+    ) -> None:
+        """Test client scope CRUD operations directly via admin API."""
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"test-scope-api-{suffix}"
+        scope_name = f"api-scope-{suffix}"
+        namespace = test_namespace
+
+        from keycloak_operator.models.keycloak_api import (
+            ClientScopeRepresentation,
+            ProtocolMapperRepresentation,
+        )
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        # Create realm first
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            client_authorization_grants=[namespace],
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # 1. Create client scope
+            scope_config = ClientScopeRepresentation(
+                name=scope_name,
+                description="Test API scope",
+                protocol="openid-connect",
+            )
+            scope_id = await keycloak_admin_client.create_client_scope(
+                realm_name, scope_config, namespace
+            )
+            assert scope_id is not None, "Failed to create client scope"
+
+            # 2. Verify scope exists via get_client_scopes
+            scopes = await keycloak_admin_client.get_client_scopes(
+                realm_name, namespace
+            )
+            scope_names = [s.name for s in scopes]
+            assert scope_name in scope_names, "Created scope not found in list"
+
+            # 3. Get scope by name
+            scope = await keycloak_admin_client.get_client_scope_by_name(
+                realm_name, scope_name, namespace
+            )
+            assert scope is not None
+            assert scope.name == scope_name
+            assert scope.id == scope_id
+
+            # 4. Get scope by ID
+            scope_by_id = await keycloak_admin_client.get_client_scope_by_id(
+                realm_name, scope_id, namespace
+            )
+            assert scope_by_id is not None
+            assert scope_by_id.name == scope_name
+
+            # 5. Update scope
+            updated_config = ClientScopeRepresentation(
+                id=scope_id,
+                name=scope_name,
+                description="Updated description",
+                protocol="openid-connect",
+            )
+            update_result = await keycloak_admin_client.update_client_scope(
+                realm_name, scope_id, updated_config, namespace
+            )
+            assert update_result is True
+
+            # Verify update
+            updated_scope = await keycloak_admin_client.get_client_scope_by_id(
+                realm_name, scope_id, namespace
+            )
+            assert updated_scope is not None
+            assert updated_scope.description == "Updated description"
+
+            # 6. Add protocol mapper to scope
+            mapper_config = ProtocolMapperRepresentation(
+                name="audience-mapper",
+                protocol="openid-connect",
+                protocol_mapper="oidc-audience-mapper",
+                config={
+                    "included.custom.audience": "test-api",
+                    "id.token.claim": "false",
+                    "access.token.claim": "true",
+                },
+            )
+            mapper_id = await keycloak_admin_client.create_client_scope_protocol_mapper(
+                realm_name, scope_id, mapper_config, namespace
+            )
+            assert mapper_id is not None, "Failed to create protocol mapper"
+
+            # 7. Get protocol mappers
+            mappers = await keycloak_admin_client.get_client_scope_protocol_mappers(
+                realm_name, scope_id, namespace
+            )
+            mapper_names = [m.name for m in mappers]
+            assert "audience-mapper" in mapper_names
+
+            # 8. Update protocol mapper
+            updated_mapper = ProtocolMapperRepresentation(
+                id=mapper_id,
+                name="audience-mapper",
+                protocol="openid-connect",
+                protocol_mapper="oidc-audience-mapper",
+                config={
+                    "included.custom.audience": "updated-api",
+                    "id.token.claim": "true",
+                    "access.token.claim": "true",
+                },
+            )
+            mapper_update = (
+                await keycloak_admin_client.update_client_scope_protocol_mapper(
+                    realm_name, scope_id, mapper_id, updated_mapper, namespace
+                )
+            )
+            assert mapper_update is True
+
+            # 9. Delete protocol mapper
+            mapper_delete = (
+                await keycloak_admin_client.delete_client_scope_protocol_mapper(
+                    realm_name, scope_id, mapper_id, namespace
+                )
+            )
+            assert mapper_delete is True
+
+            # 10. Add scope to realm defaults
+            add_default = await keycloak_admin_client.add_realm_default_client_scope(
+                realm_name, scope_id, namespace
+            )
+            assert add_default is True
+
+            # Verify in defaults
+            defaults = await keycloak_admin_client.get_realm_default_client_scopes(
+                realm_name, namespace
+            )
+            default_ids = [s.id for s in defaults]
+            assert scope_id in default_ids
+
+            # 11. Remove from defaults
+            remove_default = (
+                await keycloak_admin_client.remove_realm_default_client_scope(
+                    realm_name, scope_id, namespace
+                )
+            )
+            assert remove_default is True
+
+            # 12. Add scope to realm optionals
+            add_optional = await keycloak_admin_client.add_realm_optional_client_scope(
+                realm_name, scope_id, namespace
+            )
+            assert add_optional is True
+
+            # Verify in optionals
+            optionals = await keycloak_admin_client.get_realm_optional_client_scopes(
+                realm_name, namespace
+            )
+            optional_ids = [s.id for s in optionals]
+            assert scope_id in optional_ids
+
+            # 13. Remove from optionals
+            remove_optional = (
+                await keycloak_admin_client.remove_realm_optional_client_scope(
+                    realm_name, scope_id, namespace
+                )
+            )
+            assert remove_optional is True
+
+            # 14. Delete client scope
+            delete_result = await keycloak_admin_client.delete_client_scope(
+                realm_name, scope_id, namespace
+            )
+            assert delete_result is True
+
+            # Verify deletion
+            deleted_scope = await keycloak_admin_client.get_client_scope_by_id(
+                realm_name, scope_id, namespace
+            )
+            assert deleted_scope is None, "Scope should be deleted"
+
+        finally:
+            await _cleanup_resource(
+                k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
