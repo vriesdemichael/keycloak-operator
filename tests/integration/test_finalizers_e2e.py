@@ -453,3 +453,267 @@ class TestFinalizersE2E:
 
         except ApiException as e:
             pytest.fail(f"Failed to test cascading deletion: {e}")
+
+    async def test_cascade_skips_already_deleting_client(
+        self, k8s_custom_objects, test_namespace, operator_namespace, shared_operator
+    ):
+        """Test that cascade deletion skips clients that are already being deleted.
+
+        This verifies the 'skipped_already_deleting' code path in realm cleanup.
+        We achieve this by:
+        1. Creating a realm and client
+        2. Adding an extra finalizer to the client (prevents immediate deletion)
+        3. Triggering client deletion (sets deletionTimestamp)
+        4. Deleting the realm (cascade logic should skip the already-deleting client)
+        5. Removing our extra finalizer to allow client deletion to complete
+        """
+        import asyncio
+        import uuid
+
+        from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
+        from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+
+        suffix = uuid.uuid4().hex[:8]
+        realm_name = f"test-skip-deleting-{suffix}"
+        client_name = f"test-skip-client-{suffix}"
+        test_finalizer = "test.example.com/block-deletion"
+
+        realm_spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            realm_name=realm_name,
+            client_authorization_grants=[test_namespace],
+        )
+
+        realm_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {"name": realm_name, "namespace": test_namespace},
+            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        client_spec = KeycloakClientSpec(
+            realm_ref=RealmRef(name=realm_name, namespace=test_namespace),
+            client_id=client_name,
+        )
+
+        client_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakClient",
+            "metadata": {"name": client_name, "namespace": test_namespace},
+            "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        try:
+            # Create realm
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                body=realm_manifest,
+            )
+
+            # Wait for realm to be ready
+            async def check_realm_ready():
+                try:
+                    realm = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakrealms",
+                        name=realm_name,
+                    )
+                    status = realm.get("status", {}) or {}
+                    return status.get("phase") == "Ready"
+                except ApiException:
+                    return False
+
+            assert await _simple_wait(check_realm_ready, timeout=60), (
+                "Realm did not become ready"
+            )
+
+            # Create client
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakclients",
+                body=client_manifest,
+            )
+
+            # Wait for client to have its operator finalizer
+            async def check_client_has_finalizer():
+                try:
+                    client = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakclients",
+                        name=client_name,
+                    )
+                    finalizers = client.get("metadata", {}).get("finalizers", [])
+                    return (
+                        "vriesdemichael.github.io/keycloak-client-cleanup" in finalizers
+                    )
+                except ApiException:
+                    return False
+
+            assert await _simple_wait(check_client_has_finalizer, timeout=60), (
+                "Client finalizer was not added"
+            )
+
+            # Add our test finalizer to block deletion
+            client = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakclients",
+                name=client_name,
+            )
+            finalizers = client.get("metadata", {}).get("finalizers", [])
+            if test_finalizer not in finalizers:
+                finalizers.append(test_finalizer)
+                client["metadata"]["finalizers"] = finalizers
+                await k8s_custom_objects.patch_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=test_namespace,
+                    plural="keycloakclients",
+                    name=client_name,
+                    body=client,
+                )
+
+            # Delete the client (will set deletionTimestamp but won't complete
+            # due to our test finalizer)
+            await k8s_custom_objects.delete_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakclients",
+                name=client_name,
+            )
+
+            # Verify deletionTimestamp is set
+            async def check_client_has_deletion_timestamp():
+                try:
+                    client = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakclients",
+                        name=client_name,
+                    )
+                    return (
+                        client.get("metadata", {}).get("deletionTimestamp") is not None
+                    )
+                except ApiException as e:
+                    return e.status == 404
+
+            assert await _simple_wait(
+                check_client_has_deletion_timestamp, timeout=30
+            ), "Client deletionTimestamp was not set"
+
+            # Now delete the realm - its cascade logic should see the client
+            # already has deletionTimestamp and skip it (the code path we're testing)
+            await k8s_custom_objects.delete_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
+            # Wait a bit for realm cleanup to process the cascade logic
+            await asyncio.sleep(5)
+
+            # Now remove our test finalizer to allow client deletion to complete
+            try:
+                client = await k8s_custom_objects.get_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=test_namespace,
+                    plural="keycloakclients",
+                    name=client_name,
+                )
+                finalizers = client.get("metadata", {}).get("finalizers", [])
+                if test_finalizer in finalizers:
+                    finalizers.remove(test_finalizer)
+                    client["metadata"]["finalizers"] = finalizers
+                    await k8s_custom_objects.patch_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakclients",
+                        name=client_name,
+                        body=client,
+                    )
+            except ApiException as e:
+                if e.status != 404:
+                    raise
+
+            # Wait for both resources to be fully deleted
+            async def check_all_deleted():
+                for plural, name in [
+                    ("keycloakclients", client_name),
+                    ("keycloakrealms", realm_name),
+                ]:
+                    try:
+                        await k8s_custom_objects.get_namespaced_custom_object(
+                            group="vriesdemichael.github.io",
+                            version="v1",
+                            namespace=test_namespace,
+                            plural=plural,
+                            name=name,
+                        )
+                        return False
+                    except ApiException as e:
+                        if e.status != 404:
+                            return False
+                return True
+
+            assert await _simple_wait(check_all_deleted, timeout=120), (
+                "Resources were not fully deleted after removing test finalizer"
+            )
+
+        except ApiException as e:
+            pytest.fail(f"Failed to test cascade skip already deleting: {e}")
+
+        finally:
+            # Cleanup: ensure test finalizer is removed if test failed mid-way
+            with contextlib.suppress(ApiException):
+                try:
+                    client = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakclients",
+                        name=client_name,
+                    )
+                    finalizers = client.get("metadata", {}).get("finalizers", [])
+                    if test_finalizer in finalizers:
+                        finalizers.remove(test_finalizer)
+                        client["metadata"]["finalizers"] = finalizers
+                        await k8s_custom_objects.patch_namespaced_custom_object(
+                            group="vriesdemichael.github.io",
+                            version="v1",
+                            namespace=test_namespace,
+                            plural="keycloakclients",
+                            name=client_name,
+                            body=client,
+                        )
+                except ApiException:
+                    pass
+
+            # Try to delete resources if they still exist
+            for plural, name in [
+                ("keycloakclients", client_name),
+                ("keycloakrealms", realm_name),
+            ]:
+                with contextlib.suppress(ApiException):
+                    await k8s_custom_objects.delete_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural=plural,
+                        name=name,
+                    )
