@@ -182,7 +182,7 @@ runs:
         for pod in $(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
           namespace=$(echo $pod | cut -d/ -f1)
           podname=$(echo $pod | cut -d/ -f2)
-          kubectl logs -n $namespace $podname --all-containers=true --tail=2000 >> test-logs/operator-logs.log 2>&1 || true
+          kubectl logs -n $namespace $podname --all-containers=true --tail=10000 >> test-logs/operator-logs.log 2>&1 || true
         done
 
         kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide >> test-logs/operator-status.log 2>&1 || true

@@ -8,6 +8,8 @@ This module defines all constant values used by the operator including:
 - Error messages and status constants
 """
 
+import logging
+
 from keycloak_operator.settings import settings
 
 # Finalizer constants for cleanup coordination
@@ -88,6 +90,10 @@ DEFAULT_BACKUP_TIMEOUT = 900  # 15 minutes
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_BACKOFF_FACTOR = 2.0
 DEFAULT_INITIAL_DELAY = 1.0
+
+# Handler entry logging level (INFO for debugging, DEBUG for production if too noisy)
+# This controls the log level for "Handler invoked" messages at handler entry
+HANDLER_ENTRY_LOG_LEVEL = logging.INFO
 
 # Rate limiting configuration
 RATE_LIMIT_GLOBAL_TPS = settings.api_global_rate_limit_tps
