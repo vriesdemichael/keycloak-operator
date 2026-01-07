@@ -5,6 +5,7 @@ This module provides a unified wait helper that:
 - Automatically collects operator logs when waits timeout
 - Automatically collects k8s events for the resource
 - Raises informative exceptions with debugging context
+- Tracks deletion state with detailed diagnostics (DeletionState)
 """
 
 from __future__ import annotations
@@ -381,6 +382,76 @@ async def wait_for_resource_failed(
     )
 
 
+class DeletionState:
+    """Represents the state of a resource deletion."""
+
+    NOT_TRIGGERED = "not_triggered"  # No deletionTimestamp set
+    BLOCKED_BY_FINALIZER = "blocked_by_finalizer"  # Has deletionTimestamp but blocked
+    DELETED = "deleted"  # Resource is gone (404)
+
+    def __init__(
+        self,
+        state: str,
+        finalizers: list[str] | None = None,
+        deletion_timestamp: str | None = None,
+    ):
+        self.state = state
+        self.finalizers = finalizers or []
+        self.deletion_timestamp = deletion_timestamp
+
+    def __str__(self) -> str:
+        if self.state == self.NOT_TRIGGERED:
+            return "Deletion not triggered (no deletionTimestamp)"
+        elif self.state == self.BLOCKED_BY_FINALIZER:
+            finalizer_list = ", ".join(self.finalizers) if self.finalizers else "none"
+            return (
+                f"Deletion blocked by finalizer(s): [{finalizer_list}] "
+                f"(deletionTimestamp: {self.deletion_timestamp})"
+            )
+        else:
+            return "Resource deleted successfully"
+
+
+async def get_deletion_state(
+    k8s_custom_objects,
+    group: str,
+    version: str,
+    namespace: str,
+    plural: str,
+    name: str,
+) -> DeletionState:
+    """Check the deletion state of a resource.
+
+    Returns:
+        DeletionState indicating whether deletion was triggered and if it's blocked.
+    """
+    try:
+        resource = await k8s_custom_objects.get_namespaced_custom_object(
+            group=group,
+            version=version,
+            namespace=namespace,
+            plural=plural,
+            name=name,
+        )
+        metadata = resource.get("metadata", {})
+        deletion_timestamp = metadata.get("deletionTimestamp")
+        finalizers = metadata.get("finalizers", [])
+
+        if deletion_timestamp:
+            return DeletionState(
+                state=DeletionState.BLOCKED_BY_FINALIZER,
+                finalizers=finalizers,
+                deletion_timestamp=deletion_timestamp,
+            )
+        else:
+            return DeletionState(state=DeletionState.NOT_TRIGGERED)
+
+    except ApiException as exc:
+        if exc.status == 404:
+            return DeletionState(state=DeletionState.DELETED)
+        raise
+
+
 async def wait_for_resource_deleted(
     k8s_custom_objects,
     group: str,
@@ -390,8 +461,14 @@ async def wait_for_resource_deleted(
     name: str,
     timeout: int = 120,
     interval: int = 3,
+    operator_namespace: str | None = None,
 ) -> None:
     """Wait for a custom resource to be deleted.
+
+    This function provides detailed state tracking:
+    - Verifies deletionTimestamp is set (deletion was triggered)
+    - Tracks which finalizers are blocking deletion
+    - Collects operator logs on timeout for debugging
 
     Args:
         k8s_custom_objects: Kubernetes CustomObjectsApi client
@@ -402,34 +479,87 @@ async def wait_for_resource_deleted(
         name: Resource name
         timeout: Maximum wait time in seconds
         interval: Check interval in seconds
+        operator_namespace: Namespace where operator is running (for log collection)
 
     Raises:
-        ResourceNotReadyError: When timeout is reached
+        ResourceNotReadyError: When timeout is reached, includes detailed state info
     """
     import time
 
     start_time = time.time()
+    last_state: DeletionState | None = None
+    deletion_triggered = False
 
     while time.time() - start_time < timeout:
-        try:
-            await k8s_custom_objects.get_namespaced_custom_object(
-                group=group,
-                version=version,
-                namespace=namespace,
-                plural=plural,
-                name=name,
-            )
-            # Resource still exists, keep waiting
-            await asyncio.sleep(interval)
-        except ApiException as exc:
-            if exc.status == 404:
-                # Resource deleted successfully
-                return
-            raise
+        state = await get_deletion_state(
+            k8s_custom_objects, group, version, namespace, plural, name
+        )
+        last_state = state
 
-    raise ResourceNotReadyError(
-        f"Resource {plural}/{name} was not deleted within {timeout}s"
-    )
+        if state.state == DeletionState.DELETED:
+            logger.debug(f"Resource {plural}/{name} deleted successfully")
+            return
+
+        if state.state == DeletionState.BLOCKED_BY_FINALIZER and not deletion_triggered:
+            deletion_triggered = True
+            logger.debug(
+                f"Deletion triggered for {plural}/{name}, "
+                f"waiting for finalizers: {state.finalizers}"
+            )
+
+        await asyncio.sleep(interval)
+
+    # Timeout reached - build detailed error message
+    debug_info = []
+
+    if last_state:
+        debug_info.append(f"Final state: {last_state}")
+
+        if last_state.state == DeletionState.NOT_TRIGGERED:
+            debug_info.append(
+                "ERROR: Deletion was never triggered! "
+                "The delete API call may have failed silently."
+            )
+        elif last_state.state == DeletionState.BLOCKED_BY_FINALIZER:
+            debug_info.append(
+                f"Deletion is blocked by {len(last_state.finalizers)} finalizer(s):"
+            )
+            for finalizer in last_state.finalizers:
+                debug_info.append(f"  - {finalizer}")
+            debug_info.append(
+                "The operator's delete handler may not be running or may be stuck."
+            )
+
+    debug_files = []
+
+    # Collect operator logs if namespace provided
+    if operator_namespace:
+        try:
+            log_summary, log_file = await _collect_operator_logs(
+                operator_namespace, tail_lines=200
+            )
+            debug_info.append(f"\nOperator Logs (last 5 lines):\n{log_summary}")
+            if log_file:
+                debug_files.append(f"Full operator logs: {log_file}")
+        except Exception as e:
+            debug_info.append(f"\nFailed to collect operator logs: {e}")
+
+    # Build error message
+    error_parts = [
+        f"Resource {plural}/{name} was not deleted within {timeout}s.",
+        "",
+        *debug_info,
+    ]
+
+    if debug_files:
+        error_parts.append("\n" + "=" * 70)
+        error_parts.append("Debugging files (full logs):")
+        error_parts.extend(debug_files)
+        error_parts.append("=" * 70)
+
+    error_message = "\n".join(error_parts)
+
+    raise ResourceNotReadyError(error_message)
 
 
 async def wait_for_reconciliation_complete(

@@ -26,7 +26,11 @@ from kopf import Diff, Meta
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.constants import KEYCLOAK_FINALIZER, RECONCILE_JITTER_MAX
+from keycloak_operator.constants import (
+    HANDLER_ENTRY_LOG_LEVEL,
+    KEYCLOAK_FINALIZER,
+    RECONCILE_JITTER_MAX,
+)
 from keycloak_operator.services import KeycloakInstanceReconciler
 from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 from keycloak_operator.utils.kubernetes import (
@@ -35,6 +39,37 @@ from keycloak_operator.utils.kubernetes import (
     get_kubernetes_client,
     get_pod_resource_usage,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _log_handler_entry(
+    handler_type: str,
+    resource_type: str,
+    name: str,
+    namespace: str,
+    extra: dict[str, Any] | None = None,
+) -> None:
+    """Log handler invocation at configurable level.
+
+    This provides visibility into which handlers are being called,
+    useful for debugging issues where handlers appear to not be invoked.
+    """
+    log_extra = {
+        "handler_type": handler_type,
+        "resource_type": resource_type,
+        "resource_name": name,
+        "namespace": namespace,
+        "handler_phase": "invoked",
+    }
+    if extra:
+        log_extra.update(extra)
+
+    logger.log(
+        HANDLER_ENTRY_LOG_LEVEL,
+        f"Handler invoked: {handler_type} {resource_type}/{name} in {namespace}",
+        extra=log_extra,
+    )
 
 
 class StatusProtocol(Protocol):
@@ -113,9 +148,6 @@ class KopfHandlerKwargs(TypedDict, total=False):
     logger: Any
 
 
-logger = logging.getLogger(__name__)
-
-
 @kopf.on.create(
     "keycloaks", group="vriesdemichael.github.io", version="v1", backoff=1.5
 )
@@ -152,6 +184,9 @@ async def ensure_keycloak_instance(
         Dictionary with status information for the resource
 
     """
+    # Log handler entry immediately for debugging
+    _log_handler_entry("create/resume", "keycloak", name, namespace)
+
     # Check if resource is being deleted - if so, skip reconciliation
     # The @kopf.on.delete handler (delete_keycloak_instance) handles cleanup
     meta = kwargs.get("meta", {})
@@ -227,6 +262,9 @@ async def update_keycloak_instance(
     Returns:
         None to avoid Kopf creating status subpaths
     """
+    # Log handler entry immediately for debugging
+    _log_handler_entry("update", "keycloak", name, namespace)
+
     logger.info(f"Updating Keycloak instance {name} in namespace {namespace}")
 
     # Use patch.status for updates instead of wrapping the read-only status dict
@@ -278,7 +316,16 @@ async def delete_keycloak_instance(
         patch: Kopf patch object for modifying the resource
         retry: Kopf retry count (starts from 0)
     """
+    # Log handler entry immediately for debugging - this is the first thing we do
     retry_count = retry if retry else 0
+    _log_handler_entry(
+        "delete",
+        "keycloak",
+        name,
+        namespace,
+        extra={"retry_count": retry_count},
+    )
+
     logger.info(
         f"Starting deletion of Keycloak instance {name} in namespace {namespace} "
         f"(attempt {retry_count + 1})",

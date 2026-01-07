@@ -20,12 +20,52 @@ from typing import Any, Protocol
 
 import kopf
 
-from keycloak_operator.constants import REALM_FINALIZER, RECONCILE_JITTER_MAX
+from keycloak_operator.constants import (
+    HANDLER_ENTRY_LOG_LEVEL,
+    REALM_FINALIZER,
+    RECONCILE_JITTER_MAX,
+)
 from keycloak_operator.models.realm import KeycloakRealmSpec
 from keycloak_operator.services import KeycloakRealmReconciler
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 
 logger = logging.getLogger(__name__)
+
+
+def _log_handler_entry(
+    handler_type: str,
+    resource_type: str,
+    name: str,
+    namespace: str,
+    extra: dict[str, Any] | None = None,
+) -> None:
+    """Log handler invocation at configurable level.
+
+    This provides visibility into which handlers are being called,
+    useful for debugging issues where handlers appear to not be invoked.
+
+    Args:
+        handler_type: Type of handler (create, update, delete, resume)
+        resource_type: Type of resource (realm, client, keycloak)
+        name: Resource name
+        namespace: Resource namespace
+        extra: Additional context to include in structured log
+    """
+    log_extra = {
+        "handler_type": handler_type,
+        "resource_type": resource_type,
+        "resource_name": name,
+        "namespace": namespace,
+        "handler_phase": "invoked",
+    }
+    if extra:
+        log_extra.update(extra)
+
+    logger.log(
+        HANDLER_ENTRY_LOG_LEVEL,
+        f"Handler invoked: {handler_type} {resource_type}/{name} in {namespace}",
+        extra=log_extra,
+    )
 
 
 class StatusProtocol(Protocol):
@@ -113,6 +153,9 @@ async def ensure_keycloak_realm(
         Dictionary with status information for the resource
 
     """
+    # Log handler entry immediately for debugging
+    _log_handler_entry("create/resume", "keycloakrealm", name, namespace)
+
     # Check if resource is being deleted - if so, skip reconciliation
     # The @kopf.on.delete handler (delete_keycloak_realm) handles cleanup
     meta = kwargs.get("meta", {})
@@ -183,6 +226,9 @@ async def update_keycloak_realm(
         None to avoid Kopf creating status subpaths
 
     """
+    # Log handler entry immediately for debugging
+    _log_handler_entry("update", "keycloakrealm", name, namespace)
+
     logger.info(f"Updating KeycloakRealm {name} in namespace {namespace}")
 
     # Create reconciler and delegate to service layer
@@ -235,7 +281,16 @@ async def delete_keycloak_realm(
         patch: Kopf patch object for modifying the resource
         retry: Kopf retry count (starts from 0)
     """
+    # Log handler entry immediately for debugging - this is the first thing we do
     retry_count = retry if retry else 0
+    _log_handler_entry(
+        "delete",
+        "keycloakrealm",
+        name,
+        namespace,
+        extra={"retry_count": retry_count},
+    )
+
     logger.info(
         f"Starting deletion of KeycloakRealm {name} in namespace {namespace} "
         f"(attempt {retry_count + 1})",
