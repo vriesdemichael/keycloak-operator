@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.5.17](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.16...operator-image-v0.5.17) (2026-01-07)
+
+
+### Features
+
+* **chart-realm:** add client scope management ([708787f](https://github.com/vriesdemichael/keycloak-operator/commit/708787f23200be34947733e9059eaad1a51e02b3)), closes [#181](https://github.com/vriesdemichael/keycloak-operator/issues/181)
+
+
+### Bug Fixes
+
+* **operator:** add client_scopes_count to status model ([18d4b3c](https://github.com/vriesdemichael/keycloak-operator/commit/18d4b3cbac222ef4345887103eb5c2d510a8b104))
+* **operator:** handle 409 conflict as idempotent success for add operations ([e5eafab](https://github.com/vriesdemichael/keycloak-operator/commit/e5eafab0361c60b07691d518924ceb5b64ac564d))
+* **operator:** make client scope operations idempotent ([edd3daf](https://github.com/vriesdemichael/keycloak-operator/commit/edd3daf37730806abb076841b2f8e384299555b4))
+* **operator:** remove duplicate deletion logic from resume handlers ([ce95458](https://github.com/vriesdemichael/keycloak-operator/commit/ce954586b7127b84ab855355850632ff62b5d5b3))
+
+
+### Code Refactoring
+
+* **operator:** add decorators for consistent error handling ([c1fc4fb](https://github.com/vriesdemichael/keycloak-operator/commit/c1fc4fb2aab49c20f9ce954a26cfc81e02acf6d9))
+* **operator:** apply error handling decorators to client scope methods ([ae86fa8](https://github.com/vriesdemichael/keycloak-operator/commit/ae86fa898ae68ad037a40571e1ec2a349b090acc))
+
 ## [0.5.16](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.15...operator-image-v0.5.16) (2026-01-05)
 
 
