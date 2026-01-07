@@ -3102,7 +3102,7 @@ class KeycloakRealmReconciler(BaseReconciler):
 
                         self.logger.info(
                             f"Cascading delete: Triggering deletion of KeycloakClient CR "
-                            f"{client_cr_name} (realm {realm_name} already deleted)",
+                            f"{client_cr_name} (realm {realm_name} deleted or not owned)",
                             extra={
                                 "resource_type": "client",
                                 "resource_name": client_cr_name,

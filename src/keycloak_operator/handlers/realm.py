@@ -233,7 +233,7 @@ async def delete_keycloak_realm(
         namespace: Namespace where the resource exists
         status: Current status of the resource
         patch: Kopf patch object for modifying the resource
-        retry: Kopf retry info (iteration count, started timestamp)
+        retry: Kopf retry count (starts from 0)
     """
     retry_count = retry if retry else 0
     logger.info(

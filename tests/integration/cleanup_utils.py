@@ -102,6 +102,7 @@ async def delete_custom_resource_with_retry(
         # Wait for graceful deletion
         start_time = asyncio.get_event_loop().time()
         force_delete_triggered = False
+        last_progress_log = 0  # Track last 30-second interval logged
 
         while asyncio.get_event_loop().time() - start_time < timeout:
             try:
@@ -115,8 +116,10 @@ async def delete_custom_resource_with_retry(
 
                 elapsed = asyncio.get_event_loop().time() - start_time
 
-                # Log progress every 30 seconds
-                if int(elapsed) % 30 == 0 and int(elapsed) > 0:
+                # Log progress every 30 seconds (only once per interval)
+                current_interval = int(elapsed) // 30
+                if current_interval > last_progress_log:
+                    last_progress_log = current_interval
                     finalizers = resource.get("metadata", {}).get("finalizers", [])
                     phase = resource.get("status", {}).get("phase", "Unknown")
                     logger.info(
