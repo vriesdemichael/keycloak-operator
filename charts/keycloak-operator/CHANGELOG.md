@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.18](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.17...chart-operator-v0.3.18) (2026-01-07)
+
+
+### Features
+
+* **chart-realm:** add client scope management ([708787f](https://github.com/vriesdemichael/keycloak-operator/commit/708787f23200be34947733e9059eaad1a51e02b3)), closes [#181](https://github.com/vriesdemichael/keycloak-operator/issues/181)
+
 ## [0.3.17](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.16...chart-operator-v0.3.17) (2026-01-06)
 
 
