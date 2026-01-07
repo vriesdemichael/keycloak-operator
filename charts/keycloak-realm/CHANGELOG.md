@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.6...chart-realm-v0.3.7) (2026-01-07)
+
+
+### Features
+
+* **chart-realm:** add client scope management ([708787f](https://github.com/vriesdemichael/keycloak-operator/commit/708787f23200be34947733e9059eaad1a51e02b3)), closes [#181](https://github.com/vriesdemichael/keycloak-operator/issues/181)
+
 ## [0.3.6](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.5...chart-realm-v0.3.6) (2026-01-05)
 
 
