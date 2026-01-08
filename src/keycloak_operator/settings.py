@@ -189,14 +189,15 @@ class Settings(BaseSettings):
 
     # Health check timer intervals (seconds)
     # These also serve as the stuck finalizer detection interval
+    # All default to 300s (5 min) for production. Set lower (e.g., 10s) in tests.
     timer_interval_keycloak: int = Field(
-        default=60,
+        default=300,
         validation_alias="TIMER_INTERVAL_KEYCLOAK",
         description="Health check interval for Keycloak instances in seconds. "
         "Also determines how quickly stuck finalizers are detected.",
     )
     timer_interval_realm: int = Field(
-        default=600,
+        default=300,
         validation_alias="TIMER_INTERVAL_REALM",
         description="Health check interval for KeycloakRealms in seconds. "
         "Also determines how quickly stuck finalizers are detected.",
