@@ -17,12 +17,6 @@ from keycloak_operator.settings import settings
 # Kopf automatically adds this on create and removes it after delete handler completes
 OPERATOR_FINALIZER = "vriesdemichael.github.io/keycloak-operator"
 
-# Legacy finalizer constants - kept for migration compatibility
-# TODO: Remove after all existing resources have been migrated
-KEYCLOAK_FINALIZER = "vriesdemichael.github.io/keycloak-cleanup"
-REALM_FINALIZER = "vriesdemichael.github.io/keycloak-realm-cleanup"
-CLIENT_FINALIZER = "vriesdemichael.github.io/keycloak-client-cleanup"
-
 # Label constants for resource identification and management
 OPERATOR_LABEL_KEY = "vriesdemichael.github.io/keycloak-managed-by"
 OPERATOR_LABEL_VALUE = "keycloak-operator"
