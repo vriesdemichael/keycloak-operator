@@ -1543,6 +1543,14 @@ async def shared_operator(
                 "tag": "test",
                 "pullPolicy": "Never",  # Use local image only
             },
+            # Use short timer intervals for faster stuck finalizer detection in tests
+            "reconciliation": {
+                "timerIntervals": {
+                    "keycloak": 10,
+                    "realm": 10,
+                    "client": 10,
+                },
+            },
         },
         "webhooks": {
             # Enable admission webhooks (default behavior)

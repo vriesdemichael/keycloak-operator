@@ -151,6 +151,18 @@ operator:
     # - name: WEBHOOK_LOG_LEVEL
     #   value: "WARNING"
 
+  # Reconciliation settings
+  # Control how often the operator checks resource health and detects issues
+  reconciliation:
+    # Timer intervals for periodic health checks (seconds)
+    # These timers also detect stuck finalizers when delete events are missed
+    # Lower values = faster detection but more API load
+    # Recommended: 300s (5 min) for production, 10s for testing
+    timerIntervals:
+      keycloak: 300   # Keycloak instance health check interval
+      realm: 300      # KeycloakRealm health check interval
+      client: 300     # KeycloakClient health check interval
+
 # ============================================================================
 # Namespace Configuration
 # ============================================================================
