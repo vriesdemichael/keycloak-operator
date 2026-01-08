@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.20](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.19...chart-operator-v0.3.20) (2026-01-08)
+
+
+### Features
+
+* **chart-operator:** add configurable timer intervals for reconciliation ([80e4652](https://github.com/vriesdemichael/keycloak-operator/commit/80e46525e2ea44209c51ea89984d7cfab0c9d25c))
+* **chart-operator:** add PriorityClass for operator pods ([#173](https://github.com/vriesdemichael/keycloak-operator/issues/173)) ([6c1ec8d](https://github.com/vriesdemichael/keycloak-operator/commit/6c1ec8d8c6b451730d8f25cb9fa97b1373283469))
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator+operator:** address multiple issues ([#290](https://github.com/vriesdemichael/keycloak-operator/issues/290), [#294](https://github.com/vriesdemichael/keycloak-operator/issues/294), [#170](https://github.com/vriesdemichael/keycloak-operator/issues/170), [#168](https://github.com/vriesdemichael/keycloak-operator/issues/168)) ([0b790ac](https://github.com/vriesdemichael/keycloak-operator/commit/0b790acab044239342f888dfe170afbef874f6bc))
+
 ## [0.3.19](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.18...chart-operator-v0.3.19) (2026-01-07)
 
 
