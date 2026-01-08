@@ -56,6 +56,7 @@
     "authorizationServicesEnabled": {"type": "boolean"},
     "alwaysDisplayInConsole": {"type": "boolean"},
     "fullScopeAllowed": {"type": "boolean"},
+    "includeInTokenScope": {"type": "boolean"},
     "settings": {
       "type": "object",
       "properties": {

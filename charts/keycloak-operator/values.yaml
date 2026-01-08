@@ -632,3 +632,21 @@ webhooks:
 
     # Note: Keycloak instances are limited to 1 per namespace (ADR-062)
     # This is enforced to prevent resource conflicts and simplify RBAC
+
+# ============================================================================
+# Pod Disruption Budget Configuration
+# ============================================================================
+# Ensures minimum availability during voluntary disruptions (node drains, upgrades)
+podDisruptionBudget:
+  # Enable PodDisruptionBudget for the operator
+  # Recommended: true for production environments
+  enabled: true
+
+  # Minimum number of pods that must remain available during disruptions
+  # Use this OR maxUnavailable, not both
+  # Recommended: 1 for HA deployments with 2+ replicas
+  minAvailable: 1
+
+  # Maximum number of pods that can be unavailable during disruptions
+  # Alternative to minAvailable - uncomment to use instead
+  # maxUnavailable: 1

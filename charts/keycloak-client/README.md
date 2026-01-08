@@ -205,6 +205,7 @@ Options: `client-secret`, `client-jwt`, `client-x509`, `secret-jwt`
 | `authorizationServicesEnabled` | Enable fine-grained authorization | `false` |
 | `alwaysDisplayInConsole` | Always show in account console | `false` |
 | `fullScopeAllowed` | Allow all realm roles | `true` |
+| `includeInTokenScope` | Include client in token scope | `true` |
 
 #### Client Settings (Advanced)
 

@@ -7,6 +7,7 @@ Kubernetes, enforcing:
 - Naming conventions and scope restrictions
 - Valid operator references
 - Realm configuration constraints
+- No Keycloak environment variable placeholders
 """
 
 import asyncio
@@ -18,6 +19,10 @@ from pydantic import ValidationError
 
 from keycloak_operator.constants import WEBHOOK_MAX_REALMS_PER_NAMESPACE
 from keycloak_operator.models.realm import KeycloakRealmSpec
+from keycloak_operator.utils.validation import (
+    ValidationError as PlaceholderValidationError,
+)
+from keycloak_operator.utils.validation import validate_spec_no_placeholders
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +103,13 @@ async def validate_realm(
         error_msg = f"Invalid realm specification: {e}"
         logger.warning(f"Realm {name} validation failed: {error_msg}")
         raise kopf.AdmissionError(error_msg) from e
+
+    # Check for Keycloak environment variable placeholders
+    try:
+        validate_spec_no_placeholders(spec, "KeycloakRealm")
+    except PlaceholderValidationError as e:
+        logger.warning(f"Realm {name} contains unsupported placeholders: {e}")
+        raise kopf.AdmissionError(str(e)) from e
 
     # Only check quota on CREATE operations (not updates)
     if operation == "CREATE":
