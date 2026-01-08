@@ -29,7 +29,6 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
-    CLIENT_FINALIZER,
     RECONCILE_JITTER_MAX,
     TIMER_INTERVAL_CLIENT,
 )
@@ -91,24 +90,20 @@ async def _perform_client_cleanup(
     namespace: str,
     spec: dict[str, Any],
     status: dict[str, Any],
-    current_finalizers: list[str],
-    patch: kopf.Patch,
     rate_limiter: Any,
     trigger: str = "delete_handler",
 ) -> None:
     """
-    Perform client cleanup from Keycloak and remove finalizer.
+    Perform client cleanup from Keycloak.
 
-    This is the core cleanup logic shared between the delete handler and
-    the stuck finalizer detection in the timer handler.
+    This is the core cleanup logic for delete handlers.
+    Finalizer management is handled by Kopf via settings.persistence.finalizer.
 
     Args:
         name: Name of the KeycloakClient resource
         namespace: Namespace where the resource exists
         spec: KeycloakClient resource specification
         status: Current status of the resource
-        current_finalizers: List of current finalizers on the resource
-        patch: Kopf patch object for modifying the resource
         rate_limiter: Rate limiter for Keycloak API calls
         trigger: What triggered this cleanup (for logging)
     """
@@ -149,22 +144,10 @@ async def _perform_client_cleanup(
             },
         )
 
-    # Remove finalizer to complete deletion
-    logger.info(
-        f"Removing finalizer {CLIENT_FINALIZER} from KeycloakClient {name}",
-        extra={
-            "resource_type": "client",
-            "resource_name": name,
-            "namespace": namespace,
-            "cleanup_phase": "removing_finalizer",
-            "cleanup_trigger": trigger,
-        },
-    )
-    updated_finalizers = [f for f in current_finalizers if f != CLIENT_FINALIZER]
-    patch.metadata["finalizers"] = updated_finalizers
+    # Note: Finalizer removal is handled by Kopf automatically after this handler completes
 
     logger.info(
-        f"Successfully deleted KeycloakClient {name}",
+        f"Successfully cleaned up KeycloakClient {name}",
         extra={
             "resource_type": "client",
             "resource_name": name,
@@ -228,11 +211,8 @@ async def ensure_keycloak_client(
 
     logger.info(f"Ensuring KeycloakClient {name} in namespace {namespace}")
 
-    # Add finalizer BEFORE creating any resources to ensure proper cleanup
-    current_finalizers = meta.get("finalizers", [])
-    if CLIENT_FINALIZER not in current_finalizers:
-        logger.info(f"Adding finalizer {CLIENT_FINALIZER} to KeycloakClient {name}")
-        patch.metadata.setdefault("finalizers", []).append(CLIENT_FINALIZER)
+    # Note: Finalizer is managed by Kopf via settings.persistence.finalizer
+    # configured in operator.py startup handler
 
     # Use patch.status for updates instead of wrapping the read-only status dict
     # Add jitter to prevent thundering herd
@@ -323,11 +303,11 @@ async def delete_keycloak_client(
     **kwargs: Any,
 ) -> None:
     """
-    Handle KeycloakClient deletion with proper finalizer management.
+    Handle KeycloakClient deletion.
 
     This handler performs comprehensive cleanup of the client from Keycloak
-    and any associated Kubernetes resources, removing the finalizer only
-    after cleanup is complete.
+    and any associated Kubernetes resources. Finalizer management is handled
+    automatically by Kopf via settings.persistence.finalizer.
 
     Args:
         spec: KeycloakClient resource specification
@@ -359,26 +339,17 @@ async def delete_keycloak_client(
         },
     )
 
-    # Check if our finalizer is present
-    meta = kwargs.get("meta", {})
-    current_finalizers = list(meta.get("finalizers", []))
-    if CLIENT_FINALIZER not in current_finalizers:
-        logger.info(f"Finalizer {CLIENT_FINALIZER} not found, deletion already handled")
-        return
-
     try:
         # Add jitter to prevent thundering herd on mass deletion
         jitter = random.uniform(0, RECONCILE_JITTER_MAX)
         await asyncio.sleep(jitter)
 
-        # Use shared cleanup logic
+        # Perform Keycloak cleanup - finalizer is managed by Kopf
         await _perform_client_cleanup(
             name=name,
             namespace=namespace,
             spec=spec,
             status=status,
-            current_finalizers=current_finalizers,
-            patch=patch,
             rate_limiter=memo.rate_limiter,
             trigger="delete_handler",
         )
@@ -427,71 +398,26 @@ async def monitor_client_health(
     Periodic health check for KeycloakClients.
 
     This timer verifies that clients still exist in Keycloak and
-    that their configuration matches the desired state. It also acts as a
-    safety net for stuck finalizers - if a resource has deletionTimestamp
-    but the delete handler wasn't invoked (missed event), this timer will
-    detect it and trigger cleanup.
+    that their configuration matches the desired state.
 
     The interval is configurable via TIMER_INTERVAL_CLIENT environment variable.
-    Default: 300 seconds (5 minutes). Set lower in tests for faster detection.
+    Default: 300 seconds (5 minutes).
 
     Args:
         spec: KeycloakClient resource specification
         name: Name of the KeycloakClient resource
         namespace: Namespace where the resource exists
         status: Current status of the resource
-        meta: Resource metadata (includes deletionTimestamp, finalizers)
+        meta: Resource metadata
         memo: Kopf memo for accessing shared state like rate_limiter
 
     Returns:
         Dictionary with updated status, or None if no changes needed
 
     """
-    # CRITICAL: Check for stuck finalizer (missed delete event)
-    # If deletionTimestamp is set but our finalizer is still present,
-    # the delete handler was never invoked - trigger cleanup now
+    # Skip health checks for resources being deleted
     deletion_timestamp = meta.get("deletionTimestamp")
-    current_finalizers = list(meta.get("finalizers", []))
-
-    if deletion_timestamp and CLIENT_FINALIZER in current_finalizers:
-        logger.warning(
-            f"Stuck finalizer detected for KeycloakClient {name}: "
-            f"deletionTimestamp={deletion_timestamp} but finalizer still present. "
-            f"Triggering cleanup from timer handler (delete event was likely missed).",
-            extra={
-                "resource_type": "client",
-                "resource_name": name,
-                "namespace": namespace,
-                "deletion_timestamp": deletion_timestamp,
-                "cleanup_trigger": "stuck_finalizer_detection",
-            },
-        )
-
-        # Use shared cleanup logic
-        try:
-            await _perform_client_cleanup(
-                name=name,
-                namespace=namespace,
-                spec=spec,
-                status=status,
-                current_finalizers=current_finalizers,
-                patch=patch,
-                rate_limiter=memo.rate_limiter,
-                trigger="stuck_finalizer_detection",
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to cleanup stuck client {name}: {e}",
-                extra={
-                    "resource_type": "client",
-                    "resource_name": name,
-                    "namespace": namespace,
-                    "error_type": type(e).__name__,
-                    "cleanup_trigger": "stuck_finalizer_detection",
-                },
-                exc_info=True,
-            )
-        # Don't proceed with health check for a resource being deleted
+    if deletion_timestamp:
         return
 
     current_phase = status.get("phase", "Unknown")

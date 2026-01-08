@@ -21,7 +21,6 @@ from typing import Any, Protocol
 import kopf
 
 from keycloak_operator.constants import (
-    REALM_FINALIZER,
     RECONCILE_JITTER_MAX,
     TIMER_INTERVAL_REALM,
 )
@@ -87,24 +86,20 @@ async def _perform_realm_cleanup(
     namespace: str,
     spec: dict[str, Any],
     status: dict[str, Any],
-    current_finalizers: list[str],
-    patch: kopf.Patch,
     rate_limiter: Any,
     trigger: str = "delete_handler",
 ) -> None:
     """
-    Perform realm cleanup from Keycloak and remove finalizer.
+    Perform realm cleanup from Keycloak.
 
-    This is the core cleanup logic shared between the delete handler and
-    the stuck finalizer detection in the timer handler.
+    This is the core cleanup logic for delete handlers.
+    Finalizer management is handled by Kopf via settings.persistence.finalizer.
 
     Args:
         name: Name of the KeycloakRealm resource
         namespace: Namespace where the resource exists
         spec: KeycloakRealm resource specification
         status: Current status of the resource
-        current_finalizers: List of current finalizers on the resource
-        patch: Kopf patch object for modifying the resource
         rate_limiter: Rate limiter for Keycloak API calls
         trigger: What triggered this cleanup (for logging)
     """
@@ -145,22 +140,10 @@ async def _perform_realm_cleanup(
             },
         )
 
-    # Remove finalizer to complete deletion
-    logger.info(
-        f"Removing finalizer {REALM_FINALIZER} from KeycloakRealm {name}",
-        extra={
-            "resource_type": "realm",
-            "resource_name": name,
-            "namespace": namespace,
-            "cleanup_phase": "removing_finalizer",
-            "cleanup_trigger": trigger,
-        },
-    )
-    updated_finalizers = [f for f in current_finalizers if f != REALM_FINALIZER]
-    patch.metadata["finalizers"] = updated_finalizers
+    # Note: Finalizer removal is handled by Kopf automatically after this handler completes
 
     logger.info(
-        f"Successfully deleted KeycloakRealm {name}",
+        f"Successfully cleaned up KeycloakRealm {name}",
         extra={
             "resource_type": "realm",
             "resource_name": name,
@@ -224,11 +207,8 @@ async def ensure_keycloak_realm(
 
     logger.info(f"Ensuring KeycloakRealm {name} in namespace {namespace}")
 
-    # Add finalizer BEFORE creating any resources to ensure proper cleanup
-    current_finalizers = meta.get("finalizers", [])
-    if REALM_FINALIZER not in current_finalizers:
-        logger.info(f"Adding finalizer {REALM_FINALIZER} to KeycloakRealm {name}")
-        patch.metadata.setdefault("finalizers", []).append(REALM_FINALIZER)
+    # Note: Finalizer is managed by Kopf via settings.persistence.finalizer
+    # configured in operator.py startup handler
 
     # Create reconciler and delegate to service layer
     # Use patch.status instead of the read-only status dict for updates
@@ -321,11 +301,11 @@ async def delete_keycloak_realm(
     **kwargs: Any,
 ) -> None:
     """
-    Handle KeycloakRealm deletion with proper finalizer management.
+    Handle KeycloakRealm deletion.
 
     This handler performs comprehensive cleanup of the realm from Keycloak
-    and any associated Kubernetes resources, removing the finalizer only
-    after cleanup is complete.
+    and any associated Kubernetes resources. Finalizer management is handled
+    automatically by Kopf via settings.persistence.finalizer.
 
     Args:
         spec: KeycloakRealm resource specification
@@ -357,26 +337,17 @@ async def delete_keycloak_realm(
         },
     )
 
-    # Check if our finalizer is present
-    meta = kwargs.get("meta", {})
-    current_finalizers = list(meta.get("finalizers", []))
-    if REALM_FINALIZER not in current_finalizers:
-        logger.info(f"Finalizer {REALM_FINALIZER} not found, deletion already handled")
-        return
-
     try:
         # Add jitter to prevent thundering herd on mass deletion
         jitter = random.uniform(0, RECONCILE_JITTER_MAX)
         await asyncio.sleep(jitter)
 
-        # Use shared cleanup logic
+        # Perform Keycloak cleanup - finalizer is managed by Kopf
         await _perform_realm_cleanup(
             name=name,
             namespace=namespace,
             spec=spec,
             status=status,
-            current_finalizers=current_finalizers,
-            patch=patch,
             rate_limiter=memo.rate_limiter,
             trigger="delete_handler",
         )
@@ -425,13 +396,10 @@ async def monitor_realm_health(
     Periodic health check for KeycloakRealms.
 
     This timer verifies that realms still exist in Keycloak and
-    that their configuration matches the desired state. It also acts as a
-    safety net for stuck finalizers - if a resource has deletionTimestamp
-    but the delete handler wasn't invoked (missed event), this timer will
-    detect it and trigger cleanup.
+    that their configuration matches the desired state.
 
     The interval is configurable via TIMER_INTERVAL_REALM environment variable.
-    Default: 600 seconds (10 minutes). Set lower in tests for faster detection.
+    Default: 600 seconds (10 minutes).
 
     Args:
         spec: KeycloakRealm resource specification
@@ -439,55 +407,13 @@ async def monitor_realm_health(
         namespace: Namespace where the resource exists
         status: Current status of the resource
         patch: Kopf patch object for modifying the resource
-        meta: Resource metadata (includes deletionTimestamp, finalizers)
+        meta: Resource metadata
         memo: Kopf memo for accessing shared state like rate_limiter
 
     """
-    # CRITICAL: Check for stuck finalizer (missed delete event)
-    # If deletionTimestamp is set but our finalizer is still present,
-    # the delete handler was never invoked - trigger cleanup now
+    # Skip health checks for resources being deleted
     deletion_timestamp = meta.get("deletionTimestamp")
-    current_finalizers = list(meta.get("finalizers", []))
-
-    if deletion_timestamp and REALM_FINALIZER in current_finalizers:
-        logger.warning(
-            f"Stuck finalizer detected for KeycloakRealm {name}: "
-            f"deletionTimestamp={deletion_timestamp} but finalizer still present. "
-            f"Triggering cleanup from timer handler (delete event was likely missed).",
-            extra={
-                "resource_type": "realm",
-                "resource_name": name,
-                "namespace": namespace,
-                "deletion_timestamp": deletion_timestamp,
-                "cleanup_trigger": "stuck_finalizer_detection",
-            },
-        )
-
-        # Use shared cleanup logic
-        try:
-            await _perform_realm_cleanup(
-                name=name,
-                namespace=namespace,
-                spec=spec,
-                status=status,
-                current_finalizers=current_finalizers,
-                patch=patch,
-                rate_limiter=memo.rate_limiter,
-                trigger="stuck_finalizer_detection",
-            )
-        except Exception as e:
-            logger.error(
-                f"Failed to cleanup stuck realm {name}: {e}",
-                extra={
-                    "resource_type": "realm",
-                    "resource_name": name,
-                    "namespace": namespace,
-                    "error_type": type(e).__name__,
-                    "cleanup_trigger": "stuck_finalizer_detection",
-                },
-                exc_info=True,
-            )
-        # Don't proceed with health check for a resource being deleted
+    if deletion_timestamp:
         return
 
     current_phase = status.get("phase", "Unknown")

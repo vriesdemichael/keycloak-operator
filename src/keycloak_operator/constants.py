@@ -12,8 +12,13 @@ import logging
 
 from keycloak_operator.settings import settings
 
-# Finalizer constants for cleanup coordination
-# These prevent Kubernetes from deleting resources until cleanup is complete
+# Unified finalizer for all resources - managed by Kopf
+# This prevents Kubernetes from deleting resources until cleanup is complete
+# Kopf automatically adds this on create and removes it after delete handler completes
+OPERATOR_FINALIZER = "vriesdemichael.github.io/keycloak-operator"
+
+# Legacy finalizer constants - kept for migration compatibility
+# TODO: Remove after all existing resources have been migrated
 KEYCLOAK_FINALIZER = "vriesdemichael.github.io/keycloak-cleanup"
 REALM_FINALIZER = "vriesdemichael.github.io/keycloak-realm-cleanup"
 CLIENT_FINALIZER = "vriesdemichael.github.io/keycloak-client-cleanup"

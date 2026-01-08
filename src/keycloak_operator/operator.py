@@ -27,6 +27,7 @@ import kopf
 from kubernetes import config
 
 from keycloak_operator.constants import (
+    OPERATOR_FINALIZER,
     RATE_LIMIT_GLOBAL_BURST,
     RATE_LIMIT_GLOBAL_TPS,
     RATE_LIMIT_NAMESPACE_BURST,
@@ -101,6 +102,12 @@ async def startup_handler(
     - Admission webhook server
     """
     logging.info("Starting Keycloak Operator...")
+
+    # Configure unified finalizer for all resources
+    # Kopf will automatically add/remove this finalizer, preventing race conditions
+    settings.persistence.finalizer = OPERATOR_FINALIZER
+    logging.info(f"Using unified finalizer: {OPERATOR_FINALIZER}")
+
     # Defaults commented out - adjust as needed
     # Configure operator behavior
     # operator_settings.scanning.disabled = False  # Enable resource scanning
