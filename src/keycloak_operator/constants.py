@@ -91,9 +91,12 @@ DEFAULT_MAX_RETRIES = 3
 DEFAULT_BACKOFF_FACTOR = 2.0
 DEFAULT_INITIAL_DELAY = 1.0
 
-# Handler entry logging level (INFO for debugging, DEBUG for production if too noisy)
-# This controls the log level for "Handler invoked" messages at handler entry
-HANDLER_ENTRY_LOG_LEVEL = logging.INFO
+# Handler entry logging level - configurable via HANDLER_ENTRY_LOG_LEVEL env var
+# Controls log level for "Handler invoked" messages at handler entry
+# Default: INFO for debugging visibility; set to DEBUG in production if too noisy
+HANDLER_ENTRY_LOG_LEVEL = getattr(
+    logging, settings.handler_entry_log_level.upper(), logging.INFO
+)
 
 # Rate limiting configuration
 RATE_LIMIT_GLOBAL_TPS = settings.api_global_rate_limit_tps
