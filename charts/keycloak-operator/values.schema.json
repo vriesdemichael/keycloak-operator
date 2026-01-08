@@ -794,6 +794,32 @@
       "required": [
         "enabled"
       ]
+    },
+    "priorityClass": {
+      "type": "object",
+      "description": "PriorityClass configuration for operator pods to ensure elevated priority during resource pressure",
+      "properties": {
+        "create": {
+          "type": "boolean",
+          "description": "Create a PriorityClass for the operator. Set to false to use an existing PriorityClass",
+          "default": true
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the PriorityClass. If empty and create=true, uses release fullname. If create=false, should be name of existing PriorityClass"
+        },
+        "value": {
+          "type": "integer",
+          "description": "Priority value. Higher values mean less likely to be evicted. system-cluster-critical is 2000000000",
+          "default": 1000000,
+          "minimum": 0,
+          "maximum": 2000000000
+        }
+      },
+      "required": [
+        "create",
+        "value"
+      ]
     }
   }
 }

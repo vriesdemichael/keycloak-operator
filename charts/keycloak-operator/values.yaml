@@ -650,3 +650,25 @@ podDisruptionBudget:
   # Maximum number of pods that can be unavailable during disruptions
   # Alternative to minAvailable - uncomment to use instead
   # maxUnavailable: 1
+
+# ============================================================================
+# Priority Class Configuration
+# ============================================================================
+# Ensures operator pods have elevated priority during resource pressure
+priorityClass:
+  # Create a PriorityClass for the operator
+  # Set to false if using an existing PriorityClass
+  create: true
+
+  # Name of the PriorityClass
+  # If empty and create=true, uses the release fullname
+  # If create=false, this should be the name of an existing PriorityClass
+  name: ""
+
+  # Priority value (higher = less likely to be evicted)
+  # Reference values:
+  #   - system-cluster-critical: 2000000000
+  #   - system-node-critical: 2000001000
+  #   - Default pods: 0
+  # Recommended: 1000000 (high priority but below system-critical)
+  value: 1000000
