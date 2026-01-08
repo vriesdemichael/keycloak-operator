@@ -30,46 +30,17 @@ from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
     CLIENT_FINALIZER,
-    HANDLER_ENTRY_LOG_LEVEL,
     RECONCILE_JITTER_MAX,
 )
 from keycloak_operator.models.client import KeycloakClientSpec
 from keycloak_operator.services import KeycloakClientReconciler
+from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 from keycloak_operator.utils.kubernetes import (
     get_kubernetes_client,
 )
 
 logger = logging.getLogger(__name__)
-
-
-def _log_handler_entry(
-    handler_type: str,
-    resource_type: str,
-    name: str,
-    namespace: str,
-    extra: dict[str, Any] | None = None,
-) -> None:
-    """Log handler invocation at configurable level.
-
-    This provides visibility into which handlers are being called,
-    useful for debugging issues where handlers appear to not be invoked.
-    """
-    log_extra = {
-        "handler_type": handler_type,
-        "resource_type": resource_type,
-        "resource_name": name,
-        "namespace": namespace,
-        "handler_phase": "invoked",
-    }
-    if extra:
-        log_extra.update(extra)
-
-    logger.log(
-        HANDLER_ENTRY_LOG_LEVEL,
-        f"Handler invoked: {handler_type} {resource_type}/{name} in {namespace}",
-        extra=log_extra,
-    )
 
 
 class StatusWrapper:
@@ -151,7 +122,7 @@ async def ensure_keycloak_client(
 
     """
     # Log handler entry immediately for debugging
-    _log_handler_entry("create/resume", "keycloakclient", name, namespace)
+    log_handler_entry("create/resume", "keycloakclient", name, namespace)
 
     # Check if resource is being deleted - if so, skip reconciliation
     # The @kopf.on.delete handler (delete_keycloak_client) handles cleanup
@@ -223,7 +194,7 @@ async def update_keycloak_client(
 
     """
     # Log handler entry immediately for debugging
-    _log_handler_entry("update", "keycloakclient", name, namespace)
+    log_handler_entry("update", "keycloakclient", name, namespace)
 
     logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
 
@@ -278,7 +249,7 @@ async def delete_keycloak_client(
     """
     # Log handler entry immediately for debugging - this is the first thing we do
     retry_count = retry if retry else 0
-    _log_handler_entry(
+    log_handler_entry(
         "delete",
         "keycloakclient",
         name,

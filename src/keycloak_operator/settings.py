@@ -83,6 +83,12 @@ class Settings(BaseSettings):
         validation_alias="WEBHOOK_LOG_LEVEL",
         description="Log level for webhook requests (DEBUG, INFO, WARNING, ERROR)",
     )
+    handler_entry_log_level: str = Field(
+        default="INFO",
+        validation_alias="HANDLER_ENTRY_LOG_LEVEL",
+        description="Log level for handler invocation messages (DEBUG, INFO, WARNING, ERROR). "
+        "Set to DEBUG to reduce noise in production.",
+    )
 
     # Namespace watching
     namespaces: str = Field(
