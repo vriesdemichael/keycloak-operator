@@ -387,13 +387,18 @@ async def monitor_realm_health(
     namespace: str,
     status: dict[str, Any],
     patch: kopf.Patch,
+    meta: dict[str, Any],
+    memo: kopf.Memo,
     **_kwargs: Any,
 ) -> None:
     """
     Periodic health check for KeycloakRealms.
 
     This timer verifies that realms still exist in Keycloak and
-    that their configuration matches the desired state.
+    that their configuration matches the desired state. It also acts as a
+    safety net for stuck finalizers - if a resource has deletionTimestamp
+    but the delete handler wasn't invoked (missed event), this timer will
+    detect it and trigger cleanup.
 
     Args:
         spec: KeycloakRealm resource specification
@@ -401,8 +406,95 @@ async def monitor_realm_health(
         namespace: Namespace where the resource exists
         status: Current status of the resource
         patch: Kopf patch object for modifying the resource
+        meta: Resource metadata (includes deletionTimestamp, finalizers)
+        memo: Kopf memo for accessing shared state like rate_limiter
 
     """
+    # CRITICAL: Check for stuck finalizer (missed delete event)
+    # If deletionTimestamp is set but our finalizer is still present,
+    # the delete handler was never invoked - trigger cleanup now
+    deletion_timestamp = meta.get("deletionTimestamp")
+    current_finalizers = meta.get("finalizers", [])
+
+    if deletion_timestamp and REALM_FINALIZER in current_finalizers:
+        logger.warning(
+            f"Stuck finalizer detected for KeycloakRealm {name}: "
+            f"deletionTimestamp={deletion_timestamp} but finalizer still present. "
+            f"Triggering cleanup from timer handler (delete event was likely missed).",
+            extra={
+                "resource_type": "realm",
+                "resource_name": name,
+                "namespace": namespace,
+                "deletion_timestamp": deletion_timestamp,
+                "cleanup_trigger": "stuck_finalizer_detection",
+            },
+        )
+
+        # Perform the same cleanup as the delete handler
+        try:
+            from keycloak_operator.services import KeycloakRealmReconciler
+
+            reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
+            status_wrapper = StatusWrapper(status)
+
+            # Check if resource exists in Keycloak
+            resource_exists = await reconciler.check_resource_exists(
+                name=name, namespace=namespace, spec=spec, status=status_wrapper
+            )
+
+            if resource_exists:
+                logger.info(
+                    f"Performing cleanup for stuck realm {name}",
+                    extra={
+                        "resource_type": "realm",
+                        "resource_name": name,
+                        "namespace": namespace,
+                        "cleanup_trigger": "stuck_finalizer_detection",
+                    },
+                )
+                await reconciler.cleanup_resources(
+                    name=name, namespace=namespace, spec=spec, status=status_wrapper
+                )
+            else:
+                logger.info(
+                    f"Realm {name} does not exist in Keycloak, "
+                    f"skipping Keycloak cleanup (removing finalizer only)",
+                    extra={
+                        "resource_type": "realm",
+                        "resource_name": name,
+                        "namespace": namespace,
+                        "cleanup_trigger": "stuck_finalizer_detection",
+                    },
+                )
+
+            # Remove finalizer to complete deletion
+            updated_finalizers = [f for f in current_finalizers if f != REALM_FINALIZER]
+            patch.metadata["finalizers"] = updated_finalizers
+
+            logger.info(
+                f"Successfully cleaned up stuck realm {name} and removed finalizer",
+                extra={
+                    "resource_type": "realm",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "cleanup_trigger": "stuck_finalizer_detection",
+                },
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to cleanup stuck realm {name}: {e}",
+                extra={
+                    "resource_type": "realm",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "error_type": type(e).__name__,
+                    "cleanup_trigger": "stuck_finalizer_detection",
+                },
+                exc_info=True,
+            )
+        # Don't proceed with health check for a resource being deleted
+        return
+
     current_phase = status.get("phase", "Unknown")
 
     # Skip health checks for failed, pending, or unknown realms
