@@ -1,5 +1,30 @@
 # Changelog
 
+## [0.5.18](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.17...operator-image-v0.5.18) (2026-01-08)
+
+
+### Features
+
+* **chart-operator:** add configurable timer intervals for reconciliation ([80e4652](https://github.com/vriesdemichael/keycloak-operator/commit/80e46525e2ea44209c51ea89984d7cfab0c9d25c))
+* **operator:** add stuck finalizer detection to timer handlers ([30bd848](https://github.com/vriesdemichael/keycloak-operator/commit/30bd848d849043ffa21795a950c5243d60327ab9))
+* **operator:** improve finalizer debugging and logging ([80137b1](https://github.com/vriesdemichael/keycloak-operator/commit/80137b15f60fe2a8af37865f2069f0941495cdb0))
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator+operator:** address multiple issues ([#290](https://github.com/vriesdemichael/keycloak-operator/issues/290), [#294](https://github.com/vriesdemichael/keycloak-operator/issues/294), [#170](https://github.com/vriesdemichael/keycloak-operator/issues/170), [#168](https://github.com/vriesdemichael/keycloak-operator/issues/168)) ([0b790ac](https://github.com/vriesdemichael/keycloak-operator/commit/0b790acab044239342f888dfe170afbef874f6bc))
+* **operator:** address review comments ([6f86406](https://github.com/vriesdemichael/keycloak-operator/commit/6f864060a51aa9f3dd29d2d7c50ab98d926ba929))
+* **operator:** improve finalizer robustness and simplify cascade deletion ([6e5419f](https://github.com/vriesdemichael/keycloak-operator/commit/6e5419fcc690e9ce5f934f12fb005ad8f7956c0d))
+* **operator:** remove status param from keycloak cleanup helper ([e6e4972](https://github.com/vriesdemichael/keycloak-operator/commit/e6e4972cfc14009a6824a632c8667854b84e650d))
+* **operator:** upgrade urllib3 to 2.6.3 for CVE-2026-21441 ([4428197](https://github.com/vriesdemichael/keycloak-operator/commit/4428197fe1038323f856ce7950383e4e7df3b7a4))
+
+
+### Code Refactoring
+
+* **operator:** address PR review comments ([21d5b87](https://github.com/vriesdemichael/keycloak-operator/commit/21d5b872ef3958db11738c5767f5f4a16fb22fcb))
+* **operator:** make timer intervals configurable and deduplicate cleanup ([152e5fd](https://github.com/vriesdemichael/keycloak-operator/commit/152e5fde1dccc6e66acfba0353ebfeccabae3eea))
+* use unified Kopf-managed finalizer ([ff83287](https://github.com/vriesdemichael/keycloak-operator/commit/ff832873570114e7ba34450790fe947f4e305ee7))
+
 ## [0.5.17](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.16...operator-image-v0.5.17) (2026-01-07)
 
 
