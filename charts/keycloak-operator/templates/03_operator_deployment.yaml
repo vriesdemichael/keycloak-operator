@@ -90,6 +90,13 @@ spec:
           value: {{ .Values.monitoring.driftDetection.scope.identityProviders | quote }}
         - name: DRIFT_DETECTION_SCOPE_ROLES
           value: {{ .Values.monitoring.driftDetection.scope.roles | quote }}
+        # Timer intervals for health checks and stuck finalizer detection
+        - name: TIMER_INTERVAL_KEYCLOAK
+          value: {{ .Values.operator.reconciliation.timerIntervals.keycloak | quote }}
+        - name: TIMER_INTERVAL_REALM
+          value: {{ .Values.operator.reconciliation.timerIntervals.realm | quote }}
+        - name: TIMER_INTERVAL_CLIENT
+          value: {{ .Values.operator.reconciliation.timerIntervals.client | quote }}
         {{- if .Values.webhooks.enabled }}
         - name: ENABLE_WEBHOOKS
           value: "true"
