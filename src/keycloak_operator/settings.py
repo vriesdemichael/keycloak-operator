@@ -187,6 +187,27 @@ class Settings(BaseSettings):
         description="Include roles in drift detection",
     )
 
+    # Health check timer intervals (seconds)
+    # These also serve as the stuck finalizer detection interval
+    timer_interval_keycloak: int = Field(
+        default=60,
+        validation_alias="TIMER_INTERVAL_KEYCLOAK",
+        description="Health check interval for Keycloak instances in seconds. "
+        "Also determines how quickly stuck finalizers are detected.",
+    )
+    timer_interval_realm: int = Field(
+        default=600,
+        validation_alias="TIMER_INTERVAL_REALM",
+        description="Health check interval for KeycloakRealms in seconds. "
+        "Also determines how quickly stuck finalizers are detected.",
+    )
+    timer_interval_client: int = Field(
+        default=300,
+        validation_alias="TIMER_INTERVAL_CLIENT",
+        description="Health check interval for KeycloakClients in seconds. "
+        "Also determines how quickly stuck finalizers are detected.",
+    )
+
     # Admission webhooks
     enable_webhooks: bool = Field(
         default=True,

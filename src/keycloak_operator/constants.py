@@ -83,6 +83,12 @@ DEFAULT_RECONCILIATION_TIMEOUT = 300  # 5 minutes
 DEFAULT_HEALTH_CHECK_TIMEOUT = 30
 DEFAULT_DELETION_TIMEOUT = 600  # 10 minutes
 
+# Timer intervals for health checks and stuck finalizer detection
+# Configurable via environment variables for testing
+TIMER_INTERVAL_KEYCLOAK = settings.timer_interval_keycloak
+TIMER_INTERVAL_REALM = settings.timer_interval_realm
+TIMER_INTERVAL_CLIENT = settings.timer_interval_client
+
 # Retry configuration
 DEFAULT_MAX_RETRIES = 3
 DEFAULT_BACKOFF_FACTOR = 2.0

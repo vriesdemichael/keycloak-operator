@@ -29,6 +29,7 @@ from kubernetes.client.rest import ApiException
 from keycloak_operator.constants import (
     KEYCLOAK_FINALIZER,
     RECONCILE_JITTER_MAX,
+    TIMER_INTERVAL_KEYCLOAK,
 )
 from keycloak_operator.services import KeycloakInstanceReconciler
 from keycloak_operator.utils.handler_logging import log_handler_entry
@@ -117,6 +118,76 @@ class KopfHandlerKwargs(TypedDict, total=False):
     body: dict[str, Any]
     patch: dict[str, Any]
     logger: Any
+
+
+async def _perform_keycloak_cleanup(
+    name: str,
+    namespace: str,
+    spec: dict[str, Any],
+    status: StatusProtocol,
+    current_finalizers: list[str],
+    patch: kopf.Patch,
+    rate_limiter: Any,
+    trigger: str = "delete_handler",
+) -> None:
+    """
+    Perform Keycloak instance cleanup and remove finalizer.
+
+    This is the core cleanup logic shared between the delete handler and
+    the stuck finalizer detection in the timer handler.
+
+    Args:
+        name: Name of the Keycloak resource
+        namespace: Namespace where the resource exists
+        spec: Keycloak resource specification
+        status: Current status of the resource
+        current_finalizers: List of current finalizers on the resource
+        patch: Kopf patch object for modifying the resource
+        rate_limiter: Rate limiter for API calls
+        trigger: What triggered this cleanup (for logging)
+    """
+    reconciler = KeycloakInstanceReconciler(rate_limiter=rate_limiter)
+    status_wrapper = StatusWrapper(patch.status)
+
+    # Cleanup is idempotent - it handles missing resources gracefully
+    logger.info(
+        f"Performing cleanup for Keycloak instance {name}",
+        extra={
+            "resource_type": "keycloak",
+            "resource_name": name,
+            "namespace": namespace,
+            "cleanup_phase": "cleanup_starting",
+            "cleanup_trigger": trigger,
+        },
+    )
+    await reconciler.cleanup_resources(
+        name=name, namespace=namespace, spec=spec, status=status_wrapper
+    )
+
+    # Remove finalizer to complete deletion
+    logger.info(
+        f"Removing finalizer {KEYCLOAK_FINALIZER} from Keycloak {name}",
+        extra={
+            "resource_type": "keycloak",
+            "resource_name": name,
+            "namespace": namespace,
+            "cleanup_phase": "removing_finalizer",
+            "cleanup_trigger": trigger,
+        },
+    )
+    updated_finalizers = [f for f in current_finalizers if f != KEYCLOAK_FINALIZER]
+    patch.metadata["finalizers"] = updated_finalizers
+
+    logger.info(
+        f"Successfully deleted Keycloak instance {name}",
+        extra={
+            "resource_type": "keycloak",
+            "resource_name": name,
+            "namespace": namespace,
+            "cleanup_phase": "completed",
+            "cleanup_trigger": trigger,
+        },
+    )
 
 
 @kopf.on.create(
@@ -311,7 +382,7 @@ async def delete_keycloak_instance(
 
     # Check if our finalizer is present
     meta = kwargs.get("meta", {})
-    current_finalizers = meta.get("finalizers", [])
+    current_finalizers = list(meta.get("finalizers", []))
     if KEYCLOAK_FINALIZER not in current_finalizers:
         logger.info(
             f"Finalizer {KEYCLOAK_FINALIZER} not found, deletion already handled"
@@ -319,50 +390,20 @@ async def delete_keycloak_instance(
         return
 
     try:
-        # Delegate cleanup to the reconciler service layer
         # Add jitter to prevent thundering herd on mass deletion
         jitter = random.uniform(0, RECONCILE_JITTER_MAX)
         await asyncio.sleep(jitter)
 
-        reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
-
-        async def do_cleanup():
-            await reconciler.cleanup_resources(
-                name=name, namespace=namespace, spec=spec
-            )
-
-        await reconciler.cleanup_with_timeout(
-            cleanup_func=do_cleanup,
-            resource_type="keycloak",
+        # Use shared cleanup logic
+        await _perform_keycloak_cleanup(
             name=name,
             namespace=namespace,
-            timeout=120,  # Keycloak cleanup may take longer
-            retry_count=retry_count,
-        )
-
-        # If cleanup succeeded, remove our finalizer to complete deletion
-        logger.info(
-            f"Cleanup completed successfully, removing finalizer {KEYCLOAK_FINALIZER}",
-            extra={
-                "resource_type": "keycloak",
-                "resource_name": name,
-                "namespace": namespace,
-                "cleanup_phase": "removing_finalizer",
-            },
-        )
-        current_finalizers = list(current_finalizers)  # Make a copy
-        if KEYCLOAK_FINALIZER in current_finalizers:
-            current_finalizers.remove(KEYCLOAK_FINALIZER)
-            patch.metadata["finalizers"] = current_finalizers
-
-        logger.info(
-            f"Successfully deleted Keycloak instance {name}",
-            extra={
-                "resource_type": "keycloak",
-                "resource_name": name,
-                "namespace": namespace,
-                "cleanup_phase": "completed",
-            },
+            spec=spec,
+            status=status,
+            current_finalizers=current_finalizers,
+            patch=patch,
+            rate_limiter=memo.rate_limiter,
+            trigger="delete_handler",
         )
 
     except Exception as e:
@@ -399,7 +440,7 @@ async def delete_keycloak_instance(
         ) from e
 
 
-@kopf.timer("keycloaks", interval=60)
+@kopf.timer("keycloaks", interval=TIMER_INTERVAL_KEYCLOAK)
 async def monitor_keycloak_health(
     spec: dict[str, Any],
     name: str,
@@ -413,11 +454,13 @@ async def monitor_keycloak_health(
     """
         Periodic health check for Keycloak instances.
 
-        This timer handler runs every 60 seconds to check the health
-        of Keycloak instances and update their status accordingly.
-        It also acts as a safety net for stuck finalizers - if a resource
-        has deletionTimestamp but the delete handler wasn't invoked
-        (missed event), this timer will detect it and trigger cleanup.
+        This timer handler checks the health of Keycloak instances and updates
+        their status accordingly. It also acts as a safety net for stuck
+        finalizers - if a resource has deletionTimestamp but the delete handler
+        wasn't invoked (missed event), this timer will detect it and trigger cleanup.
+
+        The interval is configurable via TIMER_INTERVAL_KEYCLOAK environment variable.
+        Default: 60 seconds. Set lower in tests for faster detection.
 
         Args:
             spec: Keycloak resource specification
@@ -443,7 +486,7 @@ async def monitor_keycloak_health(
     # If deletionTimestamp is set but our finalizer is still present,
     # the delete handler was never invoked - trigger cleanup now
     deletion_timestamp = meta.get("deletionTimestamp")
-    current_finalizers = meta.get("finalizers", [])
+    current_finalizers = list(meta.get("finalizers", []))
 
     if deletion_timestamp and KEYCLOAK_FINALIZER in current_finalizers:
         logger.warning(
@@ -459,40 +502,17 @@ async def monitor_keycloak_health(
             },
         )
 
-        # Perform the same cleanup as the delete handler
+        # Use shared cleanup logic
         try:
-            reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
-            status_wrapper = StatusWrapper(patch.status)
-
-            # Cleanup is idempotent - it handles missing resources gracefully
-            logger.info(
-                f"Performing cleanup for stuck Keycloak instance {name}",
-                extra={
-                    "resource_type": "keycloak",
-                    "resource_name": name,
-                    "namespace": namespace,
-                    "cleanup_trigger": "stuck_finalizer_detection",
-                },
-            )
-            await reconciler.cleanup_resources(
-                name=name, namespace=namespace, spec=spec, status=status_wrapper
-            )
-
-            # Remove finalizer to complete deletion
-            updated_finalizers = [
-                f for f in current_finalizers if f != KEYCLOAK_FINALIZER
-            ]
-            patch.metadata["finalizers"] = updated_finalizers
-
-            logger.info(
-                f"Successfully cleaned up stuck Keycloak instance {name} "
-                f"and removed finalizer",
-                extra={
-                    "resource_type": "keycloak",
-                    "resource_name": name,
-                    "namespace": namespace,
-                    "cleanup_trigger": "stuck_finalizer_detection",
-                },
+            await _perform_keycloak_cleanup(
+                name=name,
+                namespace=namespace,
+                spec=spec,
+                status=status,
+                current_finalizers=current_finalizers,
+                patch=patch,
+                rate_limiter=memo.rate_limiter,
+                trigger="stuck_finalizer_detection",
             )
         except Exception as e:
             logger.error(

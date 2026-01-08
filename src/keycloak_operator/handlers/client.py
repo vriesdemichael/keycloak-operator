@@ -31,6 +31,7 @@ from kubernetes.client.rest import ApiException
 from keycloak_operator.constants import (
     CLIENT_FINALIZER,
     RECONCILE_JITTER_MAX,
+    TIMER_INTERVAL_CLIENT,
 )
 from keycloak_operator.models.client import KeycloakClientSpec
 from keycloak_operator.services import KeycloakClientReconciler
@@ -83,6 +84,95 @@ class StatusWrapper:
         """Update multiple fields. Assumes data keys are already in camelCase."""
         for k, v in data.items():
             self._patch_status[k] = v
+
+
+async def _perform_client_cleanup(
+    name: str,
+    namespace: str,
+    spec: dict[str, Any],
+    status: dict[str, Any],
+    current_finalizers: list[str],
+    patch: kopf.Patch,
+    rate_limiter: Any,
+    trigger: str = "delete_handler",
+) -> None:
+    """
+    Perform client cleanup from Keycloak and remove finalizer.
+
+    This is the core cleanup logic shared between the delete handler and
+    the stuck finalizer detection in the timer handler.
+
+    Args:
+        name: Name of the KeycloakClient resource
+        namespace: Namespace where the resource exists
+        spec: KeycloakClient resource specification
+        status: Current status of the resource
+        current_finalizers: List of current finalizers on the resource
+        patch: Kopf patch object for modifying the resource
+        rate_limiter: Rate limiter for Keycloak API calls
+        trigger: What triggered this cleanup (for logging)
+    """
+    reconciler = KeycloakClientReconciler(rate_limiter=rate_limiter)
+    status_wrapper = StatusWrapper(status)
+
+    # Check if resource actually exists in Keycloak before attempting cleanup
+    resource_exists = await reconciler.check_resource_exists(
+        name=name, namespace=namespace, spec=spec, status=status_wrapper
+    )
+
+    if resource_exists:
+        # Resource exists in Keycloak, perform cleanup
+        logger.info(
+            f"Client {name} exists in Keycloak, performing cleanup",
+            extra={
+                "resource_type": "client",
+                "resource_name": name,
+                "namespace": namespace,
+                "cleanup_phase": "keycloak_cleanup_starting",
+                "cleanup_trigger": trigger,
+            },
+        )
+        await reconciler.cleanup_resources(
+            name=name, namespace=namespace, spec=spec, status=status_wrapper
+        )
+    else:
+        # Resource never materialized in Keycloak, no cleanup needed
+        logger.info(
+            f"Client {name} does not exist in Keycloak, "
+            f"skipping cleanup (resource never materialized)",
+            extra={
+                "resource_type": "client",
+                "resource_name": name,
+                "namespace": namespace,
+                "cleanup_phase": "skipped_not_materialized",
+                "cleanup_trigger": trigger,
+            },
+        )
+
+    # Remove finalizer to complete deletion
+    logger.info(
+        f"Removing finalizer {CLIENT_FINALIZER} from KeycloakClient {name}",
+        extra={
+            "resource_type": "client",
+            "resource_name": name,
+            "namespace": namespace,
+            "cleanup_phase": "removing_finalizer",
+            "cleanup_trigger": trigger,
+        },
+    )
+    updated_finalizers = [f for f in current_finalizers if f != CLIENT_FINALIZER]
+    patch.metadata["finalizers"] = updated_finalizers
+
+    logger.info(
+        f"Successfully deleted KeycloakClient {name}",
+        extra={
+            "resource_type": "client",
+            "resource_name": name,
+            "namespace": namespace,
+            "cleanup_phase": "completed",
+            "cleanup_trigger": trigger,
+        },
+    )
 
 
 @kopf.on.create(
@@ -271,86 +361,26 @@ async def delete_keycloak_client(
 
     # Check if our finalizer is present
     meta = kwargs.get("meta", {})
-    current_finalizers = meta.get("finalizers", [])
+    current_finalizers = list(meta.get("finalizers", []))
     if CLIENT_FINALIZER not in current_finalizers:
         logger.info(f"Finalizer {CLIENT_FINALIZER} not found, deletion already handled")
         return
 
     try:
-        # Delegate cleanup to the reconciler service layer
         # Add jitter to prevent thundering herd on mass deletion
         jitter = random.uniform(0, RECONCILE_JITTER_MAX)
         await asyncio.sleep(jitter)
 
-        reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
-        status_wrapper = StatusWrapper(status)
-
-        # Check if resource actually exists in Keycloak before attempting cleanup
-        resource_exists = await reconciler.check_resource_exists(
-            name=name, namespace=namespace, spec=spec, status=status_wrapper
-        )
-
-        if resource_exists:
-            # Resource exists in Keycloak, perform cleanup with timeout
-            logger.info(
-                f"Client {name} exists in Keycloak, performing cleanup",
-                extra={
-                    "resource_type": "client",
-                    "resource_name": name,
-                    "namespace": namespace,
-                    "cleanup_phase": "keycloak_cleanup_starting",
-                },
-            )
-
-            async def do_cleanup():
-                await reconciler.cleanup_resources(
-                    name=name, namespace=namespace, spec=spec, status=status_wrapper
-                )
-
-            await reconciler.cleanup_with_timeout(
-                cleanup_func=do_cleanup,
-                resource_type="client",
-                name=name,
-                namespace=namespace,
-                timeout=60,
-                retry_count=retry_count,
-            )
-        else:
-            # Resource never materialized in Keycloak, no cleanup needed
-            logger.info(
-                f"Client {name} does not exist in Keycloak, "
-                f"skipping cleanup (resource never materialized)",
-                extra={
-                    "resource_type": "client",
-                    "resource_name": name,
-                    "namespace": namespace,
-                    "cleanup_phase": "skipped_not_materialized",
-                },
-            )
-
-        # Remove finalizer to complete deletion
-        logger.info(
-            f"Removing finalizer {CLIENT_FINALIZER} from KeycloakClient {name}",
-            extra={
-                "resource_type": "client",
-                "resource_name": name,
-                "namespace": namespace,
-                "cleanup_phase": "removing_finalizer",
-            },
-        )
-        current_finalizers = list(current_finalizers)  # Make a copy
-        if CLIENT_FINALIZER in current_finalizers:
-            current_finalizers.remove(CLIENT_FINALIZER)
-            patch.metadata["finalizers"] = current_finalizers
-
-        logger.info(
-            f"Successfully deleted KeycloakClient {name}",
-            extra={
-                "resource_type": "client",
-                "resource_name": name,
-                "namespace": namespace,
-                "cleanup_phase": "completed",
-            },
+        # Use shared cleanup logic
+        await _perform_client_cleanup(
+            name=name,
+            namespace=namespace,
+            spec=spec,
+            status=status,
+            current_finalizers=current_finalizers,
+            patch=patch,
+            rate_limiter=memo.rate_limiter,
+            trigger="delete_handler",
         )
 
     except Exception as e:
@@ -382,7 +412,7 @@ async def delete_keycloak_client(
         ) from e
 
 
-@kopf.timer("keycloakclients", interval=300)  # Check every 5 minutes
+@kopf.timer("keycloakclients", interval=TIMER_INTERVAL_CLIENT)
 async def monitor_client_health(
     spec: dict[str, Any],
     name: str,
@@ -402,6 +432,9 @@ async def monitor_client_health(
     but the delete handler wasn't invoked (missed event), this timer will
     detect it and trigger cleanup.
 
+    The interval is configurable via TIMER_INTERVAL_CLIENT environment variable.
+    Default: 300 seconds (5 minutes). Set lower in tests for faster detection.
+
     Args:
         spec: KeycloakClient resource specification
         name: Name of the KeycloakClient resource
@@ -418,7 +451,7 @@ async def monitor_client_health(
     # If deletionTimestamp is set but our finalizer is still present,
     # the delete handler was never invoked - trigger cleanup now
     deletion_timestamp = meta.get("deletionTimestamp")
-    current_finalizers = meta.get("finalizers", [])
+    current_finalizers = list(meta.get("finalizers", []))
 
     if deletion_timestamp and CLIENT_FINALIZER in current_finalizers:
         logger.warning(
@@ -434,57 +467,17 @@ async def monitor_client_health(
             },
         )
 
-        # Perform the same cleanup as the delete handler
+        # Use shared cleanup logic
         try:
-            from keycloak_operator.services import KeycloakClientReconciler
-
-            reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
-            status_wrapper = StatusWrapper(status)
-
-            # Check if resource exists in Keycloak
-            resource_exists = await reconciler.check_resource_exists(
-                name=name, namespace=namespace, spec=spec, status=status_wrapper
-            )
-
-            if resource_exists:
-                logger.info(
-                    f"Performing cleanup for stuck client {name}",
-                    extra={
-                        "resource_type": "client",
-                        "resource_name": name,
-                        "namespace": namespace,
-                        "cleanup_trigger": "stuck_finalizer_detection",
-                    },
-                )
-                await reconciler.cleanup_resources(
-                    name=name, namespace=namespace, spec=spec, status=status_wrapper
-                )
-            else:
-                logger.info(
-                    f"Client {name} does not exist in Keycloak, "
-                    f"skipping Keycloak cleanup (removing finalizer only)",
-                    extra={
-                        "resource_type": "client",
-                        "resource_name": name,
-                        "namespace": namespace,
-                        "cleanup_trigger": "stuck_finalizer_detection",
-                    },
-                )
-
-            # Remove finalizer to complete deletion
-            updated_finalizers = [
-                f for f in current_finalizers if f != CLIENT_FINALIZER
-            ]
-            patch.metadata["finalizers"] = updated_finalizers
-
-            logger.info(
-                f"Successfully cleaned up stuck client {name} and removed finalizer",
-                extra={
-                    "resource_type": "client",
-                    "resource_name": name,
-                    "namespace": namespace,
-                    "cleanup_trigger": "stuck_finalizer_detection",
-                },
+            await _perform_client_cleanup(
+                name=name,
+                namespace=namespace,
+                spec=spec,
+                status=status,
+                current_finalizers=current_finalizers,
+                patch=patch,
+                rate_limiter=memo.rate_limiter,
+                trigger="stuck_finalizer_detection",
             )
         except Exception as e:
             logger.error(
