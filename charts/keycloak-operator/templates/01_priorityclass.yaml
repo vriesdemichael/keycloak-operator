@@ -1,0 +1,15 @@
+{{- if .Values.priorityClass.create }}
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: {{ .Values.priorityClass.name | default (include "keycloak-operator.fullname" .) }}
+  labels:
+    {{- include "keycloak-operator.labels" . | nindent 4 }}
+  {{- with include "keycloak-operator.annotations" . }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+value: {{ .Values.priorityClass.value | int }}
+globalDefault: false
+description: "Priority class for Keycloak operator - critical infrastructure component"
+{{- end }}
