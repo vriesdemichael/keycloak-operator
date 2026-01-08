@@ -283,7 +283,7 @@ class TestBasicKeycloakDeployment:
                 name=keycloak_name,
             )
             finalizers = resource.get("metadata", {}).get("finalizers", [])
-            assert "vriesdemichael.github.io/keycloak-cleanup" in finalizers, (
+            assert "vriesdemichael.github.io/keycloak-operator" in finalizers, (
                 "Finalizer was not added to Keycloak resource"
             )
 
