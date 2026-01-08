@@ -79,6 +79,7 @@ authorizationServicesEnabled: false
 # Advanced settings
 alwaysDisplayInConsole: false
 fullScopeAllowed: true
+includeInTokenScope: true
 
 # Client settings
 settings:

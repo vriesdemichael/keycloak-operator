@@ -770,6 +770,30 @@
         "failurePolicy",
         "quotas"
       ]
+    },
+    "podDisruptionBudget": {
+      "type": "object",
+      "description": "PodDisruptionBudget configuration for ensuring minimum availability during voluntary disruptions",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable PodDisruptionBudget for the operator",
+          "default": true
+        },
+        "minAvailable": {
+          "type": "integer",
+          "description": "Minimum number of pods that must remain available during disruptions",
+          "minimum": 0
+        },
+        "maxUnavailable": {
+          "type": "integer",
+          "description": "Maximum number of pods that can be unavailable during disruptions (alternative to minAvailable)",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "enabled"
+      ]
     }
   }
 }

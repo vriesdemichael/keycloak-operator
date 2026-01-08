@@ -13,7 +13,6 @@ import pytest
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
-    BACKUP_ANNOTATION,
     CLIENT_FINALIZER,
     KEYCLOAK_FINALIZER,
     REALM_FINALIZER,
@@ -152,27 +151,6 @@ class TestKeycloakFinalizers:
 
         assert keycloak_k8s_apis.core.delete_namespaced_service.called
         assert keycloak_k8s_apis.apps.delete_namespaced_deployment.called
-
-    @pytest.mark.asyncio
-    async def test_keycloak_cleanup_with_backup(
-        self, keycloak_reconciler, keycloak_k8s_apis
-    ):
-        spec = self.make_keycloak_spec(
-            metadata={
-                "annotations": {
-                    BACKUP_ANNOTATION: "true",
-                }
-            },
-            persistence={"enabled": True},
-        )
-
-        backup_mock = AsyncMock()
-        with patch.object(keycloak_reconciler, "_create_backup", backup_mock):
-            await keycloak_reconciler.cleanup_resources(
-                "test-keycloak", "test-namespace", spec
-            )
-
-        backup_mock.assert_awaited_once()
 
 
 class TestRealmFinalizers:

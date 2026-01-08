@@ -13,7 +13,6 @@ Key functionality:
 """
 
 import logging
-import time
 from typing import Any
 
 from kubernetes import client, config
@@ -818,126 +817,6 @@ def create_keycloak_ingress(
 
     except ApiException as e:
         logger.error(f"Failed to create ingress {ingress_name}: {e}")
-        raise
-
-
-def backup_keycloak_data(
-    name: str,
-    namespace: str,
-    spec: KeycloakSpec,
-    k8s_client: client.ApiClient,
-) -> client.V1Job:
-    """
-    Create a Kubernetes Job to backup Keycloak data.
-
-    Args:
-        name: Name of the Keycloak resource
-        namespace: Target namespace
-        spec: Keycloak specification
-        k8s_client: Kubernetes API client
-
-    Returns:
-        Created Job object
-    """
-    logger.info(f"Creating Keycloak backup job for {name} in namespace {namespace}")
-
-    job_name = f"{name}-backup-{int(time.time())}"
-    service_name = f"{name}-keycloak"
-
-    # Create backup job container
-    container = client.V1Container(
-        name="keycloak-backup",
-        image="curlimages/curl:latest",
-        command=[
-            "/bin/sh",
-            "-c",
-            f"""
-            echo "Starting Keycloak backup for {name}"
-
-            # Get admin credentials
-            ADMIN_USER=$(cat /etc/keycloak-admin/username)
-            ADMIN_PASS=$(cat /etc/keycloak-admin/password)
-
-            # Export realms using Keycloak Admin REST API
-            echo "Exporting realms..."
-            curl -k -X GET \
-                -u "$ADMIN_USER:$ADMIN_PASS" \
-                "http://{service_name}:8080/admin/realms" \
-                -H "Accept: application/json" \
-                > /backup/realms.json
-
-            # Export users for each realm (simplified)
-            echo "Backup completed successfully"
-            ls -la /backup/
-            """,
-        ],
-        volume_mounts=[
-            client.V1VolumeMount(
-                name="admin-credentials",
-                mount_path="/etc/keycloak-admin",
-                read_only=True,
-            ),
-            client.V1VolumeMount(
-                name="backup-storage", mount_path="/backup", read_only=False
-            ),
-        ],
-    )
-
-    # Create job specification
-    job_spec = client.V1JobSpec(
-        template=client.V1PodTemplateSpec(
-            metadata=client.V1ObjectMeta(
-                labels={
-                    "vriesdemichael.github.io/keycloak-instance": name,
-                    "vriesdemichael.github.io/keycloak-component": "backup",
-                }
-            ),
-            spec=client.V1PodSpec(
-                restart_policy="Never",
-                containers=[container],
-                volumes=[
-                    client.V1Volume(
-                        name="admin-credentials",
-                        secret=client.V1SecretVolumeSource(
-                            secret_name=f"{name}-admin-credentials"
-                        ),
-                    ),
-                    client.V1Volume(
-                        name="backup-storage",
-                        persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
-                            claim_name=f"{name}-backup-pvc"
-                        ),
-                    ),
-                ],
-            ),
-        ),
-        backoff_limit=3,
-    )
-
-    # Create job object
-    job = client.V1Job(
-        api_version="batch/v1",
-        kind="Job",
-        metadata=client.V1ObjectMeta(
-            name=job_name,
-            namespace=namespace,
-            labels={
-                "vriesdemichael.github.io/keycloak-instance": name,
-                "vriesdemichael.github.io/keycloak-component": "backup",
-            },
-        ),
-        spec=job_spec,
-    )
-
-    try:
-        batch_api = client.BatchV1Api(k8s_client)
-        created_job = batch_api.create_namespaced_job(namespace=namespace, body=job)
-
-        logger.info(f"Created backup job {job_name}")
-        return created_job
-
-    except ApiException as e:
-        logger.error(f"Failed to create backup job {job_name}: {e}")
         raise
 
 

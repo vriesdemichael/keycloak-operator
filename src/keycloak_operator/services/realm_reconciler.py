@@ -127,9 +127,6 @@ class KeycloakRealmReconciler(BaseReconciler):
         if realm_spec.default_groups:
             await self.configure_default_groups(realm_spec, name, namespace)
 
-        # Setup backup preparation
-        await self.manage_realm_backup(realm_spec, name, namespace)
-
         # Return status information
         operator_ref = realm_spec.operator_ref
         target_namespace = operator_ref.namespace
@@ -2426,151 +2423,6 @@ class KeycloakRealmReconciler(BaseReconciler):
                     f"Failed to remove default group '{group_path}': {e}"
                 )
 
-    async def manage_realm_backup(
-        self, spec: KeycloakRealmSpec, name: str, namespace: str
-    ) -> None:
-        """
-        Manage realm backup operations based on spec configuration.
-
-        Args:
-            spec: Keycloak realm specification
-            name: Resource name
-            namespace: Resource namespace
-        """
-        self.logger.info(f"Managing backup for realm {spec.realm_name}")
-
-        # Check if backup is requested
-        backup_on_delete = getattr(spec, "backup_on_delete", False)
-        periodic_backup = getattr(spec, "periodic_backup", False)
-
-        if backup_on_delete:
-            self.logger.info(f"Backup on delete is enabled for realm {spec.realm_name}")
-            # Store metadata to track that backup is needed during deletion
-            # This is handled in cleanup_resources method
-
-        if periodic_backup:
-            self.logger.info(f"Periodic backup is enabled for realm {spec.realm_name}")
-            # Implement periodic backup logic
-            await self._create_realm_backup(
-                spec, name, namespace, backup_type="periodic"
-            )
-
-        self.logger.debug(f"Backup management configured for realm {spec.realm_name}")
-
-    async def _create_realm_backup(
-        self,
-        spec: KeycloakRealmSpec,
-        name: str,
-        namespace: str,
-        backup_type: str = "manual",
-    ) -> dict[str, Any] | None:
-        """
-        Create a backup of the realm configuration.
-
-        Args:
-            spec: Keycloak realm specification
-            name: Resource name
-            namespace: Resource namespace
-            backup_type: Type of backup (manual, periodic, deletion)
-
-        Returns:
-            Backup data dictionary or None if backup failed
-        """
-        from datetime import UTC, datetime
-
-        from ..errors import TemporaryError
-
-        self.logger.info(f"Creating {backup_type} backup of realm {spec.realm_name}")
-
-        try:
-            # Get admin client for the target Keycloak instance
-            operator_ref = spec.operator_ref
-            target_namespace = operator_ref.namespace
-            keycloak_name = "keycloak"  # Default Keycloak instance name
-            admin_client = await self.keycloak_admin_factory(
-                keycloak_name, target_namespace, rate_limiter=self.rate_limiter
-            )
-
-            # Create realm backup
-            backup_data = await admin_client.backup_realm(spec.realm_name, namespace)
-            if not backup_data:
-                self.logger.error(
-                    f"Failed to create backup data for realm {spec.realm_name}"
-                )
-                return None
-
-            # Store backup in Kubernetes secret for persistence
-            backup_name = f"{name}-backup-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
-            await self._store_backup_in_secret(
-                backup_data, backup_name, namespace, backup_type
-            )
-
-            self.logger.info(
-                f"Successfully created backup {backup_name} for realm {spec.realm_name}"
-            )
-            return backup_data
-
-        except Exception as e:
-            self.logger.error(
-                f"Failed to create backup for realm {spec.realm_name}: {e}"
-            )
-            if backup_type == "deletion":
-                # Don't block deletion if backup fails, but log the error
-                return None
-            else:
-                raise TemporaryError(f"Backup creation failed: {e}", delay=60) from e
-
-    async def _store_backup_in_secret(
-        self,
-        backup_data: dict[str, Any],
-        backup_name: str,
-        namespace: str,
-        backup_type: str,
-    ) -> None:
-        """
-        Store backup data in a Kubernetes secret.
-
-        Args:
-            backup_data: Backup data to store
-            backup_name: Name for the backup
-            namespace: Namespace to store the secret
-            backup_type: Type of backup
-        """
-        import json
-
-        from kubernetes import client
-
-        try:
-            k8s_client = client.CoreV1Api()
-
-            # Create secret with backup data
-            secret_data = {"backup.json": json.dumps(backup_data, indent=2)}
-
-            secret = client.V1Secret(
-                metadata=client.V1ObjectMeta(
-                    name=backup_name,
-                    namespace=namespace,
-                    labels={
-                        "vriesdemichael.github.io/keycloak-backup": "true",
-                        "vriesdemichael.github.io/keycloak-backup-type": backup_type,
-                        "vriesdemichael.github.io/keycloak-realm": backup_data.get(
-                            "realm", {}
-                        ).get("realm", "unknown"),
-                    },
-                ),
-                string_data=secret_data,
-                type="Opaque",
-            )
-
-            k8s_client.create_namespaced_secret(namespace=namespace, body=secret)
-            self.logger.info(
-                f"Backup {backup_name} stored as secret in namespace {namespace}"
-            )
-
-        except Exception as e:
-            self.logger.error(f"Failed to store backup {backup_name} in secret: {e}")
-            raise
-
     async def do_update(
         self,
         old_spec: dict[str, Any],
@@ -3031,18 +2883,6 @@ class KeycloakRealmReconciler(BaseReconciler):
                         f"proceeding with deletion"
                     )
 
-                    # Backup realm data if requested (only if spec parsed successfully)
-                    if realm_spec and getattr(realm_spec, "backup_on_delete", False):
-                        self.logger.info(
-                            f"Backing up realm {realm_name} before deletion"
-                        )
-                        try:
-                            await self._create_realm_backup(
-                                realm_spec, name, namespace, backup_type="deletion"
-                            )
-                        except Exception as e:
-                            self.logger.warning(f"Realm backup failed: {e}")
-
                     # Delete the realm from Keycloak
                     # Keycloak automatically cascade-deletes all clients, scopes, etc.
                     # within the realm - no need to delete them individually
@@ -3189,56 +3029,6 @@ class KeycloakRealmReconciler(BaseReconciler):
             },
         )
 
-    async def _create_realm_backup(
-        self,
-        name: str,
-        namespace: str,
-        realm_spec: KeycloakRealmSpec,
-        admin_client,
-    ) -> None:
-        """Create a backup of realm data before deletion."""
-        import json
-        from datetime import UTC, datetime
-
-        try:
-            # Export realm configuration
-            backup_data = admin_client.export_realm(realm_spec.realm_name)
-            if not backup_data:
-                self.logger.warning(
-                    f"No backup data retrieved for realm {realm_spec.realm_name}"
-                )
-                return
-
-            # Create backup configmap
-            core_api = client.CoreV1Api(self.kubernetes_client)
-            backup_name = (
-                f"{name}-realm-backup-{datetime.now(UTC).strftime('%Y%m%d-%H%M%S')}"
-            )
-
-            backup_cm = client.V1ConfigMap(
-                metadata=client.V1ObjectMeta(
-                    name=backup_name,
-                    namespace=namespace,
-                    labels={
-                        "vriesdemichael.github.io/keycloak-realm": realm_spec.realm_name,
-                        "vriesdemichael.github.io/keycloak-backup": "true",
-                        "vriesdemichael.github.io/keycloak-resource": name,
-                    },
-                ),
-                data={
-                    "realm-backup.json": json.dumps(backup_data, indent=2),
-                    "backup-timestamp": datetime.now(UTC).isoformat(),
-                    "realm-name": realm_spec.realm_name,
-                },
-            )
-
-            core_api.create_namespaced_config_map(namespace=namespace, body=backup_cm)
-            self.logger.info(f"Realm backup stored in configmap {backup_name}")
-
-        except Exception as e:
-            self.logger.warning(f"Failed to create realm backup: {e}")
-            # Continue with deletion even if backup fails
-
     async def _delete_realm_k8s_resources(
         self, name: str, namespace: str, realm_name: str
     ) -> None:
@@ -3246,11 +3036,11 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         core_api = client.CoreV1Api(self.kubernetes_client)
 
-        # Delete configmaps related to this realm (except backups)
+        # Delete configmaps related to this realm
         try:
             configmaps = core_api.list_namespaced_config_map(
                 namespace=namespace,
-                label_selector=f"vriesdemichael.github.io/keycloak-realm={realm_name},vriesdemichael.github.io/keycloak-backup!=true",
+                label_selector=f"vriesdemichael.github.io/keycloak-realm={realm_name}",
             )
             for cm in configmaps.items:
                 try:

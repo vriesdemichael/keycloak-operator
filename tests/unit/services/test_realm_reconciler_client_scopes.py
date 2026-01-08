@@ -56,7 +56,7 @@ def reconciler(admin_mock: MagicMock) -> KeycloakRealmReconciler:
     reconciler_instance = KeycloakRealmReconciler(
         keycloak_admin_factory=mock_factory,
     )
-    reconciler_instance.logger = MagicMock()
+    reconciler_instance.logger = MagicMock()  # type: ignore[assignment]
 
     return reconciler_instance
 
@@ -360,7 +360,7 @@ class TestConfigureRealmDefaultClientScopes:
         )
 
         admin_mock.add_realm_default_client_scope.assert_not_called()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
 
 # =============================================================================

@@ -123,12 +123,15 @@ def _resolve_refs(
 def get_cnpg_cluster_schema() -> dict[str, Any] | None:
     """Get CNPG Cluster CRD schema."""
     content = _load_yaml_file("cnpg-cluster-crd.yaml")
-    if not content:
+    if not content or not isinstance(content, dict):
         return None
 
     # Extract spec schema from CRD
     try:
-        versions = content.get("spec", {}).get("versions", [])
+        spec = content.get("spec", {})
+        if not isinstance(spec, dict):
+            return None
+        versions = spec.get("versions", [])
         for version in versions:
             schema = version.get("schema", {}).get("openAPIV3Schema", {})
             if schema:

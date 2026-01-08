@@ -70,7 +70,7 @@ def reconciler(admin_mock: MagicMock) -> KeycloakRealmReconciler:
     reconciler_instance = KeycloakRealmReconciler(
         keycloak_admin_factory=mock_factory,
     )
-    reconciler_instance.logger = MagicMock()
+    reconciler_instance.logger = MagicMock()  # type: ignore[assignment]
 
     return reconciler_instance
 
@@ -1062,7 +1062,7 @@ class TestExceptionCoverage:
         await reconciler.configure_realm_roles(spec, "test-realm", "default")
 
         admin_mock.delete_realm_role.assert_called_once()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_role_configuration_exception(
@@ -1085,7 +1085,7 @@ class TestExceptionCoverage:
         await reconciler.configure_realm_roles(spec, "test-realm", "default")
 
         admin_mock.create_realm_role.assert_called_once()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_composite_role_configuration_exception(
@@ -1117,7 +1117,7 @@ class TestExceptionCoverage:
         # Should not raise, just log warning
         await reconciler.configure_realm_roles(spec, "test-realm", "default")
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_group_configuration_exception(
@@ -1142,7 +1142,7 @@ class TestExceptionCoverage:
         await reconciler.configure_groups(spec, "test-realm", "default")
 
         admin_mock.create_group.assert_called_once()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_delete_group_exception(
@@ -1167,7 +1167,7 @@ class TestExceptionCoverage:
         await reconciler.configure_groups(spec, "test-realm", "default")
 
         admin_mock.delete_group.assert_called_once()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_group_realm_roles_exception(
@@ -1197,7 +1197,7 @@ class TestExceptionCoverage:
         # Should not raise, just log warning
         await reconciler.configure_groups(spec, "test-realm", "default")
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_client_not_found_for_group_roles(
@@ -1226,7 +1226,7 @@ class TestExceptionCoverage:
         await reconciler.configure_groups(spec, "test-realm", "default")
 
         admin_mock.get_client_uuid.assert_called_once()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_client_role_assignment_with_existing_roles(
@@ -1292,7 +1292,7 @@ class TestExceptionCoverage:
         # Should not raise, just log warning
         await reconciler.configure_groups(spec, "test-realm", "default")
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_default_group_add_exception(
@@ -1319,7 +1319,7 @@ class TestExceptionCoverage:
         await reconciler.configure_default_groups(spec, "test-realm", "default")
 
         admin_mock.add_default_group.assert_called_once()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_default_group_remove_exception(
@@ -1355,7 +1355,7 @@ class TestExceptionCoverage:
         await reconciler.configure_default_groups(spec, "test-realm", "default")
 
         admin_mock.remove_default_group.assert_called_once()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_default_group_not_found(
@@ -1377,7 +1377,7 @@ class TestExceptionCoverage:
         await reconciler.configure_default_groups(spec, "test-realm", "default")
 
         admin_mock.get_group_by_path.assert_called_once()
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_no_default_groups_early_return(
@@ -1696,7 +1696,7 @@ class TestDoUpdateRolesGroups:
         # Exception caught, no changes made, returns None
         assert result is None
         # Verify warning was logged
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_do_update_groups_exception_handled(
@@ -1728,7 +1728,7 @@ class TestDoUpdateRolesGroups:
         # Exception caught, no changes made, returns None
         assert result is None
         # Verify warning was logged
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_do_update_default_groups_exception_handled(
@@ -1760,7 +1760,7 @@ class TestDoUpdateRolesGroups:
         # Exception caught, no changes made, returns None
         assert result is None
         # Verify warning was logged
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_do_update_no_changes(
