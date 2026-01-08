@@ -12,11 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.constants import (
-    CLIENT_FINALIZER,
-    KEYCLOAK_FINALIZER,
-    REALM_FINALIZER,
-)
+from keycloak_operator.constants import OPERATOR_FINALIZER
 from keycloak_operator.services.client_reconciler import KeycloakClientReconciler
 from keycloak_operator.services.keycloak_reconciler import KeycloakInstanceReconciler
 from keycloak_operator.services.realm_reconciler import KeycloakRealmReconciler
@@ -321,16 +317,10 @@ class TestClientFinalizers:
 
 
 class TestFinalizerConstants:
-    """Ensure finalizer constants remain stable."""
+    """Ensure unified finalizer constant remains stable."""
 
-    def test_finalizer_constants_exist(self):
-        assert KEYCLOAK_FINALIZER == "vriesdemichael.github.io/keycloak-cleanup"
-        assert REALM_FINALIZER == "vriesdemichael.github.io/keycloak-realm-cleanup"
-        assert CLIENT_FINALIZER == "vriesdemichael.github.io/keycloak-client-cleanup"
-
-    def test_finalizer_constants_unique(self):
-        finalizers = {KEYCLOAK_FINALIZER, REALM_FINALIZER, CLIENT_FINALIZER}
-        assert len(finalizers) == 3
+    def test_unified_finalizer_constant_exists(self):
+        assert OPERATOR_FINALIZER == "vriesdemichael.github.io/keycloak-operator"
 
 
 class TestFinalizerErrorHandling:
