@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.3...chart-client-v0.3.4) (2026-01-08)
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator+operator:** address multiple issues ([#290](https://github.com/vriesdemichael/keycloak-operator/issues/290), [#294](https://github.com/vriesdemichael/keycloak-operator/issues/294), [#170](https://github.com/vriesdemichael/keycloak-operator/issues/170), [#168](https://github.com/vriesdemichael/keycloak-operator/issues/168)) ([0b790ac](https://github.com/vriesdemichael/keycloak-operator/commit/0b790acab044239342f888dfe170afbef874f6bc))
+
 ## [0.3.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.2...chart-client-v0.3.3) (2026-01-04)
 
 
