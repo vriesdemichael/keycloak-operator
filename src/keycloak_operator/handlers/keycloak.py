@@ -406,6 +406,8 @@ async def monitor_keycloak_health(
     namespace: str,
     status: StatusProtocol,
     patch: kopf.Patch,
+    meta: dict[str, Any],
+    memo: kopf.Memo,
     **kwargs: Any,
 ) -> None:
     """
@@ -413,12 +415,17 @@ async def monitor_keycloak_health(
 
         This timer handler runs every 60 seconds to check the health
         of Keycloak instances and update their status accordingly.
+        It also acts as a safety net for stuck finalizers - if a resource
+        has deletionTimestamp but the delete handler wasn't invoked
+        (missed event), this timer will detect it and trigger cleanup.
 
         Args:
             spec: Keycloak resource specification
             name: Name of the Keycloak resource
             namespace: Namespace where the resource exists
             status: Current status of the resource
+            meta: Resource metadata (includes deletionTimestamp, finalizers)
+            memo: Kopf memo for accessing shared state like rate_limiter
 
         Returns:
             Dictionary with updated status information, or None if no changes
@@ -432,6 +439,76 @@ async def monitor_keycloak_health(
         ⚠️  Generate events for significant status changes - Future enhancement
         ⚠️  Implement alerting for persistent failures - Future enhancement
     """
+    # CRITICAL: Check for stuck finalizer (missed delete event)
+    # If deletionTimestamp is set but our finalizer is still present,
+    # the delete handler was never invoked - trigger cleanup now
+    deletion_timestamp = meta.get("deletionTimestamp")
+    current_finalizers = meta.get("finalizers", [])
+
+    if deletion_timestamp and KEYCLOAK_FINALIZER in current_finalizers:
+        logger.warning(
+            f"Stuck finalizer detected for Keycloak {name}: "
+            f"deletionTimestamp={deletion_timestamp} but finalizer still present. "
+            f"Triggering cleanup from timer handler (delete event was likely missed).",
+            extra={
+                "resource_type": "keycloak",
+                "resource_name": name,
+                "namespace": namespace,
+                "deletion_timestamp": deletion_timestamp,
+                "cleanup_trigger": "stuck_finalizer_detection",
+            },
+        )
+
+        # Perform the same cleanup as the delete handler
+        try:
+            reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
+            status_wrapper = StatusWrapper(patch.status)
+
+            # Cleanup is idempotent - it handles missing resources gracefully
+            logger.info(
+                f"Performing cleanup for stuck Keycloak instance {name}",
+                extra={
+                    "resource_type": "keycloak",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "cleanup_trigger": "stuck_finalizer_detection",
+                },
+            )
+            await reconciler.cleanup_resources(
+                name=name, namespace=namespace, spec=spec, status=status_wrapper
+            )
+
+            # Remove finalizer to complete deletion
+            updated_finalizers = [
+                f for f in current_finalizers if f != KEYCLOAK_FINALIZER
+            ]
+            patch.metadata["finalizers"] = updated_finalizers
+
+            logger.info(
+                f"Successfully cleaned up stuck Keycloak instance {name} "
+                f"and removed finalizer",
+                extra={
+                    "resource_type": "keycloak",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "cleanup_trigger": "stuck_finalizer_detection",
+                },
+            )
+        except Exception as e:
+            logger.error(
+                f"Failed to cleanup stuck Keycloak instance {name}: {e}",
+                extra={
+                    "resource_type": "keycloak",
+                    "resource_name": name,
+                    "namespace": namespace,
+                    "error_type": type(e).__name__,
+                    "cleanup_trigger": "stuck_finalizer_detection",
+                },
+                exc_info=True,
+            )
+        # Don't proceed with health check for a resource being deleted
+        return
+
     current_phase = status.get("phase", "Unknown")
 
     # Skip health checks for failed, pending, or unknown instances
