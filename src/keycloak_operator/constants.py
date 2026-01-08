@@ -29,7 +29,6 @@ ALLOW_OPERATOR_READ_LABEL = "vriesdemichael.github.io/keycloak-allow-operator-re
 
 # Annotation constants for configuration and metadata
 PRESERVE_DATA_ANNOTATION = "vriesdemichael.github.io/keycloak-preserve-data"
-BACKUP_ANNOTATION = "vriesdemichael.github.io/keycloak-backup-before-delete"
 ISOLATION_ANNOTATION = "vriesdemichael.github.io/keycloak-isolation"
 ALLOWED_NAMESPACES_ANNOTATION = "vriesdemichael.github.io/keycloak-allowed-namespaces"
 
@@ -78,13 +77,11 @@ INGRESS_SUFFIX = "-keycloak"
 ADMIN_SECRET_SUFFIX = "-admin-credentials"
 CONFIG_MAP_SUFFIX = "-config"
 PVC_SUFFIX = "-data"
-BACKUP_SUFFIX = "-backup"
 
 # Timeout constants (in seconds)
 DEFAULT_RECONCILIATION_TIMEOUT = 300  # 5 minutes
 DEFAULT_HEALTH_CHECK_TIMEOUT = 30
 DEFAULT_DELETION_TIMEOUT = 600  # 10 minutes
-DEFAULT_BACKUP_TIMEOUT = 900  # 15 minutes
 
 # Retry configuration
 DEFAULT_MAX_RETRIES = 3
@@ -142,4 +139,3 @@ ERROR_FINALIZER_TIMEOUT = "Timeout waiting for finalizer cleanup after {} second
 SUCCESS_RECONCILIATION = "Resource reconciliation completed successfully"
 SUCCESS_DELETION = "Resource deletion and cleanup completed successfully"
 SUCCESS_UPDATE = "Resource update applied successfully"
-SUCCESS_BACKUP = "Data backup completed successfully"

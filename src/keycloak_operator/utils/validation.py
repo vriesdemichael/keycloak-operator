@@ -877,3 +877,71 @@ def validate_complete_resource(
 
     logger.info(f"Successfully validated {resource_type} resource: {name}")
     return dependencies
+
+
+# Keycloak env var placeholder pattern
+# Matches patterns like ${keycloak:...}, ${env.VAR}, ${ENV.VAR}, etc.
+KEYCLOAK_PLACEHOLDER_PATTERN = re.compile(
+    r"\$\{(?:keycloak:|env\.|ENV\.|vault:|VAULT:)[^}]*\}"
+)
+
+
+def validate_no_keycloak_placeholders(value: str, field_name: str = "field") -> None:
+    """
+    Validate that a string value does not contain Keycloak environment variable placeholders.
+
+    Keycloak supports placeholder syntax like ${keycloak:secret-name:key} or ${env.VAR}
+    for runtime variable substitution. However, this operator manages Keycloak through
+    the Admin REST API, not through Keycloak's config file mechanism. Placeholders
+    cannot be resolved and will be passed literally to Keycloak, causing unexpected behavior.
+
+    Args:
+        value: String value to check
+        field_name: Name of the field for error messages
+
+    Raises:
+        ValidationError: If placeholder patterns are detected
+    """
+    if not value or not isinstance(value, str):
+        return
+
+    matches = KEYCLOAK_PLACEHOLDER_PATTERN.findall(value)
+    if matches:
+        placeholder_examples = ", ".join(matches[:3])
+        if len(matches) > 3:
+            placeholder_examples += f", ... ({len(matches)} total)"
+
+        raise ValidationError(
+            f"Keycloak environment variable placeholders are not supported in {field_name}. "
+            f"Found: {placeholder_examples}. "
+            f"This operator manages Keycloak through the Admin REST API, not config files. "
+            f"Placeholders like '${{keycloak:...}}' or '${{env.VAR}}' cannot be resolved. "
+            f"Use Kubernetes Secrets with secretKeyRef instead. "
+            f"See: https://vriesdemichael.github.io/keycloak-operator/secrets/"
+        )
+
+
+def validate_spec_no_placeholders(spec: dict[str, Any], resource_type: str) -> None:
+    """
+    Recursively validate that a resource spec does not contain Keycloak placeholders.
+
+    Args:
+        spec: Resource specification dictionary
+        resource_type: Type of resource for error messages
+
+    Raises:
+        ValidationError: If placeholder patterns are detected in any string field
+    """
+
+    def _check_value(value: Any, path: str) -> None:
+        """Recursively check all string values in the structure."""
+        if isinstance(value, str):
+            validate_no_keycloak_placeholders(value, f"{resource_type}.{path}")
+        elif isinstance(value, dict):
+            for key, val in value.items():
+                _check_value(val, f"{path}.{key}" if path else key)
+        elif isinstance(value, list):
+            for i, item in enumerate(value):
+                _check_value(item, f"{path}[{i}]")
+
+    _check_value(spec, "")

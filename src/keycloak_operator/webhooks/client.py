@@ -7,6 +7,7 @@ Kubernetes, enforcing:
 - Valid realm references
 - Client configuration constraints
 - Service account role assignments
+- No Keycloak environment variable placeholders
 """
 
 import asyncio
@@ -18,6 +19,10 @@ from pydantic import ValidationError
 
 from keycloak_operator.constants import WEBHOOK_MAX_CLIENTS_PER_NAMESPACE
 from keycloak_operator.models.client import KeycloakClientSpec
+from keycloak_operator.utils.validation import (
+    ValidationError as PlaceholderValidationError,
+)
+from keycloak_operator.utils.validation import validate_spec_no_placeholders
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +103,13 @@ async def validate_client(
         error_msg = f"Invalid client specification: {e}"
         logger.warning(f"Client {name} validation failed: {error_msg}")
         raise kopf.AdmissionError(error_msg) from e
+
+    # Check for Keycloak environment variable placeholders
+    try:
+        validate_spec_no_placeholders(spec, "KeycloakClient")
+    except PlaceholderValidationError as e:
+        logger.warning(f"Client {name} contains unsupported placeholders: {e}")
+        raise kopf.AdmissionError(str(e)) from e
 
     # Only check quota on CREATE operations
     if operation == "CREATE":

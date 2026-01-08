@@ -68,6 +68,7 @@ spec:
     frontchannelLogout: {{ $.Values.frontchannelLogout }}
     alwaysDisplayInConsole: {{ $.Values.alwaysDisplayInConsole }}
     fullScopeAllowed: {{ $.Values.fullScopeAllowed }}
+    includeInTokenScope: {{ $.Values.includeInTokenScope }}
 
     {{- with .pkceCodeChallengeMethod }}
     pkceCodeChallengeMethod: {{ . }}

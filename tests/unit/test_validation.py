@@ -807,3 +807,101 @@ class TestValidateCompleteResource:
         with pytest.raises(ValidationError) as exc_info:
             validate_complete_resource(resource, "KeycloakRealm", "default")
         assert "realmName" in str(exc_info.value)
+
+
+class TestKeycloakPlaceholderValidation:
+    """Test cases for Keycloak environment variable placeholder validation."""
+
+    def test_valid_strings_without_placeholders(self):
+        """Test that normal strings pass validation."""
+        from keycloak_operator.utils.validation import validate_no_keycloak_placeholders
+
+        # These should not raise
+        validate_no_keycloak_placeholders("normal-string", "field")
+        validate_no_keycloak_placeholders("https://example.com", "url")
+        validate_no_keycloak_placeholders("my-client-id", "clientId")
+        validate_no_keycloak_placeholders("", "empty")
+        validate_no_keycloak_placeholders(None, "none")  # type: ignore[arg-type]
+
+    def test_detects_keycloak_secret_placeholder(self):
+        """Test that ${keycloak:...} placeholders are detected."""
+        from keycloak_operator.utils.validation import validate_no_keycloak_placeholders
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_no_keycloak_placeholders(
+                "${keycloak:github-oauth-credentials:clientId}", "clientId"
+            )
+        assert "placeholders are not supported" in str(exc_info.value)
+        assert "${keycloak:" in str(exc_info.value)
+
+    def test_detects_env_placeholder(self):
+        """Test that ${env.VAR} placeholders are detected."""
+        from keycloak_operator.utils.validation import validate_no_keycloak_placeholders
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_no_keycloak_placeholders("${env.MY_SECRET}", "secret")
+        assert "placeholders are not supported" in str(exc_info.value)
+
+    def test_detects_uppercase_env_placeholder(self):
+        """Test that ${ENV.VAR} placeholders are detected."""
+        from keycloak_operator.utils.validation import validate_no_keycloak_placeholders
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_no_keycloak_placeholders("${ENV.MY_SECRET}", "secret")
+        assert "placeholders are not supported" in str(exc_info.value)
+
+    def test_detects_vault_placeholder(self):
+        """Test that ${vault:...} placeholders are detected."""
+        from keycloak_operator.utils.validation import validate_no_keycloak_placeholders
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_no_keycloak_placeholders("${vault:secret/data/myapp}", "secret")
+        assert "placeholders are not supported" in str(exc_info.value)
+
+    def test_spec_validation_finds_nested_placeholders(self):
+        """Test that spec validation recursively finds placeholders."""
+        from keycloak_operator.utils.validation import validate_spec_no_placeholders
+
+        spec = {
+            "clientId": "my-client",
+            "settings": {
+                "nested": {
+                    "secret": "${keycloak:my-secret:value}",
+                }
+            },
+        }
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_spec_no_placeholders(spec, "KeycloakClient")
+        assert "placeholders are not supported" in str(exc_info.value)
+
+    def test_spec_validation_finds_placeholders_in_lists(self):
+        """Test that spec validation finds placeholders in lists."""
+        from keycloak_operator.utils.validation import validate_spec_no_placeholders
+
+        spec = {
+            "redirectUris": [
+                "https://example.com/callback",
+                "${env.REDIRECT_URI}",
+            ],
+        }
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_spec_no_placeholders(spec, "KeycloakClient")
+        assert "placeholders are not supported" in str(exc_info.value)
+
+    def test_spec_validation_passes_for_clean_spec(self):
+        """Test that spec validation passes for specs without placeholders."""
+        from keycloak_operator.utils.validation import validate_spec_no_placeholders
+
+        spec = {
+            "clientId": "my-client",
+            "redirectUris": ["https://example.com/callback"],
+            "settings": {
+                "enabled": True,
+                "description": "A normal description with $dollar signs",
+            },
+        }
+
+        # Should not raise
+        validate_spec_no_placeholders(spec, "KeycloakClient")

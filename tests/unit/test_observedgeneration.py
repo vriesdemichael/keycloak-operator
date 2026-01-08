@@ -324,9 +324,6 @@ class TestRealmReconcilerGenerationTracking:
             patch.object(
                 realm_reconciler, "ensure_realm_exists", new_callable=AsyncMock
             ),
-            patch.object(
-                realm_reconciler, "manage_realm_backup", new_callable=AsyncMock
-            ),
             patch(
                 "keycloak_operator.utils.kubernetes.validate_keycloak_reference",
                 return_value=None,

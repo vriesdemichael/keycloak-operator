@@ -16,7 +16,6 @@ import asyncio
 import logging
 import time
 from collections.abc import Awaitable, Callable
-from datetime import UTC, datetime
 from functools import wraps
 
 # Import RateLimiter - use TYPE_CHECKING to avoid circular import
@@ -2975,73 +2974,6 @@ class KeycloakAdminClient:
         except Exception as e:
             logger.error(f"Failed to configure user federation: {e}")
             return False
-
-    async def backup_realm(
-        self, realm_name: str, namespace: str
-    ) -> dict[str, Any] | None:
-        """
-        Create a backup of realm configuration.
-
-        Args:
-            realm_name: Name of the realm to backup
-
-        Returns:
-            Realm backup data if successful, None otherwise
-        """
-        logger.info(f"Creating backup of realm '{realm_name}'")
-
-        try:
-            # Get realm configuration
-            realm_config = await self.get_realm(realm_name, namespace)
-            if not realm_config:
-                logger.error("Failed to get realm configuration for backup")
-                return None
-
-            # Get clients
-            clients = await self.get_realm_clients(realm_name, namespace)
-
-            # Get authentication flows
-            flows_response = await self._make_request(
-                "GET", f"realms/{realm_name}/authentication/flows", namespace
-            )
-            flows = flows_response.json() if flows_response.status_code == 200 else []
-
-            # Get identity providers
-            idp_response = await self._make_request(
-                "GET", f"realms/{realm_name}/identity-provider/instances", namespace
-            )
-            identity_providers = (
-                idp_response.json() if idp_response.status_code == 200 else []
-            )
-
-            # Get user federation
-            federation_response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/components?type=org.keycloak.storage.UserStorageProvider",
-                namespace,
-            )
-            user_federation = (
-                federation_response.json()
-                if federation_response.status_code == 200
-                else []
-            )
-
-            backup_data = {
-                "realm": realm_config,
-                "clients": clients,
-                "authentication_flows": flows,
-                "identity_providers": identity_providers,
-                "user_federation": user_federation,
-                "backup_timestamp": datetime.now(UTC).isoformat(),
-                "backup_version": "1.0",
-            }
-
-            logger.info(f"Successfully created backup of realm '{realm_name}'")
-            return backup_data
-
-        except Exception as e:
-            logger.error(f"Failed to backup realm '{realm_name}': {e}")
-            return None
 
     # Protocol Mappers API methods
     @api_get_list("client protocol mappers")
