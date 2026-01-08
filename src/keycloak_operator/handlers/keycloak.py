@@ -124,7 +124,6 @@ async def _perform_keycloak_cleanup(
     name: str,
     namespace: str,
     spec: dict[str, Any],
-    status: StatusProtocol,
     current_finalizers: list[str],
     patch: kopf.Patch,
     rate_limiter: Any,
@@ -140,14 +139,12 @@ async def _perform_keycloak_cleanup(
         name: Name of the Keycloak resource
         namespace: Namespace where the resource exists
         spec: Keycloak resource specification
-        status: Current status of the resource
         current_finalizers: List of current finalizers on the resource
         patch: Kopf patch object for modifying the resource
         rate_limiter: Rate limiter for API calls
         trigger: What triggered this cleanup (for logging)
     """
     reconciler = KeycloakInstanceReconciler(rate_limiter=rate_limiter)
-    status_wrapper = StatusWrapper(patch.status)
 
     # Cleanup is idempotent - it handles missing resources gracefully
     logger.info(
@@ -160,9 +157,7 @@ async def _perform_keycloak_cleanup(
             "cleanup_trigger": trigger,
         },
     )
-    await reconciler.cleanup_resources(
-        name=name, namespace=namespace, spec=spec, status=status_wrapper
-    )
+    await reconciler.cleanup_resources(name=name, namespace=namespace, spec=spec)
 
     # Remove finalizer to complete deletion
     logger.info(
@@ -399,7 +394,6 @@ async def delete_keycloak_instance(
             name=name,
             namespace=namespace,
             spec=spec,
-            status=status,
             current_finalizers=current_finalizers,
             patch=patch,
             rate_limiter=memo.rate_limiter,
@@ -508,7 +502,6 @@ async def monitor_keycloak_health(
                 name=name,
                 namespace=namespace,
                 spec=spec,
-                status=status,
                 current_finalizers=current_finalizers,
                 patch=patch,
                 rate_limiter=memo.rate_limiter,
