@@ -28,6 +28,9 @@ data:
     [backend]
       datastore = "config"
       baseDN = "dc=example,dc=org"
+      # Use flat DN structure for simplicity
+      nameformat = "cn"
+      groupformat = "ou"
 
     # Test users
     [[users]]
