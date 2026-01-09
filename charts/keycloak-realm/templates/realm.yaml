@@ -136,6 +136,11 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.userFederation }}
+  userFederation:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- with .Values.passwordPolicy }}
   {{- if or .length .upperCase .lowerCase .digits .specialChars .notUsername .notEmail .hashIterations .passwordHistory .forceExpiredPasswordChange .maxLength .regexPattern }}
   passwordPolicy:

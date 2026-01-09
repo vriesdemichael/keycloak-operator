@@ -373,6 +373,137 @@
         }
       }
     },
+    "userFederation": {
+      "type": "array",
+      "description": "User federation provider configurations (LDAP, AD, Kerberos)",
+      "items": {
+        "type": "object",
+        "required": ["name", "providerId"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Federation provider display name"
+          },
+          "providerId": {
+            "type": "string",
+            "enum": ["ldap", "kerberos"],
+            "description": "Provider type"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0,
+            "description": "Provider priority (lower = higher priority)"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          },
+          "connectionUrl": {
+            "type": "string",
+            "description": "LDAP connection URL"
+          },
+          "bindDn": {
+            "type": "string",
+            "description": "DN for binding to LDAP"
+          },
+          "bindCredentialSecret": {
+            "type": "object",
+            "description": "Secret reference for bind password",
+            "properties": {
+              "name": {"type": "string"},
+              "key": {"type": "string"}
+            },
+            "required": ["name", "key"]
+          },
+          "usersDn": {
+            "type": "string",
+            "description": "Base DN for user searches"
+          },
+          "vendor": {
+            "type": "string",
+            "enum": ["ad", "rhds", "tivoli", "edirectory", "other"],
+            "default": "other"
+          },
+          "usernameLdapAttribute": {
+            "type": "string",
+            "default": "uid"
+          },
+          "uuidLdapAttribute": {
+            "type": "string",
+            "default": "entryUUID"
+          },
+          "rdnLdapAttribute": {
+            "type": "string",
+            "default": "uid"
+          },
+          "userObjectClasses": {
+            "type": "array",
+            "items": {"type": "string"}
+          },
+          "startTls": {
+            "type": "boolean",
+            "default": false
+          },
+          "trustEmail": {
+            "type": "boolean",
+            "default": false
+          },
+          "editMode": {
+            "type": "string",
+            "enum": ["READ_ONLY", "WRITABLE", "UNSYNCED"],
+            "default": "READ_ONLY"
+          },
+          "searchScope": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2,
+            "default": 2
+          },
+          "allowKerberosAuthentication": {
+            "type": "boolean",
+            "default": false
+          },
+          "kerberosRealm": {
+            "type": "string"
+          },
+          "serverPrincipal": {
+            "type": "string"
+          },
+          "keytabSecret": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "key": {"type": "string"}
+            },
+            "required": ["name", "key"]
+          },
+          "syncSettings": {
+            "type": "object",
+            "properties": {
+              "importEnabled": {"type": "boolean", "default": true},
+              "fullSyncPeriod": {"type": "integer", "default": -1},
+              "changedUsersSyncPeriod": {"type": "integer", "default": -1}
+            }
+          },
+          "mappers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "mapperType"],
+              "properties": {
+                "name": {"type": "string"},
+                "mapperType": {"type": "string"},
+                "config": {
+                  "type": "object",
+                  "additionalProperties": {"type": "string"}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "passwordPolicy": {
       "type": "object",
       "description": "Password policy configuration",
