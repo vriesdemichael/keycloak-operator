@@ -523,6 +523,9 @@ class KeycloakAdminClient:
         await self._ensure_authenticated()
 
         url = urljoin(f"{self.server_url}/admin/", endpoint.lstrip("/"))
+        logger.debug(
+            f"URL construction: server_url={self.server_url}, endpoint={endpoint}, url={url}"
+        )
         client = await self._get_client()
 
         try:
@@ -3001,15 +3004,31 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Fetching user federation providers for realm '{realm_name}'")
 
+        # Note: Keycloak's ?type= filter may not immediately reflect newly created
+        # components. As a workaround, we fetch all components and filter client-side.
         response = await self._make_request(
             "GET",
             f"realms/{realm_name}/components",
             namespace,
-            params={"type": "org.keycloak.storage.UserStorageProvider"},
+        )
+
+        logger.debug(
+            f"get_user_federation_providers: status={response.status_code}, "
+            f"realm={realm_name}"
         )
 
         if response.status_code == 200:
-            providers = response.json()
+            all_components = response.json()
+            # Filter client-side for UserStorageProvider type
+            providers = [
+                c
+                for c in all_components
+                if c.get("providerType") == "org.keycloak.storage.UserStorageProvider"
+            ]
+            logger.debug(
+                f"get_user_federation_providers: found {len(providers)} providers "
+                f"(filtered from {len(all_components)} total components)"
+            )
             return [ComponentRepresentation.model_validate(p) for p in providers]
         elif response.status_code == 404:
             logger.warning(f"Realm {realm_name} not found")
