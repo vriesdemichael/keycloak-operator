@@ -5,9 +5,11 @@ This module handles the lifecycle of Keycloak realms including
 themes, authentication flows, identity providers, and user federation.
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from kubernetes import client
 
@@ -19,6 +21,10 @@ from ..utils.keycloak_admin import KeycloakAdminError, get_keycloak_admin_client
 from ..utils.ownership import get_cr_reference, is_owned_by_cr
 from ..utils.rbac import get_secret_with_validation
 from .base_reconciler import BaseReconciler, StatusProtocol
+
+if TYPE_CHECKING:
+    from ..models.keycloak_api import ComponentRepresentation
+    from ..models.realm import KeycloakUserFederation
 
 
 class KeycloakRealmReconciler(BaseReconciler):
@@ -1444,20 +1450,46 @@ class KeycloakRealmReconciler(BaseReconciler):
 
     async def configure_user_federation(
         self, spec: KeycloakRealmSpec, name: str, namespace: str
-    ) -> None:
+    ) -> list[dict[str, Any]]:
         """
-        Configure user federation (LDAP, Active Directory, etc.).
+        Configure user federation providers with full CRUD lifecycle.
+
+        This method:
+        1. Fetches existing providers from Keycloak
+        2. Creates new providers defined in spec
+        3. Updates existing providers with changed config
+        4. Deletes providers removed from spec
+        5. Manages mappers for each provider
+        6. Injects secrets for bind credentials and keytabs
 
         Args:
             spec: Keycloak realm specification
             name: Resource name
             namespace: Resource namespace
+
+        Returns:
+            List of federation status dicts for status update
         """
-        self.logger.info(f"Configuring user federation for realm {spec.realm_name}")
+        from datetime import UTC, datetime
+
+        from ..models.realm import (
+            KeycloakUserFederationStatus,
+        )
+
+        federation_statuses: list[dict[str, Any]] = []
 
         if not spec.user_federation:
-            return
+            self.logger.debug(
+                f"No user federation configured for realm {spec.realm_name}"
+            )
+            return federation_statuses
 
+        self.logger.info(
+            f"Configuring {len(spec.user_federation)} user federation provider(s) "
+            f"for realm {spec.realm_name}"
+        )
+
+        # Get admin client
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"  # Default Keycloak instance name
@@ -1465,19 +1497,220 @@ class KeycloakRealmReconciler(BaseReconciler):
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
         )
 
-        for federation_config in spec.user_federation:
-            try:
-                from typing import cast
+        # Get existing providers from Keycloak
+        existing_providers = await admin_client.get_user_federation_providers(
+            spec.realm_name, namespace
+        )
+        existing_by_name = {p.name: p for p in existing_providers}
 
-                federation_dict = cast(
-                    dict[str, Any],
-                    federation_config.model_dump()
-                    if hasattr(federation_config, "model_dump")
-                    else federation_config,
+        # Track which providers we've processed (for deletion detection)
+        processed_names: set[str] = set()
+
+        for federation_config in spec.user_federation:
+            status = KeycloakUserFederationStatus(
+                name=federation_config.name,
+                provider_id=federation_config.provider_id,
+                connected=False,
+                last_sync_result="Never",
+                message="Configuring...",
+            )
+
+            try:
+                # Build component config from model
+                component_config = await self._build_federation_component(
+                    federation_config, spec.realm_name, namespace
                 )
-                admin_client.configure_user_federation(spec.realm_name, federation_dict)
+
+                existing = existing_by_name.get(federation_config.name)
+
+                if existing:
+                    # Update existing provider
+                    self.logger.info(
+                        f"Updating user federation provider '{federation_config.name}'"
+                    )
+                    success = await admin_client.update_user_federation_provider(
+                        spec.realm_name,
+                        existing.id,
+                        component_config,
+                        namespace,
+                    )
+                    if success:
+                        status.connected = True
+                        status.message = "Updated successfully"
+                        status.last_connection_test = datetime.now(UTC).isoformat()
+
+                        # Configure mappers
+                        await self._configure_federation_mappers(
+                            admin_client,
+                            spec.realm_name,
+                            existing.id,
+                            federation_config,
+                            namespace,
+                        )
+                    else:
+                        status.message = "Update failed"
+                else:
+                    # Create new provider
+                    self.logger.info(
+                        f"Creating user federation provider '{federation_config.name}'"
+                    )
+                    provider_id = await admin_client.create_user_federation_provider(
+                        spec.realm_name,
+                        component_config,
+                        namespace,
+                    )
+                    if provider_id:
+                        status.connected = True
+                        status.message = "Created successfully"
+                        status.last_connection_test = datetime.now(UTC).isoformat()
+
+                        # Configure mappers
+                        await self._configure_federation_mappers(
+                            admin_client,
+                            spec.realm_name,
+                            provider_id,
+                            federation_config,
+                            namespace,
+                        )
+                    else:
+                        status.message = "Creation failed"
+
+                processed_names.add(federation_config.name)
+
             except Exception as e:
-                self.logger.warning(f"Failed to configure user federation: {e}")
+                self.logger.warning(
+                    f"Failed to configure user federation '{federation_config.name}': {e}"
+                )
+                status.message = f"Error: {str(e)[:100]}"
+                status.sync_errors = 1
+
+            federation_statuses.append(
+                status.model_dump(by_alias=True, exclude_none=True)
+            )
+
+        # Delete providers that are no longer in spec
+        for provider_name, existing in existing_by_name.items():
+            if provider_name not in processed_names:
+                self.logger.info(
+                    f"Deleting user federation provider '{provider_name}' "
+                    f"(removed from spec)"
+                )
+                try:
+                    await admin_client.delete_user_federation_provider(
+                        spec.realm_name, existing.id, namespace
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to delete federation provider '{provider_name}': {e}"
+                    )
+
+        return federation_statuses
+
+    async def _build_federation_component(
+        self,
+        federation_config: KeycloakUserFederation,
+        realm_name: str,
+        namespace: str,
+    ) -> ComponentRepresentation:
+        """
+        Build a ComponentRepresentation from KeycloakUserFederation config.
+
+        Handles secret injection for bind credentials and keytabs.
+        """
+        from ..models.keycloak_api import ComponentRepresentation
+
+        # Get the base config from the model
+        config = federation_config.to_component_config()
+
+        # Inject bind credential from secret if specified
+        if federation_config.bind_credential_secret:
+            try:
+                password = await self._fetch_secret_value(
+                    federation_config.bind_credential_secret.name,
+                    federation_config.bind_credential_secret.key,
+                    namespace,
+                )
+                config["bindCredential"] = [password]
+            except Exception as e:
+                self.logger.warning(f"Failed to read bind credential secret: {e}")
+
+        # Inject keytab from secret if specified (for Kerberos)
+        if federation_config.keytab_secret:
+            try:
+                keytab_data = await self._fetch_secret_value(
+                    federation_config.keytab_secret.name,
+                    federation_config.keytab_secret.key,
+                    namespace,
+                )
+                # Keytab is stored as base64-encoded binary
+                config["keyTab"] = [keytab_data]
+            except Exception as e:
+                self.logger.warning(f"Failed to read keytab secret: {e}")
+
+        # Build the component representation
+        return ComponentRepresentation(
+            name=federation_config.name,
+            provider_id=federation_config.provider_id,
+            provider_type="org.keycloak.storage.UserStorageProvider",
+            parent_id=realm_name,  # Parent is the realm
+            config=config,
+        )
+
+    async def _configure_federation_mappers(
+        self,
+        admin_client,
+        realm_name: str,
+        provider_id: str,
+        federation_config: KeycloakUserFederation,
+        namespace: str,
+    ) -> None:
+        """Configure mappers for a user federation provider."""
+        from ..models.keycloak_api import ComponentRepresentation
+
+        if not federation_config.mappers:
+            return
+
+        self.logger.debug(
+            f"Configuring {len(federation_config.mappers)} mapper(s) "
+            f"for federation provider '{federation_config.name}'"
+        )
+
+        # Get existing mappers
+        existing_mappers = await admin_client.get_user_federation_mappers(
+            realm_name, provider_id, namespace
+        )
+        existing_by_name = {m.name: m for m in existing_mappers}
+
+        for mapper_config in federation_config.mappers:
+            try:
+                # Convert mapper config to list[str] format expected by Keycloak
+                mapper_component_config: dict[str, list[str]] = {}
+                for key, value in mapper_config.config.items():
+                    mapper_component_config[key] = [value]
+
+                component = ComponentRepresentation(
+                    name=mapper_config.name,
+                    provider_id=mapper_config.mapper_type,
+                    provider_type="org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+                    parent_id=provider_id,
+                    config=mapper_component_config,
+                )
+
+                existing = existing_by_name.get(mapper_config.name)
+                if existing:
+                    # Update (delete and recreate for simplicity)
+                    await admin_client.delete_user_federation_mapper(
+                        realm_name, existing.id, namespace
+                    )
+
+                await admin_client.create_user_federation_mapper(
+                    realm_name, provider_id, component, namespace
+                )
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to configure mapper '{mapper_config.name}': {e}"
+                )
 
     async def configure_client_scopes(
         self, spec: KeycloakRealmSpec, name: str, namespace: str
