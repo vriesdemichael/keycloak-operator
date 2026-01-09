@@ -73,6 +73,9 @@ data:
       primarygroup = 5000
       passsha256 = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"
       # Password: admin (SHA256 hash)
+      [[users.capabilities]]
+        action = "search"
+        object = "*"
 
     # Groups
     [[groups]]
