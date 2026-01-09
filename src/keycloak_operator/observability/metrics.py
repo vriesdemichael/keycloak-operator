@@ -250,6 +250,43 @@ RECONCILIATION_SKIPPED_TOTAL = Counter(
     registry=None,
 )
 
+# User Federation metrics
+USER_FEDERATION_STATUS = Gauge(
+    "keycloak_operator_user_federation_status",
+    "User federation provider status (1=connected, 0=disconnected)",
+    ["realm", "federation_name", "provider_id"],
+    registry=None,
+)
+
+USER_FEDERATION_SYNC_DURATION = Histogram(
+    "keycloak_operator_user_federation_sync_duration_seconds",
+    "Duration of user federation sync operations",
+    ["realm", "federation_name", "sync_type"],
+    buckets=[1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0],
+    registry=None,
+)
+
+USER_FEDERATION_SYNCED_USERS = Gauge(
+    "keycloak_operator_user_federation_synced_users",
+    "Number of users imported from federation provider",
+    ["realm", "federation_name"],
+    registry=None,
+)
+
+USER_FEDERATION_SYNC_ERRORS = Counter(
+    "keycloak_operator_user_federation_sync_errors_total",
+    "Total number of federation sync errors",
+    ["realm", "federation_name", "error_type"],
+    registry=None,
+)
+
+USER_FEDERATION_CONNECTION_TESTS = Counter(
+    "keycloak_operator_user_federation_connection_tests_total",
+    "Total number of federation connection test attempts",
+    ["realm", "federation_name", "result"],
+    registry=None,
+)
+
 
 def get_metrics_registry() -> CollectorRegistry:
     """Get or create the global metrics registry."""
@@ -282,6 +319,11 @@ def get_metrics_registry() -> CollectorRegistry:
             DRIFT_CHECK_ERRORS_TOTAL,
             DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP,
             RECONCILIATION_SKIPPED_TOTAL,
+            USER_FEDERATION_STATUS,
+            USER_FEDERATION_SYNC_DURATION,
+            USER_FEDERATION_SYNCED_USERS,
+            USER_FEDERATION_SYNC_ERRORS,
+            USER_FEDERATION_CONNECTION_TESTS,
         ]:
             # Use try-except to handle registry assignment safely
             try:
