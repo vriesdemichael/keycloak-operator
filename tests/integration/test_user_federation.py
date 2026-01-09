@@ -125,19 +125,10 @@ async def test_ldap_federation_create(
         realm_repr = await keycloak_admin_client.get_realm(realm_name, test_namespace)
         assert realm_repr is not None, "Realm should exist"
 
-        # Wait for federation provider to be created (reconciliation may take a moment)
-        providers = []
-        for attempt in range(30):  # Wait up to 30 seconds
-            try:
-                providers = await keycloak_admin_client.get_user_federation_providers(
-                    realm_name, test_namespace
-                )
-                logger.info(f"Attempt {attempt + 1}: Found {len(providers)} providers")
-                if len(providers) >= 1:
-                    break
-            except Exception as e:
-                logger.error(f"Attempt {attempt + 1}: Error getting providers: {e}")
-            await asyncio.sleep(1)
+        # Get federation providers - should be available immediately after reconciliation
+        providers = await keycloak_admin_client.get_user_federation_providers(
+            realm_name, test_namespace
+        )
 
         assert len(providers) == 1, f"Expected 1 provider, got {len(providers)}"
 
