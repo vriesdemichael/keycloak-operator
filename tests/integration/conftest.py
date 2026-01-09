@@ -77,11 +77,9 @@ from .cleanup_utils import (
 
 # Import user federation fixtures to make them available to tests
 from .fixtures_user_federation import (  # noqa: F401
-    create_keytab_secret,
     kerberos_ready,
     openldap_ad_ready,
     openldap_ready,
-    retrieve_kerberos_keytab,
 )
 from .models import KeycloakReadySetup, SharedOperatorInfo
 
