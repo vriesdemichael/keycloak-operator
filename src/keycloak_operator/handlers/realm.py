@@ -658,19 +658,13 @@ async def _test_user_federation(
     """
     try:
         # Get current user federation components
-        response = await admin_client._make_request(
-            "GET",
-            f"/admin/realms/{realm_name}/components?type=org.keycloak.storage.UserStorageProvider",
-            namespace,
+        # Use the high-level method instead of raw _make_request
+        providers = await admin_client.get_user_federation_providers(
+            realm_name, namespace
         )
 
-        if response.status_code != 200:
-            return False
-
-        current_federation = response.json()
-
         # Basic check that expected federation providers exist
-        provider_names = {comp.get("name") for comp in current_federation}
+        provider_names = {p.name for p in providers}
 
         for federation_spec in federation_specs:
             expected_name = (
