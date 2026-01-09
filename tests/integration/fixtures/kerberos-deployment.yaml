@@ -1,0 +1,255 @@
+---
+# MIT Kerberos KDC deployment for integration testing of Kerberos user federation
+# This creates a minimal Kerberos realm with service principals for Keycloak testing
+#
+# Kerberos Realm: EXAMPLE.ORG
+# Service Principal: HTTP/keycloak.keycloak-test-system.svc.cluster.local@EXAMPLE.ORG
+#
+# Test principals (all passwords are same as username):
+# - alice@EXAMPLE.ORG
+# - bob@EXAMPLE.ORG
+# - charlie@EXAMPLE.ORG
+#
+# The keytab for HTTP service is generated and stored in a Secret for Keycloak to use
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kerberos-config
+  namespace: keycloak-test-system  # Will be overridden by test code
+data:
+  krb5.conf: |
+    [libdefaults]
+      default_realm = EXAMPLE.ORG
+      dns_lookup_realm = false
+      dns_lookup_kdc = false
+      ticket_lifetime = 24h
+      renew_lifetime = 7d
+      forwardable = true
+      rdns = false
+      default_ccache_name = FILE:/tmp/krb5cc_%{uid}
+
+    [realms]
+      EXAMPLE.ORG = {
+        kdc = kerberos.keycloak-test-system.svc.cluster.local
+        admin_server = kerberos.keycloak-test-system.svc.cluster.local
+      }
+
+    [domain_realm]
+      .example.org = EXAMPLE.ORG
+      example.org = EXAMPLE.ORG
+      .keycloak-test-system.svc.cluster.local = EXAMPLE.ORG
+      keycloak-test-system.svc.cluster.local = EXAMPLE.ORG
+
+  kdc.conf: |
+    [kdcdefaults]
+      kdc_ports = 88
+      kdc_tcp_ports = 88
+
+    [realms]
+      EXAMPLE.ORG = {
+        database_name = /var/lib/krb5kdc/principal
+        admin_keytab = FILE:/var/lib/krb5kdc/kadm5.keytab
+        acl_file = /var/lib/krb5kdc/kadm5.acl
+        key_stash_file = /var/lib/krb5kdc/stash
+        max_life = 24h 0m 0s
+        max_renewable_life = 7d 0h 0m 0s
+        master_key_type = aes256-cts
+        supported_enctypes = aes256-cts:normal aes128-cts:normal
+      }
+
+    [logging]
+      kdc = FILE:/var/log/krb5kdc.log
+      admin_server = FILE:/var/log/kadmind.log
+      default = FILE:/var/log/krb5lib.log
+
+  kadm5.acl: |
+    */admin@EXAMPLE.ORG    *
+    admin@EXAMPLE.ORG      *
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kerberos-init-script
+  namespace: keycloak-test-system  # Will be overridden by test code
+data:
+  init-kdc.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "=== Initializing Kerberos KDC ==="
+
+    # Create KDC directory
+    mkdir -p /var/lib/krb5kdc
+    mkdir -p /var/log
+
+    # Copy configuration
+    cp /etc/krb5-config/krb5.conf /etc/krb5.conf
+    cp /etc/krb5-config/kdc.conf /var/lib/krb5kdc/kdc.conf
+    cp /etc/krb5-config/kadm5.acl /var/lib/krb5kdc/kadm5.acl
+
+    # Check if database already exists
+    if [ -f /var/lib/krb5kdc/principal ]; then
+      echo "KDC database already exists, skipping initialization"
+    else
+      echo "Creating new KDC database..."
+
+      # Create the KDC database with master password
+      kdb5_util create -s -P masterpassword
+
+      echo "Creating admin principal..."
+      kadmin.local -q "addprinc -pw admin admin@EXAMPLE.ORG"
+      kadmin.local -q "addprinc -pw admin admin/admin@EXAMPLE.ORG"
+
+      echo "Creating test user principals..."
+      kadmin.local -q "addprinc -pw alice alice@EXAMPLE.ORG"
+      kadmin.local -q "addprinc -pw bob bob@EXAMPLE.ORG"
+      kadmin.local -q "addprinc -pw charlie charlie@EXAMPLE.ORG"
+
+      echo "Creating HTTP service principal for Keycloak..."
+      # Create principal for any Keycloak hostname pattern
+      kadmin.local -q "addprinc -randkey HTTP/keycloak.keycloak-test-system.svc.cluster.local@EXAMPLE.ORG"
+      kadmin.local -q "addprinc -randkey HTTP/localhost@EXAMPLE.ORG"
+
+      echo "Generating keytab for HTTP service..."
+      kadmin.local -q "ktadd -k /var/lib/krb5kdc/keycloak.keytab HTTP/keycloak.keycloak-test-system.svc.cluster.local@EXAMPLE.ORG"
+      kadmin.local -q "ktadd -k /var/lib/krb5kdc/keycloak.keytab HTTP/localhost@EXAMPLE.ORG"
+
+      # Make keytab readable
+      chmod 644 /var/lib/krb5kdc/keycloak.keytab
+
+      echo "=== KDC initialized successfully ==="
+    fi
+
+    echo "Starting KDC..."
+    exec krb5kdc -n
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kerberos
+  namespace: keycloak-test-system  # Will be overridden by test code
+  labels:
+    app: kerberos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kerberos
+  template:
+    metadata:
+      labels:
+        app: kerberos
+    spec:
+      containers:
+      - name: kdc
+        # Using debian with krb5 packages - lightweight and has all needed tools
+        image: debian:bookworm-slim
+        imagePullPolicy: IfNotPresent
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Install krb5 packages
+          apt-get update && apt-get install -y --no-install-recommends \
+            krb5-kdc krb5-admin-server krb5-user \
+            && rm -rf /var/lib/apt/lists/*
+
+          # Run init script
+          /scripts/init-kdc.sh
+        ports:
+        - name: kdc
+          containerPort: 88
+          protocol: TCP
+        - name: kdc-udp
+          containerPort: 88
+          protocol: UDP
+        volumeMounts:
+        - name: krb5-config
+          mountPath: /etc/krb5-config
+        - name: init-script
+          mountPath: /scripts
+        - name: kdc-data
+          mountPath: /var/lib/krb5kdc
+        - name: keytab-out
+          mountPath: /keytab-out
+        livenessProbe:
+          tcpSocket:
+            port: 88
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 88
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      # Sidecar to copy keytab to shared volume for extraction
+      - name: keytab-exporter
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for keytab to be generated..."
+          while [ ! -f /var/lib/krb5kdc/keycloak.keytab ]; do
+            sleep 2
+          done
+          echo "Keytab found, copying to output..."
+          cp /var/lib/krb5kdc/keycloak.keytab /keytab-out/keycloak.keytab
+          echo "Keytab exported successfully"
+          # Signal readiness by creating a marker file
+          touch /keytab-out/.ready
+          echo "Keytab ready, sleeping..."
+          sleep infinity
+        volumeMounts:
+        - name: kdc-data
+          mountPath: /var/lib/krb5kdc
+          readOnly: true
+        - name: keytab-out
+          mountPath: /keytab-out
+        resources:
+          requests:
+            memory: "16Mi"
+            cpu: "10m"
+          limits:
+            memory: "32Mi"
+            cpu: "50m"
+      volumes:
+      - name: krb5-config
+        configMap:
+          name: kerberos-config
+      - name: init-script
+        configMap:
+          name: kerberos-init-script
+          defaultMode: 0755
+      - name: kdc-data
+        emptyDir: {}
+      - name: keytab-out
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kerberos
+  namespace: keycloak-test-system  # Will be overridden by test code
+  labels:
+    app: kerberos
+spec:
+  type: ClusterIP
+  ports:
+  - name: kdc
+    port: 88
+    targetPort: 88
+    protocol: TCP
+  - name: kdc-udp
+    port: 88
+    targetPort: 88
+    protocol: UDP
+  selector:
+    app: kerberos

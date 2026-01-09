@@ -41,6 +41,7 @@ When you think the moment is right to open a PR:
 3. **Ask the user** if it's ready to open the PR
 4. User will open the PR (or confirm you should)
 
+
 Opening or pushing to a PR branch triggers automated Copilot review comments - only do this when ready for actual review.
 
 ### Handling Diverged Branches (After Remote Rebase)
@@ -821,3 +822,37 @@ Example behaviors:
     Instead of: Agreeing when something’s wrong → “Actually, that’s not quite right because…”
     Instead of: Guessing what I mean → “Are you asking about X or Y specifically?”
     Instead of: Ignoring errors → “Hate to break it to you, but 2+2 isn’t 5…”
+
+
+## Starting on a new task
+When asked to start working on something there are many files you need to read up on.
+Follow these instructions (always) when starting on a new task.
+
+- If the user mentions one or multiple issues, look them up using the gh cli
+- Find the scope of the work you are starting on and read up on the following files with your task in mind.
+  - The documention in ./docs
+  - The decision records in ./docs/decisions (all of them!). These contain all architectural decisions and development standards
+  - All the helm charts in ./charts , pay close attention to the helm values, the templates for the CRs and how the values propagate from them into the CR
+  - The pydantic models in in ./src/keycloak_operator/models , pay close attention to how the values of the helm chart move from the values.yaml to the various CRs and then into the pydantic models
+  - The operator code in ./src , now you should have the complete picture of how the values in values.yaml end up in in the operator code.
+  - Look at the makefile and notice how the integration tests are executed (with `make test`). You may use the same construction as used there with teardown and recreation of hte cluster for a smaller subset of tests, but you are not allowed to run integration tests against an existing cluster.
+  - Look at the test fixtures and how they are used in integration tests
+  - Look at tests similar for functionality similar to what you are trying to achieve (e.g. with the same CR)
+  - Look at the wait helpers. When you are building tests you should make them robust, explcitely wait for a certain state, do not introduce random sleeps with an arbitrary amount of time
+- You have to introduce tests for the new functionality. The coverage target for the patch between main and your PR must be at least 85%.
+- You must introduce integration tests for all CRUD operations. Unit tests are appreciated, but the real value comes from robust integration tests.
+- After coming up with a plan for the implementation of the new task you will reason about what kind of documentation would be necessary (if any). Reason about where to put it, how and end user would benefit from it and how it will be able to find it intuitively.
+- If the new functionality deviates from the decision records or encompasses something new that would be useful to know about for future coding sessions it should be put in a new decision record or have an existing one edited.
+- You can open a PR once you have implemented the main functionality. Once the PR is opened there will be new comment added by copilot as reviewer. These comments do not show up immediately, you should first keep working on tests after the PR is opened and on your next commit with tests check the review comments. You read them and determine whether it is a good suggestion or not. If it is a good suggestion you implement it, otherwise you explain why not (comment on it so you know not to process it again afterwards.)
+- The tests (including integration tests!) should be ran locally first, this is much faster and gives you the feedback immediately. Use `make test` for all the guarantees about a clean test state.
+- Your commits must follow the conventional commit style specified in ./Releases.md, if you do not then pre-commit will block it.
+- I know there are instructions for ignoring pre-existing failures in tests. I am telling you now, whenever you work on a new task the previous state had NO ERRORS, all quality checks succeeded, so if you have any failure, that is on you! Do not ignore any failure in the tests or quality checks.
+- When starting on a new task you will ALWAYS inform the user about the required steps listed here to assure the user that you know how to handle it. Give a short summary of what you are going to do before reading up on all required reading materials. When you are fully up to date and ready to formulate an implementation plan you will output that plan to the user and ask for approval. The user might give suggestions for improvement. You will then reformulate only those parts, not the entire plan and ask for approval again. Once you have approval you MUST work autonomously until you have implemented the new functionality, written all required tests and hit the 85% patch coverage target, processed all gh copilot review comments and succesfully pass all tests in both the local and gh actions tests.
+When you do get stuck or dramatically deviate from your original plan you should get back to the user in between, otherwise keep working.
+- You will work from a new branch that is branched from the latest commit on main.
+
+## Debugging a failed cicd run
+When a CICD run has failed you need to take several things into account:
+- Which CICD run to debug (context from git or does the user specify a different branch)
+- It is usually the integration tests of security task that causes failures. For security issues there will be comments on the PR. For integration tasks you can use the logs from the cicd workflow in gh actions (retrieve it using the gh cli). Next to the logs of the integration tests with a report on test failures you can use the operator logs which are attached as an artifacts to the gh workflow run. Reason about what you need to debug, sometimes it is something obvious, other times you need to cross reference the operator logs.
+- ALWAYS use the gh cli. The repository is vriesdemichael/keycloak-operator , DO NOT try to look up the name. It has tripped you up before many times and makes you forget the entire conversation context.
