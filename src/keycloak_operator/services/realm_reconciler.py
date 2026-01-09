@@ -1487,6 +1487,16 @@ class KeycloakRealmReconciler(BaseReconciler):
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
         )
 
+        # Get realm ID (needed for component parentId)
+        realm_info = await admin_client.get_realm(spec.realm_name, namespace)
+        if not realm_info:
+            self.logger.error(
+                f"Realm {spec.realm_name} not found, cannot configure federation"
+            )
+            return federation_statuses
+        # RealmRepresentation has an 'id' attribute (the realm UUID)
+        realm_id = realm_info.id if realm_info.id else spec.realm_name
+
         # Get existing providers from Keycloak
         existing_providers = await admin_client.get_user_federation_providers(
             spec.realm_name, namespace
@@ -1534,7 +1544,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             try:
                 # Build component config from model
                 component_config = await self._build_federation_component(
-                    federation_config, spec.realm_name, namespace
+                    federation_config, realm_id, namespace
                 )
 
                 existing = existing_by_name.get(federation_config.name)
@@ -1625,13 +1635,18 @@ class KeycloakRealmReconciler(BaseReconciler):
     async def _build_federation_component(
         self,
         federation_config: KeycloakUserFederation,
-        realm_name: str,
+        realm_id: str,
         namespace: str,
     ) -> ComponentRepresentation:
         """
         Build a ComponentRepresentation from KeycloakUserFederation config.
 
         Handles secret injection for bind credentials and keytabs.
+
+        Args:
+            federation_config: The user federation configuration
+            realm_id: The realm ID (UUID), not realm name - required for parentId
+            namespace: Kubernetes namespace for secret lookups
         """
         from ..models.keycloak_api import ComponentRepresentation
 
@@ -1664,11 +1679,12 @@ class KeycloakRealmReconciler(BaseReconciler):
                 self.logger.warning(f"Failed to read keytab secret: {e}")
 
         # Build the component representation
+        # Note: parentId must be the realm ID (UUID), not the realm name
         return ComponentRepresentation(
             name=federation_config.name,
             provider_id=federation_config.provider_id,
             provider_type="org.keycloak.storage.UserStorageProvider",
-            parent_id=realm_name,  # Parent is the realm
+            parent_id=realm_id,
             config=config,
         )
 
