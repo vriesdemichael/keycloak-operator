@@ -437,24 +437,197 @@ spec:
                   - providerId
               userFederation:
                 type: array
-                description: User federation provider configurations
+                description: User federation provider configurations (LDAP, AD, Kerberos)
                 items:
                   type: object
                   properties:
-                    displayName:
+                    name:
                       type: string
-                    providerName:
+                      description: Federation provider display name
+                    providerId:
                       type: string
+                      description: Provider type (ldap, kerberos)
+                      enum: [ldap, kerberos]
                     priority:
                       type: integer
                       minimum: 0
+                      default: 0
+                      description: Provider priority (lower = higher priority)
+                    enabled:
+                      type: boolean
+                      default: true
+                      description: Whether federation is enabled
+                    # LDAP Connection Settings
+                    connectionUrl:
+                      type: string
+                      description: LDAP connection URL (ldap://host:389 or ldaps://host:636)
+                    startTls:
+                      type: boolean
+                      default: false
+                      description: Use StartTLS for encryption
+                    useTruststoreSpi:
+                      type: string
+                      default: ldapsOnly
+                      enum: [always, ldapsOnly, never]
+                    connectionPooling:
+                      type: boolean
+                      default: true
+                    connectionTimeout:
+                      type: integer
+                      minimum: 0
+                      description: Connection timeout in milliseconds
+                    readTimeout:
+                      type: integer
+                      minimum: 0
+                      description: Read timeout in milliseconds
+                    # LDAP Bind Credentials
+                    authType:
+                      type: string
+                      default: simple
+                      enum: [none, simple]
+                    bindDn:
+                      type: string
+                      description: DN for binding to LDAP
+                    bindCredentialSecret:
+                      type: object
+                      description: Secret reference for bind password
+                      properties:
+                        name:
+                          type: string
+                          description: Secret name
+                        key:
+                          type: string
+                          description: Key in secret data
+                      required:
+                      - name
+                      - key
+                    # LDAP Schema / Vendor Settings
+                    vendor:
+                      type: string
+                      default: other
+                      enum: [ad, rhds, tivoli, edirectory, other]
+                      description: LDAP vendor for schema defaults
+                    usersDn:
+                      type: string
+                      description: Base DN for user searches
+                    usernameLdapAttribute:
+                      type: string
+                      default: uid
+                      description: LDAP attribute for username (uid, sAMAccountName)
+                    rdnLdapAttribute:
+                      type: string
+                      default: uid
+                      description: LDAP attribute for RDN (uid for LDAP, cn for AD)
+                    uuidLdapAttribute:
+                      type: string
+                      default: entryUUID
+                      description: LDAP attribute for UUID (entryUUID, objectGUID)
+                    userObjectClasses:
+                      type: array
+                      items:
+                        type: string
+                      description: LDAP object classes for users
+                    customUserSearchFilter:
+                      type: string
+                      description: Custom LDAP filter for user searches
+                    # LDAP Search Settings
+                    searchScope:
+                      type: integer
+                      default: 2
+                      minimum: 1
+                      maximum: 2
+                      description: Search scope (1=one-level, 2=subtree)
+                    pagination:
+                      type: boolean
+                      default: true
+                    batchSizeForSync:
+                      type: integer
+                      default: 1000
+                      minimum: 1
+                    # User Editing Settings
+                    editMode:
+                      type: string
+                      default: READ_ONLY
+                      enum: [READ_ONLY, WRITABLE, UNSYNCED]
+                    trustEmail:
+                      type: boolean
+                      default: false
+                    validatePasswordPolicy:
+                      type: boolean
+                      default: false
+                    # Kerberos Settings
+                    allowKerberosAuthentication:
+                      type: boolean
+                      default: false
+                    kerberosRealm:
+                      type: string
+                      description: Kerberos realm name (e.g., EXAMPLE.ORG)
+                    serverPrincipal:
+                      type: string
+                      description: HTTP service principal (e.g., HTTP/host@REALM)
+                    keytabSecret:
+                      type: object
+                      description: Secret reference for keytab file
+                      properties:
+                        name:
+                          type: string
+                        key:
+                          type: string
+                      required:
+                      - name
+                      - key
+                    useKerberosForPasswordAuthentication:
+                      type: boolean
+                      default: false
+                    debug:
+                      type: boolean
+                      default: false
+                      description: Enable Kerberos debug logging
+                    # Sync Settings
+                    syncSettings:
+                      type: object
+                      properties:
+                        fullSyncPeriod:
+                          type: integer
+                          default: -1
+                          description: Full sync period in seconds (-1 to disable)
+                        changedUsersSyncPeriod:
+                          type: integer
+                          default: -1
+                          description: Changed users sync period (-1 to disable)
+                        importEnabled:
+                          type: boolean
+                          default: true
+                        syncRegistrations:
+                          type: boolean
+                          default: false
+                    # Federation Mappers
+                    mappers:
+                      type: array
+                      description: User federation mappers
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                          mapperType:
+                            type: string
+                            description: Mapper type (e.g., user-attribute-ldap-mapper)
+                          config:
+                            type: object
+                            additionalProperties:
+                              type: string
+                        required:
+                        - name
+                        - mapperType
+                    # Additional config for provider-specific options
                     config:
                       type: object
                       additionalProperties:
                         type: string
                   required:
-                  - displayName
-                  - providerName
+                  - name
+                  - providerId
               clientScopes:
                 type: array
                 description: Client scope definitions
@@ -775,6 +948,52 @@ spec:
                 description: Current list of namespaces authorized to create clients
                 items:
                   type: string
+              userFederationStatus:
+                type: array
+                description: Status of each user federation provider
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      description: Federation provider name
+                    providerId:
+                      type: string
+                      description: Provider type (ldap, kerberos)
+                    connected:
+                      type: boolean
+                      description: Whether connection to provider is successful
+                    lastConnectionTest:
+                      type: string
+                      format: date-time
+                      description: Timestamp of last connection test
+                    lastSyncResult:
+                      type: string
+                      enum: [Success, Failed, Skipped, InProgress, Never]
+                      description: Result of last sync operation
+                    lastFullSync:
+                      type: string
+                      format: date-time
+                      description: Timestamp of last full sync
+                    lastChangedSync:
+                      type: string
+                      format: date-time
+                      description: Timestamp of last changed users sync
+                    usersImported:
+                      type: integer
+                      minimum: 0
+                      description: Number of users imported from this provider
+                    groupsImported:
+                      type: integer
+                      minimum: 0
+                      description: Number of groups imported from this provider
+                    syncErrors:
+                      type: integer
+                      minimum: 0
+                      description: Number of errors in last sync
+                    message:
+                      type: string
+                      description: Human-readable status message
     additionalPrinterColumns:
     - name: Phase
       type: string
@@ -788,6 +1007,10 @@ spec:
     - name: Users
       type: integer
       jsonPath: .status.activeUsers
+    - name: Federation
+      type: integer
+      jsonPath: .status.features.userFederationProviders
+      description: Number of user federation providers
     - name: Age
       type: date
       jsonPath: .metadata.creationTimestamp
