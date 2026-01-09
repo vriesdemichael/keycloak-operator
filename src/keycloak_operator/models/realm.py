@@ -258,17 +258,307 @@ class KeycloakIdentityProvider(BaseModel):
                     )
 
 
-class KeycloakUserFederation(BaseModel):
-    """User federation configuration."""
+class KeycloakUserFederationSecretRef(BaseModel):
+    """
+    Reference to Kubernetes secret for user federation sensitive data.
 
-    name: str = Field(..., description="Federation provider name")
-    provider_id: str = Field(..., description="Federation provider type")
-    priority: int = Field(0, description="Federation priority")
+    Used for bind credentials (LDAP) or keytab (Kerberos).
+    """
+
+    name: str = Field(
+        ..., description="Secret name (must be in same namespace as realm)"
+    )
+    key: str = Field(..., description="Key in secret data")
+
+
+class KeycloakUserFederationMapper(BaseModel):
+    """
+    User federation mapper configuration.
+
+    Mappers transform LDAP/AD attributes into Keycloak user properties,
+    roles, or group memberships.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(
+        ..., description="Mapper name (unique within federation provider)"
+    )
+    mapper_type: str = Field(
+        ...,
+        alias="mapperType",
+        description="Mapper type (e.g., 'user-attribute-ldap-mapper', 'group-ldap-mapper')",
+    )
+    config: dict[str, str] = Field(
+        default_factory=dict,
+        description="Mapper-specific configuration",
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Mapper name must be a non-empty string")
+        return v
+
+
+class KeycloakUserFederationSyncSettings(BaseModel):
+    """Synchronization settings for user federation."""
+
+    model_config = {"populate_by_name": True}
+
+    # Sync periods (-1 disables periodic sync)
+    full_sync_period: int = Field(
+        -1,
+        alias="fullSyncPeriod",
+        ge=-1,
+        description="Full sync period in seconds (-1 to disable)",
+    )
+    changed_users_sync_period: int = Field(
+        -1,
+        alias="changedUsersSyncPeriod",
+        ge=-1,
+        description="Changed users sync period in seconds (-1 to disable)",
+    )
+
+    # Import settings
+    import_enabled: bool = Field(
+        True,
+        alias="importEnabled",
+        description="Enable import of users from LDAP",
+    )
+    sync_registrations: bool = Field(
+        False,
+        alias="syncRegistrations",
+        description="Sync newly created users to LDAP",
+    )
+
+
+class KeycloakUserFederation(BaseModel):
+    """
+    Complete user federation configuration for LDAP/AD/Kerberos.
+
+    This model supports:
+    - LDAP federation with full attribute mapping
+    - Active Directory with sAMAccountName/UPN support
+    - Kerberos/SPNEGO authentication
+    - User/group synchronization
+
+    Example LDAP configuration:
+        KeycloakUserFederation(
+            name="corporate-ldap",
+            provider_id="ldap",
+            connection_url="ldap://ldap.example.com:389",
+            users_dn="ou=People,dc=example,dc=org",
+            bind_dn="cn=admin,dc=example,dc=org",
+            bind_credential_secret=KeycloakUserFederationSecretRef(
+                name="ldap-credentials",
+                key="password"
+            ),
+        )
+    """
+
+    model_config = {"populate_by_name": True}
+
+    # Core settings
+    name: str = Field(..., description="Federation provider display name")
+    provider_id: str = Field(
+        ...,
+        alias="providerId",
+        description="Provider type: ldap, kerberos",
+    )
+    priority: int = Field(0, description="Provider priority (lower = higher priority)")
     enabled: bool = Field(True, description="Whether federation is enabled")
 
-    # Provider-specific configuration
+    # ==========================================================================
+    # LDAP Connection Settings
+    # ==========================================================================
+    connection_url: str | None = Field(
+        None,
+        alias="connectionUrl",
+        description="LDAP connection URL (e.g., ldap://host:389 or ldaps://host:636)",
+    )
+    start_tls: bool = Field(
+        False,
+        alias="startTls",
+        description="Use StartTLS for connection encryption",
+    )
+    use_truststore_spi: str = Field(
+        "ldapsOnly",
+        alias="useTruststoreSpi",
+        description="When to use truststore: always, ldapsOnly, never",
+    )
+    connection_pooling: bool = Field(
+        True,
+        alias="connectionPooling",
+        description="Enable connection pooling",
+    )
+    connection_timeout: int | None = Field(
+        None,
+        alias="connectionTimeout",
+        ge=0,
+        description="Connection timeout in milliseconds",
+    )
+    read_timeout: int | None = Field(
+        None,
+        alias="readTimeout",
+        ge=0,
+        description="Read timeout in milliseconds",
+    )
+
+    # ==========================================================================
+    # LDAP Bind Credentials
+    # ==========================================================================
+    auth_type: str = Field(
+        "simple",
+        alias="authType",
+        description="LDAP auth type: none, simple",
+    )
+    bind_dn: str | None = Field(
+        None,
+        alias="bindDn",
+        description="DN for binding to LDAP (for simple auth)",
+    )
+    bind_credential_secret: KeycloakUserFederationSecretRef | None = Field(
+        None,
+        alias="bindCredentialSecret",
+        description="Secret reference for bind password",
+    )
+
+    # ==========================================================================
+    # LDAP Schema / Vendor Settings
+    # ==========================================================================
+    vendor: str = Field(
+        "other",
+        description="LDAP vendor: ad, rhds, tivoli, edirectory, other",
+    )
+    users_dn: str | None = Field(
+        None,
+        alias="usersDn",
+        description="Base DN for user searches",
+    )
+    username_ldap_attribute: str = Field(
+        "uid",
+        alias="usernameLdapAttribute",
+        description="LDAP attribute for username (uid for LDAP, sAMAccountName for AD)",
+    )
+    rdn_ldap_attribute: str = Field(
+        "uid",
+        alias="rdnLdapAttribute",
+        description="LDAP attribute used as RDN (uid for LDAP, cn for AD)",
+    )
+    uuid_ldap_attribute: str = Field(
+        "entryUUID",
+        alias="uuidLdapAttribute",
+        description="LDAP attribute for UUID (entryUUID for LDAP, objectGUID for AD)",
+    )
+    user_object_classes: list[str] = Field(
+        default_factory=lambda: ["inetOrgPerson", "organizationalPerson"],
+        alias="userObjectClasses",
+        description="LDAP object classes for users",
+    )
+    custom_user_search_filter: str | None = Field(
+        None,
+        alias="customUserSearchFilter",
+        description="Custom LDAP filter for user searches",
+    )
+
+    # ==========================================================================
+    # LDAP Search Settings
+    # ==========================================================================
+    search_scope: int = Field(
+        2,
+        alias="searchScope",
+        ge=1,
+        le=2,
+        description="Search scope: 1=one-level, 2=subtree",
+    )
+    pagination: bool = Field(
+        True,
+        description="Use LDAP pagination for large result sets",
+    )
+    batch_size_for_sync: int = Field(
+        1000,
+        alias="batchSizeForSync",
+        ge=1,
+        description="Batch size for sync operations",
+    )
+
+    # ==========================================================================
+    # User Editing Settings
+    # ==========================================================================
+    edit_mode: str = Field(
+        "READ_ONLY",
+        alias="editMode",
+        description="Edit mode: READ_ONLY, WRITABLE, UNSYNCED",
+    )
+    trust_email: bool = Field(
+        False,
+        alias="trustEmail",
+        description="Trust email from LDAP (skip verification)",
+    )
+    validate_password_policy: bool = Field(
+        False,
+        alias="validatePasswordPolicy",
+        description="Validate passwords against Keycloak policy",
+    )
+
+    # ==========================================================================
+    # Kerberos Settings
+    # ==========================================================================
+    allow_kerberos_authentication: bool = Field(
+        False,
+        alias="allowKerberosAuthentication",
+        description="Enable Kerberos/SPNEGO authentication",
+    )
+    kerberos_realm: str | None = Field(
+        None,
+        alias="kerberosRealm",
+        description="Kerberos realm name (e.g., EXAMPLE.ORG)",
+    )
+    server_principal: str | None = Field(
+        None,
+        alias="serverPrincipal",
+        description="HTTP service principal (e.g., HTTP/host@REALM)",
+    )
+    keytab_secret: KeycloakUserFederationSecretRef | None = Field(
+        None,
+        alias="keytabSecret",
+        description="Secret reference for keytab file",
+    )
+    use_kerberos_for_password_authentication: bool = Field(
+        False,
+        alias="useKerberosForPasswordAuthentication",
+        description="Use Kerberos for password validation",
+    )
+    debug: bool = Field(
+        False,
+        description="Enable Kerberos debug logging",
+    )
+
+    # ==========================================================================
+    # Sync Settings
+    # ==========================================================================
+    sync_settings: KeycloakUserFederationSyncSettings = Field(
+        default_factory=KeycloakUserFederationSyncSettings,
+        alias="syncSettings",
+        description="Synchronization configuration",
+    )
+
+    # ==========================================================================
+    # Federation Mappers
+    # ==========================================================================
+    mappers: list[KeycloakUserFederationMapper] = Field(
+        default_factory=list,
+        description="User federation mappers for attribute/group/role mapping",
+    )
+
+    # ==========================================================================
+    # Additional Config (for provider-specific options not covered above)
+    # ==========================================================================
     config: KeycloakConfigMap = Field(
-        default_factory=dict, description="Federation-specific configuration"
+        default_factory=dict,
+        description="Additional provider-specific configuration",
     )
 
     @field_validator("name")
@@ -281,10 +571,106 @@ class KeycloakUserFederation(BaseModel):
     @field_validator("provider_id")
     @classmethod
     def validate_provider_id(cls, v):
-        valid_providers = ["ldap", "kerberos", "sssd"]
+        valid_providers = ["ldap", "kerberos"]
         if v not in valid_providers:
             raise ValueError(f"Provider ID must be one of {valid_providers}")
         return v
+
+    @field_validator("vendor")
+    @classmethod
+    def validate_vendor(cls, v):
+        valid_vendors = ["ad", "rhds", "tivoli", "edirectory", "other"]
+        if v not in valid_vendors:
+            raise ValueError(f"Vendor must be one of {valid_vendors}")
+        return v
+
+    @field_validator("edit_mode")
+    @classmethod
+    def validate_edit_mode(cls, v):
+        valid_modes = ["READ_ONLY", "WRITABLE", "UNSYNCED"]
+        if v not in valid_modes:
+            raise ValueError(f"Edit mode must be one of {valid_modes}")
+        return v
+
+    def to_component_config(self) -> dict[str, list[str]]:
+        """
+        Convert to Keycloak Components API config format.
+
+        Keycloak's Components API expects config values as lists of strings.
+
+        Returns:
+            Dictionary mapping config keys to list of string values
+        """
+        config: dict[str, list[str]] = {}
+
+        # Connection settings
+        if self.connection_url:
+            config["connectionUrl"] = [self.connection_url]
+        config["startTls"] = [str(self.start_tls).lower()]
+        config["useTruststoreSpi"] = [self.use_truststore_spi]
+        config["connectionPooling"] = [str(self.connection_pooling).lower()]
+        if self.connection_timeout is not None:
+            config["connectionTimeout"] = [str(self.connection_timeout)]
+        if self.read_timeout is not None:
+            config["readTimeout"] = [str(self.read_timeout)]
+
+        # Bind settings
+        config["authType"] = [self.auth_type]
+        if self.bind_dn:
+            config["bindDn"] = [self.bind_dn]
+        # Note: bindCredential injected by reconciler from secret
+
+        # Schema settings
+        config["vendor"] = [self.vendor]
+        if self.users_dn:
+            config["usersDn"] = [self.users_dn]
+        config["usernameLdapAttribute"] = [self.username_ldap_attribute]
+        config["rdnLdapAttribute"] = [self.rdn_ldap_attribute]
+        config["uuidLdapAttribute"] = [self.uuid_ldap_attribute]
+        config["userObjectClasses"] = [", ".join(self.user_object_classes)]
+        if self.custom_user_search_filter:
+            config["customUserSearchFilter"] = [self.custom_user_search_filter]
+
+        # Search settings
+        config["searchScope"] = [str(self.search_scope)]
+        config["pagination"] = [str(self.pagination).lower()]
+        config["batchSizeForSync"] = [str(self.batch_size_for_sync)]
+
+        # User editing
+        config["editMode"] = [self.edit_mode]
+        config["trustEmail"] = [str(self.trust_email).lower()]
+        config["validatePasswordPolicy"] = [str(self.validate_password_policy).lower()]
+
+        # Kerberos settings
+        config["allowKerberosAuthentication"] = [
+            str(self.allow_kerberos_authentication).lower()
+        ]
+        if self.kerberos_realm:
+            config["kerberosRealm"] = [self.kerberos_realm]
+        if self.server_principal:
+            config["serverPrincipal"] = [self.server_principal]
+        # Note: keyTab injected by reconciler from secret
+        config["useKerberosForPasswordAuthentication"] = [
+            str(self.use_kerberos_for_password_authentication).lower()
+        ]
+        config["debug"] = [str(self.debug).lower()]
+
+        # Sync settings
+        sync = self.sync_settings
+        config["fullSyncPeriod"] = [str(sync.full_sync_period)]
+        config["changedSyncPeriod"] = [str(sync.changed_users_sync_period)]
+        config["importEnabled"] = [str(sync.import_enabled).lower()]
+        config["syncRegistrations"] = [str(sync.sync_registrations).lower()]
+
+        # Priority and enabled
+        config["priority"] = [str(self.priority)]
+        config["enabled"] = [str(self.enabled).lower()]
+
+        # Add any additional config
+        for key, value in self.config.items():
+            config[key] = [value]
+
+        return config
 
 
 # =============================================================================
@@ -1268,6 +1654,53 @@ class KeycloakRealmFeatures(BaseModel):
     )
 
 
+class KeycloakUserFederationStatus(BaseModel):
+    """
+    Status of a user federation provider.
+
+    This provides observability into the health and sync state of each
+    configured user federation provider (LDAP, AD, Kerberos).
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Federation provider name")
+    provider_id: str = Field(
+        ..., alias="providerId", description="Provider type (ldap, kerberos)"
+    )
+    connected: bool = Field(
+        False, description="Whether connection to provider is successful"
+    )
+    last_connection_test: str | None = Field(
+        None,
+        alias="lastConnectionTest",
+        description="Timestamp of last connection test",
+    )
+    last_sync_result: str = Field(
+        "Never",
+        alias="lastSyncResult",
+        description="Result of last sync: Success, Failed, Skipped, InProgress, Never",
+    )
+    last_full_sync: str | None = Field(
+        None, alias="lastFullSync", description="Timestamp of last full sync"
+    )
+    last_changed_sync: str | None = Field(
+        None,
+        alias="lastChangedSync",
+        description="Timestamp of last changed users sync",
+    )
+    users_imported: int = Field(
+        0, alias="usersImported", ge=0, description="Number of users imported"
+    )
+    groups_imported: int = Field(
+        0, alias="groupsImported", ge=0, description="Number of groups imported"
+    )
+    sync_errors: int = Field(
+        0, alias="syncErrors", ge=0, description="Number of errors in last sync"
+    )
+    message: str | None = Field(None, description="Human-readable status message")
+
+
 class KeycloakRealmStatus(BaseModel):
     """
     Status of a KeycloakRealm resource.
@@ -1321,6 +1754,13 @@ class KeycloakRealmStatus(BaseModel):
     # Feature status
     features: KeycloakRealmFeatures = Field(
         default_factory=KeycloakRealmFeatures, description="Configured features"
+    )
+
+    # User Federation Status
+    user_federation_status: list[KeycloakUserFederationStatus] = Field(
+        default_factory=list,
+        alias="userFederationStatus",
+        description="Status of each user federation provider",
     )
 
     # Health and monitoring
