@@ -174,18 +174,18 @@ async def openldap_ready(
 
         logger.info("✓ OpenLDAP is ready")
 
+        # GLAuth uses cn=<username>,ou=users,dc=example,dc=org format
         yield {
             "connection_url": f"ldap://openldap.{namespace}.svc.cluster.local:389",
-            "bind_dn": "cn=admin,dc=example,dc=org",
+            "bind_dn": "cn=admin,ou=svcaccts,dc=example,dc=org",
             "bind_password": "admin",
-            "users_dn": "ou=People,dc=example,dc=org",
-            "groups_dn": "ou=Groups,dc=example,dc=org",
-            "readonly_bind_dn": "cn=readonly,dc=example,dc=org",
-            "readonly_password": "readonly123",
+            "users_dn": "ou=users,dc=example,dc=org",
+            "groups_dn": "ou=groups,dc=example,dc=org",
             "base_dn": "dc=example,dc=org",
             "vendor": "other",  # Standard OpenLDAP
-            "username_attribute": "uid",
-            "uuid_attribute": "entryUUID",
+            "username_attribute": "cn",
+            "uuid_attribute": "uidNumber",
+            "rdn_attribute": "cn",
             "test_users": [
                 {"uid": "alice", "password": "alice123", "email": "alice@example.org"},
                 {"uid": "bob", "password": "bob123", "email": "bob@example.org"},

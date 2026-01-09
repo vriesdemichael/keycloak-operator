@@ -113,6 +113,7 @@ nav:
       - RBAC Implementation: rbac-implementation.md
   - Guides:
       - Identity Providers: guides/identity-providers.md
+      - User Federation: guides/user-federation.md
       - Drift Detection: guides/drift-detection.md
       - Observability: guides/observability.md
       - Multi-Tenant Setup: how-to/multi-tenant.md

@@ -3131,6 +3131,7 @@ class KeycloakAdminClient:
         response = await self._make_validated_request(
             "POST",
             f"realms/{realm_name}/components",
+            namespace,
             request_model=federation_config,
         )
 
@@ -3184,6 +3185,7 @@ class KeycloakAdminClient:
         response = await self._make_validated_request(
             "PUT",
             f"realms/{realm_name}/components/{provider_id}",
+            namespace,
             request_model=federation_config,
         )
 
@@ -3335,6 +3337,7 @@ class KeycloakAdminClient:
         response = await self._make_validated_request(
             "POST",
             f"realms/{realm_name}/components",
+            namespace,
             request_model=mapper_config,
         )
 
