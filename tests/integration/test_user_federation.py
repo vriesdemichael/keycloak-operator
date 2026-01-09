@@ -277,7 +277,7 @@ async def test_ldap_federation_sync_users(
         from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
         sync_result = None
-        last_error = None
+        last_error: KeycloakAdminError | None = None
         for attempt in range(3):
             try:
                 sync_result = await keycloak_admin_client.trigger_user_federation_sync(
@@ -292,7 +292,9 @@ async def test_ldap_federation_sync_users(
                 )
                 await asyncio.sleep(5)
         else:
-            raise last_error  # type: ignore[misc]
+            if last_error is not None:
+                raise last_error
+            raise RuntimeError("Sync failed but no error was captured")
 
         # Verify users were imported (sync is synchronous - no wait needed)
         # Get users from Keycloak
@@ -789,6 +791,189 @@ async def test_ldap_federation_update_config(
         logger.info("✓ Successfully verified federation config update")
 
     finally:
+        try:
+            custom_api.delete_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete realm {realm_name}: {e}")
+
+        try:
+            core_api.delete_namespaced_secret(
+                name=secret_name, namespace=test_namespace
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete secret {secret_name}: {e}")
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_ldap_connection_testing(
+    shared_operator,
+    keycloak_admin_client,
+    operator_namespace,
+    test_namespace,
+    openldap_ready,
+):
+    """Test LDAP connection and authentication testing API."""
+    # Use the master realm which always exists
+    realm_name = "master"
+
+    # Test connection with valid config
+    connection_config = {
+        "connectionUrl": openldap_ready["connection_url"],
+        "bindDn": openldap_ready["bind_dn"],
+        "bindCredential": openldap_ready["bind_password"],
+        "useTruststoreSpi": "ldapsOnly",
+        "authType": "simple",
+    }
+
+    result = await keycloak_admin_client.test_ldap_connection(
+        realm_name, connection_config, namespace=test_namespace
+    )
+    assert result["status"] == "success", f"LDAP connection test failed: {result}"
+
+    # Test authentication with valid credentials
+    auth_result = await keycloak_admin_client.test_ldap_authentication(
+        realm_name, connection_config, namespace=test_namespace
+    )
+    assert auth_result["status"] == "success", f"LDAP auth test failed: {auth_result}"
+
+    # Test with invalid credentials (should fail with exception)
+    bad_config = {
+        **connection_config,
+        "bindCredential": "wrong-password",
+    }
+    from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
+    try:
+        bad_result = await keycloak_admin_client.test_ldap_authentication(
+            realm_name, bad_config, namespace=test_namespace
+        )
+        # If we get here, check the status
+        assert bad_result["status"] == "failed", (
+            "Expected auth test to fail with bad password"
+        )
+    except KeycloakAdminError:
+        # Exception is expected for bad credentials
+        pass
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_ldap_federation_mapper_management(
+    shared_operator,
+    keycloak_admin_client,
+    operator_namespace,
+    test_namespace,
+    k8s_custom_objects,
+    openldap_ready,
+):
+    """Test creating, updating, and deleting LDAP federation mappers."""
+    realm_name = f"test-mapper-{uuid.uuid4().hex[:8]}"
+
+    # Create secret with LDAP bind password
+    core_api = client.CoreV1Api()
+    secret_name = f"ldap-bind-{uuid.uuid4().hex[:8]}"
+    secret = client.V1Secret(
+        metadata=client.V1ObjectMeta(
+            name=secret_name,
+            namespace=test_namespace,
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
+        ),
+        string_data={"password": openldap_ready["bind_password"]},
+    )
+    core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
+
+    # Initial LDAP config with one custom mapper
+    ldap_config = KeycloakUserFederation(
+        name="mapper-test-ldap",
+        provider_id="ldap",
+        connection_url=openldap_ready["connection_url"],
+        bind_dn=openldap_ready["bind_dn"],
+        bind_credential_secret=KeycloakUserFederationSecretRef(
+            name=secret_name,
+            key="password",
+        ),
+        users_dn=openldap_ready["users_dn"],
+        vendor=openldap_ready["vendor"],
+        username_ldap_attribute="cn",
+        uuid_ldap_attribute="uidNumber",
+        user_object_classes=["posixAccount"],
+        mappers=[
+            KeycloakUserFederationMapper(
+                name="custom-email",
+                mapper_type="user-attribute-ldap-mapper",
+                config={
+                    "ldap.attribute": "mail",
+                    "user.model.attribute": "email",
+                    "read.only": "true",
+                    "always.read.value.from.ldap": "true",
+                    "is.mandatory.in.ldap": "false",
+                },
+            ),
+        ],
+    )
+
+    realm_spec = KeycloakRealmSpec(
+        realm_name=realm_name,
+        operator_ref=OperatorRef(namespace=operator_namespace),
+        user_federation=[ldap_config],
+    )
+
+    custom_api = client.CustomObjectsApi()
+
+    realm_cr = {
+        "apiVersion": "vriesdemichael.github.io/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": realm_name,
+            "namespace": test_namespace,
+        },
+        "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+    }
+
+    try:
+        # Create realm with federation
+        custom_api.create_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            body=realm_cr,
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            timeout=180,
+        )
+
+        # Get provider and verify mapper exists
+        providers = await keycloak_admin_client.get_user_federation_providers(
+            realm_name, test_namespace
+        )
+        assert len(providers) == 1
+        provider_id = providers[0].id
+
+        mappers = await keycloak_admin_client.get_user_federation_mappers(
+            realm_name, provider_id, test_namespace
+        )
+        # Should have default mappers plus our custom one
+        custom_mapper = next((m for m in mappers if m.name == "custom-email"), None)
+        assert custom_mapper is not None, "Custom email mapper not found"
+        logger.info(f"Found {len(mappers)} mappers, including custom-email")
+
+    finally:
+        # Cleanup
         try:
             custom_api.delete_namespaced_custom_object(
                 group="vriesdemichael.github.io",
