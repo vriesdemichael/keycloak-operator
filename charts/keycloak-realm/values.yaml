@@ -275,6 +275,75 @@ defaultGroups: []
   # - /engineering  # Group path
   # - users         # Group name (will be converted to /users)
 
+# User Federation (optional)
+# Configure LDAP, Active Directory, or Kerberos user federation
+# For enterprise integration with existing user directories
+userFederation: []
+  # Example: Standard LDAP configuration
+  # - name: corporate-ldap
+  #   providerId: ldap
+  #   connectionUrl: "ldap://ldap.example.com:389"
+  #   bindDn: "cn=admin,dc=example,dc=com"
+  #   bindCredentialSecret:
+  #     name: ldap-credentials
+  #     key: password
+  #   usersDn: "ou=People,dc=example,dc=com"
+  #   vendor: other  # other, ad, rhds, tivoli, edirectory
+  #   usernameLdapAttribute: uid
+  #   uuidLdapAttribute: entryUUID
+  #   userObjectClasses:
+  #     - inetOrgPerson
+  #     - organizationalPerson
+  #   editMode: READ_ONLY  # READ_ONLY, WRITABLE, UNSYNCED
+  #   syncSettings:
+  #     importEnabled: true
+  #     fullSyncPeriod: -1  # -1 to disable, or seconds
+  #     changedUsersSyncPeriod: -1
+  #
+  # Example: Active Directory configuration
+  # - name: corporate-ad
+  #   providerId: ldap
+  #   connectionUrl: "ldaps://dc.corp.example.com:636"
+  #   bindDn: "CN=Service Account,OU=Service,DC=corp,DC=example,DC=com"
+  #   bindCredentialSecret:
+  #     name: ad-credentials
+  #     key: password
+  #   usersDn: "OU=Users,DC=corp,DC=example,DC=com"
+  #   vendor: ad
+  #   usernameLdapAttribute: sAMAccountName
+  #   uuidLdapAttribute: objectGUID
+  #   rdnLdapAttribute: cn
+  #   userObjectClasses:
+  #     - user
+  #     - organizationalPerson
+  #   startTls: false
+  #   trustEmail: true
+  #   mappers:
+  #     - name: email
+  #       mapperType: user-attribute-ldap-mapper
+  #       config:
+  #         ldap.attribute: mail
+  #         user.model.attribute: email
+  #         read.only: "true"
+  #
+  # Example: LDAP with Kerberos/SPNEGO
+  # - name: kerberos-ldap
+  #   providerId: ldap
+  #   connectionUrl: "ldap://ldap.example.com:389"
+  #   bindDn: "cn=admin,dc=example,dc=com"
+  #   bindCredentialSecret:
+  #     name: ldap-credentials
+  #     key: password
+  #   usersDn: "ou=People,dc=example,dc=com"
+  #   vendor: other
+  #   allowKerberosAuthentication: true
+  #   kerberosRealm: EXAMPLE.ORG
+  #   serverPrincipal: HTTP/keycloak.example.com@EXAMPLE.ORG
+  #   keytabSecret:
+  #     name: kerberos-keytab
+  #     key: keytab
+  #   useKerberosForPasswordAuthentication: true
+
 # Event logging configuration (optional)
 eventsConfig:
   eventsEnabled: false
