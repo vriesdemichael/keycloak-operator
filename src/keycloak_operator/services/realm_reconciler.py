@@ -1642,9 +1642,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         if federation_config.bind_credential_secret:
             try:
                 password = await self._fetch_secret_value(
+                    namespace,
                     federation_config.bind_credential_secret.name,
                     federation_config.bind_credential_secret.key,
-                    namespace,
                 )
                 config["bindCredential"] = [password]
             except Exception as e:
@@ -1654,9 +1654,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         if federation_config.keytab_secret:
             try:
                 keytab_data = await self._fetch_secret_value(
+                    namespace,
                     federation_config.keytab_secret.name,
                     federation_config.keytab_secret.key,
-                    namespace,
                 )
                 # Keytab is stored as base64-encoded binary
                 config["keyTab"] = [keytab_data]

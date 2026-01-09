@@ -171,6 +171,15 @@ runs:
         disable_search: true
         fail_ci_if_error: true
 
+    - name: Upload integration coverage artifact
+      uses: actions/upload-artifact@v5
+      if: always() && inputs.github-actor != 'dependabot[bot]'
+      with:
+        name: integration-coverage
+        path: |
+          coverage-integration.xml
+        retention-days: 7
+
     - name: Collect logs and diagnostics
       if: always()
       shell: bash
