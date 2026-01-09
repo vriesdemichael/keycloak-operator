@@ -2975,6 +2975,561 @@ class KeycloakAdminClient:
             logger.error(f"Failed to configure user federation: {e}")
             return False
 
+    # =========================================================================
+    # User Federation Provider CRUD Operations
+    # =========================================================================
+
+    async def get_user_federation_providers(
+        self,
+        realm_name: str,
+        namespace: str = "default",
+    ) -> list[ComponentRepresentation]:
+        """
+        Get all user federation providers for a realm.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            List of user federation provider configurations
+
+        Example:
+            providers = await admin_client.get_user_federation_providers("my-realm")
+            for provider in providers:
+                print(f"Provider: {provider.name}, Type: {provider.provider_id}")
+        """
+        logger.debug(f"Fetching user federation providers for realm '{realm_name}'")
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/components",
+            namespace,
+            params={"type": "org.keycloak.storage.UserStorageProvider"},
+        )
+
+        if response.status_code == 200:
+            providers = response.json()
+            return [ComponentRepresentation.model_validate(p) for p in providers]
+        elif response.status_code == 404:
+            logger.warning(f"Realm {realm_name} not found")
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Failed to get user federation providers: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    async def get_user_federation_provider(
+        self,
+        realm_name: str,
+        provider_id: str,
+        namespace: str = "default",
+    ) -> ComponentRepresentation | None:
+        """
+        Get a specific user federation provider by ID.
+
+        Args:
+            realm_name: Name of the realm
+            provider_id: ID of the federation provider component
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            Federation provider configuration or None if not found
+        """
+        logger.debug(
+            f"Fetching user federation provider '{provider_id}' for realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/components/{provider_id}",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            return ComponentRepresentation.model_validate(response.json())
+        elif response.status_code == 404:
+            return None
+        else:
+            raise KeycloakAdminError(
+                f"Failed to get user federation provider: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    async def get_user_federation_provider_by_name(
+        self,
+        realm_name: str,
+        provider_name: str,
+        namespace: str = "default",
+    ) -> ComponentRepresentation | None:
+        """
+        Get a user federation provider by its display name.
+
+        Args:
+            realm_name: Name of the realm
+            provider_name: Display name of the federation provider
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            Federation provider configuration or None if not found
+        """
+        providers = await self.get_user_federation_providers(realm_name, namespace)
+        for provider in providers:
+            if provider.name == provider_name:
+                return provider
+        return None
+
+    async def create_user_federation_provider(
+        self,
+        realm_name: str,
+        federation_config: ComponentRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> str | None:
+        """
+        Create a new user federation provider.
+
+        Args:
+            realm_name: Name of the realm
+            federation_config: Federation provider configuration
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            ID of the created provider, or None on failure
+
+        Example:
+            config = ComponentRepresentation(
+                name="corporate-ldap",
+                provider_id="ldap",
+                provider_type="org.keycloak.storage.UserStorageProvider",
+                config={
+                    "connectionUrl": ["ldap://ldap.example.com:389"],
+                    "usersDn": ["ou=People,dc=example,dc=org"],
+                    "bindDn": ["cn=admin,dc=example,dc=org"],
+                    "bindCredential": ["secret"],
+                    "vendor": ["other"],
+                }
+            )
+            provider_id = await admin_client.create_user_federation_provider(
+                "my-realm", config
+            )
+        """
+        if isinstance(federation_config, dict):
+            federation_config = ComponentRepresentation.model_validate(
+                federation_config
+            )
+
+        # Ensure provider_type is set for user storage
+        if not federation_config.provider_type:
+            federation_config.provider_type = "org.keycloak.storage.UserStorageProvider"
+
+        federation_name = federation_config.name or "unknown"
+        logger.info(
+            f"Creating user federation provider '{federation_name}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_validated_request(
+            "POST",
+            f"realms/{realm_name}/components",
+            request_model=federation_config,
+        )
+
+        if response.status_code in [201, 204]:
+            # Extract ID from Location header
+            location = response.headers.get("Location", "")
+            provider_id = location.split("/")[-1] if location else None
+            logger.info(
+                f"Successfully created user federation provider '{federation_name}' "
+                f"with ID: {provider_id}"
+            )
+            return provider_id
+        else:
+            logger.error(
+                f"Failed to create user federation provider: {response.status_code}"
+            )
+            return None
+
+    async def update_user_federation_provider(
+        self,
+        realm_name: str,
+        provider_id: str,
+        federation_config: ComponentRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an existing user federation provider.
+
+        Args:
+            realm_name: Name of the realm
+            provider_id: ID of the federation provider to update
+            federation_config: Updated federation configuration
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if isinstance(federation_config, dict):
+            federation_config = ComponentRepresentation.model_validate(
+                federation_config
+            )
+
+        # Ensure ID is set
+        federation_config.id = provider_id
+
+        federation_name = federation_config.name or provider_id
+        logger.info(
+            f"Updating user federation provider '{federation_name}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_validated_request(
+            "PUT",
+            f"realms/{realm_name}/components/{provider_id}",
+            request_model=federation_config,
+        )
+
+        if response.status_code in [200, 204]:
+            logger.info(
+                f"Successfully updated user federation provider '{federation_name}'"
+            )
+            return True
+        else:
+            logger.error(
+                f"Failed to update user federation provider: {response.status_code}"
+            )
+            return False
+
+    async def delete_user_federation_provider(
+        self,
+        realm_name: str,
+        provider_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Delete a user federation provider.
+
+        Args:
+            realm_name: Name of the realm
+            provider_id: ID of the federation provider to delete
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Deleting user federation provider '{provider_id}' from realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/components/{provider_id}",
+            namespace,
+        )
+
+        if response.status_code in [200, 204, 404]:
+            logger.info(
+                f"Successfully deleted user federation provider '{provider_id}'"
+            )
+            return True
+        else:
+            logger.error(
+                f"Failed to delete user federation provider: {response.status_code}"
+            )
+            return False
+
+    # =========================================================================
+    # User Federation Mapper Operations
+    # =========================================================================
+
+    async def get_user_federation_mappers(
+        self,
+        realm_name: str,
+        parent_id: str,
+        namespace: str = "default",
+    ) -> list[ComponentRepresentation]:
+        """
+        Get all mappers for a user federation provider.
+
+        Args:
+            realm_name: Name of the realm
+            parent_id: ID of the parent federation provider
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            List of mapper configurations
+        """
+        logger.debug(
+            f"Fetching mappers for federation provider '{parent_id}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/components",
+            namespace,
+            params={
+                "parent": parent_id,
+                "type": "org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+            },
+        )
+
+        if response.status_code == 200:
+            mappers = response.json()
+            return [ComponentRepresentation.model_validate(m) for m in mappers]
+        elif response.status_code == 404:
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Failed to get federation mappers: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    async def create_user_federation_mapper(
+        self,
+        realm_name: str,
+        parent_id: str,
+        mapper_config: ComponentRepresentation | dict[str, Any],
+        namespace: str = "default",
+    ) -> str | None:
+        """
+        Create a mapper for a user federation provider.
+
+        Args:
+            realm_name: Name of the realm
+            parent_id: ID of the parent federation provider
+            mapper_config: Mapper configuration
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            ID of the created mapper, or None on failure
+
+        Example:
+            mapper = ComponentRepresentation(
+                name="email",
+                provider_id="user-attribute-ldap-mapper",
+                provider_type="org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+                parent_id=federation_id,
+                config={
+                    "ldap.attribute": ["mail"],
+                    "user.model.attribute": ["email"],
+                    "read.only": ["true"],
+                }
+            )
+            mapper_id = await admin_client.create_user_federation_mapper(
+                "my-realm", federation_id, mapper
+            )
+        """
+        if isinstance(mapper_config, dict):
+            mapper_config = ComponentRepresentation.model_validate(mapper_config)
+
+        # Set parent and provider type
+        mapper_config.parent_id = parent_id
+        if not mapper_config.provider_type:
+            mapper_config.provider_type = (
+                "org.keycloak.storage.ldap.mappers.LDAPStorageMapper"
+            )
+
+        mapper_name = mapper_config.name or "unknown"
+        logger.info(
+            f"Creating federation mapper '{mapper_name}' for provider '{parent_id}'"
+        )
+
+        response = await self._make_validated_request(
+            "POST",
+            f"realms/{realm_name}/components",
+            request_model=mapper_config,
+        )
+
+        if response.status_code in [201, 204]:
+            location = response.headers.get("Location", "")
+            mapper_id = location.split("/")[-1] if location else None
+            logger.info(f"Successfully created federation mapper '{mapper_name}'")
+            return mapper_id
+        else:
+            logger.error(f"Failed to create federation mapper: {response.status_code}")
+            return None
+
+    async def delete_user_federation_mapper(
+        self,
+        realm_name: str,
+        mapper_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Delete a user federation mapper.
+
+        Args:
+            realm_name: Name of the realm
+            mapper_id: ID of the mapper to delete
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            True if successful, False otherwise
+        """
+        logger.info(
+            f"Deleting federation mapper '{mapper_id}' from realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/components/{mapper_id}",
+            namespace,
+        )
+
+        if response.status_code in [200, 204, 404]:
+            logger.info(f"Successfully deleted federation mapper '{mapper_id}'")
+            return True
+        else:
+            logger.error(f"Failed to delete federation mapper: {response.status_code}")
+            return False
+
+    # =========================================================================
+    # User Federation Sync Operations
+    # =========================================================================
+
+    async def trigger_user_federation_sync(
+        self,
+        realm_name: str,
+        provider_id: str,
+        full_sync: bool = False,
+        namespace: str = "default",
+    ) -> dict[str, Any]:
+        """
+        Trigger synchronization for a user federation provider.
+
+        Args:
+            realm_name: Name of the realm
+            provider_id: ID of the federation provider
+            full_sync: If True, perform full sync; otherwise, sync only changed users
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            Dictionary with sync results (added, updated, removed, failed counts)
+
+        Example:
+            result = await admin_client.trigger_user_federation_sync(
+                "my-realm", provider_id, full_sync=True
+            )
+            print(f"Added: {result.get('added')}, Updated: {result.get('updated')}")
+        """
+        action = "triggerFullSync" if full_sync else "triggerChangedUsersSync"
+        logger.info(
+            f"Triggering {'full' if full_sync else 'changed users'} sync "
+            f"for provider '{provider_id}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/user-storage/{provider_id}/sync",
+            namespace,
+            params={"action": action},
+        )
+
+        if response.status_code == 200:
+            result = response.json()
+            logger.info(
+                f"Sync completed: added={result.get('added', 0)}, "
+                f"updated={result.get('updated', 0)}, "
+                f"removed={result.get('removed', 0)}, "
+                f"failed={result.get('failed', 0)}"
+            )
+            return result
+        else:
+            logger.error(f"Failed to trigger sync: {response.status_code}")
+            raise KeycloakAdminError(
+                f"Sync failed: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    async def test_ldap_connection(
+        self,
+        realm_name: str,
+        connection_config: dict[str, Any],
+        namespace: str = "default",
+    ) -> dict[str, Any]:
+        """
+        Test LDAP connection settings before creating a provider.
+
+        Args:
+            realm_name: Name of the realm
+            connection_config: LDAP connection configuration to test
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            Dictionary with test results
+
+        Example:
+            result = await admin_client.test_ldap_connection(
+                "my-realm",
+                {
+                    "connectionUrl": "ldap://ldap.example.com:389",
+                    "bindDn": "cn=admin,dc=example,dc=org",
+                    "bindCredential": "secret",
+                }
+            )
+            if result.get("status") == "success":
+                print("Connection successful!")
+        """
+        logger.info(f"Testing LDAP connection for realm '{realm_name}'")
+
+        # Keycloak expects the config in a specific format
+        test_config = {
+            "action": "testConnection",
+            **connection_config,
+        }
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/testLDAPConnection",
+            namespace,
+            json=test_config,
+        )
+
+        if response.status_code == 204:
+            logger.info("LDAP connection test successful")
+            return {"status": "success", "message": "Connection successful"}
+        else:
+            error_msg = response.text if response.text else "Connection failed"
+            logger.error(f"LDAP connection test failed: {error_msg}")
+            return {"status": "failed", "message": error_msg}
+
+    async def test_ldap_authentication(
+        self,
+        realm_name: str,
+        connection_config: dict[str, Any],
+        namespace: str = "default",
+    ) -> dict[str, Any]:
+        """
+        Test LDAP authentication (bind) settings.
+
+        Args:
+            realm_name: Name of the realm
+            connection_config: LDAP connection configuration with bind credentials
+            namespace: Kubernetes namespace (for logging)
+
+        Returns:
+            Dictionary with test results
+        """
+        logger.info(f"Testing LDAP authentication for realm '{realm_name}'")
+
+        test_config = {
+            "action": "testAuthentication",
+            **connection_config,
+        }
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/testLDAPConnection",
+            namespace,
+            json=test_config,
+        )
+
+        if response.status_code == 204:
+            logger.info("LDAP authentication test successful")
+            return {"status": "success", "message": "Authentication successful"}
+        else:
+            error_msg = response.text if response.text else "Authentication failed"
+            logger.error(f"LDAP authentication test failed: {error_msg}")
+            return {"status": "failed", "message": error_msg}
+
     # Protocol Mappers API methods
     @api_get_list("client protocol mappers")
     async def get_client_protocol_mappers(
