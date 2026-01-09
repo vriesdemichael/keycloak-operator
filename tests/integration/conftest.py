@@ -25,7 +25,10 @@ Session-scoped (shared across all tests):
 Function-scoped (per test):
 ├── test_namespace → str (unique per test with RBAC)
 ├── keycloak_ready → KeycloakReadySetup (operator + port + admin client)
-└── managed_* → Auto-cleanup resource creators
+├── managed_* → Auto-cleanup resource creators
+├── openldap_ready → dict (OpenLDAP server for LDAP federation tests)
+├── openldap_ad_ready → dict (OpenLDAP with AD schema simulation)
+└── kerberos_ready → dict (MIT Kerberos KDC for Kerberos tests)
 
 Internal fixtures (prefixed with _):
 ├── _k8s_*_sync → Synchronous K8s clients (wrapped by async versions)
@@ -37,6 +40,9 @@ Recommended Usage:
 - Realm tests: keycloak_ready + test_namespace
 - Client tests: keycloak_ready + test_namespace + managed_realm
 - Drift tests: keycloak_ready + drift_detector
+- LDAP federation tests: keycloak_ready + test_namespace + openldap_ready
+- AD federation tests: keycloak_ready + test_namespace + openldap_ad_ready
+- Kerberos federation tests: keycloak_ready + test_namespace + kerberos_ready
 """
 
 import asyncio
@@ -68,6 +74,15 @@ from .cleanup_utils import (
     ensure_clean_test_environment,
     force_delete_namespace,
 )
+
+# Import user federation fixtures to make them available to tests
+from .fixtures_user_federation import (  # noqa: F401
+    create_keytab_secret,
+    kerberos_ready,
+    openldap_ad_ready,
+    openldap_ready,
+    retrieve_kerberos_keytab,
+)
 from .models import KeycloakReadySetup, SharedOperatorInfo
 
 # wait_helpers are imported directly in tests, not used in conftest
@@ -91,6 +106,9 @@ def get_recommended_fixtures(scenario: str) -> list[str]:
             - "drift": Drift detection tests
             - "auth": Authorization/token system tests
             - "helm": Helm chart deployment tests
+            - "ldap": LDAP user federation tests
+            - "ldap_ad": Active Directory user federation tests
+            - "kerberos": Kerberos user federation tests
 
     Returns:
         List of recommended fixture names for that scenario
@@ -135,6 +153,25 @@ def get_recommended_fixtures(scenario: str) -> list[str]:
             "helm_realm",  # Helm realm deployment helper
             "helm_client",  # Helm client deployment helper
             "cleanup_tracker",  # Track cleanup operations
+        ],
+        "ldap": [
+            "keycloak_ready",  # Complete Keycloak setup
+            "test_namespace",  # Unique test namespace
+            "openldap_ready",  # OpenLDAP server with test users
+            "realm_cr_factory",  # For creating realm with federation
+        ],
+        "ldap_ad": [
+            "keycloak_ready",  # Complete Keycloak setup
+            "test_namespace",  # Unique test namespace
+            "openldap_ad_ready",  # OpenLDAP with AD schema simulation
+            "realm_cr_factory",  # For creating realm with AD federation
+        ],
+        "kerberos": [
+            "keycloak_ready",  # Complete Keycloak setup
+            "test_namespace",  # Unique test namespace
+            "kerberos_ready",  # MIT Kerberos KDC
+            "openldap_ready",  # Often used together with Kerberos
+            "realm_cr_factory",  # For creating realm with Kerberos
         ],
     }
 

@@ -1,0 +1,267 @@
+---
+# OpenLDAP with Active Directory schema simulation for integration testing
+# Simulates AD-style attributes: sAMAccountName, userPrincipalName
+#
+# This uses a custom schema extension to add AD-compatible attributes
+# The osixia/openldap image supports custom schema additions via environment variables
+#
+# Test users (AD-style):
+# - alice (sAMAccountName=alice, userPrincipalName=alice@corp.example.com)
+# - bob (sAMAccountName=bob, userPrincipalName=bob@corp.example.com)
+# - charlie (sAMAccountName=charlie, userPrincipalName=charlie@corp.example.com)
+#
+# Test groups:
+# - Domain Users (all users)
+# - Domain Admins (charlie)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openldap-ad-schema
+  namespace: keycloak-test-system  # Will be overridden by test code
+data:
+  # Custom schema to add AD-compatible attributes
+  # These OIDs are from Microsoft's official AD schema
+  microsoft.schema: |
+    # sAMAccountName - Primary login name in AD
+    attributetype ( 1.2.840.113556.1.4.221
+      NAME 'sAMAccountName'
+      DESC 'SAM Account Name'
+      EQUALITY caseIgnoreMatch
+      SUBSTR caseIgnoreSubstringsMatch
+      SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+      SINGLE-VALUE )
+
+    # userPrincipalName - UPN format (user@domain)
+    attributetype ( 1.2.840.113556.1.4.656
+      NAME 'userPrincipalName'
+      DESC 'User Principal Name'
+      EQUALITY caseIgnoreMatch
+      SUBSTR caseIgnoreSubstringsMatch
+      SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+      SINGLE-VALUE )
+
+    # displayName - Full display name
+    attributetype ( 1.2.840.113556.1.2.13
+      NAME 'displayName'
+      DESC 'Display Name'
+      EQUALITY caseIgnoreMatch
+      SUBSTR caseIgnoreSubstringsMatch
+      SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+      SINGLE-VALUE )
+
+    # Custom auxiliary objectClass to add AD attributes to standard users
+    objectclass ( 1.2.840.113556.1.5.9999.1
+      NAME 'msUser'
+      DESC 'Microsoft User attributes'
+      SUP top
+      AUXILIARY
+      MAY ( sAMAccountName $ userPrincipalName $ displayName ) )
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openldap-ad-config
+  namespace: keycloak-test-system  # Will be overridden by test code
+data:
+  # Bootstrap LDIF for AD-style users and groups
+  bootstrap.ldif: |
+    # Create organizational units (AD-style)
+    dn: ou=Users,dc=corp,dc=example,dc=com
+    objectClass: organizationalUnit
+    ou: Users
+    description: Users container
+
+    dn: ou=Groups,dc=corp,dc=example,dc=com
+    objectClass: organizationalUnit
+    ou: Groups
+    description: Groups container
+
+    # Create test users with AD-style attributes
+    dn: cn=alice,ou=Users,dc=corp,dc=example,dc=com
+    objectClass: inetOrgPerson
+    objectClass: msUser
+    cn: alice
+    sn: Smith
+    givenName: Alice
+    displayName: Alice Smith
+    mail: alice@corp.example.com
+    sAMAccountName: alice
+    userPrincipalName: alice@corp.example.com
+    userPassword: alice123
+
+    dn: cn=bob,ou=Users,dc=corp,dc=example,dc=com
+    objectClass: inetOrgPerson
+    objectClass: msUser
+    cn: bob
+    sn: Jones
+    givenName: Bob
+    displayName: Bob Jones
+    mail: bob@corp.example.com
+    sAMAccountName: bob
+    userPrincipalName: bob@corp.example.com
+    userPassword: bob123
+
+    dn: cn=charlie,ou=Users,dc=corp,dc=example,dc=com
+    objectClass: inetOrgPerson
+    objectClass: msUser
+    cn: charlie
+    sn: Brown
+    givenName: Charlie
+    displayName: Charlie Brown
+    mail: charlie@corp.example.com
+    sAMAccountName: charlie
+    userPrincipalName: charlie@corp.example.com
+    userPassword: charlie123
+
+    # Create AD-style groups
+    dn: cn=Domain Users,ou=Groups,dc=corp,dc=example,dc=com
+    objectClass: groupOfNames
+    cn: Domain Users
+    description: All domain users
+    member: cn=alice,ou=Users,dc=corp,dc=example,dc=com
+    member: cn=bob,ou=Users,dc=corp,dc=example,dc=com
+    member: cn=charlie,ou=Users,dc=corp,dc=example,dc=com
+
+    dn: cn=Domain Admins,ou=Groups,dc=corp,dc=example,dc=com
+    objectClass: groupOfNames
+    cn: Domain Admins
+    description: Domain administrators
+    member: cn=charlie,ou=Users,dc=corp,dc=example,dc=com
+
+    dn: cn=Developers,ou=Groups,dc=corp,dc=example,dc=com
+    objectClass: groupOfNames
+    cn: Developers
+    description: Development team
+    member: cn=alice,ou=Users,dc=corp,dc=example,dc=com
+    member: cn=bob,ou=Users,dc=corp,dc=example,dc=com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openldap-ad
+  namespace: keycloak-test-system  # Will be overridden by test code
+  labels:
+    app: openldap-ad
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openldap-ad
+  template:
+    metadata:
+      labels:
+        app: openldap-ad
+    spec:
+      initContainers:
+      # Init container to set up custom schema
+      - name: schema-setup
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          # Copy the schema file to the schema directory
+          cp /custom-schema/microsoft.schema /schema-out/microsoft.schema
+          echo "Schema file copied successfully"
+        volumeMounts:
+        - name: custom-schema
+          mountPath: /custom-schema
+        - name: schema-out
+          mountPath: /schema-out
+      containers:
+      - name: openldap
+        image: osixia/openldap:1.5.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: ldap
+          containerPort: 389
+        - name: ldaps
+          containerPort: 636
+        env:
+        - name: LDAP_ORGANISATION
+          value: "Corp Example"
+        - name: LDAP_DOMAIN
+          value: "corp.example.com"
+        - name: LDAP_BASE_DN
+          value: "dc=corp,dc=example,dc=com"
+        - name: LDAP_ADMIN_PASSWORD
+          value: "admin"
+        - name: LDAP_CONFIG_PASSWORD
+          value: "config"
+        - name: LDAP_READONLY_USER
+          value: "true"
+        - name: LDAP_READONLY_USER_USERNAME
+          value: "readonly"
+        - name: LDAP_READONLY_USER_PASSWORD
+          value: "readonly123"
+        # Load custom schema
+        - name: LDAP_SEED_INTERNAL_SCHEMA_PATH
+          value: "/container/service/slapd/assets/config/bootstrap/schema/custom"
+        - name: LDAP_SEED_INTERNAL_LDIF_PATH
+          value: "/container/service/slapd/assets/config/bootstrap/ldif/custom"
+        volumeMounts:
+        - name: schema-out
+          mountPath: /container/service/slapd/assets/config/bootstrap/schema/custom
+        - name: bootstrap-ldif
+          mountPath: /container/service/slapd/assets/config/bootstrap/ldif/custom
+        - name: data
+          mountPath: /var/lib/ldap
+        - name: config
+          mountPath: /etc/ldap/slapd.d
+        livenessProbe:
+          tcpSocket:
+            port: 389
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 389
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      volumes:
+      - name: custom-schema
+        configMap:
+          name: openldap-ad-schema
+          items:
+          - key: microsoft.schema
+            path: microsoft.schema
+      - name: schema-out
+        emptyDir: {}
+      - name: bootstrap-ldif
+        configMap:
+          name: openldap-ad-config
+          items:
+          - key: bootstrap.ldif
+            path: bootstrap.ldif
+      - name: data
+        emptyDir: {}
+      - name: config
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openldap-ad
+  namespace: keycloak-test-system  # Will be overridden by test code
+  labels:
+    app: openldap-ad
+spec:
+  type: ClusterIP
+  ports:
+  - name: ldap
+    port: 389
+    targetPort: 389
+    protocol: TCP
+  - name: ldaps
+    port: 636
+    targetPort: 636
+    protocol: TCP
+  selector:
+    app: openldap-ad

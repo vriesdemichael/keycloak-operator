@@ -1,0 +1,187 @@
+---
+# OpenLDAP deployment for integration testing of LDAP user federation
+# Uses osixia/openldap which provides a ready-to-use OpenLDAP server
+#
+# Test users created:
+# - alice (uid=alice, password=alice123)
+# - bob (uid=bob, password=bob123)
+# - charlie (uid=charlie, password=charlie123)
+#
+# Test groups:
+# - developers (members: alice, bob)
+# - admins (members: charlie)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openldap-config
+  namespace: keycloak-test-system  # Will be overridden by test code
+data:
+  # Bootstrap LDIF to create test organizational units, users, and groups
+  bootstrap.ldif: |
+    # Create organizational units
+    dn: ou=People,dc=example,dc=org
+    objectClass: organizationalUnit
+    ou: People
+    description: Users container
+
+    dn: ou=Groups,dc=example,dc=org
+    objectClass: organizationalUnit
+    ou: Groups
+    description: Groups container
+
+    # Create test users
+    dn: uid=alice,ou=People,dc=example,dc=org
+    objectClass: inetOrgPerson
+    objectClass: posixAccount
+    objectClass: shadowAccount
+    uid: alice
+    cn: Alice Smith
+    sn: Smith
+    givenName: Alice
+    mail: alice@example.org
+    uidNumber: 1001
+    gidNumber: 1001
+    homeDirectory: /home/alice
+    userPassword: alice123
+
+    dn: uid=bob,ou=People,dc=example,dc=org
+    objectClass: inetOrgPerson
+    objectClass: posixAccount
+    objectClass: shadowAccount
+    uid: bob
+    cn: Bob Jones
+    sn: Jones
+    givenName: Bob
+    mail: bob@example.org
+    uidNumber: 1002
+    gidNumber: 1001
+    homeDirectory: /home/bob
+    userPassword: bob123
+
+    dn: uid=charlie,ou=People,dc=example,dc=org
+    objectClass: inetOrgPerson
+    objectClass: posixAccount
+    objectClass: shadowAccount
+    uid: charlie
+    cn: Charlie Brown
+    sn: Brown
+    givenName: Charlie
+    mail: charlie@example.org
+    uidNumber: 1003
+    gidNumber: 1002
+    homeDirectory: /home/charlie
+    userPassword: charlie123
+
+    # Create test groups
+    dn: cn=developers,ou=Groups,dc=example,dc=org
+    objectClass: groupOfNames
+    cn: developers
+    description: Development team
+    member: uid=alice,ou=People,dc=example,dc=org
+    member: uid=bob,ou=People,dc=example,dc=org
+
+    dn: cn=admins,ou=Groups,dc=example,dc=org
+    objectClass: groupOfNames
+    cn: admins
+    description: Administrators
+    member: uid=charlie,ou=People,dc=example,dc=org
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openldap
+  namespace: keycloak-test-system  # Will be overridden by test code
+  labels:
+    app: openldap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openldap
+  template:
+    metadata:
+      labels:
+        app: openldap
+    spec:
+      containers:
+      - name: openldap
+        image: osixia/openldap:1.5.0
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: ldap
+          containerPort: 389
+        - name: ldaps
+          containerPort: 636
+        env:
+        - name: LDAP_ORGANISATION
+          value: "Example Inc."
+        - name: LDAP_DOMAIN
+          value: "example.org"
+        - name: LDAP_ADMIN_PASSWORD
+          value: "admin"
+        - name: LDAP_CONFIG_PASSWORD
+          value: "config"
+        - name: LDAP_READONLY_USER
+          value: "true"
+        - name: LDAP_READONLY_USER_USERNAME
+          value: "readonly"
+        - name: LDAP_READONLY_USER_PASSWORD
+          value: "readonly123"
+        - name: LDAP_SEED_INTERNAL_LDIF_PATH
+          value: "/container/service/slapd/assets/config/bootstrap/ldif/custom"
+        volumeMounts:
+        - name: bootstrap-ldif
+          mountPath: /container/service/slapd/assets/config/bootstrap/ldif/custom
+        - name: data
+          mountPath: /var/lib/ldap
+        - name: config
+          mountPath: /etc/ldap/slapd.d
+        livenessProbe:
+          tcpSocket:
+            port: 389
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: 389
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+      volumes:
+      - name: bootstrap-ldif
+        configMap:
+          name: openldap-config
+          items:
+          - key: bootstrap.ldif
+            path: bootstrap.ldif
+      - name: data
+        emptyDir: {}
+      - name: config
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openldap
+  namespace: keycloak-test-system  # Will be overridden by test code
+  labels:
+    app: openldap
+spec:
+  type: ClusterIP
+  ports:
+  - name: ldap
+    port: 389
+    targetPort: 389
+    protocol: TCP
+  - name: ldaps
+    port: 636
+    targetPort: 636
+    protocol: TCP
+  selector:
+    app: openldap
