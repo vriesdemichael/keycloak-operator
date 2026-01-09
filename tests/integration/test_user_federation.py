@@ -167,7 +167,9 @@ async def test_ldap_federation_create(
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.xfail(
-    reason="LDAP sync fails with UnknownError - investigating GLAuth compatibility"
+    reason="Keycloak 26.4.1 returns UnknownError on sync for newly created LDAP providers. "
+    "Connection and auth tests pass, but sync fails without logging. "
+    "Previously-existing providers work fine. Suspected Keycloak bug."
 )
 async def test_ldap_federation_sync_users(
     shared_operator,
