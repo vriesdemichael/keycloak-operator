@@ -624,9 +624,9 @@ class KeycloakUserFederation(BaseModel):
         config["vendor"] = [self.vendor]
         if self.users_dn:
             config["usersDn"] = [self.users_dn]
-        config["usernameLdapAttribute"] = [self.username_ldap_attribute]
-        config["rdnLdapAttribute"] = [self.rdn_ldap_attribute]
-        config["uuidLdapAttribute"] = [self.uuid_ldap_attribute]
+        config["usernameLDAPAttribute"] = [self.username_ldap_attribute]
+        config["rdnLDAPAttribute"] = [self.rdn_ldap_attribute]
+        config["uuidLDAPAttribute"] = [self.uuid_ldap_attribute]
         config["userObjectClasses"] = [", ".join(self.user_object_classes)]
         if self.custom_user_search_filter:
             config["customUserSearchFilter"] = [self.custom_user_search_filter]

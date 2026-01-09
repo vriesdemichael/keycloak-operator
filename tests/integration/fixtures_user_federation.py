@@ -49,6 +49,7 @@ async def _wait_for_deployment_ready(
             ):
                 return True
         except ApiException:
+            # Deployment may not exist yet during initial polling - continue waiting
             pass
         await asyncio.sleep(5)
     return False
@@ -208,106 +209,42 @@ async def openldap_ready(
 
 @pytest.fixture
 async def openldap_ad_ready(
-    operator_namespace: str,
+    openldap_ready: dict[str, Any],
 ) -> dict[str, Any]:
-    """Deploy OpenLDAP with Active Directory schema simulation.
+    """Provide AD-style LDAP configuration using GLAuth.
 
-    Deploys OpenLDAP with custom AD-compatible schema attributes:
-    - sAMAccountName (login name)
-    - userPrincipalName (user@domain format)
+    This fixture reuses the GLAuth deployment but returns AD-style configuration.
+    GLAuth already provides userPrincipalName and cn attributes which can be
+    used to simulate AD-style authentication.
 
-    This simulates an Active Directory environment for testing AD-specific
-    federation configurations.
+    The purpose is to test that the operator correctly configures AD-specific
+    settings in Keycloak, not to test against a real AD server.
 
-    Test users (password = username):
-    - alice (sAMAccountName=alice, userPrincipalName=alice@corp.example.com)
-    - bob (sAMAccountName=bob, userPrincipalName=bob@corp.example.com)
-    - charlie (sAMAccountName=charlie, userPrincipalName=charlie@corp.example.com)
+    GLAuth provides:
+    - cn: equivalent to sAMAccountName (simple username)
+    - userPrincipalName: already present (user@domain format)
 
     Yields:
-        dict with AD-style connection information
+        dict with AD-style connection information using GLAuth
     """
-    apps_api = client.AppsV1Api()
-    namespace = operator_namespace
+    logger.info("Using GLAuth with AD-style configuration")
 
-    logger.info(f"Deploying OpenLDAP with AD schema to {namespace}...")
-    _apply_manifests(OPENLDAP_AD_MANIFEST, namespace)
-
-    try:
-        # Wait for deployment to be ready
-        ready = await _wait_for_deployment_ready(
-            apps_api, "openldap-ad", namespace, timeout=300
-        )
-        if not ready:
-            # Get pod logs for debugging
-            try:
-                result = subprocess.run(
-                    [
-                        "kubectl",
-                        "logs",
-                        "-n",
-                        namespace,
-                        "-l",
-                        "app=openldap-ad",
-                        "--tail=50",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                )
-                logger.error(f"OpenLDAP-AD logs:\n{result.stdout}\n{result.stderr}")
-            except Exception as e:
-                logger.error(f"Failed to get OpenLDAP-AD logs: {e}")
-            raise TimeoutError(
-                f"OpenLDAP-AD deployment did not become ready within 300s in {namespace}"
-            )
-
-        logger.info("✓ OpenLDAP with AD schema is ready")
-
-        yield {
-            "connection_url": f"ldap://openldap-ad.{namespace}.svc.cluster.local:389",
-            "bind_dn": "cn=admin,dc=corp,dc=example,dc=com",
-            "bind_password": "admin",
-            "users_dn": "ou=Users,dc=corp,dc=example,dc=com",
-            "groups_dn": "ou=Groups,dc=corp,dc=example,dc=com",
-            "readonly_bind_dn": "cn=readonly,dc=corp,dc=example,dc=com",
-            "readonly_password": "readonly123",
-            "base_dn": "dc=corp,dc=example,dc=com",
-            "vendor": "ad",  # Active Directory
-            "username_attribute": "sAMAccountName",
-            "upn_attribute": "userPrincipalName",
-            "uuid_attribute": "objectGUID",  # AD uses objectGUID
-            "rdn_attribute": "cn",  # AD uses cn as RDN
-            "test_users": [
-                {
-                    "sAMAccountName": "alice",
-                    "userPrincipalName": "alice@corp.example.com",
-                    "password": "alice123",
-                    "email": "alice@corp.example.com",
-                },
-                {
-                    "sAMAccountName": "bob",
-                    "userPrincipalName": "bob@corp.example.com",
-                    "password": "bob123",
-                    "email": "bob@corp.example.com",
-                },
-                {
-                    "sAMAccountName": "charlie",
-                    "userPrincipalName": "charlie@corp.example.com",
-                    "password": "charlie123",
-                    "email": "charlie@corp.example.com",
-                },
-            ],
-            "test_groups": [
-                {"cn": "Domain Users", "members": ["alice", "bob", "charlie"]},
-                {"cn": "Domain Admins", "members": ["charlie"]},
-                {"cn": "Developers", "members": ["alice", "bob"]},
-            ],
-        }
-
-    finally:
-        logger.info("Cleaning up OpenLDAP-AD...")
-        _delete_manifests(OPENLDAP_AD_MANIFEST, namespace)
+    # Return AD-style config that uses GLAuth's actual attributes
+    yield {
+        "connection_url": openldap_ready["connection_url"],
+        "bind_dn": openldap_ready["bind_dn"],
+        "bind_password": openldap_ready["bind_password"],
+        "users_dn": openldap_ready["users_dn"],
+        "groups_dn": openldap_ready.get("groups_dn", "ou=groups,dc=example,dc=org"),
+        "base_dn": openldap_ready["base_dn"],
+        "vendor": "ad",  # Configure as Active Directory
+        "username_attribute": "cn",  # GLAuth's cn acts like sAMAccountName
+        "upn_attribute": "userPrincipalName",  # GLAuth provides this
+        "uuid_attribute": "uidNumber",  # GLAuth uses uidNumber as unique ID
+        "rdn_attribute": "cn",
+        "user_object_classes": ["posixAccount"],  # GLAuth's object class
+        "test_users": openldap_ready["test_users"],
+    }
 
 
 @pytest.fixture
@@ -405,6 +342,8 @@ async def kerberos_ready(
                     keytab_ready = True
                     break
             except Exception:
+                # Pod may not be ready for exec yet, or keytab-exporter container
+                # hasn't created the marker file - continue polling
                 pass
             await asyncio.sleep(5)
 

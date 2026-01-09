@@ -10,7 +10,6 @@ These tests verify that the operator correctly:
 6. Configures Kerberos authentication (when available)
 """
 
-import asyncio
 import logging
 import uuid
 
@@ -26,7 +25,7 @@ from keycloak_operator.models.realm import (
     OperatorRef,
 )
 
-from .wait_helpers import wait_for_resource_ready
+from .wait_helpers import wait_for_reconciliation_complete, wait_for_resource_ready
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,7 @@ async def test_ldap_federation_create(
         vendor=openldap_ready["vendor"],
         username_ldap_attribute=openldap_ready["username_attribute"],
         uuid_ldap_attribute=openldap_ready["uuid_attribute"],
-        user_object_classes=["inetOrgPerson", "organizationalPerson"],
+        user_object_classes=["posixAccount"],  # GLAuth returns posixAccount
         edit_mode="READ_ONLY",
         sync_settings=KeycloakUserFederationSyncSettings(
             import_enabled=True,
@@ -167,7 +166,6 @@ async def test_ldap_federation_create(
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@pytest.mark.xfail(reason="LDAP sync requires proper GLAuth configuration debugging")
 async def test_ldap_federation_sync_users(
     shared_operator,
     keycloak_admin_client,
@@ -206,7 +204,7 @@ async def test_ldap_federation_sync_users(
         vendor=openldap_ready["vendor"],
         username_ldap_attribute=openldap_ready["username_attribute"],
         uuid_ldap_attribute=openldap_ready["uuid_attribute"],
-        user_object_classes=["inetOrgPerson", "organizationalPerson"],
+        user_object_classes=["posixAccount"],  # GLAuth returns posixAccount
         edit_mode="READ_ONLY",
         sync_settings=KeycloakUserFederationSyncSettings(
             import_enabled=True,
@@ -278,10 +276,7 @@ async def test_ldap_federation_sync_users(
         )
         logger.info(f"Sync result: {sync_result}")
 
-        # Wait a moment for sync to complete
-        await asyncio.sleep(2)
-
-        # Verify users were imported
+        # Verify users were imported (sync is synchronous - no wait needed)
         # Get users from Keycloak
         response = await keycloak_admin_client._make_request(
             "GET",
@@ -322,7 +317,6 @@ async def test_ldap_federation_sync_users(
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@pytest.mark.xfail(reason="Federation deletion reconciliation needs debugging")
 async def test_ldap_federation_delete(
     shared_operator,
     keycloak_admin_client,
@@ -420,6 +414,16 @@ async def test_ldap_federation_delete(
             },
         }
 
+        # Get generation before patching to wait for the NEW reconciliation
+        current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+        )
+        current_generation = current_resource["metadata"]["generation"]
+
         custom_api.patch_namespaced_custom_object(
             group="vriesdemichael.github.io",
             version="v1",
@@ -429,8 +433,17 @@ async def test_ldap_federation_delete(
             body=realm_cr_updated,
         )
 
-        # Wait for reconciliation
-        await asyncio.sleep(10)
+        # Wait for reconciliation of the NEW generation (current + 1)
+        await wait_for_reconciliation_complete(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            min_generation=current_generation + 1,
+            timeout=60,
+        )
 
         # Verify federation was deleted
         providers = await keycloak_admin_client.get_user_federation_providers(
@@ -462,7 +475,6 @@ async def test_ldap_federation_delete(
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-@pytest.mark.xfail(reason="OpenLDAP-AD deployment needs longer timeout/debugging")
 async def test_ad_federation_with_sam_account_name(
     shared_operator,
     keycloak_admin_client,
@@ -471,7 +483,12 @@ async def test_ad_federation_with_sam_account_name(
     k8s_custom_objects,
     openldap_ad_ready,
 ):
-    """Test LDAP federation with Active Directory schema simulation."""
+    """Test LDAP federation with Active Directory style configuration.
+
+    This test verifies that the operator correctly configures AD-specific
+    settings in Keycloak. It uses GLAuth as the backend LDAP server,
+    configured with AD-style attributes (vendor=ad, username=cn).
+    """
     realm_name = f"test-ad-{uuid.uuid4().hex[:8]}"
 
     # Create secret
@@ -487,7 +504,7 @@ async def test_ad_federation_with_sam_account_name(
     )
     core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
 
-    # Configure AD-style federation
+    # Configure AD-style federation using GLAuth
     ad_config = KeycloakUserFederation(
         name="test-ad-ldap",
         provider_id="ldap",
@@ -499,12 +516,12 @@ async def test_ad_federation_with_sam_account_name(
         ),
         users_dn=openldap_ad_ready["users_dn"],
         vendor=openldap_ad_ready["vendor"],  # "ad"
-        username_ldap_attribute=openldap_ad_ready[
-            "username_attribute"
-        ],  # sAMAccountName
+        username_ldap_attribute=openldap_ad_ready["username_attribute"],  # "cn"
         rdn_ldap_attribute=openldap_ad_ready.get("rdn_attribute", "cn"),
-        uuid_ldap_attribute=openldap_ad_ready.get("uuid_attribute", "objectGUID"),
-        user_object_classes=["inetOrgPerson", "msUser"],
+        uuid_ldap_attribute=openldap_ad_ready.get("uuid_attribute", "uidNumber"),
+        user_object_classes=openldap_ad_ready.get(
+            "user_object_classes", ["posixAccount"]
+        ),
         edit_mode="READ_ONLY",
     )
 
@@ -558,9 +575,11 @@ async def test_ad_federation_with_sam_account_name(
         vendor = provider.config.get("vendor", [])
         assert "ad" in vendor, "Vendor should be 'ad'"
 
-        username_attr = provider.config.get("usernameLdapAttribute", [])
-        assert "sAMAccountName" in username_attr, (
-            "Username attr should be sAMAccountName"
+        # Keycloak returns usernameLDAPAttribute (uppercase LDAP)
+        username_attr = provider.config.get("usernameLDAPAttribute", [])
+        # We use "cn" as the username attribute (equivalent to sAMAccountName for GLAuth)
+        assert "cn" in username_attr, (
+            f"Username attr should be 'cn', got {username_attr}"
         )
 
         logger.info("✓ Successfully verified AD federation configuration")
@@ -705,6 +724,16 @@ async def test_ldap_federation_update_config(
             "spec": realm_spec_updated.model_dump(by_alias=True, exclude_unset=True),
         }
 
+        # Get generation before patching to wait for the NEW reconciliation
+        current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+        )
+        current_generation = current_resource["metadata"]["generation"]
+
         custom_api.patch_namespaced_custom_object(
             group="vriesdemichael.github.io",
             version="v1",
@@ -714,8 +743,17 @@ async def test_ldap_federation_update_config(
             body=realm_cr_updated,
         )
 
-        # Wait for reconciliation
-        await asyncio.sleep(10)
+        # Wait for reconciliation of the NEW generation (current + 1)
+        await wait_for_reconciliation_complete(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            min_generation=current_generation + 1,
+            timeout=60,
+        )
 
         # Verify updated config
         providers = await keycloak_admin_client.get_user_federation_providers(

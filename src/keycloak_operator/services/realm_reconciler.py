@@ -108,8 +108,9 @@ class KeycloakRealmReconciler(BaseReconciler):
         if realm_spec.identity_providers:
             await self.configure_identity_providers(realm_spec, name, namespace)
 
-        if realm_spec.user_federation:
-            await self.configure_user_federation(realm_spec, name, namespace)
+        # Always call configure_user_federation to handle deletions
+        # when user_federation becomes empty
+        await self.configure_user_federation(realm_spec, name, namespace)
 
         # Configure client scopes (must be before default/optional scope assignments)
         if realm_spec.client_scopes:
@@ -1478,17 +1479,6 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         federation_statuses: list[dict[str, Any]] = []
 
-        if not spec.user_federation:
-            self.logger.debug(
-                f"No user federation configured for realm {spec.realm_name}"
-            )
-            return federation_statuses
-
-        self.logger.info(
-            f"Configuring {len(spec.user_federation)} user federation provider(s) "
-            f"for realm {spec.realm_name}"
-        )
-
         # Get admin client
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
@@ -1502,6 +1492,32 @@ class KeycloakRealmReconciler(BaseReconciler):
             spec.realm_name, namespace
         )
         existing_by_name = {p.name: p for p in existing_providers}
+
+        # If no user federation in spec, delete all existing providers and return
+        if not spec.user_federation:
+            self.logger.debug(
+                f"No user federation configured for realm {spec.realm_name}"
+            )
+            # Delete all existing providers
+            for provider_name, existing in existing_by_name.items():
+                self.logger.info(
+                    f"Deleting user federation provider '{provider_name}' "
+                    f"(spec has no user federation)"
+                )
+                try:
+                    await admin_client.delete_user_federation_provider(
+                        spec.realm_name, existing.id, namespace
+                    )
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to delete federation provider '{provider_name}': {e}"
+                    )
+            return federation_statuses
+
+        self.logger.info(
+            f"Configuring {len(spec.user_federation)} user federation provider(s) "
+            f"for realm {spec.realm_name}"
+        )
 
         # Track which providers we've processed (for deletion detection)
         processed_names: set[str] = set()
