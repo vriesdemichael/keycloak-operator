@@ -573,7 +573,11 @@ class KeycloakUserFederation(BaseModel):
     def validate_provider_id(cls, v):
         valid_providers = ["ldap", "kerberos"]
         if v not in valid_providers:
-            raise ValueError(f"Provider ID must be one of {valid_providers}")
+            raise ValueError(
+                f"Provider ID must be one of {valid_providers}. "
+                "Note: Active Directory is configured using provider_id='ldap' "
+                "together with vendor='ad'."
+            )
         return v
 
     @field_validator("vendor")
