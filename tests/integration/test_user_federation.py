@@ -991,3 +991,516 @@ async def test_ldap_federation_mapper_management(
             )
         except Exception as e:
             logger.warning(f"Failed to delete secret {secret_name}: {e}")
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_ldap_federation_delete_one_of_many(
+    shared_operator,
+    keycloak_admin_client,
+    operator_namespace,
+    test_namespace,
+    k8s_custom_objects,
+    openldap_ready,
+):
+    """Test deleting one federation provider while keeping another.
+
+    This exercises the code path that deletes providers removed from spec
+    but keeps other providers that are still defined.
+    """
+    realm_name = f"test-ldap-multi-{uuid.uuid4().hex[:8]}"
+
+    # Create secret
+    core_api = client.CoreV1Api()
+    secret_name = f"ldap-bind-{uuid.uuid4().hex[:8]}"
+    secret = client.V1Secret(
+        metadata=client.V1ObjectMeta(
+            name=secret_name,
+            namespace=test_namespace,
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
+        ),
+        string_data={"password": openldap_ready["bind_password"]},
+    )
+    core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
+
+    # Configure TWO LDAP federations
+    ldap_config_1 = KeycloakUserFederation(
+        name="multi-test-ldap-1",
+        provider_id="ldap",
+        connection_url=openldap_ready["connection_url"],
+        bind_dn=openldap_ready["bind_dn"],
+        bind_credential_secret=KeycloakUserFederationSecretRef(
+            name=secret_name,
+            key="password",
+        ),
+        users_dn=openldap_ready["users_dn"],
+        vendor=openldap_ready["vendor"],
+    )
+
+    ldap_config_2 = KeycloakUserFederation(
+        name="multi-test-ldap-2",
+        provider_id="ldap",
+        connection_url=openldap_ready["connection_url"],
+        bind_dn=openldap_ready["bind_dn"],
+        bind_credential_secret=KeycloakUserFederationSecretRef(
+            name=secret_name,
+            key="password",
+        ),
+        users_dn=openldap_ready["users_dn"],
+        vendor=openldap_ready["vendor"],
+    )
+
+    realm_spec = KeycloakRealmSpec(
+        realm_name=realm_name,
+        operator_ref=OperatorRef(namespace=operator_namespace),
+        user_federation=[ldap_config_1, ldap_config_2],
+    )
+
+    custom_api = client.CustomObjectsApi()
+
+    realm_cr = {
+        "apiVersion": "vriesdemichael.github.io/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": realm_name,
+            "namespace": test_namespace,
+        },
+        "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+    }
+
+    try:
+        # Create realm with two federations
+        custom_api.create_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            body=realm_cr,
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            timeout=180,
+        )
+
+        # Verify both federations exist
+        providers = await keycloak_admin_client.get_user_federation_providers(
+            realm_name, test_namespace
+        )
+        assert len(providers) == 2, f"Expected 2 providers, got {len(providers)}"
+        provider_names = {p.name for p in providers}
+        assert "multi-test-ldap-1" in provider_names
+        assert "multi-test-ldap-2" in provider_names
+
+        # Update realm to keep only the first federation (remove the second)
+        realm_spec_updated = KeycloakRealmSpec(
+            realm_name=realm_name,
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            user_federation=[ldap_config_1],  # Only keep the first one
+        )
+
+        realm_cr_updated = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {
+                "name": realm_name,
+                "namespace": test_namespace,
+            },
+            "spec": realm_spec_updated.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        # Get generation before patching
+        current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+        )
+        current_generation = current_resource["metadata"]["generation"]
+
+        custom_api.patch_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            body=realm_cr_updated,
+        )
+
+        # Wait for reconciliation
+        await wait_for_reconciliation_complete(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            min_generation=current_generation + 1,
+            timeout=60,
+        )
+
+        # Verify only the first federation remains
+        providers = await keycloak_admin_client.get_user_federation_providers(
+            realm_name, test_namespace
+        )
+        assert len(providers) == 1, f"Expected 1 provider, got {len(providers)}"
+        assert providers[0].name == "multi-test-ldap-1"
+
+        logger.info("✓ Successfully deleted one federation while keeping another")
+
+    finally:
+        try:
+            custom_api.delete_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete realm {realm_name}: {e}")
+
+        try:
+            core_api.delete_namespaced_secret(
+                name=secret_name, namespace=test_namespace
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete secret {secret_name}: {e}")
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_ldap_federation_mapper_update(
+    shared_operator,
+    keycloak_admin_client,
+    operator_namespace,
+    test_namespace,
+    k8s_custom_objects,
+    openldap_ready,
+):
+    """Test updating a federation mapper (delete and recreate path)."""
+    realm_name = f"test-mapper-upd-{uuid.uuid4().hex[:8]}"
+
+    # Create secret
+    core_api = client.CoreV1Api()
+    secret_name = f"ldap-bind-{uuid.uuid4().hex[:8]}"
+    secret = client.V1Secret(
+        metadata=client.V1ObjectMeta(
+            name=secret_name,
+            namespace=test_namespace,
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
+        ),
+        string_data={"password": openldap_ready["bind_password"]},
+    )
+    core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
+
+    # Initial config with a mapper
+    ldap_config = KeycloakUserFederation(
+        name="mapper-update-ldap",
+        provider_id="ldap",
+        connection_url=openldap_ready["connection_url"],
+        bind_dn=openldap_ready["bind_dn"],
+        bind_credential_secret=KeycloakUserFederationSecretRef(
+            name=secret_name,
+            key="password",
+        ),
+        users_dn=openldap_ready["users_dn"],
+        vendor=openldap_ready["vendor"],
+        username_ldap_attribute="cn",
+        uuid_ldap_attribute="uidNumber",
+        user_object_classes=["posixAccount"],
+        mappers=[
+            KeycloakUserFederationMapper(
+                name="test-phone",
+                mapper_type="user-attribute-ldap-mapper",
+                config={
+                    "ldap.attribute": "telephoneNumber",
+                    "user.model.attribute": "phone",
+                    "read.only": "true",
+                    "always.read.value.from.ldap": "false",
+                    "is.mandatory.in.ldap": "false",
+                },
+            ),
+        ],
+    )
+
+    realm_spec = KeycloakRealmSpec(
+        realm_name=realm_name,
+        operator_ref=OperatorRef(namespace=operator_namespace),
+        user_federation=[ldap_config],
+    )
+
+    custom_api = client.CustomObjectsApi()
+
+    realm_cr = {
+        "apiVersion": "vriesdemichael.github.io/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": realm_name,
+            "namespace": test_namespace,
+        },
+        "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+    }
+
+    try:
+        # Create realm with initial mapper
+        custom_api.create_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            body=realm_cr,
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            timeout=180,
+        )
+
+        # Get provider and verify mapper
+        providers = await keycloak_admin_client.get_user_federation_providers(
+            realm_name, test_namespace
+        )
+        assert len(providers) == 1
+        provider_id = providers[0].id
+
+        mappers = await keycloak_admin_client.get_user_federation_mappers(
+            realm_name, provider_id, test_namespace
+        )
+        phone_mapper = next((m for m in mappers if m.name == "test-phone"), None)
+        assert phone_mapper is not None, "Phone mapper should exist"
+        # Verify initial config
+        assert (
+            phone_mapper.config.get("always.read.value.from.ldap", [""])[0] == "false"
+        )
+
+        # Update mapper config (change always.read.value.from.ldap to true)
+        ldap_config_updated = KeycloakUserFederation(
+            name="mapper-update-ldap",
+            provider_id="ldap",
+            connection_url=openldap_ready["connection_url"],
+            bind_dn=openldap_ready["bind_dn"],
+            bind_credential_secret=KeycloakUserFederationSecretRef(
+                name=secret_name,
+                key="password",
+            ),
+            users_dn=openldap_ready["users_dn"],
+            vendor=openldap_ready["vendor"],
+            username_ldap_attribute="cn",
+            uuid_ldap_attribute="uidNumber",
+            user_object_classes=["posixAccount"],
+            mappers=[
+                KeycloakUserFederationMapper(
+                    name="test-phone",  # Same name
+                    mapper_type="user-attribute-ldap-mapper",
+                    config={
+                        "ldap.attribute": "telephoneNumber",
+                        "user.model.attribute": "phone",
+                        "read.only": "true",
+                        "always.read.value.from.ldap": "true",  # Changed!
+                        "is.mandatory.in.ldap": "false",
+                    },
+                ),
+            ],
+        )
+
+        realm_spec_updated = KeycloakRealmSpec(
+            realm_name=realm_name,
+            operator_ref=OperatorRef(namespace=operator_namespace),
+            user_federation=[ldap_config_updated],
+        )
+
+        realm_cr_updated = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "KeycloakRealm",
+            "metadata": {
+                "name": realm_name,
+                "namespace": test_namespace,
+            },
+            "spec": realm_spec_updated.model_dump(by_alias=True, exclude_unset=True),
+        }
+
+        # Get generation before patching
+        current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+        )
+        current_generation = current_resource["metadata"]["generation"]
+
+        custom_api.patch_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            body=realm_cr_updated,
+        )
+
+        # Wait for reconciliation
+        await wait_for_reconciliation_complete(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            min_generation=current_generation + 1,
+            timeout=60,
+        )
+
+        # Verify mapper was updated
+        mappers = await keycloak_admin_client.get_user_federation_mappers(
+            realm_name, provider_id, test_namespace
+        )
+        phone_mapper = next((m for m in mappers if m.name == "test-phone"), None)
+        assert phone_mapper is not None, "Phone mapper should still exist"
+        # Verify updated config
+        assert phone_mapper.config.get("always.read.value.from.ldap", [""])[0] == "true"
+
+        logger.info("✓ Successfully updated federation mapper")
+
+    finally:
+        try:
+            custom_api.delete_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete realm {realm_name}: {e}")
+
+        try:
+            core_api.delete_namespaced_secret(
+                name=secret_name, namespace=test_namespace
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete secret {secret_name}: {e}")
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+async def test_ldap_federation_get_provider_by_name(
+    shared_operator,
+    keycloak_admin_client,
+    operator_namespace,
+    test_namespace,
+    k8s_custom_objects,
+    openldap_ready,
+):
+    """Test getting a user federation provider by its display name."""
+    realm_name = f"test-ldap-byname-{uuid.uuid4().hex[:8]}"
+    provider_name = "test-ldap-provider-byname"
+
+    # Create secret with LDAP bind password
+    core_api = client.CoreV1Api()
+    secret_name = f"ldap-bind-{uuid.uuid4().hex[:8]}"
+    secret = client.V1Secret(
+        metadata=client.V1ObjectMeta(
+            name=secret_name,
+            namespace=test_namespace,
+            labels={"vriesdemichael.github.io/keycloak-allow-operator-read": "true"},
+        ),
+        string_data={"password": openldap_ready["bind_password"]},
+    )
+    core_api.create_namespaced_secret(namespace=test_namespace, body=secret)
+
+    # Configure LDAP federation
+    ldap_config = KeycloakUserFederation(
+        name=provider_name,
+        provider_id="ldap",
+        connection_url=openldap_ready["connection_url"],
+        bind_dn=openldap_ready["bind_dn"],
+        bind_credential_secret=KeycloakUserFederationSecretRef(
+            name=secret_name,
+            key="password",
+        ),
+        users_dn=openldap_ready["users_dn"],
+        vendor=openldap_ready["vendor"],
+    )
+
+    realm_spec = KeycloakRealmSpec(
+        realm_name=realm_name,
+        operator_ref=OperatorRef(namespace=operator_namespace),
+        user_federation=[ldap_config],
+    )
+
+    custom_api = client.CustomObjectsApi()
+    realm_cr = {
+        "apiVersion": "vriesdemichael.github.io/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": realm_name,
+            "namespace": test_namespace,
+        },
+        "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+    }
+
+    try:
+        custom_api.create_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            body=realm_cr,
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            timeout=180,
+        )
+
+        # Test get_user_federation_provider_by_name with existing provider
+        provider = await keycloak_admin_client.get_user_federation_provider_by_name(
+            realm_name, provider_name, test_namespace
+        )
+        assert provider is not None, "Should find provider by name"
+        assert provider.name == provider_name
+        assert provider.provider_id == "ldap"
+
+        # Test get_user_federation_provider_by_name with non-existent name
+        non_existent = await keycloak_admin_client.get_user_federation_provider_by_name(
+            realm_name, "non-existent-provider", test_namespace
+        )
+        assert non_existent is None, "Should return None for non-existent provider"
+
+        logger.info("✓ Successfully tested get_user_federation_provider_by_name")
+
+    finally:
+        try:
+            custom_api.delete_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete realm {realm_name}: {e}")
+
+        try:
+            core_api.delete_namespaced_secret(
+                name=secret_name, namespace=test_namespace
+            )
+        except Exception as e:
+            logger.warning(f"Failed to delete secret {secret_name}: {e}")
