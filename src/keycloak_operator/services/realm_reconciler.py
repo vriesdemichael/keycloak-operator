@@ -110,7 +110,9 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Always call configure_user_federation to handle deletions
         # when user_federation becomes empty
-        await self.configure_user_federation(realm_spec, name, namespace)
+        federation_statuses = await self.configure_user_federation(
+            realm_spec, name, namespace
+        )
 
         # Configure client scopes (must be before default/optional scope assignments)
         if realm_spec.client_scopes:
@@ -172,6 +174,9 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Update client scopes count in status
         status.clientScopesCount = len(realm_spec.client_scopes or [])
+
+        # Add user federation status to the CR status
+        status.userFederationStatus = federation_statuses
 
         # Populate OIDC endpoint discovery
         try:
