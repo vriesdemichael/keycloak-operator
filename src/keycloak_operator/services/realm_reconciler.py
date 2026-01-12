@@ -1668,7 +1668,10 @@ class KeycloakRealmReconciler(BaseReconciler):
                 )
                 config["bindCredential"] = [password]
             except Exception as e:
-                self.logger.warning(f"Failed to read bind credential secret: {e}")
+                self.logger.warning(
+                    f"Failed to read bind credential secret for federation "
+                    f"'{federation_config.name}': {e}"
+                )
 
         # Inject keytab from secret if specified (for Kerberos)
         if federation_config.keytab_secret:
@@ -1681,7 +1684,10 @@ class KeycloakRealmReconciler(BaseReconciler):
                 # Keytab is stored as base64-encoded binary
                 config["keyTab"] = [keytab_data]
             except Exception as e:
-                self.logger.warning(f"Failed to read keytab secret: {e}")
+                self.logger.warning(
+                    f"Failed to read keytab secret for federation "
+                    f"'{federation_config.name}': {e}"
+                )
 
         # Build the component representation
         # Note: parentId must be the realm ID (UUID), not the realm name

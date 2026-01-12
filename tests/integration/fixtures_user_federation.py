@@ -374,7 +374,7 @@ async def kerberos_ready(
         _delete_manifests(KERBEROS_MANIFEST, namespace)
 
 
-async def retrieve_kerberos_keytab(
+async def _retrieve_kerberos_keytab(
     kerberos_info: dict[str, Any],
 ) -> bytes:
     """Retrieve the keytab from the Kerberos KDC pod.
@@ -450,7 +450,7 @@ async def create_keytab_secret(
         secret_name: Name for the secret
         target_namespace: Namespace to create the secret in
     """
-    keytab_data = await retrieve_kerberos_keytab(kerberos_info)
+    keytab_data = await _retrieve_kerberos_keytab(kerberos_info)
 
     secret = client.V1Secret(
         metadata=client.V1ObjectMeta(
