@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.21](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.20...chart-operator-v0.3.21) (2026-01-13)
+
+
+### Features
+
+* **operator:** enhance user federation models with LDAP/AD/Kerberos support ([7c6e1d7](https://github.com/vriesdemichael/keycloak-operator/commit/7c6e1d7bb0dae2e6c0e0b08aac01292020d6ec3d))
+
 ## [0.3.20](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.19...chart-operator-v0.3.20) (2026-01-08)
 
 
