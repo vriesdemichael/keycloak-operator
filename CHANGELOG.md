@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.19](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.18...operator-image-v0.5.19) (2026-01-13)
+
+
+### Features
+
+* **operator:** add user federation CRUD methods to Keycloak admin client ([cbdbd1a](https://github.com/vriesdemichael/keycloak-operator/commit/cbdbd1ae2e5262fecea014a6b33f8194ecb24941))
+* **operator:** Add user federation status to KeycloakRealm CR status ([74bfccf](https://github.com/vriesdemichael/keycloak-operator/commit/74bfccfab5eaca12f3806fc81e2365d96d243c48))
+* **operator:** enhance user federation models with LDAP/AD/Kerberos support ([7c6e1d7](https://github.com/vriesdemichael/keycloak-operator/commit/7c6e1d7bb0dae2e6c0e0b08aac01292020d6ec3d))
+* **operator:** implement user federation CRUD lifecycle in realm reconciler ([218061b](https://github.com/vriesdemichael/keycloak-operator/commit/218061bc332eecb2761fbf8b18aac5380621f6f6))
+
+
+### Bug Fixes
+
+* **operator:** add namespace param to user federation admin client methods ([6024fa1](https://github.com/vriesdemichael/keycloak-operator/commit/6024fa1e08b3fd6f7fa2dad44274480b45cca9b5))
+* **operator:** address PR review comments ([9de3803](https://github.com/vriesdemichael/keycloak-operator/commit/9de38035a33abd071ac4b88dba9a07cae71a69eb))
+* **operator:** correct parameter order in _fetch_secret_value calls ([58e1276](https://github.com/vriesdemichael/keycloak-operator/commit/58e12764e8e33fdd2e99c6c0a166159b1c61e7b0))
+* **operator:** use client-side filtering for user federation components ([dbb722f](https://github.com/vriesdemichael/keycloak-operator/commit/dbb722f9da266dda0f08207b12f415d61b003d4f))
+* **operator:** use realm ID instead of realm name for federation parentId ([8e54566](https://github.com/vriesdemichael/keycloak-operator/commit/8e54566427873c955d7320323d6ddd7381a94246))
+* **operator:** user federation tests and LDAP attribute config keys ([ddd7733](https://github.com/vriesdemichael/keycloak-operator/commit/ddd77335e4efa2b0620f110b350fd0dc5c79a095)), closes [#179](https://github.com/vriesdemichael/keycloak-operator/issues/179)
+
 ## [0.5.18](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.17...operator-image-v0.5.18) (2026-01-08)
 
 
