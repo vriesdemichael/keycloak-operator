@@ -35,7 +35,6 @@ def mock_reconciler(mock_admin_client):
         rate_limiter=None,
     )
     # Mock _fetch_secret_value to avoid K8s calls
-    # type: ignore[method-assign] - intentional mock for testing
     reconciler._fetch_secret_value = AsyncMock(return_value="secret-value")  # type: ignore[method-assign]
     return reconciler
 

@@ -75,7 +75,7 @@ class TestWebhooksE2E:
 
             # Verify rejection by webhook
             # Note: Kopf may return 500 or 400 for validation errors depending on timing
-            assert exc_info.value.status in (400, 500)  # type: ignore[union-attr]
+            assert exc_info.value.status in (400, 500)
             assert "quota exceeded" in exc_info.value.body.lower()  # type: ignore[union-attr]
 
         finally:
@@ -224,7 +224,7 @@ class TestWebhooksE2E:
                 )
 
             # Verify rejection by webhook
-            assert exc_info.value.status in (400, 500)  # type: ignore[union-attr]  # Kopf returns 500 or 400
+            assert exc_info.value.status in (400, 500)  # Kopf returns 500 or 400
             assert "quota exceeded" in exc_info.value.body.lower()  # type: ignore[union-attr]
 
         finally:
@@ -305,7 +305,7 @@ class TestWebhooksE2E:
                 )
 
             # Verify rejection by webhook (may be for missing creds or one-per-namespace)
-            assert exc_info.value.status in (400, 500)  # type: ignore[union-attr]  # Kopf returns 500 or 400
+            assert exc_info.value.status in (400, 500)  # Kopf returns 500 or 400
             # Webhook rejected - could be Pydantic validation or quota, both are valid
             assert "denied the request" in exc_info.value.body.lower()  # type: ignore[union-attr]
 
@@ -346,7 +346,7 @@ class TestWebhooksE2E:
                 )
 
             # Verify rejection by webhook (422 is validation error, also acceptable)
-            assert exc_info.value.status in (400, 422, 500)  # type: ignore[union-attr]
+            assert exc_info.value.status in (400, 422, 500)
             assert "invalid" in exc_info.value.body.lower()  # type: ignore[union-attr]
 
         finally:

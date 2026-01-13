@@ -56,7 +56,7 @@ def reconciler(admin_mock: MagicMock) -> KeycloakRealmReconciler:
     reconciler_instance = KeycloakRealmReconciler(
         keycloak_admin_factory=mock_factory,
     )
-    reconciler_instance.logger = MagicMock()  # type: ignore[assignment]
+    reconciler_instance.logger = MagicMock()
 
     return reconciler_instance
 

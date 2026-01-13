@@ -54,38 +54,36 @@ spec:
   adminUrl: {{ . }}
   {{- end }}
 
-  {{- with .Values.settings }}
+  # Client settings - map all settings to CRD structure
   settings:
-    enabled: {{ .enabled }}
-    clientAuthenticatorType: {{ $.Values.clientAuthenticatorType }}
-    standardFlowEnabled: {{ $.Values.standardFlowEnabled }}
-    implicitFlowEnabled: {{ $.Values.implicitFlowEnabled }}
-    directAccessGrantsEnabled: {{ $.Values.directAccessGrantsEnabled }}
-    serviceAccountsEnabled: {{ $.Values.serviceAccountsEnabled }}
-    authorizationServicesEnabled: {{ $.Values.authorizationServicesEnabled }}
-    consentRequired: {{ $.Values.consentRequired }}
-    displayOnConsentScreen: {{ $.Values.displayOnConsentScreen }}
-    frontchannelLogout: {{ $.Values.frontchannelLogout }}
-    alwaysDisplayInConsole: {{ $.Values.alwaysDisplayInConsole }}
-    fullScopeAllowed: {{ $.Values.fullScopeAllowed }}
-    includeInTokenScope: {{ $.Values.includeInTokenScope }}
+    clientAuthenticatorType: {{ .Values.clientAuthenticatorType }}
+    standardFlowEnabled: {{ .Values.standardFlowEnabled }}
+    implicitFlowEnabled: {{ .Values.implicitFlowEnabled }}
+    directAccessGrantsEnabled: {{ .Values.directAccessGrantsEnabled }}
+    serviceAccountsEnabled: {{ .Values.serviceAccountsEnabled }}
+    authorizationServicesEnabled: {{ .Values.authorizationServicesEnabled }}
+    consentRequired: {{ .Values.consentRequired }}
+    displayOnConsentScreen: {{ .Values.displayOnConsentScreen }}
+    frontchannelLogout: {{ .Values.frontchannelLogout }}
+    alwaysDisplayInConsole: {{ .Values.alwaysDisplayInConsole }}
+    fullScopeAllowed: {{ .Values.fullScopeAllowed }}
+    includeInTokenScope: {{ .Values.includeInTokenScope }}
 
-    {{- with .pkceCodeChallengeMethod }}
+    {{- with .Values.settings.pkceCodeChallengeMethod }}
     pkceCodeChallengeMethod: {{ . }}
     {{- end }}
 
-    {{- if .accessTokenLifespan }}
-    accessTokenLifespan: {{ .accessTokenLifespan }}
+    {{- if .Values.settings.accessTokenLifespan }}
+    accessTokenLifespan: {{ .Values.settings.accessTokenLifespan }}
     {{- end }}
 
-    {{- if .clientSessionIdleTimeout }}
-    clientSessionIdleTimeout: {{ .clientSessionIdleTimeout }}
+    {{- if .Values.settings.clientSessionIdleTimeout }}
+    clientSessionIdleTimeout: {{ .Values.settings.clientSessionIdleTimeout }}
     {{- end }}
 
-    {{- if .clientSessionMaxLifespan }}
-    clientSessionMaxLifespan: {{ .clientSessionMaxLifespan }}
+    {{- if .Values.settings.clientSessionMaxLifespan }}
+    clientSessionMaxLifespan: {{ .Values.settings.clientSessionMaxLifespan }}
     {{- end }}
-  {{- end }}
 
   {{- with .Values.defaultClientScopes }}
   defaultClientScopes:

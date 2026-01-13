@@ -821,7 +821,7 @@ class TestKeycloakPlaceholderValidation:
         validate_no_keycloak_placeholders("https://example.com", "url")
         validate_no_keycloak_placeholders("my-client-id", "clientId")
         validate_no_keycloak_placeholders("", "empty")
-        validate_no_keycloak_placeholders(None, "none")  # type: ignore[arg-type]
+        validate_no_keycloak_placeholders(None, "none")
 
     def test_detects_keycloak_secret_placeholder(self):
         """Test that ${keycloak:...} placeholders are detected."""

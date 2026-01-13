@@ -323,7 +323,7 @@ class DatabaseConnectionManager:
         try:
             # Try to use asyncpg for proper PostgreSQL testing
             try:
-                import asyncpg  # type: ignore
+                import asyncpg
             except ImportError:
                 logger.warning("asyncpg not available, falling back to socket test")
                 return await self._test_socket_connection(host, port)

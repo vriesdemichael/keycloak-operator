@@ -136,11 +136,11 @@ class TestKeycloakReconciler:
             # Verify resources were cleaned up
             with pytest.raises(ApiException) as exc_info:
                 await k8s_apps_v1.read_namespaced_deployment(deployment_name, namespace)
-            assert exc_info.value.status == 404  # type: ignore[attr-defined]
+            assert exc_info.value.status == 404
 
             with pytest.raises(ApiException) as exc_info:
                 await k8s_core_v1.read_namespaced_service(service_name, namespace)
-            assert exc_info.value.status == 404  # type: ignore[attr-defined]
+            assert exc_info.value.status == 404
 
         finally:
             with contextlib.suppress(ApiException):
