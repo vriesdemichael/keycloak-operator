@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.7...chart-realm-v0.3.8) (2026-01-13)
+
+
+### Features
+
+* **chart-realm:** add user federation configuration to Helm chart ([f819d18](https://github.com/vriesdemichael/keycloak-operator/commit/f819d1871888fe6fc9d43a0582cb8ceab869882c))
+
 ## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.6...chart-realm-v0.3.7) (2026-01-07)
 
 
