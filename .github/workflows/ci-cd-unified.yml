@@ -561,6 +561,101 @@ jobs:
             echo -e "$SUMMARY_OUTPUT" >> $GITHUB_STEP_SUMMARY
           fi
 
+      # Fallback: If prs output is empty (e.g., release-please failed after creating PRs,
+      # then retry succeeded but reported "remained the same"), find existing release PRs
+      # and ensure auto-merge is enabled on them.
+      - uses: actions/checkout@v6
+        if: steps.release.outputs.prs == '' || steps.release.outputs.prs == '[]'
+
+      - name: Enable auto-merge for existing release PRs (fallback)
+        if: steps.release.outputs.prs == '' || steps.release.outputs.prs == '[]'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+        run: |
+          # Find open PRs with release-please branch naming convention
+          echo "Checking for existing release PRs that may need auto-merge..."
+          SUMMARY_OUTPUT=""
+
+          # List open PRs from release-please branches
+          RELEASE_PRS=$(gh pr list --state open --json number,headRefName,title,autoMergeRequest \
+            --jq '.[] | select(.headRefName | startswith("release-please--"))')
+
+          if [[ -z "$RELEASE_PRS" ]]; then
+            echo "No existing release PRs found."
+            exit 0
+          fi
+
+          echo "$RELEASE_PRS" | jq -c '.' | while read -r pr_json; do
+            PR_NUMBER=$(echo "$pr_json" | jq -r '.number')
+            PR_BRANCH=$(echo "$pr_json" | jq -r '.headRefName')
+            PR_TITLE=$(echo "$pr_json" | jq -r '.title')
+            AUTO_MERGE=$(echo "$pr_json" | jq -r '.autoMergeRequest')
+
+            echo "Found release PR #$PR_NUMBER: $PR_TITLE"
+
+            # Skip if auto-merge is already enabled
+            if [[ "$AUTO_MERGE" != "null" && "$AUTO_MERGE" != "" ]]; then
+              echo "  ✓ Auto-merge already enabled"
+              continue
+            fi
+
+            # Fetch the PR branch to compare manifest
+            if ! git fetch origin "$PR_BRANCH:$PR_BRANCH" 2>/dev/null; then
+              echo "⚠️ Could not fetch branch $PR_BRANCH for PR #$PR_NUMBER"
+              SUMMARY_OUTPUT+="⚠️ Skipped PR #$PR_NUMBER: could not fetch branch\n"
+              continue
+            fi
+
+            # Check manifest changes to determine if this is a major release
+            HAS_MAJOR_BUMP=false
+
+            CURRENT_MANIFEST=$(cat .github/.release-please-manifest.json)
+            NEW_MANIFEST=$(git show "$PR_BRANCH:.github/.release-please-manifest.json" 2>/dev/null)
+            if [[ -z "$NEW_MANIFEST" ]]; then
+              echo "⚠️ Could not read manifest from branch $PR_BRANCH for PR #$PR_NUMBER"
+              SUMMARY_OUTPUT+="⚠️ Skipped PR #$PR_NUMBER: manifest not found in branch\n"
+              continue
+            fi
+
+            while read -r component; do
+              CURRENT_VERSION=$(echo "$CURRENT_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
+              NEW_VERSION=$(echo "$NEW_MANIFEST" | jq -r --arg comp "$component" '.[$comp]')
+
+              if [[ "$CURRENT_VERSION" != "$NEW_VERSION" ]]; then
+                echo "  Component '$component': $CURRENT_VERSION -> $NEW_VERSION"
+
+                if [[ "$CURRENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+                  CUR_MAJOR="${BASH_REMATCH[1]}"
+                fi
+
+                if [[ "$NEW_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+                  NEW_MAJOR="${BASH_REMATCH[1]}"
+                fi
+
+                if [[ "$NEW_MAJOR" -gt "$CUR_MAJOR" ]] && [[ "$NEW_MAJOR" -gt 0 ]]; then
+                  echo "  ⚠️  Major version bump detected: $CURRENT_VERSION -> $NEW_VERSION"
+                  HAS_MAJOR_BUMP=true
+                fi
+              fi
+            done < <(echo "$CURRENT_MANIFEST" | jq -r 'keys[]')
+
+            if [[ "$HAS_MAJOR_BUMP" == "false" ]]; then
+              if gh pr merge "$PR_NUMBER" --auto --rebase --repo ${{ github.repository }}; then
+                SUMMARY_OUTPUT+="✅ Auto-merge enabled for PR #$PR_NUMBER (fallback)\n"
+              else
+                SUMMARY_OUTPUT+="⚠️ Auto-merge could not be enabled for PR #$PR_NUMBER\n"
+              fi
+            else
+              SUMMARY_OUTPUT+="⚠️ Manual Review Required for PR #$PR_NUMBER (Major Release)\n"
+            fi
+          done
+
+          if [[ -n "$SUMMARY_OUTPUT" ]]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 🔄 Auto-merge Fallback Results" >> $GITHUB_STEP_SUMMARY
+            echo -e "$SUMMARY_OUTPUT" >> $GITHUB_STEP_SUMMARY
+          fi
+
   # =====================================================
   # PHASE 4: PUBLISH ARTIFACTS (Conditional on release-please outputs)
   # =====================================================
