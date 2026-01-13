@@ -1,6 +1,6 @@
 {
   ".": "0.5.19",
-  "charts/keycloak-operator": "0.3.21",
+  "charts/keycloak-operator": "0.3.22",
   "charts/keycloak-client": "0.3.4",
   "charts/keycloak-realm": "0.3.8"
 }
