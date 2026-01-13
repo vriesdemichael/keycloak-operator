@@ -840,6 +840,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../guides/user-federation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    User Federation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../guides/drift-detection/" class="md-nav__link">
         
   
@@ -2115,6 +2143,67 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="KeycloakUserFederation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederation.to_component_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_component_config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederationMapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakUserFederationMapper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederationSecretRef" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakUserFederationSecretRef
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederationStatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakUserFederationStatus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederationSyncSettings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakUserFederationSyncSettings
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -3029,6 +3118,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._build_federation_component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _build_federation_component
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._build_group_map" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3077,6 +3177,17 @@
     <span class="md-ellipsis">
       
         _configure_composite_roles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._configure_federation_mappers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _configure_federation_mappers
       
     </span>
   </a>
@@ -4240,6 +4351,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.create_user_federation_mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_user_federation_mapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.create_user_federation_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_user_federation_provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_authentication_flow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4365,6 +4498,28 @@
     <span class="md-ellipsis">
       
         delete_realm_role
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_user_federation_mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_user_federation_mapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_user_federation_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_user_federation_provider
       
     </span>
   </a>
@@ -4790,6 +4945,50 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_mappers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_federation_mappers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_federation_provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_provider_by_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_federation_provider_by_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_federation_providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.regenerate_client_secret" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4882,6 +5081,39 @@
     <span class="md-ellipsis">
       
         remove_realm_roles_from_group
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.test_ldap_authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test_ldap_authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.test_ldap_connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test_ldap_connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.trigger_user_federation_sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        trigger_user_federation_sync
       
     </span>
   </a>
@@ -5036,6 +5268,17 @@
     <span class="md-ellipsis">
       
         update_required_action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.update_user_federation_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_user_federation_provider
       
     </span>
   </a>
@@ -8811,6 +9054,67 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="KeycloakUserFederation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederation.to_component_config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        to_component_config
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederationMapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakUserFederationMapper
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederationSecretRef" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakUserFederationSecretRef
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederationStatus" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakUserFederationStatus
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakUserFederationSyncSettings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakUserFederationSyncSettings
+      
+    </span>
+  </a>
+  
 </li>
       
         <li class="md-nav__item">
@@ -9725,6 +10029,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._build_federation_component" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _build_federation_component
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._build_group_map" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9773,6 +10088,17 @@
     <span class="md-ellipsis">
       
         _configure_composite_roles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._configure_federation_mappers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _configure_federation_mappers
       
     </span>
   </a>
@@ -10936,6 +11262,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.create_user_federation_mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_user_federation_mapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.create_user_federation_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_user_federation_provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_authentication_flow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11061,6 +11409,28 @@
     <span class="md-ellipsis">
       
         delete_realm_role
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_user_federation_mapper" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_user_federation_mapper
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_user_federation_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        delete_user_federation_provider
       
     </span>
   </a>
@@ -11486,6 +11856,50 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_mappers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_federation_mappers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_federation_provider
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_provider_by_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_federation_provider_by_name
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_providers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_user_federation_providers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.regenerate_client_secret" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -11578,6 +11992,39 @@
     <span class="md-ellipsis">
       
         remove_realm_roles_from_group
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.test_ldap_authentication" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test_ldap_authentication
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.test_ldap_connection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        test_ldap_connection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.trigger_user_federation_sync" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        trigger_user_federation_sync
       
     </span>
   </a>
@@ -11732,6 +12179,17 @@
     <span class="md-ellipsis">
       
         update_required_action
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.update_user_federation_provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_user_federation_provider
       
     </span>
   </a>
@@ -15090,7 +15548,264 @@ Cross-namespace secret references are not supported for security reasons.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
-        <p>User federation configuration.</p>
+        <p>Complete user federation configuration for LDAP/AD/Kerberos.</p>
+<p>This model supports:
+- LDAP federation with full attribute mapping
+- Active Directory with sAMAccountName/UPN support
+- Kerberos/SPNEGO authentication
+- User/group synchronization</p>
+
+
+<details class="example-ldap-configuration" open>
+  <summary>Example LDAP configuration</summary>
+  <p>KeycloakUserFederation(
+    name="corporate-ldap",
+    provider_id="ldap",
+    connection_url="ldap://ldap.example.com:389",
+    users_dn="ou=People,dc=example,dc=org",
+    bind_dn="cn=admin,dc=example,dc=org",
+    bind_credential_secret=KeycloakUserFederationSecretRef(
+        name="ldap-credentials",
+        key="password"
+    ),
+)</p>
+</details>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.models.realm.KeycloakUserFederation.to_component_config" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">to_component_config</span>
+
+
+<a href="#keycloak_operator.models.realm.KeycloakUserFederation.to_component_config" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">to_component_config</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Convert to Keycloak Components API config format.</p>
+<p>Keycloak's Components API expects config values as lists of strings.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Dictionary mapping config keys to list of string values</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.realm.KeycloakUserFederationMapper" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">KeycloakUserFederationMapper</span>
+
+
+<a href="#keycloak_operator.models.realm.KeycloakUserFederationMapper" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>User federation mapper configuration.</p>
+<p>Mappers transform LDAP/AD attributes into Keycloak user properties,
+roles, or group memberships.</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.realm.KeycloakUserFederationSecretRef" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">KeycloakUserFederationSecretRef</span>
+
+
+<a href="#keycloak_operator.models.realm.KeycloakUserFederationSecretRef" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>Reference to Kubernetes secret for user federation sensitive data.</p>
+<p>Used for bind credentials (LDAP) or keytab (Kerberos).</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.realm.KeycloakUserFederationStatus" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">KeycloakUserFederationStatus</span>
+
+
+<a href="#keycloak_operator.models.realm.KeycloakUserFederationStatus" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>Status of a user federation provider.</p>
+<p>This provides observability into the health and sync state of each
+configured user federation provider (LDAP, AD, Kerberos).</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.realm.KeycloakUserFederationSyncSettings" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">KeycloakUserFederationSyncSettings</span>
+
+
+<a href="#keycloak_operator.models.realm.KeycloakUserFederationSyncSettings" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>Synchronization settings for user federation.</p>
 
 
 
@@ -21503,6 +22218,96 @@ themes, authentication flows, identity providers, and user federation.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._build_federation_component" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_build_federation_component</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._build_federation_component" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_build_federation_component</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">federation_config</span><span class="p">,</span> <span class="n">realm_id</span><span class="p">,</span> <span class="n">namespace</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Build a ComponentRepresentation from KeycloakUserFederation config.</p>
+<p>Handles secret injection for bind credentials and keytabs.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>federation_config</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="KeycloakUserFederation (keycloak_operator.models.realm.KeycloakUserFederation)" href="#keycloak_operator.models.realm.KeycloakUserFederation">KeycloakUserFederation</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The user federation configuration</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The realm ID (UUID), not realm name - required for parentId</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace for secret lookups</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._build_group_map" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">_build_group_map</span>
 
@@ -21894,6 +22699,36 @@ themes, authentication flows, identity providers, and user federation.</p>
           </tr>
       </tbody>
     </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._configure_federation_mappers" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_configure_federation_mappers</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.services.realm_reconciler.KeycloakRealmReconciler._configure_federation_mappers" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_configure_federation_mappers</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">admin_client</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">realm_name</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">provider_id</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">federation_config</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">namespace</span><span class="p">,</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Configure mappers for a user federation provider.</p>
 
 
     </div>
@@ -24145,7 +24980,14 @@ Optional scopes are available for clients to request.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Configure user federation (LDAP, Active Directory, etc.).</p>
+        <p>Configure user federation providers with full CRUD lifecycle.</p>
+<p>This method:
+1. Fetches existing providers from Keycloak
+2. Creates new providers defined in spec
+3. Updates existing providers with changed config
+4. Deletes providers removed from spec
+5. Manages mappers for each provider
+6. Injects secrets for bind credentials and keytabs</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -24205,6 +25047,29 @@ Optional scopes are available for clients to request.</p>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of federation status dicts for status update</p>
+              </div>
             </td>
           </tr>
       </tbody>
@@ -32714,6 +33579,286 @@ success = await admin_client.create_identity_provider_mapper(
 <div class="doc doc-object doc-function">
 
 
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.create_user_federation_mapper" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">create_user_federation_mapper</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.create_user_federation_mapper" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_user_federation_mapper</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">parent_id</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">mapper_config</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a mapper for a user federation provider.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>parent_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the parent federation provider</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>mapper_config</code>
+            </td>
+            <td>
+                  <code><span title="keycloak_operator.models.keycloak_api.ComponentRepresentation">ComponentRepresentation</span> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Mapper configuration</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the created mapper, or None on failure</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>mapper = ComponentRepresentation(
+    name="email",
+    provider_id="user-attribute-ldap-mapper",
+    provider_type="org.keycloak.storage.ldap.mappers.LDAPStorageMapper",
+    parent_id=federation_id,
+    config={
+        "ldap.attribute": ["mail"],
+        "user.model.attribute": ["email"],
+        "read.only": ["true"],
+    }
+)
+mapper_id = await admin_client.create_user_federation_mapper(
+    "my-realm", federation_id, mapper
+)</p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.create_user_federation_provider" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">create_user_federation_provider</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.create_user_federation_provider" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_user_federation_provider</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">federation_config</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create a new user federation provider.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>federation_config</code>
+            </td>
+            <td>
+                  <code><span title="keycloak_operator.models.keycloak_api.ComponentRepresentation">ComponentRepresentation</span> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Federation provider configuration</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the created provider, or None on failure</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>config = ComponentRepresentation(
+    name="corporate-ldap",
+    provider_id="ldap",
+    provider_type="org.keycloak.storage.UserStorageProvider",
+    config={
+        "connectionUrl": ["ldap://ldap.example.com:389"],
+        "usersDn": ["ou=People,dc=example,dc=org"],
+        "bindDn": ["cn=admin,dc=example,dc=org"],
+        "bindCredential": ["secret"],
+        "vendor": ["other"],
+    }
+)
+provider_id = await admin_client.create_user_federation_provider(
+    "my-realm", config
+)</p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_authentication_flow" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">delete_authentication_flow</span>
 
@@ -34001,6 +35146,230 @@ success = await admin_client.create_identity_provider_mapper(
             <td>
               <div class="doc-md-description">
                 <p>Namespace for rate limiting</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True if successful, False otherwise</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_user_federation_mapper" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">delete_user_federation_mapper</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_user_federation_mapper" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete_user_federation_mapper</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">mapper_id</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Delete a user federation mapper.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>mapper_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the mapper to delete</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True if successful, False otherwise</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_user_federation_provider" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">delete_user_federation_provider</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.delete_user_federation_provider" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">delete_user_federation_provider</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">provider_id</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Delete a user federation provider.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>provider_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the federation provider to delete</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
               </div>
             </td>
             <td>
@@ -38188,6 +39557,445 @@ print(f"Service account user: {user.username}, ID: {user.id}")</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_mappers" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_user_federation_mappers</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_mappers" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_user_federation_mappers</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">parent_id</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get all mappers for a user federation provider.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>parent_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the parent federation provider</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<span title="keycloak_operator.models.keycloak_api.ComponentRepresentation">ComponentRepresentation</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of mapper configurations</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_provider" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_user_federation_provider</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_provider" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_user_federation_provider</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">provider_id</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get a specific user federation provider by ID.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>provider_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the federation provider component</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="keycloak_operator.models.keycloak_api.ComponentRepresentation">ComponentRepresentation</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Federation provider configuration or None if not found</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_provider_by_name" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_user_federation_provider_by_name</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_provider_by_name" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_user_federation_provider_by_name</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">provider_name</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get a user federation provider by its display name.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>provider_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Display name of the federation provider</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="keycloak_operator.models.keycloak_api.ComponentRepresentation">ComponentRepresentation</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Federation provider configuration or None if not found</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_providers" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_user_federation_providers</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.get_user_federation_providers" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">get_user_federation_providers</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Get all user federation providers for a realm.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#list">list</a>[<span title="keycloak_operator.models.keycloak_api.ComponentRepresentation">ComponentRepresentation</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>List of user federation provider configurations</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>providers = await admin_client.get_user_federation_providers("my-realm")
+for provider in providers:
+    print(f"Provider: {provider.name}, Type: {provider.provider_id}")</p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.regenerate_client_secret" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">regenerate_client_secret</span>
 
@@ -39250,6 +41058,383 @@ print(f"Service account user: {user.username}, ID: {user.id}")</p>
       </tbody>
     </table>
 
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.test_ldap_authentication" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">test_ldap_authentication</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.test_ldap_authentication" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">test_ldap_authentication</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">connection_config</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Test LDAP authentication (bind) settings.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>connection_config</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>LDAP connection configuration with bind credentials</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Dictionary with test results</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.test_ldap_connection" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">test_ldap_connection</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.test_ldap_connection" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">test_ldap_connection</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span> <span class="n">connection_config</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Test LDAP connection settings before creating a provider.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>connection_config</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>LDAP connection configuration to test</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Dictionary with test results</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>result = await admin_client.test_ldap_connection(
+    "my-realm",
+    {
+        "connectionUrl": "ldap://ldap.example.com:389",
+        "bindDn": "cn=admin,dc=example,dc=org",
+        "bindCredential": "secret",
+    }
+)
+if result.get("status") == "success":
+    print("Connection successful!")</p>
+</details>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.trigger_user_federation_sync" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">trigger_user_federation_sync</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.trigger_user_federation_sync" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">trigger_user_federation_sync</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">provider_id</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">full_sync</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Trigger synchronization for a user federation provider.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>provider_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the federation provider</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>full_sync</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If True, perform full sync; otherwise, sync only changed users</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Dictionary with sync results (added, updated, removed, failed counts)</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<details class="example" open>
+  <summary>Example</summary>
+  <p>result = await admin_client.trigger_user_federation_sync(
+    "my-realm", provider_id, full_sync=True
+)
+print(f"Added: {result.get('added')}, Updated: {result.get('updated')}")</p>
+</details>
 
     </div>
 
@@ -41098,6 +43283,137 @@ success = await admin_client.update_identity_provider(
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True if successful, False otherwise</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.update_user_federation_provider" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">update_user_federation_provider</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.update_user_federation_provider" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">update_user_federation_provider</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">realm_name</span><span class="p">,</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">provider_id</span><span class="p">,</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">federation_config</span><span class="p">,</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">namespace</span><span class="o">=</span><span class="s2">&quot;default&quot;</span><span class="p">,</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Update an existing user federation provider.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>realm_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the realm</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>provider_id</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>ID of the federation provider to update</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>federation_config</code>
+            </td>
+            <td>
+                  <code><span title="keycloak_operator.models.keycloak_api.ComponentRepresentation">ComponentRepresentation</span> | <a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Updated federation configuration</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes namespace (for logging)</p>
+              </div>
+            </td>
+            <td>
+                  <code>&#39;default&#39;</code>
             </td>
           </tr>
       </tbody>
