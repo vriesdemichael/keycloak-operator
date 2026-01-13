@@ -591,7 +591,7 @@ class BaseReconciler(ABC):
             try:
                 # Attempt to coerce iterable to list if possible
                 if existing is not None:
-                    status.conditions = list(existing)  # type: ignore[arg-type]
+                    status.conditions = list(existing)
                 else:
                     status.conditions = []
             except Exception:

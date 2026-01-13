@@ -506,38 +506,55 @@ class KeycloakClientReconciler(BaseReconciler):
         )
 
         try:
+            # Get settings with defaults
+            settings = spec.settings
+
+            # Build attributes dict for optional settings
+            attributes: dict[str, str] = {}
+            if settings.access_token_lifespan is not None:
+                attributes["access.token.lifespan"] = str(
+                    settings.access_token_lifespan
+                )
+            if settings.client_session_idle_timeout is not None:
+                attributes["client.session.idle.timeout"] = str(
+                    settings.client_session_idle_timeout
+                )
+            if settings.client_session_max_lifespan is not None:
+                attributes["client.session.max.lifespan"] = str(
+                    settings.client_session_max_lifespan
+                )
+            if settings.pkce_code_challenge_method:
+                attributes["pkce.code.challenge.method"] = (
+                    settings.pkce_code_challenge_method
+                )
+
             # Build OAuth2/OIDC client configuration
-            client_config = {
+            client_config: dict[str, Any] = {
                 "id": client_uuid,
                 "clientId": spec.client_id,
                 "name": spec.client_name or spec.client_id,
                 "description": spec.description or "",
-                "enabled": spec.settings.enabled,
+                "enabled": True,  # Client is enabled when CR exists
                 "publicClient": spec.public_client,
                 "bearerOnly": spec.bearer_only or False,
                 "protocol": spec.protocol or "openid-connect",
-                # OAuth2/OIDC flow settings
-                "standardFlowEnabled": getattr(spec, "standard_flow_enabled", True),
-                "implicitFlowEnabled": getattr(spec, "implicit_flow_enabled", False),
-                "directAccessGrantsEnabled": getattr(
-                    spec, "direct_access_grants_enabled", True
-                ),
-                "serviceAccountsEnabled": getattr(
-                    spec, "service_accounts_enabled", not spec.public_client
-                ),
+                # OAuth2/OIDC flow settings from settings
+                "standardFlowEnabled": settings.standard_flow_enabled,
+                "implicitFlowEnabled": settings.implicit_flow_enabled,
+                "directAccessGrantsEnabled": settings.direct_access_grants_enabled,
+                "serviceAccountsEnabled": settings.service_accounts_enabled,
                 # URI configurations
                 "redirectUris": spec.redirect_uris or [],
                 "webOrigins": getattr(spec, "web_origins", []),
                 "adminUrl": getattr(spec, "admin_url", ""),
                 "baseUrl": getattr(spec, "base_url", ""),
                 "rootUrl": getattr(spec, "root_url", ""),
-                # Additional OAuth2 settings
-                "consentRequired": getattr(spec, "consent_required", False),
-                "displayOnConsentScreen": getattr(
-                    spec, "display_on_consent_screen", True
-                ),
-                "frontchannelLogout": getattr(spec, "frontchannel_logout", False),
-                "fullScopeAllowed": getattr(spec, "full_scope_allowed", True),
+                # Additional OAuth2 settings from settings
+                "consentRequired": settings.consent_required,
+                "displayOnConsentScreen": settings.display_on_consent_screen,
+                "frontchannelLogout": settings.frontchannel_logout,
+                "fullScopeAllowed": settings.full_scope_allowed,
+                "authorizationServicesEnabled": settings.authorization_services_enabled,
                 "nodeReRegistrationTimeout": getattr(
                     spec, "node_re_registration_timeout", -1
                 ),
@@ -546,12 +563,14 @@ class KeycloakClientReconciler(BaseReconciler):
                     spec, "surrogate_auth_required", False
                 ),
                 # Client authentication method for confidential clients
-                "clientAuthenticatorType": getattr(
-                    spec, "client_authenticator_type", "client-secret"
-                )
+                "clientAuthenticatorType": settings.client_authenticator_type
                 if not spec.public_client
                 else None,
             }
+
+            # Add attributes if any were set
+            if attributes:
+                client_config["attributes"] = attributes
 
             # Remove None values to avoid sending unnecessary data
             client_config = {k: v for k, v in client_config.items() if v is not None}

@@ -159,7 +159,7 @@ class TestGetK8sSecretCredentials:
             with pytest.raises(ExternalServiceError) as exc_info:
                 await db_manager._get_k8s_secret_credentials("db-creds", "default")
 
-        error: ExternalServiceError = exc_info.value  # type: ignore[assignment]
+        error: ExternalServiceError = exc_info.value
         assert "not found" in str(error)
         assert error.retryable  # Secret might be created later
 
@@ -175,7 +175,7 @@ class TestGetK8sSecretCredentials:
             with pytest.raises(ExternalServiceError) as exc_info:
                 await db_manager._get_k8s_secret_credentials("db-creds", "default")
 
-        error: ExternalServiceError = exc_info.value  # type: ignore[assignment]
+        error: ExternalServiceError = exc_info.value
         assert "has no data" in str(error)
         assert not error.retryable
 
@@ -193,7 +193,7 @@ class TestGetK8sSecretCredentials:
             with pytest.raises(ExternalServiceError) as exc_info:
                 await db_manager._get_k8s_secret_credentials("db-creds", "default")
 
-        error: ExternalServiceError = exc_info.value  # type: ignore[assignment]
+        error: ExternalServiceError = exc_info.value
         assert "missing username or password" in str(error)
         assert not error.retryable
 
@@ -211,7 +211,7 @@ class TestGetK8sSecretCredentials:
             with pytest.raises(ExternalServiceError) as exc_info:
                 await db_manager._get_k8s_secret_credentials("db-creds", "default")
 
-        error: ExternalServiceError = exc_info.value  # type: ignore[assignment]
+        error: ExternalServiceError = exc_info.value
         assert "missing username or password" in str(error)
         assert not error.retryable
 
@@ -227,7 +227,7 @@ class TestGetK8sSecretCredentials:
             with pytest.raises(ExternalServiceError) as exc_info:
                 await db_manager._get_k8s_secret_credentials("db-creds", "default")
 
-        error: ExternalServiceError = exc_info.value  # type: ignore[assignment]
+        error: ExternalServiceError = exc_info.value
         assert "Failed to read" in str(error)
         assert error.retryable  # Transient errors are retryable
 

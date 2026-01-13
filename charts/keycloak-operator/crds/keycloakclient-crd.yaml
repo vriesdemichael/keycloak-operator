@@ -87,9 +87,6 @@ spec:
                 type: object
                 description: Advanced client settings
                 properties:
-                  enabled:
-                    type: boolean
-                    default: true
                   alwaysDisplayInConsole:
                     type: boolean
                     default: false
@@ -126,6 +123,18 @@ spec:
                   includeInTokenScope:
                     type: boolean
                     default: true
+                  frontchannelLogout:
+                    type: boolean
+                    description: Enable front-channel logout
+                    default: true
+                  fullScopeAllowed:
+                    type: boolean
+                    description: Allow full scope for role mappings
+                    default: true
+                  authorizationServicesEnabled:
+                    type: boolean
+                    description: Enable fine-grained authorization support
+                    default: false
                   accessTokenLifespan:
                     type: integer
                     description: Access token lifespan in seconds
@@ -134,6 +143,21 @@ spec:
                     type: integer
                     description: Refresh token lifespan in seconds
                     minimum: 1
+                  clientSessionIdleTimeout:
+                    type: integer
+                    description: Client session idle timeout in seconds
+                    minimum: 1
+                  clientSessionMaxLifespan:
+                    type: integer
+                    description: Client session max lifespan in seconds
+                    minimum: 1
+                  pkceCodeChallengeMethod:
+                    type: string
+                    description: PKCE code challenge method
+                    enum:
+                    - S256
+                    - plain
+                    - ""
               authenticationFlows:
                 type: object
                 description: Client authentication flow overrides

@@ -74,7 +74,6 @@ class KeycloakClientSettings(BaseModel):
     model_config = {"populate_by_name": True}
 
     # Basic settings
-    enabled: bool = Field(True, description="Whether the client is enabled")
     always_display_in_console: bool = Field(
         False,
         alias="alwaysDisplayInConsole",
@@ -114,6 +113,19 @@ class KeycloakClientSettings(BaseModel):
     include_in_token_scope: bool = Field(
         True, alias="includeInTokenScope", description="Include in token scope"
     )
+    frontchannel_logout: bool = Field(
+        True, alias="frontchannelLogout", description="Enable front-channel logout"
+    )
+    full_scope_allowed: bool = Field(
+        True,
+        alias="fullScopeAllowed",
+        description="Allow full scope for role mappings",
+    )
+    authorization_services_enabled: bool = Field(
+        False,
+        alias="authorizationServicesEnabled",
+        description="Enable fine-grained authorization support",
+    )
 
     # Token settings
     access_token_lifespan: int | None = Field(
@@ -126,6 +138,34 @@ class KeycloakClientSettings(BaseModel):
         alias="refreshTokenLifespan",
         description="Refresh token lifespan in seconds",
     )
+
+    # Session settings
+    client_session_idle_timeout: int | None = Field(
+        None,
+        alias="clientSessionIdleTimeout",
+        description="Client session idle timeout in seconds",
+    )
+    client_session_max_lifespan: int | None = Field(
+        None,
+        alias="clientSessionMaxLifespan",
+        description="Client session max lifespan in seconds",
+    )
+
+    # PKCE settings
+    pkce_code_challenge_method: str | None = Field(
+        None,
+        alias="pkceCodeChallengeMethod",
+        description="PKCE code challenge method (S256 or plain)",
+    )
+
+    @field_validator("pkce_code_challenge_method")
+    @classmethod
+    def validate_pkce_method(cls, v):
+        if v and v not in ["S256", "plain"]:
+            raise ValueError(
+                "PKCE code challenge method must be 'S256', 'plain', or empty"
+            )
+        return v or None
 
     @field_validator("client_authenticator_type")
     @classmethod
@@ -390,7 +430,7 @@ class KeycloakClientSpec(BaseModel):
             "protocol": self.protocol,
             "publicClient": self.public_client,
             "bearerOnly": self.bearer_only,
-            "enabled": self.settings.enabled,
+            "enabled": True,  # Client is enabled when CR exists
             "redirectUris": self.redirect_uris,
             "webOrigins": self.web_origins,
             "attributes": self.attributes.copy(),
@@ -408,6 +448,9 @@ class KeycloakClientSpec(BaseModel):
                 "consentRequired": self.settings.consent_required,
                 "displayOnConsentScreen": self.settings.display_on_consent_screen,
                 "includeInTokenScope": self.settings.include_in_token_scope,
+                "frontchannelLogout": self.settings.frontchannel_logout,
+                "fullScopeAllowed": self.settings.full_scope_allowed,
+                "authorizationServicesEnabled": self.settings.authorization_services_enabled,
             }
         )
 
@@ -420,6 +463,23 @@ class KeycloakClientSpec(BaseModel):
         if self.settings.refresh_token_lifespan is not None:
             config["attributes"]["refresh.token.lifespan"] = str(
                 self.settings.refresh_token_lifespan
+            )
+
+        # Add session timeout settings if specified
+        if self.settings.client_session_idle_timeout is not None:
+            config["attributes"]["client.session.idle.timeout"] = str(
+                self.settings.client_session_idle_timeout
+            )
+
+        if self.settings.client_session_max_lifespan is not None:
+            config["attributes"]["client.session.max.lifespan"] = str(
+                self.settings.client_session_max_lifespan
+            )
+
+        # Add PKCE settings if specified
+        if self.settings.pkce_code_challenge_method:
+            config["attributes"]["pkce.code.challenge.method"] = (
+                self.settings.pkce_code_challenge_method
             )
 
         # Add authentication flow overrides

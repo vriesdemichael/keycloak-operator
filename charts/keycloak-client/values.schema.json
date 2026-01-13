@@ -60,11 +60,23 @@
     "settings": {
       "type": "object",
       "properties": {
-        "enabled": {"type": "boolean"},
-        "pkceCodeChallengeMethod": {"type": "string"},
-        "accessTokenLifespan": {"type": "integer"},
-        "clientSessionIdleTimeout": {"type": "integer"},
-        "clientSessionMaxLifespan": {"type": "integer"}
+        "pkceCodeChallengeMethod": {
+          "type": "string",
+          "enum": ["S256", "plain", ""],
+          "description": "PKCE code challenge method"
+        },
+        "accessTokenLifespan": {
+          "type": "integer",
+          "description": "Access token lifespan in seconds (0 = use realm default)"
+        },
+        "clientSessionIdleTimeout": {
+          "type": "integer",
+          "description": "Client session idle timeout in seconds"
+        },
+        "clientSessionMaxLifespan": {
+          "type": "integer",
+          "description": "Client session max lifespan in seconds"
+        }
       }
     },
     "defaultClientScopes": {
