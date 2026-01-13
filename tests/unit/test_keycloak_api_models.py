@@ -101,11 +101,11 @@ class TestRealmRepresentation:
         """Test that invalid types raise ValidationError."""
         # Invalid string for bool field
         with pytest.raises(ValidationError):
-            RealmRepresentation(enabled="invalid_bool")  # type: ignore[arg-type]
+            RealmRepresentation(enabled="invalid_bool")
 
         # Int when string is expected
         with pytest.raises(ValidationError):
-            RealmRepresentation(ssl_required=123)  # type: ignore[arg-type]
+            RealmRepresentation(ssl_required=123)
 
 
 class TestClientRepresentation:
@@ -201,11 +201,11 @@ class TestClientRepresentation:
         """Test that Pydantic performs type coercion."""
         # String "invalid" is not coercible to bool, so this should raise
         with pytest.raises(ValidationError):
-            ClientRepresentation(enabled="invalid_bool")  # type: ignore[arg-type]
+            ClientRepresentation(enabled="invalid_bool")
 
         # Single string is not coercible to list, so this should raise
         with pytest.raises(ValidationError):
-            ClientRepresentation(redirect_uris="http://localhost:3000/*")  # type: ignore[arg-type]
+            ClientRepresentation(redirect_uris="http://localhost:3000/*")
 
 
 class TestModelRoundTrip:

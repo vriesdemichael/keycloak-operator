@@ -83,8 +83,6 @@ includeInTokenScope: true
 
 # Client settings
 settings:
-  enabled: true
-
   # PKCE settings
   pkceCodeChallengeMethod: ""  # S256, plain, or empty for none
 
