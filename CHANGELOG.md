@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.20](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.19...operator-image-v0.5.20) (2026-01-14)
+
+
+### Features
+
+* **chart-client+chart-operator+operator:** add missing client settings fields ([5a17906](https://github.com/vriesdemichael/keycloak-operator/commit/5a179063c098f1fc0afd505b5466dd8be8a2ab79))
+
+
+### Bug Fixes
+
+* **operator-image:** bump virtualenv from 20.35.4 to 20.36.1 ([b977790](https://github.com/vriesdemichael/keycloak-operator/commit/b977790f495ef5ba4b15e937383837a0472fa972))
+
 ## [0.5.19](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.18...operator-image-v0.5.19) (2026-01-13)
 
 
