@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.23](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.22...chart-operator-v0.3.23) (2026-01-14)
+
+
+### Features
+
+* **chart-client+chart-operator+operator:** add missing client settings fields ([5a17906](https://github.com/vriesdemichael/keycloak-operator/commit/5a179063c098f1fc0afd505b5466dd8be8a2ab79))
+
 ## [0.3.22](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.21...chart-operator-v0.3.22) (2026-01-13)
 
 
