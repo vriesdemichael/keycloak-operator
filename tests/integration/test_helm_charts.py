@@ -621,7 +621,7 @@ class TestHelmClientAdvancedSettings:
         from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 
         local_port = await keycloak_port_forward(
-            "keycloak", operator_namespace, service_port=8080
+            "keycloak", operator_namespace, remote_port=8080
         )
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
@@ -737,7 +737,7 @@ class TestHelmClientAdvancedSettings:
         from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 
         local_port = await keycloak_port_forward(
-            "keycloak", operator_namespace, service_port=8080
+            "keycloak", operator_namespace, remote_port=8080
         )
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
@@ -848,7 +848,7 @@ class TestHelmClientAdvancedSettings:
         from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 
         local_port = await keycloak_port_forward(
-            "keycloak", operator_namespace, service_port=8080
+            "keycloak", operator_namespace, remote_port=8080
         )
         admin_client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
