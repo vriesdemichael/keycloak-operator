@@ -520,3 +520,349 @@ class TestHelmRealmAdvancedFields:
         assert password_policy.get("hashIterations") == 210000, (
             "hashIterations should be 210000"
         )
+
+
+@pytest.mark.asyncio
+class TestHelmClientAdvancedSettings:
+    """Test Helm chart client deployment with advanced settings fields."""
+
+    @pytest.mark.timeout(300)
+    async def test_helm_client_with_authorization_settings(
+        self,
+        helm_realm,
+        helm_client,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+        keycloak_port_forward,
+    ):
+        """Test deploying a client with authorization and scope settings via Helm."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"client-auth-{uuid.uuid4().hex[:8]}"
+        realm_release = f"realm-auth-{uuid.uuid4().hex[:8]}"
+
+        # Deploy realm first
+        await helm_realm(
+            release_name=realm_release,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            clientAuthorizationGrants=[test_namespace],
+        )
+
+        realm_cr_name = f"{realm_release}-keycloak-realm"
+
+        # Wait for realm to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Deploy client with advanced settings
+        client_id = f"auth-client-{uuid.uuid4().hex[:8]}"
+        client_release = f"client-auth-{uuid.uuid4().hex[:8]}"
+
+        await helm_client(
+            release_name=client_release,
+            client_id=client_id,
+            realm_name=realm_cr_name,
+            realm_namespace=test_namespace,
+            publicClient=False,
+            redirectUris=["https://example.com/callback"],
+            # Advanced settings
+            frontchannelLogout=True,
+            fullScopeAllowed=False,
+            authorizationServicesEnabled=False,
+        )
+
+        client_cr_name = f"{client_release}-keycloak-client"
+
+        # Wait for client to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            name=client_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify settings are in spec
+        client = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            name=client_cr_name,
+        )
+        spec = client.get("spec", {})
+        settings = spec.get("settings", {})
+
+        assert settings.get("frontchannelLogout") is True, (
+            "frontchannelLogout should be True"
+        )
+        assert settings.get("fullScopeAllowed") is False, (
+            "fullScopeAllowed should be False"
+        )
+        assert settings.get("authorizationServicesEnabled") is False, (
+            "authorizationServicesEnabled should be False"
+        )
+
+        # Verify in Keycloak
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+
+        local_port = await keycloak_port_forward(
+            "keycloak", operator_namespace, service_port=8080
+        )
+        admin_client = KeycloakAdminClient(
+            server_url=f"http://localhost:{local_port}",
+            username="admin",
+            password="admin",
+        )
+
+        kc_client = await admin_client.get_client_by_name(
+            client_id, realm_name, test_namespace
+        )
+        assert kc_client is not None, "Client should exist in Keycloak"
+        assert kc_client.frontchannel_logout is True, (
+            "Keycloak client frontchannelLogout should be True"
+        )
+        assert kc_client.full_scope_allowed is False, (
+            "Keycloak client fullScopeAllowed should be False"
+        )
+
+    @pytest.mark.timeout(300)
+    async def test_helm_client_with_session_settings(
+        self,
+        helm_realm,
+        helm_client,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+        keycloak_port_forward,
+    ):
+        """Test deploying a client with session timeout settings via Helm."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"client-sess-{uuid.uuid4().hex[:8]}"
+        realm_release = f"realm-sess-{uuid.uuid4().hex[:8]}"
+
+        # Deploy realm first
+        await helm_realm(
+            release_name=realm_release,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            clientAuthorizationGrants=[test_namespace],
+        )
+
+        realm_cr_name = f"{realm_release}-keycloak-realm"
+
+        # Wait for realm to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Deploy client with session settings
+        client_id = f"sess-client-{uuid.uuid4().hex[:8]}"
+        client_release = f"client-sess-{uuid.uuid4().hex[:8]}"
+
+        await helm_client(
+            release_name=client_release,
+            client_id=client_id,
+            realm_name=realm_cr_name,
+            realm_namespace=test_namespace,
+            publicClient=False,
+            redirectUris=["https://example.com/callback"],
+            # Session settings (nested in settings)
+            settings={
+                "accessTokenLifespan": 300,
+                "clientSessionIdleTimeout": 1800,
+                "clientSessionMaxLifespan": 36000,
+            },
+        )
+
+        client_cr_name = f"{client_release}-keycloak-client"
+
+        # Wait for client to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            name=client_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify settings are in spec
+        client = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            name=client_cr_name,
+        )
+        spec = client.get("spec", {})
+        settings = spec.get("settings", {})
+
+        assert settings.get("accessTokenLifespan") == 300, (
+            "accessTokenLifespan should be 300"
+        )
+        assert settings.get("clientSessionIdleTimeout") == 1800, (
+            "clientSessionIdleTimeout should be 1800"
+        )
+        assert settings.get("clientSessionMaxLifespan") == 36000, (
+            "clientSessionMaxLifespan should be 36000"
+        )
+
+        # Verify in Keycloak (these are stored in attributes)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+
+        local_port = await keycloak_port_forward(
+            "keycloak", operator_namespace, service_port=8080
+        )
+        admin_client = KeycloakAdminClient(
+            server_url=f"http://localhost:{local_port}",
+            username="admin",
+            password="admin",
+        )
+
+        kc_client = await admin_client.get_client_by_name(
+            client_id, realm_name, test_namespace
+        )
+        assert kc_client is not None, "Client should exist in Keycloak"
+
+        # Session settings are stored in attributes
+        attrs = kc_client.attributes or {}
+        assert attrs.get("client.session.idle.timeout") == "1800", (
+            "Keycloak client session idle timeout should be 1800"
+        )
+        assert attrs.get("client.session.max.lifespan") == "36000", (
+            "Keycloak client session max lifespan should be 36000"
+        )
+
+    @pytest.mark.timeout(300)
+    async def test_helm_client_with_pkce(
+        self,
+        helm_realm,
+        helm_client,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+        keycloak_port_forward,
+    ):
+        """Test deploying a client with PKCE settings via Helm."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"client-pkce-{uuid.uuid4().hex[:8]}"
+        realm_release = f"realm-pkce-{uuid.uuid4().hex[:8]}"
+
+        # Deploy realm first
+        await helm_realm(
+            release_name=realm_release,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            clientAuthorizationGrants=[test_namespace],
+        )
+
+        realm_cr_name = f"{realm_release}-keycloak-realm"
+
+        # Wait for realm to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Deploy public client with PKCE (common for SPAs)
+        client_id = f"pkce-client-{uuid.uuid4().hex[:8]}"
+        client_release = f"client-pkce-{uuid.uuid4().hex[:8]}"
+
+        await helm_client(
+            release_name=client_release,
+            client_id=client_id,
+            realm_name=realm_cr_name,
+            realm_namespace=test_namespace,
+            publicClient=True,
+            redirectUris=["https://spa.example.com/callback"],
+            # PKCE settings (nested in settings)
+            settings={
+                "pkceCodeChallengeMethod": "S256",
+            },
+        )
+
+        client_cr_name = f"{client_release}-keycloak-client"
+
+        # Wait for client to be ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            name=client_cr_name,
+            timeout=180,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify settings are in spec
+        client = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            name=client_cr_name,
+        )
+        spec = client.get("spec", {})
+        settings = spec.get("settings", {})
+
+        assert settings.get("pkceCodeChallengeMethod") == "S256", (
+            "pkceCodeChallengeMethod should be S256"
+        )
+
+        # Verify in Keycloak (PKCE is stored in attributes)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+
+        local_port = await keycloak_port_forward(
+            "keycloak", operator_namespace, service_port=8080
+        )
+        admin_client = KeycloakAdminClient(
+            server_url=f"http://localhost:{local_port}",
+            username="admin",
+            password="admin",
+        )
+
+        kc_client = await admin_client.get_client_by_name(
+            client_id, realm_name, test_namespace
+        )
+        assert kc_client is not None, "Client should exist in Keycloak"
+
+        # PKCE is stored in attributes
+        attrs = kc_client.attributes or {}
+        assert attrs.get("pkce.code.challenge.method") == "S256", (
+            "Keycloak client PKCE method should be S256"
+        )
