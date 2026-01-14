@@ -535,7 +535,7 @@ class TestHelmClientAdvancedSettings:
         k8s_custom_objects,
         operator_namespace,
         shared_operator,
-        keycloak_port_forward,
+        keycloak_admin_client,
     ):
         """Test deploying a client with authorization and scope settings via Helm."""
         from .wait_helpers import wait_for_resource_ready
@@ -617,19 +617,8 @@ class TestHelmClientAdvancedSettings:
             "authorizationServicesEnabled should be False"
         )
 
-        # Verify in Keycloak
-        from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
-
-        local_port = await keycloak_port_forward(
-            "keycloak", operator_namespace, remote_port=8080
-        )
-        admin_client = KeycloakAdminClient(
-            server_url=f"http://localhost:{local_port}",
-            username="admin",
-            password="admin",
-        )
-
-        kc_client = await admin_client.get_client_by_name(
+        # Verify in Keycloak using the fixture
+        kc_client = await keycloak_admin_client.get_client_by_name(
             client_id, realm_name, test_namespace
         )
         assert kc_client is not None, "Client should exist in Keycloak"
@@ -649,7 +638,7 @@ class TestHelmClientAdvancedSettings:
         k8s_custom_objects,
         operator_namespace,
         shared_operator,
-        keycloak_port_forward,
+        keycloak_admin_client,
     ):
         """Test deploying a client with session timeout settings via Helm."""
         from .wait_helpers import wait_for_resource_ready
@@ -734,18 +723,7 @@ class TestHelmClientAdvancedSettings:
         )
 
         # Verify in Keycloak (these are stored in attributes)
-        from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
-
-        local_port = await keycloak_port_forward(
-            "keycloak", operator_namespace, remote_port=8080
-        )
-        admin_client = KeycloakAdminClient(
-            server_url=f"http://localhost:{local_port}",
-            username="admin",
-            password="admin",
-        )
-
-        kc_client = await admin_client.get_client_by_name(
+        kc_client = await keycloak_admin_client.get_client_by_name(
             client_id, realm_name, test_namespace
         )
         assert kc_client is not None, "Client should exist in Keycloak"
@@ -768,7 +746,7 @@ class TestHelmClientAdvancedSettings:
         k8s_custom_objects,
         operator_namespace,
         shared_operator,
-        keycloak_port_forward,
+        keycloak_admin_client,
     ):
         """Test deploying a client with PKCE settings via Helm."""
         from .wait_helpers import wait_for_resource_ready
@@ -845,18 +823,7 @@ class TestHelmClientAdvancedSettings:
         )
 
         # Verify in Keycloak (PKCE is stored in attributes)
-        from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
-
-        local_port = await keycloak_port_forward(
-            "keycloak", operator_namespace, remote_port=8080
-        )
-        admin_client = KeycloakAdminClient(
-            server_url=f"http://localhost:{local_port}",
-            username="admin",
-            password="admin",
-        )
-
-        kc_client = await admin_client.get_client_by_name(
+        kc_client = await keycloak_admin_client.get_client_by_name(
             client_id, realm_name, test_namespace
         )
         assert kc_client is not None, "Client should exist in Keycloak"
