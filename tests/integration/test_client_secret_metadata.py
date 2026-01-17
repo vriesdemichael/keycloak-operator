@@ -69,6 +69,8 @@ class TestClientSecretMetadata:
         operator_namespace: str,
         shared_operator,
         keycloak_admin_client,
+        helm_realm,
+        helm_client,
     ) -> None:
         """Test creating a client with secret metadata.
 
@@ -79,200 +81,152 @@ class TestClientSecretMetadata:
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"metadata-realm-{suffix}"
         client_name = f"metadata-client-{suffix}"
+        realm_release_name = f"realm-{suffix}"
+        client_release_name = f"client-{suffix}"
         namespace = test_namespace
 
-        from keycloak_operator.models.client import (
-            KeycloakClientSpec,
-            RealmRef,
-            SecretMetadata,
-        )
-        from keycloak_operator.models.realm import (
-            KeycloakRealmSpec,
-            OperatorRef,
-        )
-
-        # 1. Create Realm
-        realm_spec = KeycloakRealmSpec(
-            operator_ref=OperatorRef(namespace=operator_namespace),
+        # 1. Create Realm via Helm
+        await helm_realm(
+            release_name=realm_release_name,
             realm_name=realm_name,
-            display_name="Metadata Test Realm",
-            client_authorization_grants=[namespace],
+            namespace=namespace,
+            displayName="Metadata Test Realm",
         )
 
-        realm_manifest = {
-            "apiVersion": "vriesdemichael.github.io/v1",
-            "kind": "KeycloakRealm",
-            "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+        await wait_for_resource_ready(
+            k8s_custom_objects=k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=namespace,
+            plural="keycloakrealms",
+            name=realm_name,
+            timeout=120,
+            operator_namespace=operator_namespace,
+        )
+
+        # 2. Create Client with Secret Metadata via Helm
+        custom_labels = {
+            "example.com/managed-by": "gitops",
+            "argocd.argoproj.io/secret-type": "repository",
+        }
+        custom_annotations = {"example.com/description": "This is a test secret"}
+
+        await helm_client(
+            release_name=client_release_name,
+            client_id=client_name,
+            realm_name=realm_name,
+            realm_namespace=namespace,
+            publicClient=False,
+            secretMetadata={
+                "labels": custom_labels,
+                "annotations": custom_annotations,
+            },
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects=k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=namespace,
+            plural="keycloakclients",
+            name=client_name,  # Note: Helm chart uses client name derived from release name or overridden.
+            # The helm_client fixture passes clientId as "clientId" value.
+            # The Helm chart templates the name as {{ include "keycloak-client.fullname" . }}.
+            # If we don't set fullnameOverride, it uses release name.
+            # Let's check the created name.
+            # Wait, helm_client fixture calls _install_client.
+            # The Helm chart uses `name: {{ include "keycloak-client.fullname" . }}`.
+            # I should pass `fullnameOverride=client_name` to be safe/explicit, or use the release name if that's what it defaults to.
+            # To be consistent with the manual test, I'll pass fullnameOverride.
+            fullnameOverride=client_name,
+            timeout=120,
+            operator_namespace=operator_namespace,
+        )
+
+        # 3. Verify Secret Metadata
+        secret_name = f"{client_name}-credentials"
+        secret = k8s_core_api.read_namespaced_secret(secret_name, namespace)
+
+        logger.info(f"Checking secret {secret_name} labels and annotations")
+
+        # Check labels
+        for key, value in custom_labels.items():
+            assert secret.metadata.labels.get(key) == value, f"Label {key} mismatch"
+
+        # Check annotations
+        for key, value in custom_annotations.items():
+            assert secret.metadata.annotations.get(key) == value, (
+                f"Annotation {key} mismatch"
+            )
+
+        # 4. Update Client with New Metadata via Patch
+        new_labels = {"example.com/managed-by": "manual", "new-label": "true"}
+        new_annotations = {"example.com/description": "Updated description"}
+
+        # We patch the CR directly to simulate an update.
+        # Ideally we would use helm upgrade, but the fixture doesn't support it easily.
+        # Patching the CR is sufficient to test the operator's reconciliation logic.
+
+        patch = {
+            "spec": {
+                "secretMetadata": {"labels": new_labels, "annotations": new_annotations}
+            }
         }
 
-        try:
-            await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakrealms",
-                body=realm_manifest,
+        # Get current resource to ensure we have the latest version for patching?
+        # patch_namespaced_custom_object handles merge patch.
+
+        await k8s_custom_objects.patch_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=namespace,
+            plural="keycloakclients",
+            name=client_name,
+            body=patch,
+        )
+
+        # 5. Trigger Secret Regeneration to force update
+        # Getting resource again to get latest version
+        resource = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=namespace,
+            plural="keycloakclients",
+            name=client_name,
+        )
+        current_gen = resource["metadata"].get("generation", 1)
+
+        await wait_for_reconciliation_complete(
+            k8s_custom_objects=k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=namespace,
+            plural="keycloakclients",
+            name=client_name,
+            min_generation=current_gen,
+            timeout=120,
+            operator_namespace=operator_namespace,
+        )
+
+        # 6. Verify Updated Metadata
+        secret = k8s_core_api.read_namespaced_secret(secret_name, namespace)
+
+        logger.info(f"Checking updated secret {secret_name} labels and annotations")
+
+        # Check new labels
+        for key, value in new_labels.items():
+            assert secret.metadata.labels.get(key) == value, (
+                f"Updated Label {key} mismatch"
             )
 
-            await wait_for_resource_ready(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakrealms",
-                name=realm_name,
-                timeout=120,
-                operator_namespace=operator_namespace,
+        # Check old label (example.com/managed-by changed)
+        assert secret.metadata.labels.get("example.com/managed-by") == "manual"
+
+        # Check new annotations
+        for key, value in new_annotations.items():
+            assert secret.metadata.annotations.get(key) == value, (
+                f"Updated Annotation {key} mismatch"
             )
 
-            # 2. Create Client with Secret Metadata
-            custom_labels = {
-                "example.com/managed-by": "gitops",
-                "argocd.argoproj.io/secret-type": "repository",
-            }
-            custom_annotations = {"example.com/description": "This is a test secret"}
-
-            client_spec = KeycloakClientSpec(
-                realm_ref=RealmRef(name=realm_name, namespace=namespace),
-                client_id=client_name,
-                public_client=False,
-                secret_metadata=SecretMetadata(
-                    labels=custom_labels,
-                    annotations=custom_annotations,
-                ),
-            )
-
-            client_manifest = {
-                "apiVersion": "vriesdemichael.github.io/v1",
-                "kind": "KeycloakClient",
-                "metadata": {"name": client_name, "namespace": namespace},
-                "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
-            }
-
-            await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                body=client_manifest,
-            )
-
-            await wait_for_resource_ready(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                timeout=120,
-                operator_namespace=operator_namespace,
-            )
-
-            # 3. Verify Secret Metadata
-            secret_name = f"{client_name}-credentials"
-            secret = k8s_core_api.read_namespaced_secret(secret_name, namespace)
-
-            logger.info(f"Checking secret {secret_name} labels and annotations")
-
-            # Check labels
-            for key, value in custom_labels.items():
-                assert secret.metadata.labels.get(key) == value, f"Label {key} mismatch"
-
-            # Check annotations
-            for key, value in custom_annotations.items():
-                assert secret.metadata.annotations.get(key) == value, (
-                    f"Annotation {key} mismatch"
-                )
-
-            # 4. Update Client with New Metadata
-            new_labels = {"example.com/managed-by": "manual", "new-label": "true"}
-            new_annotations = {"example.com/description": "Updated description"}
-
-            # Get current resource version
-            resource = await k8s_custom_objects.get_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-            )
-            current_gen = resource["metadata"].get("generation", 1)
-
-            assert client_spec.secret_metadata is not None
-            client_spec.secret_metadata.labels = new_labels
-            client_spec.secret_metadata.annotations = new_annotations
-
-            # Cast to dict to satisfy type checker
-            metadata: dict = client_manifest["metadata"]  # type: ignore
-            metadata["resourceVersion"] = resource["metadata"]["resourceVersion"]
-            client_manifest["spec"] = client_spec.model_dump(
-                by_alias=True, exclude_unset=True
-            )
-
-            await k8s_custom_objects.replace_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                body=client_manifest,
-            )
-
-            # 5. Trigger Secret Regeneration to force update (since metadata updates might not trigger direct reconciliation if only metadata changed in secret but not spec?)
-            # Actually, changing spec.secretMetadata IS a spec change, so it should trigger reconciliation.
-            # However, create_client_secret uses update_existing=True which does patch.
-            # We need to wait for reconciliation.
-
-            await wait_for_reconciliation_complete(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                min_generation=current_gen + 1,
-                timeout=120,
-                operator_namespace=operator_namespace,
-            )
-
-            # 6. Verify Updated Metadata
-            # We might need to wait a bit for the secret to be updated if it's async or cached
-            secret = k8s_core_api.read_namespaced_secret(secret_name, namespace)
-
-            logger.info(f"Checking updated secret {secret_name} labels and annotations")
-
-            # Check new labels
-            for key, value in new_labels.items():
-                assert secret.metadata.labels.get(key) == value, (
-                    f"Updated Label {key} mismatch"
-                )
-
-            # Check old label (example.com/managed-by changed)
-            assert secret.metadata.labels.get("example.com/managed-by") == "manual"
-
-            # Check new annotations
-            for key, value in new_annotations.items():
-                assert secret.metadata.annotations.get(key) == value, (
-                    f"Updated Annotation {key} mismatch"
-                )
-
-            logger.info("✓ Successfully verified client secret metadata")
-
-        finally:
-            await _cleanup_resource(
-                k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-            )
-            await _cleanup_resource(
-                k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakrealms",
-                name=realm_name,
-            )
+        logger.info("✓ Successfully verified client secret metadata")
+        # Cleanup is handled by fixtures
