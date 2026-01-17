@@ -200,6 +200,19 @@ class ServiceAccountRoles(BaseModel):
     )
 
 
+class SecretMetadata(BaseModel):
+    """Metadata to be added to the managed secret."""
+
+    model_config = {"populate_by_name": True}
+
+    labels: dict[str, str] = Field(
+        default_factory=dict, description="Labels to add to the secret."
+    )
+    annotations: dict[str, str] = Field(
+        default_factory=dict, description="Annotations to add to the secret."
+    )
+
+
 class KeycloakClientSpec(BaseModel):
     """
     Specification for a KeycloakClient resource.
@@ -304,6 +317,11 @@ class KeycloakClientSpec(BaseModel):
         None,
         alias="secretName",
         description="Name of Kubernetes secret for client credentials",
+    )
+    secret_metadata: SecretMetadata | None = Field(
+        default=None,
+        alias="secretMetadata",
+        description="Metadata to attach to the managed secret.",
     )
 
     # GitOps settings

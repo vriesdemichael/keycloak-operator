@@ -131,5 +131,9 @@ spec:
   {{- if .Values.secretName }}
   secretName: {{ .Values.secretName }}
   {{- end }}
+  {{- with .Values.secretMetadata }}
+  secretMetadata:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   regenerateSecret: {{ .Values.regenerateSecret }}
   {{- end }}

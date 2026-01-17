@@ -140,6 +140,12 @@ manageSecret: true
 # If not specified, defaults to: <client-name>-credentials
 secretName: ""
 
+# Metadata to attach to the managed secret
+# Only used when manageSecret is true
+secretMetadata:
+  labels: {}
+  annotations: {}
+
 # Regenerate the client secret on update
 regenerateSecret: false
 
