@@ -487,6 +487,8 @@ def create_client_secret(
     keycloak_url: str,
     realm: str,
     update_existing: bool = False,
+    labels: dict[str, str] | None = None,
+    annotations: dict[str, str] | None = None,
 ) -> client.V1Secret:
     """
     Create or update a Kubernetes secret containing client credentials.
@@ -499,6 +501,8 @@ def create_client_secret(
         keycloak_url: Keycloak server URL
         realm: Realm name
         update_existing: Whether to update if secret already exists
+        labels: Optional labels to add to the secret
+        annotations: Optional annotations to add to the secret
 
     Returns:
         Created or updated Secret object
@@ -539,6 +543,23 @@ def create_client_secret(
         }
     )
 
+    # Prepare metadata
+    secret_labels = {
+        "vriesdemichael.github.io/keycloak-client": client_id,
+        "vriesdemichael.github.io/keycloak-realm": realm,
+        "vriesdemichael.github.io/keycloak-component": "client-credentials",
+    }
+    if labels:
+        secret_labels.update(labels)
+
+    secret_annotations = {
+        "vriesdemichael.github.io/keycloak-client-type": "confidential"
+        if client_secret
+        else "public",
+    }
+    if annotations:
+        secret_annotations.update(annotations)
+
     # Create secret object
     secret = client.V1Secret(
         api_version="v1",
@@ -546,16 +567,8 @@ def create_client_secret(
         metadata=client.V1ObjectMeta(
             name=secret_name,
             namespace=namespace,
-            labels={
-                "vriesdemichael.github.io/keycloak-client": client_id,
-                "vriesdemichael.github.io/keycloak-realm": realm,
-                "vriesdemichael.github.io/keycloak-component": "client-credentials",
-            },
-            annotations={
-                "vriesdemichael.github.io/keycloak-client-type": "confidential"
-                if client_secret
-                else "public",
-            },
+            labels=secret_labels,
+            annotations=secret_annotations,
         ),
         type="Opaque",
         data=secret_data,

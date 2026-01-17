@@ -243,6 +243,20 @@ spec:
               secretName:
                 type: string
                 description: Name of Kubernetes secret for client credentials
+              secretMetadata:
+                type: object
+                description: Metadata to attach to the managed secret
+                properties:
+                  labels:
+                    type: object
+                    description: Labels to add to the secret
+                    additionalProperties:
+                      type: string
+                  annotations:
+                    type: object
+                    description: Annotations to add to the secret
+                    additionalProperties:
+                      type: string
               manageSecret:
                 type: boolean
                 description: Create and manage Kubernetes secret for credentials

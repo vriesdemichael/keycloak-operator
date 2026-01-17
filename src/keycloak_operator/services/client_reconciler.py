@@ -641,6 +641,14 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Create Kubernetes secret with client credentials
         secret_name = f"{name}-credentials"
+
+        # Extract secret metadata if present
+        labels = None
+        annotations = None
+        if spec.secret_metadata:
+            labels = spec.secret_metadata.labels
+            annotations = spec.secret_metadata.annotations
+
         create_client_secret(
             secret_name=secret_name,
             namespace=namespace,
@@ -649,6 +657,8 @@ class KeycloakClientReconciler(BaseReconciler):
             keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
             realm=actual_realm_name,
             update_existing=True,  # Update if exists (idempotent)
+            labels=labels,
+            annotations=annotations,
         )
 
         # Set up RBAC labels for secret access
@@ -1346,6 +1356,14 @@ class KeycloakClientReconciler(BaseReconciler):
 
             # Update Kubernetes secret
             secret_name = f"{name}-credentials"
+
+            # Extract secret metadata if present
+            labels = None
+            annotations = None
+            if new_client_spec.secret_metadata:
+                labels = new_client_spec.secret_metadata.labels
+                annotations = new_client_spec.secret_metadata.annotations
+
             create_client_secret(
                 secret_name=secret_name,
                 namespace=namespace,
@@ -1354,6 +1372,8 @@ class KeycloakClientReconciler(BaseReconciler):
                 keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
                 realm=actual_realm_name,
                 update_existing=True,
+                labels=labels,
+                annotations=annotations,
             )
 
         self.logger.info(f"Successfully updated KeycloakClient {name}")

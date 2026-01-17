@@ -314,6 +314,8 @@ protocolMappers:
 |-----------|-------------|---------|
 | `manageSecret` | Automatically create Kubernetes secret with client credentials | `true` |
 | `secretName` | Name of the secret (auto-generated if empty) | `""` |
+| `secretMetadata.labels` | Labels to add to the managed secret | `{}` |
+| `secretMetadata.annotations` | Annotations to add to the managed secret | `{}` |
 | `regenerateSecret` | Regenerate client secret on update | `false` |
 
 When `manageSecret: true` and `publicClient: false`, the operator creates a secret containing:
