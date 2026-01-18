@@ -13,7 +13,7 @@
 # ============================================================================
 # Stage 1: Builder - Resolve and install dependencies
 # ============================================================================
-FROM python:3.13-slim-bookworm@sha256:97e9392d12279f8c180eb80f0c7c0f3dfe5650f0f2573f7ad770aea58f75ed12 AS builder
+FROM python:3.13-slim@sha256:51e1a0a317fdb6e170dc791bbeae63fac5272c82f43958ef74a34e170c6f8b18 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     UV_LINK_MODE=copy \
@@ -43,7 +43,7 @@ RUN uv sync --frozen --no-dev
 # ============================================================================
 # Stage 2: Production - Lean runtime image
 # ============================================================================
-FROM python:3.13-slim-bookworm@sha256:97e9392d12279f8c180eb80f0c7c0f3dfe5650f0f2573f7ad770aea58f75ed12 AS production
+FROM python:3.13-slim@sha256:51e1a0a317fdb6e170dc791bbeae63fac5272c82f43958ef74a34e170c6f8b18 AS production
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH=/app/.venv/bin:$PATH \
@@ -56,8 +56,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade system python tools to fix potential vulnerabilities (e.g. CVE-2025-8869 in pip)
-# Pinned versions for deterministic builds
-RUN python -m pip install --no-cache-dir pip==25.3 setuptools==75.8.2 wheel==0.45.1
+# Pinned versions for deterministic builds - using bleeding edge versions
+RUN python -m pip install --no-cache-dir pip==25.3 setuptools==80.9.0 wheel==0.45.1
 
 # Non-root user
 RUN groupadd -r keycloak --gid=1001 && \
