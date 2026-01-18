@@ -20,7 +20,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
     VIRTUAL_ENV=/app/.venv \
     PATH=/app/.venv/bin:$PATH
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     curl build-essential \
     && rm -rf /var/lib/apt/lists/*
 
@@ -51,9 +51,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# Upgrade system python tools to fix potential vulnerabilities (e.g. CVE-2025-8869 in pip)
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
 # Non-root user
 RUN groupadd -r keycloak --gid=1001 && \
