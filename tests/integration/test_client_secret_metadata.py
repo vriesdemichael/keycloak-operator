@@ -91,6 +91,7 @@ class TestClientSecretMetadata:
             realm_name=realm_name,
             namespace=namespace,
             displayName="Metadata Test Realm",
+            fullnameOverride=realm_name,
         )
 
         await wait_for_resource_ready(
@@ -121,6 +122,7 @@ class TestClientSecretMetadata:
                 "labels": custom_labels,
                 "annotations": custom_annotations,
             },
+            fullnameOverride=client_name,
         )
 
         await wait_for_resource_ready(
@@ -129,16 +131,7 @@ class TestClientSecretMetadata:
             version="v1",
             namespace=namespace,
             plural="keycloakclients",
-            name=client_name,  # Note: Helm chart uses client name derived from release name or overridden.
-            # The helm_client fixture passes clientId as "clientId" value.
-            # The Helm chart templates the name as {{ include "keycloak-client.fullname" . }}.
-            # If we don't set fullnameOverride, it uses release name.
-            # Let's check the created name.
-            # Wait, helm_client fixture calls _install_client.
-            # The Helm chart uses `name: {{ include "keycloak-client.fullname" . }}`.
-            # I should pass `fullnameOverride=client_name` to be safe/explicit, or use the release name if that's what it defaults to.
-            # To be consistent with the manual test, I'll pass fullnameOverride.
-            fullnameOverride=client_name,
+            name=client_name,
             timeout=120,
             operator_namespace=operator_namespace,
         )
