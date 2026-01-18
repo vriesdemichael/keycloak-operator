@@ -13,7 +13,7 @@
 # ============================================================================
 # Stage 1: Builder - Resolve and install dependencies
 # ============================================================================
-FROM python:3.14-slim@sha256:9b81fe9acff79e61affb44aaf3b6ff234392e8ca477cb86c9f7fd11732ce9b6a AS builder
+FROM python:3.13-slim-bookworm@sha256:97e9392d12279f8c180eb80f0c7c0f3dfe5650f0f2573f7ad770aea58f75ed12 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     UV_LINK_MODE=copy \
@@ -43,7 +43,7 @@ RUN uv sync --frozen --no-dev
 # ============================================================================
 # Stage 2: Production - Lean runtime image
 # ============================================================================
-FROM python:3.14-slim@sha256:9b81fe9acff79e61affb44aaf3b6ff234392e8ca477cb86c9f7fd11732ce9b6a AS production
+FROM python:3.13-slim-bookworm@sha256:97e9392d12279f8c180eb80f0c7c0f3dfe5650f0f2573f7ad770aea58f75ed12 AS production
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH=/app/.venv/bin:$PATH \
@@ -57,7 +57,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Upgrade system python tools to fix potential vulnerabilities (e.g. CVE-2025-8869 in pip)
 # Pinned versions for deterministic builds
-RUN python -m pip install --no-cache-dir pip==25.3 setuptools==75.8.0 wheel==0.45.1
+RUN python -m pip install --no-cache-dir pip==25.3 setuptools==75.8.2 wheel==0.45.1
 
 # Non-root user
 RUN groupadd -r keycloak --gid=1001 && \
