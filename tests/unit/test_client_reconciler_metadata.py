@@ -55,6 +55,73 @@ async def test_manage_client_credentials_passes_metadata():
 
 
 @pytest.mark.asyncio
+async def test_do_update_passes_metadata_without_regeneration():
+    """Test that do_update passes metadata when only metadata changes (no regeneration)."""
+
+    # Mock dependencies
+    mock_k8s_client = MagicMock()
+    mock_admin_factory = AsyncMock()
+    mock_admin_client = AsyncMock()
+    mock_admin_factory.return_value = mock_admin_client
+
+    reconciler = KeycloakClientReconciler(
+        k8s_client=mock_k8s_client, keycloak_admin_factory=mock_admin_factory
+    )
+
+    reconciler._get_realm_info = MagicMock(return_value=("realm-name", "ns", "kc", {}))  # type: ignore
+    reconciler.update_status_ready = MagicMock()  # type: ignore
+
+    with (
+        patch(
+            "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
+        ) as mock_validate,
+        patch(
+            "keycloak_operator.utils.kubernetes.create_client_secret"
+        ) as mock_create_secret,
+    ):
+        mock_validate.return_value = {"status": {"endpoints": {"public": "http://kc"}}}
+        # Mock getting existing secret
+        mock_admin_client.get_client_secret.return_value = "existing-secret"
+
+        # Setup inputs
+        old_spec = {
+            "clientId": "test-client",
+            "realmRef": {"name": "my-realm", "namespace": "ns"},
+        }
+
+        new_spec = {
+            "clientId": "test-client",
+            "realmRef": {"name": "my-realm", "namespace": "ns"},
+            "regenerateSecret": False,
+            "secretMetadata": {"labels": {"l3": "v3"}, "annotations": {"a3": "v3"}},
+        }
+
+        # Diff that triggers update
+        diff = [
+            ("change", ("spec", "secretMetadata"), None, new_spec["secretMetadata"])
+        ]
+
+        # Execute
+        await reconciler.do_update(
+            old_spec=old_spec,
+            new_spec=new_spec,
+            diff=diff,
+            name="test-client-cr",
+            namespace="ns",
+            status=MagicMock(),
+        )
+
+        # Verify
+        mock_create_secret.assert_called_once()
+        call_kwargs = mock_create_secret.call_args[1]
+
+        # Ensure secret was NOT regenerated (should use existing value)
+        assert call_kwargs["client_secret"] == "existing-secret"
+        assert call_kwargs["labels"] == {"l3": "v3"}
+        assert call_kwargs["annotations"] == {"a3": "v3"}
+
+
+@pytest.mark.asyncio
 async def test_do_update_passes_metadata_on_regeneration():
     """Test that do_update passes metadata when regenerating secret."""
 
