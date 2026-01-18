@@ -13,14 +13,14 @@
 # ============================================================================
 # Stage 1: Builder - Resolve and install dependencies
 # ============================================================================
-FROM python:3.13-slim AS builder
+FROM python:3.13-slim@sha256:51e1a0a317fdb6e170dc791bbeae63fac5272c82f43958ef74a34e170c6f8b18 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive \
     UV_LINK_MODE=copy \
     VIRTUAL_ENV=/app/.venv \
     PATH=/app/.venv/bin:$PATH
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl build-essential \
     && rm -rf /var/lib/apt/lists/*
 
@@ -43,7 +43,7 @@ RUN uv sync --frozen --no-dev
 # ============================================================================
 # Stage 2: Production - Lean runtime image
 # ============================================================================
-FROM python:3.13-slim AS production
+FROM python:3.13-slim@sha256:51e1a0a317fdb6e170dc791bbeae63fac5272c82f43958ef74a34e170c6f8b18 AS production
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PATH=/app/.venv/bin:$PATH \
@@ -51,12 +51,13 @@ ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Upgrade system python tools to fix potential vulnerabilities (e.g. CVE-2025-8869 in pip)
-RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+# Pinned versions for deterministic builds
+RUN python -m pip install --no-cache-dir pip==25.3 setuptools==75.8.0 wheel==0.45.1
 
 # Non-root user
 RUN groupadd -r keycloak --gid=1001 && \
