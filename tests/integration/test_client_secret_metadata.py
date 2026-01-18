@@ -64,7 +64,7 @@ class TestClientSecretMetadata:
     async def test_client_secret_metadata(
         self,
         k8s_custom_objects,
-        k8s_core_api,
+        k8s_core_v1,
         test_namespace: str,
         operator_namespace: str,
         shared_operator,
@@ -145,7 +145,7 @@ class TestClientSecretMetadata:
 
         # 3. Verify Secret Metadata
         secret_name = f"{client_name}-credentials"
-        secret = k8s_core_api.read_namespaced_secret(secret_name, namespace)
+        secret = await k8s_core_v1.read_namespaced_secret(secret_name, namespace)
 
         logger.info(f"Checking secret {secret_name} labels and annotations")
 
@@ -209,7 +209,7 @@ class TestClientSecretMetadata:
         )
 
         # 6. Verify Updated Metadata
-        secret = k8s_core_api.read_namespaced_secret(secret_name, namespace)
+        secret = await k8s_core_v1.read_namespaced_secret(secret_name, namespace)
 
         logger.info(f"Checking updated secret {secret_name} labels and annotations")
 
