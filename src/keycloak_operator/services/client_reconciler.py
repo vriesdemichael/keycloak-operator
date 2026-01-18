@@ -1277,6 +1277,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Apply configuration updates based on the diff
         client_update_needed = False
+        update_secret_metadata_needed = False
 
         for operation, field_path, old_value, new_value in diff:
             if field_path[:2] == ("spec", "redirectUris"):
@@ -1294,6 +1295,12 @@ class KeycloakClientReconciler(BaseReconciler):
                     f"Updating client settings: {field_path[2:]} = {new_value}"
                 )
                 client_update_needed = True
+
+            elif field_path[:2] == ("spec", "secretMetadata"):
+                self.logger.info(
+                    f"Secret metadata changed: {operation} at {field_path}"
+                )
+                update_secret_metadata_needed = True
 
             elif field_path[:2] == ("spec", "protocol_mappers"):
                 self.logger.info(
@@ -1345,14 +1352,24 @@ class KeycloakClientReconciler(BaseReconciler):
                     f"Failed to update client configuration: {e}", delay=30
                 ) from e
 
-        # Handle client secret regeneration
+        # Handle client secret regeneration or metadata update
         regenerate_secret = new_client_spec.regenerate_secret
-        if regenerate_secret and not new_client_spec.public_client:
-            self.logger.info("Regenerating client secret")
-            # Generate new secret in Keycloak
-            new_secret = admin_client.regenerate_client_secret(
-                new_client_spec.client_id, actual_realm_name, namespace
-            )
+        if (
+            regenerate_secret or update_secret_metadata_needed
+        ) and not new_client_spec.public_client:
+            secret_action = "Regenerating" if regenerate_secret else "Updating"
+            self.logger.info(f"{secret_action} client secret")
+
+            if regenerate_secret:
+                # Generate new secret in Keycloak
+                client_secret = admin_client.regenerate_client_secret(
+                    new_client_spec.client_id, actual_realm_name, namespace
+                )
+            else:
+                # Fetch existing secret from Keycloak to ensure consistency
+                client_secret = await admin_client.get_client_secret(
+                    new_client_spec.client_id, actual_realm_name, namespace
+                )
 
             # Update Kubernetes secret
             secret_name = f"{name}-credentials"
@@ -1368,7 +1385,7 @@ class KeycloakClientReconciler(BaseReconciler):
                 secret_name=secret_name,
                 namespace=namespace,
                 client_id=new_client_spec.client_id,
-                client_secret=new_secret,
+                client_secret=client_secret,
                 keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
                 realm=actual_realm_name,
                 update_existing=True,
