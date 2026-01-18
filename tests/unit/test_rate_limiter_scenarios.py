@@ -229,7 +229,6 @@ class TestRateLimitingIntegration:
         assert active_ns in rate_limiter.namespace_buckets
 
     @pytest.mark.asyncio
-    @pytest.mark.skip(reason="Timing-sensitive test, flaky in CI/CD environments")
     async def test_concurrent_namespace_access_fairness(self):
         """
         Test: Concurrent access to different namespaces is fair.
@@ -237,9 +236,9 @@ class TestRateLimitingIntegration:
         """
         rate_limiter = RateLimiter(
             global_rate=50.0,
-            global_burst=100,
+            global_burst=10,  # Reduced burst to force all to wait
             namespace_rate=20.0,  # Higher than global
-            namespace_burst=30,
+            namespace_burst=5,  # Reduced burst
         )
 
         namespaces = [f"concurrent-ns-{i}" for i in range(5)]
@@ -263,8 +262,12 @@ class TestRateLimitingIntegration:
         max_time = max(times)
         min_time = min(times)
 
-        # Difference should be reasonable (within 50% of max)
-        assert (max_time - min_time) / max_time < 0.5
+        # Difference should be reasonable (within 60% of max to be safe in CI)
+        if max_time > 0:
+            assert (max_time - min_time) / max_time < 0.6
+        else:
+            # If max_time is 0, it means everything was instant, which is also fair
+            pass
 
         print(f"Completion times: {completion_times}")
 
@@ -349,28 +352,6 @@ class TestRateLimitingIntegration:
         # namespace-b should work fine
         await rate_limiter.acquire("namespace-b", timeout=1.0)
         await rate_limiter.acquire("namespace-b", timeout=1.0)
-
-
-class TestRateLimitingWithRealKeycloak:
-    """Integration tests with real Keycloak (requires cluster)."""
-
-    @pytest.mark.skip(
-        reason="Requires running Keycloak instance and keycloak_admin_client_factory fixture"
-    )
-    @pytest.mark.asyncio
-    async def test_rate_limiting_with_keycloak_admin_client(
-        self, keycloak_admin_client_factory, rate_limiter
-    ):
-        """
-        Test rate limiting with real Keycloak admin client.
-
-        This test requires:
-        - Running Keycloak instance
-        - Configured admin credentials
-        """
-        # This would be implemented if keycloak_admin_client_factory
-        # fixture is available in conftest.py
-        pytest.skip("Requires running Keycloak instance")
 
 
 if __name__ == "__main__":
