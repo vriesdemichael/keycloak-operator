@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.25](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.24...chart-operator-v0.3.25) (2026-01-20)
+
+
+### Features
+
+* **chart-client+operator:** add labels and annotations to managed secrets ([ee64ec1](https://github.com/vriesdemichael/keycloak-operator/commit/ee64ec1ecbe5ead4db3fe9896f16fd83d0c842ef))
+
 ## [0.3.24](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.23...chart-operator-v0.3.24) (2026-01-14)
 
 
