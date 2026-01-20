@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 #
-# Multi-stage Dockerfile for Keycloak Operator
+# Multi-stage Dockerfile for Keycloak Operator (Alpine Version)
 #
 # Targets:
 #   - production: Production image (default)
@@ -13,16 +13,16 @@
 # ============================================================================
 # Stage 1: Builder - Resolve and install dependencies
 # ============================================================================
-FROM python:3.13-slim AS builder
+FROM python:3.14-alpine AS builder
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    UV_LINK_MODE=copy \
+ENV UV_LINK_MODE=copy \
     VIRTUAL_ENV=/app/.venv \
     PATH=/app/.venv/bin:$PATH
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    curl build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies
+# 'build-base' is needed to compile python extensions if musl wheels aren't available
+# 'git' is often needed if dependencies are referenced via git URLs
+# RUN apk add --no-cache build-base git
 
 # Install uv binary
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -32,36 +32,40 @@ WORKDIR /app
 # Copy only files needed to resolve dependencies
 COPY pyproject.toml uv.lock README.md LICENSE ./
 
-# Install dependencies (improves layer caching)
-RUN uv sync --frozen --no-dev --no-install-project || \
+# Install dependencies with caching mounts
+# We use --frozen to ensure the lockfile is respected strictly
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev --no-install-project || \
     (echo "If this failed because uv.lock is absent, remove --frozen or generate the lock file." && exit 1)
 
 # Add application source and install the project
 COPY src/ src/
-RUN uv sync --frozen --no-dev
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-dev
 
 # ============================================================================
 # Stage 2: Production - Lean runtime image
 # ============================================================================
-FROM python:3.13-slim AS production
+FROM python:3.14-alpine AS production
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    PATH=/app/.venv/bin:$PATH \
+ENV PATH=/app/.venv/bin:$PATH \
     PYTHONPATH=/app/src \
     PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1
 
-RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+# Install runtime system dependencies
+RUN apk add --no-cache \
+    ca-certificates
+    # libstdc++ is often required by binary python extensions
+    # libstdc++
 
-# Upgrade system python tools to fix potential vulnerabilities (e.g. CVE-2025-8869 in pip)
-# Install latest versions for maximum security (sacrificing determinism)
-RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+# # Upgrade pip/setuptools in the virtual environment to fix potential vulnerabilities
+# RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Non-root user
-RUN groupadd -r keycloak --gid=1001 && \
-    useradd -r -g keycloak --uid=1001 --shell=/usr/sbin/nologin --create-home keycloak
+# Create non-root user (Alpine syntax)
+# -S creates a system user/group
+RUN addgroup -g 1001 -S keycloak && \
+    adduser -u 1001 -S -G keycloak -s /sbin/nologin -h /home/keycloak keycloak
 
 WORKDIR /app
 
@@ -85,12 +89,13 @@ CMD ["python", "-m", "keycloak_operator.operator"]
 # ============================================================================
 # Stage 3: Test - Extends production with coverage instrumentation
 # ============================================================================
-# This stage adds test dependencies and coverage collection to the production
-# image, ensuring we test exactly what we ship.
 FROM production AS test
 
 # Switch to root to install test dependencies
 USER root
+
+# Install build dependencies for test packages (just in case test deps need compilation)
+RUN apk add --no-cache build-base
 
 # Copy uv for installing test dependencies
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
@@ -98,17 +103,18 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 # Copy lock file for reproducible test dep installation
 COPY pyproject.toml uv.lock /app/
 
-# Install test group dependencies into existing venv
-RUN uv sync --frozen --group test --no-install-project
+# Install test group dependencies into existing venv using cache
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --group test --no-install-project
 
 # Copy coverage configurations
 COPY .coveragerc /app/.coveragerc
 COPY images/operator/coveragerc.container /app/.coveragerc.container
 
-# Copy test injection module for auto-starting coverage
-COPY images/operator/test-inject /app/test-inject
+# Copy test injection module
+COPY images/operator/test-inject/ /app/test-inject/
 
-# Install the .pth file to auto-import sitecustomize.py at startup
+# Install the .pth file
 RUN python - <<'PY'
 import sysconfig, pathlib
 sp = sysconfig.get_paths()['purelib']
@@ -121,11 +127,10 @@ PY
 ENV COVERAGE_PROCESS_START=/app/.coveragerc.container
 ENV COVERAGE_FILE=/tmp/coverage/.coverage
 
-# Create coverage data directory with proper permissions
+# Create coverage data directory
 RUN mkdir -p /tmp/coverage && \
     chown -R keycloak:keycloak /app /tmp/coverage
 
 USER keycloak
 
-# Override CMD to run with coverage instrumentation
 CMD ["coverage", "run", "--parallel-mode", "--source=/app/src/keycloak_operator", "-m", "keycloak_operator.operator"]

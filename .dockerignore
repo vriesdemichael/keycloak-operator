@@ -67,3 +67,6 @@ build/
 k8s/
 deploy/
 manifests/
+
+
+!images/operator/test-inject
