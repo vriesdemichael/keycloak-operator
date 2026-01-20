@@ -2,7 +2,7 @@
 # See: https://github.com/astral-sh/ty
 
 [environment]
-python-version = "3.13"
+python-version = "3.14"
 
 [rules]
 # Ignore rules that cause false positives with kopf decorators
