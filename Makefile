@@ -4,6 +4,7 @@
 VERSION ?= $(shell grep '^version = ' pyproject.toml | cut -d'"' -f2)
 KEYCLOAK_VERSION ?= 26.4.1
 TEST_IMAGE_TAG ?= test
+export UV_LINK_MODE=copy
 
 # ============================================================================
 # Help
