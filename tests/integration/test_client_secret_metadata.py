@@ -90,6 +90,8 @@ class TestClientSecretMetadata:
             release_name=realm_release_name,
             realm_name=realm_name,
             namespace=namespace,
+            operator_namespace=operator_namespace,
+            clientAuthorizationGrants=[namespace],
             displayName="Metadata Test Realm",
             fullnameOverride=realm_name,
         )
