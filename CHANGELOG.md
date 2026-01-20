@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.5.21](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.20...operator-image-v0.5.21) (2026-01-20)
+
+
+### Features
+
+* **chart-client+operator:** add labels and annotations to managed secrets ([ee64ec1](https://github.com/vriesdemichael/keycloak-operator/commit/ee64ec1ecbe5ead4db3fe9896f16fd83d0c842ef))
+* **operator:** upgrade base image to python 3.14-slim ([34b95e3](https://github.com/vriesdemichael/keycloak-operator/commit/34b95e3f41580061d54efdb5e4664058f4443a33))
+* **operator:** Upgrade to python 3.14 (alpine image for less vulnerabilities) ([f35b32b](https://github.com/vriesdemichael/keycloak-operator/commit/f35b32b242eb5c1794022e2d6c65df6d0f4f9bf9))
+
+
+### Bug Fixes
+
+* **operator-image:** enable full upgrades for security ([ed91e18](https://github.com/vriesdemichael/keycloak-operator/commit/ed91e18e1d9174fc4af4e36622355709403fb2b3))
+* **operator-image:** ensure deterministic build with pinned versions ([f3f3158](https://github.com/vriesdemichael/keycloak-operator/commit/f3f3158b2744acf6a2ce238719c043a62cc2b6e0))
+* **operator-image:** switch to bleeding edge Trixie base with secure setuptools ([9f2d657](https://github.com/vriesdemichael/keycloak-operator/commit/9f2d657128d4ef59cac295e3c0df8c0e59df5615))
+* **operator-image:** switch to bookworm and upgrade setuptools ([c7371f5](https://github.com/vriesdemichael/keycloak-operator/commit/c7371f5f04e132a1145ec40addbdb069568579e0))
+* **operator-image:** upgrade system packages and pip in image ([b034da6](https://github.com/vriesdemichael/keycloak-operator/commit/b034da606047f1f6054bb6e13cd127133833d8e6))
+* **operator:** ensure secret is updated when only metadata changes ([6dc50c3](https://github.com/vriesdemichael/keycloak-operator/commit/6dc50c3b065e9a1ccbde7e68534b7a371672a030))
+* **operator:** update pyasn1 to 0.6.2 and fix integration test ([97962cd](https://github.com/vriesdemichael/keycloak-operator/commit/97962cd90af3bfc0b9cc603d8833a8d0d953aa78))
+
 ## [0.5.20](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.19...operator-image-v0.5.20) (2026-01-14)
 
 
