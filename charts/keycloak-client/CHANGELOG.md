@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.6...chart-client-v0.3.7) (2026-01-21)
+
+
+### Features
+
+* **chart-client+operator:** improve client secret management and monitoring ([c182187](https://github.com/vriesdemichael/keycloak-operator/commit/c182187adaa614e89fb2696c74c860c39a86994d))
+
 ## [0.3.6](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.5...chart-client-v0.3.6) (2026-01-20)
 
 
