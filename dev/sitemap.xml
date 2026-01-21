@@ -333,6 +333,14 @@
          <lastmod>2026-01-21</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/073-security-and-multi-tenancy-model/</loc>
+         <lastmod>2026-01-21</lastmod>
+    </url>
+    <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/074-keycloak-scalability-and-ha/</loc>
+         <lastmod>2026-01-21</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/test-cleanup-strategy/</loc>
          <lastmod>2026-01-21</lastmod>
     </url>
