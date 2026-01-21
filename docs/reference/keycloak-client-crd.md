@@ -347,6 +347,12 @@ Configure how client credentials are managed.
 | `regenerateSecret` | boolean | No | `false` | Regenerate client secret on update |
 | `secretName` | `string` | No | `<client-name>-client-secret` | Name of Kubernetes secret for client credentials |
 | `manageSecret` | boolean | No | `true` | Create and manage Kubernetes secret for credentials |
+| `secretMetadata.labels` | map[`string`]`string` | No | `{}` | Labels to add to the managed secret |
+| `secretMetadata.annotations` | map[`string`]`string` | No | `{}` | Annotations to add to the managed secret |
+
+**Automatic Features:**
+- **Recreation:** If the managed secret is deleted, the operator automatically recreates it.
+- **Garbage Collection:** Secrets have an `OwnerReference` to the Client CR, ensuring they are deleted when the client is deleted.
 
 **Example:**
 ```yaml
@@ -354,6 +360,11 @@ spec:
   manageSecret: true
   secretName: webapp-credentials
   regenerateSecret: false  # Only regenerate manually
+  secretMetadata:
+    labels:
+      app: webapp
+    annotations:
+      description: "Credentials for webapp"
 ```
 
 The operator creates a secret with the following keys:
