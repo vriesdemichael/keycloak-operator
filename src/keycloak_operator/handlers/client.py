@@ -637,3 +637,75 @@ async def monitor_client_health(
                 "lastHealthCheck": datetime.now(UTC).isoformat(),
             }
         )
+
+
+@kopf.on.event(
+    "secrets", labels={"vriesdemichael.github.io/keycloak-client": kopf.PRESENT}
+)
+async def monitor_client_secrets(
+    event: dict[str, Any],
+    logger: logging.Logger,
+    **kwargs: Any,
+) -> None:
+    """
+    Monitor client secrets and trigger reconciliation if deleted.
+
+    If a managed secret is deleted, we must trigger reconciliation on the
+    parent KeycloakClient to recreate it.
+    """
+    # Only react to deletion events
+    if event["type"] != "DELETED":
+        return
+
+    meta = event["object"]["metadata"]
+    name = meta["name"]
+    namespace = meta["namespace"]
+    labels = meta.get("labels", {})
+    client_name = labels.get("vriesdemichael.github.io/keycloak-client")
+
+    if not client_name:
+        return
+
+    logger.info(
+        f"Managed secret {name} deleted, triggering reconciliation for KeycloakClient {client_name}"
+    )
+
+    # Touch the KeycloakClient to trigger reconciliation
+    try:
+        api = client.CustomObjectsApi(get_kubernetes_client())
+
+        # We need to use a distinct annotation value to ensure a change event
+        patch_body = {
+            "metadata": {
+                "annotations": {
+                    "keycloak-operator/force-reconcile": f"secret-deleted-{datetime.now(UTC).timestamp()}"
+                }
+            }
+        }
+
+        # Use run_in_executor to avoid blocking the event loop with synchronous K8s calls
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(
+            None,
+            lambda: api.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                body=patch_body,
+            ),
+        )
+        logger.info(f"Triggered reconciliation for KeycloakClient {client_name}")
+
+    except ApiException as e:
+        if e.status == 404:
+            logger.warning(
+                f"Parent KeycloakClient {client_name} not found, ignoring secret deletion"
+            )
+        else:
+            logger.error(
+                f"Failed to trigger reconciliation for KeycloakClient {client_name}: {e}"
+            )
+    except Exception as e:
+        logger.error(f"Unexpected error triggering reconciliation: {e}")
