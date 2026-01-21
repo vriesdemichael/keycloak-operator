@@ -318,6 +318,10 @@ protocolMappers:
 | `secretMetadata.annotations` | Annotations to add to the managed secret | `{}` |
 | `regenerateSecret` | Regenerate client secret on update | `false` |
 
+**Automatic Recreation:** If the managed secret is manually deleted, the operator will detect the deletion and automatically recreate it.
+
+**Garbage Collection:** Managed secrets have an `OwnerReference` pointing to the KeycloakClient CR. Deleting the KeycloakClient will automatically delete the associated secret.
+
 When `manageSecret: true` and `publicClient: false`, the operator creates a secret containing:
 - `client-id` - The OAuth2 client ID
 - `client-secret` - The client secret

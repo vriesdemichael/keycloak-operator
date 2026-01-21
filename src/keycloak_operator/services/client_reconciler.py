@@ -169,10 +169,13 @@ class KeycloakClientReconciler(BaseReconciler):
         # Configure OAuth2/OIDC settings
         await self.configure_oauth_settings(client_spec, client_uuid, name, namespace)
 
+        # Get owner UID from resource body
+        owner_uid = kwargs.get("body", {}).get("metadata", {}).get("uid")
+
         # Manage client credentials
         if not client_spec.public_client:
             await self.manage_client_credentials(
-                client_spec, client_uuid, name, namespace
+                client_spec, client_uuid, name, namespace, owner_uid=owner_uid
             )
 
         # Configure protocol mappers
@@ -593,7 +596,12 @@ class KeycloakClientReconciler(BaseReconciler):
             raise
 
     async def manage_client_credentials(
-        self, spec: KeycloakClientSpec, client_uuid: str, name: str, namespace: str
+        self,
+        spec: KeycloakClientSpec,
+        client_uuid: str,
+        name: str,
+        namespace: str,
+        owner_uid: str | None = None,
     ) -> None:
         """
         Generate and manage client credentials (secret).
@@ -603,6 +611,7 @@ class KeycloakClientReconciler(BaseReconciler):
             client_uuid: Client UUID in Keycloak
             name: Resource name
             namespace: Resource namespace
+            owner_uid: UID of the owning KeycloakClient resource
         """
         self.logger.info(f"Managing credentials for client {spec.client_id}")
         from kubernetes import client
@@ -659,6 +668,8 @@ class KeycloakClientReconciler(BaseReconciler):
             update_existing=True,  # Update if exists (idempotent)
             labels=labels,
             annotations=annotations,
+            owner_uid=owner_uid,
+            owner_name=name,
         )
 
         # Set up RBAC labels for secret access
@@ -1362,7 +1373,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
             if regenerate_secret:
                 # Generate new secret in Keycloak
-                client_secret = admin_client.regenerate_client_secret(
+                client_secret = await admin_client.regenerate_client_secret(
                     new_client_spec.client_id, actual_realm_name, namespace
                 )
             else:
@@ -1381,6 +1392,9 @@ class KeycloakClientReconciler(BaseReconciler):
                 labels = new_client_spec.secret_metadata.labels
                 annotations = new_client_spec.secret_metadata.annotations
 
+            # Get owner UID from resource body
+            owner_uid = kwargs.get("body", {}).get("metadata", {}).get("uid")
+
             create_client_secret(
                 secret_name=secret_name,
                 namespace=namespace,
@@ -1391,6 +1405,8 @@ class KeycloakClientReconciler(BaseReconciler):
                 update_existing=True,
                 labels=labels,
                 annotations=annotations,
+                owner_uid=owner_uid,
+                owner_name=name,
             )
 
         self.logger.info(f"Successfully updated KeycloakClient {name}")

@@ -489,6 +489,8 @@ def create_client_secret(
     update_existing: bool = False,
     labels: dict[str, str] | None = None,
     annotations: dict[str, str] | None = None,
+    owner_uid: str | None = None,
+    owner_name: str | None = None,
 ) -> client.V1Secret:
     """
     Create or update a Kubernetes secret containing client credentials.
@@ -503,6 +505,8 @@ def create_client_secret(
         update_existing: Whether to update if secret already exists
         labels: Optional labels to add to the secret
         annotations: Optional annotations to add to the secret
+        owner_uid: Optional UID of the owning resource for GC
+        owner_name: Optional name of the owning resource for GC
 
     Returns:
         Created or updated Secret object
@@ -573,6 +577,16 @@ def create_client_secret(
         type="Opaque",
         data=secret_data,
     )
+
+    # Set owner reference if provided
+    if owner_uid and owner_name:
+        set_owner_reference(
+            resource=secret,
+            owner_name=owner_name,
+            owner_uid=owner_uid,
+            owner_kind="KeycloakClient",
+            api_version="vriesdemichael.github.io/v1",
+        )
 
     # Create or update secret
     try:
