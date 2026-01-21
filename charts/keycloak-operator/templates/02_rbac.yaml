@@ -209,9 +209,11 @@ rules:
 # Label required: vriesdemichael.github.io/keycloak-allow-operator-read=true
 # Create permission needed for realm authorization secrets
 # Update/patch permission needed for client credentials
+# Watch needed for monitoring managed secrets
+# Delete needed for cleanup
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list", "create", "update", "patch"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
 # Read and delete configmaps for realm cleanup
 - apiGroups: [""]
