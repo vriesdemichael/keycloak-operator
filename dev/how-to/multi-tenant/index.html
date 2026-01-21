@@ -987,45 +987,6 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#team-responsibilities-onboarding" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Team Responsibilities &amp; Onboarding
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Team Responsibilities &amp; Onboarding">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#roles-responsibilities-matrix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Roles &amp; Responsibilities Matrix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#onboarding-new-teams" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Onboarding New Teams
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#architecture" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4054,62 +4015,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../decisions/generated-markdown/073-security-and-multi-tenancy-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-073: Security and Multi-Tenancy Model
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../decisions/generated-markdown/074-keycloak-scalability-and-ha/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-074: Keycloak Scalability and High Availability Strategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -4169,45 +4074,6 @@
       Table of contents
     </label>
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#team-responsibilities-onboarding" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Team Responsibilities &amp; Onboarding
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Team Responsibilities &amp; Onboarding">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#roles-responsibilities-matrix" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Roles &amp; Responsibilities Matrix
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#onboarding-new-teams" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Onboarding New Teams
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
       
         <li class="md-nav__item">
   <a href="#architecture" class="md-nav__link">
@@ -4597,65 +4463,6 @@
 
 <h1 id="multi-tenant-configuration-guide">Multi-Tenant Configuration Guide<a class="headerlink" href="#multi-tenant-configuration-guide" title="Permanent link">&para;</a></h1>
 <p>Configure the operator for multi-tenant environments where multiple teams manage their own realms and clients independently.</p>
-<h2 id="team-responsibilities-onboarding">Team Responsibilities &amp; Onboarding<a class="headerlink" href="#team-responsibilities-onboarding" title="Permanent link">&para;</a></h2>
-<p>When introducing the Keycloak Operator to your organization, clear role definitions are essential for a smooth "Realm-as-Tenant" adoption.</p>
-<h3 id="roles-responsibilities-matrix">Roles &amp; Responsibilities Matrix<a class="headerlink" href="#roles-responsibilities-matrix" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th style="text-align: left;">Responsibility</th>
-<th style="text-align: left;">Platform Team 🛠️</th>
-<th style="text-align: left;">Realm Owner (App Team A) 👑</th>
-<th style="text-align: left;">Client Owner (App Team B) 👤</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td style="text-align: left;"><strong>Scope</strong></td>
-<td style="text-align: left;">Cluster Infrastructure &amp; Operator</td>
-<td style="text-align: left;">Specific Realm (Tenant)</td>
-<td style="text-align: left;">Specific Application (Client)</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Infrastructure</strong></td>
-<td style="text-align: left;">Deploys Operator &amp; CRDs.<br>Ensures Keycloak availability.<br>Manages global limits/quotas.</td>
-<td style="text-align: left;">N/A</td>
-<td style="text-align: left;">N/A</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Security Boundary</strong></td>
-<td style="text-align: left;">Manages ClusterRoles.<br>No access to Realm secrets by default.</td>
-<td style="text-align: left;"><strong>Owns the Realm boundary.</strong><br>Controls <code>clientAuthorizationGrants</code>.<br>Manages Realm Users/Groups.</td>
-<td style="text-align: left;">Manages Client Secrets.<br>Configures Redirect URIs.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Onboarding</strong></td>
-<td style="text-align: left;">Creates Namespaces.<br>Grants Realm Creation rights.</td>
-<td style="text-align: left;">Creates Realm CR.<br>Approves Client access via PRs.</td>
-<td style="text-align: left;">Creates Client CR in own Namespace.<br>Requests access to Realm.</td>
-</tr>
-<tr>
-<td style="text-align: left;"><strong>Troubleshooting</strong></td>
-<td style="text-align: left;">Operator logs, Pod health, Network policies.</td>
-<td style="text-align: left;">Realm configuration errors.<br>Auth flows, Theme issues.</td>
-<td style="text-align: left;">Client connection errors.<br>Invalid Redirect URIs.</td>
-</tr>
-</tbody>
-</table>
-<h3 id="onboarding-new-teams">Onboarding New Teams<a class="headerlink" href="#onboarding-new-teams" title="Permanent link">&para;</a></h3>
-<p><strong>1. For Platform Engineers:</strong>
-*   <strong>Explain:</strong> "We provide the Keycloak <em>service</em> and the <em>operator</em>. You own your configuration."
-*   <strong>Configure:</strong> Set up namespaces and RBAC so teams can create <code>KeycloakRealm</code> resources.
-*   <strong>Security:</strong> You don't need to see their secrets. The Operator only accesses namespaces where it is explicitly invited via the Realm Helm chart.</p>
-<p><strong>2. For Realm Owners (Tenant Managers):</strong>
-*   <strong>Explain:</strong> "You own a 'Virtual Keycloak'. You control who can connect to it."
-*   <strong>Action:</strong> Deploy your Realm using the <code>keycloak-realm</code> Helm chart.
-*   <strong>Gatekeeping:</strong> Use the <code>clientAuthorizationGrants</code> list in your Realm YAML to whitelist other team's namespaces. You are the gatekeeper.</p>
-<p><strong>3. For Application Developers (Client Owners):</strong>
-*   <strong>Explain:</strong> "You define your app's auth client as code, right next to your deployment."
-*   <strong>Action:</strong> Deploy a <code>KeycloakClient</code> CR in <em>your</em> namespace.
-*   <strong>Access:</strong> If you need to connect to a shared Realm, ask the Realm Owner to add your namespace to their allowlist.</p>
-<hr />
 <h2 id="architecture">Architecture<a class="headerlink" href="#architecture" title="Permanent link">&para;</a></h2>
 <pre class="mermaid"><code>%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#00b8d9','primaryTextColor':'#fff','primaryBorderColor':'#0097a7','lineColor':'#00acc1','secondaryColor':'#006064','tertiaryColor':'#fff'}}}%%
 graph LR

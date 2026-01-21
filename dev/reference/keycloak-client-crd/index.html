@@ -3958,62 +3958,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../decisions/generated-markdown/073-security-and-multi-tenancy-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-073: Security and Multi-Tenancy Model
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../decisions/generated-markdown/074-keycloak-scalability-and-ha/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-074: Keycloak Scalability and High Availability Strategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -5045,35 +4989,13 @@
 <td><code>true</code></td>
 <td>Create and manage Kubernetes secret for credentials</td>
 </tr>
-<tr>
-<td><code>secretMetadata.labels</code></td>
-<td>map[<code>string</code>]<code>string</code></td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Labels to add to the managed secret</td>
-</tr>
-<tr>
-<td><code>secretMetadata.annotations</code></td>
-<td>map[<code>string</code>]<code>string</code></td>
-<td>No</td>
-<td><code>{}</code></td>
-<td>Annotations to add to the managed secret</td>
-</tr>
 </tbody>
 </table>
-<p><strong>Automatic Features:</strong>
-- <strong>Recreation:</strong> If the managed secret is deleted, the operator automatically recreates it.
-- <strong>Garbage Collection:</strong> Secrets have an <code>OwnerReference</code> to the Client CR, ensuring they are deleted when the client is deleted.</p>
 <p><strong>Example:</strong>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="w">  </span><span class="nt">manageSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="w">  </span><span class="nt">secretName</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp-credentials</span>
 </span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="w">  </span><span class="nt">regenerateSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">  </span><span class="c1"># Only regenerate manually</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="w">  </span><span class="nt">secretMetadata</span><span class="p">:</span>
-</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="w">    </span><span class="nt">labels</span><span class="p">:</span>
-</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="w">      </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webapp</span>
-</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="w">    </span><span class="nt">annotations</span><span class="p">:</span>
-</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">      </span><span class="nt">description</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Credentials</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">webapp&quot;</span>
 </span></code></pre></div></p>
 <p>The operator creates a secret with the following keys:
 - <code>client-id</code>: Client ID

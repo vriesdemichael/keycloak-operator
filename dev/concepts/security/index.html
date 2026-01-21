@@ -753,17 +753,6 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#roles-responsibilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Roles &amp; Responsibilities
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#why-not-traditional-rbac-alone" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4059,62 +4048,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../decisions/generated-markdown/073-security-and-multi-tenancy-model/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-073: Security and Multi-Tenancy Model
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../decisions/generated-markdown/074-keycloak-scalability-and-ha/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-074: Keycloak Scalability and High Availability Strategy
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -4197,17 +4130,6 @@
   
     <nav class="md-nav" aria-label="Design Philosophy">
       <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#roles-responsibilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Roles &amp; Responsibilities
-      
-    </span>
-  </a>
-  
-</li>
         
           <li class="md-nav__item">
   <a href="#why-not-traditional-rbac-alone" class="md-nav__link">
@@ -4610,9 +4532,7 @@
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>The Keycloak operator uses <strong>Kubernetes RBAC</strong> combined with <strong>declarative namespace grant lists</strong> for authorization.</p>
 <h2 id="design-philosophy">Design Philosophy<a class="headerlink" href="#design-philosophy" title="Permanent link">&para;</a></h2>
-<p><strong>Key principle</strong>: Application teams should manage their own Keycloak realms and clients without requiring platform team intervention for each resource. This is the <strong>"Realm-as-Tenant"</strong> model.</p>
-<h3 id="roles-responsibilities">Roles &amp; Responsibilities<a class="headerlink" href="#roles-responsibilities" title="Permanent link">&para;</a></h3>
-<p>The security model is designed to support distinct roles (Platform Team, Realm Owner, Client Owner). For a detailed breakdown of who is responsible for what, see the <a href="../../how-to/multi-tenant/#roles--responsibilities-matrix">Team Responsibilities Matrix</a>.</p>
+<p><strong>Key principle</strong>: Application teams should manage their own Keycloak realms and clients without requiring platform team intervention for each resource.</p>
 <h3 id="why-not-traditional-rbac-alone">Why Not Traditional RBAC Alone?<a class="headerlink" href="#why-not-traditional-rbac-alone" title="Permanent link">&para;</a></h3>
 <p>Pure RBAC approaches don't scale for multi-tenant Keycloak:
 - ❌ Can't express "team A can create clients in realm X but not realm Y"
