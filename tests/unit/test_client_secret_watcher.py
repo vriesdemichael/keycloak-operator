@@ -38,23 +38,34 @@ async def test_monitor_client_secrets_deleted():
         # Should call patch_namespaced_custom_object
         assert mock_api.patch_namespaced_custom_object.called
         call_args = mock_api.patch_namespaced_custom_object.call_args
-        _, kwargs = call_args
-        if not kwargs:  # If called with positional args
-            # The lambda in run_in_executor might hide call details if not carefully mocked or if run_in_executor runs it
-            pass
+        args, kwargs = call_args
 
-        # Wait, monitor_client_secrets uses loop.run_in_executor(None, lambda: ...)
-        # So the mock_api call happens in a thread.
-        # But we are in an async test.
+        # Handle both keyword and positional argument patterns
+        if not kwargs and args:
+            # kubernetes.client.CustomObjectsApi.patch_namespaced_custom_object(
+            #     group, version, namespace, plural, name, body, **kwargs
+            # )
+            group, version, namespace, plural, name, body = args[:6]
+            call_params = {
+                "group": group,
+                "version": version,
+                "namespace": namespace,
+                "plural": plural,
+                "name": name,
+                "body": body,
+            }
+        else:
+            call_params = kwargs
+
         # Verify patch arguments
-        assert kwargs["group"] == "vriesdemichael.github.io"
-        assert kwargs["version"] == "v1"
-        assert kwargs["namespace"] == "my-ns"
-        assert kwargs["plural"] == "keycloakclients"
-        assert kwargs["name"] == "my-client"
+        assert call_params["group"] == "vriesdemichael.github.io"
+        assert call_params["version"] == "v1"
+        assert call_params["namespace"] == "my-ns"
+        assert call_params["plural"] == "keycloakclients"
+        assert call_params["name"] == "my-client"
         assert (
             "keycloak-operator/force-reconcile"
-            in kwargs["body"]["metadata"]["annotations"]
+            in call_params["body"]["metadata"]["annotations"]
         )
 
 
