@@ -8,7 +8,11 @@ The Keycloak operator uses **Kubernetes RBAC** combined with **declarative names
 
 ## Design Philosophy
 
-**Key principle**: Application teams should manage their own Keycloak realms and clients without requiring platform team intervention for each resource.
+**Key principle**: Application teams should manage their own Keycloak realms and clients without requiring platform team intervention for each resource. This is the **"Realm-as-Tenant"** model.
+
+### Roles & Responsibilities
+
+The security model is designed to support distinct roles (Platform Team, Realm Owner, Client Owner). For a detailed breakdown of who is responsible for what, see the [Team Responsibilities Matrix](../how-to/multi-tenant.md#roles--responsibilities-matrix).
 
 ### Why Not Traditional RBAC Alone?
 
