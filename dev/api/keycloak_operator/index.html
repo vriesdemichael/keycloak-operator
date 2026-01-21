@@ -2781,6 +2781,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client.monitor_client_secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        monitor_client_secrets
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.handlers.client.update_keycloak_client" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -9696,6 +9707,17 @@
     <span class="md-ellipsis">
       
         monitor_client_health
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.handlers.client.monitor_client_secrets" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        monitor_client_secrets
       
     </span>
   </a>
@@ -19731,6 +19753,32 @@ Default: 300 seconds (5 minutes).</p>
 <div class="doc doc-object doc-function">
 
 
+<h2 id="keycloak_operator.handlers.client.monitor_client_secrets" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">monitor_client_secrets</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.handlers.client.monitor_client_secrets" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">monitor_client_secrets</span><span class="p">(</span><span class="n">event</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Monitor client secrets and trigger reconciliation if deleted.</p>
+<p>If a managed secret is deleted, we must trigger reconciliation on the
+parent KeycloakClient to recreate it.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="keycloak_operator.handlers.client.update_keycloak_client" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">update_keycloak_client</span>
 
@@ -27512,7 +27560,7 @@ client creation, credential management, and OAuth2 configuration.</p>
 
 <a href="#keycloak_operator.services.client_reconciler.KeycloakClientReconciler.manage_client_credentials" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">manage_client_credentials</span><span class="p">(</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">spec</span><span class="p">,</span> <span class="n">client_uuid</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">spec</span><span class="p">,</span> <span class="n">client_uuid</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">owner_uid</span><span class="o">=</span><span class="kc">None</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
 </span></code></pre></div>
 
@@ -27594,6 +27642,22 @@ client creation, credential management, and OAuth2 configuration.</p>
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>owner_uid</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>UID of the owning KeycloakClient resource</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
             </td>
           </tr>
       </tbody>
@@ -28266,7 +28330,9 @@ Sets proper labels and ownership for the secret.</p>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="n">update_existing</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>    <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="n">annotations</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="p">)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">owner_uid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">owner_name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
@@ -28423,6 +28489,38 @@ Sets proper labels and ownership for the secret.</p>
             <td>
               <div class="doc-md-description">
                 <p>Optional annotations to add to the secret</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>owner_uid</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional UID of the owning resource for GC</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>owner_name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional name of the owning resource for GC</p>
               </div>
             </td>
             <td>
