@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.26](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.25...chart-operator-v0.3.26) (2026-01-21)
+
+
+### Bug Fixes
+
+* **chart-operator:** add secret watch/delete permissions to RBAC ([d971179](https://github.com/vriesdemichael/keycloak-operator/commit/d971179f3b5951fd35e149490e760d9c7a4f93ac))
+
 ## [0.3.25](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.24...chart-operator-v0.3.25) (2026-01-20)
 
 
