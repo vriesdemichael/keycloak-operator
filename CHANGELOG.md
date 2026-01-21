@@ -1,5 +1,167 @@
 # Changelog
 
+## [0.6.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.21...operator-image-v0.6.0) (2026-01-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-client+chart-operator+chart-realm:** Helm chart distribution moved to OCI registry
+* **operator:** IDP secrets must use configSecrets field, plaintext forbidden
+* **webhooks:** Admission webhooks now require cert-manager to be installed
+* **chart-client+chart-realm:** Removed token-based authorization from all charts
+
+### Features
+
+* add OIDC endpoint discovery to realm status ([6dc52f3](https://github.com/vriesdemichael/keycloak-operator/commit/6dc52f3ac9a51547e4431f99abbe91aec1d7dca3))
+* **chart-client+chart-operator+chart-realm:** migrate to OCI registry in GHCR ([dc4f59c](https://github.com/vriesdemichael/keycloak-operator/commit/dc4f59c8f9d66be04cd7be6ae685fc714a8aad97))
+* **chart-client+chart-operator+operator:** add missing client settings fields ([5a17906](https://github.com/vriesdemichael/keycloak-operator/commit/5a179063c098f1fc0afd505b5466dd8be8a2ab79))
+* **chart-client+chart-realm:** update charts for namespace grant authorization ([add6af9](https://github.com/vriesdemichael/keycloak-operator/commit/add6af903c2ff887cd44c5608ceb1a1a6436f23e)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* **chart-client+operator:** add labels and annotations to managed secrets ([ee64ec1](https://github.com/vriesdemichael/keycloak-operator/commit/ee64ec1ecbe5ead4db3fe9896f16fd83d0c842ef))
+* **chart-client+operator:** improve client secret management and monitoring ([c182187](https://github.com/vriesdemichael/keycloak-operator/commit/c182187adaa614e89fb2696c74c860c39a86994d))
+* **chart-operator+chart-realm+operator:** add complete realm role and group management ([d55d6d9](https://github.com/vriesdemichael/keycloak-operator/commit/d55d6d99e94264225275d3fcc026f6cf900a9c44))
+* **chart-operator+chart-realm+operator:** add password policy and improve events config ([3d60b5e](https://github.com/vriesdemichael/keycloak-operator/commit/3d60b5eeddd7f2a5c63416a55e195e07f6804d92)), closes [#311](https://github.com/vriesdemichael/keycloak-operator/issues/311)
+* **chart-operator:** add 'get' permission for cross-namespace realm reads ([1e9cf4f](https://github.com/vriesdemichael/keycloak-operator/commit/1e9cf4fd7f4c4fb3e2a85d02bc217c8d4449075a)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* **chart-operator:** add configurable timer intervals for reconciliation ([80e4652](https://github.com/vriesdemichael/keycloak-operator/commit/80e46525e2ea44209c51ea89984d7cfab0c9d25c))
+* **chart-operator:** update CRDs for namespace grant authorization ([b526149](https://github.com/vriesdemichael/keycloak-operator/commit/b52614931946e588730b3cc4312c061e383623fe)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* **chart-realm+operator:** add authentication flow and required action support ([f653969](https://github.com/vriesdemichael/keycloak-operator/commit/f653969fd08b30d25af45a1b6465bc6e5ec22c2e)), closes [#180](https://github.com/vriesdemichael/keycloak-operator/issues/180)
+* **chart-realm:** add client scope management ([708787f](https://github.com/vriesdemichael/keycloak-operator/commit/708787f23200be34947733e9059eaad1a51e02b3)), closes [#181](https://github.com/vriesdemichael/keycloak-operator/issues/181)
+* implement admission webhooks for resource validation ([061acae](https://github.com/vriesdemichael/keycloak-operator/commit/061acae11b1af0d5547177c98264ac6ffbaa8f27))
+* **operator:** add comprehensive test coverage infrastructure ([0405cfb](https://github.com/vriesdemichael/keycloak-operator/commit/0405cfbb2b65993696cc820e62ba32be2793788a)), closes [#110](https://github.com/vriesdemichael/keycloak-operator/issues/110)
+* **operator:** add quiet logging mode for health probes and webhooks ([3ef5d2c](https://github.com/vriesdemichael/keycloak-operator/commit/3ef5d2cdabd42b4dd9e3200e5b9591e6977f21db))
+* **operator:** add stuck finalizer detection to timer handlers ([30bd848](https://github.com/vriesdemichael/keycloak-operator/commit/30bd848d849043ffa21795a950c5243d60327ab9))
+* **operator:** add user federation CRUD methods to Keycloak admin client ([cbdbd1a](https://github.com/vriesdemichael/keycloak-operator/commit/cbdbd1ae2e5262fecea014a6b33f8194ecb24941))
+* **operator:** Add user federation status to KeycloakRealm CR status ([74bfccf](https://github.com/vriesdemichael/keycloak-operator/commit/74bfccfab5eaca12f3806fc81e2365d96d243c48))
+* **operator:** align Pydantic models with CRD schemas ([4f96f7c](https://github.com/vriesdemichael/keycloak-operator/commit/4f96f7c491a62c8d74c9a50d3e5fc16e98427da2))
+* **operator:** centralize configuration with pydantic-settings ([dd6078b](https://github.com/vriesdemichael/keycloak-operator/commit/dd6078bf9256e722188343987009f9a26b8ac3ee)), closes [#108](https://github.com/vriesdemichael/keycloak-operator/issues/108)
+* **operator:** complete identity provider lifecycle and mapper support ([db0ad09](https://github.com/vriesdemichael/keycloak-operator/commit/db0ad0994271e9d4c5ef15bdbef796a85e983d16)), closes [#178](https://github.com/vriesdemichael/keycloak-operator/issues/178)
+* **operator:** complete integration coverage collection ([1d4e5a4](https://github.com/vriesdemichael/keycloak-operator/commit/1d4e5a4f4fd369efeb81032539c6e938c9015635))
+* **operator:** enhance user federation models with LDAP/AD/Kerberos support ([7c6e1d7](https://github.com/vriesdemichael/keycloak-operator/commit/7c6e1d7bb0dae2e6c0e0b08aac01292020d6ec3d))
+* **operator:** fix pydantic-settings environment variable configuration ([20d00b3](https://github.com/vriesdemichael/keycloak-operator/commit/20d00b3ff8a242e08706426ed7bc7a48e3eb2e6e)), closes [#108](https://github.com/vriesdemichael/keycloak-operator/issues/108)
+* **operator:** implement integration test coverage collection via SIGUSR1 ([259e587](https://github.com/vriesdemichael/keycloak-operator/commit/259e587ab08a5388702e1871d62c923434796c35)), closes [#111](https://github.com/vriesdemichael/keycloak-operator/issues/111)
+* **operator:** implement user federation CRUD lifecycle in realm reconciler ([218061b](https://github.com/vriesdemichael/keycloak-operator/commit/218061bc332eecb2761fbf8b18aac5380621f6f6))
+* **operator:** improve finalizer debugging and logging ([80137b1](https://github.com/vriesdemichael/keycloak-operator/commit/80137b15f60fe2a8af37865f2069f0941495cdb0))
+* **operator:** require secret refs for IDP secrets ([bf377fb](https://github.com/vriesdemichael/keycloak-operator/commit/bf377fb76b504f2c2160cd08c41ff60071505e57))
+* **operator:** upgrade base image to python 3.14-slim ([34b95e3](https://github.com/vriesdemichael/keycloak-operator/commit/34b95e3f41580061d54efdb5e4664058f4443a33))
+* **operator:** Upgrade to python 3.14 (alpine image for less vulnerabilities) ([f35b32b](https://github.com/vriesdemichael/keycloak-operator/commit/f35b32b242eb5c1794022e2d6c65df6d0f4f9bf9))
+* use SVG logo and update favicon ([a180ba2](https://github.com/vriesdemichael/keycloak-operator/commit/a180ba227d9295e9350b478ad47e83584e5da960))
+* **webhooks:** switch to cert-manager for webhook TLS certificates ([7195217](https://github.com/vriesdemichael/keycloak-operator/commit/7195217d15903d9c2c738999ce4c25acf1daaa88))
+
+
+### Bug Fixes
+
+* add certbuilder dependency and fix webhook RBAC permissions ([71df4ee](https://github.com/vriesdemichael/keycloak-operator/commit/71df4eebe6573b84eea6fab15fd9f9666806b3d5))
+* add clientAuthorizationGrants to finalizer tests ([954d850](https://github.com/vriesdemichael/keycloak-operator/commit/954d8505d79fc2ebe7a80f6ffab319f8f5d46a1b)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* allow test tags in operator chart schema ([6740046](https://github.com/vriesdemichael/keycloak-operator/commit/6740046724b30ca0d694bc85a40212db826fe596))
+* **chart-client+chart-operator+operator:** address multiple issues ([#290](https://github.com/vriesdemichael/keycloak-operator/issues/290), [#294](https://github.com/vriesdemichael/keycloak-operator/issues/294), [#170](https://github.com/vriesdemichael/keycloak-operator/issues/170), [#168](https://github.com/vriesdemichael/keycloak-operator/issues/168)) ([0b790ac](https://github.com/vriesdemichael/keycloak-operator/commit/0b790acab044239342f888dfe170afbef874f6bc))
+* configure webhook server with service DNS hostname ([d626c4b](https://github.com/vriesdemichael/keycloak-operator/commit/d626c4bddee90bd1fe3ab72c05c2b6d21552ece9))
+* convert snake_case to camelCase in StatusWrapper ([4ad528c](https://github.com/vriesdemichael/keycloak-operator/commit/4ad528c44a76664324b47c26b0230c7b480bef42)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* create coverage directory in container and fix collection workflow ([3b74ee6](https://github.com/vriesdemichael/keycloak-operator/commit/3b74ee6f343bfb57ef4d8e3e70169ec4ffd8925e))
+* disable webhook auto-management and default to false ([0c59b83](https://github.com/vriesdemichael/keycloak-operator/commit/0c59b834d2852d010a6ca97152eb4b2e41e0353b))
+* import all webhook modules to register handlers ([12b9bbd](https://github.com/vriesdemichael/keycloak-operator/commit/12b9bbddb038caffa83f855eccfa59519b14621a))
+* **operator-image:** bump aiohttp in the patch-updates group ([f3c604d](https://github.com/vriesdemichael/keycloak-operator/commit/f3c604d55b2e60e6317cd6ddebefa4be7098b4ea))
+* **operator-image:** bump kopf from 1.39.1 to 1.40.0 ([b83ca99](https://github.com/vriesdemichael/keycloak-operator/commit/b83ca99c55b281d26dcf90c4c3cefaa6afd7b802))
+* **operator-image:** bump kubernetes from 33.1.0 to 35.0.0 ([bcc6820](https://github.com/vriesdemichael/keycloak-operator/commit/bcc68203b44fc790356d161ae53d1059e477891b))
+* **operator-image:** bump prometheus-client from 0.23.1 to 0.24.1 ([50a0292](https://github.com/vriesdemichael/keycloak-operator/commit/50a02924176bfb93fae1369319dda351dcf3df5b))
+* **operator-image:** bump virtualenv from 20.35.4 to 20.36.1 ([b977790](https://github.com/vriesdemichael/keycloak-operator/commit/b977790f495ef5ba4b15e937383837a0472fa972))
+* **operator-image:** enable full upgrades for security ([ed91e18](https://github.com/vriesdemichael/keycloak-operator/commit/ed91e18e1d9174fc4af4e36622355709403fb2b3))
+* **operator-image:** ensure deterministic build with pinned versions ([f3f3158](https://github.com/vriesdemichael/keycloak-operator/commit/f3f3158b2744acf6a2ce238719c043a62cc2b6e0))
+* **operator-image:** switch to bleeding edge Trixie base with secure setuptools ([9f2d657](https://github.com/vriesdemichael/keycloak-operator/commit/9f2d657128d4ef59cac295e3c0df8c0e59df5615))
+* **operator-image:** switch to bookworm and upgrade setuptools ([c7371f5](https://github.com/vriesdemichael/keycloak-operator/commit/c7371f5f04e132a1145ec40addbdb069568579e0))
+* **operator-image:** upgrade system packages and pip in image ([b034da6](https://github.com/vriesdemichael/keycloak-operator/commit/b034da606047f1f6054bb6e13cd127133833d8e6))
+* **operator:** add client_scopes_count to status model ([18d4b3c](https://github.com/vriesdemichael/keycloak-operator/commit/18d4b3cbac222ef4345887103eb5c2d510a8b104))
+* **operator:** add missing namespace parameters to API calls ([45bf910](https://github.com/vriesdemichael/keycloak-operator/commit/45bf9107989639ea8413b52ac030f4b9a425f102))
+* **operator:** add namespace param to user federation admin client methods ([6024fa1](https://github.com/vriesdemichael/keycloak-operator/commit/6024fa1e08b3fd6f7fa2dad44274480b45cca9b5))
+* **operator:** address PR review comments ([9de3803](https://github.com/vriesdemichael/keycloak-operator/commit/9de38035a33abd071ac4b88dba9a07cae71a69eb))
+* **operator:** address PR review comments and expand documentation ([c05075f](https://github.com/vriesdemichael/keycloak-operator/commit/c05075ff6765aa708c4aad41972521b35e6f822d))
+* **operator:** address review comments ([6f86406](https://github.com/vriesdemichael/keycloak-operator/commit/6f864060a51aa9f3dd29d2d7c50ab98d926ba929))
+* **operator:** conditionally import webhook modules when webhooks enabled ([380eba0](https://github.com/vriesdemichael/keycloak-operator/commit/380eba070b575ede51371fb25de5984e675b3729)), closes [#237](https://github.com/vriesdemichael/keycloak-operator/issues/237)
+* **operator:** correct parameter order in _fetch_secret_value calls ([58e1276](https://github.com/vriesdemichael/keycloak-operator/commit/58e12764e8e33fdd2e99c6c0a166159b1c61e7b0))
+* **operator:** database passwordSecret support and test fixes ([038fc18](https://github.com/vriesdemichael/keycloak-operator/commit/038fc18da190e8d99eb02222c89c59393129feee))
+* **operator:** ensure secret is updated when only metadata changes ([6dc50c3](https://github.com/vriesdemichael/keycloak-operator/commit/6dc50c3b065e9a1ccbde7e68534b7a371672a030))
+* **operator:** exclude read-only fields from group update requests ([145020e](https://github.com/vriesdemichael/keycloak-operator/commit/145020ec919d6e37b93eaad9a1b55403a532d167))
+* **operator:** fix async update handler for authentication flows ([e4c7fc4](https://github.com/vriesdemichael/keycloak-operator/commit/e4c7fc42ec694090b0d04f608682eb8f94085771))
+* **operator:** handle 409 conflict as idempotent success for add operations ([e5eafab](https://github.com/vriesdemichael/keycloak-operator/commit/e5eafab0361c60b07691d518924ceb5b64ac564d))
+* **operator:** handle basic realm field updates in do_update method ([fab2804](https://github.com/vriesdemichael/keycloak-operator/commit/fab2804ad2e1b982f7e7009e11290f68fbaccf0b))
+* **operator:** handle realm deletion gracefully in client cleanup ([45b25cd](https://github.com/vriesdemichael/keycloak-operator/commit/45b25cda8c945c56daddbc2538a1c0133713324f))
+* **operator:** identity provider updates use PUT instead of POST ([d57b6ca](https://github.com/vriesdemichael/keycloak-operator/commit/d57b6cabbdbb61b95005a874a60bc461ba20a2da))
+* **operator:** improve finalizer robustness and simplify cascade deletion ([6e5419f](https://github.com/vriesdemichael/keycloak-operator/commit/6e5419fcc690e9ce5f934f12fb005ad8f7956c0d))
+* **operator:** include id field in update requests for roles and groups ([2c2f483](https://github.com/vriesdemichael/keycloak-operator/commit/2c2f4833e6f5c1a82fc3d07eec429df39a4ebdfc))
+* **operator:** make client scope operations idempotent ([edd3daf](https://github.com/vriesdemichael/keycloak-operator/commit/edd3daf37730806abb076841b2f8e384299555b4))
+* **operator:** pin urllib3&gt;=2.6.0 to fix CVE ([038456f](https://github.com/vriesdemichael/keycloak-operator/commit/038456fbda10b42eae1c81c9fa7f22cad7d50c6e))
+* **operator:** prevent event loop closed errors in httpx client cache ([83b8020](https://github.com/vriesdemichael/keycloak-operator/commit/83b80200c7d0df07058856e8ee99e979dba585a8))
+* **operator:** raise error instead of returning 'unknown' client UUID ([35d2d3e](https://github.com/vriesdemichael/keycloak-operator/commit/35d2d3eea75e1db284483006de8845824c7a246f))
+* **operator:** remove duplicate deletion logic from resume handlers ([ce95458](https://github.com/vriesdemichael/keycloak-operator/commit/ce954586b7127b84ab855355850632ff62b5d5b3))
+* **operator:** remove status param from keycloak cleanup helper ([e6e4972](https://github.com/vriesdemichael/keycloak-operator/commit/e6e4972cfc14009a6824a632c8667854b84e650d))
+* **operator:** replace secret watcher with health check polling ([0df6785](https://github.com/vriesdemichael/keycloak-operator/commit/0df67854e30ac49efae548594712b0943ef75193))
+* **operator:** resolve ingress hostname bug and improve type safety ([eb69b8a](https://github.com/vriesdemichael/keycloak-operator/commit/eb69b8aa61893c39b7143cc8101e39febc63a113))
+* **operator:** resolve JSON serialization and test timing issues ([fb29bcb](https://github.com/vriesdemichael/keycloak-operator/commit/fb29bcbd1859e0dbcb2d8ded643a38ecb52c5cb5))
+* **operator:** resolve type checker warnings after dependency upgrade ([a4aecdb](https://github.com/vriesdemichael/keycloak-operator/commit/a4aecdb22253e0464e9bf5c23ab1a3b582792c0e))
+* **operator:** restore secret watcher with namespace RBAC support ([5db7d65](https://github.com/vriesdemichael/keycloak-operator/commit/5db7d65c6fe8c27e87958d0dc9f42d9753e02078))
+* **operator:** update package metadata with correct author info ([96ba785](https://github.com/vriesdemichael/keycloak-operator/commit/96ba785332f12613446cb83e5525ade6cc966e80))
+* **operator:** update pyasn1 to 0.6.2 and fix integration test ([97962cd](https://github.com/vriesdemichael/keycloak-operator/commit/97962cd90af3bfc0b9cc603d8833a8d0d953aa78))
+* **operator:** upgrade urllib3 to 2.6.3 for CVE-2026-21441 ([4428197](https://github.com/vriesdemichael/keycloak-operator/commit/4428197fe1038323f856ce7950383e4e7df3b7a4))
+* **operator:** use asyncio.to_thread for webhook K8s API calls ([d635da9](https://github.com/vriesdemichael/keycloak-operator/commit/d635da9ae8a78928baf613b35686256849e78b80))
+* **operator:** use client-side filtering for user federation components ([dbb722f](https://github.com/vriesdemichael/keycloak-operator/commit/dbb722f9da266dda0f08207b12f415d61b003d4f))
+* **operator:** use correct camelCase field names in realm update handler ([91636eb](https://github.com/vriesdemichael/keycloak-operator/commit/91636ebdb1afef442a5eb6e9bf46db69585454b8))
+* **operator:** use correct Keycloak CR name in health check timers ([8b174cc](https://github.com/vriesdemichael/keycloak-operator/commit/8b174cc8fbbfedb6f862cdb0e76a08cade05458a))
+* **operator:** use coverage run in CMD for proper instrumentation ([1665eaa](https://github.com/vriesdemichael/keycloak-operator/commit/1665eaaef1f8bd01616a278edf99a232d6bd7a53))
+* **operator:** use realm ID instead of realm name for federation parentId ([8e54566](https://github.com/vriesdemichael/keycloak-operator/commit/8e54566427873c955d7320323d6ddd7381a94246))
+* **operator:** user federation tests and LDAP attribute config keys ([ddd7733](https://github.com/vriesdemichael/keycloak-operator/commit/ddd77335e4efa2b0620f110b350fd0dc5c79a095)), closes [#179](https://github.com/vriesdemichael/keycloak-operator/issues/179)
+* **operator:** verify ownership before deleting Keycloak resources ([b601a80](https://github.com/vriesdemichael/keycloak-operator/commit/b601a80a0626fe332e59fbd0cd01067b689b5eb2))
+* prevent premature operator cleanup in pytest-xdist workers ([8031895](https://github.com/vriesdemichael/keycloak-operator/commit/8031895e2b2347378cbb376555136ee7e395ff49))
+* remove await from synchronous API call in capacity check ([2908db5](https://github.com/vriesdemichael/keycloak-operator/commit/2908db581fa9a39f590c67b1a3ef47f27ec978d0)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* remove obsolete authorization token references from charts ([880fc98](https://github.com/vriesdemichael/keycloak-operator/commit/880fc98637ff0e0e4c9471fd47162fc1d790b194)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* remove obsolete authorizationSecretName status field ([9952eae](https://github.com/vriesdemichael/keycloak-operator/commit/9952eaef7c155f3013b9a1cc2d7a0c66c7cf4827)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* remove tests for deleted periodic_leadership_check function ([1ffcba0](https://github.com/vriesdemichael/keycloak-operator/commit/1ffcba0479decb4916a65262f58a46f84ab28ddd))
+* Removed await, added explicit k8s_client parameter. ([2908db5](https://github.com/vriesdemichael/keycloak-operator/commit/2908db581fa9a39f590c67b1a3ef47f27ec978d0))
+* replace old keycloak.mdvr.nl API group with vriesdemichael.github.io ([da644e0](https://github.com/vriesdemichael/keycloak-operator/commit/da644e09d335803e59f61a2f46f463ebfab0e50b))
+* restore correct test image tag for coverage collection ([6cb1675](https://github.com/vriesdemichael/keycloak-operator/commit/6cb16758ce97572f7b98396ea3b6960fb61e122f))
+* update tests and Helm schema for grant list authorization ([0fe6fca](https://github.com/vriesdemichael/keycloak-operator/commit/0fe6fcae8c638595a117b2093d869ecb85b37f47)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+
+
+### Performance Improvements
+
+* implement generation-based skip to avoid redundant reconciliations ([af0d4c6](https://github.com/vriesdemichael/keycloak-operator/commit/af0d4c63490122a5d4893f2cb2e5cf6d63fe3f6b)), closes [#184](https://github.com/vriesdemichael/keycloak-operator/issues/184)
+
+
+### Code Refactoring
+
+* address CodeQL false positive and remove unused method ([66e8faf](https://github.com/vriesdemichael/keycloak-operator/commit/66e8faf9fb9acab4f3206b76e025b52b84c8a79a))
+* **operator:** add decorators for consistent error handling ([c1fc4fb](https://github.com/vriesdemichael/keycloak-operator/commit/c1fc4fb2aab49c20f9ce954a26cfc81e02acf6d9))
+* **operator:** address PR review comments ([21d5b87](https://github.com/vriesdemichael/keycloak-operator/commit/21d5b872ef3958db11738c5767f5f4a16fb22fcb))
+* **operator:** apply error handling decorators to client scope methods ([ae86fa8](https://github.com/vriesdemichael/keycloak-operator/commit/ae86fa898ae68ad037a40571e1ec2a349b090acc))
+* **operator:** make timer intervals configurable and deduplicate cleanup ([152e5fd](https://github.com/vriesdemichael/keycloak-operator/commit/152e5fde1dccc6e66acfba0353ebfeccabae3eea))
+* **operator:** unify Dockerfile with multi-stage targets ([dd81347](https://github.com/vriesdemichael/keycloak-operator/commit/dd813478441800b2519e184e94bc249fa2a6289c))
+* split CI/CD workflow into composite actions ([34da80d](https://github.com/vriesdemichael/keycloak-operator/commit/34da80d4cd5aaa51e07dc4fa998f86e0faccb45f))
+* split CI/CD workflow into composite actions ([6a36cb1](https://github.com/vriesdemichael/keycloak-operator/commit/6a36cb1b9fb1f19869b2cfc7ade85f9fc4a6fab7))
+* use kopf[dev] extra instead of manual certbuilder ([bf44078](https://github.com/vriesdemichael/keycloak-operator/commit/bf44078d955d50613cc8d1c17605babecb08a3c0))
+* use unified Kopf-managed finalizer ([ff83287](https://github.com/vriesdemichael/keycloak-operator/commit/ff832873570114e7ba34450790fe947f4e305ee7))
+
+
+### Documentation
+
+* add admission webhook documentation and decision record ([396de85](https://github.com/vriesdemichael/keycloak-operator/commit/396de85863b5731e6e55ae2ac11ad21fbc45eeb1))
+* add CI/CD and documentation issues task list ([1d09817](https://github.com/vriesdemichael/keycloak-operator/commit/1d0981719319e67cb6872b4408f42e83014edd2e))
+* add custom logo and favicon ([34da80d](https://github.com/vriesdemichael/keycloak-operator/commit/34da80d4cd5aaa51e07dc4fa998f86e0faccb45f))
+* add custom logo and favicon ([6a36cb1](https://github.com/vriesdemichael/keycloak-operator/commit/6a36cb1b9fb1f19869b2cfc7ade85f9fc4a6fab7))
+* add Decision Records as separate tab with tag filtering ([6931bc3](https://github.com/vriesdemichael/keycloak-operator/commit/6931bc3b1989768b98a078161946a2115ed01d41))
+* add Keycloak brand colors and improved styling ([fc7a0a5](https://github.com/vriesdemichael/keycloak-operator/commit/fc7a0a50f0993dad3f6b1e04791fc9c36e3d4b1f))
+* add Mermaid diagram support and hide home TOC ([b1f2e74](https://github.com/vriesdemichael/keycloak-operator/commit/b1f2e74d7f7a6cff2d8de4b8b29d146c5160b21c))
+* enhance dark mode styling with better contrast ([b905878](https://github.com/vriesdemichael/keycloak-operator/commit/b9058784419cc9f9248eddbf9ef0537aed123cf3))
+* extend doc validation with external schemas and K8s resources ([7e7ce80](https://github.com/vriesdemichael/keycloak-operator/commit/7e7ce80f2f3d0c6c3d9ced00aba0560c8a757862))
+* final cleanup of remaining token references ([10f83eb](https://github.com/vriesdemichael/keycloak-operator/commit/10f83eb6fd7883b24c27e7d114c017f5e6284992))
+* final tracking update - 36/36 tests passing ([8462747](https://github.com/vriesdemichael/keycloak-operator/commit/8462747b9610497387e972a3c13def51ef843f21)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* fix ADR 45/49 and add decision records to documentation ([33586ac](https://github.com/vriesdemichael/keycloak-operator/commit/33586ac4705692b4ff9db3063091b107a4c89504))
+* fix documentation issues from user feedback ([b0d2ab7](https://github.com/vriesdemichael/keycloak-operator/commit/b0d2ab7ef8828e2d41ce11ebf71dc88476fc4fd5))
+* mark Phase 8 complete - all automated tests passing ([61ce95e](https://github.com/vriesdemichael/keycloak-operator/commit/61ce95efea92917ccc46a68915a3337ef736139d)), closes [#102](https://github.com/vriesdemichael/keycloak-operator/issues/102)
+* move Home into Getting Started section ([bff4ba6](https://github.com/vriesdemichael/keycloak-operator/commit/bff4ba682fbc69862edae9d67631638268262b0f))
+* removed mentions of the authorization token in the readme. ([a6d8287](https://github.com/vriesdemichael/keycloak-operator/commit/a6d828700a3e08755fa960baf78ffa18da1c0184))
+* reorganize navigation structure to reduce tab overflow ([e1507a9](https://github.com/vriesdemichael/keycloak-operator/commit/e1507a96a270a674151acebe502405cb994bce9a))
+* replace tags plugin with manual categorization for decision records ([1c96007](https://github.com/vriesdemichael/keycloak-operator/commit/1c960078a54bdbd9208c0e2fba88cdfd1ad4edb9))
+* review and improve decision records ([0c0ea52](https://github.com/vriesdemichael/keycloak-operator/commit/0c0ea52032b0cb4b262d41c65a3c9931a0a3fe4f))
+* update CI/CD badges to point to unified workflow ([4419899](https://github.com/vriesdemichael/keycloak-operator/commit/4419899d41bd4bb949f0d4c82d67d48334c6a08c))
+* update helm chart READMEs and fix broken links ([dfb210d](https://github.com/vriesdemichael/keycloak-operator/commit/dfb210de7e222159830c5687e47e0e6d5eab354e))
+
 ## [0.5.21](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.20...operator-image-v0.5.21) (2026-01-20)
 
 
