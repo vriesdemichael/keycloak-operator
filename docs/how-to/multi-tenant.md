@@ -2,6 +2,39 @@
 
 Configure the operator for multi-tenant environments where multiple teams manage their own realms and clients independently.
 
+## Team Responsibilities & Onboarding
+
+When introducing the Keycloak Operator to your organization, clear role definitions are essential for a smooth "Realm-as-Tenant" adoption.
+
+### Roles & Responsibilities Matrix
+
+| Responsibility | Platform Team 🛠️ | Realm Owner (App Team A) 👑 | Client Owner (App Team B) 👤 |
+| :--- | :--- | :--- | :--- |
+| **Scope** | Cluster Infrastructure & Operator | Specific Realm (Tenant) | Specific Application (Client) |
+| **Infrastructure** | Deploys Operator & CRDs.<br>Ensures Keycloak availability.<br>Manages global limits/quotas. | N/A | N/A |
+| **Security Boundary** | Manages ClusterRoles.<br>No access to Realm secrets by default. | **Owns the Realm boundary.**<br>Controls `clientAuthorizationGrants`.<br>Manages Realm Users/Groups. | Manages Client Secrets.<br>Configures Redirect URIs. |
+| **Onboarding** | Creates Namespaces.<br>Grants Realm Creation rights. | Creates Realm CR.<br>Approves Client access via PRs. | Creates Client CR in own Namespace.<br>Requests access to Realm. |
+| **Troubleshooting** | Operator logs, Pod health, Network policies. | Realm configuration errors.<br>Auth flows, Theme issues. | Client connection errors.<br>Invalid Redirect URIs. |
+
+### Onboarding New Teams
+
+**1. For Platform Engineers:**
+*   **Explain:** "We provide the Keycloak *service* and the *operator*. You own your configuration."
+*   **Configure:** Set up namespaces and RBAC so teams can create `KeycloakRealm` resources.
+*   **Security:** You don't need to see their secrets. The Operator only accesses namespaces where it is explicitly invited via the Realm Helm chart.
+
+**2. For Realm Owners (Tenant Managers):**
+*   **Explain:** "You own a 'Virtual Keycloak'. You control who can connect to it."
+*   **Action:** Deploy your Realm using the `keycloak-realm` Helm chart.
+*   **Gatekeeping:** Use the `clientAuthorizationGrants` list in your Realm YAML to whitelist other team's namespaces. You are the gatekeeper.
+
+**3. For Application Developers (Client Owners):**
+*   **Explain:** "You define your app's auth client as code, right next to your deployment."
+*   **Action:** Deploy a `KeycloakClient` CR in *your* namespace.
+*   **Access:** If you need to connect to a shared Realm, ask the Realm Owner to add your namespace to their allowlist.
+
+---
+
 ## Architecture
 
 ```mermaid
