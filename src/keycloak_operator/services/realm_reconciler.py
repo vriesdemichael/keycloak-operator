@@ -84,6 +84,27 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Parse and validate the specification
         realm_spec = self._validate_spec(spec)
 
+        # Enforce Admin Events if Drift Detection is enabled
+        # This is required for "smart drift detection" to work
+        if settings.drift_detection_enabled:
+            # We must modify the spec object itself so it propagates to to_keycloak_config
+            if not realm_spec.events_config:
+                from ..models.realm import KeycloakEventsConfig
+
+                realm_spec.events_config = KeycloakEventsConfig(
+                    admin_events_enabled=True
+                )
+            else:
+                realm_spec.events_config.admin_events_enabled = True
+                # Ensure details are enabled too for better diffing if needed
+                realm_spec.events_config.admin_events_details_enabled = True
+
+            # Also ensure expiration is set to something reasonable if missing
+            # to prevent unlimited database growth
+            if not realm_spec.events_config.events_expiration:
+                # Default to 30 days (2592000 seconds) if not set
+                realm_spec.events_config.events_expiration = 2592000
+
         # Validate cross-namespace permissions
         await self.validate_cross_namespace_access(realm_spec, namespace)
 
