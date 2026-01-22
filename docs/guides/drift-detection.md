@@ -44,7 +44,7 @@ The operator runs periodic background scans to check for drift:
 When enabled, the operator can automatically fix drift:
 
 - **Orphaned resources**: Delete from Keycloak if older than minimum age (default: 24 hours)
-- **Configuration drift**: Update Keycloak to match CR spec (future feature)
+- **Configuration drift**: Update Keycloak to match CR spec (supported for Realms and Clients)
 
 **Safety mechanisms:**
 - Minimum age check (default: 24 hours) prevents accidental deletion of newly created resources
@@ -428,10 +428,10 @@ Do nothing. Existing resources will show up as "unmanaged" in metrics but won't 
 
 ## Future Enhancements
 
-- [ ] **Config drift detection**: Compare actual Keycloak state with CR spec
+- [x] **Config drift detection**: Compare actual Keycloak state with CR spec
 - [ ] **Identity provider drift detection**: Track IDP configuration changes
 - [ ] **Role drift detection**: Monitor role assignments
-- [ ] **Drift remediation for config changes**: Auto-update Keycloak when CR changes
+- [x] **Drift remediation for config changes**: Auto-update Keycloak when CR changes
 - [ ] **Grafana dashboard**: Pre-built dashboard for drift visualization
 - [ ] **Webhook notifications**: Send alerts to Slack/Teams when drift detected
 - [ ] **Dry-run mode**: Log what would be remediated without actually doing it
