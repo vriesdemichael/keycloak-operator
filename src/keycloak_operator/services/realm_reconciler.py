@@ -126,8 +126,8 @@ class KeycloakRealmReconciler(BaseReconciler):
         if self._has_flow_bindings(realm_spec):
             await self.apply_flow_bindings(realm_spec, name, namespace)
 
-        if realm_spec.identity_providers:
-            await self.configure_identity_providers(realm_spec, name, namespace)
+        # Always configure identity providers to handle deletions
+        await self.configure_identity_providers(realm_spec, name, namespace)
 
         # Always call configure_user_federation to handle deletions
         # when user_federation becomes empty
