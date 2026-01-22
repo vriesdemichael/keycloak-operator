@@ -501,6 +501,16 @@ def event_loop():
     loop.close()
 
 
+@pytest.fixture(scope="session", autouse=True)
+def configure_env():
+    """Configure environment variables for testing."""
+    os.environ["OPERATOR_INSTANCE_ID"] = "keycloak-operator-test-system"
+    # Ensure settings are reloaded
+    from keycloak_operator.settings import settings
+
+    settings.operator_instance_id = "keycloak-operator-test-system"
+
+
 @pytest.fixture(scope="session")
 def kube_config():
     """Load Kubernetes configuration."""
@@ -2838,12 +2848,13 @@ async def drift_detector(
     )
 
     # Create custom admin client factory that uses port-forwarding
-    async def admin_factory(kc_name: str, namespace: str):
+    async def admin_factory(kc_name: str, namespace: str, rate_limiter=None):
         username, password = get_admin_credentials(kc_name, namespace)
         client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
             username=username,
             password=password,
+            rate_limiter=rate_limiter,
         )
         await client.authenticate()
         return client

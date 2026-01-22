@@ -325,6 +325,9 @@ class TestRealmReconcilerGenerationTracking:
                 realm_reconciler, "ensure_realm_exists", new_callable=AsyncMock
             ),
             patch.object(
+                realm_reconciler, "configure_identity_providers", new_callable=AsyncMock
+            ),
+            patch.object(
                 realm_reconciler, "configure_user_federation", new_callable=AsyncMock
             ),
             patch(
