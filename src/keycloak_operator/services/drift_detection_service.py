@@ -125,6 +125,11 @@ class DriftDetector:
         self.custom_objects_api = client.CustomObjectsApi(self.k8s_client)
         self.core_v1_api = client.CoreV1Api(self.k8s_client)
 
+        # State tracking for smart scan
+        self._last_scan_times: dict[
+            str, float
+        ] = {}  # Key: resource_uid, Value: timestamp
+
         logger.info(
             f"Drift detector initialized: enabled={self.config.enabled}, "
             f"interval={self.config.interval_seconds}s, "
@@ -190,20 +195,17 @@ class DriftDetector:
         drift_results: list[DriftResult] = []
 
         try:
-            # Scan realms if enabled
+            # 1. Scan realms if enabled (using smart scan)
             if self.config.scope_realms:
-                realm_results = await self.check_realm_drift()
+                realm_results = await self._scan_realms_smart()
                 drift_results.extend(realm_results)
                 logger.info(f"Found {len(realm_results)} realm drift issues")
 
-            # Scan clients if enabled
+            # 2. Scan clients if enabled
             if self.config.scope_clients:
-                client_results = await self.check_client_drift()
+                client_results = await self._scan_clients_smart()
                 drift_results.extend(client_results)
                 logger.info(f"Found {len(client_results)} client drift issues")
-
-            # TODO: Scan identity providers if enabled
-            # TODO: Scan roles if enabled
 
             # Update last success timestamp
             DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP.set(time.time())
@@ -216,6 +218,214 @@ class DriftDetector:
         except Exception as e:
             logger.error(f"Drift scan failed: {e}", exc_info=True)
             raise
+
+    async def _scan_realms_smart(self) -> list[DriftResult]:
+        """Scan realms for drift using admin events if possible."""
+        results: list[DriftResult] = []
+
+        # Discover all Realm CRs
+        try:
+            # Use discover_resources helper if available, or list objects directly
+            # We need CR metadata to know which Keycloak to check
+            custom_objects_api = self.custom_objects_api
+
+            response = await asyncio.to_thread(
+                custom_objects_api.list_cluster_custom_object,
+                group="vriesdemichael.github.io",
+                version="v1",
+                plural="keycloakrealms",
+            )
+            # Cast response to dict to help type checker
+            from typing import cast
+
+            response_dict = cast(dict[str, Any], response)
+            realm_crs = cast(list[dict[str, Any]], response_dict.get("items", []))
+            logger.info(f"Found {len(realm_crs)} Realm CRs to scan")
+        except Exception as e:
+            logger.error(f"Failed to list KeycloakRealm CRs: {e}")
+            return []
+
+        for cr in realm_crs:
+            name = str(cr["metadata"]["name"])
+            namespace = str(cr["metadata"]["namespace"])
+            uid = str(cr["metadata"]["uid"])
+            spec = cast(dict[str, Any], cr.get("spec", {}))
+            realm_name = str(spec.get("realmName", name))
+
+            operator_ref = cast(dict[str, Any], spec.get("operatorRef", {}))
+            kc_namespace = str(operator_ref.get("namespace", namespace))
+            kc_name = "keycloak"
+
+            try:
+                admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
+
+                # Check for tamper events
+                last_scan = self._last_scan_times.get(uid, 0)
+                date_from = (
+                    time.strftime("%Y-%m-%d", time.gmtime(last_scan))
+                    if last_scan > 0
+                    else None
+                )
+
+                events = await admin_client.get_admin_events(
+                    realm_name,
+                    kc_namespace,
+                    date_from=date_from,
+                    operation_types=["CREATE", "UPDATE", "DELETE"],
+                )
+                logger.info(
+                    f"Fetched {len(events)} admin events for {realm_name} since {date_from}"
+                )
+
+                # Filter events that are relevant to Realm configuration
+                relevant_events = [
+                    e
+                    for e in events
+                    if e.resource_type != "CLIENT"
+                    and e.resource_type != "USER"
+                    and e.resource_type != "USER_SESSION"
+                    and e.resource_type != "CLIENT_SESSION"
+                ]
+
+                needs_reconcile = False
+
+                if not date_from:
+                    needs_reconcile = True
+                elif relevant_events:
+                    logger.info(
+                        f"Detected {len(relevant_events)} tamper events for realm {realm_name}"
+                    )
+                    needs_reconcile = True
+
+                # Force deep check every 24h
+                if time.time() - last_scan > 86400:
+                    needs_reconcile = True
+
+                if needs_reconcile:
+                    results.append(
+                        DriftResult(
+                            resource_type="realm",
+                            resource_name=realm_name,
+                            drift_type="config_drift",
+                            keycloak_resource={},
+                            desired_resource=spec,
+                            cr_namespace=namespace,
+                            cr_name=name,
+                            drift_details=[f"Events detected: {len(relevant_events)}"],
+                        )
+                    )
+
+                self._last_scan_times[uid] = time.time()
+
+            except Exception as e:
+                logger.error(f"Error scanning realm {name}: {e}")
+
+        return results
+
+    async def _scan_clients_smart(self) -> list[DriftResult]:
+        """Scan clients for drift using admin events."""
+        results: list[DriftResult] = []
+
+        try:
+            response = await asyncio.to_thread(
+                self.custom_objects_api.list_cluster_custom_object,
+                group="vriesdemichael.github.io",
+                version="v1",
+                plural="keycloakclients",
+            )
+            from typing import cast
+
+            response_dict = cast(dict[str, Any], response)
+            client_crs = cast(list[dict[str, Any]], response_dict.get("items", []))
+        except Exception as e:
+            logger.error(f"Failed to list KeycloakClient CRs: {e}")
+            return []
+
+        for cr in client_crs:
+            name = str(cr["metadata"]["name"])
+            namespace = str(cr["metadata"]["namespace"])
+            uid = str(cr["metadata"]["uid"])
+            spec = cast(dict[str, Any], cr.get("spec", {}))
+            client_id = str(spec.get("clientId", ""))
+
+            if not client_id:
+                continue
+
+            realm_ref = cast(dict[str, Any], spec.get("realmRef", {}))
+            realm_cr_name = str(realm_ref.get("name", ""))
+            if not realm_cr_name:
+                continue
+
+            try:
+                realm_cr_response = await asyncio.to_thread(
+                    self.custom_objects_api.get_namespaced_custom_object,
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=str(realm_ref.get("namespace", namespace)),
+                    plural="keycloakrealms",
+                    name=realm_cr_name,
+                )
+                realm_cr = cast(dict[str, Any], realm_cr_response)
+                realm_spec = cast(dict[str, Any], realm_cr.get("spec", {}))
+                realm_name = str(realm_spec.get("realmName", ""))
+                operator_ref = cast(dict[str, Any], realm_spec.get("operatorRef", {}))
+                kc_namespace = str(operator_ref.get("namespace", namespace))
+                kc_name = "keycloak"
+
+                admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
+
+                last_scan = self._last_scan_times.get(uid, 0)
+                date_from = (
+                    time.strftime("%Y-%m-%d", time.gmtime(last_scan))
+                    if last_scan > 0
+                    else None
+                )
+
+                events = await admin_client.get_admin_events(
+                    realm_name,
+                    kc_namespace,
+                    date_from=date_from,
+                    operation_types=["CREATE", "UPDATE", "DELETE"],
+                    resource_types=["CLIENT", "CLIENT_ROLE", "CLIENT_SCOPE_MAPPING"],
+                )
+
+                client_uuid = await admin_client.get_client_uuid(
+                    client_id, realm_name, kc_namespace
+                )
+
+                client_events = []
+                if client_uuid:
+                    for e in events:
+                        if e.resource_path and client_uuid in e.resource_path:
+                            client_events.append(e)
+
+                needs_reconcile = False
+                if not date_from or client_events or (time.time() - last_scan > 86400):
+                    needs_reconcile = True
+
+                if needs_reconcile:
+                    results.append(
+                        DriftResult(
+                            resource_type="client",
+                            resource_name=client_id,
+                            drift_type="config_drift",
+                            keycloak_resource={"id": client_uuid}
+                            if client_uuid
+                            else {},
+                            desired_resource=spec,
+                            cr_namespace=namespace,
+                            cr_name=name,
+                            parent_realm=realm_name,
+                            drift_details=[f"Events: {len(client_events)}"],
+                        )
+                    )
+
+                self._last_scan_times[uid] = time.time()
+
+            except Exception as e:
+                logger.error(f"Error scanning client {name}: {e}")
+
+        return results
 
     async def check_realm_drift(self) -> list[DriftResult]:
         """

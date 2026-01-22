@@ -26,6 +26,7 @@ import httpx
 from pydantic import BaseModel
 
 from keycloak_operator.models.keycloak_api import (
+    AdminEventRepresentation,
     AuthenticationExecutionInfoRepresentation,
     AuthenticationFlowRepresentation,
     AuthenticatorConfigRepresentation,
@@ -839,6 +840,164 @@ class KeycloakAdminClient:
                 f"Failed to update realm: {response.status_code}",
                 response.status_code,
             )
+
+    async def create_identity_provider(
+        self,
+        realm_name: str,
+        idp_config: dict[str, Any],
+        namespace: str,
+    ) -> str | None:
+        """
+        Create a new identity provider.
+
+        Args:
+            realm_name: Name of the realm
+            idp_config: Identity provider configuration
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            ID of the created identity provider or None if failed
+        """
+        logger.info(
+            f"Creating identity provider '{idp_config.get('alias')}' in realm '{realm_name}'"
+        )
+
+        try:
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/identity-provider/instances",
+                namespace,
+                json=idp_config,
+            )
+
+            if response.status_code == 201:
+                logger.info(
+                    f"Successfully created identity provider '{idp_config.get('alias')}'"
+                )
+
+                # Try to extract ID from Location header if available
+                location = response.headers.get("Location")
+                if location:
+                    return location.split("/")[-1]
+
+                return idp_config.get("alias")
+            else:
+                logger.error(
+                    f"Failed to create identity provider: {response.status_code}",
+                    extra={"response_body": response.text},
+                )
+                return None
+
+        except Exception as e:
+            logger.error(f"Failed to create identity provider: {e}")
+            return None
+
+    async def get_identity_providers(
+        self, realm_name: str, namespace: str
+    ) -> list[IdentityProviderRepresentation]:
+        """
+        Get all identity providers in a realm.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
+
+        Returns:
+            List of identity providers
+        """
+        logger.debug(f"Getting identity providers for realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/identity-provider/instances", namespace
+            )
+
+            if response.status_code == 200:
+                idps_data = response.json()
+                return [
+                    IdentityProviderRepresentation.model_validate(idp)
+                    for idp in idps_data
+                ]
+            else:
+                logger.warning(
+                    f"Failed to get identity providers: {response.status_code}"
+                )
+                return []
+
+        except Exception as e:
+            logger.error(f"Failed to get identity providers: {e}")
+            return []
+
+    async def get_admin_events(
+        self,
+        realm_name: str,
+        namespace: str,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        operation_types: list[str] | None = None,
+        resource_types: list[str] | None = None,
+        resource_path: str | None = None,
+        max_results: int | None = None,
+        first_result: int | None = None,
+    ) -> list[AdminEventRepresentation]:
+        """
+        Get admin events from Keycloak.
+
+        Based on OpenAPI spec: GET /admin/realms/{realm}/admin-events
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
+            date_from: Filter events after this date (format: yyyy-MM-dd)
+            date_to: Filter events before this date (format: yyyy-MM-dd)
+            operation_types: Filter by operation types (CREATE, UPDATE, DELETE, ACTION)
+            resource_types: Filter by resource types (REALM, CLIENT, USER, etc.)
+            resource_path: Filter by resource path (e.g. 'users/123')
+            max_results: Maximum number of results to return
+            first_result: Offset for pagination
+
+        Returns:
+            List of AdminEventRepresentation objects
+        """
+        logger.debug(f"Fetching admin events for realm '{realm_name}'")
+
+        try:
+            params = {}
+            if date_from:
+                params["dateFrom"] = date_from
+            if date_to:
+                params["dateTo"] = date_to
+            if operation_types:
+                params["operationTypes"] = operation_types
+            if resource_types:
+                params["resourceTypes"] = resource_types
+            if resource_path:
+                params["resourcePath"] = resource_path
+            if max_results is not None:
+                params["max"] = max_results
+            if first_result is not None:
+                params["first"] = first_result
+
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/admin-events", namespace, params=params
+            )
+
+            if response.status_code == 200:
+                events_data = response.json()
+                return [
+                    AdminEventRepresentation.model_validate(event)
+                    for event in events_data
+                ]
+            else:
+                logger.error(
+                    f"Failed to get admin events: HTTP {response.status_code}",
+                    extra={"response_body": response.text},
+                )
+                return []
+
+        except Exception as e:
+            logger.error(f"Failed to get admin events: {e}")
+            return []
 
     # Client Management Methods
 
@@ -2530,50 +2689,6 @@ class KeycloakAdminClient:
             logger.error(f"Failed to create identity provider: {e}")
             return False
 
-    async def get_identity_providers(
-        self,
-        realm_name: str,
-        namespace: str,
-    ) -> list[IdentityProviderRepresentation]:
-        """
-        Get all identity providers for a realm.
-
-        Args:
-            realm_name: Name of the realm
-            namespace: Origin namespace for rate limiting
-
-        Returns:
-            List of IdentityProviderRepresentation objects
-
-        Example:
-            idps = await admin_client.get_identity_providers("my-realm", "default")
-            for idp in idps:
-                print(f"IdP: {idp.alias}, Enabled: {idp.enabled}")
-        """
-        logger.debug(f"Listing identity providers in realm '{realm_name}'")
-
-        try:
-            response = await self._make_request(
-                "GET",
-                f"realms/{realm_name}/identity-provider/instances",
-                namespace,
-            )
-
-            if response.status_code == 200:
-                return [
-                    IdentityProviderRepresentation.model_validate(idp)
-                    for idp in response.json()
-                ]
-            else:
-                logger.warning(
-                    f"Failed to list identity providers: {response.status_code}"
-                )
-                return []
-
-        except Exception as e:
-            logger.error(f"Failed to list identity providers: {e}")
-            return []
-
     async def delete_identity_provider(
         self,
         realm_name: str,
@@ -2620,10 +2735,6 @@ class KeycloakAdminClient:
         except Exception as e:
             logger.error(f"Failed to delete identity provider '{alias}': {e}")
             return False
-
-    # =========================================================================
-    # Identity Provider Mapper Methods
-    # =========================================================================
 
     async def get_identity_provider_mappers(
         self,
