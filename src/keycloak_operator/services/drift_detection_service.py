@@ -15,6 +15,8 @@ from dataclasses import dataclass
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.models.client import KeycloakClientSpec
+from keycloak_operator.models.realm import KeycloakRealmSpec
 from keycloak_operator.observability.metrics import (
     CONFIG_DRIFT,
     DRIFT_CHECK_DURATION,
@@ -51,6 +53,9 @@ class DriftResult:
     cr_namespace: str | None = None
     cr_name: str | None = None
     age_hours: float | None = None
+    desired_resource: dict | None = None
+    drift_details: list[str] | None = None
+    parent_realm: str | None = None
 
 
 @dataclass
@@ -122,6 +127,51 @@ class DriftDetector:
             f"interval={self.config.interval_seconds}s, "
             f"auto_remediate={self.config.auto_remediate}"
         )
+
+    def _calculate_drift(
+        self, desired: dict, actual: dict, path: str = ""
+    ) -> list[str]:
+        """
+        Calculate drift between desired and actual configuration.
+
+        Args:
+            desired: Desired configuration (from CR)
+            actual: Actual configuration (from Keycloak)
+            path: Current path for recursive calls
+
+        Returns:
+            List of drift descriptions
+        """
+        drift = []
+
+        for key, value in desired.items():
+            # Skip None values in desired config (treated as "don't care")
+            if value is None:
+                continue
+
+            current_path = f"{path}.{key}" if path else key
+
+            if key not in actual:
+                drift.append(f"Missing field: {current_path}")
+                continue
+
+            actual_value = actual[key]
+
+            if isinstance(value, dict) and isinstance(actual_value, dict):
+                drift.extend(self._calculate_drift(value, actual_value, current_path))
+            elif isinstance(value, list) and isinstance(actual_value, list):
+                # Simple list comparison for now
+                # In future we might want to handle set-like lists (order independent)
+                if value != actual_value:
+                    drift.append(
+                        f"List mismatch at {current_path}: desired={value}, actual={actual_value}"
+                    )
+            elif value != actual_value:
+                drift.append(
+                    f"Value mismatch at {current_path}: desired={value}, actual={actual_value}"
+                )
+
+        return drift
 
     async def scan_for_drift(self) -> list[DriftResult]:
         """
@@ -331,8 +381,55 @@ class DriftDetector:
                 )
 
             # CR exists - check for config drift
-            # TODO: Implement config drift detection
-            # For now, we just detect orphans
+            try:
+                cr = await asyncio.to_thread(
+                    self.custom_objects_api.get_namespaced_custom_object,
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=cr_namespace,
+                    plural="keycloakrealms",
+                    name=cr_name,
+                )
+
+                spec = cr.get("spec", {})
+                realm_spec = KeycloakRealmSpec.model_validate(spec)
+                # We include flow bindings for drift detection to ensure they match
+                desired_config = realm_spec.to_keycloak_config(
+                    include_flow_bindings=True
+                )
+
+                # Convert actual realm to dict for comparison
+                # Using by_alias=True to match Keycloak API field names (camelCase)
+                actual_config = (
+                    realm.model_dump(by_alias=True, exclude_unset=True)
+                    if hasattr(realm, "model_dump")
+                    else vars(realm)
+                )
+
+                drift_details = self._calculate_drift(desired_config, actual_config)
+
+                if drift_details:
+                    logger.info(
+                        f"Config drift detected for realm {realm.realm}: {drift_details}"
+                    )
+                    return DriftResult(
+                        resource_type="realm",
+                        resource_name=realm.realm,
+                        drift_type="config_drift",
+                        keycloak_resource=actual_config,
+                        desired_resource=desired_config,
+                        drift_details=drift_details,
+                        cr_namespace=cr_namespace,
+                        cr_name=cr_name,
+                        age_hours=get_resource_age_hours(attributes),
+                    )
+
+            except Exception as e:
+                logger.error(
+                    f"Failed to check config drift for realm {realm.realm}: {e}"
+                )
+                # Don't fail the whole scan, just log error
+                pass
 
         elif is_managed_by_operator(attributes):
             # Owned by a different operator instance - ignore
@@ -412,7 +509,50 @@ class DriftDetector:
                 )
 
             # CR exists - check for config drift
-            # TODO: Implement config drift detection
+            try:
+                cr = await asyncio.to_thread(
+                    self.custom_objects_api.get_namespaced_custom_object,
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=cr_namespace,
+                    plural="keycloakclients",
+                    name=cr_name,
+                )
+
+                spec = cr.get("spec", {})
+                client_spec = KeycloakClientSpec.model_validate(spec)
+                desired_config = client_spec.to_keycloak_config()
+
+                # Helper to convert actual client to dict
+                actual_config = (
+                    kc_client.model_dump(by_alias=True, exclude_unset=True)
+                    if hasattr(kc_client, "model_dump")
+                    else vars(kc_client)
+                )
+
+                drift_details = self._calculate_drift(desired_config, actual_config)
+
+                if drift_details:
+                    logger.info(
+                        f"Config drift detected for client {kc_client.client_id}: {drift_details}"
+                    )
+                    return DriftResult(
+                        resource_type="client",
+                        resource_name=kc_client.client_id,
+                        drift_type="config_drift",
+                        keycloak_resource=actual_config,
+                        desired_resource=desired_config,
+                        drift_details=drift_details,
+                        cr_namespace=cr_namespace,
+                        cr_name=cr_name,
+                        age_hours=get_resource_age_hours(attributes),
+                        parent_realm=realm_name,
+                    )
+            except Exception as e:
+                logger.error(
+                    f"Failed to check config drift for client {kc_client.client_id}: {e}"
+                )
+                pass
 
         elif is_managed_by_operator(attributes):
             # Owned by a different operator instance - ignore
@@ -636,30 +776,38 @@ class DriftDetector:
                 # For clients, we need the client UUID and realm name
                 # Extract from keycloak_resource
                 client_id = drift.keycloak_resource.get("id")
-                # Find which realm this client belongs to
-                # We stored the client data, so we can try to extract realm from attributes
-                # or search through all realms
-                realms = await admin_client.get_realms(kc_namespace)
+
+                # Use parent_realm if available (added in recent changes)
+                target_realms = []
+                if drift.parent_realm:
+                    # If we know the parent realm, only check that one
+                    target_realms = [drift.parent_realm]
+                else:
+                    # Fallback: search all realms
+                    all_realms = await admin_client.get_realms(kc_namespace)
+                    target_realms = [r.realm for r in all_realms if r.realm != "master"]
+
                 client_deleted = False
 
-                for realm in realms:
-                    if realm.realm == "master":
-                        continue
-
+                for realm_name in target_realms:
                     try:
-                        # Get client in this realm by clientId
-                        kc_client = await admin_client.get_client_by_name(
-                            drift.resource_name, realm.realm, kc_namespace
-                        )
-                        if kc_client and kc_client.id == client_id:
-                            # Found it! Delete it
+                        # Get client in this realm by clientId to confirm it exists and get ID if needed
+                        if not client_id:
+                            kc_client = await admin_client.get_client_by_name(
+                                drift.resource_name, realm_name, kc_namespace
+                            )
+                            if kc_client:
+                                client_id = kc_client.id
+
+                        if client_id:
+                            # Try to delete
                             success = await admin_client.delete_client(
-                                kc_client.id, realm.realm, kc_namespace
+                                client_id, realm_name, kc_namespace
                             )
                             if success:
                                 logger.info(
                                     f"Successfully deleted orphaned client {drift.resource_name} "
-                                    f"from realm {realm.realm}"
+                                    f"from realm {realm_name}"
                                 )
                                 REMEDIATION_TOTAL.labels(
                                     resource_type=drift.resource_type,
@@ -670,7 +818,7 @@ class DriftDetector:
                                 break
                     except Exception as e:
                         logger.debug(
-                            f"Client {drift.resource_name} not in realm {realm.realm}: {e}"
+                            f"Client {drift.resource_name} error in realm {realm_name}: {e}"
                         )
                         continue
 
@@ -704,7 +852,73 @@ class DriftDetector:
             f"Remediating config drift for {drift.resource_type} {drift.resource_name}"
         )
 
-        # TODO: Implement actual config update via Keycloak Admin API
+        if not drift.desired_resource:
+            logger.warning(
+                f"Cannot remediate {drift.resource_type} {drift.resource_name}: desired state not available"
+            )
+            return
+
+        # Get Keycloak admin client
+        # TODO: Handle multiple Keycloak instances properly (use operator_instance_id tracking)
+        keycloak_instances = await self._discover_keycloak_instances()
+        if not keycloak_instances:
+            logger.error("No Keycloak instances found for remediation")
+            return
+
+        kc_namespace, kc_name = keycloak_instances[0]
+
+        try:
+            admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
+
+            if drift.resource_type == "realm":
+                # For realms, we use the realm name as ID for updates
+                # We need to make sure 'realm' field is present in desired_resource
+                if "realm" not in drift.desired_resource:
+                    drift.desired_resource["realm"] = drift.resource_name
+
+                # We should use update_realm method
+                # Note: update_realm takes RealmRepresentation model or dict
+                # drift.desired_resource is a dict (from to_keycloak_config)
+                await admin_client.update_realm(
+                    drift.resource_name, drift.desired_resource, kc_namespace
+                )
+                logger.info(f"Successfully remediated realm {drift.resource_name}")
+
+            elif drift.resource_type == "client":
+                realm_name = drift.parent_realm
+                if not realm_name:
+                    logger.error(
+                        f"Cannot remediate client {drift.resource_name}: parent realm unknown"
+                    )
+                    return
+
+                # Get client internal ID (UUID)
+                client_id = drift.keycloak_resource.get("id")
+                if not client_id:
+                    # Try to fetch it by clientId
+                    kc_client = await admin_client.get_client_by_name(
+                        drift.resource_name, realm_name, kc_namespace
+                    )
+                    if kc_client:
+                        client_id = kc_client.id
+                    else:
+                        logger.error(
+                            f"Client {drift.resource_name} not found for remediation"
+                        )
+                        return
+
+                await admin_client.update_client(
+                    client_id, drift.desired_resource, realm_name, kc_namespace
+                )
+                logger.info(f"Successfully remediated client {drift.resource_name}")
+
+        except Exception as e:
+            logger.error(f"Failed to remediate drift: {e}")
+            REMEDIATION_ERRORS_TOTAL.labels(
+                resource_type=drift.resource_type,
+                action="updated",
+            ).inc()
+            raise
 
         REMEDIATION_TOTAL.labels(
             resource_type=drift.resource_type,
