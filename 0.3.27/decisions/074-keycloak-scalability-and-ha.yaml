@@ -1,0 +1,27 @@
+number: 74
+title: Keycloak Scalability and High Availability Strategy
+category: architecture
+decision: >
+  Horizontal scaling of the managed Keycloak instance MUST be handled by the Keycloak application itself via proper clustering (JGroups/Infinispan), NOT by the Operator simply creating more unclustered replicas.
+
+  For the current version of the Operator:
+  1. Operator-managed Keycloak instances are optimized for vertical scaling or simple Active-Standby (if supported).
+  2. For high-throughput horizontal scaling, users should configure an **external Keycloak** (managed outside the operator or by a dedicated Helm chart) that is properly clustered.
+  3. "Naive scaling" (increasing `spec.replicas` > 1 without clustering config) is explicitly unsupported for production as it leads to split-brain states (sessions not shared).
+agent_instructions: >
+  If a user asks how to scale Keycloak for high load, advise them that simply increasing replicas in the Keycloak CR is not sufficient for proper HA without clustering configuration.
+  Recommend using an external Keycloak instance for massive horizontal scale requirements until the Operator natively supports full JGroups discovery and configuration.
+  Clarify that the Operator's own HA (Kopf peering) is distinct from the Keycloak application's HA.
+rationale: >
+  Keycloak is a stateful application requiring distributed caching (Infinispan) to share sessions and user states across replicas.
+  Simply launching multiple Pods (replicas) without this discovery mechanism results in isolated instances, breaking authentication flows (e.g., login on Pod A, code exchange on Pod B fails).
+
+  While the Operator handles K8s resources, configuring robust JGroups discovery (DNS_PING, KUBE_PING) and cache tuning is a complex application-level concern that is currently best handled by dedicated Helm charts or external management for high-scale needs.
+provenance: human
+rejected_alternatives:
+  - alternative: Auto-scaling Replicas without Clustering
+    reason: >
+      Leads to broken user experience (session loss) due to lack of state synchronization.
+  - alternative: Operator automatically configuring JGroups
+    reason: >
+      Adds significant complexity to the Operator logic. Better to delegate this to the underlying Helm chart or external configuration for now.
