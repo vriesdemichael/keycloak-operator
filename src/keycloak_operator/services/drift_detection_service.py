@@ -11,7 +11,7 @@ import logging
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -207,6 +207,12 @@ class DriftDetector:
                 drift_results.extend(client_results)
                 logger.info(f"Found {len(client_results)} client drift issues")
 
+            # 3. Detect orphaned and unmanaged resources (reverse check)
+            if self.config.scope_realms or self.config.scope_clients:
+                orphan_results = await self._scan_orphans_and_unmanaged()
+                drift_results.extend(orphan_results)
+                logger.info(f"Found {len(orphan_results)} orphan/unmanaged issues")
+
             # Update last success timestamp
             DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP.set(time.time())
 
@@ -219,14 +225,87 @@ class DriftDetector:
             logger.error(f"Drift scan failed: {e}", exc_info=True)
             raise
 
+    async def _scan_orphans_and_unmanaged(self) -> list[DriftResult]:
+        """
+        Scan for orphaned and unmanaged resources by querying Keycloak directly.
+        """
+        results: list[DriftResult] = []
+
+        try:
+            keycloak_instances = await self._discover_keycloak_instances()
+            for kc_namespace, kc_name in keycloak_instances:
+                try:
+                    admin_client = await self.keycloak_admin_factory(
+                        kc_name, kc_namespace
+                    )
+
+                    # 1. Check Realms
+                    if self.config.scope_realms:
+                        realms = await admin_client.get_realms(kc_namespace)
+                        if realms:  # Null safety check
+                            for realm in realms:
+                                if realm.realm == "master":
+                                    continue
+
+                                # Re-use the existing logic which handles orphan/unmanaged checks
+                                # based on attributes
+                                drift = await self._check_realm_resource_drift(
+                                    realm, admin_client
+                                )
+
+                                # Filter results: only keep orphan/unmanaged
+                                # Config drift is handled by smart scan now
+                                if drift and drift.drift_type in [
+                                    "orphaned",
+                                    "unmanaged",
+                                ]:
+                                    results.append(drift)
+
+                    # 2. Check Clients
+                    if self.config.scope_clients:
+                        # Iterate through realms to find clients
+                        realms = await admin_client.get_realms(kc_namespace)
+                        if realms:  # Null safety check
+                            for realm in realms:
+                                if realm.realm == "master" or not realm.realm:
+                                    continue
+
+                                clients = await admin_client.get_realm_clients(
+                                    realm.realm, kc_namespace
+                                )
+                                if clients:  # Null safety check
+                                    for client in clients:
+                                        drift = await self._check_client_resource_drift(
+                                            client, realm.realm, admin_client
+                                        )
+                                        if drift and drift.drift_type in [
+                                            "orphaned",
+                                            "unmanaged",
+                                        ]:
+                                            results.append(drift)
+
+                except Exception as e:
+                    logger.error(
+                        f"Error in orphan scan for {kc_namespace}/{kc_name}: {e}"
+                    )
+
+        except Exception as e:
+            logger.error(f"Failed orphan scan: {e}")
+
+        return results
+
     async def _scan_realms_smart(self) -> list[DriftResult]:
-        """Scan realms for drift using admin events if possible."""
+        """
+        Scan realms for drift using timestamp-based comparison.
+
+        This compares the CR's status.lastReconcileEventTime against the latest
+        admin event timestamp in Keycloak. If Keycloak has newer events, the
+        resource has drifted and needs reconciliation.
+        """
         results: list[DriftResult] = []
 
         # Discover all Realm CRs
         try:
-            # Use discover_resources helper if available, or list objects directly
-            # We need CR metadata to know which Keycloak to check
             custom_objects_api = self.custom_objects_api
 
             response = await asyncio.to_thread(
@@ -235,12 +314,10 @@ class DriftDetector:
                 version="v1",
                 plural="keycloakrealms",
             )
-            # Cast response to dict to help type checker
-            from typing import cast
 
             response_dict = cast(dict[str, Any], response)
             realm_crs = cast(list[dict[str, Any]], response_dict.get("items", []))
-            logger.info(f"Found {len(realm_crs)} Realm CRs to scan")
+            logger.info(f"Found {len(realm_crs)} Realm CRs to scan for drift")
         except Exception as e:
             logger.error(f"Failed to list KeycloakRealm CRs: {e}")
             return []
@@ -248,9 +325,18 @@ class DriftDetector:
         for cr in realm_crs:
             name = str(cr["metadata"]["name"])
             namespace = str(cr["metadata"]["namespace"])
-            uid = str(cr["metadata"]["uid"])
             spec = cast(dict[str, Any], cr.get("spec", {}))
+            status = cast(dict[str, Any], cr.get("status", {}))
             realm_name = str(spec.get("realmName", name))
+
+            # Skip CRs that haven't reached Ready phase yet
+            # These are still being reconciled and shouldn't be scanned for drift
+            phase = status.get("phase", "")
+            if phase not in ["Ready", "Degraded"]:
+                logger.debug(
+                    f"Skipping realm {realm_name}: CR phase is '{phase}', not Ready/Degraded"
+                )
+                continue
 
             operator_ref = cast(dict[str, Any], spec.get("operatorRef", {}))
             kc_namespace = str(operator_ref.get("namespace", namespace))
@@ -259,47 +345,59 @@ class DriftDetector:
             try:
                 admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
 
-                # Check for tamper events
-                last_scan = self._last_scan_times.get(uid, 0)
-                date_from = (
-                    time.strftime("%Y-%m-%d", time.gmtime(last_scan))
-                    if last_scan > 0
-                    else None
-                )
+                # Verify realm exists in Keycloak before checking events
+                realm = await admin_client.get_realm(realm_name, kc_namespace)
+                if realm is None:
+                    # Realm doesn't exist in Keycloak - skip, let regular reconciliation handle it
+                    logger.debug(f"Skipping realm {realm_name}: not found in Keycloak")
+                    continue
 
-                events = await admin_client.get_admin_events(
+                # Get the stored timestamp from CR status
+                last_reconcile_time = status.get("lastReconcileEventTime")
+
+                # Get the latest admin event timestamp from Keycloak
+                latest_event_time = await admin_client.get_latest_admin_event_time(
                     realm_name,
                     kc_namespace,
-                    date_from=date_from,
-                    operation_types=["CREATE", "UPDATE", "DELETE"],
+                    scope="realm",
                 )
-                logger.info(
-                    f"Fetched {len(events)} admin events for {realm_name} since {date_from}"
-                )
-
-                # Filter events that are relevant to Realm configuration
-                relevant_events = [
-                    e
-                    for e in events
-                    if e.resource_type != "CLIENT"
-                    and e.resource_type != "USER"
-                    and e.resource_type != "USER_SESSION"
-                    and e.resource_type != "CLIENT_SESSION"
-                ]
 
                 needs_reconcile = False
+                drift_reason = ""
 
-                if not date_from:
+                if last_reconcile_time is None:
+                    # CR has never recorded a timestamp - likely first run or pre-upgrade
+                    # Trigger reconciliation to establish baseline
                     needs_reconcile = True
-                elif relevant_events:
-                    logger.info(
-                        f"Detected {len(relevant_events)} tamper events for realm {realm_name}"
+                    drift_reason = (
+                        "No lastReconcileEventTime in CR status (first run or upgrade)"
                     )
+                    logger.info(
+                        f"Realm {realm_name}: no stored timestamp, triggering reconcile"
+                    )
+                elif latest_event_time is None:
+                    # No admin events in Keycloak - this could mean:
+                    # 1. Events were purged (expiration)
+                    # 2. No changes ever made
+                    # Don't trigger reconcile, assume no drift
+                    logger.debug(
+                        f"Realm {realm_name}: no admin events found in Keycloak"
+                    )
+                elif latest_event_time > last_reconcile_time:
+                    # Newer events exist - drift detected!
                     needs_reconcile = True
-
-                # Force deep check every 24h
-                if time.time() - last_scan > 86400:
-                    needs_reconcile = True
+                    drift_reason = (
+                        f"Newer admin events detected: latest={latest_event_time}, "
+                        f"lastReconcile={last_reconcile_time}"
+                    )
+                    logger.info(
+                        f"Drift detected for realm {realm_name}: {drift_reason}"
+                    )
+                else:
+                    logger.debug(
+                        f"Realm {realm_name}: no drift (latest={latest_event_time}, "
+                        f"lastReconcile={last_reconcile_time})"
+                    )
 
                 if needs_reconcile:
                     results.append(
@@ -311,11 +409,9 @@ class DriftDetector:
                             desired_resource=spec,
                             cr_namespace=namespace,
                             cr_name=name,
-                            drift_details=[f"Events detected: {len(relevant_events)}"],
+                            drift_details=[drift_reason],
                         )
                     )
-
-                self._last_scan_times[uid] = time.time()
 
             except Exception as e:
                 logger.error(f"Error scanning realm {name}: {e}")
@@ -323,9 +419,16 @@ class DriftDetector:
         return results
 
     async def _scan_clients_smart(self) -> list[DriftResult]:
-        """Scan clients for drift using admin events."""
+        """
+        Scan clients for drift using timestamp-based comparison.
+
+        This compares the CR's status.lastReconcileEventTime against the latest
+        client-specific admin event timestamp in Keycloak. If Keycloak has newer
+        events for this client, the resource has drifted and needs reconciliation.
+        """
         results: list[DriftResult] = []
 
+        # Discover all Client CRs
         try:
             response = await asyncio.to_thread(
                 self.custom_objects_api.list_cluster_custom_object,
@@ -333,10 +436,10 @@ class DriftDetector:
                 version="v1",
                 plural="keycloakclients",
             )
-            from typing import cast
 
             response_dict = cast(dict[str, Any], response)
             client_crs = cast(list[dict[str, Any]], response_dict.get("items", []))
+            logger.info(f"Found {len(client_crs)} Client CRs to scan for drift")
         except Exception as e:
             logger.error(f"Failed to list KeycloakClient CRs: {e}")
             return []
@@ -344,11 +447,20 @@ class DriftDetector:
         for cr in client_crs:
             name = str(cr["metadata"]["name"])
             namespace = str(cr["metadata"]["namespace"])
-            uid = str(cr["metadata"]["uid"])
             spec = cast(dict[str, Any], cr.get("spec", {}))
+            status = cast(dict[str, Any], cr.get("status", {}))
             client_id = str(spec.get("clientId", ""))
 
             if not client_id:
+                continue
+
+            # Skip CRs that haven't reached Ready phase yet
+            # These are still being reconciled and shouldn't be scanned for drift
+            phase = status.get("phase", "")
+            if phase not in ["Ready", "Degraded"]:
+                logger.debug(
+                    f"Skipping client {client_id}: CR phase is '{phase}', not Ready/Degraded"
+                )
                 continue
 
             realm_ref = cast(dict[str, Any], spec.get("realmRef", {}))
@@ -357,6 +469,7 @@ class DriftDetector:
                 continue
 
             try:
+                # Get the realm CR to find the Keycloak instance and realm name
                 realm_cr_response = await asyncio.to_thread(
                     self.custom_objects_api.get_namespaced_custom_object,
                     group="vriesdemichael.github.io",
@@ -367,41 +480,69 @@ class DriftDetector:
                 )
                 realm_cr = cast(dict[str, Any], realm_cr_response)
                 realm_spec = cast(dict[str, Any], realm_cr.get("spec", {}))
-                realm_name = str(realm_spec.get("realmName", ""))
+                realm_name = str(realm_spec.get("realmName", realm_cr_name))
                 operator_ref = cast(dict[str, Any], realm_spec.get("operatorRef", {}))
                 kc_namespace = str(operator_ref.get("namespace", namespace))
                 kc_name = "keycloak"
 
                 admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
 
-                last_scan = self._last_scan_times.get(uid, 0)
-                date_from = (
-                    time.strftime("%Y-%m-%d", time.gmtime(last_scan))
-                    if last_scan > 0
-                    else None
-                )
-
-                events = await admin_client.get_admin_events(
-                    realm_name,
-                    kc_namespace,
-                    date_from=date_from,
-                    operation_types=["CREATE", "UPDATE", "DELETE"],
-                    resource_types=["CLIENT", "CLIENT_ROLE", "CLIENT_SCOPE_MAPPING"],
-                )
-
+                # Get the client UUID for filtering events
                 client_uuid = await admin_client.get_client_uuid(
                     client_id, realm_name, kc_namespace
                 )
 
-                client_events = []
-                if client_uuid:
-                    for e in events:
-                        if e.resource_path and client_uuid in e.resource_path:
-                            client_events.append(e)
+                if not client_uuid:
+                    # Client doesn't exist in Keycloak yet - skip
+                    # This could happen if the realm is still being set up or
+                    # the client hasn't been reconciled yet
+                    logger.debug(f"Skipping client {client_id}: not found in Keycloak")
+                    continue
+
+                # Get the stored timestamp from CR status
+                last_reconcile_time = status.get("lastReconcileEventTime")
+
+                # Get the latest admin event timestamp from Keycloak for this client
+                latest_event_time = await admin_client.get_latest_admin_event_time(
+                    realm_name,
+                    kc_namespace,
+                    scope="client",
+                    client_uuid=client_uuid,
+                )
 
                 needs_reconcile = False
-                if not date_from or client_events or (time.time() - last_scan > 86400):
+                drift_reason = ""
+
+                if last_reconcile_time is None:
+                    # CR has never recorded a timestamp - likely first run or pre-upgrade
+                    # Trigger reconciliation to establish baseline
                     needs_reconcile = True
+                    drift_reason = (
+                        "No lastReconcileEventTime in CR status (first run or upgrade)"
+                    )
+                    logger.info(
+                        f"Client {client_id}: no stored timestamp, triggering reconcile"
+                    )
+                elif latest_event_time is None:
+                    # No admin events in Keycloak for this client - assume no drift
+                    logger.debug(
+                        f"Client {client_id}: no admin events found in Keycloak"
+                    )
+                elif latest_event_time > last_reconcile_time:
+                    # Newer events exist - drift detected!
+                    needs_reconcile = True
+                    drift_reason = (
+                        f"Newer admin events detected: latest={latest_event_time}, "
+                        f"lastReconcile={last_reconcile_time}"
+                    )
+                    logger.info(
+                        f"Drift detected for client {client_id}: {drift_reason}"
+                    )
+                else:
+                    logger.debug(
+                        f"Client {client_id}: no drift (latest={latest_event_time}, "
+                        f"lastReconcile={last_reconcile_time})"
+                    )
 
                 if needs_reconcile:
                     results.append(
@@ -409,18 +550,14 @@ class DriftDetector:
                             resource_type="client",
                             resource_name=client_id,
                             drift_type="config_drift",
-                            keycloak_resource={"id": client_uuid}
-                            if client_uuid
-                            else {},
+                            keycloak_resource={"id": client_uuid},
                             desired_resource=spec,
                             cr_namespace=namespace,
                             cr_name=name,
                             parent_realm=realm_name,
-                            drift_details=[f"Events: {len(client_events)}"],
+                            drift_details=[drift_reason],
                         )
                     )
-
-                self._last_scan_times[uid] = time.time()
 
             except Exception as e:
                 logger.error(f"Error scanning client {name}: {e}")
@@ -450,16 +587,17 @@ class DriftDetector:
                     )
                     realms = await admin_client.get_realms(kc_namespace)
 
-                    for realm in realms:
-                        # Skip master realm (system realm)
-                        if realm.realm == "master":
-                            continue
+                    if realms:  # Null safety check
+                        for realm in realms:
+                            # Skip master realm (system realm)
+                            if realm.realm == "master":
+                                continue
 
-                        drift = await self._check_realm_resource_drift(
-                            realm, admin_client
-                        )
-                        if drift:
-                            drift_results.append(drift)
+                            drift = await self._check_realm_resource_drift(
+                                realm, admin_client
+                            )
+                            if drift:
+                                drift_results.append(drift)
 
                 except Exception as e:
                     logger.error(
@@ -503,22 +641,24 @@ class DriftDetector:
                     # Get all realms first
                     realms = await admin_client.get_realms(kc_namespace)
 
-                    for realm in realms:
-                        # Skip master realm
-                        if realm.realm == "master":
-                            continue
+                    if realms:  # Null safety check
+                        for realm in realms:
+                            # Skip master realm
+                            if realm.realm == "master" or not realm.realm:
+                                continue
 
-                        # Get all clients in this realm
-                        clients = await admin_client.get_realm_clients(
-                            realm.realm, kc_namespace
-                        )
-
-                        for kc_client in clients:
-                            drift = await self._check_client_resource_drift(
-                                kc_client, realm.realm, admin_client
+                            # Get all clients in this realm
+                            clients = await admin_client.get_realm_clients(
+                                realm.realm, kc_namespace
                             )
-                            if drift:
-                                drift_results.append(drift)
+
+                            if clients:  # Null safety check
+                                for kc_client in clients:
+                                    drift = await self._check_client_resource_drift(
+                                        kc_client, realm.realm, admin_client
+                                    )
+                                    if drift:
+                                        drift_results.append(drift)
 
                 except Exception as e:
                     logger.error(
@@ -595,7 +735,7 @@ class DriftDetector:
 
             # CR exists - check for config drift
             try:
-                cr = await asyncio.to_thread(
+                cr_response = await asyncio.to_thread(
                     self.custom_objects_api.get_namespaced_custom_object,
                     group="vriesdemichael.github.io",
                     version="v1",
@@ -603,6 +743,7 @@ class DriftDetector:
                     plural="keycloakrealms",
                     name=cr_name,
                 )
+                cr = cast(dict[str, Any], cr_response)
 
                 spec = cr.get("spec", {})
                 realm_spec = KeycloakRealmSpec.model_validate(spec)
@@ -700,6 +841,7 @@ class DriftDetector:
                     drift_type="orphaned",
                     keycloak_resource=client_dict,
                     age_hours=get_resource_age_hours(attributes),
+                    parent_realm=realm_name,
                 )
 
             cr_namespace, cr_name = cr_ref
@@ -719,11 +861,12 @@ class DriftDetector:
                     cr_namespace=cr_namespace,
                     cr_name=cr_name,
                     age_hours=get_resource_age_hours(attributes),
+                    parent_realm=realm_name,
                 )
 
             # CR exists - check for config drift
             try:
-                cr = await asyncio.to_thread(
+                cr_response = await asyncio.to_thread(
                     self.custom_objects_api.get_namespaced_custom_object,
                     group="vriesdemichael.github.io",
                     version="v1",
@@ -731,6 +874,7 @@ class DriftDetector:
                     plural="keycloakclients",
                     name=cr_name,
                 )
+                cr = cast(dict[str, Any], cr_response)
 
                 spec = cr.get("spec", {})
                 client_spec = KeycloakClientSpec.model_validate(spec)
@@ -986,49 +1130,43 @@ class DriftDetector:
                     ).inc()
 
             elif drift.resource_type == "client":
-                # For clients, we need the client UUID and realm name
-                # Extract from keycloak_resource
-                client_id = drift.keycloak_resource.get("id")
+                # For clients, we need the realm name to delete
+                # drift.resource_name contains the clientId (name)
 
                 # Use parent_realm if available (added in recent changes)
-                target_realms = []
+                target_realms: list[str] = []
                 if drift.parent_realm:
                     # If we know the parent realm, only check that one
                     target_realms = [drift.parent_realm]
                 else:
                     # Fallback: search all realms
                     all_realms = await admin_client.get_realms(kc_namespace)
-                    target_realms = [r.realm for r in all_realms if r.realm != "master"]
+                    if all_realms:
+                        for r in all_realms:
+                            if r.realm and r.realm != "master":
+                                target_realms.append(r.realm)
 
                 client_deleted = False
 
                 for realm_name in target_realms:
                     try:
-                        # Get client in this realm by clientId to confirm it exists and get ID if needed
-                        if not client_id:
-                            kc_client = await admin_client.get_client_by_name(
-                                drift.resource_name, realm_name, kc_namespace
+                        # Try to delete using the clientId (name)
+                        # delete_client expects clientId, not UUID
+                        success = await admin_client.delete_client(
+                            drift.resource_name, realm_name, kc_namespace
+                        )
+                        if success:
+                            logger.info(
+                                f"Successfully deleted orphaned client {drift.resource_name} "
+                                f"from realm {realm_name}"
                             )
-                            if kc_client:
-                                client_id = kc_client.id
-
-                        if client_id:
-                            # Try to delete
-                            success = await admin_client.delete_client(
-                                client_id, realm_name, kc_namespace
-                            )
-                            if success:
-                                logger.info(
-                                    f"Successfully deleted orphaned client {drift.resource_name} "
-                                    f"from realm {realm_name}"
-                                )
-                                REMEDIATION_TOTAL.labels(
-                                    resource_type=drift.resource_type,
-                                    action="delete",
-                                    reason="orphaned",
-                                ).inc()
-                                client_deleted = True
-                                break
+                            REMEDIATION_TOTAL.labels(
+                                resource_type=drift.resource_type,
+                                action="delete",
+                                reason="orphaned",
+                            ).inc()
+                            client_deleted = True
+                            break
                     except Exception as e:
                         logger.debug(
                             f"Client {drift.resource_name} error in realm {realm_name}: {e}"
@@ -1085,7 +1223,7 @@ class DriftDetector:
 
             # 2. Fetch current CR from Kubernetes
             # We fetch fresh to ensure we are applying the latest desired state
-            cr = await asyncio.to_thread(
+            cr_response = await asyncio.to_thread(
                 self.custom_objects_api.get_namespaced_custom_object,
                 group="vriesdemichael.github.io",
                 version="v1",
@@ -1093,6 +1231,7 @@ class DriftDetector:
                 plural=plural,
                 name=drift.cr_name,
             )
+            cr = cast(dict[str, Any], cr_response)
 
             # 3. Instantiate Reconciler
             # IMPORTANT: We explicitly disable RBAC validation during drift remediation
