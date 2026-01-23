@@ -202,11 +202,6 @@ async def test_smart_drift_detection_client_update(
     # 3. Scan
     results = await detector.scan_for_drift()
 
-    # Debug results
-    print(f"\nDEBUG: Scan results: {results}")
-    if results:
-        print(f"DEBUG: Result 0 details: {results[0].drift_details}")
-
     # Check that we found drift
     assert len(results) > 0, "Should detect drift via events"
 
