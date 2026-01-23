@@ -233,6 +233,33 @@ class KeycloakClientReconciler(BaseReconciler):
         # Extract generation for status tracking
         generation = kwargs.get("meta", {}).get("generation", 0)
 
+        # Store the latest admin event timestamp for drift detection
+        # This allows drift detection to compare against changes made after reconciliation
+        from ..settings import settings
+
+        if settings.drift_detection_enabled:
+            try:
+                admin_client_for_ts = await self.keycloak_admin_factory(
+                    keycloak_name, keycloak_namespace, rate_limiter=self.rate_limiter
+                )
+                latest_event_time = (
+                    await admin_client_for_ts.get_latest_admin_event_time(
+                        actual_realm_name,
+                        namespace,
+                        scope="client",
+                        client_uuid=client_uuid,
+                    )
+                )
+                if latest_event_time is not None:
+                    status.lastReconcileEventTime = latest_event_time
+                    self.logger.debug(
+                        f"Stored lastReconcileEventTime={latest_event_time} for client {client_spec.client_id}"
+                    )
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to get latest admin event time for drift detection: {e}"
+                )
+
         # Update status to ready
         self.update_status_ready(status, "Client configured and ready", generation)
 

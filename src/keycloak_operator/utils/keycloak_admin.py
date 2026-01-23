@@ -999,6 +999,169 @@ class KeycloakAdminClient:
             logger.error(f"Failed to get admin events: {e}")
             return []
 
+    # Resource type constants for drift detection filtering
+    # These are config-changing events that should trigger reconciliation
+    REALM_CONFIG_RESOURCE_TYPES = [
+        "REALM",
+        "REALM_ROLE",
+        "REALM_SCOPE_MAPPING",
+        "AUTH_FLOW",
+        "AUTH_EXECUTION",
+        "AUTH_EXECUTION_FLOW",
+        "AUTHENTICATOR_CONFIG",
+        "REQUIRED_ACTION",
+        "IDENTITY_PROVIDER",
+        "IDENTITY_PROVIDER_MAPPER",
+        "CLIENT_SCOPE",  # Realm-level client scopes
+        "USER_FEDERATION_PROVIDER",
+        "USER_FEDERATION_MAPPER",
+        "COMPONENT",
+        "CLIENT_INITIAL_ACCESS_MODEL",
+    ]
+
+    CLIENT_CONFIG_RESOURCE_TYPES = [
+        "CLIENT",
+        "CLIENT_ROLE",
+        "CLIENT_SCOPE_MAPPING",
+        "PROTOCOL_MAPPER",
+    ]
+
+    async def get_latest_admin_event_time(
+        self,
+        realm_name: str,
+        namespace: str,
+        scope: str = "realm",
+        client_uuid: str | None = None,
+        since_timestamp: int | None = None,
+    ) -> int | None:
+        """
+        Get the timestamp of the latest config-changing admin event.
+
+        This method is used for drift detection to determine if any configuration
+        changes have been made since the last reconciliation.
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Origin namespace for rate limiting
+            scope: Either "realm" or "client" - determines which resource types to filter
+            client_uuid: Required when scope="client" - the client UUID to filter events for
+            since_timestamp: Optional timestamp (Unix ms) to filter events after this time
+
+        Returns:
+            The timestamp (Unix ms) of the latest matching event, or None if no events found
+
+        Examples:
+            # Get latest realm config event
+            ts = await client.get_latest_admin_event_time("my-realm", "default", scope="realm")
+
+            # Get latest client config event
+            ts = await client.get_latest_admin_event_time(
+                "my-realm", "default", scope="client", client_uuid="abc-123"
+            )
+
+            # Check for events since last reconcile
+            ts = await client.get_latest_admin_event_time(
+                "my-realm", "default", since_timestamp=last_reconcile_time
+            )
+        """
+        logger.debug(
+            f"Getting latest admin event time for {scope} in realm '{realm_name}'"
+        )
+
+        try:
+            # Determine resource types based on scope
+            if scope == "realm":
+                resource_types = self.REALM_CONFIG_RESOURCE_TYPES
+            elif scope == "client":
+                if not client_uuid:
+                    logger.error("client_uuid required when scope='client'")
+                    return None
+                resource_types = self.CLIENT_CONFIG_RESOURCE_TYPES
+            else:
+                logger.error(f"Invalid scope: {scope}")
+                return None
+
+            # Build query parameters
+            params: dict[str, Any] = {
+                # Only config-changing operations, not ACTION (login events, etc.)
+                "operationTypes": ["CREATE", "UPDATE", "DELETE"],
+                "resourceTypes": resource_types,
+                # We only need the most recent event
+                "max": 1,
+                "first": 0,
+            }
+
+            # Convert since_timestamp to date string for API
+            # Note: Keycloak API only supports date filtering (yyyy-MM-dd), not precise timestamps
+            # We'll filter more precisely after fetching
+
+            response = await self._make_request(
+                "GET", f"realms/{realm_name}/admin-events", namespace, params=params
+            )
+
+            if response.status_code != 200:
+                logger.error(
+                    f"Failed to get admin events: HTTP {response.status_code}",
+                    extra={"response_body": response.text},
+                )
+                return None
+
+            events_data = response.json()
+
+            if not events_data:
+                logger.debug(
+                    f"No admin events found for {scope} in realm '{realm_name}'"
+                )
+                return None
+
+            # Parse events and filter
+            events = [
+                AdminEventRepresentation.model_validate(event) for event in events_data
+            ]
+
+            # For client scope, filter by resource_path containing the client UUID
+            if scope == "client" and client_uuid:
+                events = [
+                    e
+                    for e in events
+                    if e.resource_path and client_uuid in e.resource_path
+                ]
+
+            # For realm scope, exclude events that are client-specific
+            # (resource_path starting with "clients/")
+            if scope == "realm":
+                events = [
+                    e
+                    for e in events
+                    if not (e.resource_path and e.resource_path.startswith("clients/"))
+                ]
+
+            # Filter by since_timestamp if provided
+            if since_timestamp is not None:
+                events = [e for e in events if e.time and e.time > since_timestamp]
+
+            if not events:
+                logger.debug(
+                    f"No matching admin events found for {scope} in realm '{realm_name}'"
+                )
+                return None
+
+            # Get the latest event timestamp
+            latest_event = max(events, key=lambda e: e.time or 0)
+            latest_time = latest_event.time
+
+            logger.debug(
+                f"Latest {scope} admin event in realm '{realm_name}': "
+                f"type={latest_event.resource_type}, op={latest_event.operation_type}, "
+                f"time={latest_time}"
+            )
+
+            return latest_time
+
+        except Exception as e:
+            logger.error(f"Failed to get latest admin event time: {e}")
+            return None
+
     # Client Management Methods
 
     async def get_client_by_name(

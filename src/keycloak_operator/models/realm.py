@@ -1789,6 +1789,13 @@ class KeycloakRealmStatus(BaseModel):
         None, alias="clientScopesCount", description="Number of custom client scopes"
     )
 
+    # Drift detection
+    last_reconcile_event_time: int | None = Field(
+        None,
+        alias="lastReconcileEventTime",
+        description="Timestamp (Unix ms) of latest Keycloak admin event after last reconciliation",
+    )
+
 
 class KeycloakRealm(BaseModel):
     """
