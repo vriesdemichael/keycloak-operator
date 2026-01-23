@@ -636,6 +636,13 @@ class KeycloakClientStatus(BaseModel):
         description="Protocol mappers that were applied",
     )
 
+    # Drift detection
+    last_reconcile_event_time: int | None = Field(
+        None,
+        alias="lastReconcileEventTime",
+        description="Timestamp (Unix ms) of latest Keycloak admin event after last reconciliation",
+    )
+
 
 class KeycloakClient(BaseModel):
     """

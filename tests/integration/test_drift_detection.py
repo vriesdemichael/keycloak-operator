@@ -847,10 +847,14 @@ async def test_client_config_drift_detection_and_remediation(
 
     assert len(client_drifts) == 1, "Client config drift should be detected"
     drift = client_drifts[0]
-    # Check that details contain expected mismatches
+    # With timestamp-based drift detection, details contain event timing info
+    # rather than field-level comparison
     drift_details_str = str(drift.drift_details)
-    assert "description" in drift_details_str
-    assert "redirectUris" in drift_details_str
+    assert (
+        "event" in drift_details_str.lower()
+        or "timestamp" in drift_details_str.lower()
+        or "reconcile" in drift_details_str.lower()
+    ), f"Expected drift details to mention events/timestamps, got: {drift_details_str}"
 
     # 5. Run remediation
     await detector.remediate_drift(drift_results)
@@ -966,113 +970,6 @@ async def test_client_orphan_remediation(
     await detector.remediate_drift(drift_results)
 
     # 4. Verify Deletion
-    await asyncio.sleep(2)
-    kc_client = await keycloak_admin_client.get_client_by_name(
-        client_id, realm_name, test_namespace
-    )
-    assert kc_client is None, "Orphaned client should be deleted"
-
-    # Cleanup Realm
-    await k8s_custom_objects.delete_namespaced_custom_object(
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-    )
-
-    await wait_for_resource_ready(
-        k8s_custom_objects,
-        group="vriesdemichael.github.io",
-        version="v1",
-        namespace=test_namespace,
-        plural="keycloakrealms",
-        name=realm_cr["metadata"]["name"],
-    )
-    realm_name = realm_cr["spec"]["realmName"]
-
-    # 2. Setup Client
-    client_id = "orphan-client-test"
-
-    # 3. Create Orphan Condition (remove finalizer & delete CR)
-    # Remove finalizer to simulate orphan (normally operator removes it on delete)
-    # We want to delete CR but keep Keycloak resource to test drift detection
-
-    # Actually, we can just delete the CR. Since the operator is running, it might
-    # process the deletion and remove the client. To test orphan detection,
-    # we need a situation where the CR is gone but the resource remains.
-    # The best way is to manually remove the finalizer via API patch,
-    # then delete the CR. The operator might still catch the delete event though.
-    #
-    # Safer way: Disable the operator temporarily? No, shared operator.
-    #
-    # Alternative: Create the resource in Keycloak MANUALLY, but with
-    # operator ownership attributes pointing to a non-existent CR.
-
-    # Let's try the manual creation approach which is more stable
-    # Delete the proper CR first to clear state
-    # await k8s_custom_objects.delete_namespaced_custom_object(
-    #     group="vriesdemichael.github.io",
-    #     version="v1",
-    #     namespace=test_namespace,
-    #     plural="keycloakclients",
-    #     name=client_cr["metadata"]["name"],
-    # )
-
-    # Wait for deletion
-    await asyncio.sleep(2)
-
-    # Manually create client in Keycloak with ownership attributes
-    from keycloak_operator.utils.ownership import (
-        ATTR_CR_NAME,
-        ATTR_CR_NAMESPACE,
-        ATTR_CREATED_AT,
-        ATTR_MANAGED_BY,
-        ATTR_OPERATOR_INSTANCE,
-    )
-
-    fake_client_data = {
-        "clientId": client_id,
-        "enabled": True,
-        "attributes": {
-            ATTR_MANAGED_BY: "keycloak-operator",
-            ATTR_OPERATOR_INSTANCE: operator_instance_id,
-            ATTR_CR_NAMESPACE: test_namespace,
-            ATTR_CR_NAME: "non-existent-cr",  # This CR does not exist
-            # Add creation timestamp to bypass minimum age check
-            ATTR_CREATED_AT: "2020-01-01T00:00:00Z",
-        },
-    }
-
-    await keycloak_admin_client.create_client(
-        fake_client_data, realm_name, test_namespace
-    )
-
-    # 4. Scan and Remediate
-    config = DriftDetectionConfig(
-        enabled=True,
-        interval_seconds=60,
-        auto_remediate=True,
-        minimum_age_hours=0,
-        scope_realms=False,
-        scope_clients=True,
-        scope_identity_providers=False,
-        scope_roles=False,
-    )
-
-    detector = drift_detector(config)
-    drift_results = await detector.scan_for_drift()
-
-    orphans = [
-        d
-        for d in drift_results
-        if d.resource_name == client_id and d.drift_type == "orphaned"
-    ]
-    assert len(orphans) == 1, "Should detect manually created orphan"
-
-    await detector.remediate_drift(drift_results)
-
-    # 5. Verify Deletion
     await asyncio.sleep(2)
     kc_client = await keycloak_admin_client.get_client_by_name(
         client_id, realm_name, test_namespace

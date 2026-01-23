@@ -199,6 +199,34 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Add user federation status to the CR status
         status.userFederationStatus = federation_statuses
 
+        # Store the latest admin event timestamp for drift detection
+        # This allows drift detection to compare against changes made after reconciliation
+        if settings.drift_detection_enabled:
+            try:
+                operator_ref_for_ts = realm_spec.operator_ref
+                keycloak_name_for_ts = "keycloak"
+                admin_client_for_ts = await self.keycloak_admin_factory(
+                    keycloak_name_for_ts,
+                    operator_ref_for_ts.namespace,
+                    rate_limiter=self.rate_limiter,
+                )
+                latest_event_time = (
+                    await admin_client_for_ts.get_latest_admin_event_time(
+                        realm_spec.realm_name,
+                        namespace,
+                        scope="realm",
+                    )
+                )
+                if latest_event_time is not None:
+                    status.lastReconcileEventTime = latest_event_time
+                    self.logger.debug(
+                        f"Stored lastReconcileEventTime={latest_event_time} for realm {realm_spec.realm_name}"
+                    )
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to get latest admin event time for drift detection: {e}"
+                )
+
         # Populate OIDC endpoint discovery
         try:
             from ..models.keycloak import Keycloak
