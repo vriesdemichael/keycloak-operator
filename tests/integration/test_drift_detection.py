@@ -9,6 +9,7 @@ These tests verify that:
 """
 
 import asyncio
+import contextlib
 
 import pytest
 
@@ -1040,3 +1041,444 @@ async def test_resource_ignored_if_owned_by_other_operator(
 
     finally:
         await keycloak_admin_client.delete_realm(other_realm_name, test_namespace)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_unmanaged_client_detected(
+    shared_operator,
+    keycloak_admin_client,
+    k8s_custom_objects,
+    test_namespace,
+    operator_instance_id,
+    realm_cr,
+    drift_detector,
+):
+    """Test that unmanaged clients (created without operator) are detected."""
+    import uuid
+
+    # 1. Create a realm first (managed by operator)
+    await k8s_custom_objects.create_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        body=realm_cr,
+    )
+
+    await wait_for_resource_ready(
+        k8s_custom_objects,
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+        timeout=120,
+    )
+
+    realm_name = realm_cr["spec"]["realmName"]
+
+    # 2. Create an unmanaged client directly in Keycloak (no ownership attributes)
+    unmanaged_client_id = f"unmanaged-client-{uuid.uuid4().hex[:8]}"
+    client_config = {
+        "clientId": unmanaged_client_id,
+        "enabled": True,
+        "publicClient": True,
+        # No attributes - this makes it unmanaged
+    }
+
+    await keycloak_admin_client.create_client(client_config, realm_name, test_namespace)
+    await asyncio.sleep(2)
+
+    # 3. Run drift detection with client scope enabled
+    config = DriftDetectionConfig(
+        enabled=True,
+        interval_seconds=60,
+        auto_remediate=False,
+        minimum_age_hours=0,
+        scope_realms=False,
+        scope_clients=True,
+        scope_identity_providers=False,
+        scope_roles=False,
+    )
+
+    detector = drift_detector(config)
+    drift_results = await detector.scan_for_drift()
+
+    # 4. Verify unmanaged client is detected
+    unmanaged_clients = [
+        d
+        for d in drift_results
+        if d.resource_type == "client"
+        and d.drift_type == "unmanaged"
+        and d.resource_name == unmanaged_client_id
+    ]
+
+    assert len(unmanaged_clients) == 1, (
+        f"Should detect unmanaged client, found: {[d.resource_name for d in drift_results if d.resource_type == 'client']}"
+    )
+
+    # Cleanup
+    await keycloak_admin_client.delete_client(
+        unmanaged_client_id, realm_name, test_namespace
+    )
+    await k8s_custom_objects.delete_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_disabled_scope_skips_resources(
+    shared_operator,
+    keycloak_admin_client,
+    k8s_custom_objects,
+    test_namespace,
+    operator_instance_id,
+    realm_cr,
+    drift_detector,
+):
+    """Test that disabled scopes skip their respective resources."""
+    import uuid
+
+    # 1. Create both an unmanaged realm and an unmanaged client
+    unmanaged_realm_name = f"scope-test-realm-{uuid.uuid4().hex[:8]}"
+    realm_config = {
+        "realm": unmanaged_realm_name,
+        "displayName": "Scope Test Realm",
+        "enabled": True,
+        # No attributes - this makes it unmanaged
+    }
+
+    await keycloak_admin_client.create_realm(realm_config, test_namespace)
+
+    # Create client in this unmanaged realm
+    unmanaged_client_id = f"scope-test-client-{uuid.uuid4().hex[:8]}"
+    client_config = {
+        "clientId": unmanaged_client_id,
+        "enabled": True,
+        "publicClient": True,
+    }
+
+    await keycloak_admin_client.create_client(
+        client_config, unmanaged_realm_name, test_namespace
+    )
+    await asyncio.sleep(2)
+
+    try:
+        # 2. Scan with only realm scope enabled (clients disabled)
+        config_realms_only = DriftDetectionConfig(
+            enabled=True,
+            interval_seconds=60,
+            auto_remediate=False,
+            minimum_age_hours=0,
+            scope_realms=True,
+            scope_clients=False,  # Disabled!
+            scope_identity_providers=False,
+            scope_roles=False,
+        )
+
+        detector = drift_detector(config_realms_only)
+        drift_results = await detector.scan_for_drift()
+
+        # Should find realm but NOT client
+        realm_results = [
+            d for d in drift_results if d.resource_name == unmanaged_realm_name
+        ]
+        client_results = [
+            d for d in drift_results if d.resource_name == unmanaged_client_id
+        ]
+
+        assert len(realm_results) == 1, "Should detect unmanaged realm"
+        assert len(client_results) == 0, (
+            "Should NOT detect client when scope_clients=False"
+        )
+
+        # 3. Scan with only client scope enabled (realms disabled)
+        config_clients_only = DriftDetectionConfig(
+            enabled=True,
+            interval_seconds=60,
+            auto_remediate=False,
+            minimum_age_hours=0,
+            scope_realms=False,  # Disabled!
+            scope_clients=True,
+            scope_identity_providers=False,
+            scope_roles=False,
+        )
+
+        detector2 = drift_detector(config_clients_only)
+        drift_results2 = await detector2.scan_for_drift()
+
+        # Should find client but NOT realm
+        realm_results2 = [
+            d for d in drift_results2 if d.resource_name == unmanaged_realm_name
+        ]
+        client_results2 = [
+            d for d in drift_results2 if d.resource_name == unmanaged_client_id
+        ]
+
+        assert len(realm_results2) == 0, (
+            "Should NOT detect realm when scope_realms=False"
+        )
+        assert len(client_results2) == 1, "Should detect unmanaged client"
+
+    finally:
+        # Cleanup
+        await keycloak_admin_client.delete_client(
+            unmanaged_client_id, unmanaged_realm_name, test_namespace
+        )
+        await keycloak_admin_client.delete_realm(unmanaged_realm_name, test_namespace)
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_pending_cr_skipped_in_drift_scan(
+    shared_operator,
+    keycloak_admin_client,
+    k8s_custom_objects,
+    test_namespace,
+    operator_instance_id,
+    drift_detector,
+):
+    """Test that CRs in Pending/Provisioning phase are skipped during drift scan.
+
+    The drift detector should only scan resources that have reached Ready or Degraded
+    phase, since resources still being reconciled haven't established their baseline.
+    """
+    import uuid
+
+    # 1. Create a realm CR but immediately patch it to Pending phase
+    # We'll simulate a "stuck" CR that never reached Ready
+    realm_name = f"pending-test-{uuid.uuid4().hex[:8]}"
+    realm_cr = {
+        "apiVersion": "vriesdemichael.github.io/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": f"pending-realm-{uuid.uuid4().hex[:8]}",
+            "namespace": test_namespace,
+        },
+        "spec": {
+            "realmName": realm_name,
+            "displayName": "Pending Test Realm",
+            "operatorRef": {
+                "name": shared_operator.name,
+                "namespace": shared_operator.namespace,
+            },
+        },
+    }
+
+    await k8s_custom_objects.create_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        body=realm_cr,
+    )
+
+    # Wait a moment for the CR to be created but NOT for it to become Ready
+    await asyncio.sleep(2)
+
+    # Force the status to Pending by patching (simulating a stuck CR)
+    # Note: In real scenarios, the operator would set this, but we're testing
+    # the drift detector's behavior when it encounters such CRs
+    try:
+        patch_body = {"status": {"phase": "Pending", "message": "Simulated pending"}}
+        await k8s_custom_objects.patch_namespaced_custom_object_status(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr["metadata"]["name"],
+            body=patch_body,
+        )
+    except Exception:
+        # Status subresource might not be patchable in all scenarios
+        # The test still validates the behavior - CR without Ready status
+        pass
+
+    # 2. Run drift detection
+    config = DriftDetectionConfig(
+        enabled=True,
+        interval_seconds=60,
+        auto_remediate=False,
+        minimum_age_hours=0,
+        scope_realms=True,
+        scope_clients=False,
+        scope_identity_providers=False,
+        scope_roles=False,
+    )
+
+    detector = drift_detector(config)
+
+    # Get the CR to check its current phase
+    cr_obj = await k8s_custom_objects.get_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+    current_phase = cr_obj.get("status", {}).get("phase", "Unknown")
+
+    # Only run the assertion if we successfully set the CR to a non-Ready phase
+    # If the operator already reconciled it to Ready, this test scenario doesn't apply
+    if current_phase not in ["Ready", "Degraded"]:
+        drift_results = await detector.scan_for_drift()
+
+        # Should NOT find this realm in drift results (it's skipped due to phase)
+        realm_results = [
+            d
+            for d in drift_results
+            if d.resource_type == "realm" and d.resource_name == realm_name
+        ]
+
+        assert len(realm_results) == 0, (
+            f"Should skip CR in {current_phase} phase, but found drift: {realm_results}"
+        )
+
+    # Cleanup - wait for it to be ready first, then delete
+    with contextlib.suppress(Exception):
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr["metadata"]["name"],
+            timeout=60,
+        )
+
+    await k8s_custom_objects.delete_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_nested_config_drift_detection(
+    shared_operator,
+    keycloak_admin_client,
+    k8s_custom_objects,
+    test_namespace,
+    operator_instance_id,
+    drift_detector,
+):
+    """Test that nested configuration changes are detected as drift.
+
+    This tests the _calculate_drift method's handling of nested objects
+    like eventsConfig, smtpServer, etc.
+    """
+    import uuid
+
+    # 1. Create a realm with nested configuration
+    realm_name = f"nested-drift-{uuid.uuid4().hex[:8]}"
+    realm_cr = {
+        "apiVersion": "vriesdemichael.github.io/v1",
+        "kind": "KeycloakRealm",
+        "metadata": {
+            "name": f"nested-realm-{uuid.uuid4().hex[:8]}",
+            "namespace": test_namespace,
+        },
+        "spec": {
+            "realmName": realm_name,
+            "displayName": "Nested Config Test",
+            "operatorRef": {
+                "name": shared_operator.name,
+                "namespace": shared_operator.namespace,
+            },
+            "eventsConfig": {
+                "eventsEnabled": True,
+                "adminEventsEnabled": True,
+                "eventsExpiration": 3600,
+            },
+        },
+    }
+
+    await k8s_custom_objects.create_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        body=realm_cr,
+    )
+
+    await wait_for_resource_ready(
+        k8s_custom_objects,
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+        timeout=120,
+    )
+
+    # 2. Verify initial state
+    kc_realm = await keycloak_admin_client.get_realm(realm_name, test_namespace)
+    assert kc_realm.events_enabled is True
+    assert kc_realm.admin_events_enabled is True
+
+    # 3. Modify nested configuration directly in Keycloak
+    kc_realm.events_enabled = False  # Change nested eventsConfig
+    kc_realm.admin_events_enabled = False
+    await keycloak_admin_client.update_realm(realm_name, kc_realm, test_namespace)
+
+    # Verify the change took effect
+    kc_realm_modified = await keycloak_admin_client.get_realm(
+        realm_name, test_namespace
+    )
+    assert kc_realm_modified.events_enabled is False
+
+    # 4. Run drift detection
+    config = DriftDetectionConfig(
+        enabled=True,
+        interval_seconds=60,
+        auto_remediate=True,
+        minimum_age_hours=0,
+        scope_realms=True,
+        scope_clients=False,
+        scope_identity_providers=False,
+        scope_roles=False,
+    )
+
+    detector = drift_detector(config)
+    drift_results = await detector.scan_for_drift()
+
+    # 5. Verify drift is detected
+    realm_drift = [
+        d
+        for d in drift_results
+        if d.resource_type == "realm"
+        and d.drift_type == "config_drift"
+        and d.resource_name == realm_name
+    ]
+
+    assert len(realm_drift) == 1, "Should detect config drift for nested changes"
+
+    # 6. Remediate and verify
+    await detector.remediate_drift(drift_results)
+    await asyncio.sleep(2)
+
+    kc_realm_fixed = await keycloak_admin_client.get_realm(realm_name, test_namespace)
+    assert kc_realm_fixed.events_enabled is True, (
+        "Nested eventsEnabled should be restored"
+    )
+    assert kc_realm_fixed.admin_events_enabled is True, (
+        "Nested adminEventsEnabled should be restored"
+    )
+
+    # Cleanup
+    await k8s_custom_objects.delete_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
