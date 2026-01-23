@@ -783,7 +783,6 @@ class DriftDetector:
                     f"Failed to check config drift for realm {realm.realm}: {e}"
                 )
                 # Don't fail the whole scan, just log error
-                pass
 
         elif is_managed_by_operator(attributes):
             # Owned by a different operator instance - ignore
@@ -909,7 +908,7 @@ class DriftDetector:
                 logger.error(
                     f"Failed to check config drift for client {kc_client.client_id}: {e}"
                 )
-                pass
+                # Don't fail the whole scan, just log error
 
         elif is_managed_by_operator(attributes):
             # Owned by a different operator instance - ignore
@@ -1310,8 +1309,6 @@ class DriftDetector:
 
         except Exception as e:
             logger.error(f"Failed to remediate drift: {e}")
-            REMEDIATION_ERRORS_TOTAL.labels(
-                resource_type=drift.resource_type,
-                action="reconcile",
-            ).inc()
+            # Don't increment error counter here - let the caller handle it
+            # to avoid double-counting
             raise
