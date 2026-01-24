@@ -1147,6 +1147,43 @@ class DriftDetector:
 
                 client_deleted = False
 
+                # When doing fallback realm search, we need to find which realm
+                # actually has the client before deleting, since delete_client
+                # returns True for "not found" (idempotent behavior)
+                if not drift.parent_realm and len(target_realms) > 1:
+                    # Fallback mode: find the realm that contains the client first
+                    containing_realm = None
+                    for realm_name in target_realms:
+                        try:
+                            client = await admin_client.get_client_by_name(
+                                drift.resource_name, realm_name, kc_namespace
+                            )
+                            if client:
+                                containing_realm = realm_name
+                                logger.debug(
+                                    f"Found orphaned client {drift.resource_name} "
+                                    f"in realm {realm_name}"
+                                )
+                                break
+                        except Exception as e:
+                            logger.debug(
+                                f"Error checking client {drift.resource_name} "
+                                f"in realm {realm_name}: {e}"
+                            )
+                            continue
+
+                    if containing_realm:
+                        target_realms = [containing_realm]
+                    else:
+                        logger.warning(
+                            f"Orphaned client {drift.resource_name} not found in any realm"
+                        )
+                        REMEDIATION_ERRORS_TOTAL.labels(
+                            resource_type=drift.resource_type,
+                            action="delete",
+                        ).inc()
+                        return
+
                 for realm_name in target_realms:
                     try:
                         # Try to delete using the clientId (name)
