@@ -1601,6 +1601,26 @@ async def shared_operator(
             # Enable admission webhooks (default behavior)
             "enabled": True,
         },
+        "monitoring": {
+            # Enable drift detection with short interval for testing
+            # This allows operator-side drift detection tests to exercise
+            # the DriftDetector code paths in the operator pod
+            "driftDetection": {
+                "enabled": True,
+                "intervalSeconds": 30,  # Short interval for testing
+                "autoRemediate": True,  # Enable auto-remediation for testing
+                # Use 1 hour minimum age so orphans created via CRs (with fresh
+                # timestamps) are NOT auto-remediated. Operator-side tests that
+                # WANT remediation create orphans with old timestamps (2020-01-01).
+                "minimumAgeHours": 1,
+                "scope": {
+                    "realms": True,
+                    "clients": True,
+                    "identityProviders": True,
+                    "roles": True,
+                },
+            },
+        },
     }
 
     # Create values file
