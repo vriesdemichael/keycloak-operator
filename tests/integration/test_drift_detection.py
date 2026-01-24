@@ -1961,14 +1961,15 @@ async def test_auto_remediation_disabled_skips_remediation(
     keycloak_admin_client,
     k8s_custom_objects,
     test_namespace,
-    operator_instance_id,
     realm_cr,
-    drift_detector,
 ):
     """Test that auto-remediation is skipped when disabled in config.
 
     This exercises the early return path in remediate_drift() when
     auto_remediate=False.
+
+    Note: We use a fake operator instance ID to avoid interference from
+    the operator's background drift detection which runs with autoRemediate=True.
     """
     import uuid
 
@@ -2001,14 +2002,19 @@ async def test_auto_remediation_disabled_skips_remediation(
 
     realm_name = realm_cr["spec"]["realmName"]
 
-    # 2. Create an orphan client
+    # 2. Create an orphan client with a DIFFERENT operator instance ID
+    # This ensures the operator's background drift detection won't delete it,
+    # since the operator only manages resources owned by its own instance ID.
+    # We use a fake instance ID so this test can verify the test-side detector's
+    # auto_remediate=False behavior without interference from the operator.
+    fake_instance_id = "test-only-instance-for-auto-remediate-test"
     orphan_client_id = f"no-remediate-{uuid.uuid4().hex[:8]}"
     orphan_client_data = {
         "clientId": orphan_client_id,
         "enabled": True,
         "attributes": {
             ATTR_MANAGED_BY: "keycloak-operator",
-            ATTR_OPERATOR_INSTANCE: operator_instance_id,
+            ATTR_OPERATOR_INSTANCE: fake_instance_id,  # Different from operator!
             ATTR_CR_NAMESPACE: test_namespace,
             ATTR_CR_NAME: "non-existent-cr",
             ATTR_CREATED_AT: "2020-01-01T00:00:00Z",
@@ -2019,6 +2025,12 @@ async def test_auto_remediation_disabled_skips_remediation(
     )
 
     # 3. Run drift detection with auto_remediate=False
+    # We need to create a custom detector that uses the SAME fake instance ID
+    # so it will detect the orphan we created above.
+    from keycloak_operator.services.drift_detection_service import DriftDetector
+    from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+    from keycloak_operator.utils.kubernetes import get_admin_credentials
+
     config = DriftDetectionConfig(
         enabled=True,
         interval_seconds=60,
@@ -2030,7 +2042,28 @@ async def test_auto_remediation_disabled_skips_remediation(
         scope_roles=False,
     )
 
-    detector = drift_detector(config)
+    # Create a detector with the fake instance ID
+    username, password = get_admin_credentials(
+        shared_operator.name, shared_operator.namespace
+    )
+    admin_client = KeycloakAdminClient(
+        server_url=keycloak_admin_client.server_url,
+        username=username,
+        password=password,
+    )
+    await admin_client.authenticate()
+
+    async def admin_factory(kc_name: str, namespace: str, rate_limiter=None):
+        return admin_client
+
+    keycloak_instances = [(shared_operator.namespace, shared_operator.name)]
+    detector = DriftDetector(
+        config=config,
+        k8s_client=None,  # Not needed for this test
+        keycloak_admin_factory=admin_factory,
+        keycloak_instances=keycloak_instances,
+        operator_instance_id=fake_instance_id,  # Use the fake instance ID!
+    )
     drift_results = await detector.scan_for_drift()
 
     # Verify orphan was detected
@@ -2202,3 +2235,436 @@ async def test_config_drift_remediation_missing_cr_info_skipped(
     # Should not raise an exception, just log and skip
     await detector.remediate_drift([drift_result])
     # Test passes if no exception is raised
+
+
+# ============================================================================
+# Operator-Side Drift Detection Tests
+# ============================================================================
+# These tests exercise the drift detection code running in the operator pod
+# rather than in the test process. This ensures coverage is collected from
+# the actual operator deployment.
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_operator_side_realm_config_drift_remediation(
+    shared_operator,
+    keycloak_admin_client,
+    k8s_custom_objects,
+    test_namespace,
+    realm_cr_factory,
+):
+    """Test that the operator's background drift detection remediates realm config drift.
+
+    This test exercises the operator-side drift detection code paths, including:
+    - drift_detection_timer in operator.py
+    - DriftDetector.scan_for_drift()
+    - DriftDetector._remediate_config_drift() for realms
+    - The full reconciliation path triggered by drift remediation
+
+    The operator is configured (via Helm values) with:
+    - driftDetection.enabled=true
+    - driftDetection.intervalSeconds=30
+    - driftDetection.autoRemediate=true
+    - driftDetection.minimumAgeHours=0
+    """
+    import time
+
+    # 1. Create a realm with a distinctive display name
+    realm_cr = realm_cr_factory(
+        realm_name=f"operator-drift-test-{int(time.time() * 1000)}",
+    )
+    realm_cr["spec"]["displayName"] = "Operator Drift Test Realm"
+
+    await k8s_custom_objects.create_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        body=realm_cr,
+    )
+
+    await wait_for_resource_ready(
+        k8s_custom_objects,
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+        timeout=120,
+    )
+
+    realm_name = realm_cr["spec"]["realmName"]
+
+    # 2. Verify initial state
+    kc_realm = await keycloak_admin_client.get_realm(realm_name, test_namespace)
+    assert kc_realm is not None
+    assert kc_realm.display_name == "Operator Drift Test Realm"
+
+    # 3. Introduce drift by modifying the realm directly in Keycloak
+    kc_realm.display_name = "DRIFTED - Should Be Fixed By Operator"
+    await keycloak_admin_client.update_realm(realm_name, kc_realm, test_namespace)
+
+    # Verify drift was introduced
+    kc_realm_drifted = await keycloak_admin_client.get_realm(realm_name, test_namespace)
+    assert kc_realm_drifted.display_name == "DRIFTED - Should Be Fixed By Operator"
+
+    # 4. Wait for operator's drift detection to run and remediate
+    # The operator is configured with:
+    # - initial_delay=60s (hardcoded in operator.py)
+    # - intervalSeconds=30s (from Helm values)
+    # We need to wait up to 120s for the drift detection to kick in
+    max_wait = 150  # seconds
+    poll_interval = 10  # seconds
+    start_time = time.time()
+    remediated = False
+    kc_realm_check = None
+
+    while time.time() - start_time < max_wait:
+        await asyncio.sleep(poll_interval)
+        kc_realm_check = await keycloak_admin_client.get_realm(
+            realm_name, test_namespace
+        )
+        if (
+            kc_realm_check
+            and kc_realm_check.display_name == "Operator Drift Test Realm"
+        ):
+            remediated = True
+            break
+
+    current_display_name = kc_realm_check.display_name if kc_realm_check else "None"
+    assert remediated, (
+        f"Operator should have remediated the realm config drift within {max_wait}s. "
+        f"Current displayName: {current_display_name}"
+    )
+
+    # 5. Cleanup
+    await k8s_custom_objects.delete_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_operator_side_client_config_drift_remediation(
+    shared_operator,
+    keycloak_admin_client,
+    k8s_custom_objects,
+    test_namespace,
+    realm_cr_factory,
+    client_cr_factory,
+):
+    """Test that the operator's background drift detection remediates client config drift.
+
+    This test exercises the operator-side drift detection code paths for clients,
+    including:
+    - DriftDetector._check_client_resource_drift()
+    - DriftDetector._remediate_config_drift() for clients
+    - ClientReconciler triggered by drift remediation
+    """
+    import time
+
+    # 1. Create realm first
+    realm_cr = realm_cr_factory(
+        realm_name=f"client-drift-realm-{int(time.time() * 1000)}",
+    )
+
+    await k8s_custom_objects.create_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        body=realm_cr,
+    )
+
+    await wait_for_resource_ready(
+        k8s_custom_objects,
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+        timeout=120,
+    )
+
+    realm_name = realm_cr["spec"]["realmName"]
+
+    # 2. Create client
+    client_cr = client_cr_factory(
+        realm_cr=realm_cr,
+        client_id=f"drift-client-{int(time.time() * 1000)}",
+        description="Original Client Description",
+    )
+
+    await k8s_custom_objects.create_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakclients",
+        body=client_cr,
+    )
+
+    await wait_for_resource_ready(
+        k8s_custom_objects,
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakclients",
+        name=client_cr["metadata"]["name"],
+        timeout=120,
+    )
+
+    client_id = client_cr["spec"]["clientId"]
+
+    # 3. Verify initial state
+    kc_client = await keycloak_admin_client.get_client_by_name(
+        client_id, realm_name, test_namespace
+    )
+    assert kc_client is not None
+    assert kc_client.description == "Original Client Description"
+
+    # 4. Introduce drift by modifying the client directly in Keycloak
+    kc_client.description = "DRIFTED - Should Be Fixed By Operator"
+    await keycloak_admin_client.update_client(
+        kc_client.id, kc_client, realm_name, test_namespace
+    )
+
+    # Verify drift was introduced
+    kc_client_drifted = await keycloak_admin_client.get_client_by_name(
+        client_id, realm_name, test_namespace
+    )
+    assert kc_client_drifted.description == "DRIFTED - Should Be Fixed By Operator"
+
+    # 5. Wait for operator's drift detection to run and remediate
+    max_wait = 150  # seconds
+    poll_interval = 10  # seconds
+    start_time = time.time()
+    remediated = False
+    kc_client_check = None
+
+    while time.time() - start_time < max_wait:
+        await asyncio.sleep(poll_interval)
+        kc_client_check = await keycloak_admin_client.get_client_by_name(
+            client_id, realm_name, test_namespace
+        )
+        if (
+            kc_client_check
+            and kc_client_check.description == "Original Client Description"
+        ):
+            remediated = True
+            break
+
+    current_description = kc_client_check.description if kc_client_check else "None"
+    assert remediated, (
+        f"Operator should have remediated the client config drift within {max_wait}s. "
+        f"Current description: {current_description}"
+    )
+
+    # 6. Cleanup
+    await k8s_custom_objects.delete_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakclients",
+        name=client_cr["metadata"]["name"],
+    )
+    await k8s_custom_objects.delete_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_operator_side_orphan_realm_remediation(
+    shared_operator,
+    keycloak_admin_client,
+    k8s_custom_objects,
+    test_namespace,
+    realm_cr_factory,
+    operator_instance_id,
+):
+    """Test that the operator's background drift detection deletes orphaned realms.
+
+    This test exercises the operator-side orphan detection and remediation:
+    - DriftDetector._check_realm_resource_drift() detecting orphan
+    - DriftDetector._remediate_orphan() for realms
+    - admin_client.delete_realm()
+
+    An orphaned realm is one that exists in Keycloak with operator ownership
+    attributes but no corresponding CR in Kubernetes.
+    """
+    import time
+
+    from keycloak_operator.utils.ownership import (
+        ATTR_CR_NAME,
+        ATTR_CR_NAMESPACE,
+        ATTR_CREATED_AT,
+        ATTR_MANAGED_BY,
+        ATTR_OPERATOR_INSTANCE,
+    )
+
+    # 1. Create a realm directly in Keycloak (simulating an orphan)
+    # This realm has operator ownership attributes but no CR
+    orphan_realm_name = f"orphan-realm-{int(time.time() * 1000)}"
+
+    # First verify it doesn't exist
+    existing = await keycloak_admin_client.get_realm(orphan_realm_name, test_namespace)
+    assert existing is None
+
+    # Create the orphaned realm with ownership attributes
+    from keycloak_operator.models.keycloak_api import RealmRepresentation
+
+    orphan_realm = RealmRepresentation(
+        realm=orphan_realm_name,
+        enabled=True,
+        display_name="Orphan Realm - Should Be Deleted",
+        attributes={
+            ATTR_MANAGED_BY: "keycloak-operator",
+            ATTR_OPERATOR_INSTANCE: operator_instance_id,
+            ATTR_CR_NAMESPACE: test_namespace,
+            ATTR_CR_NAME: "non-existent-realm-cr",
+            ATTR_CREATED_AT: "2020-01-01T00:00:00Z",  # Old enough to be remediated
+        },
+    )
+
+    await keycloak_admin_client.create_realm(orphan_realm, test_namespace)
+
+    # Verify orphan was created
+    kc_orphan = await keycloak_admin_client.get_realm(orphan_realm_name, test_namespace)
+    assert kc_orphan is not None
+
+    # 2. Wait for operator's drift detection to detect and delete the orphan
+    max_wait = 150  # seconds
+    poll_interval = 10  # seconds
+    start_time = time.time()
+    deleted = False
+
+    while time.time() - start_time < max_wait:
+        await asyncio.sleep(poll_interval)
+        kc_orphan_check = await keycloak_admin_client.get_realm(
+            orphan_realm_name, test_namespace
+        )
+        if kc_orphan_check is None:
+            deleted = True
+            break
+
+    assert deleted, (
+        f"Operator should have deleted the orphaned realm within {max_wait}s. "
+        f"Realm '{orphan_realm_name}' still exists."
+    )
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_operator_side_orphan_client_remediation(
+    shared_operator,
+    keycloak_admin_client,
+    k8s_custom_objects,
+    test_namespace,
+    realm_cr_factory,
+    operator_instance_id,
+):
+    """Test that the operator's background drift detection deletes orphaned clients.
+
+    This test exercises the operator-side orphan detection and remediation:
+    - DriftDetector._check_client_resource_drift() detecting orphan
+    - DriftDetector._remediate_orphan() for clients with parent_realm available
+    - admin_client.delete_client()
+    """
+    import time
+
+    from keycloak_operator.utils.ownership import (
+        ATTR_CR_NAME,
+        ATTR_CR_NAMESPACE,
+        ATTR_CREATED_AT,
+        ATTR_MANAGED_BY,
+        ATTR_OPERATOR_INSTANCE,
+    )
+
+    # 1. Create a realm first (needed to host the orphan client)
+    realm_cr = realm_cr_factory(
+        realm_name=f"orphan-client-host-{int(time.time() * 1000)}",
+    )
+
+    await k8s_custom_objects.create_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        body=realm_cr,
+    )
+
+    await wait_for_resource_ready(
+        k8s_custom_objects,
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+        timeout=120,
+    )
+
+    realm_name = realm_cr["spec"]["realmName"]
+
+    # 2. Create an orphan client directly in Keycloak
+    orphan_client_id = f"orphan-client-{int(time.time() * 1000)}"
+
+    orphan_client_data = {
+        "clientId": orphan_client_id,
+        "enabled": True,
+        "description": "Orphan Client - Should Be Deleted",
+        "attributes": {
+            ATTR_MANAGED_BY: "keycloak-operator",
+            ATTR_OPERATOR_INSTANCE: operator_instance_id,
+            ATTR_CR_NAMESPACE: test_namespace,
+            ATTR_CR_NAME: "non-existent-client-cr",
+            ATTR_CREATED_AT: "2020-01-01T00:00:00Z",  # Old enough to be remediated
+        },
+    }
+
+    await keycloak_admin_client.create_client(
+        orphan_client_data, realm_name, test_namespace
+    )
+
+    # Verify orphan was created
+    kc_orphan = await keycloak_admin_client.get_client_by_name(
+        orphan_client_id, realm_name, test_namespace
+    )
+    assert kc_orphan is not None
+
+    # 3. Wait for operator's drift detection to detect and delete the orphan
+    max_wait = 150  # seconds
+    poll_interval = 10  # seconds
+    start_time = time.time()
+    deleted = False
+
+    while time.time() - start_time < max_wait:
+        await asyncio.sleep(poll_interval)
+        kc_orphan_check = await keycloak_admin_client.get_client_by_name(
+            orphan_client_id, realm_name, test_namespace
+        )
+        if kc_orphan_check is None:
+            deleted = True
+            break
+
+    assert deleted, (
+        f"Operator should have deleted the orphaned client within {max_wait}s. "
+        f"Client '{orphan_client_id}' still exists in realm '{realm_name}'."
+    )
+
+    # 4. Cleanup realm
+    await k8s_custom_objects.delete_namespaced_custom_object(
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
