@@ -2256,25 +2256,37 @@ async def test_operator_side_realm_config_drift_remediation(
 ):
     """Test that the operator's background drift detection remediates realm config drift.
 
-    This test exercises the operator-side drift detection code paths, including:
+    This test exercises the REAL operator-side drift detection code paths:
     - drift_detection_timer in operator.py
-    - DriftDetector.scan_for_drift()
-    - DriftDetector._remediate_config_drift() for realms
-    - The full reconciliation path triggered by drift remediation
+    - DriftDetector._scan_realms_smart() with timestamp-based comparison
+    - DriftDetector._remediate_config_drift() triggering reconciliation
+    - The full reconciliation path
+
+    For timestamp-based drift detection to work:
+    1. Admin events must be enabled in the realm
+    2. The CR must have lastReconcileEventTime in status (set after reconciliation)
+    3. A modification in Keycloak generates an admin event with newer timestamp
+    4. Drift detector sees latest_event_time > lastReconcileEventTime
 
     The operator is configured (via Helm values) with:
     - driftDetection.enabled=true
     - driftDetection.intervalSeconds=30
     - driftDetection.autoRemediate=true
-    - driftDetection.minimumAgeHours=0
+    - driftDetection.minimumAgeHours=1 (protects fresh orphans)
     """
     import time
 
-    # 1. Create a realm with a distinctive display name
+    # 1. Create a realm with admin events ENABLED for drift detection
     realm_cr = realm_cr_factory(
         realm_name=f"operator-drift-test-{int(time.time() * 1000)}",
     )
     realm_cr["spec"]["displayName"] = "Operator Drift Test Realm"
+    # Enable admin events - required for timestamp-based drift detection
+    realm_cr["spec"]["eventsConfig"] = {
+        "adminEventsEnabled": True,
+        "adminEventsDetailsEnabled": True,
+        "eventsEnabled": True,
+    }
 
     await k8s_custom_objects.create_namespaced_custom_object(
         group="vriesdemichael.github.io",
@@ -2296,12 +2308,35 @@ async def test_operator_side_realm_config_drift_remediation(
 
     realm_name = realm_cr["spec"]["realmName"]
 
-    # 2. Verify initial state
+    # 2. Wait for CR status to have lastReconcileEventTime
+    # This is set by the reconciler after successful reconciliation
+    max_wait_for_timestamp = 60
+    start = time.time()
+    has_timestamp = False
+    while time.time() - start < max_wait_for_timestamp:
+        cr_obj = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr["metadata"]["name"],
+        )
+        status = cr_obj.get("status", {})
+        if status.get("lastReconcileEventTime") is not None:
+            has_timestamp = True
+            break
+        await asyncio.sleep(5)
+
+    # Even if no timestamp, continue - the drift detector handles this case
+    # (triggers reconcile when no lastReconcileEventTime exists)
+
+    # 3. Verify initial state
     kc_realm = await keycloak_admin_client.get_realm(realm_name, test_namespace)
     assert kc_realm is not None
     assert kc_realm.display_name == "Operator Drift Test Realm"
 
-    # 3. Introduce drift by modifying the realm directly in Keycloak
+    # 4. Introduce drift by modifying the realm directly in Keycloak
+    # This generates an admin event with a newer timestamp
     kc_realm.display_name = "DRIFTED - Should Be Fixed By Operator"
     await keycloak_admin_client.update_realm(realm_name, kc_realm, test_namespace)
 
@@ -2309,12 +2344,10 @@ async def test_operator_side_realm_config_drift_remediation(
     kc_realm_drifted = await keycloak_admin_client.get_realm(realm_name, test_namespace)
     assert kc_realm_drifted.display_name == "DRIFTED - Should Be Fixed By Operator"
 
-    # 4. Wait for operator's drift detection to run and remediate
-    # The operator is configured with:
-    # - initial_delay=60s (hardcoded in operator.py)
-    # - intervalSeconds=30s (from Helm values)
-    # We need to wait up to 120s for the drift detection to kick in
-    max_wait = 150  # seconds
+    # 5. Wait for operator's drift detection to run and remediate
+    # The smart scan compares lastReconcileEventTime vs latest admin event time
+    # When latest_event_time > lastReconcileEventTime, it triggers reconciliation
+    max_wait = 180  # seconds - allow time for drift detection cycle
     poll_interval = 10  # seconds
     start_time = time.time()
     remediated = False
@@ -2335,10 +2368,11 @@ async def test_operator_side_realm_config_drift_remediation(
     current_display_name = kc_realm_check.display_name if kc_realm_check else "None"
     assert remediated, (
         f"Operator should have remediated the realm config drift within {max_wait}s. "
-        f"Current displayName: {current_display_name}"
+        f"Current displayName: {current_display_name}, "
+        f"had lastReconcileEventTime: {has_timestamp}"
     )
 
-    # 5. Cleanup
+    # 6. Cleanup
     await k8s_custom_objects.delete_namespaced_custom_object(
         group="vriesdemichael.github.io",
         version="v1",
