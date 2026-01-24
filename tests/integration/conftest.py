@@ -2881,13 +2881,10 @@ async def drift_detector(
 
     # Return factory function for tests to configure detector
     def create_detector(config):
-        # Use the shared_operator namespace and name for discovering Keycloak instances
-        keycloak_instances = [(shared_operator.namespace, shared_operator.name)]
         return DriftDetector(
             config=config,
             k8s_client=k8s_client,
             keycloak_admin_factory=admin_factory,
-            keycloak_instances=keycloak_instances,
             operator_instance_id=operator_instance_id,
         )
 
