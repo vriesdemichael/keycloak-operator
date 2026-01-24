@@ -100,6 +100,7 @@ class DriftDetector:
             Callable[[str, str], Awaitable[KeycloakAdminClient]] | None
         ) = None,
         operator_instance_id: str | None = None,
+        operator_namespace: str | None = None,
     ):
         """
         Initialize drift detector.
@@ -111,6 +112,9 @@ class DriftDetector:
                 Signature: async (keycloak_name: str, namespace: str) -> KeycloakAdminClient
             operator_instance_id: Optional operator instance ID for ownership checks.
                 If None, will use get_operator_instance_id() which reads from settings.
+            operator_namespace: Optional namespace where the Keycloak instance is running.
+                If None, will use settings.operator_namespace.
+                This is primarily used for testing to override the namespace.
 
         Note:
             Per ADR-062, each operator manages exactly one Keycloak instance.
@@ -122,6 +126,7 @@ class DriftDetector:
             keycloak_admin_factory or get_keycloak_admin_client
         )
         self.operator_instance_id = operator_instance_id
+        self.operator_namespace = operator_namespace or settings.operator_namespace
         self.custom_objects_api = client.CustomObjectsApi(self.k8s_client)
         self.core_v1_api = client.CoreV1Api(self.k8s_client)
 
@@ -230,7 +235,7 @@ class DriftDetector:
         results: list[DriftResult] = []
 
         # Per ADR-062: One operator = One Keycloak instance
-        kc_namespace = settings.operator_namespace
+        kc_namespace = self.operator_namespace
         kc_name = "keycloak"
 
         try:
@@ -568,7 +573,7 @@ class DriftDetector:
         drift_results: list[DriftResult] = []
 
         # Per ADR-062: One operator = One Keycloak instance
-        kc_namespace = settings.operator_namespace
+        kc_namespace = self.operator_namespace
         kc_name = "keycloak"
 
         try:
@@ -609,7 +614,7 @@ class DriftDetector:
         drift_results: list[DriftResult] = []
 
         # Per ADR-062: One operator = One Keycloak instance
-        kc_namespace = settings.operator_namespace
+        kc_namespace = self.operator_namespace
         kc_name = "keycloak"
 
         try:
@@ -1058,7 +1063,7 @@ class DriftDetector:
         )
 
         # Per ADR-062: One operator = One Keycloak instance
-        kc_namespace = settings.operator_namespace
+        kc_namespace = self.operator_namespace
         kc_name = "keycloak"
 
         try:

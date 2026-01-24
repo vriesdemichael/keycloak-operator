@@ -2886,6 +2886,7 @@ async def drift_detector(
             k8s_client=k8s_client,
             keycloak_admin_factory=admin_factory,
             operator_instance_id=operator_instance_id,
+            operator_namespace=shared_operator.namespace,
         )
 
     return create_detector
