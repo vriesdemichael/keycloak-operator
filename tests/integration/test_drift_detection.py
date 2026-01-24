@@ -2056,12 +2056,10 @@ async def test_auto_remediation_disabled_skips_remediation(
     async def admin_factory(kc_name: str, namespace: str, rate_limiter=None):
         return admin_client
 
-    keycloak_instances = [(shared_operator.namespace, shared_operator.name)]
     detector = DriftDetector(
         config=config,
         k8s_client=None,  # Not needed for this test
         keycloak_admin_factory=admin_factory,
-        keycloak_instances=keycloak_instances,
         operator_instance_id=fake_instance_id,  # Use the fake instance ID!
     )
     drift_results = await detector.scan_for_drift()
