@@ -1089,12 +1089,14 @@ class KeycloakEventsConfig(BaseModel):
         None, alias="eventsExpiration", description="Event expiration in seconds", ge=1
     )
     admin_events_enabled: bool = Field(
-        False, alias="adminEventsEnabled", description="Enable admin event logging"
+        True,
+        alias="adminEventsEnabled",
+        description="Enable admin event logging (required for drift detection)",
     )
     admin_events_details_enabled: bool = Field(
-        False,
+        True,
         alias="adminEventsDetailsEnabled",
-        description="Include details in admin events",
+        description="Include details in admin events (recommended for drift detection)",
     )
 
 

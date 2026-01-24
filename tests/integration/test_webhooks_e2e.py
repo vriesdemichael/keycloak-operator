@@ -15,6 +15,8 @@ import pytest
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
+from .wait_helpers import wait_for_resource_ready
+
 
 @pytest.mark.integration
 @pytest.mark.requires_cluster
@@ -117,7 +119,22 @@ class TestWebhooksE2E:
                     },
                 )
 
-            # Update an existing realm - should be allowed even at quota
+            # Wait for the first realm to be Ready to ensure reconciliation is complete
+            # This prevents race conditions where the reconciler is still updating
+            # the CR status when we try to patch
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name="test-realm-0",
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
+
+            # Fetch the latest version of the realm after it's ready
+            # to get the current resourceVersion
             realm = await k8s_custom_objects.get_namespaced_custom_object(
                 group="vriesdemichael.github.io",
                 version="v1",
@@ -129,15 +146,32 @@ class TestWebhooksE2E:
             # Modify spec (change display name)
             realm["spec"]["displayName"] = "Updated Test Realm"
 
-            # UPDATE should succeed
-            await k8s_custom_objects.patch_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakrealms",
-                name="test-realm-0",
-                body=realm,
-            )
+            # UPDATE should succeed - use retry pattern in case of concurrent updates
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    await k8s_custom_objects.patch_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=namespace,
+                        plural="keycloakrealms",
+                        name="test-realm-0",
+                        body=realm,
+                    )
+                    break
+                except ApiException as e:
+                    if e.status == 409 and attempt < max_retries - 1:
+                        # Conflict - re-fetch and retry
+                        realm = await k8s_custom_objects.get_namespaced_custom_object(
+                            group="vriesdemichael.github.io",
+                            version="v1",
+                            namespace=namespace,
+                            plural="keycloakrealms",
+                            name="test-realm-0",
+                        )
+                        realm["spec"]["displayName"] = "Updated Test Realm"
+                        continue
+                    raise
 
             # Verify update succeeded
             updated_realm = await k8s_custom_objects.get_namespaced_custom_object(

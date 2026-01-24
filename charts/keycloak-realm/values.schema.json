@@ -351,11 +351,13 @@
         },
         "adminEventsEnabled": {
           "type": "boolean",
-          "description": "Enable admin event logging"
+          "default": true,
+          "description": "Enable admin event logging (required for drift detection)"
         },
         "adminEventsDetailsEnabled": {
           "type": "boolean",
-          "description": "Include details in admin events"
+          "default": true,
+          "description": "Include details in admin events (recommended for drift detection)"
         },
         "eventsListeners": {
           "type": "array",
