@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import time
 from typing import TYPE_CHECKING, Any
 
 from kubernetes import client
@@ -92,11 +93,21 @@ class KeycloakRealmReconciler(BaseReconciler):
                 from ..models.realm import KeycloakEventsConfig
 
                 realm_spec.events_config = KeycloakEventsConfig(
-                    admin_events_enabled=True
+                    admin_events_enabled=True,
+                    admin_events_details_enabled=True,
                 )
-            else:
+                self.logger.debug(
+                    f"Drift detection enabled: created events config with admin events for realm {realm_spec.realm_name}"
+                )
+            elif not realm_spec.events_config.admin_events_enabled:
+                # Force admin events on regardless of user setting
+                self.logger.info(
+                    f"Drift detection enabled: enforcing adminEventsEnabled=true for realm {realm_spec.realm_name} (was false)"
+                )
                 realm_spec.events_config.admin_events_enabled = True
-                # Ensure details are enabled too for better diffing if needed
+                realm_spec.events_config.admin_events_details_enabled = True
+            else:
+                # Already enabled, just ensure details are enabled too
                 realm_spec.events_config.admin_events_details_enabled = True
 
             # Also ensure expiration is set to something reasonable if missing
@@ -221,6 +232,15 @@ class KeycloakRealmReconciler(BaseReconciler):
                     status.lastReconcileEventTime = latest_event_time
                     self.logger.debug(
                         f"Stored lastReconcileEventTime={latest_event_time} for realm {realm_spec.realm_name}"
+                    )
+                else:
+                    # No admin events found (e.g., new realm, admin events not enabled)
+                    # Set current time as baseline to prevent drift detection from
+                    # triggering unnecessary reconciles for new resources
+                    current_time_ms = int(time.time() * 1000)
+                    status.lastReconcileEventTime = current_time_ms
+                    self.logger.debug(
+                        f"No admin events found, set baseline lastReconcileEventTime={current_time_ms} for realm {realm_spec.realm_name}"
                     )
             except Exception as e:
                 self.logger.warning(

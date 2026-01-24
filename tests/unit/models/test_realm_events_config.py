@@ -9,11 +9,17 @@ class TestEventsConfigModel:
     """Tests for KeycloakEventsConfig Pydantic model."""
 
     def test_defaults(self):
-        """Default values are correct."""
+        """Default values are correct.
+
+        Note: admin_events_enabled and admin_events_details_enabled default to True
+        because they are required for drift detection to work properly.
+        """
         config = KeycloakEventsConfig()
         assert config.events_enabled is False
-        assert config.admin_events_enabled is False
-        assert config.admin_events_details_enabled is False
+        assert config.admin_events_enabled is True  # Required for drift detection
+        assert (
+            config.admin_events_details_enabled is True
+        )  # Required for drift detection
         assert config.events_listeners == []
         assert config.enabled_event_types == []
         assert config.events_expiration is None
@@ -67,13 +73,18 @@ class TestEventsConfigModel:
         assert config.events_expiration == 3600
 
     def test_partial_configuration(self):
-        """Partial configuration works correctly."""
+        """Partial configuration works correctly.
+
+        Note: admin_events_enabled defaults to True for drift detection.
+        """
         config = KeycloakEventsConfig(
             events_enabled=True,
             events_listeners=["jboss-logging"],
         )
         assert config.events_enabled is True
-        assert config.admin_events_enabled is False
+        assert (
+            config.admin_events_enabled is True
+        )  # Defaults to True for drift detection
         assert config.events_listeners == ["jboss-logging"]
         assert config.enabled_event_types == []
 
@@ -101,14 +112,19 @@ class TestRealmSpecWithEventsConfig:
     """Tests for KeycloakRealmSpec with events configuration."""
 
     def test_default_events_config(self):
-        """Default events config is created."""
+        """Default events config is created.
+
+        Note: admin_events_enabled defaults to True for drift detection.
+        """
         spec = KeycloakRealmSpec(
             realm_name="test-realm",
             operator_ref={"namespace": "keycloak"},
         )
         assert spec.events_config is not None
         assert spec.events_config.events_enabled is False
-        assert spec.events_config.admin_events_enabled is False
+        assert (
+            spec.events_config.admin_events_enabled is True
+        )  # Required for drift detection
 
     def test_custom_events_config(self):
         """Custom events config is applied."""
@@ -149,7 +165,10 @@ class TestRealmSpecWithEventsConfig:
         assert config["adminEventsDetailsEnabled"] is True
 
     def test_to_keycloak_config_default_events(self):
-        """to_keycloak_config() includes default events config."""
+        """to_keycloak_config() includes default events config.
+
+        Note: admin events default to True for drift detection.
+        """
         spec = KeycloakRealmSpec(
             realm_name="test-realm",
             operator_ref={"namespace": "keycloak"},
@@ -160,8 +179,10 @@ class TestRealmSpecWithEventsConfig:
         assert config["eventsListeners"] == []
         assert config["enabledEventTypes"] == []
         assert config["eventsExpiration"] is None
-        assert config["adminEventsEnabled"] is False
-        assert config["adminEventsDetailsEnabled"] is False
+        assert config["adminEventsEnabled"] is True  # Required for drift detection
+        assert (
+            config["adminEventsDetailsEnabled"] is True
+        )  # Required for drift detection
 
     def test_events_config_alias_in_realm_spec(self):
         """KeycloakRealmSpec accepts eventsConfig alias."""

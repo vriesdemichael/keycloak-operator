@@ -5,6 +5,7 @@ This module handles the lifecycle of Keycloak clients including
 client creation, credential management, and OAuth2 configuration.
 """
 
+import time
 from typing import Any
 
 from kubernetes import client
@@ -254,6 +255,15 @@ class KeycloakClientReconciler(BaseReconciler):
                     status.lastReconcileEventTime = latest_event_time
                     self.logger.debug(
                         f"Stored lastReconcileEventTime={latest_event_time} for client {client_spec.client_id}"
+                    )
+                else:
+                    # No admin events found (e.g., new client, admin events not enabled)
+                    # Set current time as baseline to prevent drift detection from
+                    # triggering unnecessary reconciles for new resources
+                    current_time_ms = int(time.time() * 1000)
+                    status.lastReconcileEventTime = current_time_ms
+                    self.logger.debug(
+                        f"No admin events found, set baseline lastReconcileEventTime={current_time_ms} for client {client_spec.client_id}"
                     )
             except Exception as e:
                 self.logger.warning(
