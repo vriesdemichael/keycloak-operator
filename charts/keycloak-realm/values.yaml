@@ -345,13 +345,15 @@ userFederation: []
   #   useKerberosForPasswordAuthentication: true
 
 # Event logging configuration (optional)
+# Note: Admin events are enabled by default because they are required for
+# drift detection to work properly. Disabling them is not recommended.
 eventsConfig:
   eventsEnabled: false
   eventsListeners: []
   enabledEventTypes: []
   # eventsExpiration: 86400  # seconds
-  adminEventsEnabled: false
-  adminEventsDetailsEnabled: false
+  adminEventsEnabled: true  # Required for drift detection
+  adminEventsDetailsEnabled: true  # Recommended for drift detection
 
 # Extra Kubernetes manifests to deploy
 # Useful for deploying ExternalSecrets, SealedSecrets, ConfigMaps, etc.

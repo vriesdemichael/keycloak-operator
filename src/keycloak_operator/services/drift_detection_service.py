@@ -99,7 +99,6 @@ class DriftDetector:
         keycloak_admin_factory: (
             Callable[[str, str], Awaitable[KeycloakAdminClient]] | None
         ) = None,
-        keycloak_instances: list[tuple[str, str]] | None = None,
         operator_instance_id: str | None = None,
     ):
         """
@@ -110,25 +109,21 @@ class DriftDetector:
             k8s_client: Kubernetes API client
             keycloak_admin_factory: Factory function for creating Keycloak admin clients.
                 Signature: async (keycloak_name: str, namespace: str) -> KeycloakAdminClient
-            keycloak_instances: Optional list of (namespace, name) tuples for Keycloak instances to scan.
-                If None, will discover instances automatically.
             operator_instance_id: Optional operator instance ID for ownership checks.
                 If None, will use get_operator_instance_id() which reads from settings.
+
+        Note:
+            Per ADR-062, each operator manages exactly one Keycloak instance.
+            The Keycloak instance is always named "keycloak" in the operator namespace.
         """
         self.config = config or DriftDetectionConfig.from_env()
         self.k8s_client = k8s_client or client.ApiClient()
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
-        self.keycloak_instances_override = keycloak_instances
         self.operator_instance_id = operator_instance_id
         self.custom_objects_api = client.CustomObjectsApi(self.k8s_client)
         self.core_v1_api = client.CoreV1Api(self.k8s_client)
-
-        # State tracking for smart scan
-        self._last_scan_times: dict[
-            str, float
-        ] = {}  # Key: resource_uid, Value: timestamp
 
         logger.info(
             f"Drift detector initialized: enabled={self.config.enabled}, "
@@ -228,69 +223,67 @@ class DriftDetector:
     async def _scan_orphans_and_unmanaged(self) -> list[DriftResult]:
         """
         Scan for orphaned and unmanaged resources by querying Keycloak directly.
+
+        Per ADR-062, there is exactly one Keycloak instance per operator deployment,
+        always named "keycloak" in the operator namespace.
         """
         results: list[DriftResult] = []
 
+        # Per ADR-062: One operator = One Keycloak instance
+        kc_namespace = settings.operator_namespace
+        kc_name = "keycloak"
+
         try:
-            keycloak_instances = await self._discover_keycloak_instances()
-            for kc_namespace, kc_name in keycloak_instances:
-                try:
-                    admin_client = await self.keycloak_admin_factory(
-                        kc_name, kc_namespace
-                    )
+            admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
 
-                    # 1. Check Realms
-                    if self.config.scope_realms:
-                        realms = await admin_client.get_realms(kc_namespace)
-                        if realms:  # Null safety check
-                            for realm in realms:
-                                if realm.realm == "master":
-                                    continue
+            # 1. Check Realms
+            if self.config.scope_realms:
+                realms = await admin_client.get_realms(kc_namespace)
+                if realms:  # Null safety check
+                    for realm in realms:
+                        if realm.realm == "master":
+                            continue
 
-                                # Re-use the existing logic which handles orphan/unmanaged checks
-                                # based on attributes
-                                drift = await self._check_realm_resource_drift(
-                                    realm, admin_client
+                        # Check for orphan/unmanaged only (skip expensive config drift)
+                        drift = await self._check_realm_resource_drift(
+                            realm, admin_client, skip_config_drift=True
+                        )
+
+                        if drift and drift.drift_type in [
+                            "orphaned",
+                            "unmanaged",
+                        ]:
+                            results.append(drift)
+
+            # 2. Check Clients
+            if self.config.scope_clients:
+                # Iterate through realms to find clients
+                realms = await admin_client.get_realms(kc_namespace)
+                if realms:  # Null safety check
+                    for realm in realms:
+                        if realm.realm == "master" or not realm.realm:
+                            continue
+
+                        clients = await admin_client.get_realm_clients(
+                            realm.realm, kc_namespace
+                        )
+                        if clients:  # Null safety check
+                            for client in clients:
+                                # Check for orphan/unmanaged only (skip expensive config drift)
+                                drift = await self._check_client_resource_drift(
+                                    client,
+                                    realm.realm,
+                                    admin_client,
+                                    skip_config_drift=True,
                                 )
-
-                                # Filter results: only keep orphan/unmanaged
-                                # Config drift is handled by smart scan now
                                 if drift and drift.drift_type in [
                                     "orphaned",
                                     "unmanaged",
                                 ]:
                                     results.append(drift)
 
-                    # 2. Check Clients
-                    if self.config.scope_clients:
-                        # Iterate through realms to find clients
-                        realms = await admin_client.get_realms(kc_namespace)
-                        if realms:  # Null safety check
-                            for realm in realms:
-                                if realm.realm == "master" or not realm.realm:
-                                    continue
-
-                                clients = await admin_client.get_realm_clients(
-                                    realm.realm, kc_namespace
-                                )
-                                if clients:  # Null safety check
-                                    for client in clients:
-                                        drift = await self._check_client_resource_drift(
-                                            client, realm.realm, admin_client
-                                        )
-                                        if drift and drift.drift_type in [
-                                            "orphaned",
-                                            "unmanaged",
-                                        ]:
-                                            results.append(drift)
-
-                except Exception as e:
-                    logger.error(
-                        f"Error in orphan scan for {kc_namespace}/{kc_name}: {e}"
-                    )
-
         except Exception as e:
-            logger.error(f"Failed orphan scan: {e}")
+            logger.error(f"Error in orphan scan for {kc_namespace}/{kc_name}: {e}")
 
         return results
 
@@ -574,36 +567,23 @@ class DriftDetector:
         start_time = time.time()
         drift_results: list[DriftResult] = []
 
+        # Per ADR-062: One operator = One Keycloak instance
+        kc_namespace = settings.operator_namespace
+        kc_name = "keycloak"
+
         try:
-            # Get all Keycloak instances to scan
-            # For now, we'll scan the default Keycloak instance in each namespace
-            # TODO: Make this configurable or discover Keycloak instances
-            keycloak_instances = await self._discover_keycloak_instances()
+            admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
+            realms = await admin_client.get_realms(kc_namespace)
 
-            for kc_namespace, kc_name in keycloak_instances:
-                try:
-                    admin_client = await self.keycloak_admin_factory(
-                        kc_name, kc_namespace
-                    )
-                    realms = await admin_client.get_realms(kc_namespace)
+            if realms:  # Null safety check
+                for realm in realms:
+                    # Skip master realm (system realm)
+                    if realm.realm == "master":
+                        continue
 
-                    if realms:  # Null safety check
-                        for realm in realms:
-                            # Skip master realm (system realm)
-                            if realm.realm == "master":
-                                continue
-
-                            drift = await self._check_realm_resource_drift(
-                                realm, admin_client
-                            )
-                            if drift:
-                                drift_results.append(drift)
-
-                except Exception as e:
-                    logger.error(
-                        f"Failed to check realms in Keycloak {kc_namespace}/{kc_name}: {e}"
-                    )
-                    DRIFT_CHECK_ERRORS_TOTAL.labels(resource_type="realm").inc()
+                    drift = await self._check_realm_resource_drift(realm, admin_client)
+                    if drift:
+                        drift_results.append(drift)
 
             # Update metrics
             self._update_drift_metrics(drift_results, "realm")
@@ -628,43 +608,34 @@ class DriftDetector:
         start_time = time.time()
         drift_results: list[DriftResult] = []
 
+        # Per ADR-062: One operator = One Keycloak instance
+        kc_namespace = settings.operator_namespace
+        kc_name = "keycloak"
+
         try:
-            # Get all Keycloak instances to scan
-            keycloak_instances = await self._discover_keycloak_instances()
+            admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
 
-            for kc_namespace, kc_name in keycloak_instances:
-                try:
-                    admin_client = await self.keycloak_admin_factory(
-                        kc_name, kc_namespace
+            # Get all realms first
+            realms = await admin_client.get_realms(kc_namespace)
+
+            if realms:  # Null safety check
+                for realm in realms:
+                    # Skip master realm
+                    if realm.realm == "master" or not realm.realm:
+                        continue
+
+                    # Get all clients in this realm
+                    clients = await admin_client.get_realm_clients(
+                        realm.realm, kc_namespace
                     )
 
-                    # Get all realms first
-                    realms = await admin_client.get_realms(kc_namespace)
-
-                    if realms:  # Null safety check
-                        for realm in realms:
-                            # Skip master realm
-                            if realm.realm == "master" or not realm.realm:
-                                continue
-
-                            # Get all clients in this realm
-                            clients = await admin_client.get_realm_clients(
-                                realm.realm, kc_namespace
+                    if clients:  # Null safety check
+                        for kc_client in clients:
+                            drift = await self._check_client_resource_drift(
+                                kc_client, realm.realm, admin_client
                             )
-
-                            if clients:  # Null safety check
-                                for kc_client in clients:
-                                    drift = await self._check_client_resource_drift(
-                                        kc_client, realm.realm, admin_client
-                                    )
-                                    if drift:
-                                        drift_results.append(drift)
-
-                except Exception as e:
-                    logger.error(
-                        f"Failed to check clients in Keycloak {kc_namespace}/{kc_name}: {e}"
-                    )
-                    DRIFT_CHECK_ERRORS_TOTAL.labels(resource_type="client").inc()
+                            if drift:
+                                drift_results.append(drift)
 
             # Update metrics
             self._update_drift_metrics(drift_results, "client")
@@ -680,7 +651,10 @@ class DriftDetector:
             raise
 
     async def _check_realm_resource_drift(
-        self, realm, admin_client: KeycloakAdminClient
+        self,
+        realm,
+        admin_client: KeycloakAdminClient,
+        skip_config_drift: bool = False,
     ) -> DriftResult | None:
         """
         Check a single realm for drift.
@@ -688,6 +662,8 @@ class DriftDetector:
         Args:
             realm: Realm representation from Keycloak
             admin_client: Keycloak admin client
+            skip_config_drift: If True, only check for orphaned/unmanaged resources,
+                skip expensive config drift calculation. Used by _scan_orphans_and_unmanaged.
 
         Returns:
             DriftResult if drift detected, None otherwise
@@ -733,56 +709,57 @@ class DriftDetector:
                     age_hours=get_resource_age_hours(attributes),
                 )
 
-            # CR exists - check for config drift
-            try:
-                cr_response = await asyncio.to_thread(
-                    self.custom_objects_api.get_namespaced_custom_object,
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=cr_namespace,
-                    plural="keycloakrealms",
-                    name=cr_name,
-                )
-                cr = cast(dict[str, Any], cr_response)
-
-                spec = cr.get("spec", {})
-                realm_spec = KeycloakRealmSpec.model_validate(spec)
-                # We include flow bindings for drift detection to ensure they match
-                desired_config = realm_spec.to_keycloak_config(
-                    include_flow_bindings=True
-                )
-
-                # Convert actual realm to dict for comparison
-                # Using by_alias=True to match Keycloak API field names (camelCase)
-                actual_config = (
-                    realm.model_dump(by_alias=True, exclude_unset=True)
-                    if hasattr(realm, "model_dump")
-                    else vars(realm)
-                )
-
-                drift_details = self._calculate_drift(desired_config, actual_config)
-
-                if drift_details:
-                    logger.info(
-                        f"Config drift detected for realm {realm.realm}: {drift_details}"
+            # CR exists - check for config drift (unless skipped for performance)
+            if not skip_config_drift:
+                try:
+                    cr_response = await asyncio.to_thread(
+                        self.custom_objects_api.get_namespaced_custom_object,
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=cr_namespace,
+                        plural="keycloakrealms",
+                        name=cr_name,
                     )
-                    return DriftResult(
-                        resource_type="realm",
-                        resource_name=realm.realm,
-                        drift_type="config_drift",
-                        keycloak_resource=actual_config,
-                        desired_resource=desired_config,
-                        drift_details=drift_details,
-                        cr_namespace=cr_namespace,
-                        cr_name=cr_name,
-                        age_hours=get_resource_age_hours(attributes),
+                    cr = cast(dict[str, Any], cr_response)
+
+                    spec = cr.get("spec", {})
+                    realm_spec = KeycloakRealmSpec.model_validate(spec)
+                    # We include flow bindings for drift detection to ensure they match
+                    desired_config = realm_spec.to_keycloak_config(
+                        include_flow_bindings=True
                     )
 
-            except Exception as e:
-                logger.error(
-                    f"Failed to check config drift for realm {realm.realm}: {e}"
-                )
-                # Don't fail the whole scan, just log error
+                    # Convert actual realm to dict for comparison
+                    # Using by_alias=True to match Keycloak API field names (camelCase)
+                    actual_config = (
+                        realm.model_dump(by_alias=True, exclude_unset=True)
+                        if hasattr(realm, "model_dump")
+                        else vars(realm)
+                    )
+
+                    drift_details = self._calculate_drift(desired_config, actual_config)
+
+                    if drift_details:
+                        logger.info(
+                            f"Config drift detected for realm {realm.realm}: {drift_details}"
+                        )
+                        return DriftResult(
+                            resource_type="realm",
+                            resource_name=realm.realm,
+                            drift_type="config_drift",
+                            keycloak_resource=actual_config,
+                            desired_resource=desired_config,
+                            drift_details=drift_details,
+                            cr_namespace=cr_namespace,
+                            cr_name=cr_name,
+                            age_hours=get_resource_age_hours(attributes),
+                        )
+
+                except Exception as e:
+                    logger.error(
+                        f"Failed to check config drift for realm {realm.realm}: {e}"
+                    )
+                    # Don't fail the whole scan, just log error
 
         elif is_managed_by_operator(attributes):
             # Owned by a different operator instance - ignore
@@ -804,7 +781,11 @@ class DriftDetector:
         return None
 
     async def _check_client_resource_drift(
-        self, kc_client, realm_name: str, admin_client: KeycloakAdminClient
+        self,
+        kc_client,
+        realm_name: str,
+        admin_client: KeycloakAdminClient,
+        skip_config_drift: bool = False,
     ) -> DriftResult | None:
         """
         Check a single client for drift.
@@ -813,6 +794,8 @@ class DriftDetector:
             kc_client: Client representation from Keycloak
             realm_name: Name of the realm this client belongs to
             admin_client: Keycloak admin client
+            skip_config_drift: If True, only check for orphaned/unmanaged resources,
+                skip expensive config drift calculation. Used by _scan_orphans_and_unmanaged.
 
         Returns:
             DriftResult if drift detected, None otherwise
@@ -863,52 +846,53 @@ class DriftDetector:
                     parent_realm=realm_name,
                 )
 
-            # CR exists - check for config drift
-            try:
-                cr_response = await asyncio.to_thread(
-                    self.custom_objects_api.get_namespaced_custom_object,
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=cr_namespace,
-                    plural="keycloakclients",
-                    name=cr_name,
-                )
-                cr = cast(dict[str, Any], cr_response)
-
-                spec = cr.get("spec", {})
-                client_spec = KeycloakClientSpec.model_validate(spec)
-                desired_config = client_spec.to_keycloak_config()
-
-                # Helper to convert actual client to dict
-                actual_config = (
-                    kc_client.model_dump(by_alias=True, exclude_unset=True)
-                    if hasattr(kc_client, "model_dump")
-                    else vars(kc_client)
-                )
-
-                drift_details = self._calculate_drift(desired_config, actual_config)
-
-                if drift_details:
-                    logger.info(
-                        f"Config drift detected for client {kc_client.client_id}: {drift_details}"
+            # CR exists - check for config drift (unless skipped for performance)
+            if not skip_config_drift:
+                try:
+                    cr_response = await asyncio.to_thread(
+                        self.custom_objects_api.get_namespaced_custom_object,
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=cr_namespace,
+                        plural="keycloakclients",
+                        name=cr_name,
                     )
-                    return DriftResult(
-                        resource_type="client",
-                        resource_name=kc_client.client_id,
-                        drift_type="config_drift",
-                        keycloak_resource=actual_config,
-                        desired_resource=desired_config,
-                        drift_details=drift_details,
-                        cr_namespace=cr_namespace,
-                        cr_name=cr_name,
-                        age_hours=get_resource_age_hours(attributes),
-                        parent_realm=realm_name,
+                    cr = cast(dict[str, Any], cr_response)
+
+                    spec = cr.get("spec", {})
+                    client_spec = KeycloakClientSpec.model_validate(spec)
+                    desired_config = client_spec.to_keycloak_config()
+
+                    # Helper to convert actual client to dict
+                    actual_config = (
+                        kc_client.model_dump(by_alias=True, exclude_unset=True)
+                        if hasattr(kc_client, "model_dump")
+                        else vars(kc_client)
                     )
-            except Exception as e:
-                logger.error(
-                    f"Failed to check config drift for client {kc_client.client_id}: {e}"
-                )
-                # Don't fail the whole scan, just log error
+
+                    drift_details = self._calculate_drift(desired_config, actual_config)
+
+                    if drift_details:
+                        logger.info(
+                            f"Config drift detected for client {kc_client.client_id}: {drift_details}"
+                        )
+                        return DriftResult(
+                            resource_type="client",
+                            resource_name=kc_client.client_id,
+                            drift_type="config_drift",
+                            keycloak_resource=actual_config,
+                            desired_resource=desired_config,
+                            drift_details=drift_details,
+                            cr_namespace=cr_namespace,
+                            cr_name=cr_name,
+                            age_hours=get_resource_age_hours(attributes),
+                            parent_realm=realm_name,
+                        )
+                except Exception as e:
+                    logger.error(
+                        f"Failed to check config drift for client {kc_client.client_id}: {e}"
+                    )
+                    # Don't fail the whole scan, just log error
 
         elif is_managed_by_operator(attributes):
             # Owned by a different operator instance - ignore
@@ -966,22 +950,6 @@ class DriftDetector:
                 f"Error checking if {kind} {namespace}/{name} exists: {e.status} {e.reason}"
             )
             return False
-
-    async def _discover_keycloak_instances(self) -> list[tuple[str, str]]:
-        """
-        Discover all Keycloak instances to scan.
-
-        Returns:
-            List of (namespace, name) tuples for Keycloak instances
-        """
-        # If instances were provided at init, use those
-        if self.keycloak_instances_override is not None:
-            return self.keycloak_instances_override
-
-        # For now, return a hardcoded list
-        # TODO(#66): Discover Keycloak instances dynamically via CRDs for multi-instance deployments
-        # This limitation impacts scalability in production environments with multiple Keycloak instances
-        return [(settings.operator_namespace, "keycloak")]
 
     def _update_drift_metrics(
         self, drift_results: list[DriftResult], resource_type: str
@@ -1089,18 +1057,9 @@ class DriftDetector:
             f"(age: {drift.age_hours:.1f}h)"
         )
 
-        # Get Keycloak admin client
-        keycloak_instances = await self._discover_keycloak_instances()
-        if not keycloak_instances:
-            logger.error("No Keycloak instances found for remediation")
-            REMEDIATION_ERRORS_TOTAL.labels(
-                resource_type=drift.resource_type,
-                action="delete",
-            ).inc()
-            return
-
-        # Use the first Keycloak instance (TODO: track which instance owns which resource)
-        kc_namespace, kc_name = keycloak_instances[0]
+        # Per ADR-062: One operator = One Keycloak instance
+        kc_namespace = settings.operator_namespace
+        kc_name = "keycloak"
 
         try:
             admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
