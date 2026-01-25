@@ -346,7 +346,7 @@ userFederation: []
 
 # Event logging configuration (optional)
 # Note: Admin events are enabled by default because they are required for
-# drift detection to work properly. Disabling them is not recommended.
+# drift detection to work properly. See docs/guides/drift-detection.md for details.
 eventsConfig:
   eventsEnabled: false
   eventsListeners: []
