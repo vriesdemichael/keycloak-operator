@@ -341,6 +341,10 @@
          <lastmod>2026-01-25</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/075-keycloak-horizontal-scaling-jgroups/</loc>
+         <lastmod>2026-01-25</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/test-cleanup-strategy/</loc>
          <lastmod>2026-01-25</lastmod>
     </url>

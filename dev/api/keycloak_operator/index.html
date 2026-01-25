@@ -3057,6 +3057,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler.ensure_discovery_service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ensure_discovery_service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler.ensure_ingress" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3826,6 +3837,17 @@
     <span class="md-ellipsis">
       
         create_keycloak_deployment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.kubernetes.create_keycloak_discovery_service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_keycloak_discovery_service
       
     </span>
   </a>
@@ -8417,6 +8439,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/075-keycloak-horizontal-scaling-jgroups/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -10118,6 +10168,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler.ensure_discovery_service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ensure_discovery_service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler.ensure_ingress" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10887,6 +10948,17 @@
     <span class="md-ellipsis">
       
         create_keycloak_deployment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.kubernetes.create_keycloak_discovery_service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        create_keycloak_discovery_service
       
     </span>
   </a>
@@ -21820,6 +21892,79 @@ data loss and ensure all associated resources are properly removed.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler.ensure_discovery_service" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">ensure_discovery_service</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler.ensure_discovery_service" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">ensure_discovery_service</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Ensure headless discovery service exists for JGroups clustering.</p>
+<p>This headless service enables Keycloak replicas to discover each other
+via DNS_PING for proper session replication and cache synchronization.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Resource name</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Resource namespace</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler.ensure_ingress" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">ensure_ingress</span>
 
@@ -28792,6 +28937,120 @@ Returns:
     Created Deployment object
 </code></pre></div>
 <p>This function creates a complete Keycloak deployment with proper configuration.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="keycloak_operator.utils.kubernetes.create_keycloak_discovery_service" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">create_keycloak_discovery_service</span>
+
+
+<a href="#keycloak_operator.utils.kubernetes.create_keycloak_discovery_service" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">create_keycloak_discovery_service</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">k8s_client</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create headless Kubernetes Service for JGroups peer discovery.</p>
+<p>This headless service (clusterIP: None) enables Keycloak clustering by
+creating DNS A-records for each pod IP, allowing JGroups DNS_PING discovery.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Name of the Keycloak resource</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Target namespace</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>k8s_client</code>
+            </td>
+            <td>
+                  <code><span title="kubernetes.client.ApiClient">ApiClient</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Kubernetes API client</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="kubernetes.client.V1Service">V1Service</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Created headless Service object</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+        <p>The service exposes port 7800 for JGroups TCP communication between
+Keycloak replicas. Combined with the KC_CACHE_STACK=kubernetes environment
+variable and JAVA_OPTS_APPEND DNS query, this enables automatic cluster
+formation.</p>
 
 
     </div>

@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/005-no-plaintext-secrets/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/075-keycloak-horizontal-scaling-jgroups/">
       
       
-        <link rel="prev" href="../004-everything-must-be-gitopsable/">
+        <link rel="prev" href="../074-keycloak-scalability-and-ha/">
       
       
-        <link rel="next" href="../006-all-functionality-must-be-tested-with-pytest/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-005: No plaintext secrets - Keycloak Operator</title>
+        <title>ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-005-no-plaintext-secrets" class="md-skip">
+        <a href="#adr-075-keycloak-horizontal-scaling-via-jgroups-dns_ping" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-005: No plaintext secrets
+              ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING
             
           </span>
         </div>
@@ -1707,37 +1707,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-005: No plaintext secrets
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../005-no-plaintext-secrets/" class="md-nav__link">
         
   
   
@@ -1753,59 +1726,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3747,10 +3667,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../075-keycloak-horizontal-scaling-jgroups/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -3766,6 +3713,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kube_ping-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KUBE_PING discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#udp-multicast-default-jgroups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UDP Multicast (default JGroups)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-configuration-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External configuration only
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3864,6 +3914,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kube_ping-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KUBE_PING discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#udp-multicast-default-jgroups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UDP Multicast (default JGroups)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#external-configuration-only" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        External configuration only
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3881,7 +3981,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/005-no-plaintext-secrets.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/075-keycloak-horizontal-scaling-jgroups.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -3889,15 +3989,28 @@
   
 
 
-<h1 id="adr-005-no-plaintext-secrets">ADR-005: No plaintext secrets<a class="headerlink" href="#adr-005-no-plaintext-secrets" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> development
-<strong>Provenance:</strong> guided-ai</p>
+<h1 id="adr-075-keycloak-horizontal-scaling-via-jgroups-dns_ping">ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING<a class="headerlink" href="#adr-075-keycloak-horizontal-scaling-via-jgroups-dns_ping" title="Permanent link">&para;</a></h1>
+<p><strong>Category:</strong> architecture
+<strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>No sensitive configuration (passwords, API keys, certificates) may be stored as plaintext in CRDs, configuration files, or code. All sensitive data must be provided via Kubernetes Secret references.</p>
+<p>The Operator MUST automatically configure JGroups DNS_PING discovery for all managed Keycloak instances, enabling transparent horizontal scaling by simply increasing <code>spec.replicas</code>.
+Implementation details: 1. Create a headless Service (<code>clusterIP: None</code>) for each Keycloak instance with port 7800 (JGroups TCP). 2. Set <code>KC_CACHE_STACK=kubernetes</code> environment variable to use TCP-based discovery instead of UDP multicast. 3. Set <code>JAVA_OPTS_APPEND=-Djgroups.dns.query=&lt;headless-service&gt;.&lt;namespace&gt;.svc.cluster.local</code> for DNS-based peer discovery. 4. Expose port 7800 in the Deployment container spec for JGroups communication.
+This supersedes ADR-074 which recommended external Keycloak for HA scenarios.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Security: Prevents secrets from appearing in Git, CRD manifests, or logs. GitOps compatible: Works seamlessly with secret management tools (Sealed Secrets, External Secrets Operator, Vault). Kubernetes native: Follows standard K8s patterns for secret handling. RBAC integration: Secret access controlled by K8s RBAC independently of CRD permissions. Audit trail: Secret access logged separately from CRD changes.</p>
+<p>Keycloak requires JGroups/Infinispan clustering to share sessions and distributed caches across replicas. Without proper discovery, multiple replicas operate as isolated instances causing split-brain scenarios.
+DNS_PING via headless Services is the Kubernetes-native approach: - No special RBAC permissions needed (unlike KUBE_PING which requires pod listing) - Works across all Kubernetes distributions - Simple configuration via environment variables - Automatic peer discovery through DNS A-records
+The <code>kubernetes</code> cache stack (introduced in Keycloak 21) provides a pre-configured JGroups setup optimized for Kubernetes using TCP transport and DNS_PING discovery.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When adding any field for sensitive data (passwords, tokens, keys, certificates), always provide a way to reference it from a Kubernetes Secret (SecretKeySelector with secretName + key). Never accept or store plaintext secrets in CRD specs, ConfigMaps, or environment variables. Validate that secret references exist during reconciliation.</p>
+<p>When users ask about scaling Keycloak, explain that horizontal scaling is now supported out-of-the-box. Users simply need to set <code>spec.replicas</code> to the desired count in the Keycloak CR. The operator automatically configures JGroups clustering via DNS_PING discovery.
+For verification, users can check pod logs for <code>ISPN000094: Received new cluster view</code> showing the expected member count.
+Note: This requires Keycloak 25.0.0+ (already a project requirement) and works best with the CNPG database backend for shared persistence.</p>
+<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="kube_ping-discovery">KUBE_PING discovery<a class="headerlink" href="#kube_ping-discovery" title="Permanent link">&para;</a></h3>
+<p>Requires additional RBAC permissions (pods/list, pods/get) in the Keycloak namespace. DNS_PING achieves the same result using standard Kubernetes DNS without extra permissions, aligning with our least-privilege security model.</p>
+<h3 id="udp-multicast-default-jgroups">UDP Multicast (default JGroups)<a class="headerlink" href="#udp-multicast-default-jgroups" title="Permanent link">&para;</a></h3>
+<p>Most Kubernetes CNI implementations block or don't support multicast traffic. TCP with DNS_PING is universally supported across all Kubernetes environments.</p>
+<h3 id="external-configuration-only">External configuration only<a class="headerlink" href="#external-configuration-only" title="Permanent link">&para;</a></h3>
+<p>Forces users to manually configure clustering, violating our GitOps-first design principle. Automatic configuration provides a better out-of-box experience while still allowing overrides.</p>
 
 
 
@@ -3933,7 +4046,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../004-everything-must-be-gitopsable/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-004: Everything must be GitOpsable">
+          <a href="../074-keycloak-scalability-and-ha/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-074: Keycloak Scalability and High Availability Strategy">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -3943,20 +4056,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-004: Everything must be GitOpsable
+                ADR-074: Keycloak Scalability and High Availability Strategy
               </div>
             </div>
           </a>
         
         
           
-          <a href="../006-all-functionality-must-be-tested-with-pytest/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-006: All functionality must be tested with pytest">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-006: All functionality must be tested with pytest
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">
