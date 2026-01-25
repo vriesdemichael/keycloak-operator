@@ -1,0 +1,48 @@
+number: 75
+title: Keycloak Horizontal Scaling via JGroups DNS_PING
+category: architecture
+decision: >
+  The Operator MUST automatically configure JGroups DNS_PING discovery for all managed Keycloak instances, enabling transparent horizontal scaling by simply increasing `spec.replicas`.
+
+  Implementation details:
+  1. Create a headless Service (`clusterIP: None`) for each Keycloak instance with port 7800 (JGroups TCP).
+  2. Set `KC_CACHE_STACK=kubernetes` environment variable to use TCP-based discovery instead of UDP multicast.
+  3. Set `JAVA_OPTS_APPEND=-Djgroups.dns.query=<headless-service>.<namespace>.svc.cluster.local` for DNS-based peer discovery.
+  4. Expose port 7800 in the Deployment container spec for JGroups communication.
+
+  This supersedes ADR-074 which recommended external Keycloak for HA scenarios.
+agent_instructions: >
+  When users ask about scaling Keycloak, explain that horizontal scaling is now supported out-of-the-box.
+  Users simply need to set `spec.replicas` to the desired count in the Keycloak CR.
+  The operator automatically configures JGroups clustering via DNS_PING discovery.
+
+  For verification, users can check pod logs for `ISPN000094: Received new cluster view` showing the expected member count.
+
+  Note: This requires Keycloak 25.0.0+ (already a project requirement) and works best with the CNPG database backend for shared persistence.
+rationale: >
+  Keycloak requires JGroups/Infinispan clustering to share sessions and distributed caches across replicas.
+  Without proper discovery, multiple replicas operate as isolated instances causing split-brain scenarios.
+
+  DNS_PING via headless Services is the Kubernetes-native approach:
+  - No special RBAC permissions needed (unlike KUBE_PING which requires pod listing)
+  - Works across all Kubernetes distributions
+  - Simple configuration via environment variables
+  - Automatic peer discovery through DNS A-records
+
+  The `kubernetes` cache stack (introduced in Keycloak 21) provides a pre-configured JGroups setup optimized for Kubernetes using TCP transport and DNS_PING discovery.
+provenance: human
+rejected_alternatives:
+  - alternative: KUBE_PING discovery
+    reason: >
+      Requires additional RBAC permissions (pods/list, pods/get) in the Keycloak namespace.
+      DNS_PING achieves the same result using standard Kubernetes DNS without extra permissions, aligning with our least-privilege security model.
+  - alternative: UDP Multicast (default JGroups)
+    reason: >
+      Most Kubernetes CNI implementations block or don't support multicast traffic.
+      TCP with DNS_PING is universally supported across all Kubernetes environments.
+  - alternative: External configuration only
+    reason: >
+      Forces users to manually configure clustering, violating our GitOps-first design principle.
+      Automatic configuration provides a better out-of-box experience while still allowing overrides.
+supersedes:
+  - 74

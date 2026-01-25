@@ -216,3 +216,261 @@ class TestKeycloakReconciler:
                     plural="keycloaks",
                     name=keycloak_name,
                 )
+
+    @pytest.mark.timeout(180)
+    async def test_keycloak_discovery_service_created(
+        self,
+        k8s_custom_objects,
+        k8s_core_v1,
+        k8s_apps_v1,
+        test_keycloak_namespace,
+        operator_namespace,
+        shared_operator,
+        sample_keycloak_spec_factory,
+    ) -> None:
+        """Test that headless discovery service is created for JGroups clustering."""
+        suffix = uuid.uuid4().hex[:8]
+        keycloak_name = f"test-discovery-{suffix}"
+        namespace = test_keycloak_namespace
+
+        # Get spec with secret copied to target namespace
+        spec = await sample_keycloak_spec_factory(namespace)
+
+        keycloak_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "Keycloak",
+            "metadata": {"name": keycloak_name, "namespace": namespace},
+            "spec": spec,
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                body=keycloak_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                name=keycloak_name,
+                timeout=150,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify discovery service was created (headless service for JGroups)
+            discovery_service_name = f"{keycloak_name}-discovery"
+            discovery_service = await k8s_core_v1.read_namespaced_service(
+                discovery_service_name, namespace
+            )
+            assert discovery_service is not None
+
+            # Verify it's a headless service (clusterIP: None)
+            assert discovery_service.spec.cluster_ip == "None"
+
+            # Verify it publishes not-ready addresses (for peer discovery during startup)
+            assert discovery_service.spec.publish_not_ready_addresses is True
+
+            # Verify JGroups port 7800 is exposed
+            jgroups_port = next(
+                (p for p in discovery_service.spec.ports if p.name == "jgroups"),
+                None,
+            )
+            assert jgroups_port is not None
+            assert jgroups_port.port == 7800
+            assert jgroups_port.target_port == 7800
+
+            # Verify selector matches the Keycloak instance
+            assert discovery_service.spec.selector["app"] == "keycloak"
+            assert (
+                discovery_service.spec.selector[
+                    "vriesdemichael.github.io/keycloak-instance"
+                ]
+                == keycloak_name
+            )
+
+        finally:
+            with contextlib.suppress(ApiException):
+                await k8s_custom_objects.delete_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloaks",
+                    name=keycloak_name,
+                )
+
+    @pytest.mark.timeout(180)
+    async def test_keycloak_jgroups_env_vars_configured(
+        self,
+        k8s_custom_objects,
+        k8s_apps_v1,
+        test_keycloak_namespace,
+        operator_namespace,
+        shared_operator,
+        sample_keycloak_spec_factory,
+    ) -> None:
+        """Test that deployment includes JGroups clustering environment variables."""
+        suffix = uuid.uuid4().hex[:8]
+        keycloak_name = f"test-jgroups-{suffix}"
+        namespace = test_keycloak_namespace
+
+        # Get spec with secret copied to target namespace
+        spec = await sample_keycloak_spec_factory(namespace)
+
+        keycloak_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "Keycloak",
+            "metadata": {"name": keycloak_name, "namespace": namespace},
+            "spec": spec,
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                body=keycloak_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                name=keycloak_name,
+                timeout=150,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify deployment has JGroups configuration
+            deployment_name = f"{keycloak_name}-keycloak"
+            deployment = await k8s_apps_v1.read_namespaced_deployment(
+                deployment_name, namespace
+            )
+
+            # Get container and env vars
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # Verify KC_CACHE_STACK is set to kubernetes for TCP-based discovery
+            assert "KC_CACHE_STACK" in env_var_dict
+            assert env_var_dict["KC_CACHE_STACK"].value == "kubernetes"
+
+            # Verify JAVA_OPTS_APPEND contains JGroups DNS query pointing to discovery service
+            assert "JAVA_OPTS_APPEND" in env_var_dict
+            java_opts = env_var_dict["JAVA_OPTS_APPEND"].value
+            expected_dns = f"{keycloak_name}-discovery.{namespace}.svc.cluster.local"
+            assert f"-Djgroups.dns.query={expected_dns}" in java_opts
+
+            # Verify JGroups port 7800 is exposed in container
+            port_names = {p.name: p.container_port for p in container.ports}
+            assert "jgroups" in port_names
+            assert port_names["jgroups"] == 7800
+
+        finally:
+            with contextlib.suppress(ApiException):
+                await k8s_custom_objects.delete_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloaks",
+                    name=keycloak_name,
+                )
+
+    @pytest.mark.timeout(300)  # Allow extra time for 2-replica startup
+    async def test_keycloak_clustering_with_multiple_replicas(
+        self,
+        k8s_custom_objects,
+        k8s_apps_v1,
+        k8s_core_v1,
+        test_keycloak_namespace,
+        operator_namespace,
+        shared_operator,
+        sample_keycloak_spec_factory,
+    ) -> None:
+        """Test Keycloak clustering works with multiple replicas.
+
+        Verifies that:
+        1. Both replicas start successfully
+        2. Discovery service has endpoints for both pods
+        3. JGroups configuration is correct for cluster formation
+        """
+        suffix = uuid.uuid4().hex[:8]
+        keycloak_name = f"test-cluster-{suffix}"
+        namespace = test_keycloak_namespace
+
+        # Get spec with secret copied to target namespace
+        base_spec = await sample_keycloak_spec_factory(namespace)
+        cluster_spec = {**base_spec, "replicas": 2}
+
+        keycloak_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "Keycloak",
+            "metadata": {"name": keycloak_name, "namespace": namespace},
+            "spec": cluster_spec,
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                body=keycloak_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                name=keycloak_name,
+                timeout=240,  # 2 replicas need more time
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify both replicas are ready
+            deployment_name = f"{keycloak_name}-keycloak"
+            deployment = await k8s_apps_v1.read_namespaced_deployment(
+                deployment_name, namespace
+            )
+            assert deployment.spec.replicas == 2
+            assert deployment.status.ready_replicas == 2
+
+            # Verify discovery service exists with correct configuration
+            discovery_service_name = f"{keycloak_name}-discovery"
+            discovery_service = await k8s_core_v1.read_namespaced_service(
+                discovery_service_name, namespace
+            )
+            assert discovery_service.spec.cluster_ip == "None"
+
+            # Verify the endpoints exist for the discovery service
+            # This confirms DNS_PING will be able to discover peers
+            endpoints = await k8s_core_v1.read_namespaced_endpoints(
+                discovery_service_name, namespace
+            )
+            # With 2 ready replicas, we should have 2 addresses in the endpoints
+            total_addresses = sum(
+                len(subset.addresses or []) for subset in (endpoints.subsets or [])
+            )
+            assert total_addresses == 2, (
+                f"Expected 2 endpoint addresses for 2 replicas, got {total_addresses}"
+            )
+
+        finally:
+            with contextlib.suppress(ApiException):
+                await k8s_custom_objects.delete_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloaks",
+                    name=keycloak_name,
+                )
