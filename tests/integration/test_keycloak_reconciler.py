@@ -400,7 +400,7 @@ class TestKeycloakReconciler:
         Verifies that:
         1. Both replicas start successfully
         2. Discovery service has endpoints for both pods
-        3. JGroups configuration is correct for cluster formation
+        3. Infinispan cluster is actually formed (via ISPN000094 log message)
         """
         suffix = uuid.uuid4().hex[:8]
         keycloak_name = f"test-cluster-{suffix}"
@@ -463,6 +463,32 @@ class TestKeycloakReconciler:
             )
             assert total_addresses == 2, (
                 f"Expected 2 endpoint addresses for 2 replicas, got {total_addresses}"
+            )
+
+            # Verify Infinispan cluster formation by checking pod logs
+            # The ISPN000094 message indicates a cluster view was received with members
+            pods = await k8s_core_v1.list_namespaced_pod(
+                namespace,
+                label_selector=f"vriesdemichael.github.io/keycloak-instance={keycloak_name}",
+            )
+            assert len(pods.items) == 2, f"Expected 2 pods, got {len(pods.items)}"
+
+            # Check logs from each pod for cluster formation evidence
+            cluster_formed = False
+            for pod in pods.items:
+                logs = await k8s_core_v1.read_namespaced_pod_log(
+                    pod.metadata.name, namespace, container="keycloak"
+                )
+                # ISPN000094 is the Infinispan message for receiving a new cluster view
+                # It includes the member count, e.g., "Received new cluster view for channel
+                # ISPN: [node1, node2] (2)"
+                if "ISPN000094" in logs and "(2)" in logs:
+                    cluster_formed = True
+                    break
+
+            assert cluster_formed, (
+                "Infinispan cluster not formed: ISPN000094 message with 2 members "
+                "not found in any pod logs. JGroups DNS_PING may not be working."
             )
 
         finally:
