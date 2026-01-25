@@ -4588,7 +4588,7 @@
 <p>When enabled, the operator can automatically fix drift:</p>
 <ul>
 <li><strong>Orphaned resources</strong>: Delete from Keycloak if older than minimum age (default: 24 hours)</li>
-<li><strong>Configuration drift</strong>: Update Keycloak to match CR spec (future feature)</li>
+<li><strong>Configuration drift</strong>: Update Keycloak to match CR spec (supported for Realms and Clients)</li>
 </ul>
 <p><strong>Safety mechanisms:</strong>
 - Minimum age check (default: 24 hours) prevents accidental deletion of newly created resources
@@ -4897,10 +4897,10 @@
 - Consider disabling unmanaged resource metrics if needed</p>
 <h2 id="future-enhancements">Future Enhancements<a class="headerlink" href="#future-enhancements" title="Permanent link">&para;</a></h2>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Config drift detection</strong>: Compare actual Keycloak state with CR spec</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Config drift detection</strong>: Compare actual Keycloak state with CR spec</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Identity provider drift detection</strong>: Track IDP configuration changes</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Role drift detection</strong>: Monitor role assignments</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Drift remediation for config changes</strong>: Auto-update Keycloak when CR changes</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled checked/><span class="task-list-indicator"></span></label> <strong>Drift remediation for config changes</strong>: Auto-update Keycloak when CR changes</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Grafana dashboard</strong>: Pre-built dashboard for drift visualization</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Webhook notifications</strong>: Send alerts to Slack/Teams when drift detected</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Dry-run mode</strong>: Log what would be remediated without actually doing it</li>

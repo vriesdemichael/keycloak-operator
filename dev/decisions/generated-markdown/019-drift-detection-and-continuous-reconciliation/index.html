@@ -2194,6 +2194,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-state-diff-on-every-reconciliation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full state diff on every reconciliation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-webhooks-for-change-notification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak webhooks for change notification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-admin-events-warn-if-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional admin events (warn if disabled)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3836,6 +3886,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#full-state-diff-on-every-reconciliation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full state diff on every reconciliation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-webhooks-for-change-notification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak webhooks for change notification
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#optional-admin-events-warn-if-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional admin events (warn if disabled)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -3865,11 +3965,68 @@
 <p><strong>Category:</strong> architecture
 <strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Operator reconciles CRD specs with actual Keycloak state. Drift detection is opt-in via environment variables and tracks ownership to prevent conflicts with manual resources or other operators.</p>
+<p>Operator reconciles CRD specs with actual Keycloak state using a timestamp-based comparison approach. Drift detection is opt-in via environment variables and uses Keycloak Admin Events to efficiently detect external changes without polling.
+Key implementation details: 1. Admin events MUST be enabled for drift detection to function (enforced by reconciler). 2. Timestamp comparison: Store last reconcile event time, compare with latest admin event. 3. Baseline timestamp: Set current time on resource creation (no admin event exists yet). 4. Ownership tracking prevents conflicts with manual resources or other operators.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Opt-in drift detection prevents interference with manually managed resources or resources from other operator instances. Ownership tracking via Keycloak resource attributes (io.kubernetes.operator-instance, io.kubernetes.cr-namespace, io.kubernetes.cr-name) enables multi-operator deployments. CRD remains source of truth for owned resources. Configurable auto-remediation allows teams to choose between detection-only or automatic correction.</p>
+<p><strong>Why timestamp-based detection with admin events?</strong>
+Alternative approaches were considered and rejected:
+1. <strong>Full state comparison on every timer</strong>: Too expensive. Requires fetching entire
+   Keycloak state and diffing against CRD spec. O(n) API calls per resource per tick.</p>
+<ol>
+<li>
+<p><strong>Polling for changes</strong>: No efficient way to ask Keycloak "what changed since X?"
+   without admin events. Would require full state fetch.</p>
+</li>
+<li>
+<p><strong>Webhook from Keycloak</strong>: Keycloak doesn't support outbound webhooks for config changes.
+Admin events provide an efficient mechanism: one API call returns all changes since a timestamp. If no relevant events, skip reconciliation entirely.
+<strong>Why enforce admin events?</strong>
+Users might disable admin events for "performance" but this breaks drift detection entirely. Rather than silently failing or degrading, the reconciler enforces the requirement. The overhead of admin events is minimal compared to the value of drift detection.
+<strong>Why baseline timestamp on creation?</strong>
+When a realm is created, the creation itself doesn't generate an admin event (the realm didn't exist to log events). Without a baseline, the first timer tick would see "no events since epoch" and potentially trigger unnecessary work. Setting current time as baseline establishes a clean starting point.</p>
+</li>
+</ol>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Reconcilers compare CRD spec with Keycloak state during reconciliation. Drift detection configured via environment variables (DRIFT_DETECTION_ENABLED, DRIFT_DETECTION_AUTO_REMEDIATE, DRIFT_DETECTION_MINIMUM_AGE_HOURS). Use ownership tracking from src/keycloak_operator/utils/ownership.py to mark resources with operator instance ID. Only remediate drift for resources owned by this operator instance. Status.phase reflects state: Unknown, Pending, Provisioning, Ready, Degraded, Failed. See src/keycloak_operator/services/drift_detection_service.py.</p>
+<p>Drift detection uses Keycloak Admin Events for efficient change detection:
+1. <strong>Admin Events Required</strong>: When drift detection is enabled, the reconciler enforces
+   <code>adminEventsEnabled: true</code> and <code>adminEventsDetailsEnabled: true</code> on the realm,
+   regardless of user configuration. This is non-negotiable for drift detection to work.</p>
+<ol>
+<li>
+<p><strong>Timestamp-Based Detection</strong>: The operator stores <code>lastReconcileEventTime</code> in CR status.
+   On each timer tick, it queries admin events since that timestamp. If events exist for
+   the resource type, drift may have occurred and full reconciliation runs.</p>
+</li>
+<li>
+<p><strong>Baseline Timestamp</strong>: When creating a new resource, there's no admin event yet (the
+   realm didn't exist). The reconciler sets <code>lastReconcileEventTime = current_time</code> as
+   a baseline to prevent unnecessary double-reconciliation.</p>
+</li>
+<li>
+<p><strong>Configuration</strong>: Environment variables control behavior:</p>
+</li>
+<li>DRIFT_DETECTION_ENABLED (default: false)</li>
+<li>DRIFT_DETECTION_AUTO_REMEDIATE (default: true when enabled)</li>
+<li>
+<p>DRIFT_DETECTION_MINIMUM_AGE_HOURS (default: 1)</p>
+</li>
+<li>
+<p><strong>Ownership Tracking</strong>: Use ownership.py to mark resources with operator instance ID.
+   Only remediate drift for resources owned by this operator instance.</p>
+</li>
+<li>
+<p><strong>Status Phases</strong>: Unknown, Pending, Provisioning, Ready, Degraded, Failed.
+   Timer handlers skip Unknown, Pending, Failed phases.</p>
+</li>
+</ol>
+<p>Key files: - src/keycloak_operator/services/drift_detection_service.py - src/keycloak_operator/services/realm_reconciler.py (baseline timestamp logic ~line 215-248) - src/keycloak_operator/services/client_reconciler.py (baseline timestamp logic ~line 250-280) - src/keycloak_operator/utils/ownership.py</p>
+<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="full-state-diff-on-every-reconciliation">Full state diff on every reconciliation<a class="headerlink" href="#full-state-diff-on-every-reconciliation" title="Permanent link">&para;</a></h3>
+<p>Too expensive. Each reconciliation would require fetching entire Keycloak state (realms, clients, roles, groups, etc.) and comparing against CRD spec. This creates O(n) API calls per resource and doesn't scale with large Keycloak deployments.</p>
+<h3 id="keycloak-webhooks-for-change-notification">Keycloak webhooks for change notification<a class="headerlink" href="#keycloak-webhooks-for-change-notification" title="Permanent link">&para;</a></h3>
+<p>Keycloak does not support outbound webhooks for configuration changes. Admin events are the only mechanism to track changes made outside the operator.</p>
+<h3 id="optional-admin-events-warn-if-disabled">Optional admin events (warn if disabled)<a class="headerlink" href="#optional-admin-events-warn-if-disabled" title="Permanent link">&para;</a></h3>
+<p>Drift detection cannot function without admin events. Warning but proceeding would give users false confidence that drift detection works. Better to enforce the requirement explicitly.</p>
 
 
 
