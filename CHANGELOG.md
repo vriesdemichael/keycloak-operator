@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.6.1...operator-image-v0.6.2) (2026-01-25)
+
+
+### Features
+
+* **operator:** implement JGroups DNS_PING for horizontal scaling ([ef5b7c3](https://github.com/vriesdemichael/keycloak-operator/commit/ef5b7c3e9007e3d1d96fdef56911f86cb37f87d8)), closes [#347](https://github.com/vriesdemichael/keycloak-operator/issues/347)
+
 ## [0.6.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.6.0...operator-image-v0.6.1) (2026-01-25)
 
 
