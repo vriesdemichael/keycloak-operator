@@ -197,6 +197,22 @@ def create_keycloak_deployment(
         ]
     )
 
+    # Add JGroups clustering configuration for horizontal scaling
+    # This enables Keycloak replicas to discover each other via DNS_PING
+    # The kubernetes cache stack uses TCP transport with DNS-based discovery
+    discovery_service_dns = f"{name}-discovery.{namespace}.svc.cluster.local"
+    env_vars.extend(
+        [
+            # Switch from UDP multicast to TCP with DNS discovery
+            client.V1EnvVar(name="KC_CACHE_STACK", value="kubernetes"),
+            # Configure JGroups to query the headless service for peer discovery
+            client.V1EnvVar(
+                name="JAVA_OPTS_APPEND",
+                value=f"-Djgroups.dns.query={discovery_service_dns}",
+            ),
+        ]
+    )
+
     # Add database configuration environment variables if configured
     if spec.database and spec.database.type != "h2":
         # Database type - map CRD values to Keycloak values
@@ -292,6 +308,7 @@ def create_keycloak_deployment(
         ports=[
             client.V1ContainerPort(container_port=8080, name="http"),
             client.V1ContainerPort(container_port=9000, name="management"),
+            client.V1ContainerPort(container_port=7800, name="jgroups"),
         ],
         env=env_vars,
         resources=client.V1ResourceRequirements(
@@ -476,6 +493,89 @@ def create_keycloak_service(
 
     except ApiException as e:
         logger.error(f"Failed to create service {service_name}: {e}")
+        raise
+
+
+def create_keycloak_discovery_service(
+    name: str,
+    namespace: str,
+    k8s_client: client.ApiClient,
+) -> client.V1Service:
+    """
+    Create headless Kubernetes Service for JGroups peer discovery.
+
+    This headless service (clusterIP: None) enables Keycloak clustering by
+    creating DNS A-records for each pod IP, allowing JGroups DNS_PING discovery.
+
+    Args:
+        name: Name of the Keycloak resource
+        namespace: Target namespace
+        k8s_client: Kubernetes API client
+
+    Returns:
+        Created headless Service object
+
+    The service exposes port 7800 for JGroups TCP communication between
+    Keycloak replicas. Combined with the KC_CACHE_STACK=kubernetes environment
+    variable and JAVA_OPTS_APPEND DNS query, this enables automatic cluster
+    formation.
+    """
+    logger.info(
+        f"Creating Keycloak discovery service {name}-discovery in namespace {namespace}"
+    )
+
+    service_name = f"{name}-discovery"
+
+    # Headless service specification for DNS-based peer discovery
+    service_spec = client.V1ServiceSpec(
+        # clusterIP: None makes this a headless service
+        # DNS will return A-records for all pod IPs instead of a single cluster IP
+        cluster_ip="None",
+        # Must set publishNotReadyAddresses to true so that pods can discover
+        # each other during startup (before they are ready)
+        publish_not_ready_addresses=True,
+        selector={
+            "app": "keycloak",
+            "vriesdemichael.github.io/keycloak-instance": name,
+        },
+        ports=[
+            client.V1ServicePort(
+                name="jgroups",
+                port=7800,
+                target_port=7800,
+                protocol="TCP",
+            ),
+        ],
+    )
+
+    # Create service object
+    service = client.V1Service(
+        api_version="v1",
+        kind="Service",
+        metadata=client.V1ObjectMeta(
+            name=service_name,
+            namespace=namespace,
+            labels={
+                "app": "keycloak",
+                "vriesdemichael.github.io/keycloak-instance": name,
+                "vriesdemichael.github.io/keycloak-component": "discovery",
+            },
+        ),
+        spec=service_spec,
+    )
+
+    # Create service using Kubernetes API
+    try:
+        core_api = client.CoreV1Api(k8s_client)
+        created_service = core_api.create_namespaced_service(
+            namespace=namespace, body=service
+        )
+
+        logger.info(f"Created discovery service {service_name}")
+        return created_service
+
+    except ApiException as e:
+        logger.error(f"Failed to create discovery service {service_name}: {e}")
         raise
 
 

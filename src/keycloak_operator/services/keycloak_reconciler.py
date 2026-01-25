@@ -348,6 +348,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         # Ensure core Kubernetes resources exist
         await self.ensure_deployment(keycloak_spec, name, namespace, db_connection_info)
         await self.ensure_service(keycloak_spec, name, namespace)
+        await self.ensure_discovery_service(name, namespace)
 
         # Setup ingress if configured
         if keycloak_spec.ingress.enabled:
@@ -839,6 +840,55 @@ class KeycloakInstanceReconciler(BaseReconciler):
             else:
                 raise
 
+    async def ensure_discovery_service(self, name: str, namespace: str) -> None:
+        """
+        Ensure headless discovery service exists for JGroups clustering.
+
+        This headless service enables Keycloak replicas to discover each other
+        via DNS_PING for proper session replication and cache synchronization.
+
+        Args:
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Ensuring discovery service for {name}")
+        from kubernetes import client
+        from kubernetes.client.rest import ApiException
+
+        from ..utils.kubernetes import create_keycloak_discovery_service
+
+        discovery_service_name = f"{name}-discovery"
+        core_api = client.CoreV1Api(self.kubernetes_client)
+
+        try:
+            core_api.read_namespaced_service(
+                name=discovery_service_name, namespace=namespace
+            )
+            self.logger.info(
+                f"Keycloak discovery service {discovery_service_name} already exists"
+            )
+        except ApiException as e:
+            if e.status == 404:
+                try:
+                    service = create_keycloak_discovery_service(
+                        name=name,
+                        namespace=namespace,
+                        k8s_client=self.kubernetes_client,
+                    )
+                    self.logger.info(
+                        f"Created Keycloak discovery service: {service.metadata.name}"
+                    )
+                except ApiException as create_error:
+                    if create_error.status == 409:
+                        # Resource created by another reconciliation - this is fine
+                        self.logger.info(
+                            f"Discovery service {discovery_service_name} already exists (created concurrently)"
+                        )
+                    else:
+                        raise
+            else:
+                raise
+
     async def ensure_ingress(
         self, spec: KeycloakSpec, name: str, namespace: str
     ) -> None:
@@ -1165,6 +1215,13 @@ class KeycloakInstanceReconciler(BaseReconciler):
             await self._delete_service(service_name, namespace, core_api)
         except Exception as e:
             self.logger.warning(f"Failed to delete service: {e}")
+
+        # 2b. Delete discovery service (headless service for JGroups clustering)
+        discovery_service_name = f"{name}-discovery"
+        try:
+            await self._delete_service(discovery_service_name, namespace, core_api)
+        except Exception as e:
+            self.logger.warning(f"Failed to delete discovery service: {e}")
 
         # 3. Delete deployment to stop pods
         deployment_name = f"{name}{DEPLOYMENT_SUFFIX}"
