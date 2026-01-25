@@ -2,7 +2,11 @@
 
 from unittest.mock import MagicMock, patch
 
-from keycloak_operator.utils.kubernetes import create_client_secret
+from keycloak_operator.utils.kubernetes import (
+    create_client_secret,
+    create_keycloak_deployment,
+    create_keycloak_discovery_service,
+)
 
 
 @patch("keycloak_operator.utils.kubernetes.get_kubernetes_client")
@@ -100,3 +104,208 @@ def test_create_client_secret_update_with_metadata(mock_get_k8s_client):
         # Verify metadata in the patch body
         assert created_secret.metadata.labels["new"] == "label"
         assert created_secret.metadata.annotations["new"] == "annotation"
+
+
+class TestKeycloakDiscoveryService:
+    """Tests for the headless discovery service used for JGroups clustering."""
+
+    def test_create_keycloak_discovery_service_creates_headless_service(self):
+        """Test that discovery service is created as a headless service."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            create_keycloak_discovery_service(
+                name="my-keycloak",
+                namespace="test-ns",
+                k8s_client=mock_k8s_client,
+            )
+
+            # Verify service was created
+            mock_core_api.create_namespaced_service.assert_called_once()
+            call_args = mock_core_api.create_namespaced_service.call_args
+
+            # Check namespace
+            assert call_args[1]["namespace"] == "test-ns"
+
+            # Check service body
+            created_service = call_args[1]["body"]
+
+            # Verify it's a headless service
+            assert created_service.spec.cluster_ip == "None"
+
+            # Verify publish_not_ready_addresses is True for peer discovery during startup
+            assert created_service.spec.publish_not_ready_addresses is True
+
+            # Verify service name follows convention
+            assert created_service.metadata.name == "my-keycloak-discovery"
+
+            # Verify labels
+            assert created_service.metadata.labels["app"] == "keycloak"
+            assert (
+                created_service.metadata.labels[
+                    "vriesdemichael.github.io/keycloak-instance"
+                ]
+                == "my-keycloak"
+            )
+            assert (
+                created_service.metadata.labels[
+                    "vriesdemichael.github.io/keycloak-component"
+                ]
+                == "discovery"
+            )
+
+            # Verify selector
+            assert created_service.spec.selector["app"] == "keycloak"
+            assert (
+                created_service.spec.selector[
+                    "vriesdemichael.github.io/keycloak-instance"
+                ]
+                == "my-keycloak"
+            )
+
+    def test_create_keycloak_discovery_service_exposes_jgroups_port(self):
+        """Test that discovery service exposes JGroups port 7800."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            create_keycloak_discovery_service(
+                name="my-keycloak",
+                namespace="test-ns",
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_core_api.create_namespaced_service.call_args
+            created_service = call_args[1]["body"]
+
+            # Verify JGroups port
+            assert len(created_service.spec.ports) == 1
+            jgroups_port = created_service.spec.ports[0]
+            assert jgroups_port.name == "jgroups"
+            assert jgroups_port.port == 7800
+            assert jgroups_port.target_port == 7800
+            assert jgroups_port.protocol == "TCP"
+
+
+class TestKeycloakDeploymentJGroups:
+    """Tests for JGroups clustering configuration in Keycloak deployment."""
+
+    def test_deployment_includes_jgroups_env_vars(self):
+        """Test that deployment includes JGroups environment variables."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=2,
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            # Get environment variables
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # Verify KC_CACHE_STACK is set to kubernetes
+            assert "KC_CACHE_STACK" in env_var_dict
+            assert env_var_dict["KC_CACHE_STACK"].value == "kubernetes"
+
+            # Verify JAVA_OPTS_APPEND contains JGroups DNS query
+            assert "JAVA_OPTS_APPEND" in env_var_dict
+            java_opts = env_var_dict["JAVA_OPTS_APPEND"].value
+            assert "-Djgroups.dns.query=" in java_opts
+            assert "my-keycloak-discovery.test-ns.svc.cluster.local" in java_opts
+
+    def test_deployment_includes_jgroups_port(self):
+        """Test that deployment exposes JGroups port 7800."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            # Get container ports
+            container = deployment.spec.template.spec.containers[0]
+            port_names = {p.name: p.container_port for p in container.ports}
+
+            # Verify JGroups port is included
+            assert "jgroups" in port_names
+            assert port_names["jgroups"] == 7800
+
+            # Verify other ports are still there
+            assert "http" in port_names
+            assert port_names["http"] == 8080
+            assert "management" in port_names
+            assert port_names["management"] == 9000
+
+    def test_deployment_jgroups_dns_query_uses_correct_namespace(self):
+        """Test that JGroups DNS query uses the deployment's namespace."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=3,
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="prod-keycloak",
+                namespace="production",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            java_opts = env_var_dict["JAVA_OPTS_APPEND"].value
+            # Should use the correct namespace
+            assert "prod-keycloak-discovery.production.svc.cluster.local" in java_opts

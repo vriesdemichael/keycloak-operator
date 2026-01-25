@@ -172,6 +172,9 @@ class TestKeycloakReconcilerGenerationTracking:
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
             patch.object(
+                keycloak_reconciler, "ensure_discovery_service", new_callable=AsyncMock
+            ),
+            patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
                 new_callable=AsyncMock,
@@ -221,6 +224,9 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
+            patch.object(
+                keycloak_reconciler, "ensure_discovery_service", new_callable=AsyncMock
+            ),
             patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
@@ -272,6 +278,9 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
             ),
             patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
+            patch.object(
+                keycloak_reconciler, "ensure_discovery_service", new_callable=AsyncMock
+            ),
             patch.object(
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
