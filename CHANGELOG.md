@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.6.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.6.0...operator-image-v0.6.1) (2026-01-25)
+
+
+### Features
+
+* **operator:** implement drift remediation for realms and clients ([2a145fa](https://github.com/vriesdemichael/keycloak-operator/commit/2a145fa2a9a257b98b39302127aa15bf3ea71acf))
+
+
+### Bug Fixes
+
+* **operator:** add operator_namespace override for drift detector tests ([6a0e48c](https://github.com/vriesdemichael/keycloak-operator/commit/6a0e48c0cd9745a4f0745ca4a0ff6407f6abb727))
+* **operator:** address review comments on drift detection ([4eddc79](https://github.com/vriesdemichael/keycloak-operator/commit/4eddc795f009dafc4c9336d5dcd68e66d6938e18))
+* **operator:** resolve drift detection bugs and test failures ([263badd](https://github.com/vriesdemichael/keycloak-operator/commit/263badd583e26b3c3b1d23cae0efa78bbae83e57))
+* **operator:** resolve linting and test issues for drift detection ([28f4081](https://github.com/vriesdemichael/keycloak-operator/commit/28f4081e30cfd24bfcb8671bf2ff7e161ec63527))
+* **operator:** resolve linting issues and test configuration ([f5f038b](https://github.com/vriesdemichael/keycloak-operator/commit/f5f038bdc478324d58eab72adc08132bb6351061))
+* **operator:** simplify drift detection using timestamp comparison ([393cfa1](https://github.com/vriesdemichael/keycloak-operator/commit/393cfa1f0137ed1e7659e51df763d75a9ff77060))
+
+
+### Code Refactoring
+
+* **operator:** simplify drift detection to single Keycloak instance ([282b2bc](https://github.com/vriesdemichael/keycloak-operator/commit/282b2bc3df2eab59fb071a6f9ee2969411623be5))
+
 ## [0.6.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.5.21...operator-image-v0.6.0) (2026-01-21)
 
 
