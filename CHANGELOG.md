@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.6.2...operator-image-v0.6.3) (2026-01-26)
+
+
+### Bug Fixes
+
+* **operator-image:** bump kopf in the patch-updates group ([6c9df1d](https://github.com/vriesdemichael/keycloak-operator/commit/6c9df1d0316b44d4901354cdb76bcdb6dced047d))
+
 ## [0.6.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.6.1...operator-image-v0.6.2) (2026-01-25)
 
 
