@@ -21,7 +21,11 @@ import uuid
 import pytest
 from kubernetes.client.rest import ApiException
 
-from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
+from .wait_helpers import (
+    wait_for_reconciliation_complete,
+    wait_for_resource_deleted,
+    wait_for_resource_ready,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -509,13 +513,21 @@ class TestAuthenticationFlows:
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
             assert realm_repr is not None, f"Realm {realm_name} should exist"
 
-            # Give a moment for required actions to be configured
-            await asyncio.sleep(2)
-
-            # Verify required actions are configured
-            actions = await keycloak_admin_client.get_required_actions(
-                realm_name, namespace
-            )
+            # Poll for required actions to be configured
+            actions = []
+            for _ in range(20):
+                actions = await keycloak_admin_client.get_required_actions(
+                    realm_name, namespace
+                )
+                action_map = {action.alias: action for action in actions}
+                # Check if our custom actions are present
+                if (
+                    action_map.get("CONFIGURE_TOTP")
+                    and action_map.get("VERIFY_EMAIL")
+                    and action_map.get("UPDATE_PASSWORD")
+                ):
+                    break
+                await asyncio.sleep(1)
 
             # Build a map for easier lookup
             action_map = {action.alias: action for action in actions}
@@ -873,12 +885,15 @@ class TestAuthenticationFlows:
             )
 
             # Allow time for required actions to be configured
-            await asyncio.sleep(2)
-
-            # Verify required actions
-            actions = await keycloak_admin_client.get_required_actions(
-                realm_name, namespace
-            )
+            actions = []
+            for _ in range(20):
+                actions = await keycloak_admin_client.get_required_actions(
+                    realm_name, namespace
+                )
+                action_map = {action.alias: action for action in actions}
+                if action_map.get("CONFIGURE_TOTP") and action_map.get("VERIFY_EMAIL"):
+                    break
+                await asyncio.sleep(1)
             action_map = {action.alias: action for action in actions}
 
             # CONFIGURE_TOTP should be a default action
@@ -1240,12 +1255,17 @@ class TestAuthenticationFlows:
             )
 
             # Allow time for required actions to be configured
-            await asyncio.sleep(2)
-
-            # Verify required action is disabled
-            actions = await keycloak_admin_client.get_required_actions(
-                realm_name, namespace
-            )
+            actions = []
+            for _ in range(20):
+                actions = await keycloak_admin_client.get_required_actions(
+                    realm_name, namespace
+                )
+                action_map = {action.alias: action for action in actions}
+                update_pwd = action_map.get("UPDATE_PASSWORD")
+                # Wait until action exists and is disabled
+                if update_pwd and update_pwd.enabled is False:
+                    break
+                await asyncio.sleep(1)
             action_map = {action.alias: action for action in actions}
 
             update_pwd = action_map.get("UPDATE_PASSWORD")
@@ -1505,24 +1525,20 @@ class TestAuthenticationFlows:
             )
 
             # Allow time for authenticator config to be applied
-            await asyncio.sleep(3)
-
-            # Verify the flow was created
-            flow = await keycloak_admin_client.get_authentication_flow_by_alias(
-                realm_name, flow_alias, namespace
-            )
-            assert flow is not None, f"Flow {flow_alias} should exist"
-
-            # Get executions and find the one with config
-            executions = await keycloak_admin_client.get_flow_executions(
-                realm_name, flow_alias, namespace
-            )
-
+            # Poll until config is available
             otp_exec = None
-            for ex in executions:
-                if ex.provider_id == "auth-otp-form":
-                    otp_exec = ex
+            executions = []
+            for _ in range(20):
+                executions = await keycloak_admin_client.get_flow_executions(
+                    realm_name, flow_alias, namespace
+                )
+                for ex in executions:
+                    if ex.provider_id == "auth-otp-form" and ex.authentication_config:
+                        otp_exec = ex
+                        break
+                if otp_exec:
                     break
+                await asyncio.sleep(1)
 
             assert otp_exec is not None, "OTP execution should exist"
 
@@ -1663,6 +1679,16 @@ class TestAuthenticationFlows:
                 "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
+            # Get generation before patching
+            resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = resource["metadata"]["generation"]
+
             # Patch the realm
             await k8s_custom_objects.patch_namespaced_custom_object(
                 group="vriesdemichael.github.io",
@@ -1676,7 +1702,17 @@ class TestAuthenticationFlows:
             logger.info("Patched realm with updated execution requirement")
 
             # Wait for reconciliation
-            await asyncio.sleep(10)
+            await wait_for_reconciliation_complete(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                min_generation=current_generation + 1,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
 
             # Verify the execution requirement was updated
             updated_executions = await keycloak_admin_client.get_flow_executions(
@@ -1936,12 +1972,20 @@ class TestAuthenticationFlows:
             )
 
             # Allow time for required actions to be configured
-            await asyncio.sleep(3)
-
-            # Verify all required actions
-            actions = await keycloak_admin_client.get_required_actions(
-                realm_name, namespace
-            )
+            actions = []
+            for _ in range(20):
+                actions = await keycloak_admin_client.get_required_actions(
+                    realm_name, namespace
+                )
+                action_map = {action.alias: action for action in actions}
+                if (
+                    action_map.get("VERIFY_EMAIL")
+                    and action_map.get("UPDATE_PASSWORD")
+                    and action_map.get("CONFIGURE_TOTP")
+                    and action_map.get("UPDATE_PROFILE")
+                ):
+                    break
+                await asyncio.sleep(1)
             action_map = {action.alias: action for action in actions}
 
             # Check VERIFY_EMAIL
@@ -2174,8 +2218,23 @@ class TestAuthenticationFlows:
                 operator_namespace=operator_namespace,
             )
 
-            # Give time for config to be created
-            await asyncio.sleep(3)
+            # Give time for config to be created - poll for it
+            # While wait_for_resource_ready should be enough, polling ensures KC is consistent
+            for _ in range(20):
+                executions = await keycloak_admin_client.get_flow_executions(
+                    realm_name, flow_alias, namespace
+                )
+                idp_exec = next(
+                    (
+                        ex
+                        for ex in executions
+                        if ex.provider_id == "identity-provider-redirector"
+                    ),
+                    None,
+                )
+                if idp_exec and idp_exec.authentication_config:
+                    break
+                await asyncio.sleep(1)
 
             # Now update the config
             updated_flow = KeycloakAuthenticationFlow(
@@ -2217,6 +2276,16 @@ class TestAuthenticationFlows:
                 "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True),
             }
 
+            # Get generation before patching
+            resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = resource["metadata"]["generation"]
+
             await k8s_custom_objects.patch_namespaced_custom_object(
                 group="vriesdemichael.github.io",
                 version="v1",
@@ -2227,7 +2296,17 @@ class TestAuthenticationFlows:
             )
 
             # Wait for reconciliation
-            await asyncio.sleep(10)
+            await wait_for_reconciliation_complete(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                min_generation=current_generation + 1,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
 
             # Verify flow exists
             flow = await keycloak_admin_client.get_authentication_flow_by_alias(
@@ -2582,6 +2661,16 @@ class TestAuthenticationFlows:
                 "spec": realm_spec_v2.model_dump(by_alias=True, exclude_unset=True),
             }
 
+            # Get generation before patching
+            resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = resource["metadata"]["generation"]
+
             await k8s_custom_objects.patch_namespaced_custom_object(
                 group="vriesdemichael.github.io",
                 version="v1",
@@ -2592,7 +2681,17 @@ class TestAuthenticationFlows:
             )
 
             # Wait for reconciliation
-            await asyncio.sleep(10)
+            await wait_for_reconciliation_complete(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                min_generation=current_generation + 1,
+                timeout=120,
+                operator_namespace=operator_namespace,
+            )
 
             # Verify action was updated
             updated_actions = await keycloak_admin_client.get_required_actions(
