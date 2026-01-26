@@ -103,7 +103,14 @@ async def test_smart_drift_detection_remediates_tampered_idp(
     await detector.remediate_drift(results)
 
     # 4. Verify Remediation (IDP should be gone)
-    await asyncio.sleep(2)  # Give it a moment to propagate
+    # Poll for IDP deletion
+    for _ in range(20):
+        idps_after = await keycloak_admin_client.get_identity_providers(
+            realm_name, test_namespace
+        )
+        if not any(i.alias == idp_alias for i in idps_after):
+            break
+        await asyncio.sleep(1)
 
     idps_after = await keycloak_admin_client.get_identity_providers(
         realm_name, test_namespace
@@ -218,7 +225,14 @@ async def test_smart_drift_detection_client_update(
     # 4. Remediate
     await detector.remediate_drift(results)
 
-    await asyncio.sleep(2)
+    # Poll for client update (revert description)
+    for _ in range(20):
+        kc_client_fixed = await keycloak_admin_client.get_client_by_name(
+            "smart-client-test", realm_name, test_namespace
+        )
+        if not kc_client_fixed.description:
+            break
+        await asyncio.sleep(1)
 
     # Verify
     kc_client_fixed = await keycloak_admin_client.get_client_by_name(

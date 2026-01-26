@@ -24,7 +24,10 @@ from keycloak_operator.utils.ownership import (
     get_cr_reference,
     is_owned_by_this_operator,
 )
-from tests.integration.wait_helpers import wait_for_resource_ready
+from tests.integration.wait_helpers import (
+    wait_for_resource_deleted,
+    wait_for_resource_ready,
+)
 
 
 @pytest.mark.integration
@@ -369,10 +372,17 @@ async def test_orphan_detection_after_client_deletion(
         group="vriesdemichael.github.io",
         version="v1",
         namespace=test_namespace,
-        plural="keycloakclients",
-        name=client_cr["metadata"]["name"],
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
     )
-    await asyncio.sleep(5)
+    await wait_for_resource_deleted(
+        k8s_custom_objects,
+        group="vriesdemichael.github.io",
+        version="v1",
+        namespace=test_namespace,
+        plural="keycloakrealms",
+        name=realm_cr["metadata"]["name"],
+    )
 
     config = DriftDetectionConfig(
         enabled=True,
