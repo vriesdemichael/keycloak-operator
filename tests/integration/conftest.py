@@ -1994,8 +1994,17 @@ async def keycloak_port_forward():
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
 
-        # Wait for port-forward to be ready
-        await asyncio.sleep(2)
+        # Wait for port-forward to be ready by testing TCP connectivity
+        from tests.integration.wait_helpers import wait_for_port_forward_ready
+
+        try:
+            await wait_for_port_forward_ready(local_port, timeout=30, interval=0.5)
+        except TimeoutError as e:
+            # Check if the process died
+            if proc.poll() is not None:
+                stderr = proc.stderr.read() if proc.stderr else ""
+                raise RuntimeError(f"Port-forward failed: {stderr}") from e
+            raise
 
         if proc.poll() is not None:
             stderr = proc.stderr.read() if proc.stderr else ""
@@ -2589,8 +2598,25 @@ async def helm_client(
                         f"Deleted KeycloakClient CR {client_name} before Helm uninstall"
                     )
 
-                    # Wait a bit for the CR to be deleted
-                    await asyncio.sleep(2)
+                    # Poll for the CR to be deleted instead of arbitrary sleep
+                    from kubernetes.client.rest import ApiException
+
+                    for _ in range(30):  # 30 * 1s = 30s max
+                        try:
+                            await custom_api.get_namespaced_custom_object(
+                                group="vriesdemichael.github.io",
+                                version="v1",
+                                namespace=test_namespace,
+                                plural="keycloakclients",
+                                name=client_name,
+                            )
+                            # Still exists, wait and retry
+                            await asyncio.sleep(1)
+                        except ApiException as api_e:
+                            if api_e.status == 404:
+                                # CR deleted
+                                break
+                            raise
                 except Exception as e:
                     # CR might not exist or already deleted, that's fine
                     logger.debug(

@@ -111,6 +111,8 @@ async def test_smart_drift_detection_remediates_tampered_idp(
         if not any(i.alias == idp_alias for i in idps_after):
             break
         await asyncio.sleep(1)
+    else:
+        pytest.fail("Timed out waiting for tampered IDP to be deleted")
 
     idps_after = await keycloak_admin_client.get_identity_providers(
         realm_name, test_namespace
@@ -233,6 +235,8 @@ async def test_smart_drift_detection_client_update(
         if not kc_client_fixed.description:
             break
         await asyncio.sleep(1)
+    else:
+        pytest.fail("Timed out waiting for client description to be reverted")
 
     # Verify
     kc_client_fixed = await keycloak_admin_client.get_client_by_name(

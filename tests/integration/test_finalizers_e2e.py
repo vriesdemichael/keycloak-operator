@@ -461,7 +461,6 @@ class TestFinalizersE2E:
         4. Deleting the realm (cascade logic should skip the already-deleting client)
         5. Removing our extra finalizer to allow client deletion to complete
         """
-        import asyncio
         import uuid
 
         from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
@@ -615,8 +614,28 @@ class TestFinalizersE2E:
                 name=realm_name,
             )
 
-            # Wait a bit for realm cleanup to process the cascade logic
-            await asyncio.sleep(5)
+            # Wait for realm deletion to be processed (deletionTimestamp set)
+            # This ensures the cascade logic has had a chance to run
+            async def check_realm_deletion_initiated():
+                try:
+                    realm = await k8s_custom_objects.get_namespaced_custom_object(
+                        group="vriesdemichael.github.io",
+                        version="v1",
+                        namespace=test_namespace,
+                        plural="keycloakrealms",
+                        name=realm_name,
+                    )
+                    # Check if deletionTimestamp is set (cascade started)
+                    return (
+                        realm.get("metadata", {}).get("deletionTimestamp") is not None
+                    )
+                except ApiException as e:
+                    # 404 means already deleted - cascade completed
+                    return e.status == 404
+
+            assert await _simple_wait(check_realm_deletion_initiated, timeout=30), (
+                "Realm deletion was not initiated"
+            )
 
             # Now remove our test finalizer to allow client deletion to complete
             try:

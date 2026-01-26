@@ -632,3 +632,306 @@ async def wait_for_reconciliation_complete(
         operator_namespace=operator_namespace,
         expected_phases=("Ready", "Degraded"),
     )
+
+
+class KeycloakResourceNotFoundError(Exception):
+    """Raised when a Keycloak resource is not found (expected state for deletion waits)."""
+
+    pass
+
+
+class KeycloakResourceTimeoutError(Exception):
+    """Raised when waiting for a Keycloak resource state times out."""
+
+    pass
+
+
+async def wait_for_keycloak_resource_deleted(
+    keycloak_admin_client,
+    resource_type: str,
+    resource_name: str,
+    realm_name: str,
+    namespace: str,
+    timeout: int = 60,
+    interval: float = 1.0,
+) -> None:
+    """Wait for a Keycloak resource (client, realm, etc.) to be deleted.
+
+    Polls the Keycloak API until the resource no longer exists.
+
+    Args:
+        keycloak_admin_client: KeycloakAdminClient instance
+        resource_type: Type of resource ("client", "realm", "identity_provider")
+        resource_name: Name/ID of the resource (client_id for clients, realm name for realms)
+        realm_name: Realm name (ignored for realm resource type)
+        namespace: Kubernetes namespace for admin client
+        timeout: Maximum wait time in seconds
+        interval: Check interval in seconds
+
+    Raises:
+        KeycloakResourceTimeoutError: When timeout is reached and resource still exists
+    """
+    import time
+
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        try:
+            if resource_type == "realm":
+                resource = await keycloak_admin_client.get_realm(
+                    resource_name, namespace
+                )
+            elif resource_type == "client":
+                resource = await keycloak_admin_client.get_client_by_name(
+                    resource_name, realm_name, namespace
+                )
+            elif resource_type == "identity_provider":
+                idps = await keycloak_admin_client.get_identity_providers(
+                    realm_name, namespace
+                )
+                resource = next((i for i in idps if i.alias == resource_name), None)
+            else:
+                raise ValueError(f"Unknown resource type: {resource_type}")
+
+            if resource is None:
+                logger.debug(
+                    f"Keycloak {resource_type} '{resource_name}' deleted successfully"
+                )
+                return
+
+        except Exception as e:
+            # If we get an error that indicates resource not found, treat as success
+            if "not found" in str(e).lower() or "404" in str(e):
+                logger.debug(
+                    f"Keycloak {resource_type} '{resource_name}' deleted (got {e})"
+                )
+                return
+            # Log but continue polling for other errors
+            logger.debug(f"Error checking {resource_type} '{resource_name}': {e}")
+
+        await asyncio.sleep(interval)
+
+    raise KeycloakResourceTimeoutError(
+        f"Keycloak {resource_type} '{resource_name}' was not deleted within {timeout}s"
+    )
+
+
+async def wait_for_keycloak_client_state(
+    keycloak_admin_client,
+    client_name: str,
+    realm_name: str,
+    namespace: str,
+    condition_func: Callable[[Any], bool],
+    condition_description: str,
+    timeout: int = 60,
+    interval: float = 1.0,
+) -> Any:
+    """Wait for a Keycloak client to reach a specific state.
+
+    Polls the Keycloak API until the client matches the condition.
+
+    Args:
+        keycloak_admin_client: KeycloakAdminClient instance
+        client_name: Client ID (name) in Keycloak
+        realm_name: Realm name
+        namespace: Kubernetes namespace for admin client
+        condition_func: Function that takes client object and returns True when condition met
+        condition_description: Human-readable description of the expected state
+        timeout: Maximum wait time in seconds
+        interval: Check interval in seconds
+
+    Returns:
+        The client object when condition is met
+
+    Raises:
+        KeycloakResourceTimeoutError: When timeout is reached
+    """
+    import time
+
+    start_time = time.time()
+    last_client = None
+
+    while time.time() - start_time < timeout:
+        try:
+            client = await keycloak_admin_client.get_client_by_name(
+                client_name, realm_name, namespace
+            )
+            last_client = client
+
+            if client is not None and condition_func(client):
+                logger.debug(
+                    f"Keycloak client '{client_name}' reached state: {condition_description}"
+                )
+                return client
+
+        except Exception as e:
+            logger.debug(f"Error checking client '{client_name}': {e}")
+
+        await asyncio.sleep(interval)
+
+    last_state = "not found" if last_client is None else str(last_client)
+    raise KeycloakResourceTimeoutError(
+        f"Keycloak client '{client_name}' did not reach state '{condition_description}' "
+        f"within {timeout}s. Last state: {last_state}"
+    )
+
+
+async def wait_for_keycloak_realm_state(
+    keycloak_admin_client,
+    realm_name: str,
+    namespace: str,
+    condition_func: Callable[[Any], bool],
+    condition_description: str,
+    timeout: int = 60,
+    interval: float = 1.0,
+) -> Any:
+    """Wait for a Keycloak realm to reach a specific state.
+
+    Polls the Keycloak API until the realm matches the condition.
+
+    Args:
+        keycloak_admin_client: KeycloakAdminClient instance
+        realm_name: Realm name
+        namespace: Kubernetes namespace for admin client
+        condition_func: Function that takes realm object and returns True when condition met
+        condition_description: Human-readable description of the expected state
+        timeout: Maximum wait time in seconds
+        interval: Check interval in seconds
+
+    Returns:
+        The realm object when condition is met
+
+    Raises:
+        KeycloakResourceTimeoutError: When timeout is reached
+    """
+    import time
+
+    start_time = time.time()
+    last_realm = None
+
+    while time.time() - start_time < timeout:
+        try:
+            realm = await keycloak_admin_client.get_realm(realm_name, namespace)
+            last_realm = realm
+
+            if realm is not None and condition_func(realm):
+                logger.debug(
+                    f"Keycloak realm '{realm_name}' reached state: {condition_description}"
+                )
+                return realm
+
+        except Exception as e:
+            logger.debug(f"Error checking realm '{realm_name}': {e}")
+
+        await asyncio.sleep(interval)
+
+    last_state = "not found" if last_realm is None else str(last_realm)
+    raise KeycloakResourceTimeoutError(
+        f"Keycloak realm '{realm_name}' did not reach state '{condition_description}' "
+        f"within {timeout}s. Last state: {last_state}"
+    )
+
+
+async def wait_for_port_forward_ready(
+    local_port: int,
+    timeout: int = 30,
+    interval: float = 0.5,
+) -> None:
+    """Wait for a port-forward to become ready by testing TCP connectivity.
+
+    Args:
+        local_port: Local port that should be forwarded
+        timeout: Maximum wait time in seconds
+        interval: Check interval in seconds
+
+    Raises:
+        TimeoutError: When timeout is reached and port is still not accessible
+    """
+    import socket
+    import time
+
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(1.0)
+            result = sock.connect_ex(("127.0.0.1", local_port))
+            sock.close()
+            if result == 0:
+                logger.debug(f"Port-forward ready on port {local_port}")
+                return
+        except Exception:
+            pass
+
+        await asyncio.sleep(interval)
+
+    raise TimeoutError(
+        f"Port-forward to localhost:{local_port} did not become ready within {timeout}s"
+    )
+
+
+async def wait_for_cr_phase_change(
+    k8s_custom_objects,
+    group: str,
+    version: str,
+    namespace: str,
+    plural: str,
+    name: str,
+    from_phase: str = "Unknown",
+    timeout: int = 60,
+    interval: float = 2.0,
+) -> dict[str, Any]:
+    """Wait for a CR to transition from a specific phase to any other phase.
+
+    This is useful for waiting until reconciliation starts processing a resource.
+
+    Args:
+        k8s_custom_objects: Kubernetes CustomObjectsApi client
+        group: API group
+        version: API version
+        namespace: Resource namespace
+        plural: Resource plural name
+        name: Resource name
+        from_phase: The phase to transition FROM (default "Unknown")
+        timeout: Maximum wait time in seconds
+        interval: Check interval in seconds
+
+    Returns:
+        The resource dict when phase has changed
+
+    Raises:
+        ResourceNotReadyError: When timeout is reached
+    """
+    import time
+
+    start_time = time.time()
+
+    while time.time() - start_time < timeout:
+        try:
+            resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group=group,
+                version=version,
+                namespace=namespace,
+                plural=plural,
+                name=name,
+            )
+            status = resource.get("status", {}) or {}
+            phase = status.get("phase", "Unknown")
+
+            if phase != from_phase:
+                logger.debug(
+                    f"Resource {plural}/{name} transitioned from {from_phase} to {phase}"
+                )
+                return resource
+
+        except ApiException as e:
+            if e.status != 404:
+                logger.debug(f"Error checking resource {plural}/{name}: {e}")
+
+        await asyncio.sleep(interval)
+
+    raise ResourceNotReadyError(
+        f"Resource {plural}/{name} did not transition from phase '{from_phase}' "
+        f"within {timeout}s"
+    )
