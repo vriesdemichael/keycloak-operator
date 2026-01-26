@@ -528,6 +528,8 @@ class TestAuthenticationFlows:
                 ):
                     break
                 await asyncio.sleep(1)
+            else:
+                pytest.fail("Timed out waiting for required actions to be configured")
 
             # Build a map for easier lookup
             action_map = {action.alias: action for action in actions}
@@ -673,6 +675,10 @@ class TestAuthenticationFlows:
                 if await realm_deleted_from_keycloak():
                     break
                 await asyncio.sleep(2)
+            else:
+                pytest.fail(
+                    f"Timed out waiting for realm {realm_name} deletion from Keycloak"
+                )
 
             # Verify realm (and thus flows) are deleted from Keycloak
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
@@ -894,6 +900,8 @@ class TestAuthenticationFlows:
                 if action_map.get("CONFIGURE_TOTP") and action_map.get("VERIFY_EMAIL"):
                     break
                 await asyncio.sleep(1)
+            else:
+                pytest.fail("Timed out waiting for required actions to be configured")
             action_map = {action.alias: action for action in actions}
 
             # CONFIGURE_TOTP should be a default action
@@ -1040,6 +1048,8 @@ class TestAuthenticationFlows:
                 )
                 if flow is not None:
                     break
+            else:
+                pytest.fail(f"Timed out waiting for flow {flow_alias} to be created")
 
             assert flow is not None, f"Flow {flow_alias} should exist after update"
             assert flow.alias == flow_alias
@@ -1266,6 +1276,8 @@ class TestAuthenticationFlows:
                 if update_pwd and update_pwd.enabled is False:
                     break
                 await asyncio.sleep(1)
+            else:
+                pytest.fail("Timed out waiting for UPDATE_PASSWORD to be disabled")
             action_map = {action.alias: action for action in actions}
 
             update_pwd = action_map.get("UPDATE_PASSWORD")
@@ -1539,6 +1551,8 @@ class TestAuthenticationFlows:
                 if otp_exec:
                     break
                 await asyncio.sleep(1)
+            else:
+                pytest.fail("Timed out waiting for authenticator config to be applied")
 
             assert otp_exec is not None, "OTP execution should exist"
 
@@ -1986,6 +2000,8 @@ class TestAuthenticationFlows:
                 ):
                     break
                 await asyncio.sleep(1)
+            else:
+                pytest.fail("Timed out waiting for required actions to be configured")
             action_map = {action.alias: action for action in actions}
 
             # Check VERIFY_EMAIL
@@ -2235,6 +2251,8 @@ class TestAuthenticationFlows:
                 if idp_exec and idp_exec.authentication_config:
                     break
                 await asyncio.sleep(1)
+            else:
+                pytest.fail("Timed out waiting for identity-provider-redirector config")
 
             # Now update the config
             updated_flow = KeycloakAuthenticationFlow(
