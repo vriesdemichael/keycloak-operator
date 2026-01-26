@@ -649,8 +649,18 @@ class TestAuthenticationFlows:
                 timeout=120,
             )
 
-            # Give Keycloak a moment to cleanup
-            await asyncio.sleep(3)
+            # Wait for realm to be removed from Keycloak (poll instead of fixed sleep)
+            # The finalizer deletes the realm, but there can be a delay under load
+            async def realm_deleted_from_keycloak() -> bool:
+                realm_repr = await keycloak_admin_client.get_realm(
+                    realm_name, namespace
+                )
+                return realm_repr is None
+
+            for _ in range(30):  # 30 * 2s = 60s max
+                if await realm_deleted_from_keycloak():
+                    break
+                await asyncio.sleep(2)
 
             # Verify realm (and thus flows) are deleted from Keycloak
             realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
