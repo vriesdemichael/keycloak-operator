@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.9](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.8...chart-realm-v0.3.9) (2026-01-26)
+
+
+### Bug Fixes
+
+* **chart-realm:** update drift detection documentation reference ([6f39a48](https://github.com/vriesdemichael/keycloak-operator/commit/6f39a48faaac4fe92c022515972b6ad6ab0ba389))
+* **operator:** add operator_namespace override for drift detector tests ([6a0e48c](https://github.com/vriesdemichael/keycloak-operator/commit/6a0e48c0cd9745a4f0745ca4a0ff6407f6abb727))
+
 ## [0.3.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.7...chart-realm-v0.3.8) (2026-01-13)
 
 
