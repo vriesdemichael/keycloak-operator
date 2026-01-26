@@ -25,6 +25,8 @@ from keycloak_operator.utils.ownership import (
     is_owned_by_this_operator,
 )
 from tests.integration.wait_helpers import (
+    wait_for_keycloak_realm_state,
+    wait_for_keycloak_resource_deleted,
     wait_for_resource_deleted,
     wait_for_resource_ready,
 )
@@ -582,8 +584,16 @@ async def test_client_orphan_remediation(
 
     await detector.remediate_drift(drift_results)
 
-    # 4. Verify Deletion
-    await asyncio.sleep(2)
+    # 4. Verify Deletion - poll until client is deleted
+    await wait_for_keycloak_resource_deleted(
+        keycloak_admin_client,
+        resource_type="client",
+        resource_name=client_id,
+        realm_name=realm_name,
+        namespace=test_namespace,
+        timeout=30,
+    )
+
     kc_client = await keycloak_admin_client.get_client_by_name(
         client_id, realm_name, test_namespace
     )
@@ -860,8 +870,29 @@ async def test_pending_cr_skipped_in_drift_scan(
         body=realm_cr,
     )
 
-    # Wait a moment for the CR to be created but NOT for it to become Ready
-    await asyncio.sleep(2)
+    # Wait for the CR to exist and have a status (but NOT for it to become Ready)
+    # This ensures the CR exists before we try to patch its status
+    from kubernetes.client.rest import ApiException
+
+    for _ in range(30):  # 30 * 1s = 30s max
+        try:
+            cr_obj = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloakrealms",
+                name=realm_cr["metadata"]["name"],
+            )
+            # CR exists, check if it has started processing
+            status = cr_obj.get("status", {})
+            if status:  # Has any status
+                break
+            await asyncio.sleep(1)
+        except ApiException as e:
+            if e.status == 404:
+                await asyncio.sleep(1)
+            else:
+                raise
 
     # Force the status to Pending by patching (simulating a stuck CR)
     try:
@@ -1039,9 +1070,18 @@ async def test_nested_config_drift_detection(
 
     assert len(realm_drift) == 1, "Should detect config drift for nested changes"
 
-    # 6. Remediate and verify
+    # 6. Remediate and verify - poll for state restoration
     await detector.remediate_drift(drift_results)
-    await asyncio.sleep(2)
+
+    await wait_for_keycloak_realm_state(
+        keycloak_admin_client,
+        realm_name=realm_name,
+        namespace=test_namespace,
+        condition_func=lambda r: r.events_enabled is True
+        and r.admin_events_enabled is True,
+        condition_description="eventsEnabled=True and adminEventsEnabled=True",
+        timeout=30,
+    )
 
     kc_realm_fixed = await keycloak_admin_client.get_realm(realm_name, test_namespace)
     assert kc_realm_fixed.events_enabled is True, (
@@ -1346,8 +1386,16 @@ async def test_orphan_client_remediation_fallback_realm_search(
     detector = drift_detector(config)
     await detector.remediate_drift([drift_result])
 
-    # 5. Verify client was deleted via fallback search
-    await asyncio.sleep(2)
+    # 5. Verify client was deleted via fallback search - poll until deleted
+    await wait_for_keycloak_resource_deleted(
+        keycloak_admin_client,
+        resource_type="client",
+        resource_name=orphan_client_id,
+        realm_name=realm_name,
+        namespace=test_namespace,
+        timeout=30,
+    )
+
     kc_client_after = await keycloak_admin_client.get_client_by_name(
         orphan_client_id, realm_name, test_namespace
     )
@@ -1645,11 +1693,12 @@ async def test_auto_remediation_disabled_skips_remediation(
     orphans = [d for d in drift_results if d.resource_name == orphan_client_id]
     assert len(orphans) == 1
 
-    # 4. Attempt remediation (should be skipped)
+    # 4. Attempt remediation (should be skipped because auto_remediate=False)
     await detector.remediate_drift(drift_results)
-    await asyncio.sleep(1)
 
     # 5. Verify client still exists (was NOT deleted)
+    # Note: remediate_drift() is synchronous - if the client wasn't deleted
+    # during the call, it won't be deleted afterward
     kc_client = await keycloak_admin_client.get_client_by_name(
         orphan_client_id, realm_name, test_namespace
     )
@@ -1749,7 +1798,8 @@ async def test_orphan_without_age_skips_remediation(
     await detector.remediate_drift([drift_result])
 
     # 5. Verify client still exists (remediation skipped due to unknown age)
-    await asyncio.sleep(1)
+    # Note: remediate_drift() is synchronous - if the client wasn't deleted
+    # during the call, it won't be deleted afterward
     kc_client = await keycloak_admin_client.get_client_by_name(
         orphan_client_id, realm_name, test_namespace
     )
