@@ -221,6 +221,9 @@ _site/
 # Generated markdown from decision records
 docs/decisions/generated-markdown/
 
+# Downloaded OpenAPI specs
+scripts/keycloak-model-generation/specs/
+
 # Backup files (use git instead!)
 *.backup
 *.bak
