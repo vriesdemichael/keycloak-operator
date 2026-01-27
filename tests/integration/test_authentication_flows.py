@@ -22,6 +22,7 @@ import pytest
 from kubernetes.client.rest import ApiException
 
 from .wait_helpers import (
+    wait_for_keycloak_realm_state,
     wait_for_reconciliation_complete,
     wait_for_resource_deleted,
     wait_for_resource_ready,
@@ -782,21 +783,23 @@ class TestAuthenticationFlows:
                 operator_namespace=operator_namespace,
             )
 
-            # Verify realm and bindings
-            realm_repr = await keycloak_admin_client.get_realm(realm_name, namespace)
+            # Poll Keycloak directly for flow bindings - Ready status doesn't
+            # guarantee bindings are applied due to reconciliation timing
+            realm_repr = await wait_for_keycloak_realm_state(
+                keycloak_admin_client,
+                realm_name=realm_name,
+                namespace=namespace,
+                condition_func=lambda r: (
+                    r.browser_flow == browser_flow_alias
+                    and r.direct_grant_flow == direct_grant_alias
+                ),
+                condition_description=(
+                    f"flow bindings applied (browserFlow={browser_flow_alias}, "
+                    f"directGrantFlow={direct_grant_alias})"
+                ),
+                timeout=60,
+            )
             assert realm_repr is not None, f"Realm {realm_name} should exist"
-
-            # Check browser flow binding
-            assert realm_repr.browser_flow == browser_flow_alias, (
-                f"browserFlow should be '{browser_flow_alias}', "
-                f"got '{realm_repr.browser_flow}'"
-            )
-
-            # Check direct grant flow binding
-            assert realm_repr.direct_grant_flow == direct_grant_alias, (
-                f"directGrantFlow should be '{direct_grant_alias}', "
-                f"got '{realm_repr.direct_grant_flow}'"
-            )
 
             logger.info("✓ Multiple flow bindings correctly applied")
 
