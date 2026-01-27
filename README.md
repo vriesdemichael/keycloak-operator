@@ -269,7 +269,7 @@ make quality
 make test-unit
 ```
 
-See [Development Guide](docs/development.md) and [CLAUDE.md](CLAUDE.md) for more details.
+See [Development Guide](docs/development.md) and [AGENTS.md](AGENTS.md) for more details.
 
 ## 📝 License
 
