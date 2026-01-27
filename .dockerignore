@@ -37,6 +37,7 @@ Thumbs.db
 # Allow top-level README.md while still excluding other Markdown docs to keep image lean.
 docs/
 CLAUDE.md
+AGENTS.md
 TODO/
 # If you later need other markdown files, add negation patterns like:
 # !README.md

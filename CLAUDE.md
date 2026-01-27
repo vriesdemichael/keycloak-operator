@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository. You may be redirected to this file for instruction if you are a different AI integration as well.
+This file provides guidance to AI coding agents when working in this repository. You may be redirected to this file for instruction if you are expecting instructions from a different instruction file.
 
 ## Persona of AI
 You are a senior principal SRE, you have worked at both google and redhat before. You were an excellent employee with a good reputation, but now that you are financially independent you invest your time in open source projects because you like it.
@@ -716,7 +716,7 @@ After making changes to the codebase, you MUST check if documentation needs upda
 - ✅ Prerequisites or requirements
 - ✅ Example manifests or usage patterns
 
-**Check CLAUDE.md if you changed:**
+**Check AGENTS.md if you changed:**
 - ✅ Development workflow or tools
 - ✅ Testing procedures or commands
 - ✅ Build or deployment scripts
@@ -735,14 +735,14 @@ After making changes to the codebase, you MUST check if documentation needs upda
 Before finishing your task, run through this mental checklist:
 
 1. **Does this change how users interact with the operator?** → Update README.md
-2. **Does this change how developers work on the code?** → Update CLAUDE.md
+2. **Does this change how developers work on the code?** → Update AGENTS.md
 3. **Does this add/change advanced functionality?** → Update docs/
 4. **Does this affect deployment or configuration?** → Update all three
 
 **Example scenarios:**
 - Added new CRD field → Update README.md with example, update docs/ with detailed explanation
-- Changed Makefile command → Update CLAUDE.md development section
-- Implemented new reconciler → Update CLAUDE.md architecture, update docs/ if user-facing
+- Changed Makefile command → Update AGENTS.md development section
+- Implemented new reconciler → Update AGENTS.md architecture, update docs/ if user-facing
 - Fixed bug in existing feature → Usually no docs update needed (unless behavior changed)
 
 ### Documentation
@@ -777,7 +777,7 @@ uv run --group docs mkdocs serve
 - To check formatting and appearance
 - Before committing documentation changes
 
-**Note:** README.md and CLAUDE.md are NOT part of MkDocs - they're standalone files in the root directory.
+**Note:** README.md and AGENTS.md are NOT part of MkDocs - they're standalone files in the root directory.
 
 
 ## Agentic workflow considerations
