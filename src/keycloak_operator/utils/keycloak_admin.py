@@ -25,6 +25,8 @@ from urllib.parse import urljoin
 import httpx
 from pydantic import BaseModel
 
+from keycloak_operator.compatibility import get_adapter
+from keycloak_operator.compatibility.base import KeycloakAdapter
 from keycloak_operator.models.keycloak_api import (
     AdminEventRepresentation,
     AuthenticationExecutionInfoRepresentation,
@@ -285,6 +287,7 @@ class KeycloakAdminClient:
         verify_ssl: bool = True,
         timeout: int = 60,
         rate_limiter: "RateLimiter | None" = None,
+        version: str | None = None,
     ) -> None:
         """
         Initialize Keycloak Admin client.
@@ -298,6 +301,7 @@ class KeycloakAdminClient:
             verify_ssl: Whether to verify SSL certificates
             timeout: Request timeout in seconds
             rate_limiter: Optional rate limiter for API call throttling
+            version: Keycloak version string (e.g., "24.0.5"). If None, auto-detected.
         """
         self.server_url = server_url.rstrip("/")
         self.username = username
@@ -307,6 +311,13 @@ class KeycloakAdminClient:
         self.verify_ssl = verify_ssl
         self.timeout = timeout
         self.rate_limiter = rate_limiter
+
+        # Initialize adapter based on provided version or default to latest
+        # Ideally we auto-detect, but we need auth first.
+        # We start with the latest adapter and can update it after auth/detection.
+        self.adapter: KeycloakAdapter = get_adapter(version or "26.0.0")
+        self.auto_detect_version = version is None
+        self._version_detected = False
 
         # Authentication state
         self.access_token: str | None = None
@@ -420,9 +431,35 @@ class KeycloakAdminClient:
 
             logger.debug("Successfully authenticated with Keycloak")
 
+            if self.auto_detect_version and not self._version_detected:
+                await self._detect_server_version()
+
         except httpx.HTTPError as e:
             logger.error(f"Failed to authenticate with Keycloak: {e}")
             raise KeycloakAdminError(f"Authentication failed: {e}") from e
+
+    async def _detect_server_version(self) -> None:
+        """Detect Keycloak version and update adapter."""
+        try:
+            # Use raw client to avoid recursion via _make_request -> _ensure_auth -> authenticate
+            client = await self._get_client()
+            url = f"{self.server_url}/admin/serverinfo"
+            headers = {"Authorization": f"Bearer {self.access_token}"}
+
+            response = await client.get(url, headers=headers)
+            if response.status_code == 200:
+                data = response.json()
+                version = data.get("systemInfo", {}).get("version", "26.0.0")
+                logger.info(f"Detected Keycloak version: {version}")
+                self.adapter = get_adapter(version)
+                self._version_detected = True
+            else:
+                logger.warning(
+                    f"Failed to detect version: {response.status_code}",
+                    extra={"response_body": response.text},
+                )
+        except Exception as e:
+            logger.warning(f"Failed to detect version: {e}")
 
     async def _ensure_authenticated(self) -> None:
         """
@@ -632,13 +669,8 @@ class KeycloakAdminClient:
         """
         # Validate and serialize request payload
         if request_model is not None:
-            # Convert Pydantic model to JSON-compatible dict
-            # exclude_none: Don't send null values to API
-            # by_alias: Use camelCase field names for API
-            # mode='json': Serialize Enums and other types properly
-            kwargs["json"] = request_model.model_dump(
-                exclude_none=True, by_alias=True, mode="json"
-            )
+            # Use adapter to convert (downgrade) the model if necessary
+            kwargs["json"] = self.adapter.convert_to_target(request_model)
 
         # Make the HTTP request
         response = await self._make_request(method, endpoint, namespace, **kwargs)
@@ -646,6 +678,7 @@ class KeycloakAdminClient:
         # Validate and parse response
         if response_model is not None and response.status_code < 300:
             # Parse response JSON and validate against model (httpx buffers automatically)
+            # Pydantic ignores extra fields by default, handling "upgrade" (reading old data)
             response_data = response.json()
             return response_model.model_validate(response_data)
 
@@ -677,7 +710,10 @@ class KeycloakAdminClient:
 
         # Use validated request
         response = await self._make_validated_request(
-            "POST", "realms", namespace, request_model=realm_config
+            "POST",
+            self.adapter.get_realms_path(),
+            namespace,
+            request_model=realm_config,
         )
 
         if response.status_code == 201:
@@ -709,7 +745,7 @@ class KeycloakAdminClient:
         try:
             return await self._make_validated_request(
                 "GET",
-                f"realms/{realm_name}",
+                self.adapter.get_realm_path(realm_name),
                 namespace,
                 response_model=RealmRepresentation,
             )
@@ -744,7 +780,7 @@ class KeycloakAdminClient:
         try:
             return await self._make_validated_request(
                 "GET",
-                f"realms/{realm_name}",
+                self.adapter.get_realm_path(realm_name),
                 namespace,
                 response_model=RealmRepresentation,
             )
@@ -784,7 +820,7 @@ class KeycloakAdminClient:
                 params["briefRepresentation"] = "true"
 
             response = await self._make_request(
-                "GET", "realms", namespace, params=params
+                "GET", self.adapter.get_realms_path(), namespace, params=params
             )
 
             if response.status_code == 200:
@@ -829,7 +865,10 @@ class KeycloakAdminClient:
 
         # Use validated request
         response = await self._make_validated_request(
-            "PUT", f"realms/{realm_name}", namespace, request_model=realm_config
+            "PUT",
+            self.adapter.get_realm_path(realm_name),
+            namespace,
+            request_model=realm_config,
         )
 
         if response.status_code == 204:  # No content on successful update
@@ -865,7 +904,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "POST",
-                f"realms/{realm_name}/identity-provider/instances",
+                self.adapter.get_identity_providers_path(realm_name),
                 namespace,
                 json=idp_config,
             )
@@ -909,7 +948,7 @@ class KeycloakAdminClient:
 
         try:
             response = await self._make_request(
-                "GET", f"realms/{realm_name}/identity-provider/instances", namespace
+                "GET", self.adapter.get_identity_providers_path(realm_name), namespace
             )
 
             if response.status_code == 200:
@@ -979,7 +1018,10 @@ class KeycloakAdminClient:
                 params["first"] = first_result
 
             response = await self._make_request(
-                "GET", f"realms/{realm_name}/admin-events", namespace, params=params
+                "GET",
+                self.adapter.get_admin_events_path(realm_name),
+                namespace,
+                params=params,
             )
 
             if response.status_code == 200:
@@ -1096,7 +1138,10 @@ class KeycloakAdminClient:
             # We'll filter more precisely after fetching
 
             response = await self._make_request(
-                "GET", f"realms/{realm_name}/admin-events", namespace, params=params
+                "GET",
+                self.adapter.get_admin_events_path(realm_name),
+                namespace,
+                params=params,
             )
 
             if response.status_code != 200:
@@ -1188,7 +1233,7 @@ class KeycloakAdminClient:
         try:
             # Get all clients in the realm
             response = await self._make_request(
-                "GET", f"realms/{realm_name}/clients", namespace
+                "GET", self.adapter.get_clients_path(realm_name), namespace
             )
             clients_data = response.json()
 
@@ -1256,7 +1301,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "POST",
-                f"realms/{realm_name}/clients",
+                self.adapter.get_clients_path(realm_name),
                 namespace,
                 request_model=client_config,
             )
@@ -1313,7 +1358,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "PUT",
-                f"realms/{realm_name}/clients/{client_uuid}",
+                self.adapter.get_client_path(realm_name, client_uuid),
                 namespace,
                 request_model=client_config,
             )
@@ -1360,7 +1405,7 @@ class KeycloakAdminClient:
             # Get the client secret
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/clients/{client_uuid}/client-secret",
+                self.adapter.get_client_secret_path(realm_name, client_uuid),
                 namespace,
             )
 
@@ -1414,7 +1459,9 @@ class KeycloakAdminClient:
         try:
             return await self._make_validated_request(
                 "GET",
-                f"realms/{realm_name}/clients/{client_uuid}/service-account-user",
+                self.adapter.get_client_service_account_user_path(
+                    realm_name, client_uuid
+                ),
                 namespace,
                 response_model=UserRepresentation,
             )
@@ -1452,7 +1499,7 @@ class KeycloakAdminClient:
         try:
             return await self._make_validated_request(
                 "GET",
-                f"realms/{realm_name}/roles/{role_name}",
+                self.adapter.get_realm_role_path(realm_name, role_name),
                 namespace,
                 response_model=RoleRepresentation,
             )
@@ -1490,7 +1537,7 @@ class KeycloakAdminClient:
         try:
             return await self._make_validated_request(
                 "GET",
-                f"realms/{realm_name}/clients/{client_uuid}/roles/{role_name}",
+                self.adapter.get_client_role_path(realm_name, client_uuid, role_name),
                 namespace,
                 response_model=RoleRepresentation,
             )
@@ -1549,7 +1596,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "POST",
-                f"realms/{realm_name}/users/{user_id}/role-mappings/realm",
+                self.adapter.get_user_realm_role_mappings_path(realm_name, user_id),
                 namespace,
                 json=roles_data,
             )
@@ -1625,9 +1672,12 @@ class KeycloakAdminClient:
         ]
 
         try:
+            url = self.adapter.get_client_role_mapping_path(
+                realm_name, user_id, client_uuid
+            )
             response = await self._make_request(
                 "POST",
-                f"realms/{realm_name}/users/{user_id}/role-mappings/clients/{client_uuid}",
+                url,
                 namespace,
                 json=roles_data,
             )
@@ -1672,7 +1722,9 @@ class KeycloakAdminClient:
             client_uuid = client.id
 
             response = await self._make_request(
-                "DELETE", f"realms/{realm_name}/clients/{client_uuid}", namespace
+                "DELETE",
+                self.adapter.get_client_path(realm_name, client_uuid),
+                namespace,
             )
 
             if response.status_code == 204:
@@ -1717,7 +1769,7 @@ class KeycloakAdminClient:
             # Regenerate the client secret
             response = await self._make_request(
                 "POST",
-                f"realms/{realm_name}/clients/{client_uuid}/client-secret",
+                self.adapter.get_client_secret_path(realm_name, client_uuid),
                 namespace,
             )
 
@@ -1762,7 +1814,7 @@ class KeycloakAdminClient:
 
         try:
             response = await self._make_request(
-                "DELETE", f"realms/{realm_name}", namespace
+                "DELETE", self.adapter.get_realm_path(realm_name), namespace
             )
 
             if response.status_code == 204:
@@ -1799,7 +1851,7 @@ class KeycloakAdminClient:
 
         try:
             response = await self._make_request(
-                "GET", f"realms/{realm_name}/clients", namespace
+                "GET", self.adapter.get_clients_path(realm_name), namespace
             )
 
             if response.status_code == 200:
@@ -1849,7 +1901,10 @@ class KeycloakAdminClient:
             realm_config = {k: v for k, v in realm_config.items() if v is not None}
 
             response = await self._make_request(
-                "PUT", f"realms/{realm_name}", namespace, json=realm_config
+                "PUT",
+                self.adapter.get_realm_path(realm_name),
+                namespace,
+                json=realm_config,
             )
 
             if response.status_code == 204:
@@ -1887,7 +1942,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/authentication/flows",
+                self.adapter.get_authentication_flows_path(realm_name),
                 namespace,
             )
 
@@ -1967,7 +2022,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "POST",
-                f"realms/{realm_name}/authentication/flows",
+                self.adapter.get_authentication_flows_path(realm_name),
                 namespace,
                 request_model=flow_config,
             )
@@ -2014,7 +2069,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "DELETE",
-                f"realms/{realm_name}/authentication/flows/{flow_id}",
+                self.adapter.get_authentication_flow_path(realm_name, flow_id),
                 namespace,
             )
 
@@ -2063,7 +2118,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "POST",
-                f"realms/{realm_name}/authentication/flows/{source_flow_alias}/copy",
+                self.adapter.get_authentication_flow_copy_path(
+                    realm_name, source_flow_alias
+                ),
                 namespace,
                 json={"newName": new_flow_alias},
             )
@@ -2112,7 +2169,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/authentication/flows/{flow_alias}/executions",
+                self.adapter.get_authentication_flow_executions_path(
+                    realm_name, flow_alias
+                ),
                 namespace,
             )
 
@@ -2159,7 +2218,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "POST",
-                f"realms/{realm_name}/authentication/flows/{flow_alias}/executions/execution",
+                self.adapter.get_authentication_flow_executions_execution_path(
+                    realm_name, flow_alias
+                ),
                 namespace,
                 json={"provider": provider_id},
             )
@@ -2217,7 +2278,9 @@ class KeycloakAdminClient:
 
             response = await self._make_request(
                 "POST",
-                f"realms/{realm_name}/authentication/flows/{parent_flow_alias}/executions/flow",
+                self.adapter.get_authentication_flow_executions_flow_path(
+                    realm_name, parent_flow_alias
+                ),
                 namespace,
                 json=payload,
             )
@@ -2284,7 +2347,9 @@ class KeycloakAdminClient:
 
             response = await self._make_request(
                 "PUT",
-                f"realms/{realm_name}/authentication/flows/{flow_alias}/executions",
+                self.adapter.get_authentication_flow_executions_path(
+                    realm_name, flow_alias
+                ),
                 namespace,
                 json=update_payload,
             )
@@ -2326,7 +2391,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "DELETE",
-                f"realms/{realm_name}/authentication/executions/{execution_id}",
+                self.adapter.get_authentication_execution_path(
+                    realm_name, execution_id
+                ),
                 namespace,
             )
 
@@ -2370,7 +2437,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/authentication/config/{config_id}",
+                self.adapter.get_authentication_config_path(realm_name, config_id),
                 namespace,
             )
 
@@ -2418,7 +2485,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "POST",
-                f"realms/{realm_name}/authentication/executions/{execution_id}/config",
+                self.adapter.get_authentication_execution_config_path(
+                    realm_name, execution_id
+                ),
                 namespace,
                 request_model=config,
             )
@@ -2470,7 +2539,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "PUT",
-                f"realms/{realm_name}/authentication/config/{config_id}",
+                self.adapter.get_authentication_config_path(realm_name, config_id),
                 namespace,
                 request_model=config,
             )
@@ -2512,7 +2581,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/authentication/required-actions",
+                self.adapter.get_authentication_required_actions_path(realm_name),
                 namespace,
             )
 
@@ -2556,7 +2625,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/authentication/required-actions/{action_alias}",
+                self.adapter.get_authentication_required_action_path(
+                    realm_name, action_alias
+                ),
                 namespace,
             )
 
@@ -2606,7 +2677,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "PUT",
-                f"realms/{realm_name}/authentication/required-actions/{action_alias}",
+                self.adapter.get_authentication_required_action_path(
+                    realm_name, action_alias
+                ),
                 namespace,
                 request_model=action_config,
             )
@@ -2650,7 +2723,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "POST",
-                f"realms/{realm_name}/authentication/register-required-action",
+                self.adapter.get_authentication_register_required_action_path(
+                    realm_name
+                ),
                 namespace,
                 json={"providerId": provider_id, "name": name},
             )
@@ -2700,7 +2775,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/identity-provider/instances/{alias}",
+                self.adapter.get_identity_provider_path(realm_name, alias),
                 namespace,
             )
 
@@ -2756,7 +2831,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "PUT",
-                f"realms/{realm_name}/identity-provider/instances/{alias}",
+                self.adapter.get_identity_provider_path(realm_name, alias),
                 namespace,
                 request_model=provider_config,
             )
@@ -2832,7 +2907,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "POST",
-                f"realms/{realm_name}/identity-provider/instances",
+                self.adapter.get_identity_providers_path(realm_name),
                 namespace,
                 request_model=provider_config,
             )
@@ -2877,7 +2952,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "DELETE",
-                f"realms/{realm_name}/identity-provider/instances/{alias}",
+                self.adapter.get_identity_provider_path(realm_name, alias),
                 namespace,
             )
 
@@ -2930,7 +3005,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/identity-provider/instances/{alias}/mappers",
+                self.adapter.get_identity_provider_mappers_path(realm_name, alias),
                 namespace,
             )
 
@@ -2973,7 +3048,9 @@ class KeycloakAdminClient:
         try:
             response = await self._make_request(
                 "GET",
-                f"realms/{realm_name}/identity-provider/instances/{alias}/mappers/{mapper_id}",
+                self.adapter.get_identity_provider_mapper_path(
+                    realm_name, alias, mapper_id
+                ),
                 namespace,
             )
 
@@ -2985,7 +3062,7 @@ class KeycloakAdminClient:
                 return None
             else:
                 logger.warning(
-                    f"Failed to get identity provider mapper: {response.status_code}"
+                    f"Failed to get mapper '{mapper_id}': {response.status_code}"
                 )
                 return None
 
@@ -4201,7 +4278,7 @@ class KeycloakAdminClient:
         logger.debug(f"Fetching realm roles for realm '{realm_name}'")
 
         response = await self._make_request(
-            "GET", f"realms/{realm_name}/roles", namespace
+            "GET", self.adapter.get_realm_roles_path(realm_name), namespace
         )
 
         if response.status_code == 200:
@@ -4231,7 +4308,7 @@ class KeycloakAdminClient:
         logger.debug(f"Fetching realm role '{role_name}' in realm '{realm_name}'")
 
         response = await self._make_request(
-            "GET", f"realms/{realm_name}/roles/{role_name}", namespace
+            "GET", self.adapter.get_realm_role_path(realm_name, role_name), namespace
         )
 
         if response.status_code == 200:
@@ -4270,7 +4347,7 @@ class KeycloakAdminClient:
         try:
             response = await self._make_validated_request(
                 "POST",
-                f"realms/{realm_name}/roles",
+                self.adapter.get_realm_roles_path(realm_name),
                 namespace,
                 request_model=role_config,
             )
@@ -4315,7 +4392,7 @@ class KeycloakAdminClient:
 
         response = await self._make_validated_request(
             "PUT",
-            f"realms/{realm_name}/roles/{role_name}",
+            self.adapter.get_realm_role_path(realm_name, role_name),
             namespace,
             request_model=role_config,
         )
@@ -4347,7 +4424,7 @@ class KeycloakAdminClient:
         logger.info(f"Deleting realm role '{role_name}' in realm '{realm_name}'")
 
         response = await self._make_request(
-            "DELETE", f"realms/{realm_name}/roles/{role_name}", namespace
+            "DELETE", self.adapter.get_realm_role_path(realm_name, role_name), namespace
         )
 
         if response.status_code == 204:
@@ -4382,7 +4459,9 @@ class KeycloakAdminClient:
         )
 
         response = await self._make_request(
-            "GET", f"realms/{realm_name}/roles/{role_name}/composites", namespace
+            "GET",
+            self.adapter.get_realm_role_composites_path(realm_name, role_name),
+            namespace,
         )
 
         if response.status_code == 200:
@@ -4427,7 +4506,7 @@ class KeycloakAdminClient:
 
         response = await self._make_request(
             "POST",
-            f"realms/{realm_name}/roles/{role_name}/composites",
+            self.adapter.get_realm_role_composites_path(realm_name, role_name),
             namespace,
             json=roles_data,
         )

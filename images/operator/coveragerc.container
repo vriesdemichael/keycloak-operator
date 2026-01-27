@@ -21,6 +21,7 @@ omit =
     */__pycache__/*
     */site-packages/*
     */dist-packages/*
+    */models/generated/*
 
 [report]
 # Regexes for lines to exclude from consideration
