@@ -1,0 +1,21 @@
+number: 42
+title: pytest-xdist for parallel integration tests
+category: development
+decision: Use pytest-xdist to run integration tests in parallel across multiple workers.
+  Significantly reduces total test time.
+agent_instructions: Run integration tests with 'pytest -n auto' to use all CPU cores.
+  Design tests to be parallel-safe (isolated namespaces, no shared state). Use xdist's
+  worker-scoped fixtures when needed. Configure in pyproject.toml or pytest.ini.
+rationale: Integration tests are I/O bound (waiting for Kubernetes resources). Running
+  in parallel utilizes CPU cores during wait times. pytest-xdist distributes tests
+  across workers. 'auto' mode uses all available cores. Dramatically reduces total
+  test time (e.g., 20 tests * 30s = 10min sequential vs 2min parallel with 10 cores).
+  Better CI resource utilization. Tests must be designed for isolation anyway (different
+  namespaces), making parallelization straightforward.
+provenance: human
+rejected_alternatives:
+- alternative: Sequential test execution
+  reason: Wastes time and CI resources. Tests spend most time waiting for Kubernetes,
+    not CPU bound.
+- alternative: Custom parallel test runner
+  reason: Reinvents wheel. pytest-xdist is mature, well-maintained, handles edge cases.
