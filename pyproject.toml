@@ -133,3 +133,7 @@ dev = [
     "datamodel-code-generator[http]>=0.25.0", # For generating Pydantic models from OpenAPI specs
     "jsonschema>=4.25.1",
 ]
+model-generation = [
+    "deepdiff>=8.0.1",
+    "httpx>=0.27.0",
+]
