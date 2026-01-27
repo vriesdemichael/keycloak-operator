@@ -2,7 +2,7 @@
 
 # Configuration
 VERSION ?= $(shell grep '^version = ' pyproject.toml | cut -d'"' -f2)
-KEYCLOAK_VERSION ?= 26.4.1
+KEYCLOAK_VERSION ?= 26.5.2
 TEST_IMAGE_TAG ?= test
 export UV_LINK_MODE=copy
 
@@ -31,6 +31,10 @@ install-hooks: ## Install pre-commit hooks
 
 .PHONY: setup
 setup: install install-hooks ## Complete development setup (install deps + hooks)
+
+.PHONY: generate-models
+generate-models: ## Generate Pydantic models from Keycloak OpenAPI specs
+	uv run --group model-generation python scripts/generate_keycloak_models.py
 
 # ============================================================================
 # Code Quality
@@ -142,12 +146,12 @@ build-all-test: build-test kind-load-keycloak-optimized ## Build and load all te
 .PHONY: test-integration
 test-integration: ensure-test-cluster build-all-test ## Run integration tests (builds images, deploys via Helm)
 	@echo "Running integration tests (tests deploy operator via Helm)..."
-	TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) uv run pytest tests/integration/ -v -n auto --dist=loadscope
+	TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
 .PHONY: test-integration-coverage
 test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized ## Run integration tests with coverage collection
 	@echo "Running integration tests with coverage enabled..."
-	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) uv run pytest tests/integration/ -v -n auto --dist=loadscope
+	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 	@echo "Combining coverage data..."
 	./scripts/combine-coverage.sh
 

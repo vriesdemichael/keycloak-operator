@@ -1,0 +1,29 @@
+number: 59
+title: "Multi-Version Keycloak Support with Adapter Pattern"
+category: architecture
+decision: >
+  The operator will support multiple Keycloak versions (starting with 24.x, 25.x, 26.x) using a Canonical Model + Adapter architecture.
+  The "Canonical Model" is defined as the Pydantic models generated from the latest supported Keycloak version.
+  All Operator logic (Reconcilers) will be written against this Canonical Model.
+  A Compatibility Layer (Adapters) will handle the translation between the Canonical Model and the specific Keycloak version running in the cluster at runtime.
+agent_instructions: >
+  When modifying the KeycloakAdminClient or adding support for new Keycloak versions:
+  1. Always import models from `keycloak_operator.models.current` (or the top-level `models` package alias).
+  2. Do not hardcode API paths that change between versions; use the `KeycloakAdapter` interface.
+  3. Update `scripts/keycloak_versions.yaml` to add new versions.
+  4. Run `scripts/generate_keycloak_models.py` to regenerate versioned models.
+  5. If an API path changes, implement the specific logic in the version-specific Adapter.
+rationale: >
+  Keycloak introduces breaking changes in minor and major versions (e.g., renaming endpoints, removing fields).
+  Forcing a single version support (Decision 058) limits the operator's utility for users who cannot upgrade Keycloak immediately.
+  The Adapter pattern allows us to maintain a clean, strongly-typed codebase (using the latest models) while handling the "dirty work" of downgrading requests and resolving paths in a dedicated layer.
+  This approach ensures type safety for developers while providing runtime flexibility for users.
+rejected_alternatives:
+  - alternative: "Single Version Support (Status Quo)"
+    reason: "Users cannot use the operator with older supported Red Hat Build of Keycloak versions (e.g., 24.x)."
+  - alternative: "Multiple Dispatch / Versioned Reconcilers"
+    reason: "Writing separate reconciliation logic for every version would lead to massive code duplication and maintenance burden."
+  - alternative: "Manual Model Maintenance"
+    reason: "Too error-prone and labor-intensive given the size of the Keycloak API. Automated generation is safer."
+provenance: guided-ai
+supersedes: 58
