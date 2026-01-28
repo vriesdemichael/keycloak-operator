@@ -53,8 +53,44 @@ class TestKeycloakModels:
 
         assert spec.image == "quay.io/keycloak/keycloak:26.4.0"
         assert spec.replicas == 1
+        assert spec.keycloak_version is None  # Default is None (auto-detect)
         assert spec.service.type == "ClusterIP"
         assert spec.service.http_port == 8080
+
+    def test_keycloak_spec_with_version_override(self):
+        """Test KeycloakSpec with explicit keycloakVersion for custom images."""
+        from keycloak_operator.models.keycloak import KeycloakDatabaseConfig
+
+        spec = KeycloakSpec(
+            image="myregistry.com/custom-keycloak:v1.2.3",
+            keycloak_version="24.0.5",
+            database=KeycloakDatabaseConfig(
+                type="postgresql",
+                host="postgres",
+                database="keycloak",
+                username="keycloak",
+                credentials_secret="db-secret",
+            ),
+        )
+
+        assert spec.image == "myregistry.com/custom-keycloak:v1.2.3"
+        assert spec.keycloak_version == "24.0.5"
+
+        # Test with camelCase alias
+        spec_from_dict = KeycloakSpec.model_validate(
+            {
+                "image": "myregistry.com/custom-keycloak:v1.2.3",
+                "keycloakVersion": "24.0.5",
+                "database": {
+                    "type": "postgresql",
+                    "host": "postgres",
+                    "database": "keycloak",
+                    "username": "keycloak",
+                    "credentialsSecret": "db-secret",
+                },
+            }
+        )
+        assert spec_from_dict.keycloak_version == "24.0.5"
 
     def test_keycloak_spec_validation(self):
         """Test KeycloakSpec validation rules."""

@@ -209,7 +209,8 @@ class KeycloakAdapter(ABC):
             Dict suitable for sending to this Keycloak version's API
         """
         # Start with the canonical model dump
-        data = model.model_dump(exclude_none=True, by_alias=True)
+        # mode="json" ensures enums are serialized to their values
+        data = model.model_dump(exclude_none=True, by_alias=True, mode="json")
 
         # Apply version-specific transformations
         data = self._apply_outbound_conversions(data, type(model).__name__)

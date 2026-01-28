@@ -29,6 +29,9 @@ spec:
               image:
                 type: string
                 description: Container image for Keycloak
+              keycloakVersion:
+                type: string
+                description: Keycloak version override for custom images without version tags. Used to determine health port (24.x uses 8080, 25.x+ uses 9000). Auto-detected from image tag if not specified.
               replicas:
                 type: integer
                 description: Number of Keycloak replicas
