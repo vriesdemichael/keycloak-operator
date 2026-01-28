@@ -1,6 +1,20 @@
-import importlib
+"""
+Base adapter for Keycloak version compatibility.
+
+This module provides the abstract base class for version-specific adapters that handle:
+1. Converting canonical models to version-specific formats
+2. Converting version-specific data back to canonical models
+3. Tracking warnings and errors for CR status feedback
+4. Validating configurations against version capabilities
+"""
+
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from datetime import UTC, datetime
+from enum import Enum
 from typing import Any, TypeVar
 
 from pydantic import BaseModel
@@ -10,90 +24,298 @@ logger = logging.getLogger(__name__)
 T = TypeVar("T", bound=BaseModel)
 
 
+class WarningLevel(Enum):
+    """Severity level for version compatibility warnings."""
+
+    INFO = "Info"  # Feature converted, works fine
+    WARNING = "Warning"  # Deprecated, recommend upgrade
+    ERROR = "Error"  # Cannot proceed, invalid config
+
+
+@dataclass
+class VersionWarning:
+    """
+    Warning about version-specific behavior.
+
+    These warnings are collected during reconciliation and added to the CR status
+    so that users managing realms/clients can see compatibility issues without
+    needing access to operator logs.
+    """
+
+    level: WarningLevel
+    code: str  # e.g., "ClientPolicyConfigConverted"
+    field_path: str  # e.g., "clientPolicies[*].conditions[*].configuration"
+    message: str  # Human-readable message
+    keycloak_version: str  # e.g., "26.2.0"
+    min_version: str | None = None  # e.g., "26.3.0" (if upgrade recommended)
+
+    def to_condition(self) -> dict[str, Any]:
+        """Convert to Kubernetes condition format for CR status."""
+        return {
+            "type": f"VersionCompatibility/{self.code}",
+            "status": "False" if self.level == WarningLevel.ERROR else "True",
+            "reason": self.code,
+            "message": self.message,
+            "lastTransitionTime": datetime.now(UTC).isoformat(),
+        }
+
+
+@dataclass
+class ValidationResult:
+    """Result of validating a spec against a Keycloak version."""
+
+    valid: bool
+    warnings: list[VersionWarning] = field(default_factory=list)
+    errors: list[VersionWarning] = field(default_factory=list)
+
+    @property
+    def has_warnings(self) -> bool:
+        return len(self.warnings) > 0
+
+    @property
+    def has_errors(self) -> bool:
+        return len(self.errors) > 0
+
+    @property
+    def error_summary(self) -> str:
+        """Get a summary of all errors for exception messages."""
+        if not self.errors:
+            return ""
+        return "; ".join(e.message for e in self.errors)
+
+
 class KeycloakAdapter(ABC):
-    """Abstract base adapter for Keycloak version compatibility."""
+    """
+    Abstract base adapter for Keycloak version compatibility.
+
+    Each major version has a concrete adapter that handles:
+    - Endpoint path resolution (stable within major versions)
+    - Model conversion (canonical to version-specific and back)
+    - Validation of configurations against version capabilities
+    - Collecting warnings/errors for CR status feedback
+    """
+
+    # Subclasses should define their supported version range
+    SUPPORTED_RANGE: tuple[tuple[int, int, int], tuple[int, int, int]] = (
+        (0, 0, 0),
+        (99, 99, 99),
+    )
 
     def __init__(self, version: str):
+        """
+        Initialize adapter for a specific Keycloak version.
+
+        Args:
+            version: Keycloak version string (e.g., "26.2.0")
+        """
         self.version = version
-        # Determine module name from version (simple mapping for now)
-        # Assumes standard format or set by subclass
-        self.module_name = self._get_module_name(version)
+        self.version_tuple = self._parse_version(version)
+        self._warnings: list[VersionWarning] = []
+        self._errors: list[VersionWarning] = []
 
-    def _get_module_name(self, version: str) -> str:
-        # Map version to module name (e.g. 24.0.5 -> v24_0_5)
-        # This is a bit fragile if versions in yaml don't match strict pattern,
-        # but robust enough for the supported set.
-        return f"v{version.replace('.', '_')}"
-
-    def get_target_model_class(
-        self, source_model_class: type[BaseModel]
-    ) -> type[BaseModel]:
-        """Dynamically load the corresponding model class for this version."""
+    def _parse_version(self, version: str) -> tuple[int, int, int]:
+        """Parse version string to tuple for comparison."""
         try:
-            module_path = f"keycloak_operator.models.generated.{self.module_name}"
-            module = importlib.import_module(module_path)
-            return getattr(module, source_model_class.__name__)
-        except (ImportError, AttributeError) as e:
-            logger.warning(
-                f"Could not find target model for {source_model_class.__name__} "
-                f"in {self.module_name}: {e}. "
-                "Falling back to source model (no downgrading)."
-            )
-            return source_model_class
+            parts = version.split(".")
+            major = int(parts[0]) if len(parts) > 0 else 0
+            minor = int(parts[1]) if len(parts) > 1 else 0
+            patch = int(parts[2]) if len(parts) > 2 else 0
+            return (major, minor, patch)
+        except (ValueError, IndexError):
+            logger.warning(f"Could not parse version '{version}', assuming 0.0.0")
+            return (0, 0, 0)
 
-    def convert_to_target(
-        self, source_model: BaseModel, source_model_class: type[BaseModel] | None = None
-    ) -> dict[str, Any]:
-        """
-        Convert a source model (Canonical v26) to a target model dict (e.g. v24).
+    @property
+    def major_version(self) -> int:
+        """Get the major version number."""
+        return self.version_tuple[0]
 
-        This method:
-        1. Resolves the target model class for this adapter's version.
-        2. Dumps the source model to a dict (excluding unset fields).
-        3. Validates it against the target model class.
-        4. Identifies dropped fields that had values.
-        5. Logs warnings for dropped data.
-        6. Returns the clean dict suitable for the target API.
-        """
-        target_model_class = self.get_target_model_class(
-            source_model_class or type(source_model)
+    @property
+    def minor_version(self) -> int:
+        """Get the minor version number."""
+        return self.version_tuple[1]
+
+    @property
+    def patch_version(self) -> int:
+        """Get the patch version number."""
+        return self.version_tuple[2]
+
+    def version_at_least(self, major: int, minor: int = 0, patch: int = 0) -> bool:
+        """Check if version is at least the specified version."""
+        return self.version_tuple >= (major, minor, patch)
+
+    def version_less_than(self, major: int, minor: int = 0, patch: int = 0) -> bool:
+        """Check if version is less than the specified version."""
+        return self.version_tuple < (major, minor, patch)
+
+    def add_warning(self, warning: VersionWarning) -> None:
+        """Add a warning to be included in CR status."""
+        self._warnings.append(warning)
+        logger.info(
+            f"Version compatibility warning [{warning.code}]: {warning.message}"
         )
 
-        # 1. Get the source data (what the user intended to send)
-        source_data = source_model.model_dump(exclude_unset=True, by_alias=True)
+    def add_error(self, error: VersionWarning) -> None:
+        """Add an error to be included in CR status."""
+        self._errors.append(error)
+        logger.error(f"Version compatibility error [{error.code}]: {error.message}")
 
-        # 2. Try to "fit" it into the target model
-        # We rely on Pydantic to ignore extra fields by default,
-        # but we need to know WHICH fields were ignored to warn the user.
+    def clear_warnings_and_errors(self) -> None:
+        """Clear accumulated warnings and errors (call before each reconcile)."""
+        self._warnings.clear()
+        self._errors.clear()
 
-        # Get the set of valid field aliases in the target model
-        target_fields = set()
-        for name, field in target_model_class.model_fields.items():
-            target_fields.add(field.alias or name)
+    def get_status_conditions(self) -> list[dict[str, Any]]:
+        """
+        Get all version compatibility conditions for CR status.
 
-        # 3. Check for dropped fields
-        dropped_fields = []
-        clean_data = {}
+        Returns:
+            List of Kubernetes condition dicts to add to CR status
+        """
+        conditions = []
+        for warning in self._warnings:
+            conditions.append(warning.to_condition())
+        for error in self._errors:
+            conditions.append(error.to_condition())
+        return conditions
 
-        for key, value in source_data.items():
-            if key in target_fields:
-                clean_data[key] = value
-            else:
-                # If the value is not None, we are losing data!
-                if value is not None:
-                    dropped_fields.append(key)
+    @property
+    def warnings(self) -> list[VersionWarning]:
+        """Get accumulated warnings."""
+        return self._warnings.copy()
 
-        if dropped_fields:
-            logger.warning(
-                f"Configuration fields {dropped_fields} are not supported by Keycloak "
-                f"{self.version} and will be ignored. Upgrade Keycloak to use these features."
-            )
+    @property
+    def errors(self) -> list[VersionWarning]:
+        """Get accumulated errors."""
+        return self._errors.copy()
 
-        # 4. Final validation ensuring types are correct for target
-        # This might seem redundant but handles type coercions if they changed
-        validated_target = target_model_class.model_validate(clean_data)
+    # --- Conversion Methods ---
 
-        return validated_target.model_dump(exclude_none=True, by_alias=True)
+    def convert_to_keycloak(self, model: BaseModel, namespace: str) -> dict[str, Any]:
+        """
+        Convert a canonical model to version-specific format for Keycloak API.
+
+        This method:
+        1. Dumps the model to dict
+        2. Applies version-specific transformations (implemented by subclasses)
+        3. Collects warnings for fields that needed conversion
+        4. Collects errors for fields that can't be used with this version
+
+        Args:
+            model: Canonical Pydantic model
+            namespace: Originating namespace (for rate limiting context)
+
+        Returns:
+            Dict suitable for sending to this Keycloak version's API
+        """
+        # Start with the canonical model dump
+        data = model.model_dump(exclude_none=True, by_alias=True)
+
+        # Apply version-specific transformations
+        data = self._apply_outbound_conversions(data, type(model).__name__)
+
+        return data
+
+    def convert_from_keycloak(self, data: dict[str, Any], model_class: type[T]) -> T:
+        """
+        Convert version-specific data from Keycloak API to canonical model.
+
+        This method:
+        1. Applies version-specific transformations to upgrade data
+        2. Validates against canonical model
+        3. Returns typed canonical model
+
+        Args:
+            data: Raw dict from Keycloak API
+            model_class: Target canonical model class
+
+        Returns:
+            Canonical Pydantic model instance
+        """
+        # Apply version-specific transformations
+        data = self._apply_inbound_conversions(data, model_class.__name__)
+
+        # Validate against canonical model
+        return model_class.model_validate(data)
+
+    def validate_for_version(self, spec: dict[str, Any]) -> ValidationResult:
+        """
+        Validate a spec dict against this Keycloak version's capabilities.
+
+        This is called before reconciliation to catch configuration errors
+        early and provide clear feedback in the CR status.
+
+        Args:
+            spec: The spec dict from the CR
+
+        Returns:
+            ValidationResult with any warnings or errors
+        """
+        # Clear any previous state
+        self.clear_warnings_and_errors()
+
+        # Run version-specific validation
+        self._validate_spec(spec)
+
+        return ValidationResult(
+            valid=len(self._errors) == 0,
+            warnings=self._warnings.copy(),
+            errors=self._errors.copy(),
+        )
+
+    # --- Abstract Methods for Subclasses ---
+
+    @abstractmethod
+    def _apply_outbound_conversions(
+        self, data: dict[str, Any], model_name: str
+    ) -> dict[str, Any]:
+        """
+        Apply version-specific conversions when sending data to Keycloak.
+
+        Subclasses implement this to handle downgrading canonical format
+        to older version formats.
+
+        Args:
+            data: Dict from canonical model
+            model_name: Name of the source model class
+
+        Returns:
+            Converted dict suitable for this Keycloak version
+        """
+        pass
+
+    @abstractmethod
+    def _apply_inbound_conversions(
+        self, data: dict[str, Any], model_name: str
+    ) -> dict[str, Any]:
+        """
+        Apply version-specific conversions when receiving data from Keycloak.
+
+        Subclasses implement this to handle upgrading older version formats
+        to canonical format.
+
+        Args:
+            data: Dict from Keycloak API
+            model_name: Name of the target model class
+
+        Returns:
+            Converted dict suitable for canonical model
+        """
+        pass
+
+    @abstractmethod
+    def _validate_spec(self, spec: dict[str, Any]) -> None:
+        """
+        Validate spec against version capabilities.
+
+        Subclasses implement this to check for fields/features that
+        are not supported in this version. Should call add_warning()
+        or add_error() as appropriate.
+
+        Args:
+            spec: The spec dict to validate
+        """
+        pass
 
     # --- Endpoint Resolvers ---
     # Centralizing all URL construction here to handle version-specific path changes

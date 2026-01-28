@@ -7,38 +7,7 @@ import pytest
 from keycloak_operator.models.keycloak_api import ComponentRepresentation
 from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
-
-class MockResponse:
-    """Mock HTTP response object."""
-
-    def __init__(self, status_code: int, json_data=None, headers=None, text=""):
-        self.status_code = status_code
-        self._json_data = json_data or {}
-        self.headers = headers or {}
-        self.text = text
-
-    def json(self):
-        return self._json_data
-
-
-@pytest.fixture
-def mock_admin_client():
-    """Create a mock KeycloakAdminClient for testing."""
-    from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
-
-    client = object.__new__(KeycloakAdminClient)
-    client.server_url = "http://keycloak:8080"
-    client.username = "admin"
-    client.password = "admin"
-    client.admin_realm = "master"
-    client.client_id = "admin-cli"
-    client.verify_ssl = True
-    client.timeout = 60
-    client.rate_limiter = None
-    client.access_token = "test-token"
-    client.refresh_token = None
-    client.token_expires_at = 9999999999.0
-    return client
+from .test_helpers import MockResponse
 
 
 class TestTriggerUserFederationSync:

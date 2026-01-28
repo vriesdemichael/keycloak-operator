@@ -223,6 +223,7 @@ docs/decisions/generated-markdown/
 
 # Downloaded OpenAPI specs
 scripts/keycloak-model-generation/specs/
+scripts/.keycloak-specs/
 
 # Backup files (use git instead!)
 *.backup
