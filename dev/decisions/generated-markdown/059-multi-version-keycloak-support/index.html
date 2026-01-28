@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/023-make-for-development-automation/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/059-multi-version-keycloak-support/">
       
       
-        <link rel="prev" href="../022-type-annotations-with-ty-for-type-checking/">
+        <link rel="prev" href="../058-single-keycloak-version-support/">
       
       
-        <link rel="next" href="../024-helm-as-deployment-mechanism/">
+        <link rel="next" href="../059-no-managed-keycloak-upgrades/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-023: Make for development automation - Keycloak Operator</title>
+        <title>ADR-059: Multi-Version Keycloak Support with Single Canonical Model - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-023-make-for-development-automation" class="md-skip">
+        <a href="#adr-059-multi-version-keycloak-support-with-single-canonical-model" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-023: Make for development automation
+              ADR-059: Multi-Version Keycloak Support with Single Canonical Model
             
           </span>
         </div>
@@ -2211,37 +2211,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-023: Make for development automation
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../023-make-for-development-automation/" class="md-nav__link">
         
   
   
@@ -2257,109 +2230,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#use-shell-scripts-in-scripts-directory" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use shell scripts in scripts/ directory
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-task-runners-like-taskfile-or-just" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use task runners like Taskfile or Just
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#document-raw-commands" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Document raw commands
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3349,10 +3219,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../059-multi-version-keycloak-support/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-059: Multi-Version Keycloak Support with Single Canonical Model
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -3368,6 +3265,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#single-version-support-status-quo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single Version Support (Status Quo)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-model-files-one-per-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple Model Files (One per Version)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-dispatch-versioned-reconcilers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multiple Dispatch / Versioned Reconcilers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-model-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Model Maintenance
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -3955,10 +3966,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#use-shell-scripts-in-scripts-directory" class="md-nav__link">
+  <a href="#single-version-support-status-quo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Use shell scripts in scripts/ directory
+        Single Version Support (Status Quo)
       
     </span>
   </a>
@@ -3966,10 +3977,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#use-task-runners-like-taskfile-or-just" class="md-nav__link">
+  <a href="#multiple-model-files-one-per-version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Use task runners like Taskfile or Just
+        Multiple Model Files (One per Version)
       
     </span>
   </a>
@@ -3977,10 +3988,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#document-raw-commands" class="md-nav__link">
+  <a href="#multiple-dispatch-versioned-reconcilers" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Document raw commands
+        Multiple Dispatch / Versioned Reconcilers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#manual-model-maintenance" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Manual Model Maintenance
       
     </span>
   </a>
@@ -4009,7 +4031,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/023-make-for-development-automation.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/059-multi-version-keycloak-support.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4017,22 +4039,24 @@
   
 
 
-<h1 id="adr-023-make-for-development-automation">ADR-023: Make for development automation<a class="headerlink" href="#adr-023-make-for-development-automation" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> development
-<strong>Provenance:</strong> human</p>
+<h1 id="adr-059-multi-version-keycloak-support-with-single-canonical-model">ADR-059: Multi-Version Keycloak Support with Single Canonical Model<a class="headerlink" href="#adr-059-multi-version-keycloak-support-with-single-canonical-model" title="Permanent link">&para;</a></h1>
+<p><strong>Category:</strong> architecture
+<strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use Make as the primary interface for all development tasks. All common workflows (testing, quality checks, deployment, cluster management) must have corresponding Make targets.</p>
+<p>The operator supports multiple Keycloak versions (24.x, 25.x, 26.x) using a Single Canonical Model + Adapter architecture. A single set of Pydantic models is generated from the latest supported Keycloak version (currently 26.5.2). All operator logic (Reconcilers, Admin Client, Validation) is written against this canonical model. Version-specific adapters handle field conversions, validation, and incompatibilities at runtime. This approach eliminates code duplication while providing clear error messages when using features unavailable in older versions.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Make provides a standardized, discoverable interface for all development tasks. Developers and AI agents can run 'make help' to see all available commands. Make targets abstract away complexity (uv, pytest flags, cluster setup) into simple, memorable commands. Documentation stays in sync because commands are defined once in Makefile. Cross-platform compatibility - Make works on Linux, macOS, Windows (WSL). CI/CD uses same Make targets as local development, ensuring consistency.</p>
+<p>Keycloak introduces breaking changes in minor and major versions (e.g., removing fields, changing types). The Single Canonical Model approach provides several benefits: 1. Type safety - All code is written against strongly-typed Pydantic models 2. Maintainability - Only one model file to maintain, not 20+ version-specific files 3. Clear errors - Version incompatibilities are caught early with clear error messages 4. Reduced complexity - No need for complex model selection or conversion logic in reconcilers 5. CI/CD simplicity - Only test against canonical version; adapters handle other versions The adapter pattern keeps version-specific logic isolated and testable.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Always check the Makefile for existing targets before running commands directly. Use 'make help' to see available targets. When adding new development workflows, create corresponding Make targets with descriptive help text. Never document raw commands in guides - reference Make targets instead (e.g., 'make test-integration' not 'uv run pytest tests/integration'). Make targets provide consistent interface across different environments.</p>
+<p>When modifying the KeycloakAdminClient or working with Keycloak APIs: 1. Always import models from <code>keycloak_operator.models.keycloak_api</code> (the canonical 26.5.2 models). 2. Do NOT create version-specific model files - there is only ONE model file. 3. For version-specific behavior, add logic to the appropriate adapter in <code>keycloak_operator/compatibility/adapters.py</code>. 4. Use <code>adapter.validate_for_version(spec)</code> to check spec compatibility before reconciliation. 5. Use <code>adapter.convert_to_keycloak(data, model_name)</code> to convert outbound requests. 6. Use <code>adapter.convert_from_keycloak(data, model_name)</code> to convert inbound responses. 7. Check <code>adapter.get_status_conditions()</code> after validation to get warnings/errors for CR status. 8. Breaking changes between versions should be handled in adapter <code>_apply_outbound_conversions()</code> and <code>_apply_inbound_conversions()</code>.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="use-shell-scripts-in-scripts-directory">Use shell scripts in scripts/ directory<a class="headerlink" href="#use-shell-scripts-in-scripts-directory" title="Permanent link">&para;</a></h3>
-<p>Less discoverable, no built-in help system, harder to compose tasks. Make provides dependency management and built-in help.</p>
-<h3 id="use-task-runners-like-taskfile-or-just">Use task runners like Taskfile or Just<a class="headerlink" href="#use-task-runners-like-taskfile-or-just" title="Permanent link">&para;</a></h3>
-<p>Make is universally available, well-understood, and doesn't require additional tooling. Taskfile/Just add dependencies.</p>
-<h3 id="document-raw-commands">Document raw commands<a class="headerlink" href="#document-raw-commands" title="Permanent link">&para;</a></h3>
-<p>Commands change (different flags, tools, paths). Make targets provide stable interface even as underlying commands evolve.</p>
+<h3 id="single-version-support-status-quo">Single Version Support (Status Quo)<a class="headerlink" href="#single-version-support-status-quo" title="Permanent link">&para;</a></h3>
+<p>Users cannot use the operator with older supported Red Hat Build of Keycloak versions (e.g., 24.x).</p>
+<h3 id="multiple-model-files-one-per-version">Multiple Model Files (One per Version)<a class="headerlink" href="#multiple-model-files-one-per-version" title="Permanent link">&para;</a></h3>
+<p>Generates 20+ model files (v24.py, v25.py, v26_0.py, v26_1.py, etc.), massive code duplication, complex import logic, and maintenance burden.</p>
+<h3 id="multiple-dispatch-versioned-reconcilers">Multiple Dispatch / Versioned Reconcilers<a class="headerlink" href="#multiple-dispatch-versioned-reconcilers" title="Permanent link">&para;</a></h3>
+<p>Writing separate reconciliation logic for every version would lead to massive code duplication and maintenance burden.</p>
+<h3 id="manual-model-maintenance">Manual Model Maintenance<a class="headerlink" href="#manual-model-maintenance" title="Permanent link">&para;</a></h3>
+<p>Too error-prone and labor-intensive given the size of the Keycloak API (~250 models). Automated generation is safer.</p>
 
 
 
@@ -4068,7 +4092,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../022-type-annotations-with-ty-for-type-checking/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-022: Type annotations with ty for type checking">
+          <a href="../058-single-keycloak-version-support/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-058: Single Keycloak version support (26.x)">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4078,20 +4102,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-022: Type annotations with ty for type checking
+                ADR-058: Single Keycloak version support (26.x)
               </div>
             </div>
           </a>
         
         
           
-          <a href="../024-helm-as-deployment-mechanism/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-024: Helm as deployment mechanism">
+          <a href="../059-no-managed-keycloak-upgrades/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-059: No managed Keycloak upgrades">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-024: Helm as deployment mechanism
+                ADR-059: No managed Keycloak upgrades
               </div>
             </div>
             <div class="md-footer__button md-icon">
