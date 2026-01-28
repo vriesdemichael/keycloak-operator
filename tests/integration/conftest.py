@@ -85,6 +85,29 @@ from .models import KeycloakReadySetup, SharedOperatorInfo
 
 # wait_helpers are imported directly in tests, not used in conftest
 
+
+def get_keycloak_test_image() -> str:
+    """
+    Get the Keycloak image to use for integration tests.
+
+    Priority: KEYCLOAK_IMAGE > KEYCLOAK_VERSION > default
+    This ensures consistency between local testing (KEYCLOAK_VERSION)
+    and CI (KEYCLOAK_IMAGE or KEYCLOAK_VERSION).
+
+    Returns:
+        Full image reference like "keycloak-optimized:26.4.1"
+    """
+    keycloak_image_env = os.getenv("KEYCLOAK_IMAGE")
+    keycloak_version_env = os.getenv("KEYCLOAK_VERSION")
+
+    if keycloak_image_env:
+        return keycloak_image_env
+    elif keycloak_version_env:
+        return f"keycloak-optimized:{keycloak_version_env}"
+    else:
+        return f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}"
+
+
 # ============================================================================
 # Test Helper Functions
 # ============================================================================
@@ -1255,7 +1278,7 @@ async def sample_keycloak_spec_factory(
 
         return {
             "replicas": 1,
-            "image": f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}",
+            "image": get_keycloak_test_image(),
             "database": {
                 "type": shared_cnpg_info["type"],
                 "host": shared_cnpg_info["host"],
@@ -1298,7 +1321,7 @@ async def sample_keycloak_spec(cnpg_cluster, test_namespace) -> dict[str, Any]:
 
     return {
         "replicas": 1,
-        "image": f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}",
+        "image": get_keycloak_test_image(),
         "database": {
             "type": cnpg_cluster["type"],
             "host": cnpg_cluster["host"],
@@ -1554,10 +1577,7 @@ async def shared_operator(
 
     # Prepare Helm values for operator deployment
     # Use optimized Keycloak image if available for faster test startup
-    # Format: "keycloak-optimized:26.4.1" or "ghcr.io/<repo>/keycloak-optimized:26.4.1"
-    keycloak_image_full = os.getenv(
-        "KEYCLOAK_IMAGE", f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}"
-    )
+    keycloak_image_full = get_keycloak_test_image()
 
     # Split image and tag for Helm values
     if ":" in keycloak_image_full:

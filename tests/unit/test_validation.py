@@ -399,10 +399,13 @@ class TestValidateKeycloakVersion:
     def test_valid_keycloak_versions(self):
         """Test that supported Keycloak versions pass validation."""
         valid_images = [
+            "keycloak:24.0.0",
+            "keycloak:24.0.5",
             "keycloak:25.0.0",
             "keycloak:25.0.1",
             "keycloak:26.4.0",
             "keycloak:30.0.0",
+            "quay.io/keycloak/keycloak:24.0.0",
             "quay.io/keycloak/keycloak:25.0.0",
         ]
 
@@ -412,7 +415,6 @@ class TestValidateKeycloakVersion:
     def test_invalid_keycloak_versions(self):
         """Test that unsupported Keycloak versions are rejected."""
         invalid_images = [
-            "keycloak:24.0.0",
             "keycloak:23.0.5",
             "keycloak:22.0.0",
             "quay.io/keycloak/keycloak:20.0.0",
@@ -422,18 +424,111 @@ class TestValidateKeycloakVersion:
             with pytest.raises(ValidationError) as exc_info:
                 validate_keycloak_version(image)
             assert "not supported" in str(exc_info.value)
-            assert "25.0.0" in str(exc_info.value)
+            assert "24.0.0" in str(exc_info.value)
 
     def test_version_validation_with_digest(self, caplog):
         """Test that digest-based images log a warning."""
         validate_keycloak_version("keycloak@sha256:abc123")
         assert "Could not extract version" in caplog.text
-        assert "25.0.0" in caplog.text
+        assert "24.0.0" in caplog.text
 
     def test_version_validation_with_non_version_tag(self, caplog):
         """Test that non-version tags log a warning."""
         validate_keycloak_version("keycloak:latest")
         assert "Could not extract version" in caplog.text
+
+
+class TestManagementPortSupport:
+    """Test cases for management port version detection."""
+
+    def test_supports_management_port_v26(self):
+        """Test that Keycloak 26.x supports management port."""
+        from keycloak_operator.utils.validation import supports_management_port
+
+        assert supports_management_port("keycloak:26.4.0") is True
+        assert supports_management_port("quay.io/keycloak/keycloak:26.0.0") is True
+
+    def test_supports_management_port_v25(self):
+        """Test that Keycloak 25.x supports management port."""
+        from keycloak_operator.utils.validation import supports_management_port
+
+        assert supports_management_port("keycloak:25.0.0") is True
+        assert supports_management_port("keycloak:25.0.6") is True
+
+    def test_no_management_port_v24(self):
+        """Test that Keycloak 24.x does NOT support management port."""
+        from keycloak_operator.utils.validation import supports_management_port
+
+        assert supports_management_port("keycloak:24.0.0") is False
+        assert supports_management_port("keycloak:24.0.5") is False
+
+    def test_management_port_unknown_version_defaults_true(self):
+        """Test that unknown versions assume management port support."""
+        from keycloak_operator.utils.validation import supports_management_port
+
+        # Digest-based images default to True (assume modern)
+        assert supports_management_port("keycloak@sha256:abc123") is True
+        # Non-version tags default to True
+        assert supports_management_port("keycloak:latest") is True
+
+    def test_get_health_port_v26(self):
+        """Test health port for Keycloak 26.x is 9000."""
+        from keycloak_operator.utils.validation import get_health_port
+
+        assert get_health_port("keycloak:26.4.0") == 9000
+
+    def test_get_health_port_v25(self):
+        """Test health port for Keycloak 25.x is 9000."""
+        from keycloak_operator.utils.validation import get_health_port
+
+        assert get_health_port("keycloak:25.0.0") == 9000
+
+    def test_get_health_port_v24(self):
+        """Test health port for Keycloak 24.x is 8080 (main HTTP port)."""
+        from keycloak_operator.utils.validation import get_health_port
+
+        assert get_health_port("keycloak:24.0.0") == 8080
+        assert get_health_port("keycloak:24.0.5") == 8080
+
+    def test_get_health_port_unknown_defaults_9000(self):
+        """Test that unknown versions default to management port 9000."""
+        from keycloak_operator.utils.validation import get_health_port
+
+        # Unknown versions default to 9000 (assume modern)
+        assert get_health_port("keycloak:latest") == 9000
+        assert get_health_port("keycloak@sha256:abc123") == 9000
+
+    def test_version_override_takes_precedence(self):
+        """Test that version override takes precedence over image tag."""
+        from keycloak_operator.utils.validation import (
+            get_health_port,
+            supports_management_port,
+        )
+
+        # Custom image with 26.x tag but actually based on 24.x
+        assert supports_management_port("myregistry/keycloak:v1.0.0", "24.0.5") is False
+        assert get_health_port("myregistry/keycloak:v1.0.0", "24.0.5") == 8080
+
+        # Custom image with no version but actually based on 25.x
+        assert supports_management_port("myregistry/keycloak:latest", "25.0.0") is True
+        assert get_health_port("myregistry/keycloak:latest", "25.0.0") == 9000
+
+        # Override even overrides a valid version tag
+        assert supports_management_port("keycloak:26.0.0", "24.0.0") is False
+        assert get_health_port("keycloak:26.0.0", "24.0.0") == 8080
+
+    def test_version_override_none_uses_image_tag(self):
+        """Test that None version override falls back to image tag detection."""
+        from keycloak_operator.utils.validation import (
+            get_health_port,
+            supports_management_port,
+        )
+
+        # None override - should use image tag
+        assert supports_management_port("keycloak:24.0.5", None) is False
+        assert supports_management_port("keycloak:26.0.0", None) is True
+        assert get_health_port("keycloak:24.0.5", None) == 8080
+        assert get_health_port("keycloak:26.0.0", None) == 9000
 
 
 class TestValidateResourceLimits:

@@ -19,7 +19,7 @@ from ..errors import (
 )
 from ..models.keycloak import KeycloakSpec
 from ..utils.keycloak_admin import get_keycloak_admin_client
-from ..utils.validation import validate_keycloak_version
+from ..utils.validation import supports_management_port, validate_keycloak_version
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 
@@ -379,11 +379,17 @@ class KeycloakInstanceReconciler(BaseReconciler):
         status.deployment = f"{name}-keycloak"
         status.service = f"{name}-keycloak"
         status.adminSecret = f"{name}-admin-credentials"
-        status.endpoints = {
+        endpoints = {
             "admin": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
             "public": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
-            "management": f"http://{name}-keycloak.{namespace}.svc.cluster.local:9000",
         }
+        # Management endpoint only for Keycloak 25.x+
+        version_override = keycloak_spec.keycloak_version
+        if supports_management_port(image, version_override):
+            endpoints["management"] = (
+                f"http://{name}-keycloak.{namespace}.svc.cluster.local:9000"
+            )
+        status.endpoints = endpoints
 
         # Update capacity status
         await self._update_capacity_status(status, keycloak_spec, namespace)

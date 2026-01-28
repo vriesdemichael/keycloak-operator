@@ -15,7 +15,10 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
-from keycloak_operator.constants import MINIMUM_KEYCLOAK_VERSION
+from keycloak_operator.constants import (
+    MANAGEMENT_PORT_MIN_VERSION,
+    MINIMUM_KEYCLOAK_VERSION,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +130,66 @@ def _extract_version_from_image(image: str) -> str | None:
         return tag
 
     return None
+
+
+def supports_management_port(image: str, version_override: str | None = None) -> bool:
+    """
+    Check if a Keycloak image supports the separate management port (9000).
+
+    The management interface with separate port 9000 was introduced in Keycloak 25.0.0.
+    Earlier versions (24.x) serve health endpoints on the main HTTP port (8080).
+
+    Args:
+        image: Container image reference like "quay.io/keycloak/keycloak:26.4.0"
+        version_override: Optional explicit version string (e.g., "24.0.5") for custom
+            images without version tags. Takes precedence over image tag detection.
+
+    Returns:
+        True if the version supports management port (25.0.0+), False otherwise.
+        Returns True if version cannot be determined (assume modern version).
+    """
+    # Use version override if provided, otherwise try to extract from image tag
+    version_str = version_override or _extract_version_from_image(image)
+
+    if not version_str:
+        # Can't determine version, assume it supports management port
+        logger.debug(
+            f"Could not extract version from image '{image}' - assuming management port support"
+        )
+        return True
+
+    try:
+        version = _parse_version(version_str)
+        mgmt_port_version = _parse_version(MANAGEMENT_PORT_MIN_VERSION)
+        supports = version >= mgmt_port_version
+        logger.debug(
+            f"Keycloak {version_str} {'supports' if supports else 'does not support'} "
+            f"management port (requires {MANAGEMENT_PORT_MIN_VERSION}+)"
+        )
+        return supports
+    except ValueError:
+        # Can't parse version, assume it supports management port
+        logger.debug(
+            f"Could not parse version '{version_str}' - assuming management port support"
+        )
+        return True
+
+
+def get_health_port(image: str, version_override: str | None = None) -> int:
+    """
+    Get the port to use for health check endpoints based on Keycloak version.
+
+    Args:
+        image: Container image reference
+        version_override: Optional explicit version string (e.g., "24.0.5") for custom
+            images without version tags. Takes precedence over image tag detection.
+
+    Returns:
+        Port number for health endpoints (8080 for 24.x, 9000 for 25.x+)
+    """
+    if supports_management_port(image, version_override):
+        return 9000
+    return 8080
 
 
 class ValidationError(Exception):
@@ -491,16 +554,17 @@ def validate_image_reference(image: str) -> None:
 
 def validate_keycloak_version(image: str) -> None:
     """
-    Validate Keycloak version supports required features (management port).
+    Validate Keycloak version is supported by this operator.
 
-    The management interface with separate port 9000 was introduced in Keycloak 25.0.0.
-    Earlier versions do not support KC_HTTP_MANAGEMENT_PORT and will fail health checks.
+    Supported versions: 24.x, 25.x, 26.x
+    - 24.x: Health endpoints on main HTTP port (8080)
+    - 25.x+: Health endpoints on management port (9000) with KC_HTTP_MANAGEMENT_PORT
 
     Args:
         image: Container image reference
 
     Raises:
-        ValidationError: If Keycloak version is too old and doesn't support management port
+        ValidationError: If Keycloak version is not supported
 
     """
     version_str = _extract_version_from_image(image)
@@ -508,7 +572,7 @@ def validate_keycloak_version(image: str) -> None:
     if not version_str:
         logger.warning(
             f"Could not extract version from image '{image}' - skipping version validation. "
-            f"Ensure the image uses Keycloak {MINIMUM_KEYCLOAK_VERSION} or later for management port support."
+            f"Ensure the image uses Keycloak {MINIMUM_KEYCLOAK_VERSION} or later."
         )
         return
 
@@ -520,8 +584,6 @@ def validate_keycloak_version(image: str) -> None:
             raise ValidationError(
                 f"Keycloak version {version_str} is not supported. "
                 f"Minimum required version is {MINIMUM_KEYCLOAK_VERSION}. "
-                f"Earlier versions do not support the management interface (port 9000) "
-                f"required for health checks and metrics. "
                 f"Please upgrade to Keycloak {MINIMUM_KEYCLOAK_VERSION} or later."
             )
 
@@ -532,7 +594,7 @@ def validate_keycloak_version(image: str) -> None:
     except ValueError as e:
         logger.warning(
             f"Could not parse version from image tag '{version_str}': {e}. "
-            f"Ensure the image uses Keycloak {MINIMUM_KEYCLOAK_VERSION} or later for management port support."
+            f"Ensure the image uses Keycloak {MINIMUM_KEYCLOAK_VERSION} or later."
         )
 
 
