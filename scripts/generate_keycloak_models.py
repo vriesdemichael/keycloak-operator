@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+"""
+Generate Pydantic models from Keycloak OpenAPI spec.
+
+This script downloads the canonical Keycloak OpenAPI spec and generates
+Pydantic models for type-safe API interactions.
+
+Usage:
+    uv run scripts/generate_keycloak_models.py
+
+The generated models are placed in src/keycloak_operator/models/keycloak_api.py
+"""
+
 import argparse
 import logging
 import shutil
@@ -6,7 +18,6 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any
 
 import httpx
 import yaml
@@ -20,23 +31,11 @@ logger = logging.getLogger(__name__)
 SCRIPT_DIR = Path(__file__).parent.absolute()
 PROJECT_ROOT = SCRIPT_DIR.parent
 MODELS_DIR = PROJECT_ROOT / "src" / "keycloak_operator" / "models"
-GENERATED_DIR = MODELS_DIR / "generated"
-SPECS_DIR = SCRIPT_DIR / "keycloak-model-generation" / "specs"
+SPECS_DIR = SCRIPT_DIR / ".keycloak-specs"
 
 
-def setup_directories():
-    """Ensure necessary directories exist."""
-    GENERATED_DIR.mkdir(parents=True, exist_ok=True)
-    SPECS_DIR.mkdir(parents=True, exist_ok=True)
-
-    # Ensure __init__.py exists in generated dir
-    init_file = GENERATED_DIR / "__init__.py"
-    if not init_file.exists():
-        init_file.touch()
-
-
-def load_config() -> list[dict[str, Any]]:
-    """Load supported versions from config file."""
+def load_config() -> dict:
+    """Load canonical version from config file."""
     config_path = SCRIPT_DIR / "keycloak_versions.yaml"
     if not config_path.exists():
         logger.error(f"Config file not found at {config_path}")
@@ -44,34 +43,29 @@ def load_config() -> list[dict[str, Any]]:
 
     with open(config_path) as f:
         data = yaml.safe_load(f)
-        return data.get("supported_versions", [])
+        return data.get("canonical_version", {})
 
 
 def download_spec(version: str, url: str) -> Path:
-    """Download OpenAPI spec if not exists or hash changed."""
+    """Download OpenAPI spec if not exists."""
+    SPECS_DIR.mkdir(parents=True, exist_ok=True)
     spec_path = SPECS_DIR / f"keycloak-api-{version}.yaml"
 
     logger.info(f"Checking spec for {version}...")
 
     try:
-        # Always fetch to check for updates (or we could rely on manual cleanup)
-        # For now, we trust the file if it exists to save bandwidth/time,
-        # unless forced (future improvement)
         if spec_path.exists() and spec_path.stat().st_size > 0:
-            logger.info(f"Spec for {version} already exists.")
+            logger.info(f"Spec for {version} already exists at {spec_path}")
             return spec_path
 
         logger.info(f"Downloading spec from {url}...")
-        response = httpx.get(url, follow_redirects=True)
+        response = httpx.get(url, follow_redirects=True, timeout=60.0)
         response.raise_for_status()
 
         spec_path.write_bytes(response.content)
         logger.info(f"Saved spec to {spec_path}")
         return spec_path
     except httpx.HTTPStatusError as e:
-        if e.response.status_code == 404:
-            logger.warning(f"Spec not found for version {version} (404). Skipping.")
-            return None
         logger.error(f"Failed to download spec for {version}: {e}")
         sys.exit(1)
     except Exception as e:
@@ -79,24 +73,20 @@ def download_spec(version: str, url: str) -> Path:
         sys.exit(1)
 
 
-def generate_model(spec_path: Path, module_name: str) -> Path:
-    """Generate Pydantic model for a specific version."""
-    output_file = GENERATED_DIR / f"{module_name}.py"
+def generate_model(spec_path: Path, version: str) -> Path:
+    """Generate Pydantic model for the canonical version."""
+    output_file = MODELS_DIR / "keycloak_api.py"
 
-    if output_file.exists() and output_file.stat().st_size > 0:
-        logger.info(f"Model {module_name} already exists. Skipping generation.")
-        return output_file
-
-    logger.info(f"Generating models for {module_name}...")
+    logger.info(f"Generating models from {spec_path.name}...")
 
     # Create a temporary directory for the generation process
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_spec_path = Path(tmp_dir) / spec_path.name
-        tmp_output_path = Path(tmp_dir) / f"{module_name}.py"
+        tmp_output_path = Path(tmp_dir) / "keycloak_api.py"
 
         shutil.copy(spec_path, tmp_spec_path)
 
-        # Command matches the one used in the bash script but adapted for multiple files
+        # Command for datamodel-codegen
         cmd = [
             "uv",
             "run",
@@ -137,54 +127,88 @@ def generate_model(spec_path: Path, module_name: str) -> Path:
 
             # Post-processing: Add header to indicate it's generated
             content = tmp_output_path.read_text()
-            header = f"# Generated from Keycloak OpenAPI Spec {spec_path.name}\n# DO NOT EDIT MANUALLY\n\n"
+            header = f'''"""
+Keycloak Admin REST API Models
+
+Generated from Keycloak OpenAPI Spec version {version}
+DO NOT EDIT MANUALLY - regenerate with: uv run scripts/generate_keycloak_models.py
+
+These models represent the canonical Keycloak API types. The operator uses
+version-specific adapters (see compatibility/ module) to handle differences
+between Keycloak versions.
+"""
+
+'''
             tmp_output_path.write_text(header + content)
 
             shutil.move(tmp_output_path, output_file)
             logger.info(f"Generated {output_file}")
             return output_file
         except subprocess.CalledProcessError as e:
-            logger.error(f"Failed to generate models for {module_name}:\n{e.stderr}")
+            logger.error(f"Failed to generate models:\n{e.stderr}")
             sys.exit(1)
 
 
-def create_current_symlink(current_version: dict):
-    """Create the current.py file importing the current version."""
-    module_name = current_version["module_name"]
+def update_current_py(version: str):
+    """Update current.py to document the canonical version."""
     current_file = MODELS_DIR / "current.py"
 
-    logger.info(f"Updating current.py to point to {module_name}...")
+    logger.info(f"Updating current.py to document version {version}...")
 
-    content = f"""# Canonical Models for the Operator
-# This file imports the models from the latest supported Keycloak version.
-# All Operator logic should be written against these models.
+    content = f'''"""
+Canonical Keycloak API Models
 
-from .generated.{module_name} import *
+This module re-exports all models from keycloak_api.py for convenient imports.
+The models are generated from Keycloak OpenAPI spec version {version}.
+
+All operator logic should be written against these models. Version-specific
+differences are handled by the compatibility layer (see compatibility/ module).
+
+Usage:
+    from keycloak_operator.models.current import RealmRepresentation, ClientRepresentation
 """
+
+# Re-export all models from keycloak_api.py
+# This wildcard import is intentional - we want all generated models available
+from .keycloak_api import *  # noqa: F401, F403
+'''
     current_file.write_text(content)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate Keycloak Pydantic models.")
-    parser.parse_args()
+    parser = argparse.ArgumentParser(
+        description="Generate Keycloak Pydantic models from OpenAPI spec."
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force regeneration even if models exist",
+    )
+    args = parser.parse_args()
 
-    setup_directories()
-    versions = load_config()
+    canonical = load_config()
+    if not canonical:
+        logger.error("No canonical_version found in config!")
+        sys.exit(1)
 
-    current_version = None
+    version = canonical["version"]
+    url = canonical["url"]
 
-    for v in versions:
-        spec_path = download_spec(v["version"], v["url"])
-        if spec_path:
-            generate_model(spec_path, v["module_name"])
+    logger.info(f"Canonical version: {version}")
 
-        if v.get("current"):
-            current_version = v
+    # Check if regeneration is needed
+    output_file = MODELS_DIR / "keycloak_api.py"
+    if output_file.exists() and not args.force:
+        logger.info(
+            f"Models already exist at {output_file}. Use --force to regenerate."
+        )
+        return
 
-    if current_version:
-        create_current_symlink(current_version)
-    else:
-        logger.warning("No version marked as 'current' in config!")
+    spec_path = download_spec(version, url)
+    generate_model(spec_path, version)
+    update_current_py(version)
+
+    logger.info("Model generation complete!")
 
 
 if __name__ == "__main__":

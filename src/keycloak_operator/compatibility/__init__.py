@@ -1,35 +1,38 @@
-import logging
+"""
+Keycloak version compatibility layer.
 
-from .adapters import AdapterV24, AdapterV25, AdapterV26
-from .base import KeycloakAdapter
+This module provides version-specific adapters that handle:
+- Converting canonical models to version-specific formats
+- Converting version-specific data back to canonical models
+- Tracking warnings and errors for CR status feedback
+- Validating configurations against version capabilities
+"""
 
-logger = logging.getLogger(__name__)
+from .adapters import (
+    ADAPTER_REGISTRY,
+    V24Adapter,
+    V25Adapter,
+    V26Adapter,
+    get_adapter_for_version,
+)
+from .base import (
+    KeycloakAdapter,
+    ValidationResult,
+    VersionWarning,
+    WarningLevel,
+)
 
-
-def get_adapter(version: str) -> KeycloakAdapter:
-    """
-    Factory to get the correct adapter for a Keycloak version.
-
-    Args:
-        version: Version string (e.g. "24.0.5", "26.5.2")
-
-    Returns:
-        KeycloakAdapter instance
-    """
-    major = int(version.split(".")[0])
-
-    if major >= 26:
-        logger.info(f"Using Keycloak v26 adapter for version {version}")
-        return AdapterV26(version)
-    elif major == 25:
-        logger.info(f"Using Keycloak v25 adapter for version {version}")
-        return AdapterV25(version)
-    elif major == 24:
-        logger.info(f"Using Keycloak v24 adapter for version {version}")
-        return AdapterV24(version)
-    else:
-        logger.warning(
-            f"Unsupported Keycloak version {version}. Defaulting to v26 adapter. "
-            "Some features may not work."
-        )
-        return AdapterV26(version)
+__all__ = [
+    # Base classes and types
+    "KeycloakAdapter",
+    "ValidationResult",
+    "VersionWarning",
+    "WarningLevel",
+    # Adapters
+    "V24Adapter",
+    "V25Adapter",
+    "V26Adapter",
+    "ADAPTER_REGISTRY",
+    # Factory function
+    "get_adapter_for_version",
+]

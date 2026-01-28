@@ -25,8 +25,8 @@ from urllib.parse import urljoin
 import httpx
 from pydantic import BaseModel
 
-from keycloak_operator.compatibility import get_adapter
-from keycloak_operator.compatibility.base import KeycloakAdapter
+from keycloak_operator.compatibility import KeycloakAdapter, get_adapter_for_version
+from keycloak_operator.constants import CANONICAL_MODEL_VERSION
 from keycloak_operator.models.keycloak_api import (
     AdminEventRepresentation,
     AuthenticationExecutionInfoRepresentation,
@@ -315,7 +315,9 @@ class KeycloakAdminClient:
         # Initialize adapter based on provided version or default to latest
         # Ideally we auto-detect, but we need auth first.
         # We start with the latest adapter and can update it after auth/detection.
-        self.adapter: KeycloakAdapter = get_adapter(version or "26.0.0")
+        self.adapter: KeycloakAdapter = get_adapter_for_version(
+            version or CANONICAL_MODEL_VERSION
+        )
         self.auto_detect_version = version is None
         self._version_detected = False
 
@@ -449,9 +451,11 @@ class KeycloakAdminClient:
             response = await client.get(url, headers=headers)
             if response.status_code == 200:
                 data = response.json()
-                version = data.get("systemInfo", {}).get("version", "26.0.0")
+                version = data.get("systemInfo", {}).get(
+                    "version", CANONICAL_MODEL_VERSION
+                )
                 logger.info(f"Detected Keycloak version: {version}")
-                self.adapter = get_adapter(version)
+                self.adapter = get_adapter_for_version(version)
                 self._version_detected = True
             else:
                 logger.warning(
@@ -670,7 +674,7 @@ class KeycloakAdminClient:
         # Validate and serialize request payload
         if request_model is not None:
             # Use adapter to convert (downgrade) the model if necessary
-            kwargs["json"] = self.adapter.convert_to_target(request_model)
+            kwargs["json"] = self.adapter.convert_to_keycloak(request_model, namespace)
 
         # Make the HTTP request
         response = await self._make_request(method, endpoint, namespace, **kwargs)

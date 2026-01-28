@@ -988,3 +988,31 @@ class BaseReconciler(ABC):
         self.logger.info(
             f"Cleanup step: {step} for {resource_type}/{name}", extra=extra
         )
+
+    def add_version_conditions(
+        self,
+        status: StatusProtocol,
+        conditions: list[dict[str, Any]],
+        generation: int = 0,
+    ) -> None:
+        """
+        Add version compatibility conditions from adapter to CR status.
+
+        This method adds conditions from the Keycloak version adapter's
+        warnings and errors to the CR status, allowing users to see
+        version compatibility issues without accessing operator logs.
+
+        Args:
+            status: Resource status object
+            conditions: List of condition dicts from adapter.get_status_conditions()
+            generation: Resource generation for observedGeneration tracking
+        """
+        for condition in conditions:
+            self._add_condition(
+                status,
+                condition_type=condition.get("type", "VersionCompatibility"),
+                condition_status=condition.get("status", "True"),
+                reason=condition.get("reason", "VersionCheck"),
+                message=condition.get("message", ""),
+                generation=generation,
+            )

@@ -16,6 +16,7 @@ from kubernetes import client
 
 from keycloak_operator.settings import settings
 
+from ..compatibility import ValidationResult
 from ..errors import ValidationError
 from ..models.realm import KeycloakRealmSpec
 from ..utils.keycloak_admin import KeycloakAdminError, get_keycloak_admin_client
@@ -119,6 +120,19 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Validate cross-namespace permissions
         await self.validate_cross_namespace_access(realm_spec, namespace)
 
+        # Extract generation for observedGeneration tracking
+        generation = kwargs.get("meta", {}).get("generation", 0)
+
+        # Validate spec against Keycloak version and add compatibility conditions
+        version_result = await self._validate_version_compatibility(
+            realm_spec, namespace, status, generation
+        )
+        if not version_result.valid:
+            # Version compatibility errors - fail the reconciliation
+            error_msg = f"Version compatibility error: {version_result.error_summary}"
+            self.update_status_failed(status, error_msg, generation)
+            raise ValidationError(error_msg)
+
         # Ensure basic realm exists (pass kwargs for ownership tracking)
         await self.ensure_realm_exists(realm_spec, name, namespace, **kwargs)
 
@@ -171,9 +185,6 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Return status information
         operator_ref = realm_spec.operator_ref
         target_namespace = operator_ref.namespace
-
-        # Extract generation for status tracking
-        generation = kwargs.get("meta", {}).get("generation", 0)
 
         # Set custom status fields using attribute assignment (camelCase as in CRD)
         # IMPORTANT: Use attribute assignment, not item assignment!
@@ -312,6 +323,60 @@ class KeycloakRealmReconciler(BaseReconciler):
             return KeycloakRealmSpec.model_validate(spec)
         except Exception as e:
             raise ValidationError(f"Invalid Keycloak realm specification: {e}") from e
+
+    async def _validate_version_compatibility(
+        self,
+        realm_spec: KeycloakRealmSpec,
+        namespace: str,
+        status: StatusProtocol,
+        generation: int,
+    ) -> ValidationResult:
+        """
+        Validate realm spec against target Keycloak version.
+
+        This method:
+        1. Gets the admin client to determine Keycloak version
+        2. Validates the spec against version capabilities
+        3. Adds version compatibility conditions to CR status
+
+        Args:
+            realm_spec: Validated realm specification
+            namespace: Resource namespace
+            status: Resource status object
+            generation: Resource generation for observedGeneration
+
+        Returns:
+            ValidationResult with any warnings or errors
+        """
+        try:
+            # Get admin client to determine Keycloak version
+            operator_ref = realm_spec.operator_ref
+            admin_client = await self.keycloak_admin_factory(
+                "keycloak",  # Default Keycloak instance name
+                operator_ref.namespace,
+                rate_limiter=self.rate_limiter,
+            )
+
+            # Convert spec to dict for validation
+            spec_dict = realm_spec.to_keycloak_config(include_flow_bindings=False)
+
+            # Validate against version capabilities
+            result = admin_client.adapter.validate_for_version(spec_dict)
+
+            # Add version compatibility conditions to CR status
+            if result.warnings or result.errors:
+                conditions = admin_client.adapter.get_status_conditions()
+                self.add_version_conditions(status, conditions, generation)
+
+            return result
+
+        except Exception as e:
+            self.logger.warning(
+                f"Version compatibility check failed, proceeding with reconciliation: {e}"
+            )
+            # Return valid result to allow reconciliation to proceed
+            # The actual API calls will fail if there are compatibility issues
+            return ValidationResult(valid=True)
 
     async def validate_cross_namespace_access(
         self, spec: KeycloakRealmSpec, namespace: str
