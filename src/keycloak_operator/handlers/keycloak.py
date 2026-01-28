@@ -39,6 +39,7 @@ from keycloak_operator.utils.kubernetes import (
     get_kubernetes_client,
     get_pod_resource_usage,
 )
+from keycloak_operator.utils.validation import get_health_port
 
 logger = logging.getLogger(__name__)
 
@@ -494,12 +495,15 @@ async def monitor_keycloak_health(
             patch.status["lastHealthCheck"] = current_time
             return
 
-        # Perform HTTP health check against Keycloak management interface
-        # Keycloak 25.0+ uses port 9000 for health endpoints
+        # Perform HTTP health check against Keycloak health endpoint
+        # Get the appropriate health port based on Keycloak version:
+        # - Keycloak 24.x: health on main HTTP port (8080)
+        # - Keycloak 25.x+: health on management port (9000)
+        image = spec.get("image", "")
+        version_override = spec.get("keycloakVersion")
+        health_port = get_health_port(image, version_override)
         service_name = f"{name}-keycloak"
-        health_url = (
-            f"http://{service_name}.{namespace}.svc.cluster.local:9000/health/ready"
-        )
+        health_url = f"http://{service_name}.{namespace}.svc.cluster.local:{health_port}/health/ready"
 
         # Perform actual HTTP health check against Keycloak
         keycloak_responding, health_error = await check_http_health(
