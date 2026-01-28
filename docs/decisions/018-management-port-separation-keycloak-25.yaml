@@ -1,15 +1,20 @@
 number: 18
 title: Management port separation - Keycloak 25+
 category: architecture
-decision: Require Keycloak 25.0.0 or later which supports separate management interface
-  (port 9000). Use management port for health checks and metrics, port 8080 for user
-  traffic.
-agent_instructions: 'Enforce minimum Keycloak version 25.0.0. Health checks use management
-  port (9000) for /health/ready and /health/live. User traffic on port 8080. Reject
-  versions < 25.0.0. Update DEFAULT_KEYCLOAK_VERSION in src/keycloak_operator/constants.py
-  when new stable versions release.'
-rationale: 'Security: Separates management endpoints from user traffic. Production
-  ready: Management port is production best practice from Keycloak 25+. Health checks:
-  Dedicated management port prevents health check impact on user traffic. Version
-  enforcement: Ensures users run supported, modern Keycloak versions.'
+decision: >
+  Use the separate management interface (port 9000) for health checks and metrics when available (Keycloak 25.0.0+).
+  For Keycloak 24.x, fall back to port 8080 for health checks since the management interface is not available.
+  User traffic always uses port 8080.
+agent_instructions: >
+  Health check port is version-dependent:
+  - Keycloak 25.x+: Use management port 9000 for /health/ready and /health/live
+  - Keycloak 24.x: Use main HTTP port 8080 for health checks (no management interface)
+  Use `supports_management_port()` and `get_health_port()` from `keycloak_operator.utils.validation`
+  to determine correct port at runtime. User traffic always on port 8080.
+  See ADR-059 for multi-version support architecture.
+rationale: >
+  Security: Separates management endpoints from user traffic when possible (25.x+).
+  Backward compatibility: Supports 24.x users who need the operator but cannot upgrade.
+  Production ready: Management port is production best practice from Keycloak 25+.
+  Health checks: Dedicated management port prevents health check impact on user traffic.
 provenance: guided-ai

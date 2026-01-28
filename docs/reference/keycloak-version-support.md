@@ -13,7 +13,18 @@ This document describes which Keycloak versions are supported by the operator an
 
 ### Minimum Version Requirement
 
-The operator requires **Keycloak 25.0.0 or later** for the separate management interface (port 9000). Earlier versions do not support `KC_HTTP_MANAGEMENT_PORT` and will fail health checks.
+The operator requires **Keycloak 24.0.0 or later**.
+
+### Port Behavior by Version
+
+The operator automatically detects the Keycloak version and configures health probes accordingly:
+
+| Version | Health Check Port | Notes |
+|---------|------------------|-------|
+| **24.x** | 8080 (HTTP port) | No separate management interface |
+| **25.x+** | 9000 (management port) | Uses dedicated `KC_HTTP_MANAGEMENT_PORT` |
+
+When using custom images, you can specify `keycloakVersion` in the CR spec to override version detection.
 
 ## Canonical Model Architecture
 
@@ -55,6 +66,16 @@ The operator uses a **single canonical model** approach for type safety and main
 6. **Validation**: The adapter validates CRD specs against version-specific constraints
 
 ## Version-Specific Behaviors
+
+### Keycloak 25.0.0+ Changes
+
+The **management port** (9000) was introduced in Keycloak 25.0.0:
+
+- Health checks (`/health/started`, `/health/live`, `/health/ready`) moved to port 9000
+- Metrics endpoint (`/metrics`) moved to port 9000
+- The operator automatically detects this and configures probes accordingly
+
+For 24.x instances, the operator uses port 8080 for all health checks.
 
 ### Keycloak 26.4.0+ Changes
 
