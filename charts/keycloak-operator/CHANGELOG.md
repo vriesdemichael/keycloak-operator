@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.30](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.29...chart-operator-v0.3.30) (2026-01-28)
+
+
+### Bug Fixes
+
+* **operator:** resolve BruteForceStrategy enum serialization and complete multi-version support ([569e8e8](https://github.com/vriesdemichael/keycloak-operator/commit/569e8e8a95deddc68f6c34e52de5a2209f9b68e0))
+
 ## [0.3.29](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.28...chart-operator-v0.3.29) (2026-01-26)
 
 
