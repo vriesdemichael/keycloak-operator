@@ -308,6 +308,13 @@ class KeycloakSpec(BaseModel):
     image: str = Field(
         "quay.io/keycloak/keycloak:26.4.0", description="Keycloak container image"
     )
+    keycloak_version: str | None = Field(
+        None,
+        alias="keycloakVersion",
+        description="Keycloak version override for custom images without version tags. "
+        "Used to determine health port (24.x uses 8080, 25.x+ uses 9000). "
+        "Auto-detected from image tag if not specified.",
+    )
     replicas: int = Field(1, description="Number of Keycloak replicas", ge=1)
 
     # Resource management

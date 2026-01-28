@@ -143,6 +143,7 @@ runs:
       shell: bash
       env:
         INTEGRATION_COVERAGE: "true"
+        KEYCLOAK_VERSION: ${{ inputs.keycloak-version }}
       run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
 
     - name: Combine and convert integration coverage to XML

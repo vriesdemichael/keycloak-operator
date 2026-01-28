@@ -21,6 +21,7 @@ from kubernetes.client.rest import ApiException
 from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
 from keycloak_operator.models.keycloak import KeycloakSpec
 from keycloak_operator.settings import settings
+from keycloak_operator.utils.validation import get_health_port, supports_management_port
 
 logger = logging.getLogger(__name__)
 
@@ -142,6 +143,12 @@ def create_keycloak_deployment(
     # Admin credentials come from operator-generated secret
     admin_secret_name = f"{name}-admin-credentials"
 
+    # Determine version-specific configuration
+    image = spec.image or DEFAULT_KEYCLOAK_IMAGE
+    version_override = spec.keycloak_version  # User-specified version for custom images
+    uses_management_port = supports_management_port(image, version_override)
+    health_port = get_health_port(image, version_override)
+
     env_vars = [
         # Keycloak admin bootstrap variables (support both old and new versions)
         # KEYCLOAK_ADMIN* for Keycloak <= 23
@@ -185,17 +192,21 @@ def create_keycloak_deployment(
     ]
 
     # Add other environment variables
-    env_vars.extend(
-        [
-            # Keycloak feature configuration
-            client.V1EnvVar(name="KC_HEALTH_ENABLED", value="true"),
-            client.V1EnvVar(name="KC_METRICS_ENABLED", value="true"),
-            # Management port for health and metrics endpoints
-            client.V1EnvVar(name="KC_HTTP_MANAGEMENT_PORT", value="9000"),
-            # Hostname configuration for flexibility
-            client.V1EnvVar(name="KC_HOSTNAME_STRICT", value="false"),
-        ]
-    )
+    common_env_vars = [
+        # Keycloak feature configuration
+        client.V1EnvVar(name="KC_HEALTH_ENABLED", value="true"),
+        client.V1EnvVar(name="KC_METRICS_ENABLED", value="true"),
+        # Hostname configuration for flexibility
+        client.V1EnvVar(name="KC_HOSTNAME_STRICT", value="false"),
+    ]
+
+    # Management port only available in Keycloak 25.0.0+
+    if uses_management_port:
+        common_env_vars.append(
+            client.V1EnvVar(name="KC_HTTP_MANAGEMENT_PORT", value="9000")
+        )
+
+    env_vars.extend(common_env_vars)
 
     # Add JGroups clustering configuration for horizontal scaling
     # This enables Keycloak replicas to discover each other via DNS_PING
@@ -300,16 +311,23 @@ def create_keycloak_deployment(
     # Container configuration
     # Use production mode with HTTP enabled for ingress TLS termination
     # Note: --optimized flag omitted to allow runtime database configuration
+
+    # Build container ports - management port only for 25.x+
+    container_ports = [
+        client.V1ContainerPort(container_port=8080, name="http"),
+        client.V1ContainerPort(container_port=7800, name="jgroups"),
+    ]
+    if uses_management_port:
+        container_ports.insert(
+            1, client.V1ContainerPort(container_port=9000, name="management")
+        )
+
     container = client.V1Container(
         name="keycloak",
-        image=spec.image or DEFAULT_KEYCLOAK_IMAGE,
+        image=image,
         command=["/opt/keycloak/bin/kc.sh"],
         args=["start", "--http-enabled=true", "--proxy-headers=xforwarded"],
-        ports=[
-            client.V1ContainerPort(container_port=8080, name="http"),
-            client.V1ContainerPort(container_port=9000, name="management"),
-            client.V1ContainerPort(container_port=7800, name="jgroups"),
-        ],
+        ports=container_ports,
         env=env_vars,
         resources=client.V1ResourceRequirements(
             requests={
@@ -324,7 +342,7 @@ def create_keycloak_deployment(
         liveness_probe=client.V1Probe(
             http_get=client.V1HTTPGetAction(
                 path="/health/live",
-                port=9000,  # Use management port for health endpoints
+                port=health_port,  # Version-aware health port
             ),
             initial_delay_seconds=60,
             period_seconds=30,
@@ -332,7 +350,7 @@ def create_keycloak_deployment(
         readiness_probe=client.V1Probe(
             http_get=client.V1HTTPGetAction(
                 path="/health/ready",
-                port=9000,  # Use management port for health endpoints
+                port=health_port,  # Version-aware health port
             ),
             initial_delay_seconds=30,
             period_seconds=10,
