@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.6.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.6.3...operator-image-v0.6.4) (2026-01-28)
+
+
+### Features
+
+* **operator:** add multi-version keycloak support (v24-v26) ([ed4dde8](https://github.com/vriesdemichael/keycloak-operator/commit/ed4dde8458178b777d68538c2db8fce6d0b8d702))
+
+
+### Bug Fixes
+
+* **operator:** resolve BruteForceStrategy enum serialization and complete multi-version support ([569e8e8](https://github.com/vriesdemichael/keycloak-operator/commit/569e8e8a95deddc68f6c34e52de5a2209f9b68e0))
+
+
+### Code Refactoring
+
+* **operator:** simplify multi-version support to single canonical model ([a3067a5](https://github.com/vriesdemichael/keycloak-operator/commit/a3067a5b0eacf8d7e4a96af3c785179d32c092bf))
+
 ## [0.6.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.6.2...operator-image-v0.6.3) (2026-01-26)
 
 
