@@ -2,14 +2,16 @@ number: 59
 title: "Multi-Version Keycloak Support with Single Canonical Model"
 category: architecture
 decision: >
-  The operator supports multiple Keycloak versions (24.x, 25.x, 26.x) using a Single Canonical Model + Adapter architecture.
-  A single set of Pydantic models is generated from the latest supported Keycloak version (currently 26.5.2).
+  The operator supports Keycloak 24.0.0 and higher using a Single Canonical Model + Adapter architecture.
+  A single set of Pydantic models is generated from the canonical Keycloak version (currently 26.5.2).
   All operator logic (Reconcilers, Admin Client, Validation) is written against this canonical model.
   Version-specific adapters handle field conversions, validation, and incompatibilities at runtime.
   This approach eliminates code duplication while providing clear error messages when using features unavailable in older versions.
-agent_instructions: >
+agent_instructions: |
+  ## Using the Multi-Version Architecture
+
   When modifying the KeycloakAdminClient or working with Keycloak APIs:
-  1. Always import models from `keycloak_operator.models.keycloak_api` (the canonical 26.5.2 models).
+  1. Always import models from `keycloak_operator.models.keycloak_api` (the canonical models).
   2. Do NOT create version-specific model files - there is only ONE model file.
   3. For version-specific behavior, add logic to the appropriate adapter in `keycloak_operator/compatibility/adapters.py`.
   4. Use `adapter.validate_for_version(spec)` to check spec compatibility before reconciliation.
@@ -17,6 +19,46 @@ agent_instructions: >
   6. Use `adapter.convert_from_keycloak(data, model_name)` to convert inbound responses.
   7. Check `adapter.get_status_conditions()` after validation to get warnings/errors for CR status.
   8. Breaking changes between versions should be handled in adapter `_apply_outbound_conversions()` and `_apply_inbound_conversions()`.
+
+  ## Adding Support for a New Keycloak Major Version
+
+  When a new Keycloak major version is released (e.g., 27.0.0):
+
+  1. **Check for breaking changes**: Review Keycloak release notes and OpenAPI spec diff
+  2. **Update constants**: Add version to `MINIMUM_KEYCLOAK_VERSION` check in `constants.py` if needed
+  3. **Create adapter** (if needed): Add new adapter class in `compatibility/adapters.py` for version-specific conversions
+  4. **Register adapter**: Update `get_adapter()` factory function to return appropriate adapter
+  5. **Add unit tests**: Test adapter conversions in `tests/unit/test_compatibility.py`
+  6. **Validate manually**: Run full integration test suite with `KEYCLOAK_VERSION=27.0.0 make test`
+  7. **Document validation**: Update `scripts/keycloak_versions.yaml` with validation date and commit
+
+  ## Updating the Canonical Model Version
+
+  When updating the canonical model version (e.g., from 26.5.2 to 27.0.0):
+
+  1. **Download new spec**: `curl -o keycloak-api-spec.yaml https://www.keycloak.org/docs-api/27.0.0/rest-api/openapi.yaml`
+  2. **Regenerate models**: `./scripts/generate-keycloak-models.sh`
+  3. **Review changes**: `git diff src/keycloak_operator/models/keycloak_api.py`
+  4. **Update constants**: Set `CANONICAL_MODEL_VERSION = "27.0.0"` in `constants.py`
+  5. **Update keycloak_versions.yaml**: Change `canonical_version.version` to new version
+  6. **Fix breaking changes**: Update adapters for any removed/changed fields
+  7. **Run full test suite**: `make test` to ensure all tests pass
+  8. **Document in ADR notes**: Add breaking changes to the notes section below
+
+  ## Validating a Keycloak Version
+
+  To validate support for a specific Keycloak version:
+
+  1. Set environment variable: `export KEYCLOAK_VERSION=24.0.0`
+  2. Run full test suite: `make test`
+  3. If tests pass, document in `scripts/keycloak_versions.yaml` under `validated_versions`
+  4. Include: version, date, commit hash, and pass/fail status
+
+  ## Port Behavior
+
+  Use helpers from `keycloak_operator.utils.validation`:
+  - `supports_management_port(image, version_override)`: Returns True for 25.x+
+  - `get_health_port(image, version_override)`: Returns 9000 for 25.x+, 8080 for 24.x
 rationale: >
   Keycloak introduces breaking changes in minor and major versions (e.g., removing fields, changing types).
   The Single Canonical Model approach provides several benefits:
@@ -37,10 +79,12 @@ rejected_alternatives:
     reason: "Too error-prone and labor-intensive given the size of the Keycloak API (~250 models). Automated generation is safer."
 provenance: guided-ai
 supersedes: 58
-notes: >
-  Only the canonical (latest supported) Keycloak version (26.5.2) is tested in the CI/CD pipeline.
-  Support for other versions (24.x, 25.x, older 26.x) is verified through unit tests of the adapter conversions.
+notes: |
+  Only the canonical Keycloak version is tested in the CI/CD pipeline.
+  Support for other versions is verified through manual validation runs documented in scripts/keycloak_versions.yaml.
+
   Known breaking changes handled by adapters:
   - 26.4.0: Removed oAuth2DeviceCodeLifespan and oAuth2DevicePollingInterval fields
   - 26.3.0: Changed ClientPolicyCondition/Executor.configuration from list[Any] to dict[str, Any]
   - 25.x and earlier: Organizations feature not available (requires 26.0.0+)
+  - 24.x: No management port (KC_HTTP_MANAGEMENT_PORT), health checks use port 8080

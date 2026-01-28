@@ -4,13 +4,9 @@ category: architecture
 decision: Operator supports only Keycloak 26.x (currently 26.4.1). Multiple version
   support is planned but not implemented. Users must use the same Keycloak version
   as defined in DEFAULT_KEYCLOAK_IMAGE constant.
-agent_instructions: 'Current supported version: 26.4.1 (see DEFAULT_KEYCLOAK_IMAGE
-  in src/keycloak_operator/constants.py). Minimum version: 25.0.0 for management port
-  (decision 018). Operator assumes 26.x API and features. When Keycloak releases new
-  versions, update DEFAULT_KEYCLOAK_IMAGE constant. Test against new version before
-  updating. Multiple version support planned but blocked by API compatibility testing
-  and feature detection needs. Reject version mismatches with clear error messages.
-  Document supported version in README and Helm chart.'
+agent_instructions: >
+  SUPERSEDED - See ADR-059 for current multi-version support (24.x, 25.x, 26.x).
+  This ADR is kept for historical context only.
 rationale: 'Single version support simplifies development - no API compatibility matrix,
   no feature detection, no version-specific code paths. Keycloak API relatively stable
   within major versions but changes between majors. Supporting multiple versions requires
@@ -20,6 +16,7 @@ rationale: 'Single version support simplifies development - no API compatibility
   be a planned feature (decision 008 feature parity). Current approach: stay on latest
   Keycloak version, update operator when Keycloak updates.'
 provenance: human
+superseded_by: 59
 rejected_alternatives:
 - alternative: Support all Keycloak versions 25.0+
   reason: Requires extensive compatibility testing. API differences between versions

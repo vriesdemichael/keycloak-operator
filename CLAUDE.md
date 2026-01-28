@@ -194,13 +194,18 @@ This is an alternative Keycloak operator project built to replace the existing r
 - First class support for CNPG as gitops database
 
 ### Keycloak Version Requirements
-- **Minimum Version**: Keycloak 25.0.0 or later
-- **Reason**: The separate management interface (port 9000) was introduced in Keycloak 25.0.0
-- **Impact**: Earlier versions do not support `KC_HTTP_MANAGEMENT_PORT` and will fail health checks
-- **Default Version**: Keycloak 26.4.0 (defined in `src/keycloak_operator/constants.py`)
-- **Validation**: The operator automatically validates Keycloak versions and rejects unsupported versions during reconciliation
+- **Minimum Version**: Keycloak 24.0.0 or later
+- **Supported Versions**: 24.x, 25.x, 26.x and future versions
+- **Default Version**: Keycloak 26.4.1 (defined in `src/keycloak_operator/constants.py`)
+- **Canonical Model Version**: 26.5.2 (Pydantic models generated from this version's OpenAPI spec)
 
-When using custom Keycloak images, ensure they are version 25.0.0 or later. The operator will log a warning if it cannot determine the version from the image tag (e.g., digest-based images).
+**Port Behavior by Version:**
+- **24.x**: Health checks on port 8080 (main HTTP port) - no separate management interface
+- **25.x+**: Health checks on port 9000 (dedicated management interface via `KC_HTTP_MANAGEMENT_PORT`)
+
+The operator automatically detects the Keycloak version and configures health probes accordingly. When using custom images, you can specify `keycloakVersion` in the CR spec to override version detection.
+
+See `docs/keycloak-version-support.md` and `scripts/keycloak_versions.yaml` for detailed version compatibility information.
 
 ## Development Setup
 During development the environment is setup using uv and make.
