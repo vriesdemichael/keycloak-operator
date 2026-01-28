@@ -52,6 +52,7 @@ kubectl apply -f examples/03-client-example.yaml
 - **OAuth2/OIDC Clients** - Automated client provisioning with credential management
 - **Service Accounts** - Declarative role assignment for machine-to-machine authentication
 - **OIDC Endpoint Discovery** - Automatic population of all OIDC/OAuth2 endpoints in realm status
+- **Multi-Version Support** - Supports Keycloak 24.x, 25.x, and 26.x via compatibility adapters
 
 ## 📚 Documentation
 
