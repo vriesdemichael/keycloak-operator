@@ -1,23 +1,69 @@
-# Keycloak OpenAPI Spec Configuration
+# Keycloak Version Support Configuration
 #
-# This file defines the canonical version for Pydantic model generation.
-# The operator uses a single canonical model with version-specific adapters
-# to handle differences between Keycloak versions (see compatibility/ module).
+# This file defines version support for the keycloak-operator.
 #
-# Supported Keycloak versions: 24.x, 25.x, 26.x
-# See docs/keycloak-version-support.md for details on version compatibility.
+# SUPPORTED VERSIONS: Keycloak 24.0.0 and higher
+#
+# The operator uses a Single Canonical Model architecture (see ADR-059):
+# - Pydantic models are generated from the canonical version's OpenAPI spec
+# - Version-specific adapters handle breaking changes between versions
+# - All operator code is written against the canonical model
+#
+# See docs/keycloak-version-support.md for user-facing documentation.
+
+# Minimum supported version
+minimum_version: "24.0.0"
 
 # Canonical version - models are generated from this version's OpenAPI spec
+# This is the "reference" version that all operator code is written against
 canonical_version:
   version: "26.5.2"
   url: "https://www.keycloak.org/docs-api/26.5.2/rest-api/openapi.yaml"
 
-# Version ranges with available OpenAPI specs (for reference/verification)
+# Validated versions - manually tested with full integration test suite
+# Format: version, date, commit, result
+#
+# To validate a new version:
+#   KEYCLOAK_VERSION=X.Y.Z make test
+# If all tests pass, add entry here with commit hash
+validated_versions:
+  - version: "24.0.0"
+    date: "2026-01-28"
+    commit: "569e8e8"
+    result: "pass"
+    notes: "840 unit tests, 135 integration tests passed"
+  - version: "25.0.0"
+    date: "2026-01-28"
+    commit: "569e8e8"
+    result: "pass"
+    notes: "840 unit tests, 135 integration tests passed"
+  - version: "26.5.2"
+    date: "2026-01-28"
+    commit: "569e8e8"
+    result: "pass"
+    notes: "Canonical version, tested in CI/CD pipeline"
+
+# Version ranges with available OpenAPI specs (for reference/model generation)
 # Not all patch versions have published specs
 available_specs:
   - major: 24
-    versions: ["24.0.5"]  # Only one spec available
+    versions: ["24.0.5"]
   - major: 25
-    versions: ["25.0.6"]  # Only one spec available
+    versions: ["25.0.6"]
   - major: 26
     versions: ["26.0.8", "26.1.5", "26.2.0", "26.3.0", "26.4.0", "26.5.0", "26.5.2"]
+
+# Known breaking changes by version (handled by adapters)
+# See keycloak_operator/compatibility/adapters.py for implementation
+breaking_changes:
+  "26.4.0":
+    - "Removed oAuth2DeviceCodeLifespan field from RealmRepresentation"
+    - "Removed oAuth2DevicePollingInterval field from RealmRepresentation"
+  "26.3.0":
+    - "Changed ClientPolicyCondition.configuration from list[Any] to dict[str, Any]"
+    - "Changed ClientPolicyExecutor.configuration from list[Any] to dict[str, Any]"
+  "26.0.0":
+    - "Added Organizations feature (not available in 25.x and earlier)"
+  "25.0.0":
+    - "Added management port (KC_HTTP_MANAGEMENT_PORT) for health/metrics endpoints"
+    - "Prior versions use port 8080 for health checks"

@@ -128,6 +128,7 @@ nav:
       - Keycloak CRD: reference/keycloak-crd.md
       - KeycloakRealm CRD: reference/keycloak-realm-crd.md
       - KeycloakClient CRD: reference/keycloak-client-crd.md
+      - Keycloak Versions: reference/keycloak-version-support.md
       - Versioning: versioning.md
       - API Docs: api/keycloak_operator.md
   - Development:
