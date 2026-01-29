@@ -1,5 +1,86 @@
 # Changelog
 
+## [0.4.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.30...chart-operator-v0.4.0) (2026-01-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-client+chart-operator+chart-realm:** Helm chart distribution moved to OCI registry
+* **webhooks:** Admission webhooks now require cert-manager to be installed
+
+### Features
+
+* **chart-client+chart-operator+chart-realm:** migrate to OCI registry in GHCR ([3d122c6](https://github.com/vriesdemichael/keycloak-operator/commit/3d122c6b78851ef571b5d4d4af436039e45bb9d0))
+* **chart-client+chart-operator+operator:** add missing client settings fields ([0404a43](https://github.com/vriesdemichael/keycloak-operator/commit/0404a43b24fc8988fce32414f75a2b012c68168d))
+* **chart-client+operator:** add labels and annotations to managed secrets ([a2fcd36](https://github.com/vriesdemichael/keycloak-operator/commit/a2fcd36ef5e7b46c8b53a747a99353074eb3823e))
+* **chart-operator+chart-realm+operator:** add complete realm role and group management ([add7630](https://github.com/vriesdemichael/keycloak-operator/commit/add763062f9c8d62f3131fba55361d2e7bd40a62))
+* **chart-operator+chart-realm+operator:** add password policy and improve events config ([48e91af](https://github.com/vriesdemichael/keycloak-operator/commit/48e91af5ca03940d1e86eb6cc0c50e4c595973f6)), closes [#311](https://github.com/vriesdemichael/keycloak-operator/issues/311)
+* **chart-operator:** add CNPG and connection pool schema fields ([c3140b7](https://github.com/vriesdemichael/keycloak-operator/commit/c3140b720c6eb7a157cd9bc86d2eda0e00e74bc5))
+* **chart-operator:** add configurable timer intervals for reconciliation ([9ace7e4](https://github.com/vriesdemichael/keycloak-operator/commit/9ace7e47f6406263e9d5c13d0b48755348729102))
+* **chart-operator:** add documentation link to values.yaml header ([e7ea45f](https://github.com/vriesdemichael/keycloak-operator/commit/e7ea45fe694f73dcf273b1ee9255a77d6d49a787))
+* **chart-operator:** add PriorityClass for operator pods ([#173](https://github.com/vriesdemichael/keycloak-operator/issues/173)) ([e151175](https://github.com/vriesdemichael/keycloak-operator/commit/e151175232428fa4b251d8511de19bcb0e04ad78))
+* **chart-realm+operator:** add authentication flow and required action support ([ec8092e](https://github.com/vriesdemichael/keycloak-operator/commit/ec8092e33e1255a6e479f1108d0a12a5e518ebf6)), closes [#180](https://github.com/vriesdemichael/keycloak-operator/issues/180)
+* **chart-realm:** add client scope management ([bd63d5b](https://github.com/vriesdemichael/keycloak-operator/commit/bd63d5bc4ef514020575390ac2a4eb51d5b57279)), closes [#181](https://github.com/vriesdemichael/keycloak-operator/issues/181)
+* **operator:** add quiet logging mode for health probes and webhooks ([76fb7d2](https://github.com/vriesdemichael/keycloak-operator/commit/76fb7d221c31a6921507f9b7c99f1d0d75510ab9))
+* **operator:** enhance user federation models with LDAP/AD/Kerberos support ([2b5f4c6](https://github.com/vriesdemichael/keycloak-operator/commit/2b5f4c63a5cd75aed07c7e58bd38516cf7f0659d))
+* **operator:** fix pydantic-settings environment variable configuration ([d1cea04](https://github.com/vriesdemichael/keycloak-operator/commit/d1cea04948658df46e9209d1ba37bdac20c0dab4)), closes [#108](https://github.com/vriesdemichael/keycloak-operator/issues/108)
+* **webhooks:** switch to cert-manager for webhook TLS certificates ([e23dbde](https://github.com/vriesdemichael/keycloak-operator/commit/e23dbde72bb9b60a9eff2a0abb28f0ca88d56ea8))
+
+
+### Bug Fixes
+
+* add get permission for CRDs in ClusterRole ([61af8a8](https://github.com/vriesdemichael/keycloak-operator/commit/61af8a8842ebd02b1df9226bf91c1dbbbe19ac66))
+* allow test tags in operator chart schema ([71012b7](https://github.com/vriesdemichael/keycloak-operator/commit/71012b71951c1bce1c522fc1bed68857859afda8))
+* allow test-* tags in operator chart schema ([22a75db](https://github.com/vriesdemichael/keycloak-operator/commit/22a75dbdbe0f44b6aeaeb94b98fbc03350102573))
+* **chart-client+chart-operator+chart-realm:** update Kubernetes version requirement to 1.27+ ([f53fe0c](https://github.com/vriesdemichael/keycloak-operator/commit/f53fe0c26425274282fcc8a10095c0484cef9a13))
+* **chart-client+chart-operator+operator:** address multiple issues ([#290](https://github.com/vriesdemichael/keycloak-operator/issues/290), [#294](https://github.com/vriesdemichael/keycloak-operator/issues/294), [#170](https://github.com/vriesdemichael/keycloak-operator/issues/170), [#168](https://github.com/vriesdemichael/keycloak-operator/issues/168)) ([23a1dba](https://github.com/vriesdemichael/keycloak-operator/commit/23a1dbafabfd0deb35f6c528b560df1cb19da1e5))
+* **chart-operator:** add secret watch/delete permissions to RBAC ([4de6384](https://github.com/vriesdemichael/keycloak-operator/commit/4de6384c7131c612352dd6f2297483b3b15cd554))
+* **chart-operator:** align helm ingress values with keycloak CRD schema ([47ed813](https://github.com/vriesdemichael/keycloak-operator/commit/47ed813a1bc8675dce9c7bac0a8b0e60aca0b563))
+* **chart-operator:** remove admission token configuration from values ([c20ae4c](https://github.com/vriesdemichael/keycloak-operator/commit/c20ae4cfebc4257658604d5addbd5bcb10a80524))
+* **chart-operator:** remove outdated authorization token instructions ([898814f](https://github.com/vriesdemichael/keycloak-operator/commit/898814f64bbf4bdc2c5bafc987f22dec971664f2))
+* **chart-operator:** update for operator v0.3.3 compatibility ([794a415](https://github.com/vriesdemichael/keycloak-operator/commit/794a415695d6ebad69332e0c2c0ff7a7484a224e))
+* **chart-operator:** update for operator v0.4.2 ([6920fcf](https://github.com/vriesdemichael/keycloak-operator/commit/6920fcf6ce459479c2ada87f22790898e0b3fb21))
+* **chart-operator:** update for operator v0.4.3 ([63935e4](https://github.com/vriesdemichael/keycloak-operator/commit/63935e4b3d4406e5c31011743ebfce8f3d701492))
+* **chart-operator:** update for operator v0.5.10 ([dcd4a75](https://github.com/vriesdemichael/keycloak-operator/commit/dcd4a758e7500e1db124fa742b977bde471b468d))
+* **chart-operator:** update for operator v0.5.11 ([0b5c68c](https://github.com/vriesdemichael/keycloak-operator/commit/0b5c68c8fe55b1f1226e3cb8cde615684908d01f))
+* **chart-operator:** update for operator v0.5.12 ([f79be8a](https://github.com/vriesdemichael/keycloak-operator/commit/f79be8aea6a92412e8eb7d88852c0174bbc72b2a))
+* **chart-operator:** update for operator v0.5.12 ([30cd277](https://github.com/vriesdemichael/keycloak-operator/commit/30cd277f4bacd3ba9ef90f8f31bd9aa0b158570c))
+* **chart-operator:** update for operator v0.5.13 ([e15182e](https://github.com/vriesdemichael/keycloak-operator/commit/e15182ea29ce4f649ddd996ea9ed91d8b50ac5b4))
+* **chart-operator:** update for operator v0.5.15 ([0c834a1](https://github.com/vriesdemichael/keycloak-operator/commit/0c834a106bc136c1dc9caa0782e91d938f83e042))
+* **chart-operator:** update for operator v0.5.16 ([712e3a2](https://github.com/vriesdemichael/keycloak-operator/commit/712e3a221b0f1fc71c373920124e3e5cde0f8e86))
+* **chart-operator:** update for operator v0.5.17 ([aad3798](https://github.com/vriesdemichael/keycloak-operator/commit/aad3798f0cc07abfcc612760ab85d5c61fcf5041))
+* **chart-operator:** update for operator v0.5.18 ([f86e34f](https://github.com/vriesdemichael/keycloak-operator/commit/f86e34f5fb74baea824e182677dcc52a249d2692))
+* **chart-operator:** update for operator v0.5.19 ([2a7b24f](https://github.com/vriesdemichael/keycloak-operator/commit/2a7b24fb6f2c861ba84c5aa65154afe0a49a4ff9))
+* **chart-operator:** update for operator v0.5.20 ([5b6be7a](https://github.com/vriesdemichael/keycloak-operator/commit/5b6be7ac2d03b3442924301ce556b741355b505f))
+* **chart-operator:** update for operator v0.5.3 ([8e80e43](https://github.com/vriesdemichael/keycloak-operator/commit/8e80e43261ecffe14d5fddab875a7c0078dfd05b))
+* **chart-operator:** update for operator v0.5.5 ([f2e5050](https://github.com/vriesdemichael/keycloak-operator/commit/f2e50503e2e80f71dc2271cb49b1999c78bc74d2))
+* **chart-operator:** update for operator v0.5.6 ([818ecc6](https://github.com/vriesdemichael/keycloak-operator/commit/818ecc6be13cba92f21b24eb1d37da2abe27ec00))
+* **chart-operator:** update for operator v0.5.7 ([3d0cc01](https://github.com/vriesdemichael/keycloak-operator/commit/3d0cc01d1931f506d1231bb4e7c4990bc4abe34c))
+* **chart-operator:** update for operator v0.5.8 ([4c4c9ad](https://github.com/vriesdemichael/keycloak-operator/commit/4c4c9ade2b4db1f04f4a3803932e8b2775fb65ba))
+* **chart-operator:** update for operator v0.5.9 ([a3596f1](https://github.com/vriesdemichael/keycloak-operator/commit/a3596f1e0943b25ea3cf214065ecf5110ab06f12))
+* **chart-operator:** update for operator v0.6.0 ([72dec6d](https://github.com/vriesdemichael/keycloak-operator/commit/72dec6dae8fd63591e33b3f03bc3ea7dda71be08))
+* **chart-operator:** update for operator v0.6.1 ([50dc4f6](https://github.com/vriesdemichael/keycloak-operator/commit/50dc4f6cf673d98aac5ca61e5d34d53a58801407))
+* **chart-operator:** update for operator v0.6.2 ([f2324c3](https://github.com/vriesdemichael/keycloak-operator/commit/f2324c34e4f79310414cfc2f41f69bfdbfd21bf1))
+* **chart-operator:** update for operator v0.6.3 ([4dd93c0](https://github.com/vriesdemichael/keycloak-operator/commit/4dd93c07388e3bbc41415c359faf69c548d2303b))
+* **chart-operator:** use values for CNPG storage configuration ([002f6ec](https://github.com/vriesdemichael/keycloak-operator/commit/002f6ecb468bb6f5e0b022e6d8b4382eb85fd7da)), closes [#233](https://github.com/vriesdemichael/keycloak-operator/issues/233)
+* disable webhook auto-management and default to false ([5104c5f](https://github.com/vriesdemichael/keycloak-operator/commit/5104c5f385921d45dc4aa754bb29df7355a0953b))
+* **operator:** add configSecrets field to identity provider CRD schema ([95a12a6](https://github.com/vriesdemichael/keycloak-operator/commit/95a12a69ddc3e2a7979fee6358ce5765ca1a0a3e))
+* **operator:** database passwordSecret support and test fixes ([3389f69](https://github.com/vriesdemichael/keycloak-operator/commit/3389f695a3a10f8fbeb7e9b0f8cb494b55c3f628))
+* **operator:** resolve BruteForceStrategy enum serialization and complete multi-version support ([3afb2ea](https://github.com/vriesdemichael/keycloak-operator/commit/3afb2ea815aebf7afd10050db96ad013e4b2a2d2))
+* remove tests for deleted periodic_leadership_check function ([eb4c6ac](https://github.com/vriesdemichael/keycloak-operator/commit/eb4c6acc9e732f91567a26e6d4dbe1e9453c7a60))
+* remove webhook config template, let Kopf manage it ([b84b0d5](https://github.com/vriesdemichael/keycloak-operator/commit/b84b0d5aaf9c5814b6ed6e375c45c3918c5e1f8f))
+* restore correct test image tag for coverage collection ([09d1da3](https://github.com/vriesdemichael/keycloak-operator/commit/09d1da3686bfa1aa6ba6d7920f34b031de40d76a))
+
+
+### Documentation
+
+* bulk cleanup of authorizationSecretRef in chart READMEs ([3e31d59](https://github.com/vriesdemichael/keycloak-operator/commit/3e31d59534e7df3f7580099987d30c800422ccec))
+* **chart-operator:** remove all admission token documentation ([d37113c](https://github.com/vriesdemichael/keycloak-operator/commit/d37113c8716323e2336e4518daa73adb023d8401))
+* document webhook timeout behavior on fresh install ([7b4d010](https://github.com/vriesdemichael/keycloak-operator/commit/7b4d010514f0f8298fb7ba1fc125c73dfc626dbc)), closes [#240](https://github.com/vriesdemichael/keycloak-operator/issues/240)
+* final cleanup of remaining token references ([96e6086](https://github.com/vriesdemichael/keycloak-operator/commit/96e6086d173abdfedec0bb197a94cf50afb7690a))
+* improve operator chart values documentation ([2ada78e](https://github.com/vriesdemichael/keycloak-operator/commit/2ada78e95daca86a5c7397e522807d5dee7abb7d))
+* update helm chart READMEs and fix broken links ([a32d3e2](https://github.com/vriesdemichael/keycloak-operator/commit/a32d3e243e7d5f0616bf2d52c3bc14ff2d2f2464))
+
 ## [0.3.30](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.29...chart-operator-v0.3.30) (2026-01-28)
 
 
