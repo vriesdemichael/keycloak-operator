@@ -775,11 +775,26 @@ async def test_ldap_federation_update_config(
             timeout=60,
         )
 
-        # Verify updated config
-        providers = await keycloak_admin_client.get_user_federation_providers(
-            realm_name, test_namespace
-        )
-        assert len(providers) == 1
+        # Wait for Keycloak to reflect the updated config
+        # The CR may report Ready before Keycloak has fully processed the changes
+        import asyncio
+
+        providers = []
+        for attempt in range(10):
+            providers = await keycloak_admin_client.get_user_federation_providers(
+                realm_name, test_namespace
+            )
+            if len(providers) == 1:
+                updated_scope = providers[0].config.get("searchScope", ["1"])[0]
+                if updated_scope == "2":
+                    break
+            logger.debug(
+                f"Attempt {attempt + 1}: waiting for provider config update "
+                f"(providers={len(providers)}, scope={providers[0].config.get('searchScope', ['?'])[0] if providers else 'N/A'})"
+            )
+            await asyncio.sleep(2)
+
+        assert len(providers) == 1, f"Expected 1 provider, got {len(providers)}"
         updated_scope = providers[0].config.get("searchScope", ["1"])[0]
         assert updated_scope == "2", f"Updated scope should be 2, got {updated_scope}"
 
