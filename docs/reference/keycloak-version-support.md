@@ -169,7 +169,7 @@ If you need to update the canonical models (e.g., when a new Keycloak version is
 ```bash
 # Update the canonical version in keycloak_versions.yaml
 # Then regenerate the models
-./scripts/generate_keycloak_models.sh
+uv run scripts/generate_keycloak_models.py
 ```
 
 See the [Keycloak API Reference](../AGENTS.md#keycloak-api-reference) section in AGENTS.md for more details.
