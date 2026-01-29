@@ -1,0 +1,19 @@
+number: 76
+title: No Network Policies in Helm Chart
+category: architecture
+decision: We will not include Kubernetes NetworkPolicy resources in the Keycloak Operator
+  Helm chart.
+agent_instructions: Do not accept requests to add NetworkPolicy templates to the Helm
+  chart. Direct users to manage network security at the platform level.
+rationale: 'Network Policies are highly specific to the underlying CNI (Calico, Cilium,
+  Flannel, etc.) and cluster network architecture. Including them creates a "lowest
+  common denominator" policy that is rarely sufficient for production while adding
+  maintenance burden. We follow the principle of "separation of concerns": the operator
+  chart manages the application, while network security should be managed by the platform
+  team/infrastructure-as-code. Users can easily add NetworkPolicies alongside the
+  release using GitOps.'
+provenance: human
+rejected_alternatives:
+- alternative: Optional NetworkPolicies
+  reason: Adds template complexity and testing burden for features that are often
+    replaced by Service Mesh or CNI-specific CRDs.
