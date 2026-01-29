@@ -349,6 +349,14 @@
          <lastmod>2026-01-29</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/076-no-network-policies-in-helm-chart/</loc>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/077-no-ingress-traffic-separation-for-admin-and-public-interfaces/</loc>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/test-cleanup-strategy/</loc>
          <lastmod>2026-01-29</lastmod>
     </url>

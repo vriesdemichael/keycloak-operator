@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/039-token-rotation-and-bootstrap-flows/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/076-no-network-policies-in-helm-chart/">
       
       
-        <link rel="prev" href="../037-support-for-operator-managed-and-external-keycloak-instances/">
+        <link rel="prev" href="../075-keycloak-horizontal-scaling-jgroups/">
       
       
-        <link rel="next" href="../040-admission-webhooks-for-validation/">
+        <link rel="next" href="../077-no-ingress-traffic-separation-for-admin-and-public-interfaces/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-039: Token rotation and bootstrap flows - Keycloak Operator</title>
+        <title>ADR-076: No Network Policies in Helm Chart - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-039-token-rotation-and-bootstrap-flows" class="md-skip">
+        <a href="#adr-076-no-network-policies-in-helm-chart" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-039: Token rotation and bootstrap flows
+              ADR-076: No Network Policies in Helm Chart
             
           </span>
         </div>
@@ -2659,37 +2659,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-039: Token rotation and bootstrap flows
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
   
@@ -2705,98 +2678,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#non-rotatable-tokens" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Non-rotatable tokens
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#manual-token-distribution-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Manual token distribution only
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3870,10 +3751,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../076-no-network-policies-in-helm-chart/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-076: No Network Policies in Helm Chart
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -3889,6 +3797,87 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#optional-networkpolicies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Optional NetworkPolicies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4028,21 +4017,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#non-rotatable-tokens" class="md-nav__link">
+  <a href="#optional-networkpolicies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Non-rotatable tokens
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#manual-token-distribution-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Manual token distribution only
+        Optional NetworkPolicies
       
     </span>
   </a>
@@ -4071,7 +4049,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/039-token-rotation-and-bootstrap-flows.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/076-no-network-policies-in-helm-chart.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4079,20 +4057,18 @@
   
 
 
-<h1 id="adr-039-token-rotation-and-bootstrap-flows">ADR-039: Token rotation and bootstrap flows<a class="headerlink" href="#adr-039-token-rotation-and-bootstrap-flows" title="Permanent link">&para;</a></h1>
+<h1 id="adr-076-no-network-policies-in-helm-chart">ADR-076: No Network Policies in Helm Chart<a class="headerlink" href="#adr-076-no-network-policies-in-helm-chart" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> architecture
 <strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Automatic token rotation with grace periods for zero-downtime updates. Bootstrap flows enable initial token creation without manual intervention. Tokens rotated 7 days before expiry with dual-token support during transition.</p>
+<p>We will not include Kubernetes NetworkPolicy resources in the Keycloak Operator Helm chart.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Token rotation is security best practice. Long-lived tokens increase compromise risk. Automatic rotation 7 days before expiry prevents service disruptions. Grace period with dual tokens ensures zero downtime - old token works while clients migrate to new token. Bootstrap flows enable automated initial setup without manual token distribution. Prometheus metrics provide visibility into rotation health. Version tracking enables audit trail of token changes.</p>
+<p>Keycloak's primary function relies on external user interaction (login prompts, redirects) which requires secure external TLS access. Internal service-to-service communication (e.g. for token exchange) creates potential configuration issues ("config hell") due to mismatches between external issuer URLs and internal service URLs. The complexity of managing these network restrictions outweighs the minimal security gain, as the application is designed to be public-facing.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Token rotation implemented in src/keycloak_operator/handlers/token_rotation.py. Daily timer checks tokens expiring within 7 days and rotates them. Rotated secrets contain both new token (token) and old token (token-previous) during grace period. Hourly cleanup removes old tokens after grace period expires. Bootstrap flows in tests/integration/test_token_bootstrap.py. Rotation tracked via Prometheus metrics. Tokens have version numbers that increment on rotation. Use SecretManager from src/keycloak_operator/utils/secret_manager.py for rotation operations.</p>
+<p>Do not accept requests to add NetworkPolicy templates to the Helm chart. Direct users to manage network security at the platform level.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="non-rotatable-tokens">Non-rotatable tokens<a class="headerlink" href="#non-rotatable-tokens" title="Permanent link">&para;</a></h3>
-<p>Security risk. Compromised tokens can't be invalidated without recreating all resources.</p>
-<h3 id="manual-token-distribution-only">Manual token distribution only<a class="headerlink" href="#manual-token-distribution-only" title="Permanent link">&para;</a></h3>
-<p>Doesn't scale. Error-prone. Slows down initial setup and emergency rotation.</p>
+<h3 id="optional-networkpolicies">Optional NetworkPolicies<a class="headerlink" href="#optional-networkpolicies" title="Permanent link">&para;</a></h3>
+<p>Adds template complexity and testing burden for features that are often replaced by Service Mesh or CNI-specific CRDs.</p>
 
 
 
@@ -4128,7 +4104,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../037-support-for-operator-managed-and-external-keycloak-instances/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-037: Support for operator-managed and external Keycloak instances">
+          <a href="../075-keycloak-horizontal-scaling-jgroups/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4138,20 +4114,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-037: Support for operator-managed and external Keycloak instances
+                ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING
               </div>
             </div>
           </a>
         
         
           
-          <a href="../040-admission-webhooks-for-validation/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-040: Admission Webhooks for Resource Validation">
+          <a href="../077-no-ingress-traffic-separation-for-admin-and-public-interfaces/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-077: No Ingress Traffic Separation for Admin and Public Interfaces">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-040: Admission Webhooks for Resource Validation
+                ADR-077: No Ingress Traffic Separation for Admin and Public Interfaces
               </div>
             </div>
             <div class="md-footer__button md-icon">
