@@ -871,6 +871,121 @@ async def wait_for_port_forward_ready(
     )
 
 
+class SecretNotReadyError(Exception):
+    """Raised when a secret doesn't have expected keys within timeout."""
+
+    pass
+
+
+async def wait_for_secret_keys(
+    k8s_core_v1,
+    secret_name: str,
+    namespace: str,
+    required_keys: list[str],
+    timeout: int = 60,
+    interval: float = 2.0,
+    operator_namespace: str | None = None,
+) -> Any:
+    """Wait for a Kubernetes Secret to exist and contain all required keys.
+
+    This is useful for handling the race condition where a CR reaches Ready
+    status but the secret hasn't been fully populated yet.
+
+    Args:
+        k8s_core_v1: Kubernetes CoreV1Api client
+        secret_name: Name of the secret to check
+        namespace: Namespace where the secret should exist
+        required_keys: List of keys that must be present in the secret's data
+        timeout: Maximum wait time in seconds
+        interval: Check interval in seconds
+        operator_namespace: Namespace where operator is running (for log collection)
+
+    Returns:
+        The V1Secret object when all required keys are present
+
+    Raises:
+        SecretNotReadyError: When timeout is reached, includes debugging info
+    """
+    import time
+
+    start_time = time.time()
+    last_secret = None
+    last_exception = None
+
+    while time.time() - start_time < timeout:
+        try:
+            secret = await k8s_core_v1.read_namespaced_secret(secret_name, namespace)
+            last_secret = secret
+
+            if secret.data:
+                present_keys = set(secret.data.keys())
+                missing_keys = set(required_keys) - present_keys
+                if not missing_keys:
+                    logger.debug(
+                        f"Secret {namespace}/{secret_name} has all required keys: {required_keys}"
+                    )
+                    return secret
+                logger.debug(
+                    f"Secret {namespace}/{secret_name} missing keys: {missing_keys}"
+                )
+            else:
+                logger.debug(f"Secret {namespace}/{secret_name} has no data yet")
+
+        except ApiException as exc:
+            if exc.status == 404:
+                logger.debug(f"Secret {namespace}/{secret_name} not found yet")
+            else:
+                last_exception = exc
+                logger.debug(f"Error checking secret {namespace}/{secret_name}: {exc}")
+
+        await asyncio.sleep(interval)
+
+    # Timeout reached - collect debugging info
+    debug_info = []
+
+    if last_secret:
+        present_keys = list(last_secret.data.keys()) if last_secret.data else []
+        missing_keys = set(required_keys) - set(present_keys)
+        debug_info.append(f"Secret exists with keys: {present_keys}")
+        debug_info.append(f"Missing keys: {list(missing_keys)}")
+    else:
+        debug_info.append("Secret was never found (404)")
+
+    if last_exception:
+        debug_info.append(f"Last error: {last_exception}")
+
+    debug_files = []
+
+    # Collect operator logs if namespace provided
+    if operator_namespace:
+        try:
+            log_summary, log_file = await _collect_operator_logs(
+                operator_namespace, tail_lines=100
+            )
+            debug_info.append(f"\nOperator Logs (last 5 lines):\n{log_summary}")
+            if log_file:
+                debug_files.append(f"Full operator logs: {log_file}")
+        except Exception as e:
+            debug_info.append(f"\nFailed to collect operator logs: {e}")
+
+    # Build error message
+    error_parts = [
+        f"Secret {namespace}/{secret_name} did not have required keys {required_keys} within {timeout}s.",
+        "",
+        *debug_info,
+    ]
+
+    if debug_files:
+        error_parts.append("\n" + "=" * 70)
+        error_parts.append("Debugging files (full logs):")
+        error_parts.extend(debug_files)
+        error_parts.append("=" * 70)
+
+    error_message = "\n".join(error_parts)
+
+    raise SecretNotReadyError(error_message)
+
+
 async def wait_for_cr_phase_change(
     k8s_custom_objects,
     group: str,

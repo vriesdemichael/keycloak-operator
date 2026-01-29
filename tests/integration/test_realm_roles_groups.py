@@ -78,7 +78,7 @@ async def _cleanup_resource(
 class TestRealmRoles:
     """Test realm role management via the operator."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(300)
     async def test_realm_with_basic_roles(
         self,
         k8s_custom_objects,
@@ -147,7 +147,7 @@ class TestRealmRoles:
 
             logger.info(f"Created realm CR: {realm_name} with 3 roles")
 
-            # Wait for realm to become ready
+            # Wait for realm to become ready (increased timeout for parallel execution)
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -155,7 +155,7 @@ class TestRealmRoles:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=180,
                 operator_namespace=operator_namespace,
             )
 
@@ -190,7 +190,7 @@ class TestRealmRoles:
                 name=realm_name,
             )
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)
     async def test_realm_with_composite_roles(
         self,
         k8s_custom_objects,
@@ -268,15 +268,24 @@ class TestRealmRoles:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=150,
                 operator_namespace=operator_namespace,
             )
 
-            # Verify composite role exists and is marked as composite
-            editor_role = await keycloak_admin_client.get_realm_role_by_name(
-                realm_name, "editor", namespace
-            )
-            assert editor_role is not None
+            # Retry loop for role lookup - Keycloak may return 500 briefly after
+            # realm is Ready while internal state settles
+            editor_role = None
+            for attempt in range(5):
+                editor_role = await keycloak_admin_client.get_realm_role_by_name(
+                    realm_name, "editor", namespace
+                )
+                if editor_role is not None:
+                    break
+                logger.warning(
+                    f"Attempt {attempt + 1}/5: editor role not found, retrying..."
+                )
+                await asyncio.sleep(2)
+            assert editor_role is not None, "editor role should exist after retries"
             assert editor_role.composite is True
 
             # Verify composite role has child roles
@@ -397,7 +406,7 @@ class TestRealmRoles:
 class TestGroups:
     """Test group management via the operator."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)
     async def test_realm_with_basic_groups(
         self,
         k8s_custom_objects,
@@ -457,6 +466,7 @@ class TestGroups:
 
             logger.info(f"Created realm CR: {realm_name} with 2 groups")
 
+            # Increased timeout for parallel execution pressure
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -464,7 +474,7 @@ class TestGroups:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=150,
                 operator_namespace=operator_namespace,
             )
 

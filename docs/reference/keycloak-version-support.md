@@ -6,10 +6,27 @@ This document describes which Keycloak versions are supported by the operator an
 
 | Major Version | Supported Versions | Status |
 |--------------|-------------------|--------|
-| **26.x** | 26.0.0 - 26.5.2+ | ✅ Fully Supported (Canonical) |
+| **26.x** | 26.0.8, 26.1.5, 26.2.0, 26.3.0, 26.4.0, 26.5.2 | ✅ Fully Supported (26.5.2 is Canonical) |
 | **25.x** | 25.0.0+ | ✅ Supported |
 | **24.x** | 24.0.0+ | ✅ Supported |
 | **23.x and earlier** | - | ❌ Not Supported |
+
+### Validated Versions
+
+The following versions have been explicitly validated with the full integration test suite (840 unit tests + 135 integration tests):
+
+| Version | Date Validated | Status |
+|---------|---------------|--------|
+| 24.0.0 | 2026-01-28 | ✅ Pass |
+| 25.0.0 | 2026-01-28 | ✅ Pass |
+| 26.0.8 | 2026-01-29 | ✅ Pass |
+| 26.1.5 | 2026-01-29 | ✅ Pass |
+| 26.2.0 | 2026-01-29 | ✅ Pass |
+| 26.3.0 | 2026-01-29 | ✅ Pass |
+| 26.4.0 | 2026-01-29 | ✅ Pass |
+| 26.5.2 | 2026-01-28 | ✅ Pass (Canonical) |
+
+See `scripts/keycloak_versions.yaml` for the complete validation history.
 
 ### Minimum Version Requirement
 
@@ -156,11 +173,26 @@ When upgrading Keycloak versions:
 
 ## Testing with Multiple Versions
 
-The operator's integration tests run against the canonical version (26.5.2). For other versions:
+The operator's integration tests run against the canonical version (26.5.2) in CI/CD. However, all validated versions listed above have been manually tested with the full integration test suite.
 
-- **Unit tests** cover adapter conversions and validations
-- **Manual testing** is recommended when deploying to non-canonical versions
-- **CI/CD** can be extended to test against specific versions if required
+### Validating a New Version
+
+To validate support for a specific Keycloak version:
+
+```bash
+# Set the version and run the full test suite
+KEYCLOAK_VERSION=26.3.0 make test
+```
+
+This will:
+
+1. Run code quality checks
+2. Create a fresh Kind cluster
+3. Deploy Keycloak with the specified version
+4. Run 840 unit tests and 135 integration tests
+5. Report pass/fail status
+
+If all tests pass, the version should be added to `scripts/keycloak_versions.yaml` under `validated_versions`.
 
 ## Regenerating Models
 

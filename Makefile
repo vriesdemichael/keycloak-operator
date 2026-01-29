@@ -140,23 +140,87 @@ kind-load-keycloak-optimized: build-keycloak-optimized ## Build and load optimiz
 build-all-test: build-test kind-load-keycloak-optimized ## Build and load all test images
 
 # ============================================================================
-# Integration Testing - Execution
+# Integration Testing - Execution (INTERNAL TARGETS)
+# ============================================================================
+# WARNING: These targets are internal implementation details.
+# DO NOT call these targets directly! Use 'make test' instead.
+#
+# Why? Integration tests require a FRESH cluster to guarantee a clean state.
+# Calling test-integration or test-integration-coverage directly on an existing
+# cluster can leave the cluster in a broken state (stuck namespaces, orphaned
+# resources) that will cause subsequent test runs to fail.
+#
+# The 'make test' target properly:
+# 1. Tears down any existing cluster
+# 2. Creates a fresh cluster
+# 3. Runs all tests in the correct order
 # ============================================================================
 
-.PHONY: test-integration
-test-integration: ensure-test-cluster build-all-test ## Run integration tests (builds images, deploys via Helm)
+# Internal target - do not use directly, use 'make test' instead
+.PHONY: _test-integration
+_test-integration: ensure-test-cluster build-all-test
 	@echo "Running integration tests (tests deploy operator via Helm)..."
 	TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 
-.PHONY: test-integration-coverage
-test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized ## Run integration tests with coverage collection
+# Internal target - do not use directly, use 'make test' instead
+.PHONY: _test-integration-coverage
+_test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized
 	@echo "Running integration tests with coverage enabled..."
 	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 	@echo "Combining coverage data..."
 	./scripts/combine-coverage.sh
 
+# Deprecated aliases that warn users - these will be removed in a future version
+.PHONY: test-integration
+test-integration:
+	@echo ""
+	@echo "=============================================================="
+	@echo "ERROR: 'make test-integration' should not be used directly!"
+	@echo "=============================================================="
+	@echo ""
+	@echo "Integration tests require a fresh cluster to guarantee clean state."
+	@echo "Using this target directly can leave the cluster broken."
+	@echo ""
+	@echo "Please use 'make test' instead, which:"
+	@echo "  1. Tears down any existing cluster"
+	@echo "  2. Creates a fresh cluster"
+	@echo "  3. Runs quality checks, unit tests, and integration tests"
+	@echo ""
+	@echo "If you absolutely need to run integration tests on an existing"
+	@echo "cluster (not recommended), use: make _test-integration"
+	@echo ""
+	@exit 1
+
+.PHONY: test-integration-coverage
+test-integration-coverage:
+	@echo ""
+	@echo "=============================================================="
+	@echo "ERROR: 'make test-integration-coverage' should not be used directly!"
+	@echo "=============================================================="
+	@echo ""
+	@echo "Integration tests require a fresh cluster to guarantee clean state."
+	@echo "Using this target directly can leave the cluster broken."
+	@echo ""
+	@echo "Please use 'make test' instead, which:"
+	@echo "  1. Tears down any existing cluster"
+	@echo "  2. Creates a fresh cluster"
+	@echo "  3. Runs quality checks, unit tests, and integration tests"
+	@echo ""
+	@echo "If you absolutely need to run integration tests on an existing"
+	@echo "cluster (not recommended), use: make _test-integration-coverage"
+	@echo ""
+	@exit 1
+
 .PHONY: test-integration-clean
-test-integration-clean: kind-teardown test-integration ## Tear down cluster, then run integration tests
+test-integration-clean:
+	@echo ""
+	@echo "=============================================================="
+	@echo "WARNING: 'make test-integration-clean' is deprecated!"
+	@echo "=============================================================="
+	@echo ""
+	@echo "Please use 'make test' instead."
+	@echo ""
+	@exit 1
 
 # ============================================================================
 # Complete Test Suite
@@ -201,7 +265,7 @@ test-pre-commit: ## Complete pre-commit flow (quality + docs validation + fresh 
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] -------------------------------------" | tee -a .tmp/test-pre-commit.log
 	@bash -c "set -o pipefail; $(MAKE) install-cnpg 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Failed to install CNPG" | tee -a .tmp/test-pre-commit.log; exit 1; }
 	@bash -c "set -o pipefail; $(MAKE) install-cert-manager 2>&1 | tee -a .tmp/test-pre-commit.log" || { echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Failed to install cert-manager" | tee -a .tmp/test-pre-commit.log; exit 1; }
-	@bash -c "set -o pipefail; INTEGRATION_COVERAGE=true $(MAKE) test-integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log" || { \
+	@bash -c "set -o pipefail; INTEGRATION_COVERAGE=true $(MAKE) _test-integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log" || { \
 		echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ❌ Integration tests failed, collecting diagnostics..." | tee -a .tmp/test-pre-commit.log; \
 		$(MAKE) collect-test-logs; \
 		exit 1; \
