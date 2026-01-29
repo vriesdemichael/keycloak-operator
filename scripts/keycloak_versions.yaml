@@ -9,7 +9,7 @@
 # - Version-specific adapters handle breaking changes between versions
 # - All operator code is written against the canonical model
 #
-# See docs/keycloak-version-support.md for user-facing documentation.
+# See docs/reference/keycloak-version-support.md for user-facing documentation.
 
 # Minimum supported version
 minimum_version: "24.0.0"
