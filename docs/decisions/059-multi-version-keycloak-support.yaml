@@ -37,7 +37,7 @@ agent_instructions: |
   When updating the canonical model version (e.g., from 26.5.2 to 27.0.0):
 
   1. **Download new spec**: `curl -o keycloak-api-spec.yaml https://www.keycloak.org/docs-api/27.0.0/rest-api/openapi.yaml`
-  2. **Regenerate models**: `./scripts/generate-keycloak-models.sh`
+  2. **Regenerate models**: `uv run scripts/generate_keycloak_models.py`
   3. **Review changes**: `git diff src/keycloak_operator/models/keycloak_api.py`
   4. **Update constants**: Set `CANONICAL_MODEL_VERSION = "27.0.0"` in `constants.py`
   5. **Update keycloak_versions.yaml**: Change `canonical_version.version` to new version
