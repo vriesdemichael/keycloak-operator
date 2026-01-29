@@ -1,0 +1,29 @@
+number: 9
+title: AI agents as first-class developers
+category: development
+decision: All development-critical information must be documented in locations where
+  AI agents can discover and consume it. This includes AGENTS.md, decision records,
+  inline documentation, and architectural docs. LLM agents should have equal access
+  to context as human developers.
+agent_instructions: Always document information crucial for development in discoverable
+  locations. Assumptions about standards, utility functions, architecture, security,
+  testing patterns, and workflows belong in AGENTS.md, decision records, or inline
+  docs. Never rely on tribal knowledge or undocumented conventions. When you encounter
+  undocumented patterns or assumptions, propose adding them to the appropriate documentation.
+  Code comments explain 'why' and context, not 'what' (LLMs read code structure directly).
+rationale: 'Knowledge accessibility: AI agents need the same context as humans to
+  contribute effectively. Standards assumptions (e.g., "always use uv", "prefer CNPG")
+  must be explicitly documented, not implicit. Utility functions and architectural
+  patterns should be discoverable through AGENTS.md or decision records. Security
+  assumptions (e.g., least privilege, no plaintext secrets) codified in decisions.
+  This creates a self-documenting codebase where agents can onboard instantly by reading
+  structured documentation. Future-proof: As AI capabilities improve, well-documented
+  projects benefit automatically.'
+rejected_alternatives:
+- alternative: Rely on code comments alone for context
+  reason: Comments are scattered and don't provide high-level architectural context
+    or cross-cutting concerns that decision records capture
+- alternative: Only document for humans, let AI learn from code
+  reason: Inefficient - agents waste time inferring patterns that could be explicitly
+    stated. Leads to inconsistent approaches across different AI sessions.
+provenance: guided-ai
