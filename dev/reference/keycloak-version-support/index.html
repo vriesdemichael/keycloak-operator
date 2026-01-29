@@ -1401,6 +1401,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#validated-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validated Versions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#minimum-version-requirement" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1574,6 +1585,23 @@
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Testing with Multiple Versions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#validating-a-new-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validating a New Version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -4067,6 +4095,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#validated-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validated Versions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#minimum-version-requirement" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4241,6 +4280,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Testing with Multiple Versions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#validating-a-new-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validating a New Version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4293,8 +4349,8 @@
 <tbody>
 <tr>
 <td><strong>26.x</strong></td>
-<td>26.0.0 - 26.5.2+</td>
-<td>✅ Fully Supported (Canonical)</td>
+<td>26.0.8+</td>
+<td>✅ Fully Supported (26.5.2 is Canonical)</td>
 </tr>
 <tr>
 <td><strong>25.x</strong></td>
@@ -4313,6 +4369,60 @@
 </tr>
 </tbody>
 </table>
+<h3 id="validated-versions">Validated Versions<a class="headerlink" href="#validated-versions" title="Permanent link">&para;</a></h3>
+<p>The following versions have been explicitly validated with the full integration test suite (840 unit tests + 135 integration tests):</p>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Date Validated</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>24.0.0</td>
+<td>2026-01-28</td>
+<td>✅ Pass</td>
+</tr>
+<tr>
+<td>25.0.0</td>
+<td>2026-01-28</td>
+<td>✅ Pass</td>
+</tr>
+<tr>
+<td>26.0.8</td>
+<td>2026-01-29</td>
+<td>✅ Pass</td>
+</tr>
+<tr>
+<td>26.1.5</td>
+<td>2026-01-29</td>
+<td>✅ Pass</td>
+</tr>
+<tr>
+<td>26.2.0</td>
+<td>2026-01-29</td>
+<td>✅ Pass</td>
+</tr>
+<tr>
+<td>26.3.0</td>
+<td>2026-01-29</td>
+<td>✅ Pass</td>
+</tr>
+<tr>
+<td>26.4.0</td>
+<td>2026-01-29</td>
+<td>✅ Pass</td>
+</tr>
+<tr>
+<td>26.5.2</td>
+<td>2026-01-28</td>
+<td>✅ Pass (Canonical)</td>
+</tr>
+</tbody>
+</table>
+<p>See <code>scripts/keycloak_versions.yaml</code> for the complete validation history.</p>
 <h3 id="minimum-version-requirement">Minimum Version Requirement<a class="headerlink" href="#minimum-version-requirement" title="Permanent link">&para;</a></h3>
 <p>The operator requires <strong>Keycloak 24.0.0 or later</strong>.</p>
 <h3 id="port-behavior-by-version">Port Behavior by Version<a class="headerlink" href="#port-behavior-by-version" title="Permanent link">&para;</a></h3>
@@ -4460,17 +4570,26 @@
 <li><strong>Update CRD specs</strong> - Remove any deprecated fields (e.g., OAuth2 device fields for 26.4.0+)</li>
 </ol>
 <h2 id="testing-with-multiple-versions">Testing with Multiple Versions<a class="headerlink" href="#testing-with-multiple-versions" title="Permanent link">&para;</a></h2>
-<p>The operator's integration tests run against the canonical version (26.5.2). For other versions:</p>
-<ul>
-<li><strong>Unit tests</strong> cover adapter conversions and validations</li>
-<li><strong>Manual testing</strong> is recommended when deploying to non-canonical versions</li>
-<li><strong>CI/CD</strong> can be extended to test against specific versions if required</li>
-</ul>
+<p>The operator's integration tests run against the canonical version (26.5.2) in CI/CD. However, all validated versions listed above have been manually tested with the full integration test suite.</p>
+<h3 id="validating-a-new-version">Validating a New Version<a class="headerlink" href="#validating-a-new-version" title="Permanent link">&para;</a></h3>
+<p>To validate support for a specific Keycloak version:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Set the version and run the full test suite</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">KEYCLOAK_VERSION</span><span class="o">=</span><span class="m">26</span>.3.0<span class="w"> </span>make<span class="w"> </span><span class="nb">test</span>
+</span></code></pre></div>
+<p>This will:</p>
+<ol>
+<li>Run code quality checks</li>
+<li>Create a fresh Kind cluster</li>
+<li>Deploy Keycloak with the specified version</li>
+<li>Run 840 unit tests and 135 integration tests</li>
+<li>Report pass/fail status</li>
+</ol>
+<p>If all tests pass, the version should be added to <code>scripts/keycloak_versions.yaml</code> under <code>validated_versions</code>.</p>
 <h2 id="regenerating-models">Regenerating Models<a class="headerlink" href="#regenerating-models" title="Permanent link">&para;</a></h2>
 <p>If you need to update the canonical models (e.g., when a new Keycloak version is released):</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Update the canonical version in keycloak_versions.yaml</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Then regenerate the models</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>uv<span class="w"> </span>run<span class="w"> </span>scripts/generate_keycloak_models.py
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Update the canonical version in keycloak_versions.yaml</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="c1"># Then regenerate the models</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>uv<span class="w"> </span>run<span class="w"> </span>scripts/generate_keycloak_models.py
 </span></code></pre></div>
 <p>See the <a href="../AGENTS.md#keycloak-api-reference">Keycloak API Reference</a> section in AGENTS.md for more details.</p>
 

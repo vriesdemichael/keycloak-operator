@@ -4911,17 +4911,8 @@
 - Verifying error handling</p>
 <h3 id="integration-tests">Integration Tests<a class="headerlink" href="#integration-tests" title="Permanent link">&para;</a></h3>
 <p>Real Kubernetes tests using Kind clusters:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Run complete test suite (creates cluster, runs tests, cleans up)</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="c1"># Run complete test suite (creates fresh cluster, runs tests)</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>make<span class="w"> </span><span class="nb">test</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="c1"># Run only integration tests (reuses existing cluster for speed)</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>make<span class="w"> </span>test-integration
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="c1"># Fast iteration: reset state but keep cluster</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>make<span class="w"> </span>clean-integration-state<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>test-integration
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="c1"># Fresh start: destroy and recreate cluster</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>make<span class="w"> </span>kind-teardown<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>test-integration
 </span></code></pre></div>
 <p><strong>Integration test workflow:</strong>
 1. Creates Kind cluster (if not exists)
@@ -5305,7 +5296,7 @@ graph TB
 <tr>
 <td>Integration tests fail</td>
 <td>Cluster not ready</td>
-<td>Run <code>make kind-teardown &amp;&amp; make test-integration</code></td>
+<td>Run <code>make kind-teardown &amp;&amp; make test</code></td>
 </tr>
 <tr>
 <td>Port conflicts in tests</td>
@@ -5331,7 +5322,7 @@ graph TB
 </table>
 <h3 id="development-tips">Development Tips<a class="headerlink" href="#development-tips" title="Permanent link">&para;</a></h3>
 <ol>
-<li><strong>Fast iteration</strong>: Use <code>make clean-integration-state &amp;&amp; make test-integration</code> instead of full teardown</li>
+<li><strong>Fast iteration</strong>: Use <code>make test</code> which handles cluster management automatically</li>
 <li><strong>Debug tests</strong>: Add <code>--pdb</code> flag to pytest to drop into debugger on failure</li>
 <li><strong>Parallel testing</strong>: Integration tests run with 8 workers by default, use unique names</li>
 <li><strong>Rate limiting</strong>: Tests automatically respect rate limits, don't bypass them</li>
