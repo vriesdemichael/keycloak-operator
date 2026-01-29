@@ -6,7 +6,7 @@ This document describes which Keycloak versions are supported by the operator an
 
 | Major Version | Supported Versions | Status |
 |--------------|-------------------|--------|
-| **26.x** | 26.0.8, 26.1.5, 26.2.0, 26.3.0, 26.4.0, 26.5.2 | ✅ Fully Supported (26.5.2 is Canonical) |
+| **26.x** | 26.0.8+ | ✅ Fully Supported (26.5.2 is Canonical) |
 | **25.x** | 25.0.0+ | ✅ Supported |
 | **24.x** | 24.0.0+ | ✅ Supported |
 | **23.x and earlier** | - | ❌ Not Supported |

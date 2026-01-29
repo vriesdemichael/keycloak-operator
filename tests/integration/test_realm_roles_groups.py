@@ -20,6 +20,8 @@ import uuid
 import pytest
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
 from .wait_helpers import (
     wait_for_reconciliation_complete,
     wait_for_resource_deleted,
@@ -273,17 +275,28 @@ class TestRealmRoles:
             )
 
             # Retry loop for role lookup - Keycloak may return 500 briefly after
-            # realm is Ready while internal state settles
+            # realm is Ready while internal state settles. The API can return None
+            # or raise KeycloakAdminError with 5xx status codes.
             editor_role = None
             for attempt in range(5):
-                editor_role = await keycloak_admin_client.get_realm_role_by_name(
-                    realm_name, "editor", namespace
-                )
-                if editor_role is not None:
-                    break
-                logger.warning(
-                    f"Attempt {attempt + 1}/5: editor role not found, retrying..."
-                )
+                try:
+                    editor_role = await keycloak_admin_client.get_realm_role_by_name(
+                        realm_name, "editor", namespace
+                    )
+                    if editor_role is not None:
+                        break
+                    logger.warning(
+                        f"Attempt {attempt + 1}/5: editor role not found, retrying..."
+                    )
+                except KeycloakAdminError as e:
+                    # Retry on 5xx server errors
+                    if e.status_code is not None and 500 <= e.status_code < 600:
+                        logger.warning(
+                            f"Attempt {attempt + 1}/5: get_realm_role_by_name failed "
+                            f"with {e.status_code}: {e}, retrying..."
+                        )
+                    else:
+                        raise
                 await asyncio.sleep(2)
             assert editor_role is not None, "editor role should exist after retries"
             assert editor_role.composite is True

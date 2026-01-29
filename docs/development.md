@@ -136,17 +136,8 @@ uv run pytest tests/unit --cov=src/keycloak_operator --cov-report=html
 Real Kubernetes tests using Kind clusters:
 
 ```bash
-# Run complete test suite (creates cluster, runs tests, cleans up)
+# Run complete test suite (creates fresh cluster, runs tests)
 make test
-
-# Run only integration tests (reuses existing cluster for speed)
-make test-integration
-
-# Fast iteration: reset state but keep cluster
-make clean-integration-state && make test-integration
-
-# Fresh start: destroy and recreate cluster
-make kind-teardown && make test-integration
 ```
 
 **Integration test workflow:**
@@ -584,7 +575,7 @@ To add a new explicit page:
 | `No module named 'keycloak_operator'` | Not using uv run | Always use `uv run <command>` or activate venv |
 | Type errors block tests | Missing type annotations | Run `uv run ty check` and fix issues |
 | Pre-commit hook fails | Code quality issues | Run `make quality` to auto-fix |
-| Integration tests fail | Cluster not ready | Run `make kind-teardown && make test-integration` |
+| Integration tests fail | Cluster not ready | Run `make kind-teardown && make test` |
 | Port conflicts in tests | Previous test run still active | Run `pkill -f port-forward` |
 | Missing API docs | Module not referenced | Add `::: dotted.path` in markdown |
 | 404 for docs page | Wrong nav path | Check `mkdocs.yml` navigation |
@@ -592,7 +583,7 @@ To add a new explicit page:
 
 ### Development Tips
 
-1. **Fast iteration**: Use `make clean-integration-state && make test-integration` instead of full teardown
+1. **Fast iteration**: Use `make test` which handles cluster management automatically
 2. **Debug tests**: Add `--pdb` flag to pytest to drop into debugger on failure
 3. **Parallel testing**: Integration tests run with 8 workers by default, use unique names
 4. **Rate limiting**: Tests automatically respect rate limits, don't bypass them
