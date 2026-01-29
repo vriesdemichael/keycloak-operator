@@ -19,6 +19,7 @@ from kubernetes.client.rest import ApiException
 from .wait_helpers import (
     wait_for_reconciliation_complete,
     wait_for_resource_ready,
+    wait_for_secret_keys,
 )
 
 logger = logging.getLogger(__name__)
@@ -95,8 +96,18 @@ class TestClientSecretLifecycle:
 
         secret_name = f"{client_name}-credentials"
 
+        # Wait for secret to have required keys (handles race condition where CR is Ready
+        # but secret population is still in progress)
+        secret = await wait_for_secret_keys(
+            k8s_core_v1=k8s_core_v1,
+            secret_name=secret_name,
+            namespace=namespace,
+            required_keys=["client-secret", "client-id"],
+            timeout=60,
+            operator_namespace=operator_namespace,
+        )
+
         # 3. Verify OwnerReference (Issue 382)
-        secret = await k8s_core_v1.read_namespaced_secret(secret_name, namespace)
         assert secret.metadata.owner_references, "Secret missing ownerReferences"
         owner_ref = secret.metadata.owner_references[0]
         assert owner_ref.kind == "KeycloakClient", (

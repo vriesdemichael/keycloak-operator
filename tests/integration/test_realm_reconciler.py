@@ -26,7 +26,7 @@ from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
 class TestRealmReconciler:
     """Test Realm reconciler functionality."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(300)
     async def test_realm_lifecycle(
         self,
         k8s_custom_objects,
@@ -74,7 +74,7 @@ class TestRealmReconciler:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=150,
                 operator_namespace=operator_namespace,
             )
 

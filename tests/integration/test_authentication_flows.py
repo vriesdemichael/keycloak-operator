@@ -67,7 +67,7 @@ async def _cleanup_resource(
 class TestAuthenticationFlows:
     """Test authentication flow configuration via the operator."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)
     async def test_realm_with_custom_authentication_flow(
         self,
         k8s_custom_objects,
@@ -143,7 +143,7 @@ class TestAuthenticationFlows:
 
             logger.info(f"Created realm CR: {realm_name} with flow: {flow_alias}")
 
-            # Wait for realm to become ready
+            # Wait for realm to become ready (increased timeout for parallel execution)
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -151,7 +151,7 @@ class TestAuthenticationFlows:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=150,
                 operator_namespace=operator_namespace,
             )
 

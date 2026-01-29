@@ -64,7 +64,7 @@ async def _cleanup_resource(
 class TestKeycloakAdminAPI:
     """Test Keycloak Admin API client functionality."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)
     async def test_realm_crud_operations(
         self,
         k8s_custom_objects,
@@ -110,7 +110,7 @@ class TestKeycloakAdminAPI:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=150,
                 operator_namespace=operator_namespace,
             )
 

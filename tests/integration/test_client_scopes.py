@@ -77,7 +77,7 @@ async def _cleanup_resource(
 class TestClientScopes:
     """Test client scope management via the operator."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(300)
     async def test_realm_with_client_scopes(
         self,
         k8s_custom_objects,
@@ -141,7 +141,7 @@ class TestClientScopes:
 
             logger.info(f"Created realm CR: {realm_name} with 2 client scopes")
 
-            # Wait for realm to become ready
+            # Wait for realm to become ready (increased timeout for parallel execution)
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -149,7 +149,7 @@ class TestClientScopes:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=180,
                 operator_namespace=operator_namespace,
             )
 
@@ -663,7 +663,7 @@ class TestClientScopes:
 class TestRealmDefaultOptionalScopes:
     """Test realm-level default and optional client scope assignments."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)
     async def test_realm_default_client_scopes(
         self,
         k8s_custom_objects,
@@ -719,6 +719,7 @@ class TestRealmDefaultOptionalScopes:
                 body=realm_manifest,
             )
 
+            # Increased timeout to handle parallel execution pressure
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -726,7 +727,7 @@ class TestRealmDefaultOptionalScopes:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=150,
                 operator_namespace=operator_namespace,
             )
 
@@ -756,7 +757,7 @@ class TestRealmDefaultOptionalScopes:
                 name=realm_name,
             )
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)
     async def test_realm_optional_client_scopes(
         self,
         k8s_custom_objects,
@@ -812,6 +813,7 @@ class TestRealmDefaultOptionalScopes:
                 body=realm_manifest,
             )
 
+            # Increased timeout to handle parallel execution pressure
             await wait_for_resource_ready(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -819,7 +821,7 @@ class TestRealmDefaultOptionalScopes:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                timeout=120,
+                timeout=150,
                 operator_namespace=operator_namespace,
             )
 
