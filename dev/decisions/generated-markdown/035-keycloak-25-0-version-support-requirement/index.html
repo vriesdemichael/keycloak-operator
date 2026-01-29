@@ -1326,6 +1326,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../reference/keycloak-version-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keycloak Versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../versioning/" class="md-nav__link">
         
   
@@ -3341,6 +3369,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../059-multi-version-keycloak-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-059: Multi-Version Keycloak Support with Single Canonical Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../059-no-managed-keycloak-upgrades/" class="md-nav__link">
         
   
@@ -3975,7 +4031,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Keycloak 25.0.0 introduced separate management interface (port 9000) which is required for proper health checks and metrics without impacting user traffic. Earlier versions lack this feature. Enforcing minimum version ensures consistent behavior and allows operator to depend on modern Keycloak features. Clear version requirement reduces support burden from incompatible configurations.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Enforce minimum Keycloak version 25.0.0 in operator code. Update DEFAULT_KEYCLOAK_VERSION in constants.py to track latest stable. Add version validation in reconcilers. Document version requirements clearly. Reject Keycloak instances with versions &lt; 25.0.0 with clear error messages.</p>
+<p>SUPERSEDED - See ADR-059 for current multi-version support (24.x+). This ADR is kept for historical context only.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="support-all-keycloak-versions">Support all Keycloak versions<a class="headerlink" href="#support-all-keycloak-versions" title="Permanent link">&para;</a></h3>
 <p>Pre-25.0 lacks management port, forcing health checks on user-facing port. Different behavior paths increase complexity.</p>

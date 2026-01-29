@@ -1326,6 +1326,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../reference/keycloak-version-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keycloak Versions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../versioning/" class="md-nav__link">
         
   
@@ -3302,6 +3330,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../059-multi-version-keycloak-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-059: Multi-Version Keycloak Support with Single Canonical Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../059-no-managed-keycloak-upgrades/" class="md-nav__link">
         
   
@@ -3893,11 +3949,11 @@
 <p><strong>Category:</strong> architecture
 <strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Require Keycloak 25.0.0 or later which supports separate management interface (port 9000). Use management port for health checks and metrics, port 8080 for user traffic.</p>
+<p>Use the separate management interface (port 9000) for health checks and metrics when available (Keycloak 25.0.0+). For Keycloak 24.x, fall back to port 8080 for health checks since the management interface is not available. User traffic always uses port 8080.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Security: Separates management endpoints from user traffic. Production ready: Management port is production best practice from Keycloak 25+. Health checks: Dedicated management port prevents health check impact on user traffic. Version enforcement: Ensures users run supported, modern Keycloak versions.</p>
+<p>Security: Separates management endpoints from user traffic when possible (25.x+). Backward compatibility: Supports 24.x users who need the operator but cannot upgrade. Production ready: Management port is production best practice from Keycloak 25+. Health checks: Dedicated management port prevents health check impact on user traffic.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Enforce minimum Keycloak version 25.0.0. Health checks use management port (9000) for /health/ready and /health/live. User traffic on port 8080. Reject versions &lt; 25.0.0. Update DEFAULT_KEYCLOAK_VERSION in src/keycloak_operator/constants.py when new stable versions release.</p>
+<p>Health check port is version-dependent: - Keycloak 25.x+: Use management port 9000 for /health/ready and /health/live - Keycloak 24.x: Use main HTTP port 8080 for health checks (no management interface) Use <code>supports_management_port()</code> and <code>get_health_port()</code> from <code>keycloak_operator.utils.validation</code> to determine correct port at runtime. User traffic always on port 8080. See ADR-059 for multi-version support architecture.</p>
 
 
 

@@ -277,6 +277,10 @@
          <lastmod>2026-01-29</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/059-multi-version-keycloak-support/</loc>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/059-no-managed-keycloak-upgrades/</loc>
          <lastmod>2026-01-29</lastmod>
     </url>
@@ -414,6 +418,10 @@
     </url>
     <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/reference/keycloak-realm-crd/</loc>
+         <lastmod>2026-01-29</lastmod>
+    </url>
+    <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/reference/keycloak-version-support/</loc>
          <lastmod>2026-01-29</lastmod>
     </url>
 </urlset>

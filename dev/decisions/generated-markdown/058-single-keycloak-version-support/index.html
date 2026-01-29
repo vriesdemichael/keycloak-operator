@@ -16,7 +16,7 @@
         <link rel="prev" href="../057-cr-data-validated-with-pydantic/">
       
       
-        <link rel="next" href="../059-no-managed-keycloak-upgrades/">
+        <link rel="next" href="../059-multi-version-keycloak-support/">
       
       
         
@@ -1306,6 +1306,34 @@
     
   
     KeycloakClient CRD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../reference/keycloak-version-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keycloak Versions
   
 
     
@@ -3352,6 +3380,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../059-multi-version-keycloak-support/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-059: Multi-Version Keycloak Support with Single Canonical Model
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../059-no-managed-keycloak-upgrades/" class="md-nav__link">
         
   
@@ -3997,7 +4053,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Single version support simplifies development - no API compatibility matrix, no feature detection, no version-specific code paths. Keycloak API relatively stable within major versions but changes between majors. Supporting multiple versions requires testing each Keycloak version, maintaining compatibility shims, detecting feature availability. Resources better spent on core features now. Users can pin operator version matching their Keycloak version. When multi-version support added, it will be a planned feature (decision 008 feature parity). Current approach: stay on latest Keycloak version, update operator when Keycloak updates.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Current supported version: 26.4.1 (see DEFAULT_KEYCLOAK_IMAGE in src/keycloak_operator/constants.py). Minimum version: 25.0.0 for management port (decision 018). Operator assumes 26.x API and features. When Keycloak releases new versions, update DEFAULT_KEYCLOAK_IMAGE constant. Test against new version before updating. Multiple version support planned but blocked by API compatibility testing and feature detection needs. Reject version mismatches with clear error messages. Document supported version in README and Helm chart.</p>
+<p>SUPERSEDED - See ADR-059 for current multi-version support (24.x, 25.x, 26.x). This ADR is kept for historical context only.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="support-all-keycloak-versions-250">Support all Keycloak versions 25.0+<a class="headerlink" href="#support-all-keycloak-versions-250" title="Permanent link">&para;</a></h3>
 <p>Requires extensive compatibility testing. API differences between versions need conditional code. Feature detection complexity.</p>
@@ -4057,13 +4113,13 @@
         
         
           
-          <a href="../059-no-managed-keycloak-upgrades/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-059: No managed Keycloak upgrades">
+          <a href="../059-multi-version-keycloak-support/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-059: Multi-Version Keycloak Support with Single Canonical Model">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-059: No managed Keycloak upgrades
+                ADR-059: Multi-Version Keycloak Support with Single Canonical Model
               </div>
             </div>
             <div class="md-footer__button md-icon">

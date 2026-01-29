@@ -10,31 +10,31 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/051-multi-stage-docker-builds-for-minimal-images/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/reference/keycloak-version-support/">
       
       
-        <link rel="prev" href="../050-structured-json-logging/">
+        <link rel="prev" href="../keycloak-client-crd/">
       
       
-        <link rel="next" href="../052-optimized-keycloak-container-for-tests/">
+        <link rel="next" href="../../versioning/">
       
       
         
       
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
     
     
       
-        <title>ADR-051: Multi-stage Docker builds for minimal images - Keycloak Operator</title>
+        <title>Keycloak Versions - Keycloak Operator</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.ab4e12ef.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
       
       
 
@@ -53,11 +53,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-051-multi-stage-docker-builds-for-minimal-images" class="md-skip">
+        <a href="#keycloak-version-support" class="md-skip">
           Skip to content
         </a>
       
@@ -100,9 +100,9 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="Keycloak Operator" class="md-header__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
+    <a href="../.." title="Keycloak Operator" class="md-header__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
       
-  <img src="../../../assets/images/logo.svg" alt="logo">
+  <img src="../../assets/images/logo.svg" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-051: Multi-stage Docker builds for minimal images
+              Keycloak Versions
             
           </span>
         </div>
@@ -237,7 +237,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../.." class="md-tabs__link">
+        <a href="../.." class="md-tabs__link">
           
   
   
@@ -257,7 +257,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../concepts/architecture/" class="md-tabs__link">
+        <a href="../../concepts/architecture/" class="md-tabs__link">
           
   
   
@@ -277,7 +277,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../guides/identity-providers/" class="md-tabs__link">
+        <a href="../../guides/identity-providers/" class="md-tabs__link">
           
   
   
@@ -297,7 +297,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../operations/troubleshooting/" class="md-tabs__link">
+        <a href="../../operations/troubleshooting/" class="md-tabs__link">
           
   
   
@@ -313,11 +313,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../../reference/keycloak-crd/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../keycloak-crd/" class="md-tabs__link">
           
   
   
@@ -337,7 +339,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../../development/" class="md-tabs__link">
+        <a href="../../development/" class="md-tabs__link">
           
   
   
@@ -353,11 +355,9 @@
   
   
   
-    
   
-  
-    <li class="md-tabs__item md-tabs__item--active">
-      <a href="../" class="md-tabs__link">
+    <li class="md-tabs__item">
+      <a href="../../decisions/generated-markdown/" class="md-tabs__link">
         
   
   
@@ -376,7 +376,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../../faq/" class="md-tabs__link">
+      <a href="../../faq/" class="md-tabs__link">
         
   
   
@@ -411,9 +411,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="Keycloak Operator" class="md-nav__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
+    <a href="../.." title="Keycloak Operator" class="md-nav__button md-logo" aria-label="Keycloak Operator" data-md-component="logo">
       
-  <img src="../../../assets/images/logo.svg" alt="logo">
+  <img src="../../assets/images/logo.svg" alt="logo">
 
     </a>
     Keycloak Operator
@@ -494,7 +494,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -522,7 +522,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -550,7 +550,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/end-to-end-setup/" class="md-nav__link">
+      <a href="../../how-to/end-to-end-setup/" class="md-nav__link">
         
   
   
@@ -639,7 +639,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concepts/architecture/" class="md-nav__link">
+      <a href="../../concepts/architecture/" class="md-nav__link">
         
   
   
@@ -667,7 +667,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../concepts/security/" class="md-nav__link">
+      <a href="../../concepts/security/" class="md-nav__link">
         
   
   
@@ -695,7 +695,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../admission-webhooks/" class="md-nav__link">
+      <a href="../../admission-webhooks/" class="md-nav__link">
         
   
   
@@ -723,7 +723,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../rbac-implementation/" class="md-nav__link">
+      <a href="../../rbac-implementation/" class="md-nav__link">
         
   
   
@@ -812,7 +812,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/identity-providers/" class="md-nav__link">
+      <a href="../../guides/identity-providers/" class="md-nav__link">
         
   
   
@@ -840,7 +840,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/user-federation/" class="md-nav__link">
+      <a href="../../guides/user-federation/" class="md-nav__link">
         
   
   
@@ -868,7 +868,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/drift-detection/" class="md-nav__link">
+      <a href="../../guides/drift-detection/" class="md-nav__link">
         
   
   
@@ -896,7 +896,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../guides/observability/" class="md-nav__link">
+      <a href="../../guides/observability/" class="md-nav__link">
         
   
   
@@ -924,7 +924,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/multi-tenant/" class="md-nav__link">
+      <a href="../../how-to/multi-tenant/" class="md-nav__link">
         
   
   
@@ -952,7 +952,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/database-setup/" class="md-nav__link">
+      <a href="../../how-to/database-setup/" class="md-nav__link">
         
   
   
@@ -980,7 +980,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/smtp-configuration/" class="md-nav__link">
+      <a href="../../how-to/smtp-configuration/" class="md-nav__link">
         
   
   
@@ -1008,7 +1008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/ha-deployment/" class="md-nav__link">
+      <a href="../../how-to/ha-deployment/" class="md-nav__link">
         
   
   
@@ -1036,7 +1036,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../how-to/backup-restore/" class="md-nav__link">
+      <a href="../../how-to/backup-restore/" class="md-nav__link">
         
   
   
@@ -1125,7 +1125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/troubleshooting/" class="md-nav__link">
+      <a href="../../operations/troubleshooting/" class="md-nav__link">
         
   
   
@@ -1153,7 +1153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../operations/migration/" class="md-nav__link">
+      <a href="../../operations/migration/" class="md-nav__link">
         
   
   
@@ -1185,28 +1185,31 @@
       
   
   
+    
   
   
+  
     
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
-        
-          
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
             
   
   
@@ -1224,7 +1227,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1242,7 +1245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/keycloak-crd/" class="md-nav__link">
+      <a href="../keycloak-crd/" class="md-nav__link">
         
   
   
@@ -1270,7 +1273,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/keycloak-realm-crd/" class="md-nav__link">
+      <a href="../keycloak-realm-crd/" class="md-nav__link">
         
   
   
@@ -1298,7 +1301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../reference/keycloak-client-crd/" class="md-nav__link">
+      <a href="../keycloak-client-crd/" class="md-nav__link">
         
   
   
@@ -1323,10 +1326,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../reference/keycloak-version-support/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Keycloak Versions
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1342,6 +1372,226 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported Versions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Supported Versions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minimum-version-requirement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Minimum Version Requirement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#port-behavior-by-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Port Behavior by Version
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#canonical-model-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Canonical Model Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Canonical Model Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-specific-behaviors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version-Specific Behaviors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version-Specific Behaviors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-2500-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak 25.0.0+ Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-2640-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak 26.4.0+ Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-2630-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak 26.3.0+ Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-2600-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak 26.0.0+ Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#status-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status Conditions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Status Conditions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#condition-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Condition Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-your-keycloak-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking Your Keycloak Version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-keycloak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrading Keycloak
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-with-multiple-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing with Multiple Versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#regenerating-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regenerating Models
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1354,7 +1604,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../versioning/" class="md-nav__link">
+      <a href="../../versioning/" class="md-nav__link">
         
   
   
@@ -1382,7 +1632,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../api/keycloak_operator/" class="md-nav__link">
+      <a href="../../api/keycloak_operator/" class="md-nav__link">
         
   
   
@@ -1471,7 +1721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/" class="md-nav__link">
+      <a href="../../development/" class="md-nav__link">
         
   
   
@@ -1499,7 +1749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/testing/" class="md-nav__link">
+      <a href="../../development/testing/" class="md-nav__link">
         
   
   
@@ -1527,7 +1777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../development/test-cleanup-strategy/" class="md-nav__link">
         
   
   
@@ -1559,32 +1809,29 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_7" >
         
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../decisions/generated-markdown/" class="md-nav__link ">
               
   
   
@@ -1602,13 +1849,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_7">
             <span class="md-nav__icon md-icon"></span>
             
@@ -1626,7 +1873,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../001-kopf-as-operator-framework/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/001-kopf-as-operator-framework/" class="md-nav__link">
         
   
   
@@ -1654,7 +1901,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../002-uv-for-dependency-management/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/002-uv-for-dependency-management/" class="md-nav__link">
         
   
   
@@ -1682,7 +1929,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../003-least-privilege-everywhere/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/003-least-privilege-everywhere/" class="md-nav__link">
         
   
   
@@ -1710,7 +1957,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../004-everything-must-be-gitopsable/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/004-everything-must-be-gitopsable/" class="md-nav__link">
         
   
   
@@ -1738,7 +1985,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../005-no-plaintext-secrets/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/005-no-plaintext-secrets/" class="md-nav__link">
         
   
   
@@ -1766,7 +2013,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../006-all-functionality-must-be-tested-with-pytest/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/006-all-functionality-must-be-tested-with-pytest/" class="md-nav__link">
         
   
   
@@ -1794,7 +2041,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../007-integration-tests-in-kind-clusters/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/007-integration-tests-in-kind-clusters/" class="md-nav__link">
         
   
   
@@ -1822,7 +2069,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../008-feature-parity-with-self-managed-keycloak/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/008-feature-parity-with-self-managed-keycloak/" class="md-nav__link">
         
   
   
@@ -1850,7 +2097,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../009-ai-agents-as-first-class-developers/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/009-ai-agents-as-first-class-developers/" class="md-nav__link">
         
   
   
@@ -1878,7 +2125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../010-semantic-versioning-for-all-artifacts/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/010-semantic-versioning-for-all-artifacts/" class="md-nav__link">
         
   
   
@@ -1906,7 +2153,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../011-conventional-commits-for-all-development/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/011-conventional-commits-for-all-development/" class="md-nav__link">
         
   
   
@@ -1934,7 +2181,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../012-async-api-with-rate-limiting-and-retries/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/012-async-api-with-rate-limiting-and-retries/" class="md-nav__link">
         
   
   
@@ -1962,7 +2209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../013-pydantic-models-for-keycloak-api/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/013-pydantic-models-for-keycloak-api/" class="md-nav__link">
         
   
   
@@ -1990,7 +2237,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../014-separate-helm-charts-per-resource-type/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/014-separate-helm-charts-per-resource-type/" class="md-nav__link">
         
   
   
@@ -2018,7 +2265,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../015-cloudnativepg-as-first-class-database/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/015-cloudnativepg-as-first-class-database/" class="md-nav__link">
         
   
   
@@ -2046,7 +2293,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../016-multi-namespace-operation-by-default/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/016-multi-namespace-operation-by-default/" class="md-nav__link">
         
   
   
@@ -2074,7 +2321,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../017-kubernetes-rbac-over-keycloak-security/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security/" class="md-nav__link">
         
   
   
@@ -2102,7 +2349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../018-management-port-separation-keycloak-25/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/018-management-port-separation-keycloak-25/" class="md-nav__link">
         
   
   
@@ -2130,7 +2377,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../019-drift-detection-and-continuous-reconciliation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/019-drift-detection-and-continuous-reconciliation/" class="md-nav__link">
         
   
   
@@ -2158,7 +2405,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../020-real-kubernetes-for-integration-testing/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/020-real-kubernetes-for-integration-testing/" class="md-nav__link">
         
   
   
@@ -2186,7 +2433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../021-pre-commit-hooks-with-strict-validation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/021-pre-commit-hooks-with-strict-validation/" class="md-nav__link">
         
   
   
@@ -2214,7 +2461,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../022-type-annotations-with-ty-for-type-checking/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/022-type-annotations-with-ty-for-type-checking/" class="md-nav__link">
         
   
   
@@ -2242,7 +2489,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../023-make-for-development-automation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/023-make-for-development-automation/" class="md-nav__link">
         
   
   
@@ -2270,7 +2517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../024-helm-as-deployment-mechanism/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/024-helm-as-deployment-mechanism/" class="md-nav__link">
         
   
   
@@ -2298,7 +2545,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../025-realm-and-client-as-primary-crd-resource-types/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/025-realm-and-client-as-primary-crd-resource-types/" class="md-nav__link">
         
   
   
@@ -2326,7 +2573,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../026-three-layer-responsibility-system-with-token-delegation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/026-three-layer-responsibility-system-with-token-delegation/" class="md-nav__link">
         
   
   
@@ -2354,7 +2601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../027-json-schemas-published-to-github-pages/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/027-json-schemas-published-to-github-pages/" class="md-nav__link">
         
   
   
@@ -2382,7 +2629,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../028-documentation-published-to-github-pages/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/028-documentation-published-to-github-pages/" class="md-nav__link">
         
   
   
@@ -2410,7 +2657,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../029-versioned-documentation-with-mike/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/029-versioned-documentation-with-mike/" class="md-nav__link">
         
   
   
@@ -2438,7 +2685,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../030-helm-charts-published-to-github-pages-oci-registry/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/030-helm-charts-published-to-github-pages-oci-registry/" class="md-nav__link">
         
   
   
@@ -2466,7 +2713,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../031-automated-releases-with-release-please/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/031-automated-releases-with-release-please/" class="md-nav__link">
         
   
   
@@ -2494,7 +2741,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../032-minimal-rbac-with-namespaced-service-accounts/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/032-minimal-rbac-with-namespaced-service-accounts/" class="md-nav__link">
         
   
   
@@ -2522,7 +2769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../033-custom-resource-definitions-as-api/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/033-custom-resource-definitions-as-api/" class="md-nav__link">
         
   
   
@@ -2550,7 +2797,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../034-github-actions-for-ci-and-artifact-publication/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/034-github-actions-for-ci-and-artifact-publication/" class="md-nav__link">
         
   
   
@@ -2578,7 +2825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../035-keycloak-25-0-version-support-requirement/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/035-keycloak-25-0-version-support-requirement/" class="md-nav__link">
         
   
   
@@ -2606,7 +2853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../036-automated-dependency-updates-with-dependabot-and-custom-workflows/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/036-automated-dependency-updates-with-dependabot-and-custom-workflows/" class="md-nav__link">
         
   
   
@@ -2634,7 +2881,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../037-support-for-operator-managed-and-external-keycloak-instances/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/037-support-for-operator-managed-and-external-keycloak-instances/" class="md-nav__link">
         
   
   
@@ -2662,7 +2909,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
   
@@ -2690,7 +2937,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-admission-webhooks-for-validation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/040-admission-webhooks-for-validation/" class="md-nav__link">
         
   
   
@@ -2718,7 +2965,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../040-ruff-for-formatting-and-linting/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/040-ruff-for-formatting-and-linting/" class="md-nav__link">
         
   
   
@@ -2746,7 +2993,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../041-shared-operator-fixture-in-tests/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/041-shared-operator-fixture-in-tests/" class="md-nav__link">
         
   
   
@@ -2774,7 +3021,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../042-pytest-xdist-for-parallel-integration-tests/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/042-pytest-xdist-for-parallel-integration-tests/" class="md-nav__link">
         
   
   
@@ -2802,7 +3049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../043-wait-helpers-with-debug-logging-in-tests/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/043-wait-helpers-with-debug-logging-in-tests/" class="md-nav__link">
         
   
   
@@ -2830,7 +3077,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../044-extra-manifests-support-in-helm-charts/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/044-extra-manifests-support-in-helm-charts/" class="md-nav__link">
         
   
   
@@ -2858,7 +3105,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../045-active-standby-ha-using-kopf-peering/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/045-active-standby-ha-using-kopf-peering/" class="md-nav__link">
         
   
   
@@ -2886,7 +3133,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../046-multiple-operator-support-with-explicit-references/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/046-multiple-operator-support-with-explicit-references/" class="md-nav__link">
         
   
   
@@ -2914,7 +3161,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../047-managed-keycloak-for-quick-start/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/047-managed-keycloak-for-quick-start/" class="md-nav__link">
         
   
   
@@ -2942,7 +3189,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../048-prometheus-metrics-exposure/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/048-prometheus-metrics-exposure/" class="md-nav__link">
         
   
   
@@ -2970,7 +3217,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../049-horizontal-scaling-via-multiple-operators/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/049-horizontal-scaling-via-multiple-operators/" class="md-nav__link">
         
   
   
@@ -2998,7 +3245,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../050-structured-json-logging/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/050-structured-json-logging/" class="md-nav__link">
         
   
   
@@ -3023,37 +3270,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-051: Multi-stage Docker builds for minimal images
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/051-multi-stage-docker-builds-for-minimal-images/" class="md-nav__link">
         
   
   
@@ -3069,98 +3289,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#single-stage-builds" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Single-stage builds
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#separate-build-and-runtime-dockerfiles" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Separate build and runtime Dockerfiles
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3173,7 +3301,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../052-optimized-keycloak-container-for-tests/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/052-optimized-keycloak-container-for-tests/" class="md-nav__link">
         
   
   
@@ -3201,7 +3329,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../053-error-categorization-temporary-vs-permanent/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/053-error-categorization-temporary-vs-permanent/" class="md-nav__link">
         
   
   
@@ -3229,7 +3357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../054-namespace-watch-scope-requires-cluster-rbac/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/054-namespace-watch-scope-requires-cluster-rbac/" class="md-nav__link">
         
   
   
@@ -3257,7 +3385,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../055-container-image-registry-and-tagging/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/055-container-image-registry-and-tagging/" class="md-nav__link">
         
   
   
@@ -3285,7 +3413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../056-no-opinionated-backup-or-secret-management/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/056-no-opinionated-backup-or-secret-management/" class="md-nav__link">
         
   
   
@@ -3313,7 +3441,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../057-cr-data-validated-with-pydantic/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/057-cr-data-validated-with-pydantic/" class="md-nav__link">
         
   
   
@@ -3341,7 +3469,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../058-single-keycloak-version-support/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/058-single-keycloak-version-support/" class="md-nav__link">
         
   
   
@@ -3369,7 +3497,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../059-multi-version-keycloak-support/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/059-multi-version-keycloak-support/" class="md-nav__link">
         
   
   
@@ -3397,7 +3525,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../059-no-managed-keycloak-upgrades/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/059-no-managed-keycloak-upgrades/" class="md-nav__link">
         
   
   
@@ -3425,7 +3553,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../060-cascading-deletes/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/060-cascading-deletes/" class="md-nav__link">
         
   
   
@@ -3453,7 +3581,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../061-github-issues-with-ai-instructions/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/061-github-issues-with-ai-instructions/" class="md-nav__link">
         
   
   
@@ -3481,7 +3609,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../062-one-keycloak-per-operator/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/062-one-keycloak-per-operator/" class="md-nav__link">
         
   
   
@@ -3509,7 +3637,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../063-namespace-grant-list-authorization/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/063-namespace-grant-list-authorization/" class="md-nav__link">
         
   
   
@@ -3537,7 +3665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../064-no-force-delete-annotation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/064-no-force-delete-annotation/" class="md-nav__link">
         
   
   
@@ -3565,7 +3693,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../065-webhook-certificate-management-with-cert-manager/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/065-webhook-certificate-management-with-cert-manager/" class="md-nav__link">
         
   
   
@@ -3593,7 +3721,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../066-centralized-settings-with-pydantic/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/066-centralized-settings-with-pydantic/" class="md-nav__link">
         
   
   
@@ -3621,7 +3749,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../067-integration-test-coverage-via-sigusr1/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/067-integration-test-coverage-via-sigusr1/" class="md-nav__link">
         
   
   
@@ -3649,7 +3777,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../068-always-recreate-test-cluster/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/068-always-recreate-test-cluster/" class="md-nav__link">
         
   
   
@@ -3677,7 +3805,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../069-documentation-schema-validation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/069-documentation-schema-validation/" class="md-nav__link">
         
   
   
@@ -3705,7 +3833,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../070-auto-discovery-for-schema-validation/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/070-auto-discovery-for-schema-validation/" class="md-nav__link">
         
   
   
@@ -3733,7 +3861,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../071-crd-pydantic-schema-sync/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/071-crd-pydantic-schema-sync/" class="md-nav__link">
         
   
   
@@ -3761,7 +3889,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../072-handling-unrecognized-doc-snippets/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/072-handling-unrecognized-doc-snippets/" class="md-nav__link">
         
   
   
@@ -3789,7 +3917,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../073-security-and-multi-tenancy-model/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/073-security-and-multi-tenancy-model/" class="md-nav__link">
         
   
   
@@ -3817,7 +3945,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../074-keycloak-scalability-and-ha/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/074-keycloak-scalability-and-ha/" class="md-nav__link">
         
   
   
@@ -3845,7 +3973,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../075-keycloak-horizontal-scaling-jgroups/" class="md-nav__link">
+      <a href="../../decisions/generated-markdown/075-keycloak-horizontal-scaling-jgroups/" class="md-nav__link">
         
   
   
@@ -3880,7 +4008,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../faq/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   
@@ -3927,55 +4055,22 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
+  <a href="#supported-versions" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Decision
+        Supported Versions
       
     </span>
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
+    <nav class="md-nav" aria-label="Supported Versions">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#single-stage-builds" class="md-nav__link">
+  <a href="#minimum-version-requirement" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Single-stage builds
+        Minimum Version Requirement
       
     </span>
   </a>
@@ -3983,10 +4078,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#separate-build-and-runtime-dockerfiles" class="md-nav__link">
+  <a href="#port-behavior-by-version" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Separate build and runtime Dockerfiles
+        Port Behavior by Version
       
     </span>
   </a>
@@ -3995,6 +4090,167 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#canonical-model-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Canonical Model Architecture
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Canonical Model Architecture">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How It Works
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#version-specific-behaviors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Version-Specific Behaviors
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Version-Specific Behaviors">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-2500-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak 25.0.0+ Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-2640-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak 26.4.0+ Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-2630-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak 26.3.0+ Changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak-2600-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keycloak 26.0.0+ Features
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#status-conditions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status Conditions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Status Conditions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#condition-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Condition Types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#checking-your-keycloak-version" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Checking Your Keycloak Version
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#upgrading-keycloak" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Upgrading Keycloak
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing-with-multiple-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing with Multiple Versions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#regenerating-models" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Regenerating Models
+      
+    </span>
+  </a>
   
 </li>
       
@@ -4015,7 +4271,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/051-multi-stage-docker-builds-for-minimal-images.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/reference/keycloak-version-support.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4023,20 +4279,200 @@
   
 
 
-<h1 id="adr-051-multi-stage-docker-builds-for-minimal-images">ADR-051: Multi-stage Docker builds for minimal images<a class="headerlink" href="#adr-051-multi-stage-docker-builds-for-minimal-images" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> development
-<strong>Provenance:</strong> human</p>
-<h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use multi-stage Docker builds to produce minimal production images. Build stage installs dependencies, final stage contains only runtime requirements.</p>
-<h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Multi-stage builds produce smaller images (100s of MB vs GBs). Smaller images = faster pulls, less storage, smaller attack surface. Build tools (gcc, make) not needed at runtime. Only ship runtime dependencies. Separates build-time and runtime concerns. Faster image pulls in production. Lower network costs. Better security (fewer packages = fewer vulnerabilities).</p>
-<h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Define Dockerfile with separate build and runtime stages. Build stage: install uv, sync all dependencies including dev/build tools. Runtime stage: copy only installed packages and application code. Use slim base images (python:3.13-slim). Don't include build tools, compilers, or dev dependencies in final image.</p>
-<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="single-stage-builds">Single-stage builds<a class="headerlink" href="#single-stage-builds" title="Permanent link">&para;</a></h3>
-<p>Large images with unnecessary build tools. Slower deployments. More security vulnerabilities.</p>
-<h3 id="separate-build-and-runtime-dockerfiles">Separate build and runtime Dockerfiles<a class="headerlink" href="#separate-build-and-runtime-dockerfiles" title="Permanent link">&para;</a></h3>
-<p>Harder to maintain. Duplication. Multi-stage achieves same goal in single file.</p>
+<h1 id="keycloak-version-support">Keycloak Version Support<a class="headerlink" href="#keycloak-version-support" title="Permanent link">&para;</a></h1>
+<p>This document describes which Keycloak versions are supported by the operator and how version compatibility is handled.</p>
+<h2 id="supported-versions">Supported Versions<a class="headerlink" href="#supported-versions" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Major Version</th>
+<th>Supported Versions</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>26.x</strong></td>
+<td>26.0.0 - 26.5.2+</td>
+<td>✅ Fully Supported (Canonical)</td>
+</tr>
+<tr>
+<td><strong>25.x</strong></td>
+<td>25.0.0+</td>
+<td>✅ Supported</td>
+</tr>
+<tr>
+<td><strong>24.x</strong></td>
+<td>24.0.0+</td>
+<td>✅ Supported</td>
+</tr>
+<tr>
+<td><strong>23.x and earlier</strong></td>
+<td>-</td>
+<td>❌ Not Supported</td>
+</tr>
+</tbody>
+</table>
+<h3 id="minimum-version-requirement">Minimum Version Requirement<a class="headerlink" href="#minimum-version-requirement" title="Permanent link">&para;</a></h3>
+<p>The operator requires <strong>Keycloak 24.0.0 or later</strong>.</p>
+<h3 id="port-behavior-by-version">Port Behavior by Version<a class="headerlink" href="#port-behavior-by-version" title="Permanent link">&para;</a></h3>
+<p>The operator automatically detects the Keycloak version and configures health probes accordingly:</p>
+<table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Health Check Port</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>24.x</strong></td>
+<td>8080 (HTTP port)</td>
+<td>No separate management interface</td>
+</tr>
+<tr>
+<td><strong>25.x+</strong></td>
+<td>9000 (management port)</td>
+<td>Uses dedicated <code>KC_HTTP_MANAGEMENT_PORT</code></td>
+</tr>
+</tbody>
+</table>
+<p>When using custom images, you can specify <code>keycloakVersion</code> in the CR spec to override version detection.</p>
+<h2 id="canonical-model-architecture">Canonical Model Architecture<a class="headerlink" href="#canonical-model-architecture" title="Permanent link">&para;</a></h2>
+<p>The operator uses a <strong>single canonical model</strong> approach for type safety and maintainability:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>┌─────────────────────────────────────────────────────────────────┐
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>│                     Operator Code                               │
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>│  (Reconcilers, Handlers, Validation - written against v26.5.2) │
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>└───────────────────────┬─────────────────────────────────────────┘
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>                        │
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>                        ▼
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>┌─────────────────────────────────────────────────────────────────┐
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>│              Canonical Pydantic Models (v26.5.2)                │
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>│           keycloak_operator/models/keycloak_api.py              │
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>└───────────────────────┬─────────────────────────────────────────┘
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>                        │
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>                        ▼
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>┌─────────────────────────────────────────────────────────────────┐
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>│                   Version Adapters                              │
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>│    V26Adapter │ V25Adapter │ V24Adapter                         │
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>│  (Handles version-specific conversions and validations)         │
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>└───────────────────────┬─────────────────────────────────────────┘
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>                        │
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>                        ▼
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>┌─────────────────────────────────────────────────────────────────┐
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>│                     Keycloak API                                │
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>│              (24.x, 25.x, or 26.x instance)                     │
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>└─────────────────────────────────────────────────────────────────┘
+</span></code></pre></div>
+<h3 id="how-it-works">How It Works<a class="headerlink" href="#how-it-works" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Single Model</strong>: All operator code uses Pydantic models generated from Keycloak 26.5.2 (the canonical version)</li>
+<li><strong>Version Detection</strong>: When connecting to Keycloak, the operator detects the server version</li>
+<li><strong>Adapter Selection</strong>: The appropriate adapter (V24, V25, or V26) is selected based on version</li>
+<li><strong>Outbound Conversion</strong>: When sending data to Keycloak, the adapter converts canonical models to the target version format</li>
+<li><strong>Inbound Conversion</strong>: When receiving data from Keycloak, the adapter converts responses back to canonical format</li>
+<li><strong>Validation</strong>: The adapter validates CRD specs against version-specific constraints</li>
+</ol>
+<h2 id="version-specific-behaviors">Version-Specific Behaviors<a class="headerlink" href="#version-specific-behaviors" title="Permanent link">&para;</a></h2>
+<h3 id="keycloak-2500-changes">Keycloak 25.0.0+ Changes<a class="headerlink" href="#keycloak-2500-changes" title="Permanent link">&para;</a></h3>
+<p>The <strong>management port</strong> (9000) was introduced in Keycloak 25.0.0:</p>
+<ul>
+<li>Health checks (<code>/health/started</code>, <code>/health/live</code>, <code>/health/ready</code>) moved to port 9000</li>
+<li>Metrics endpoint (<code>/metrics</code>) moved to port 9000</li>
+<li>The operator automatically detects this and configures probes accordingly</li>
+</ul>
+<p>For 24.x instances, the operator uses port 8080 for all health checks.</p>
+<h3 id="keycloak-2640-changes">Keycloak 26.4.0+ Changes<a class="headerlink" href="#keycloak-2640-changes" title="Permanent link">&para;</a></h3>
+<p>The following fields were <strong>removed</strong> in 26.4.0:</p>
+<ul>
+<li><code>oAuth2DeviceCodeLifespan</code></li>
+<li><code>oAuth2DevicePollingInterval</code></li>
+</ul>
+<p>If you specify these fields in a <code>KeycloakRealm</code> spec targeting 26.4.0+, the operator will:</p>
+<ol>
+<li>Report an <strong>error</strong> in the CR status conditions</li>
+<li>Fail the reconciliation with a clear message</li>
+</ol>
+<h3 id="keycloak-2630-changes">Keycloak 26.3.0+ Changes<a class="headerlink" href="#keycloak-2630-changes" title="Permanent link">&para;</a></h3>
+<p>The <code>configuration</code> field in <code>ClientPolicyConditionRepresentation</code> and <code>ClientPolicyExecutorRepresentation</code> changed type:</p>
+<ul>
+<li><strong>Before 26.3.0</strong>: <code>list[Any]</code></li>
+<li><strong>26.3.0+</strong>: <code>dict[str, Any]</code></li>
+</ul>
+<p>The adapter automatically converts between these formats:</p>
+<ul>
+<li>When sending to Keycloak &lt; 26.3.0: Converts dict → list</li>
+<li>When receiving from Keycloak &lt; 26.3.0: Converts list → dict</li>
+</ul>
+<p>A <strong>warning</strong> is added to the CR status conditions when this conversion occurs.</p>
+<h3 id="keycloak-2600-features">Keycloak 26.0.0+ Features<a class="headerlink" href="#keycloak-2600-features" title="Permanent link">&para;</a></h3>
+<p>The <strong>Organizations</strong> feature is only available in Keycloak 26.0.0+. If you enable <code>organizationsEnabled: true</code> on a 25.x or 24.x instance, the operator will:</p>
+<ol>
+<li>Report an <strong>error</strong> in the CR status conditions</li>
+<li>Fail the reconciliation with a message explaining the minimum version requirement</li>
+</ol>
+<h2 id="status-conditions">Status Conditions<a class="headerlink" href="#status-conditions" title="Permanent link">&para;</a></h2>
+<p>The operator reports version compatibility information in the CR status conditions:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">status</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">conditions</span><span class="p">:</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">VersionCompatibility/ClientPolicyConfigConverted</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">      </span><span class="nt">status</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;True&quot;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">      </span><span class="nt">reason</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ClientPolicyConfigConverted</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">      </span><span class="nt">message</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Client</span><span class="nv"> </span><span class="s">policy</span><span class="nv"> </span><span class="s">configuration</span><span class="nv"> </span><span class="s">converted</span><span class="nv"> </span><span class="s">from</span><span class="nv"> </span><span class="s">dict</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">list</span><span class="nv"> </span><span class="s">for</span><span class="nv"> </span><span class="s">Keycloak</span><span class="nv"> </span><span class="s">26.2.0&quot;</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">      </span><span class="nt">lastTransitionTime</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2025-01-28T14:30:00Z&quot;</span>
+</span></code></pre></div>
+<h3 id="condition-types">Condition Types<a class="headerlink" href="#condition-types" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Level</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>VersionCompatibility/*Warning</code></td>
+<td>Warning</td>
+<td>Non-blocking issue, operation will proceed</td>
+</tr>
+<tr>
+<td><code>VersionCompatibility/*Error</code></td>
+<td>Error</td>
+<td>Blocking issue, reconciliation fails</td>
+</tr>
+</tbody>
+</table>
+<h2 id="checking-your-keycloak-version">Checking Your Keycloak Version<a class="headerlink" href="#checking-your-keycloak-version" title="Permanent link">&para;</a></h2>
+<p>The operator automatically detects the Keycloak version. You can verify the detected version by checking the operator logs:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>kubectl<span class="w"> </span>logs<span class="w"> </span>-n<span class="w"> </span>keycloak-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;Keycloak version&quot;</span>
+</span></code></pre></div>
+<p>Or check the Keycloak CR status:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>-o<span class="w"> </span><span class="nv">jsonpath</span><span class="o">=</span><span class="s1">&#39;{.status.version}&#39;</span>
+</span></code></pre></div>
+<h2 id="upgrading-keycloak">Upgrading Keycloak<a class="headerlink" href="#upgrading-keycloak" title="Permanent link">&para;</a></h2>
+<p>When upgrading Keycloak versions:</p>
+<ol>
+<li><strong>Check compatibility</strong> - Review the version-specific behaviors above</li>
+<li><strong>Update Keycloak</strong> - Perform the Keycloak upgrade</li>
+<li><strong>Verify operator</strong> - The operator will automatically detect the new version and use the appropriate adapter</li>
+<li><strong>Update CRD specs</strong> - Remove any deprecated fields (e.g., OAuth2 device fields for 26.4.0+)</li>
+</ol>
+<h2 id="testing-with-multiple-versions">Testing with Multiple Versions<a class="headerlink" href="#testing-with-multiple-versions" title="Permanent link">&para;</a></h2>
+<p>The operator's integration tests run against the canonical version (26.5.2). For other versions:</p>
+<ul>
+<li><strong>Unit tests</strong> cover adapter conversions and validations</li>
+<li><strong>Manual testing</strong> is recommended when deploying to non-canonical versions</li>
+<li><strong>CI/CD</strong> can be extended to test against specific versions if required</li>
+</ul>
+<h2 id="regenerating-models">Regenerating Models<a class="headerlink" href="#regenerating-models" title="Permanent link">&para;</a></h2>
+<p>If you need to update the canonical models (e.g., when a new Keycloak version is released):</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="c1"># Update the canonical version in keycloak_versions.yaml</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="c1"># Then regenerate the models</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>uv<span class="w"> </span>run<span class="w"> </span>scripts/generate_keycloak_models.py
+</span></code></pre></div>
+<p>See the <a href="../AGENTS.md#keycloak-api-reference">Keycloak API Reference</a> section in AGENTS.md for more details.</p>
 
 
 
@@ -4072,7 +4508,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../050-structured-json-logging/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-050: Structured JSON logging">
+          <a href="../keycloak-client-crd/" class="md-footer__link md-footer__link--prev" aria-label="Previous: KeycloakClient CRD">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4082,20 +4518,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-050: Structured JSON logging
+                KeycloakClient CRD
               </div>
             </div>
           </a>
         
         
           
-          <a href="../052-optimized-keycloak-container-for-tests/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-052: Optimized Keycloak container for tests">
+          <a href="../../versioning/" class="md-footer__link md-footer__link--next" aria-label="Next: Versioning">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-052: Optimized Keycloak container for tests
+                Versioning
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -4148,10 +4584,10 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "../../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "search.share", "content.code.copy", "content.action.edit", "navigation.top", "navigation.footer"], "search": "../../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.tabs", "navigation.sections", "navigation.expand", "search.highlight", "search.share", "content.code.copy", "content.action.edit", "navigation.top", "navigation.footer"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
       
         <script src="https://unpkg.com/mermaid@10/dist/mermaid.min.js"></script>
       
