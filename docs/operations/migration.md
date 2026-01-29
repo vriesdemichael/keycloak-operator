@@ -32,11 +32,6 @@ kubectl get keycloak,keycloakrealm,keycloakclient --all-namespaces -o yaml \
 helm get values keycloak-operator -n keycloak-operator-system \
   > operator-values-backup-$(date +%Y%m%d).yaml
 
-# Backup token metadata
-kubectl get configmap keycloak-operator-token-metadata \
-  -n keycloak-operator-system -o yaml \
-  > token-metadata-backup-$(date +%Y%m%d).yaml
-
 # Backup CRDs
 kubectl get crd -o yaml | grep -A1000 "vriesdemichael.github.io" \
   > crds-backup-$(date +%Y%m%d).yaml
@@ -64,16 +59,14 @@ Check the [Releases Page](https://github.com/vriesdemichael/keycloak-operator/re
 ### Step 4: Upgrade Operator (Helm)
 
 ```bash
-# Update Helm repository
-helm repo update
-
-# Check available versions
-helm search repo keycloak-operator --versions
+# Check available versions (OCI)
+helm show chart oci://ghcr.io/vriesdemichael/charts/keycloak-operator
 
 # Upgrade operator
-helm upgrade keycloak-operator ./charts/keycloak-operator \
+helm upgrade keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-operator-system \
   --values operator-values-backup-$(date +%Y%m%d).yaml \
+  --version <version> \
   --wait
 ```
 
@@ -284,9 +277,9 @@ kubectl get pods -n <namespace> -l app=keycloak
 
 | Feature | This Operator | Official Operator |
 |---------|---------------|-------------------|
-| Authorization method | Secret-based tokens | Keycloak admin credentials |
-| Token rotation | ✅ Automatic (90-day) | ❌ Manual |
-| Multi-tenant isolation | ✅ Namespace-scoped tokens | ⚠️ RBAC-based |
+| Authorization method | Namespace Grant + RBAC | Keycloak admin credentials |
+| Token rotation | ✅ Automatic | ❌ Manual |
+| Multi-tenant isolation | ✅ Namespace Grant Lists | ⚠️ RBAC-based |
 | Audit trail | ✅ K8s API + ConfigMap | ⚠️ Keycloak logs |
 | Secret distribution | ✅ GitOps-friendly | ⚠️ Manual |
 
@@ -346,11 +339,6 @@ kubectl get keycloak,keycloakrealm,keycloakclient --all-namespaces -o yaml \
 # Backup operator config
 helm get values keycloak-operator -n keycloak-operator-system \
   > ${BACKUP_DIR}/operator-values.yaml
-
-# Backup token metadata
-kubectl get configmap keycloak-operator-token-metadata \
-  -n keycloak-operator-system -o yaml \
-  > ${BACKUP_DIR}/token-metadata.yaml
 
 # Backup CRDs
 kubectl get crd -o yaml | grep -A1000 "vriesdemichael.github.io" \
