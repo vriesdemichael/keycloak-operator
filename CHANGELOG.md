@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.0...operator-image-v0.7.1) (2026-01-29)
+
+
+### Features
+
+* **operator-image:** add OCI image labels ([5bc3332](https://github.com/vriesdemichael/keycloak-operator/commit/5bc3332a02595d61d324496d67941e5a4699360a)), closes [#390](https://github.com/vriesdemichael/keycloak-operator/issues/390)
+
 ## [0.7.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.6.4...operator-image-v0.7.0) (2026-01-29)
 
 
