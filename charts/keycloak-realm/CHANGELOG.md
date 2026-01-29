@@ -1,5 +1,37 @@
 # Changelog
 
+## [0.4.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.9...chart-realm-v0.4.0) (2026-01-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-client+chart-operator+chart-realm:** Helm chart distribution moved to OCI registry
+
+### Features
+
+* **chart-client+chart-operator+chart-realm:** migrate to OCI registry in GHCR ([3d122c6](https://github.com/vriesdemichael/keycloak-operator/commit/3d122c6b78851ef571b5d4d4af436039e45bb9d0))
+* **chart-operator+chart-realm+operator:** add complete realm role and group management ([add7630](https://github.com/vriesdemichael/keycloak-operator/commit/add763062f9c8d62f3131fba55361d2e7bd40a62))
+* **chart-operator+chart-realm+operator:** add password policy and improve events config ([48e91af](https://github.com/vriesdemichael/keycloak-operator/commit/48e91af5ca03940d1e86eb6cc0c50e4c595973f6)), closes [#311](https://github.com/vriesdemichael/keycloak-operator/issues/311)
+* **chart-realm:** add client scope management ([bd63d5b](https://github.com/vriesdemichael/keycloak-operator/commit/bd63d5bc4ef514020575390ac2a4eb51d5b57279)), closes [#181](https://github.com/vriesdemichael/keycloak-operator/issues/181)
+* **chart-realm:** add missing CRD fields to Helm chart ([fc75111](https://github.com/vriesdemichael/keycloak-operator/commit/fc75111b89a6c575706745249d6ec2dda854a26c)), closes [#274](https://github.com/vriesdemichael/keycloak-operator/issues/274)
+* **chart-realm:** add rbac and clientAuthorizationGrants to schema ([31d3d77](https://github.com/vriesdemichael/keycloak-operator/commit/31d3d77122ab0a3143e96df79fddb874d4887801))
+* **chart-realm:** add user federation configuration to Helm chart ([db3258c](https://github.com/vriesdemichael/keycloak-operator/commit/db3258c031b4f1d363f7576d8123940b9d72a0bd))
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator+chart-realm:** update Kubernetes version requirement to 1.27+ ([f53fe0c](https://github.com/vriesdemichael/keycloak-operator/commit/f53fe0c26425274282fcc8a10095c0484cef9a13))
+* **chart-operator:** update for operator v0.5.12 ([f79be8a](https://github.com/vriesdemichael/keycloak-operator/commit/f79be8aea6a92412e8eb7d88852c0174bbc72b2a))
+* **chart-realm:** add new fields to values.schema.json ([913a581](https://github.com/vriesdemichael/keycloak-operator/commit/913a581ba74d73a28c341bf58e5b3a293f556a09))
+* **chart-realm:** update drift detection documentation reference ([930c5e9](https://github.com/vriesdemichael/keycloak-operator/commit/930c5e9ba98d1f7492ad2a40caa33e5b393bcebb))
+
+
+### Documentation
+
+* bulk cleanup of authorizationSecretRef in chart READMEs ([3e31d59](https://github.com/vriesdemichael/keycloak-operator/commit/3e31d59534e7df3f7580099987d30c800422ccec))
+* final cleanup of remaining token references ([96e6086](https://github.com/vriesdemichael/keycloak-operator/commit/96e6086d173abdfedec0bb197a94cf50afb7690a))
+* update helm chart READMEs and fix broken links ([a32d3e2](https://github.com/vriesdemichael/keycloak-operator/commit/a32d3e243e7d5f0616bf2d52c3bc14ff2d2f2464))
+
 ## [0.3.9](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.3.8...chart-realm-v0.3.9) (2026-01-26)
 
 
