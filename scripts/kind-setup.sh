@@ -118,7 +118,7 @@ main() {
     log ""
     log "Next steps:"
     log "  1. Run 'make deploy' to install operator, CNPG, and test Keycloak"
-    log "  2. Run 'make test-integration' to run integration tests"
+    log "  2. Run 'make test' to run the complete test suite"
     log "  3. Run 'make kind-teardown' to cleanup when done"
 }
 

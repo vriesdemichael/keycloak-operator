@@ -323,7 +323,6 @@ make test                        # Quality + unit + integration tests (fresh clu
 
 # Individual test types
 make test-unit                   # Fast unit tests only (generates .coverage)
-make test-integration            # Integration tests (fresh cluster)
 make quality                     # Linting and formatting
 ```
 
@@ -344,14 +343,10 @@ make quality                     # Linting and formatting
 
 **Enabling Coverage:**
 ```bash
-# Coverage is enabled by default in make test-pre-commit
-make test-pre-commit
+# Coverage is enabled by default in make test
+make test
 
-# Manual control via environment variable
-INTEGRATION_COVERAGE=true make test-integration
-
-# View coverage report locally
-make test-integration-coverage
+# View coverage report locally after running tests
 coverage html
 open htmlcov/index.html  # or xdg-open on Linux
 ```

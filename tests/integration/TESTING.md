@@ -572,11 +572,8 @@ async def test_feature_name(
 ## Running Tests
 
 ```bash
-# Run all integration tests
-make test-integration
-
-# Run complete pre-commit test suite (quality + fresh cluster + unit + integration with coverage)
-make test-pre-commit
+# Run complete test suite (quality + fresh cluster + unit + integration with coverage)
+make test
 
 # Run specific test
 uv run pytest tests/integration/test_example.py::TestClass::test_method -v
@@ -733,14 +730,11 @@ Integration tests support coverage collection from the operator running in Kuber
 ### Running Tests with Coverage
 
 ```bash
-# Run integration tests with coverage enabled
-make test-integration-coverage
+# Run complete test suite with coverage (recommended)
+make test
 
 # Or set environment variable manually
 INTEGRATION_COVERAGE=true uv run pytest tests/integration/ -v -n auto --dist=loadscope
-
-# Pre-commit flow (includes coverage by default)
-make test-pre-commit
 ```
 
 ### Viewing Coverage Reports
