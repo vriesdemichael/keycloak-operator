@@ -36,7 +36,11 @@ runs:
       shell: bash
       run: |
         VERSION="${{ inputs.operator-version }}"
+        REVISION=${{ github.sha }}
+        CREATED=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
         echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "revision=${REVISION}" >> $GITHUB_OUTPUT
+        echo "created=${CREATED}" >> $GITHUB_OUTPUT
         echo "Publishing operator version: ${VERSION}"
 
     - name: Generate tags
@@ -54,6 +58,8 @@ runs:
           org.opencontainers.image.vendor=Michaël de Vries
           org.opencontainers.image.licenses=MIT
           org.opencontainers.image.version=v${{ steps.version.outputs.version }}
+          org.opencontainers.image.source=https://github.com/vriesdemichael/keycloak-operator
+          org.opencontainers.image.url=https://github.com/vriesdemichael/keycloak-operator
 
     - name: Build and push
       id: build
@@ -66,6 +72,10 @@ runs:
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        build-args: |
+          VERSION=${{ steps.version.outputs.version }}
+          REVISION=${{ steps.version.outputs.revision }}
+          CREATED=${{ steps.version.outputs.created }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         provenance: true
