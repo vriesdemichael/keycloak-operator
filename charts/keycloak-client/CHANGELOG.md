@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.4.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.7...chart-client-v0.4.0) (2026-01-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-client+chart-operator+chart-realm:** Helm chart distribution moved to OCI registry
+
+### Features
+
+* **chart-client+chart-operator+chart-realm:** migrate to OCI registry in GHCR ([3d122c6](https://github.com/vriesdemichael/keycloak-operator/commit/3d122c6b78851ef571b5d4d4af436039e45bb9d0))
+* **chart-client+chart-operator+operator:** add missing client settings fields ([0404a43](https://github.com/vriesdemichael/keycloak-operator/commit/0404a43b24fc8988fce32414f75a2b012c68168d))
+* **chart-client+operator:** add labels and annotations to managed secrets ([a2fcd36](https://github.com/vriesdemichael/keycloak-operator/commit/a2fcd36ef5e7b46c8b53a747a99353074eb3823e))
+* **chart-client+operator:** improve client secret management and monitoring ([555c173](https://github.com/vriesdemichael/keycloak-operator/commit/555c173ca89b8d2f587fd7e7a08e5ad52ae06b57))
+* **chart-client:** add rbac configuration to schema ([25b73ec](https://github.com/vriesdemichael/keycloak-operator/commit/25b73ec6f09fc895e45cbaec932c3107fe5b78de))
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator+chart-realm:** update Kubernetes version requirement to 1.27+ ([f53fe0c](https://github.com/vriesdemichael/keycloak-operator/commit/f53fe0c26425274282fcc8a10095c0484cef9a13))
+* **chart-client+chart-operator+operator:** address multiple issues ([#290](https://github.com/vriesdemichael/keycloak-operator/issues/290), [#294](https://github.com/vriesdemichael/keycloak-operator/issues/294), [#170](https://github.com/vriesdemichael/keycloak-operator/issues/170), [#168](https://github.com/vriesdemichael/keycloak-operator/issues/168)) ([23a1dba](https://github.com/vriesdemichael/keycloak-operator/commit/23a1dbafabfd0deb35f6c528b560df1cb19da1e5))
+* **chart-operator:** update for operator v0.5.12 ([f79be8a](https://github.com/vriesdemichael/keycloak-operator/commit/f79be8aea6a92412e8eb7d88852c0174bbc72b2a))
+
+
+### Documentation
+
+* bulk cleanup of authorizationSecretRef in chart READMEs ([3e31d59](https://github.com/vriesdemichael/keycloak-operator/commit/3e31d59534e7df3f7580099987d30c800422ccec))
+
 ## [0.3.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.6...chart-client-v0.3.7) (2026-01-21)
 
 
