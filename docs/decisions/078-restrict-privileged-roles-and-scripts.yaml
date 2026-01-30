@@ -15,11 +15,10 @@ rationale: >
   Allowing service accounts to acquire full realm admin privileges ('admin', 'realm-admin') allows users to bypass this model and potentially escalate privileges within Keycloak.
   Script mappers allow arbitrary code execution on the Keycloak server, which is a severe security risk if not strictly controlled.
   The 'impersonation' role allows a service account to act as any user, including admins, which is equivalent to granting admin access.
-provenance: human
-consequences:
-  positive:
+
+  Consequences:
   - Prevents accidental or malicious privilege escalation.
   - Mitigates Remote Code Execution (RCE) risks from script mappers.
   - Enforces the intended security model (RBAC + Namespace Grants).
-  negative:
   - May break existing deployments that rely on these high-privilege roles or script mappers (mitigated by configuration flags).
+provenance: human

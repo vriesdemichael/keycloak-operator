@@ -5,12 +5,19 @@ decision: All development-critical information must be documented in locations w
   AI agents can discover and consume it. This includes AGENTS.md, decision records,
   inline documentation, and architectural docs. LLM agents should have equal access
   to context as human developers.
-agent_instructions: Always document information crucial for development in discoverable
+agent_instructions: |
+  Always document information crucial for development in discoverable
   locations. Assumptions about standards, utility functions, architecture, security,
   testing patterns, and workflows belong in AGENTS.md, decision records, or inline
   docs. Never rely on tribal knowledge or undocumented conventions. When you encounter
   undocumented patterns or assumptions, propose adding them to the appropriate documentation.
   Code comments explain 'why' and context, not 'what' (LLMs read code structure directly).
+
+  ADR Documentation Standards:
+  - ADRs must follow the strict schema (no extra fields allowed).
+  - Use 'agent_instructions' for information that is crucial to know BEFORE working on a specific region (injected into agent context).
+  - Use 'decision' or 'rationale' for details that are only relevant when focused on that specific architectural area.
+  - This separation ensures agents are not overwhelmed with irrelevant details while maintaining all technical context.
 rationale: 'Knowledge accessibility: AI agents need the same context as humans to
   contribute effectively. Standards assumptions (e.g., "always use uv", "prefer CNPG")
   must be explicitly documented, not implicit. Utility functions and architectural
