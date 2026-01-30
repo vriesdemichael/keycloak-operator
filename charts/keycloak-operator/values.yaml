@@ -135,6 +135,19 @@ operator:
     timeoutSeconds: 3        # Fail if check takes > 3s
     failureThreshold: 3      # Mark unready after 3 failures
 
+  # Security settings
+  security:
+    # Allow usage of script-based protocol mappers
+    # WARNING: Script mappers execute arbitrary JavaScript on the Keycloak server.
+    # Enabling this allows potential RCE if malicious scripts are deployed.
+    # Enable only in trusted environments or if required for migration.
+    allowScriptMappers: false
+
+    # Allow service accounts to impersonate users
+    # WARNING: This allows a service account to impersonate ANY user, including admins.
+    # Effectively grants full administrative access to the Keycloak instance.
+    allowImpersonation: false
+
   # Environment variables for operator customization
   # Common variables:
   # - LOG_LEVEL: DEBUG, INFO, WARNING, ERROR (default: INFO)

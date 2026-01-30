@@ -110,6 +110,10 @@ spec:
         - name: ENABLE_WEBHOOKS
           value: "false"
         {{- end }}
+        - name: KEYCLOAK_ALLOW_SCRIPT_MAPPERS
+          value: {{ .Values.operator.security.allowScriptMappers | quote }}
+        - name: KEYCLOAK_ALLOW_IMPERSONATION
+          value: {{ .Values.operator.security.allowImpersonation | quote }}
         {{- with .Values.operator.env }}
         {{- toYaml . | nindent 8 }}
         {{- end }}
