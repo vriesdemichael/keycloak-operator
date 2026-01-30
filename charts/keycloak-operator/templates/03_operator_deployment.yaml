@@ -43,7 +43,7 @@ spec:
         - containerPort: 8080
           name: http
           protocol: TCP
-        - containerPort: 8081
+        - containerPort: {{ .Values.operator.metrics.port }}
           name: metrics
           protocol: TCP
         {{- if .Values.webhooks.enabled }}
@@ -74,6 +74,22 @@ spec:
           value: {{ include "keycloak-operator.namespace" . }}
         - name: OPERATOR_INSTANCE_ID
           value: {{ include "keycloak-operator.instanceId" . }}
+        - name: KEYCLOAK_OPERATOR_NAMESPACES
+          value: {{ .Values.operator.watchNamespaces | quote }}
+        - name: METRICS_PORT
+          value: {{ .Values.operator.metrics.port | quote }}
+        - name: METRICS_HOST
+          value: {{ .Values.operator.metrics.host | quote }}
+        - name: KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS
+          value: {{ .Values.operator.rateLimiting.global.tps | quote }}
+        - name: KEYCLOAK_API_GLOBAL_BURST
+          value: {{ .Values.operator.rateLimiting.global.burst | quote }}
+        - name: KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS
+          value: {{ .Values.operator.rateLimiting.namespace.tps | quote }}
+        - name: KEYCLOAK_API_NAMESPACE_BURST
+          value: {{ .Values.operator.rateLimiting.namespace.burst | quote }}
+        - name: RECONCILE_JITTER_MAX_SECONDS
+          value: {{ .Values.operator.reconciliation.jitterMaxSeconds | quote }}
         - name: DRIFT_DETECTION_ENABLED
           value: {{ .Values.monitoring.driftDetection.enabled | quote }}
         - name: DRIFT_DETECTION_INTERVAL_SECONDS
@@ -126,7 +142,7 @@ spec:
         readinessProbe:
           httpGet:
             path: /ready
-            port: 8081
+            port: {{ .Values.operator.metrics.port }}
           initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 5
