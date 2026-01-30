@@ -599,5 +599,6 @@ Script-based protocol mappers allow executing JavaScript code on the Keycloak se
 - [ADR 017](../decisions/017-kubernetes-rbac-over-keycloak-security.yaml) - Kubernetes RBAC over Keycloak security
 - [ADR 032](../decisions/032-minimal-rbac-with-namespaced-service-accounts.yaml) - Minimal RBAC design
 - [ADR 063](../decisions/063-namespace-grant-list-authorization.yaml) - Namespace grant list authorization
+- [ADR 078](../decisions/078-restrict-privileged-roles-and-scripts.yaml) - Restrict privileged roles and script mappers
 - [Architecture](architecture.md) - How authorization fits into overall design
 - [Quick Start](../quickstart/README.md) - Practical authorization examples
