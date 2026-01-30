@@ -6,8 +6,10 @@ client creation, credential management, and OAuth2 configuration.
 """
 
 import time
+from datetime import datetime, timedelta
 from typing import Any
 
+import pytz
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
@@ -650,6 +652,124 @@ class KeycloakClientReconciler(BaseReconciler):
             self.logger.error(f"Error configuring OAuth settings: {e}")
             raise
 
+    def _parse_duration(self, duration_str: str) -> timedelta:
+        """Parse duration string (e.g. '90d', '24h', '10s') into timedelta."""
+        if not duration_str:
+            return timedelta(days=90)  # Default
+
+        unit = duration_str[-1].lower()
+        if unit not in ["s", "m", "h", "d"]:
+            raise ValidationError(
+                f"Invalid duration unit in '{duration_str}'. Supported units: s, m, h, d."
+            )
+
+        try:
+            value = int(duration_str[:-1])
+        except ValueError as e:
+            raise ValidationError(
+                f"Invalid duration format '{duration_str}'. Expected integer followed by unit."
+            ) from e
+
+        if unit == "s":
+            return timedelta(seconds=value)
+        elif unit == "m":
+            return timedelta(minutes=value)
+        elif unit == "h":
+            return timedelta(hours=value)
+        elif unit == "d":
+            return timedelta(days=value)
+
+        return timedelta(days=90)  # Should be unreachable
+
+    def _should_rotate_secret(
+        self,
+        spec: KeycloakClientSpec,
+        secret: client.V1Secret,
+    ) -> bool:
+        """
+        Check if client secret should be rotated based on configuration.
+
+        Args:
+            spec: Client specification
+            secret: Existing Kubernetes secret
+
+        Returns:
+            True if rotation is needed
+        """
+        if not spec.secret_rotation.enabled:
+            return False
+
+        annotations = secret.metadata.annotations or {}
+        rotated_at_str = annotations.get("keycloak-operator/rotated-at")
+
+        # If never rotated but exists, mark it as rotated NOW to start the timer
+        # This prevents immediate rotation on enabling the feature
+        if not rotated_at_str:
+            return False
+
+        try:
+            # Parse rotated_at (stored as ISO format string)
+            # We assume stored time is UTC if no timezone info, but it should have it
+            rotated_at = datetime.fromisoformat(rotated_at_str)
+            if rotated_at.tzinfo is None:
+                rotated_at = rotated_at.replace(tzinfo=pytz.UTC)
+        except ValueError:
+            self.logger.warning(
+                f"Invalid 'rotated-at' annotation '{rotated_at_str}', resetting rotation timer."
+            )
+            return False
+
+        # Calculate expiration time
+        rotation_period = self._parse_duration(spec.secret_rotation.rotation_period)
+        expiration_time = rotated_at + rotation_period
+
+        # Current time in UTC
+        now = datetime.now(pytz.UTC)
+
+        # Basic check: Has period elapsed?
+        if now < expiration_time:
+            return False
+
+        # Advanced check: Rotation Time Window
+        if spec.secret_rotation.rotation_time:
+            try:
+                # Parse target timezone
+                target_tz = pytz.timezone(spec.secret_rotation.timezone)
+
+                # Convert expiration time to target timezone
+                expiration_in_tz = expiration_time.astimezone(target_tz)
+
+                # Parse desired rotation hour/minute
+                target_hour, target_minute = map(
+                    int, spec.secret_rotation.rotation_time.split(":")
+                )
+
+                # Set the target time on the expiration day
+                # If expiration was at 10:00 but target is 02:00, we must wait for 02:00 NEXT day?
+                # No, we wait for the first occurrence of 02:00 AFTER expiration.
+
+                target_rotation_dt = expiration_in_tz.replace(
+                    hour=target_hour, minute=target_minute, second=0, microsecond=0
+                )
+
+                # If the calculated target time is earlier than the expiration time (e.g. expired at 14:00, target is 02:00),
+                # move to the next day
+                if target_rotation_dt < expiration_in_tz:
+                    target_rotation_dt += timedelta(days=1)
+
+                # Check if we have passed the target window
+                now_in_tz = now.astimezone(target_tz)
+                if now_in_tz < target_rotation_dt:
+                    return False
+
+            except Exception as e:
+                self.logger.warning(
+                    f"Error calculating rotation schedule: {e}. Falling back to immediate rotation."
+                )
+                return True
+
+        return True
+
     async def manage_client_credentials(
         self,
         spec: KeycloakClientSpec,
@@ -680,16 +800,70 @@ class KeycloakClientReconciler(BaseReconciler):
             realm_resource_name, target_namespace
         )
 
-        # Get client secret if this is a confidential client
+        # Get Keycloak admin client
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, keycloak_namespace
+        )
+
+        # Create Kubernetes secret with client credentials
+        secret_name = f"{name}-credentials"
+
+        # Check if secret exists to determine if we need to check for rotation
+        from kubernetes.client.rest import ApiException as K8sApiException
+
+        from ..utils.kubernetes import get_kubernetes_client
+
+        k8s_client = get_kubernetes_client()
+        core_api = client.CoreV1Api(k8s_client)
+        existing_secret = None
+        try:
+            existing_secret = core_api.read_namespaced_secret(secret_name, namespace)
+        except K8sApiException as e:
+            if e.status != 404:
+                raise
+
+        # Determine if we need to regenerate/rotate
+        should_rotate = False
         client_secret = None
-        if not spec.public_client:
-            admin_client = await self.keycloak_admin_factory(
-                keycloak_name, keycloak_namespace
-            )
-            client_secret = await admin_client.get_client_secret(
-                spec.client_id, actual_realm_name, namespace
-            )
-            self.logger.info("Retrieved client secret for confidential client")
+
+        if existing_secret:
+            # Check for rotation eligibility
+            if self._should_rotate_secret(spec, existing_secret):
+                self.logger.info(
+                    f"Client secret rotation triggered for {spec.client_id}"
+                )
+                should_rotate = True
+
+            # If not rotating, try to use existing secret from K8s if available
+            # This avoids fetching from Keycloak API if not needed
+            if not should_rotate:
+                import base64
+
+                if existing_secret.data and "client-secret" in existing_secret.data:
+                    try:
+                        client_secret = base64.b64decode(
+                            existing_secret.data["client-secret"]
+                        ).decode("utf-8")
+                    except Exception:
+                        self.logger.warning(
+                            "Could not decode existing secret from K8s, fetching from Keycloak"
+                        )
+
+        # If rotating or secret not found, fetch/regenerate from Keycloak
+        if (not client_secret or should_rotate) and not spec.public_client:
+            if should_rotate:
+                # Atomic Rotation: Regenerate secret in Keycloak
+                # This INVALIDATES the old secret immediately
+                client_secret = await admin_client.regenerate_client_secret(
+                    spec.client_id, actual_realm_name, namespace
+                )
+                self.logger.info("Regenerated client secret (Atomic Rotation)")
+            else:
+                # Just fetch existing
+                client_secret = await admin_client.get_client_secret(
+                    spec.client_id, actual_realm_name, namespace
+                )
+                self.logger.info("Retrieved client secret from Keycloak")
 
         # Get Keycloak instance for endpoint construction
         keycloak_instance = validate_keycloak_reference(
@@ -703,15 +877,36 @@ class KeycloakClientReconciler(BaseReconciler):
                 f"in namespace {target_namespace}"
             )
 
-        # Create Kubernetes secret with client credentials
-        secret_name = f"{name}-credentials"
-
         # Extract secret metadata if present
         labels = None
         annotations = None
         if spec.secret_metadata:
             labels = spec.secret_metadata.labels
             annotations = spec.secret_metadata.annotations
+
+        # Initialize annotations if needed
+        if annotations is None:
+            annotations = {}
+
+        # Update rotation timestamp
+        # We update this:
+        # 1. On creation (to start the timer)
+        # 2. On rotation (to reset the timer)
+        # 3. If missing (to start the timer for existing secrets)
+        is_new_secret = existing_secret is None
+        has_timestamp = (
+            existing_secret
+            and existing_secret.metadata.annotations
+            and "keycloak-operator/rotated-at" in existing_secret.metadata.annotations
+        )
+
+        if (
+            is_new_secret
+            or should_rotate
+            or (spec.secret_rotation.enabled and not has_timestamp)
+        ):
+            now_iso = datetime.now(pytz.UTC).isoformat()
+            annotations["keycloak-operator/rotated-at"] = now_iso
 
         create_client_secret(
             secret_name=secret_name,
@@ -731,11 +926,7 @@ class KeycloakClientReconciler(BaseReconciler):
         try:
             from kubernetes.client.rest import ApiException
 
-            from ..utils.kubernetes import get_kubernetes_client
-
-            k8s_client = get_kubernetes_client()
-            core_api = client.CoreV1Api(k8s_client)
-
+            # We reuse the core_api initialized above
             try:
                 secret = core_api.read_namespaced_secret(
                     name=secret_name, namespace=namespace
