@@ -21,6 +21,11 @@ operator:
   # Example: "prod-operator" or leave empty for auto-generation
   instanceId: ""
 
+  # List of namespaces to watch (comma-separated string)
+  # If empty, the operator watches all namespaces (Cluster-wide)
+  # Recommended: empty for Cluster-wide operation
+  watchNamespaces: ""
+
   image:
     # Container registry and repository path
     repository: ghcr.io/vriesdemichael/keycloak-operator
@@ -148,6 +153,27 @@ operator:
     # Effectively grants full administrative access to the Keycloak instance.
     allowImpersonation: false
 
+  # API Rate Limiting
+  # Protects Keycloak from overload and ensures fair sharing between namespaces
+  rateLimiting:
+    global:
+      # Total requests per second allowed across all namespaces
+      tps: 50.0
+      # Maximum burst of requests allowed
+      burst: 100
+    namespace:
+      # Requests per second allowed per single namespace
+      tps: 5.0
+      # Maximum burst per namespace
+      burst: 10
+
+  # Metrics server configuration
+  metrics:
+    # Port to expose Prometheus metrics on
+    port: 8081
+    # Host/Address to bind the metrics server to
+    host: "0.0.0.0"
+
   # Environment variables for operator customization
   # Common variables:
   # - LOG_LEVEL: DEBUG, INFO, WARNING, ERROR (default: INFO)
@@ -175,6 +201,9 @@ operator:
       keycloak: 300   # Keycloak instance health check interval
       realm: 300      # KeycloakRealm health check interval
       client: 300     # KeycloakClient health check interval
+
+    # Random jitter added to reconciliation scheduling to prevent thundering herd (seconds)
+    jitterMaxSeconds: 5.0
 
 # ============================================================================
 # Namespace Configuration

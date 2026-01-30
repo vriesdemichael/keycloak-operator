@@ -20,6 +20,11 @@
           "maxLength": 63,
           "pattern": "^([a-z0-9]([-a-z0-9]*[a-z0-9])?)?$"
         },
+        "watchNamespaces": {
+          "type": "string",
+          "description": "Comma-separated list of namespaces to watch. If empty, the operator watches all namespaces (Cluster-wide).",
+          "default": ""
+        },
         "image": {
           "type": "object",
           "description": "Container image configuration for the operator",
@@ -258,6 +263,107 @@
               "valueFrom": {
                 "type": "object"
               }
+            }
+          }
+        },
+        "security": {
+          "type": "object",
+          "description": "Security settings for the operator",
+          "properties": {
+            "allowScriptMappers": {
+              "type": "boolean",
+              "description": "Allow usage of script-based protocol mappers",
+              "default": false
+            },
+            "allowImpersonation": {
+              "type": "boolean",
+              "description": "Allow service accounts to impersonate users",
+              "default": false
+            }
+          }
+        },
+        "rateLimiting": {
+          "type": "object",
+          "description": "API rate limiting configuration to protect Keycloak from overload",
+          "properties": {
+            "global": {
+              "type": "object",
+              "properties": {
+                "tps": {
+                  "type": "number",
+                  "description": "Total requests per second allowed across all namespaces",
+                  "default": 50.0
+                },
+                "burst": {
+                  "type": "integer",
+                  "description": "Maximum burst of requests allowed",
+                  "default": 100
+                }
+              }
+            },
+            "namespace": {
+              "type": "object",
+              "properties": {
+                "tps": {
+                  "type": "number",
+                  "description": "Requests per second allowed per single namespace",
+                  "default": 5.0
+                },
+                "burst": {
+                  "type": "integer",
+                  "description": "Maximum burst per namespace",
+                  "default": 10
+                }
+              }
+            }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "description": "Metrics server configuration",
+          "properties": {
+            "port": {
+              "type": "integer",
+              "description": "Port to expose Prometheus metrics on",
+              "default": 8081,
+              "minimum": 1024,
+              "maximum": 65535
+            },
+            "host": {
+              "type": "string",
+              "description": "Host/Address to bind the metrics server to",
+              "default": "0.0.0.0"
+            }
+          }
+        },
+        "reconciliation": {
+          "type": "object",
+          "description": "Reconciliation settings for resource health checks",
+          "properties": {
+            "timerIntervals": {
+              "type": "object",
+              "properties": {
+                "keycloak": {
+                  "type": "integer",
+                  "description": "Keycloak instance health check interval (seconds)",
+                  "default": 300
+                },
+                "realm": {
+                  "type": "integer",
+                  "description": "KeycloakRealm health check interval (seconds)",
+                  "default": 300
+                },
+                "client": {
+                  "type": "integer",
+                  "description": "KeycloakClient health check interval (seconds)",
+                  "default": 300
+                }
+              }
+            },
+            "jitterMaxSeconds": {
+              "type": "number",
+              "description": "Random jitter added to reconciliation scheduling (seconds)",
+              "default": 5.0
             }
           }
         }
