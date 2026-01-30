@@ -765,6 +765,19 @@ class KeycloakClientReconciler(BaseReconciler):
             self.logger.debug("No protocol mappers specified, skipping configuration")
             return
 
+        # Check for script mappers
+        from ..settings import settings
+
+        if not settings.allow_script_mappers:
+            for mapper_spec in spec.protocol_mappers:
+                if "script" in mapper_spec.protocol_mapper.lower():
+                    # Common types: 'oidc-script-based-protocol-mapper', 'saml-javascript-mapper'
+                    raise ValidationError(
+                        f"Script mapper '{mapper_spec.name}' (type: {mapper_spec.protocol_mapper}) is not allowed. "
+                        "Script mappers are disabled by default for security. "
+                        "Set KEYCLOAK_ALLOW_SCRIPT_MAPPERS=true to enable them."
+                    )
+
         # Get Keycloak admin client
         realm_ref = spec.realm_ref
         target_namespace = realm_ref.namespace
@@ -1144,6 +1157,31 @@ class KeycloakClientReconciler(BaseReconciler):
                 f"No service account roles defined for client {spec.client_id}"
             )
             return
+
+        # Validate realm roles
+        restricted_realm_roles = {"admin"}
+        for role in roles_config.realm_roles:
+            if role in restricted_realm_roles:
+                raise ValidationError(
+                    f"Assigning restricted realm role '{role}' to service account is not allowed for security reasons."
+                )
+
+        # Validate client roles
+        if roles_config.client_roles:
+            # Check for realm-management client roles
+            # We need to know the realm-management client name (usually "realm-management")
+            # and restricted roles like "realm-admin".
+
+            restricted_client_roles = {"realm-management": {"realm-admin"}}
+
+            for target_client, roles in roles_config.client_roles.items():
+                if target_client == "realm-management":
+                    for role in roles:
+                        if role in restricted_client_roles["realm-management"]:
+                            raise ValidationError(
+                                f"Assigning restricted client role '{role}' from '{target_client}' "
+                                "to service account is not allowed for security reasons."
+                            )
 
         self.logger.info(
             f"Configuring service account roles for client {spec.client_id} (resource {namespace}/{name})"

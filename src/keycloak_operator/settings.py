@@ -231,6 +231,13 @@ class Settings(BaseSettings):
         description="Maximum number of clients allowed per namespace",
     )
 
+    # Security settings
+    allow_script_mappers: bool = Field(
+        default=False,
+        validation_alias="KEYCLOAK_ALLOW_SCRIPT_MAPPERS",
+        description="Allow usage of script-based protocol mappers (security risk)",
+    )
+
     @property
     def watched_namespaces(self) -> list[str] | None:
         """Parse watched namespaces from comma-separated string.
