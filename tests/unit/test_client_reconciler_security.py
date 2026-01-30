@@ -11,7 +11,9 @@ from keycloak_operator.services.client_reconciler import KeycloakClientReconcile
 
 @pytest.fixture
 def mock_settings():
-    with patch("keycloak_operator.settings.settings") as mock_settings:
+    with patch(
+        "keycloak_operator.services.client_reconciler.settings"
+    ) as mock_settings:
         mock_settings.allow_script_mappers = False
         mock_settings.drift_detection_enabled = False
         yield mock_settings
