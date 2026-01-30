@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.1...operator-image-v0.7.2) (2026-01-30)
+
+
+### Features
+
+* **operator:** implement security restrictions for client roles and mappers ([d653dbd](https://github.com/vriesdemichael/keycloak-operator/commit/d653dbd42c0c8ec765903c30f492ae6c6345add9))
+
+
+### Bug Fixes
+
+* **operator:** harden security restrictions and address review comments ([4d0a1dd](https://github.com/vriesdemichael/keycloak-operator/commit/4d0a1dd7f6ecb9ae4a4291892c4664aa97bd2c7a))
+
+
+### Code Refactoring
+
+* **operator:** remove redundant import ([661c406](https://github.com/vriesdemichael/keycloak-operator/commit/661c4064a98ee87240f70d6433f7605eefa2481d))
+
 ## [0.7.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.0...operator-image-v0.7.1) (2026-01-29)
 
 
