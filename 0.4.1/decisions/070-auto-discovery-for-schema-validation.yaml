@@ -1,0 +1,20 @@
+number: 70
+title: Auto-discovery for schema validation
+category: development
+decision: >
+  The schema validator auto-discovers validatable charts and CRD kinds from the
+  filesystem rather than using hardcoded lists. Charts are discovered by scanning
+  the charts/ directory for subdirectories containing values.schema.json. CRD kinds
+  are discovered by parsing the CRD YAML files in charts/keycloak-operator/crds/.
+agent_instructions: >
+  When adding a new Helm chart, ensure it has a values.schema.json file to be
+  automatically included in documentation validation. When adding a new CRD,
+  place it in charts/keycloak-operator/crds/ with the standard CRD structure
+  (spec.names.kind must be defined). No code changes are needed to the validator
+  when adding new charts or CRDs - they are discovered automatically.
+rationale: >
+  Hardcoded lists of charts and CRD kinds require maintenance and can become stale.
+  Auto-discovery ensures that new charts and CRDs are automatically validated without
+  code changes. This follows the DRY principle - the source of truth is the filesystem
+  structure, not duplicated constants in code.
+provenance: guided-ai
