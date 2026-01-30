@@ -1,15 +1,34 @@
 number: 40
 title: Admission Webhooks for Resource Validation
 category: architecture
-decision: Implement Kubernetes admission webhooks to validate Custom Resource specifications
+decision: |
+  Implement Kubernetes admission webhooks to validate Custom Resource specifications
   before they are persisted to etcd. Use cert-manager for TLS certificate management
   instead of Kopf's auto-managed webhooks (see ADR-065 for details).
-agent_instructions: When implementing resource validation, use both Pydantic models
+agent_instructions: |
+  When implementing resource validation, use both Pydantic models
   (for type safety in code) AND admission webhooks (for early validation at K8s API
   boundary). Webhooks should validate specs synchronously and return clear error
   messages. Use kopf.on.validate decorators with explicit 'id' parameter for webhook
   paths. Ensure cert-manager is available for TLS certificate generation. Include
   readiness probe that checks webhook server port.
+
+  Implementation Details:
+  - Bootstrap consideration: The Keycloak CR in the operator Helm chart must be
+    created AFTER the operator pod is ready and webhook server is listening. This
+    is handled by:
+    1. Enhanced readiness probe checking webhook port 8443
+    2. Helm --wait flag ensures operator ready before Keycloak CR
+    3. ArgoCD sync waves (operator=wave0, Keycloak=wave1)
+    4. Webhook readiness check in test fixtures (conftest.py)
+
+  - RBAC requirements:
+    - create/update/delete for validatingwebhookconfigurations
+    - create/update/delete for mutatingwebhookconfigurations (for future use)
+
+  - Dependencies:
+    - cert-manager 1.14+ (for TLS certificate generation and rotation)
+    - Certificates mounted at /tmp/k8s-webhook-server/serving-certs
 rationale: |
   Pydantic validation happens during reconciliation, which means:
   1. Users see "resource created successfully" but it fails later
@@ -32,58 +51,36 @@ rationale: |
   - cert-manager is a standard Kubernetes pattern
   - Allows manual control over ValidatingWebhookConfiguration
   - See ADR-065 for full technical rationale
-provenance: human
-updated: 2025-11-12
-updated_reason: Changed from Kopf auto-management to cert-manager based on ADR-065
+
+  Update (2025-11-12): Changed from Kopf auto-management to cert-manager based on ADR-065
   findings that Kopf's auto-management doesn't work in our setup.
-implementation_notes: |
-  Bootstrap consideration: The Keycloak CR in the operator Helm chart must be
-  created AFTER the operator pod is ready and webhook server is listening. This
-  is handled by:
-  1. Enhanced readiness probe checking webhook port 8443
-  2. Helm --wait flag ensures operator ready before Keycloak CR
-  3. ArgoCD sync waves (operator=wave0, Keycloak=wave1)
-  4. Webhook readiness check in test fixtures (conftest.py)
 
-  RBAC requirements:
-  - create/update/delete for validatingwebhookconfigurations
-  - create/update/delete for mutatingwebhookconfigurations (for future use)
-
-  Dependencies:
-  - cert-manager 1.14+ (for TLS certificate generation and rotation)
-  - Certificates mounted at /tmp/k8s-webhook-server/serving-certs
-rejected_alternatives:
-- alternative: Pydantic validation only
-  reason: No immediate feedback to users. Resources appear created but fail during
-    reconciliation. Poor UX for debugging.
-- alternative: Use Kopf auto-managed webhooks with self-signed certs
-  reason: Kopf's auto-management depends on insights.ready_resources.wait() which
-    never completes in our operator setup. See ADR-065 for details.
-- alternative: Disable webhooks, only use CRD OpenAPI schema validation
-  reason: CRD validation is limited (no cross-resource checks, no quotas, no complex
-    logic). Webhooks enable richer validation.
-- alternative: Manual certificate management without cert-manager
-  reason: Requires custom rotation logic. cert-manager is a standard solution.
-consequences:
-  positive:
+  Consequences:
   - Immediate validation feedback (better UX)
   - Resource quotas prevent namespace abuse
   - One-Keycloak-per-namespace prevents conflicts
   - GitOps tools show validation errors immediately
   - Invalid resources never stored in etcd
   - Reliable certificate rotation via cert-manager
-  negative:
   - Requires cert-manager as cluster dependency
   - Increased complexity (webhook server, RBAC, certificates, cert-manager)
   - Bootstrap coordination needed (operator must be ready before CRs)
   - Admission webhook failures block resource creation (fail-closed by default)
   - Can disable webhooks if cert-manager not available (fallback to reconciliation validation)
-related_decisions:
-- number: 33
-  relationship: clarifies
-  note: ADR-033 prohibits webhooks for configuration API. This ADR adds webhooks
-    for validation only, which is complementary.
-- number: 65
-  relationship: refines
-  note: ADR-065 specifies cert-manager for webhook certificates instead of Kopf
-    auto-management, resolving technical issues discovered during implementation.
+
+  Related Decisions:
+  - ADR-033: Prohibits webhooks for configuration API. This ADR adds webhooks for validation only.
+  - ADR-065: Specifies cert-manager for webhook certificates instead of Kopf auto-management.
+rejected_alternatives:
+  - alternative: Pydantic validation only
+    reason: No immediate feedback to users. Resources appear created but fail during
+      reconciliation. Poor UX for debugging.
+  - alternative: Use Kopf auto-managed webhooks with self-signed certs
+    reason: Kopf's auto-management depends on insights.ready_resources.wait() which
+      never completes in our operator setup. See ADR-065 for details.
+  - alternative: Disable webhooks, only use CRD OpenAPI schema validation
+    reason: CRD validation is limited (no cross-resource checks, no quotas, no complex
+      logic). Webhooks enable richer validation.
+  - alternative: Manual certificate management without cert-manager
+    reason: Requires custom rotation logic. cert-manager is a standard solution.
+provenance: human

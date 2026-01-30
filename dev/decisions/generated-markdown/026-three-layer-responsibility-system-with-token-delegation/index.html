@@ -2792,6 +2792,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../038-ruff-for-formatting-and-linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-038: Ruff for formatting and linting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
@@ -2828,34 +2856,6 @@
     
   
     ADR-040: Admission Webhooks for Resource Validation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../040-ruff-for-formatting-and-linting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-040: Ruff for formatting and linting
   
 
     
@@ -3408,34 +3408,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../059-no-managed-keycloak-upgrades/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-059: No managed Keycloak upgrades
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../060-cascading-deletes/" class="md-nav__link">
         
   
@@ -3933,6 +3905,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-078: Restrict Privileged Roles and Script Mappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../079-no-managed-keycloak-upgrades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-079: No managed Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4107,7 +4135,14 @@
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Three-layer system: operator team manages Keycloak instances and issues admission tokens, realm teams manage realms and issue operational tokens, application teams manage clients. Authorization is managed through a token system that allows delegation between layers without requiring PRs or manual approval.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Three-layer separation matches organizational structure: platform teams run Keycloak, security teams manage realms, developers manage OAuth clients. Token-based delegation enables self-service and reduces operational burden. Once a token is issued, teams can independently create resources without cross-team PRs or manual approvals. This scales better than centralized control as organization grows. Tokens provide audit trail of who authorized what. Automatic rotation with grace periods ensures security without downtime.</p>
+<p>Three-layer separation matches organizational structure: platform teams
+run Keycloak, security teams manage realms, developers manage OAuth clients. Token-based
+delegation enables self-service and reduces operational burden. Once a token is
+issued, teams can independently create resources without cross-team PRs or manual
+approvals. This scales better than centralized control as organization grows. Tokens
+provide audit trail of who authorized what. Automatic rotation with grace periods
+ensures security without downtime.</p>
+<p>Superseded: 2025-11-10 by Namespace Grant List (ADR-063).</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
 <p>Use token-based authorization from src/keycloak_operator/utils/token_manager.py. Operators generate admission tokens for realm creation. Realms validate admission tokens and generate operational tokens for client management. Clients validate operational tokens before reconciliation. Token types: admission (realm authorization) and operational (client authorization). Tokens stored as secrets, metadata in ConfigMap with SHA-256 hashing. Token rotation handled by src/keycloak_operator/handlers/token_rotation.py. CRD models use AuthorizationSecretRef for token references.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>

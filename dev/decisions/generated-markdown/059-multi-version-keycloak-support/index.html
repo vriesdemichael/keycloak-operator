@@ -16,7 +16,7 @@
         <link rel="prev" href="../058-single-keycloak-version-support/">
       
       
-        <link rel="next" href="../059-no-managed-keycloak-upgrades/">
+        <link rel="next" href="../060-cascading-deletes/">
       
       
         
@@ -2662,6 +2662,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../038-ruff-for-formatting-and-linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-038: Ruff for formatting and linting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
@@ -2698,34 +2726,6 @@
     
   
     ADR-040: Admission Webhooks for Resource Validation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../040-ruff-for-formatting-and-linting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-040: Ruff for formatting and linting
   
 
     
@@ -3410,10 +3410,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#single-version-support-status-quo" class="md-nav__link">
+  <a href="#single-version-support-status-status-quo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Single Version Support (Status Quo)
+        Single Version Support (Status Status Quo)
       
     </span>
   </a>
@@ -3462,34 +3462,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../059-no-managed-keycloak-upgrades/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-059: No managed Keycloak upgrades
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -3999,6 +3971,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-078: Restrict Privileged Roles and Script Mappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../079-no-managed-keycloak-upgrades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-079: No managed Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4160,10 +4188,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#single-version-support-status-quo" class="md-nav__link">
+  <a href="#single-version-support-status-status-quo" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Single Version Support (Status Quo)
+        Single Version Support (Status Status Quo)
       
     </span>
   </a>
@@ -4272,7 +4300,7 @@
 <li><strong>Update keycloak_versions.yaml</strong>: Change <code>canonical_version.version</code> to new version</li>
 <li><strong>Fix breaking changes</strong>: Update adapters for any removed/changed fields</li>
 <li><strong>Run full test suite</strong>: <code>make test</code> to ensure all tests pass</li>
-<li><strong>Document in ADR notes</strong>: Add breaking changes to the notes section below</li>
+<li><strong>Document in ADR notes</strong>: Add breaking changes to the rationale section of this ADR</li>
 </ol>
 <h2 id="validating-a-keycloak-version">Validating a Keycloak Version<a class="headerlink" href="#validating-a-keycloak-version" title="Permanent link">&para;</a></h2>
 <p>To validate support for a specific Keycloak version:</p>
@@ -4286,8 +4314,15 @@
 <p>Use helpers from <code>keycloak_operator.utils.validation</code>:
 - <code>supports_management_port(image, version_override)</code>: Returns True for 25.x+
 - <code>get_health_port(image, version_override)</code>: Returns 9000 for 25.x+, 8080 for 24.x</p>
+<p>Only the canonical Keycloak version is tested in the CI/CD pipeline.
+Support for other versions is verified through manual validation runs documented in scripts/keycloak_versions.yaml.</p>
+<p>Known breaking changes handled by adapters:
+- 26.4.0: Removed oAuth2DeviceCodeLifespan and oAuth2DevicePollingInterval fields
+- 26.3.0: Changed ClientPolicyCondition/Executor.configuration from list[Any] to dict[str, Any]
+- 25.x and earlier: Organizations feature not available (requires 26.0.0+)
+- 24.x: No management port (KC_HTTP_MANAGEMENT_PORT), health checks use port 8080</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="single-version-support-status-quo">Single Version Support (Status Quo)<a class="headerlink" href="#single-version-support-status-quo" title="Permanent link">&para;</a></h3>
+<h3 id="single-version-support-status-status-quo">Single Version Support (Status Status Quo)<a class="headerlink" href="#single-version-support-status-status-quo" title="Permanent link">&para;</a></h3>
 <p>Users cannot use the operator with older supported Red Hat Build of Keycloak versions (e.g., 24.x).</p>
 <h3 id="multiple-model-files-one-per-version">Multiple Model Files (One per Version)<a class="headerlink" href="#multiple-model-files-one-per-version" title="Permanent link">&para;</a></h3>
 <p>Generates 20+ model files (v24.py, v25.py, v26_0.py, v26_1.py, etc.), massive code duplication, complex import logic, and maintenance burden.</p>
@@ -4347,13 +4382,13 @@
         
         
           
-          <a href="../059-no-managed-keycloak-upgrades/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-059: No managed Keycloak upgrades">
+          <a href="../060-cascading-deletes/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-060: Cascading deletes for dependent resources">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-059: No managed Keycloak upgrades
+                ADR-060: Cascading deletes for dependent resources
               </div>
             </div>
             <div class="md-footer__button md-icon">

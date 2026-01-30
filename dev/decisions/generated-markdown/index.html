@@ -2662,6 +2662,34 @@
   
   
     <li class="md-nav__item">
+      <a href="038-ruff-for-formatting-and-linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-038: Ruff for formatting and linting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
@@ -2698,34 +2726,6 @@
     
   
     ADR-040: Admission Webhooks for Resource Validation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="040-ruff-for-formatting-and-linting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-040: Ruff for formatting and linting
   
 
     
@@ -3278,34 +3278,6 @@
   
   
     <li class="md-nav__item">
-      <a href="059-no-managed-keycloak-upgrades/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-059: No managed Keycloak upgrades
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="060-cascading-deletes/" class="md-nav__link">
         
   
@@ -3803,6 +3775,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-078: Restrict Privileged Roles and Script Mappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="079-no-managed-keycloak-upgrades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-079: No managed Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3876,10 +3904,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#architecture-decisions-40-records" class="md-nav__link">
+  <a href="#architecture-decisions-41-records" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Architecture Decisions (40 records)
+        Architecture Decisions (41 records)
       
     </span>
   </a>
@@ -3974,7 +4002,7 @@
 <h1 id="decision-records">Decision Records<a class="headerlink" href="#decision-records" title="Permanent link">&para;</a></h1>
 <p>This section contains Architecture Decision Records (ADRs) documenting significant architectural and design decisions made during the development of the Keycloak Operator.</p>
 <h2 id="browse-by-category">Browse by Category<a class="headerlink" href="#browse-by-category" title="Permanent link">&para;</a></h2>
-<h3 id="architecture-decisions-40-records">Architecture Decisions (40 records)<a class="headerlink" href="#architecture-decisions-40-records" title="Permanent link">&para;</a></h3>
+<h3 id="architecture-decisions-41-records">Architecture Decisions (41 records)<a class="headerlink" href="#architecture-decisions-41-records" title="Permanent link">&para;</a></h3>
 <p>Core design decisions affecting system structure, behavior, and runtime characteristics.</p>
 <h3 id="development-decisions-38-records">Development Decisions (38 records)<a class="headerlink" href="#development-decisions-38-records" title="Permanent link">&para;</a></h3>
 <p>Tooling, processes, testing strategies, and development workflow decisions.</p>
@@ -4027,7 +4055,6 @@
 <li><a href="056-no-opinionated-backup-or-secret-management/">ADR-056: No opinionated backup or secret management</a></li>
 <li><a href="058-single-keycloak-version-support/">ADR-058: Single Keycloak version support (26.x)</a></li>
 <li><a href="059-multi-version-keycloak-support/">ADR-059: Multi-Version Keycloak Support with Single Canonical Model</a></li>
-<li><a href="059-no-managed-keycloak-upgrades/">ADR-059: No managed Keycloak upgrades</a></li>
 <li><a href="060-cascading-deletes/">ADR-060: Cascading deletes for dependent resources</a></li>
 <li><a href="062-one-keycloak-per-operator/">ADR-062: One Keycloak instance per operator deployment</a></li>
 <li><a href="063-namespace-grant-list-authorization/">ADR-063: Namespace grant list authorization for clients</a></li>
@@ -4038,6 +4065,8 @@
 <li><a href="075-keycloak-horizontal-scaling-jgroups/">ADR-075: Keycloak Horizontal Scaling via JGroups DNS_PING</a></li>
 <li><a href="076-no-network-policies-in-helm-chart/">ADR-076: No Network Policies in Helm Chart</a></li>
 <li><a href="077-no-ingress-traffic-separation-for-admin-and-public-interfaces/">ADR-077: No Ingress Traffic Separation for Admin and Public Interfaces</a></li>
+<li><a href="078-restrict-privileged-roles-and-scripts/">ADR-078: Restrict Privileged Roles and Script Mappers</a></li>
+<li><a href="079-no-managed-keycloak-upgrades/">ADR-079: No managed Keycloak upgrades</a></li>
 </ul>
 <h2 id="development-decisions">Development Decisions<a class="headerlink" href="#development-decisions" title="Permanent link">&para;</a></h2>
 <ul>
@@ -4061,7 +4090,7 @@
 <li><a href="031-automated-releases-with-release-please/">ADR-031: Automated releases with release-please</a></li>
 <li><a href="034-github-actions-for-ci-and-artifact-publication/">ADR-034: GitHub Actions for CI and artifact publication</a></li>
 <li><a href="036-automated-dependency-updates-with-dependabot-and-custom-workflows/">ADR-036: Automated dependency updates with Dependabot and custom workflows</a></li>
-<li><a href="040-ruff-for-formatting-and-linting/">ADR-040: Ruff for formatting and linting</a></li>
+<li><a href="038-ruff-for-formatting-and-linting/">ADR-038: Ruff for formatting and linting</a></li>
 <li><a href="041-shared-operator-fixture-in-tests/">ADR-041: Shared operator fixture in tests</a></li>
 <li><a href="042-pytest-xdist-for-parallel-integration-tests/">ADR-042: pytest-xdist for parallel integration tests</a></li>
 <li><a href="043-wait-helpers-with-debug-logging-in-tests/">ADR-043: Wait helpers with debug logging in tests</a></li>

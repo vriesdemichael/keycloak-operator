@@ -1,4 +1,4 @@
-number: 40
+number: 38
 title: Ruff for formatting and linting
 category: development
 decision: Use Ruff for both code formatting and linting. Ruff replaces multiple tools

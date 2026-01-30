@@ -43,7 +43,7 @@ agent_instructions: |
   5. **Update keycloak_versions.yaml**: Change `canonical_version.version` to new version
   6. **Fix breaking changes**: Update adapters for any removed/changed fields
   7. **Run full test suite**: `make test` to ensure all tests pass
-  8. **Document in ADR notes**: Add breaking changes to the notes section below
+  8. **Document in ADR notes**: Add breaking changes to the rationale section of this ADR
 
   ## Validating a Keycloak Version
 
@@ -59,6 +59,15 @@ agent_instructions: |
   Use helpers from `keycloak_operator.utils.validation`:
   - `supports_management_port(image, version_override)`: Returns True for 25.x+
   - `get_health_port(image, version_override)`: Returns 9000 for 25.x+, 8080 for 24.x
+
+  Only the canonical Keycloak version is tested in the CI/CD pipeline.
+  Support for other versions is verified through manual validation runs documented in scripts/keycloak_versions.yaml.
+
+  Known breaking changes handled by adapters:
+  - 26.4.0: Removed oAuth2DeviceCodeLifespan and oAuth2DevicePollingInterval fields
+  - 26.3.0: Changed ClientPolicyCondition/Executor.configuration from list[Any] to dict[str, Any]
+  - 25.x and earlier: Organizations feature not available (requires 26.0.0+)
+  - 24.x: No management port (KC_HTTP_MANAGEMENT_PORT), health checks use port 8080
 rationale: >
   Keycloak introduces breaking changes in minor and major versions (e.g., removing fields, changing types).
   The Single Canonical Model approach provides several benefits:
@@ -69,7 +78,7 @@ rationale: >
   5. CI/CD simplicity - Only test against canonical version; adapters handle other versions
   The adapter pattern keeps version-specific logic isolated and testable.
 rejected_alternatives:
-  - alternative: "Single Version Support (Status Quo)"
+  - alternative: "Single Version Support (Status Status Quo)"
     reason: "Users cannot use the operator with older supported Red Hat Build of Keycloak versions (e.g., 24.x)."
   - alternative: "Multiple Model Files (One per Version)"
     reason: "Generates 20+ model files (v24.py, v25.py, v26_0.py, v26_1.py, etc.), massive code duplication, complex import logic, and maintenance burden."
@@ -79,12 +88,3 @@ rejected_alternatives:
     reason: "Too error-prone and labor-intensive given the size of the Keycloak API (~250 models). Automated generation is safer."
 provenance: guided-ai
 supersedes: 58
-notes: |
-  Only the canonical Keycloak version is tested in the CI/CD pipeline.
-  Support for other versions is verified through manual validation runs documented in scripts/keycloak_versions.yaml.
-
-  Known breaking changes handled by adapters:
-  - 26.4.0: Removed oAuth2DeviceCodeLifespan and oAuth2DevicePollingInterval fields
-  - 26.3.0: Changed ClientPolicyCondition/Executor.configuration from list[Any] to dict[str, Any]
-  - 25.x and earlier: Organizations feature not available (requires 26.0.0+)
-  - 24.x: No management port (KC_HTTP_MANAGEMENT_PORT), health checks use port 8080

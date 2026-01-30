@@ -2662,6 +2662,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../038-ruff-for-formatting-and-linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-038: Ruff for formatting and linting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
@@ -2698,34 +2726,6 @@
     
   
     ADR-040: Admission Webhooks for Resource Validation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../040-ruff-for-formatting-and-linting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-040: Ruff for formatting and linting
   
 
     
@@ -3278,34 +3278,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../059-no-managed-keycloak-upgrades/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-059: No managed Keycloak upgrades
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../060-cascading-deletes/" class="md-nav__link">
         
   
@@ -3563,6 +3535,67 @@
       
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config-dataclass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config dataclass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-dotenv-manual-parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        python-dotenv + manual parsing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-config-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom config class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keep-scattered-osgetenv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep scattered os.getenv
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -3883,6 +3916,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-078: Restrict Privileged Roles and Script Mappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../079-no-managed-keycloak-upgrades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-079: No managed Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -3976,6 +4065,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#config-dataclass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config dataclass
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#python-dotenv-manual-parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        python-dotenv + manual parsing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-config-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom config class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keep-scattered-osgetenv" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep scattered os.getenv
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4007,9 +4157,35 @@
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Use pydantic-settings for centralized operator configuration instead of scattered os.getenv calls throughout the codebase.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Scattered os.getenv calls throughout the codebase lead to: (1) Inconsistent parsing and validation, (2) Difficult discovery of available configuration options, (3) Type safety issues, (4) Hard to test with mocked configurations, (5) No central documentation of settings. pydantic-settings provides: (1) Automatic type validation and coercion, (2) Single source of truth for all configuration, (3) Better IDE support with autocomplete, (4) Easy testing with model instances, (5) Built-in documentation through Field descriptions, (6) Support for .env files and multiple sources, (7) Validation errors with clear messages. Trade-off: Minimal - pydantic-settings was already a dependency, just not utilized properly.</p>
+<p>Scattered os.getenv calls throughout the codebase lead to: (1) Inconsistent
+parsing and validation, (2) Difficult discovery of available configuration options,
+(3) Type safety issues, (4) Hard to test with mocked configurations, (5) No central
+documentation of settings. pydantic-settings provides: (1) Automatic type validation
+and coercion, (2) Single source of truth for all configuration, (3) Better IDE
+support with autocomplete, (4) Easy testing with model instances, (5) Built-in
+documentation through Field descriptions, (6) Support for .env files and multiple
+sources, (7) Validation errors with clear messages. Trade-off: Minimal - pydantic-settings
+was already a dependency, just not utilized properly.</p>
+<p>Context: The operator had environment variable parsing scattered across operator.py,
+constants.py, drift_detection_service.py, health.py, leader_election.py, and various
+other modules. Each location manually parsed strings to bools, ints, and floats
+with inconsistent default handling. This made it difficult to understand what configuration
+options existed and how they interacted. Centralizing in a Settings class using
+pydantic-settings provides validation, type safety, and documentation in one location.</p>
+<p>References:
+- <a href="https://docs.pydantic.dev/latest/concepts/pydantic_settings/">https://docs.pydantic.dev/latest/concepts/pydantic_settings/</a>
+- <a href="https://github.com/pydantic/pydantic-settings">https://github.com/pydantic/pydantic-settings</a></p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
 <p>When adding new configuration options, add them to the Settings class in src/keycloak_operator/settings.py. Never use os.getenv directly in other modules. Import settings from the settings module instead. All environment variables must be documented in the Settings class with Field descriptions.</p>
+<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="config-dataclass">Config dataclass<a class="headerlink" href="#config-dataclass" title="Permanent link">&para;</a></h3>
+<p>Rejected due to lack of validation and env parsing.</p>
+<h3 id="python-dotenv-manual-parsing">python-dotenv + manual parsing<a class="headerlink" href="#python-dotenv-manual-parsing" title="Permanent link">&para;</a></h3>
+<p>Rejected due to lack of type safety.</p>
+<h3 id="custom-config-class">Custom config class<a class="headerlink" href="#custom-config-class" title="Permanent link">&para;</a></h3>
+<p>Rejected - reinventing the wheel when pydantic-settings exists.</p>
+<h3 id="keep-scattered-osgetenv">Keep scattered os.getenv<a class="headerlink" href="#keep-scattered-osgetenv" title="Permanent link">&para;</a></h3>
+<p>Rejected due to maintainability issues.</p>
 
 
 

@@ -16,7 +16,7 @@
         <link rel="prev" href="../039-token-rotation-and-bootstrap-flows/">
       
       
-        <link rel="next" href="../040-ruff-for-formatting-and-linting/">
+        <link rel="next" href="../041-shared-operator-fixture-in-tests/">
       
       
         
@@ -2662,6 +2662,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../038-ruff-for-formatting-and-linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-038: Ruff for formatting and linting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
@@ -2847,34 +2875,6 @@
   
 </nav>
       
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../040-ruff-for-formatting-and-linting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-040: Ruff for formatting and linting
-  
-
-    
-  </span>
-  
-  
-
-      </a>
     </li>
   
 
@@ -3419,34 +3419,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../059-no-managed-keycloak-upgrades/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-059: No managed Keycloak upgrades
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../060-cascading-deletes/" class="md-nav__link">
         
   
@@ -3944,6 +3916,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-078: Restrict Privileged Roles and Script Mappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../079-no-managed-keycloak-upgrades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-079: No managed Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4127,7 +4155,9 @@
 <p><strong>Category:</strong> architecture
 <strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Implement Kubernetes admission webhooks to validate Custom Resource specifications before they are persisted to etcd. Use cert-manager for TLS certificate management instead of Kopf's auto-managed webhooks (see ADR-065 for details).</p>
+<p>Implement Kubernetes admission webhooks to validate Custom Resource specifications
+before they are persisted to etcd. Use cert-manager for TLS certificate management
+instead of Kopf's auto-managed webhooks (see ADR-065 for details).</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Pydantic validation happens during reconciliation, which means:
 1. Users see "resource created successfully" but it fails later
@@ -4147,8 +4177,50 @@
 - cert-manager is a standard Kubernetes pattern
 - Allows manual control over ValidatingWebhookConfiguration
 - See ADR-065 for full technical rationale</p>
+<p>Update (2025-11-12): Changed from Kopf auto-management to cert-manager based on ADR-065
+findings that Kopf's auto-management doesn't work in our setup.</p>
+<p>Consequences:
+- Immediate validation feedback (better UX)
+- Resource quotas prevent namespace abuse
+- One-Keycloak-per-namespace prevents conflicts
+- GitOps tools show validation errors immediately
+- Invalid resources never stored in etcd
+- Reliable certificate rotation via cert-manager
+- Requires cert-manager as cluster dependency
+- Increased complexity (webhook server, RBAC, certificates, cert-manager)
+- Bootstrap coordination needed (operator must be ready before CRs)
+- Admission webhook failures block resource creation (fail-closed by default)
+- Can disable webhooks if cert-manager not available (fallback to reconciliation validation)</p>
+<p>Related Decisions:
+- ADR-033: Prohibits webhooks for configuration API. This ADR adds webhooks for validation only.
+- ADR-065: Specifies cert-manager for webhook certificates instead of Kopf auto-management.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When implementing resource validation, use both Pydantic models (for type safety in code) AND admission webhooks (for early validation at K8s API boundary). Webhooks should validate specs synchronously and return clear error messages. Use kopf.on.validate decorators with explicit 'id' parameter for webhook paths. Ensure cert-manager is available for TLS certificate generation. Include readiness probe that checks webhook server port.</p>
+<p>When implementing resource validation, use both Pydantic models
+(for type safety in code) AND admission webhooks (for early validation at K8s API
+boundary). Webhooks should validate specs synchronously and return clear error
+messages. Use kopf.on.validate decorators with explicit 'id' parameter for webhook
+paths. Ensure cert-manager is available for TLS certificate generation. Include
+readiness probe that checks webhook server port.</p>
+<p>Implementation Details:
+- Bootstrap consideration: The Keycloak CR in the operator Helm chart must be
+  created AFTER the operator pod is ready and webhook server is listening. This
+  is handled by:
+  1. Enhanced readiness probe checking webhook port 8443
+  2. Helm --wait flag ensures operator ready before Keycloak CR
+  3. ArgoCD sync waves (operator=wave0, Keycloak=wave1)
+  4. Webhook readiness check in test fixtures (conftest.py)</p>
+<ul>
+<li>RBAC requirements:</li>
+<li>create/update/delete for validatingwebhookconfigurations</li>
+<li>
+<p>create/update/delete for mutatingwebhookconfigurations (for future use)</p>
+</li>
+<li>
+<p>Dependencies:</p>
+</li>
+<li>cert-manager 1.14+ (for TLS certificate generation and rotation)</li>
+<li>Certificates mounted at /tmp/k8s-webhook-server/serving-certs</li>
+</ul>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="pydantic-validation-only">Pydantic validation only<a class="headerlink" href="#pydantic-validation-only" title="Permanent link">&para;</a></h3>
 <p>No immediate feedback to users. Resources appear created but fail during reconciliation. Poor UX for debugging.</p>
@@ -4210,13 +4282,13 @@
         
         
           
-          <a href="../040-ruff-for-formatting-and-linting/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-040: Ruff for formatting and linting">
+          <a href="../041-shared-operator-fixture-in-tests/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-041: Shared operator fixture in tests">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-040: Ruff for formatting and linting
+                ADR-041: Shared operator fixture in tests
               </div>
             </div>
             <div class="md-footer__button md-icon">

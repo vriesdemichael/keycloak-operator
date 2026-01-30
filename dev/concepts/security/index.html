@@ -1124,6 +1124,45 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#security-restrictions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Restrictions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Restrictions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#restricted-roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restricted Roles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#script-mappers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Script Mappers
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#related-documentation" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3114,6 +3153,34 @@
   
   
     <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/038-ruff-for-formatting-and-linting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-038: Ruff for formatting and linting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../decisions/generated-markdown/039-token-rotation-and-bootstrap-flows/" class="md-nav__link">
         
   
@@ -3150,34 +3217,6 @@
     
   
     ADR-040: Admission Webhooks for Resource Validation
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../decisions/generated-markdown/040-ruff-for-formatting-and-linting/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-040: Ruff for formatting and linting
   
 
     
@@ -3730,34 +3769,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../decisions/generated-markdown/059-no-managed-keycloak-upgrades/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-059: No managed Keycloak upgrades
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../decisions/generated-markdown/060-cascading-deletes/" class="md-nav__link">
         
   
@@ -4255,6 +4266,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-078: Restrict Privileged Roles and Script Mappers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/079-no-managed-keycloak-upgrades/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-079: No managed Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4698,6 +4765,45 @@
     <span class="md-ellipsis">
       
         Cannot Update Existing Client
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#security-restrictions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Security Restrictions
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Security Restrictions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#restricted-roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Restricted Roles
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#script-mappers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Script Mappers
       
     </span>
   </a>
@@ -5196,11 +5302,32 @@ graph TB
 1. Existing clients continue to work (runtime not affected)
 2. To allow updates: Re-add namespace to grant list
 3. Or: Transfer ownership by recreating client in authorized namespace</p>
+<h2 id="security-restrictions">Security Restrictions<a class="headerlink" href="#security-restrictions" title="Permanent link">&para;</a></h2>
+<p>To prevent privilege escalation and secure the Keycloak instance, the operator enforces several restrictions on <code>KeycloakClient</code> resources.</p>
+<h3 id="restricted-roles">Restricted Roles<a class="headerlink" href="#restricted-roles" title="Permanent link">&para;</a></h3>
+<p>Service accounts cannot be assigned roles that would grant full administrative access to the realm or the Keycloak instance.</p>
+<p><strong>Blocked Roles:</strong>
+- Realm Role: <code>admin</code> (Full access to the realm)
+- Client Role (realm-management): <code>realm-admin</code> (Full access to the realm)
+- Client Role (realm-management): <code>manage-realm</code> (Manage realm settings)
+- Client Role (realm-management): <code>manage-authorization</code> (Manage fine-grained permissions)</p>
+<p><strong>Configurable Restrictions:</strong>
+- Client Role (realm-management): <code>impersonation</code>
+    - <strong>Default:</strong> Blocked
+    - <strong>Configuration:</strong> <code>KEYCLOAK_ALLOW_IMPERSONATION=true</code>
+    - <strong>Risk:</strong> Allows the service account to impersonate <em>any</em> user, including realm admins, effectively granting full admin access.</p>
+<h3 id="script-mappers">Script Mappers<a class="headerlink" href="#script-mappers" title="Permanent link">&para;</a></h3>
+<p>Script-based protocol mappers allow executing JavaScript code on the Keycloak server during token generation. This poses a significant security risk (Remote Code Execution, access to environment variables/secrets).</p>
+<p><strong>Restriction:</strong>
+- Script mappers are <strong>blocked by default</strong>.
+- <strong>Configuration:</strong> <code>KEYCLOAK_ALLOW_SCRIPT_MAPPERS=true</code>
+- <strong>Risk:</strong> Malicious scripts can compromise the entire Keycloak instance and potentially the underlying node.</p>
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../decisions/017-kubernetes-rbac-over-keycloak-security.yaml">ADR 017</a> - Kubernetes RBAC over Keycloak security</li>
 <li><a href="../../decisions/032-minimal-rbac-with-namespaced-service-accounts.yaml">ADR 032</a> - Minimal RBAC design</li>
 <li><a href="../../decisions/063-namespace-grant-list-authorization.yaml">ADR 063</a> - Namespace grant list authorization</li>
+<li><a href="../../decisions/078-restrict-privileged-roles-and-scripts.yaml">ADR 078</a> - Restrict privileged roles and script mappers</li>
 <li><a href="../architecture/">Architecture</a> - How authorization fits into overall design</li>
 <li><a href="../../quickstart/">Quick Start</a> - Practical authorization examples</li>
 </ul>

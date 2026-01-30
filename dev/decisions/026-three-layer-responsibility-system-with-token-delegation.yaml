@@ -3,7 +3,6 @@ title: Three-layer responsibility system with token delegation
 category: architecture
 status: superseded
 superseded_by: 63
-superseded_date: 2025-11-10
 decision: 'Three-layer system: operator team manages Keycloak instances and issues
   admission tokens, realm teams manage realms and issue operational tokens, application
   teams manage clients. Authorization is managed through a token system that allows
@@ -15,13 +14,16 @@ agent_instructions: 'Use token-based authorization from src/keycloak_operator/ut
   (client authorization). Tokens stored as secrets, metadata in ConfigMap with SHA-256
   hashing. Token rotation handled by src/keycloak_operator/handlers/token_rotation.py.
   CRD models use AuthorizationSecretRef for token references.'
-rationale: 'Three-layer separation matches organizational structure: platform teams
+rationale: |
+  Three-layer separation matches organizational structure: platform teams
   run Keycloak, security teams manage realms, developers manage OAuth clients. Token-based
   delegation enables self-service and reduces operational burden. Once a token is
   issued, teams can independently create resources without cross-team PRs or manual
   approvals. This scales better than centralized control as organization grows. Tokens
   provide audit trail of who authorized what. Automatic rotation with grace periods
-  ensures security without downtime.'
+  ensures security without downtime.
+
+  Superseded: 2025-11-10 by Namespace Grant List (ADR-063).
 provenance: human
 rejected_alternatives:
 - alternative: Centralized management - all resources created by operator team
