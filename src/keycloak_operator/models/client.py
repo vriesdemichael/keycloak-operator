@@ -213,6 +213,28 @@ class SecretMetadata(BaseModel):
     )
 
 
+class SecretRotationConfig(BaseModel):
+    """Configuration for automated client secret rotation."""
+
+    model_config = {"populate_by_name": True}
+
+    enabled: bool = Field(False, description="Enable automated secret rotation")
+    rotation_period: str = Field(
+        "90d",
+        alias="rotationPeriod",
+        description="Rotation period (e.g., '90d', '24h', '10s'). Supported units: s, m, h, d.",
+    )
+    rotation_time: str | None = Field(
+        None,
+        alias="rotationTime",
+        description="Target time for rotation in 'HH:MM' format. If set, rotation waits for this time.",
+    )
+    timezone: str = Field(
+        "UTC",
+        description="IANA Timezone for rotation scheduling (e.g., 'America/New_York', 'UTC').",
+    )
+
+
 class KeycloakClientSpec(BaseModel):
     """
     Specification for a KeycloakClient resource.
@@ -322,6 +344,13 @@ class KeycloakClientSpec(BaseModel):
         default=None,
         alias="secretMetadata",
         description="Metadata to attach to the managed secret.",
+    )
+
+    # Secret rotation settings
+    secret_rotation: SecretRotationConfig = Field(
+        default_factory=SecretRotationConfig,
+        alias="secretRotation",
+        description="Automated secret rotation configuration",
     )
 
     # GitOps settings

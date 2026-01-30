@@ -30,6 +30,7 @@ dependencies = [
     "pyyaml>=6.0.2",
     "urllib3>=2.6.3",  # CVE-2026-21441 fix
     "pyasn1>=0.6.2",   # CVE-2026-23490 fix
+    "pytz>=2025.2",
 ]
 
 [project.urls]
