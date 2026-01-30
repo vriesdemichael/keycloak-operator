@@ -3,7 +3,6 @@ title: Token rotation and bootstrap flows
 category: architecture
 status: superseded
 superseded_by: 63
-superseded_date: 2025-11-10
 decision: Automatic token rotation with grace periods for zero-downtime updates. Bootstrap
   flows enable initial token creation without manual intervention. Tokens rotated
   7 days before expiry with dual-token support during transition.
@@ -14,12 +13,15 @@ agent_instructions: 'Token rotation implemented in src/keycloak_operator/handler
   tests/integration/test_token_bootstrap.py. Rotation tracked via Prometheus metrics.
   Tokens have version numbers that increment on rotation. Use SecretManager from src/keycloak_operator/utils/secret_manager.py
   for rotation operations.'
-rationale: Token rotation is security best practice. Long-lived tokens increase compromise
+rationale: |
+  Token rotation is security best practice. Long-lived tokens increase compromise
   risk. Automatic rotation 7 days before expiry prevents service disruptions. Grace
   period with dual tokens ensures zero downtime - old token works while clients migrate
   to new token. Bootstrap flows enable automated initial setup without manual token
   distribution. Prometheus metrics provide visibility into rotation health. Version
   tracking enables audit trail of token changes.
+
+  Superseded: 2025-11-10 by Namespace Grant List (ADR-063).
 provenance: human
 rejected_alternatives:
 - alternative: Non-rotatable tokens

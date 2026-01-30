@@ -4,9 +4,10 @@ category: architecture
 decision: Operator supports only Keycloak 26.x (currently 26.4.1). Multiple version
   support is planned but not implemented. Users must use the same Keycloak version
   as defined in DEFAULT_KEYCLOAK_IMAGE constant.
-agent_instructions: >
-  SUPERSEDED - See ADR-059 for current multi-version support (24.x, 25.x, 26.x).
-  This ADR is kept for historical context only.
+agent_instructions: 'SUPERSEDED - See ADR-059 for current multi-version support (24.x,
+  25.x, 26.x). This ADR is kept for historical context only.
+
+  '
 rationale: 'Single version support simplifies development - no API compatibility matrix,
   no feature detection, no version-specific code paths. Keycloak API relatively stable
   within major versions but changes between majors. Supporting multiple versions requires
@@ -27,3 +28,4 @@ rejected_alternatives:
 - alternative: Support only latest major (27.x when it releases)
   reason: Forces users to upgrade Keycloak before operator. Breaking for existing
     deployments.
+status: superseded

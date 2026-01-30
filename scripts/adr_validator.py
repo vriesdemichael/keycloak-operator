@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 DECISIONS_DIR = Path("docs/decisions")
 
@@ -31,11 +31,16 @@ class RejectedAlternative(BaseModel):
 class DecisionRecordModel(BaseModel):
     """Decision Record model (Architecture or Development)."""
 
+    model_config = ConfigDict(extra="forbid")
+
     number: int = Field(..., description="Sequential number (e.g., 1, 2, 3)")
     title: TitleStr = Field(
         ..., description="Brief description (e.g., 'Kopf as operator framework')"
     )
     category: Literal["architecture", "development"]
+    status: Literal["proposed", "accepted", "superseded", "deprecated"] | None = None
+    superseded_by: int | None = None
+    supersedes: list[int] | int | None = None
     decision: str
     agent_instructions: str
     rationale: str
@@ -55,15 +60,14 @@ def read_yaml(path: Path) -> dict:
         return yaml.safe_load(fh)
 
 
-def validate_file(path: Path) -> None:
+def validate_file(path: Path) -> DecisionRecordModel:
     """Validate a single decision record file."""
     data = read_yaml(path)
     try:
-        DecisionRecordModel.model_validate(data)
+        return DecisionRecordModel.model_validate(data)
     except ValidationError as e:
         print(f"VALIDATION ERROR in {path}:\n{e}", file=sys.stderr)
         raise SystemExit(2) from None
-    print(f"✓ {path}")
 
 
 def create_decision(
@@ -74,6 +78,9 @@ def create_decision(
     agent_instructions: str,
     rationale: str,
     provenance: str,
+    status: str | None = None,
+    superseded_by: int | None = None,
+    supersedes: int | None = None,
     rejected_alternatives: list[dict] | None = None,
 ) -> Path:
     """Create a new decision record file."""
@@ -96,6 +103,9 @@ def create_decision(
         "number": number,
         "title": title,
         "category": category,
+        "status": status,
+        "superseded_by": superseded_by,
+        "supersedes": supersedes,
         "decision": decision.strip(),
         "agent_instructions": agent_instructions.strip(),
         "rationale": rationale.strip(),
@@ -104,6 +114,9 @@ def create_decision(
 
     if rejected_alternatives:
         content["rejected_alternatives"] = rejected_alternatives
+
+    # Remove None values
+    content = {k: v for k, v in content.items() if v is not None}
 
     with path.open("w", encoding="utf-8") as fh:
         fh.write(yaml.safe_dump(content, sort_keys=False))
@@ -139,6 +152,9 @@ def main(argv: list[str] | None = None) -> int:
             number=data.get("number", 0),
             title=data["title"],
             category=data["category"],
+            status=data.get("status"),
+            superseded_by=data.get("superseded_by"),
+            supersedes=data.get("supersedes"),
             decision=data["decision"],
             agent_instructions=data["agent_instructions"],
             rationale=data["rationale"],
@@ -149,12 +165,33 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.validate is not None:
-        files = args.validate if args.validate else list(DECISIONS_DIR.glob("*.yaml"))
+        files = (
+            [Path(f) for f in args.validate]
+            if args.validate
+            else sorted(DECISIONS_DIR.glob("*.yaml"))
+        )
         if not files:
             print("No decision record files found", file=sys.stderr)
             return 0
+
+        models = []
         for f in files:
-            validate_file(Path(f))
+            models.append(validate_file(f))
+            print(f"✓ {f}")
+
+        # Check for duplicates and gaps
+        numbers = sorted([m.number for m in models])
+        duplicates = [n for n in set(numbers) if numbers.count(n) > 1]
+        if duplicates:
+            print(f"ERROR: Duplicate ADR numbers found: {duplicates}", file=sys.stderr)
+            return 2
+
+        if numbers:
+            expected = list(range(1, max(numbers) + 1))
+            missing = sorted(set(expected) - set(numbers))
+            if missing:
+                print(f"WARNING: Missing ADR numbers: {missing}", file=sys.stderr)
+
         return 0
 
     p.print_help()
