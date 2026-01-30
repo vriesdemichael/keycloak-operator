@@ -230,4 +230,6 @@ keycloak-api-spec.yaml
 *.backup
 *.bak
 *~
-*.orig
+
+# OpenCode plans
+.opencode/

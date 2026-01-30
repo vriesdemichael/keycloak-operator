@@ -98,6 +98,55 @@ async def test_other_roles_allowed(reconciler):
 
 
 @pytest.mark.asyncio
+async def test_impersonation_blocked_by_default(reconciler, mock_settings):
+    """Test that impersonation role is blocked by default."""
+    mock_settings.allow_impersonation = False
+    spec_dict = {
+        "clientId": "test-client",
+        "realmRef": {"name": "test-realm", "namespace": "test-ns"},
+        "serviceAccountRoles": {"clientRoles": {"realm-management": ["impersonation"]}},
+        "settings": {"serviceAccountsEnabled": True},
+    }
+    spec = KeycloakClientSpec.model_validate(spec_dict)
+
+    with pytest.raises(ValidationError, match="restricted client role 'impersonation'"):
+        await reconciler.manage_service_account_roles(
+            spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
+        )
+
+
+@pytest.mark.asyncio
+async def test_impersonation_allowed_when_enabled(reconciler, mock_settings):
+    """Test that impersonation role is allowed when setting is enabled."""
+    mock_settings.allow_impersonation = True
+    spec_dict = {
+        "clientId": "test-client",
+        "realmRef": {"name": "test-realm", "namespace": "test-ns"},
+        "serviceAccountRoles": {"clientRoles": {"realm-management": ["impersonation"]}},
+        "settings": {"serviceAccountsEnabled": True},
+    }
+    spec = KeycloakClientSpec.model_validate(spec_dict)
+
+    # Mock admin client
+    admin_client = AsyncMock()
+    mock_user = MagicMock()
+    mock_user.id = "user-id"
+    admin_client.get_service_account_user.return_value = mock_user
+
+    mock_client = MagicMock()
+    mock_client.id = "target-client-uuid"
+    admin_client.get_client_by_name.return_value = mock_client
+
+    reconciler.keycloak_admin_factory = AsyncMock(return_value=admin_client)
+    reconciler._get_realm_info = MagicMock(return_value=("test-realm", "ns", "kc", {}))
+
+    # Should not raise exception
+    await reconciler.manage_service_account_roles(
+        spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
+    )
+
+
+@pytest.mark.asyncio
 async def test_script_mapper_blocked(reconciler, mock_settings):
     """Test that script mappers are blocked when setting is False."""
     mock_settings.allow_script_mappers = False
@@ -120,6 +169,98 @@ async def test_script_mapper_blocked(reconciler, mock_settings):
         ValidationError, match="Script mapper 'script-mapper' .* is not allowed"
     ):
         await reconciler.configure_protocol_mappers(
+            spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
+        )
+
+
+@pytest.mark.asyncio
+async def test_saml_script_mapper_blocked(reconciler, mock_settings):
+    """Test that SAML script mappers are blocked."""
+    mock_settings.allow_script_mappers = False
+
+    spec_dict = {
+        "clientId": "test-client",
+        "realmRef": {"name": "test-realm", "namespace": "test-ns"},
+        "protocolMappers": [
+            {
+                "name": "script-mapper",
+                "protocol": "saml",
+                "protocolMapper": "saml-javascript-mapper",
+                "config": {"script": "foo"},
+            }
+        ],
+    }
+    spec = KeycloakClientSpec.model_validate(spec_dict)
+
+    with pytest.raises(
+        ValidationError, match="Script mapper 'script-mapper' .* is not allowed"
+    ):
+        await reconciler.configure_protocol_mappers(
+            spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
+        )
+
+
+@pytest.mark.asyncio
+async def test_case_insensitive_script_mapper_blocked(reconciler, mock_settings):
+    """Test that script mappers are blocked regardless of case."""
+    mock_settings.allow_script_mappers = False
+
+    spec_dict = {
+        "clientId": "test-client",
+        "realmRef": {"name": "test-realm", "namespace": "test-ns"},
+        "protocolMappers": [
+            {
+                "name": "script-mapper",
+                "protocol": "openid-connect",
+                "protocolMapper": "OIDC-SCRIPT-BASED-PROTOCOL-MAPPER",
+                "config": {"script": "foo"},
+            }
+        ],
+    }
+    spec = KeycloakClientSpec.model_validate(spec_dict)
+
+    with pytest.raises(
+        ValidationError, match="Script mapper 'script-mapper' .* is not allowed"
+    ):
+        await reconciler.configure_protocol_mappers(
+            spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
+        )
+
+
+@pytest.mark.asyncio
+async def test_combined_role_restrictions(reconciler):
+    """Test combined realm and client role restrictions."""
+    spec_dict = {
+        "clientId": "test-client",
+        "realmRef": {"name": "test-realm", "namespace": "test-ns"},
+        "serviceAccountRoles": {
+            "realmRoles": ["admin"],
+            "clientRoles": {"realm-management": ["manage-users"]},
+        },
+        "settings": {"serviceAccountsEnabled": True},
+    }
+    spec = KeycloakClientSpec.model_validate(spec_dict)
+
+    # Should raise error for the first violation encountered
+    with pytest.raises(ValidationError):
+        await reconciler.manage_service_account_roles(
+            spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
+        )
+
+
+@pytest.mark.asyncio
+async def test_other_high_privilege_roles_blocked(reconciler):
+    """Test that other high-privilege roles like manage-users are blocked."""
+    spec_dict = {
+        "clientId": "test-client",
+        "realmRef": {"name": "test-realm", "namespace": "test-ns"},
+        "serviceAccountRoles": {"clientRoles": {"realm-management": ["manage-users"]}},
+        "settings": {"serviceAccountsEnabled": True},
+    }
+    spec = KeycloakClientSpec.model_validate(spec_dict)
+
+    with pytest.raises(ValidationError, match="restricted client role 'manage-users'"):
+        await reconciler.manage_service_account_roles(
             spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
         )
 

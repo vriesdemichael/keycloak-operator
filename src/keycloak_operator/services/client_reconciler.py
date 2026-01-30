@@ -13,6 +13,7 @@ from kubernetes.client.rest import ApiException
 
 from ..errors import KeycloakAdminError, ReconciliationError, ValidationError
 from ..models.client import KeycloakClientSpec
+from ..settings import settings
 from ..utils.keycloak_admin import get_keycloak_admin_client
 from ..utils.ownership import get_cr_reference, is_owned_by_cr
 from .base_reconciler import BaseReconciler, StatusProtocol
@@ -766,12 +767,21 @@ class KeycloakClientReconciler(BaseReconciler):
             return
 
         # Check for script mappers
-        from ..settings import settings
-
         if not settings.allow_script_mappers:
+            # Explicit denylist of known dangerous script mapper types
+            dangerous_script_mapper_types = {
+                "oidc-script-based-protocol-mapper",
+                "saml-javascript-mapper",
+            }
+
             for mapper_spec in spec.protocol_mappers:
-                if "script" in mapper_spec.protocol_mapper.lower():
-                    # Common types: 'oidc-script-based-protocol-mapper', 'saml-javascript-mapper'
+                protocol_mapper_type = (
+                    mapper_spec.protocol_mapper.lower()
+                    if mapper_spec.protocol_mapper is not None
+                    else ""
+                )
+
+                if protocol_mapper_type in dangerous_script_mapper_types:
                     raise ValidationError(
                         f"Script mapper '{mapper_spec.name}' (type: {mapper_spec.protocol_mapper}) is not allowed. "
                         "Script mappers are disabled by default for security. "
@@ -1172,12 +1182,28 @@ class KeycloakClientReconciler(BaseReconciler):
             # We need to know the realm-management client name (usually "realm-management")
             # and restricted roles like "realm-admin".
 
-            restricted_client_roles = {"realm-management": {"realm-admin"}}
+            restricted_realm_management_roles = {
+                "realm-admin",
+                "manage-realm",
+                "manage-authorization",
+                "manage-users",
+                "manage-clients",
+                "manage-events",
+                "manage-identity-providers",
+            }
+
+            if not settings.allow_impersonation:
+                restricted_realm_management_roles.add("impersonation")
+
+            restricted_client_roles = {
+                "realm-management": restricted_realm_management_roles
+            }
 
             for target_client, roles in roles_config.client_roles.items():
-                if target_client == "realm-management":
+                if target_client in restricted_client_roles:
+                    restricted_roles = restricted_client_roles[target_client]
                     for role in roles:
-                        if role in restricted_client_roles["realm-management"]:
+                        if role in restricted_roles:
                             raise ValidationError(
                                 f"Assigning restricted client role '{role}' from '{target_client}' "
                                 "to service account is not allowed for security reasons."

@@ -1,0 +1,25 @@
+number: 78
+title: Restrict Privileged Roles and Script Mappers
+category: architecture
+decision: >
+  Implement security controls to prevent privilege escalation via KeycloakClient resources.
+  1. Block assignment of high-privilege roles ('admin', 'realm-admin', 'manage-realm', 'manage-authorization') to service accounts.
+  2. Block assignment of 'impersonation' role by default, configurable via KEYCLOAK_ALLOW_IMPERSONATION.
+  3. Block script-based protocol mappers by default, configurable via KEYCLOAK_ALLOW_SCRIPT_MAPPERS.
+agent_instructions: >
+  When implementing or modifying client reconciliation logic, ensure these security checks remain in place.
+  Do not remove these checks without explicit authorization.
+  When testing, verify that restricted roles and mappers are rejected.
+rationale: >
+  The operator uses a least-privilege model where authorization is handled via Kubernetes RBAC.
+  Allowing service accounts to acquire full realm admin privileges ('admin', 'realm-admin') allows users to bypass this model and potentially escalate privileges within Keycloak.
+  Script mappers allow arbitrary code execution on the Keycloak server, which is a severe security risk if not strictly controlled.
+  The 'impersonation' role allows a service account to act as any user, including admins, which is equivalent to granting admin access.
+provenance: human
+consequences:
+  positive:
+  - Prevents accidental or malicious privilege escalation.
+  - Mitigates Remote Code Execution (RCE) risks from script mappers.
+  - Enforces the intended security model (RBAC + Namespace Grants).
+  negative:
+  - May break existing deployments that rely on these high-privilege roles or script mappers (mitigated by configuration flags).
