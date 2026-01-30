@@ -235,7 +235,21 @@ class Settings(BaseSettings):
     allow_script_mappers: bool = Field(
         default=False,
         validation_alias="KEYCLOAK_ALLOW_SCRIPT_MAPPERS",
-        description="Allow usage of script-based protocol mappers (security risk)",
+        description=(
+            "Allow usage of script-based protocol mappers in Keycloak realms. "
+            "Disabled by default as a hardening measure because script mappers "
+            "execute dynamic code inside the Keycloak JVM and can be abused to "
+            "run arbitrary logic. Enable only in tightly controlled environments "
+            "where realm administrators are fully trusted and script mappers are "
+            "required for compatibility or advanced customization."
+        ),
+    )
+    allow_impersonation: bool = Field(
+        default=False,
+        validation_alias="KEYCLOAK_ALLOW_IMPERSONATION",
+        description="Allow service accounts to use the 'impersonation' role from realm-management. "
+        "WARNING: Enabling this allows the service account to impersonate ANY user in the realm, "
+        "including realm admins, effectively granting full administrative access to Keycloak.",
     )
 
     @property

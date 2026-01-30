@@ -565,6 +565,35 @@ spec:
 2. To allow updates: Re-add namespace to grant list
 3. Or: Transfer ownership by recreating client in authorized namespace
 
+## Security Restrictions
+
+To prevent privilege escalation and secure the Keycloak instance, the operator enforces several restrictions on `KeycloakClient` resources.
+
+### Restricted Roles
+
+Service accounts cannot be assigned roles that would grant full administrative access to the realm or the Keycloak instance.
+
+**Blocked Roles:**
+- Realm Role: `admin` (Full access to the realm)
+- Client Role (realm-management): `realm-admin` (Full access to the realm)
+- Client Role (realm-management): `manage-realm` (Manage realm settings)
+- Client Role (realm-management): `manage-authorization` (Manage fine-grained permissions)
+
+**Configurable Restrictions:**
+- Client Role (realm-management): `impersonation`
+    - **Default:** Blocked
+    - **Configuration:** `KEYCLOAK_ALLOW_IMPERSONATION=true`
+    - **Risk:** Allows the service account to impersonate *any* user, including realm admins, effectively granting full admin access.
+
+### Script Mappers
+
+Script-based protocol mappers allow executing JavaScript code on the Keycloak server during token generation. This poses a significant security risk (Remote Code Execution, access to environment variables/secrets).
+
+**Restriction:**
+- Script mappers are **blocked by default**.
+- **Configuration:** `KEYCLOAK_ALLOW_SCRIPT_MAPPERS=true`
+- **Risk:** Malicious scripts can compromise the entire Keycloak instance and potentially the underlying node.
+
 ## Related Documentation
 
 - [ADR 017](../decisions/017-kubernetes-rbac-over-keycloak-security.yaml) - Kubernetes RBAC over Keycloak security
