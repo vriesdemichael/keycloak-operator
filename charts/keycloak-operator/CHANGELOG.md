@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.0...chart-operator-v0.4.1) (2026-01-30)
+
+
+### Features
+
+* **chart-operator+operator:** expose security settings in helm chart ([50c8d9a](https://github.com/vriesdemichael/keycloak-operator/commit/50c8d9ac2159f533a49b3138d09339b3c7ef5c6e))
+* **chart-operator:** expose rate limiting and metrics settings ([fbada3e](https://github.com/vriesdemichael/keycloak-operator/commit/fbada3ef55a1333e9fcb581d0aaec6dbc0d2a793))
+
 ## [0.4.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.3.30...chart-operator-v0.4.0) (2026-01-29)
 
 
