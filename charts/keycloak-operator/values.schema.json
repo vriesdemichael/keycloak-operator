@@ -25,6 +25,11 @@
           "description": "Comma-separated list of namespaces to watch. If empty, the operator watches all namespaces (Cluster-wide).",
           "default": ""
         },
+        "dryRun": {
+          "type": "boolean",
+          "description": "Run the operator in dry-run mode (no changes applied to Keycloak)",
+          "default": false
+        },
         "image": {
           "type": "object",
           "description": "Container image configuration for the operator",
@@ -364,6 +369,57 @@
               "type": "number",
               "description": "Random jitter added to reconciliation scheduling (seconds)",
               "default": 5.0
+            }
+          }
+        },
+        "logging": {
+          "type": "object",
+          "description": "Operator logging configuration",
+          "properties": {
+            "level": {
+              "type": "string",
+              "enum": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+              ],
+              "default": "INFO"
+            },
+            "json": {
+              "type": "boolean",
+              "default": true
+            },
+            "correlationIds": {
+              "type": "boolean",
+              "default": true
+            },
+            "logHealthProbes": {
+              "type": "boolean",
+              "default": false
+            },
+            "webhookLogLevel": {
+              "type": "string",
+              "enum": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+              ],
+              "default": "WARNING"
+            },
+            "handlerEntryLogLevel": {
+              "type": "string",
+              "enum": [
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL"
+              ],
+              "default": "INFO"
             }
           }
         }

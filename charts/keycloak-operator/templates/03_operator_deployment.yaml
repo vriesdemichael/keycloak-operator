@@ -76,6 +76,20 @@ spec:
           value: {{ include "keycloak-operator.instanceId" . }}
         - name: KEYCLOAK_OPERATOR_NAMESPACES
           value: {{ .Values.operator.watchNamespaces | quote }}
+        - name: DRY_RUN
+          value: {{ .Values.operator.dryRun | quote }}
+        - name: LOG_LEVEL
+          value: {{ .Values.operator.logging.level | quote }}
+        - name: JSON_LOGS
+          value: {{ .Values.operator.logging.json | quote }}
+        - name: CORRELATION_IDS
+          value: {{ .Values.operator.logging.correlationIds | quote }}
+        - name: LOG_HEALTH_PROBES
+          value: {{ .Values.operator.logging.logHealthProbes | quote }}
+        - name: WEBHOOK_LOG_LEVEL
+          value: {{ .Values.operator.logging.webhookLogLevel | quote }}
+        - name: HANDLER_ENTRY_LOG_LEVEL
+          value: {{ .Values.operator.logging.handlerEntryLogLevel | quote }}
         - name: METRICS_PORT
           value: {{ .Values.operator.metrics.port | quote }}
         - name: METRICS_HOST

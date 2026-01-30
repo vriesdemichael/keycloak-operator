@@ -26,6 +26,10 @@ operator:
   # Recommended: empty for Cluster-wide operation
   watchNamespaces: ""
 
+  # Run the operator in dry-run mode
+  # If true, the operator will not make any changes to Keycloak
+  dryRun: false
+
   image:
     # Container registry and repository path
     repository: ghcr.io/vriesdemichael/keycloak-operator
@@ -174,12 +178,22 @@ operator:
     # Host/Address to bind the metrics server to
     host: "0.0.0.0"
 
+  # Logging configuration
+  logging:
+    # Main log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    level: INFO
+    # Enable JSON structured logging
+    json: true
+    # Enable correlation IDs for request tracing
+    correlationIds: true
+    # Log health and readiness probe requests (noisy)
+    logHealthProbes: false
+    # Log level for admission webhooks
+    webhookLogLevel: WARNING
+    # Log level for handler entry messages (noisy)
+    handlerEntryLogLevel: INFO
+
   # Environment variables for operator customization
-  # Common variables:
-  # - LOG_LEVEL: DEBUG, INFO, WARNING, ERROR (default: INFO)
-  # - JSON_LOGS: "true" for JSON structured logs (default: "true")
-  # - LOG_HEALTH_PROBES: "true" to log health/ready probe requests (default: "false")
-  # - WEBHOOK_LOG_LEVEL: Log level for webhook handlers (default: "WARNING")
   env: []
     # - name: LOG_LEVEL
     #   value: "INFO"
