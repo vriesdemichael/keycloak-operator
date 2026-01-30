@@ -18,6 +18,24 @@ from ..utils.keycloak_admin import get_keycloak_admin_client
 from ..utils.ownership import get_cr_reference, is_owned_by_cr
 from .base_reconciler import BaseReconciler, StatusProtocol
 
+# Constants for security restrictions
+DANGEROUS_SCRIPT_MAPPER_TYPES = {
+    "oidc-script-based-protocol-mapper",
+    "saml-javascript-mapper",
+}
+
+RESTRICTED_CLIENT_ROLES = {
+    "realm-management": {
+        "realm-admin",
+        "manage-realm",
+        "manage-authorization",
+        "manage-users",
+        "manage-clients",
+        "manage-events",
+        "manage-identity-providers",
+    }
+}
+
 
 class KeycloakClientReconciler(BaseReconciler):
     """
@@ -237,7 +255,6 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Store the latest admin event timestamp for drift detection
         # This allows drift detection to compare against changes made after reconciliation
-        from ..settings import settings
 
         if settings.drift_detection_enabled:
             try:
@@ -768,12 +785,6 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Check for script mappers
         if not settings.allow_script_mappers:
-            # Explicit denylist of known dangerous script mapper types
-            dangerous_script_mapper_types = {
-                "oidc-script-based-protocol-mapper",
-                "saml-javascript-mapper",
-            }
-
             for mapper_spec in spec.protocol_mappers:
                 protocol_mapper_type = (
                     mapper_spec.protocol_mapper.lower()
@@ -781,11 +792,11 @@ class KeycloakClientReconciler(BaseReconciler):
                     else ""
                 )
 
-                if protocol_mapper_type in dangerous_script_mapper_types:
+                if protocol_mapper_type in DANGEROUS_SCRIPT_MAPPER_TYPES:
                     raise ValidationError(
                         f"Script mapper '{mapper_spec.name}' (type: {mapper_spec.protocol_mapper}) is not allowed. "
                         "Script mappers are disabled by default for security. "
-                        "Set KEYCLOAK_ALLOW_SCRIPT_MAPPERS=true to enable them."
+                        "Set operator.security.allowScriptMappers=true in values.yaml to enable them."
                     )
 
         # Get Keycloak admin client
@@ -1178,32 +1189,15 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Validate client roles
         if roles_config.client_roles:
-            # Check for realm-management client roles
-            # We need to know the realm-management client name (usually "realm-management")
-            # and restricted roles like "realm-admin".
-
-            restricted_realm_management_roles = {
-                "realm-admin",
-                "manage-realm",
-                "manage-authorization",
-                "manage-users",
-                "manage-clients",
-                "manage-events",
-                "manage-identity-providers",
-            }
-
-            if not settings.allow_impersonation:
-                restricted_realm_management_roles.add("impersonation")
-
-            restricted_client_roles = {
-                "realm-management": restricted_realm_management_roles
-            }
-
             for target_client, roles in roles_config.client_roles.items():
-                if target_client in restricted_client_roles:
-                    restricted_roles = restricted_client_roles[target_client]
+                if target_client in RESTRICTED_CLIENT_ROLES:
+                    restricted_roles = RESTRICTED_CLIENT_ROLES[target_client]
                     for role in roles:
-                        if role in restricted_roles:
+                        # Allow impersonation only if explicitly configured
+                        if role == "impersonation" and settings.allow_impersonation:
+                            continue
+
+                        if role in restricted_roles or role == "impersonation":
                             raise ValidationError(
                                 f"Assigning restricted client role '{role}' from '{target_client}' "
                                 "to service account is not allowed for security reasons."
