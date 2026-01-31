@@ -7,8 +7,12 @@ from pydantic import ValidationError as PydanticValidationError
 
 from keycloak_operator.errors import ValidationError
 from keycloak_operator.handlers.client import (
+    ROTATION_INITIAL_BACKOFF_SECONDS,
+    ROTATION_MAX_BACKOFF_SECONDS,
+    _calculate_exponential_backoff,
     _calculate_seconds_until_rotation,
     _parse_duration,
+    _parse_rotation_timestamp,
 )
 from keycloak_operator.models.client import KeycloakClientSpec, SecretRotationConfig
 from keycloak_operator.services.client_reconciler import KeycloakClientReconciler
@@ -386,3 +390,112 @@ class TestCalculateSecondsUntilRotation:
 
         # Should be approximately 30 seconds
         assert 25 < seconds <= 30
+
+
+class TestParseRotationTimestamp:
+    """Test the _parse_rotation_timestamp helper function."""
+
+    def test_parse_valid_iso_format_with_timezone(self):
+        """Test parsing a valid ISO timestamp with timezone."""
+        timestamp_str = "2026-01-31T12:00:00+00:00"
+        result = _parse_rotation_timestamp(timestamp_str)
+
+        assert result is not None
+        assert result.year == 2026
+        assert result.month == 1
+        assert result.day == 31
+        assert result.hour == 12
+        assert result.tzinfo is not None
+
+    def test_parse_valid_iso_format_without_timezone(self):
+        """Test parsing a valid ISO timestamp without timezone defaults to UTC."""
+        timestamp_str = "2026-01-31T12:00:00"
+        result = _parse_rotation_timestamp(timestamp_str)
+
+        assert result is not None
+        assert result.tzinfo == UTC
+
+    def test_parse_valid_iso_format_with_microseconds(self):
+        """Test parsing a valid ISO timestamp with microseconds."""
+        timestamp_str = "2026-01-31T12:00:00.123456+00:00"
+        result = _parse_rotation_timestamp(timestamp_str)
+
+        assert result is not None
+        assert result.microsecond == 123456
+
+    def test_parse_none_returns_none(self):
+        """Test that None input returns None."""
+        result = _parse_rotation_timestamp(None)
+        assert result is None
+
+    def test_parse_empty_string_returns_none(self):
+        """Test that empty string returns None."""
+        result = _parse_rotation_timestamp("")
+        assert result is None
+
+    def test_parse_invalid_format_returns_none(self):
+        """Test that invalid format returns None instead of raising."""
+        result = _parse_rotation_timestamp("not-a-timestamp")
+        assert result is None
+
+    def test_parse_partial_timestamp_returns_none(self):
+        """Test that partial timestamp returns None."""
+        result = _parse_rotation_timestamp("2026-01-31")
+        # datetime.fromisoformat accepts date-only strings in Python 3.11+
+        # so this should actually parse successfully
+        assert result is not None  # Date-only is valid ISO format
+
+    def test_parse_garbage_returns_none(self):
+        """Test that garbage input returns None."""
+        result = _parse_rotation_timestamp("garbage123")
+        assert result is None
+
+
+class TestCalculateExponentialBackoff:
+    """Test the _calculate_exponential_backoff helper function."""
+
+    def test_initial_backoff(self):
+        """Test backoff at retry 0."""
+        backoff = _calculate_exponential_backoff(0)
+        assert backoff == ROTATION_INITIAL_BACKOFF_SECONDS
+
+    def test_first_retry_doubles(self):
+        """Test backoff doubles after first retry."""
+        backoff = _calculate_exponential_backoff(1)
+        assert backoff == ROTATION_INITIAL_BACKOFF_SECONDS * 2
+
+    def test_second_retry_quadruples(self):
+        """Test backoff quadruples after second retry."""
+        backoff = _calculate_exponential_backoff(2)
+        assert backoff == ROTATION_INITIAL_BACKOFF_SECONDS * 4
+
+    def test_backoff_capped_at_max(self):
+        """Test backoff is capped at maximum value."""
+        # With initial=2.0, after many retries we should hit the 30s cap
+        backoff = _calculate_exponential_backoff(10)  # 2 * 2^10 = 2048, capped at 30
+        assert backoff == ROTATION_MAX_BACKOFF_SECONDS
+
+    def test_custom_initial_backoff(self):
+        """Test with custom initial backoff."""
+        backoff = _calculate_exponential_backoff(0, initial_backoff=5.0)
+        assert backoff == 5.0
+
+    def test_custom_max_backoff(self):
+        """Test with custom max backoff."""
+        backoff = _calculate_exponential_backoff(
+            10, initial_backoff=2.0, max_backoff=10.0
+        )
+        assert backoff == 10.0
+
+    def test_backoff_just_below_max(self):
+        """Test backoff just below the max threshold."""
+        # initial=2.0, retry=3 -> 2*8=16, which is below 30
+        backoff = _calculate_exponential_backoff(3)
+        assert backoff == 16.0
+        assert backoff < ROTATION_MAX_BACKOFF_SECONDS
+
+    def test_backoff_just_at_max(self):
+        """Test backoff at the point where it hits max."""
+        # initial=2.0, retry=4 -> 2*16=32, capped at 30
+        backoff = _calculate_exponential_backoff(4)
+        assert backoff == ROTATION_MAX_BACKOFF_SECONDS

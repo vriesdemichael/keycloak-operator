@@ -763,6 +763,50 @@ ROTATION_INITIAL_BACKOFF_SECONDS = 2.0  # Short backoff as requested
 ROTATION_MAX_BACKOFF_SECONDS = 30.0
 
 
+def _parse_rotation_timestamp(timestamp_str: str | None) -> datetime | None:
+    """
+    Parse a rotation timestamp string to a datetime object.
+
+    Handles ISO format timestamps and ensures timezone awareness (defaults to UTC).
+
+    Args:
+        timestamp_str: ISO format timestamp string, or None
+
+    Returns:
+        Parsed datetime with timezone, or None if input was None/invalid
+    """
+    if not timestamp_str:
+        return None
+
+    try:
+        rotated_at = datetime.fromisoformat(timestamp_str)
+        if rotated_at.tzinfo is None:
+            rotated_at = rotated_at.replace(tzinfo=UTC)
+        return rotated_at
+    except ValueError:
+        return None
+
+
+def _calculate_exponential_backoff(
+    retry_count: int,
+    initial_backoff: float = ROTATION_INITIAL_BACKOFF_SECONDS,
+    max_backoff: float = ROTATION_MAX_BACKOFF_SECONDS,
+) -> float:
+    """
+    Calculate exponential backoff delay.
+
+    Args:
+        retry_count: Current retry attempt number (0-based)
+        initial_backoff: Initial backoff delay in seconds
+        max_backoff: Maximum backoff delay in seconds
+
+    Returns:
+        Backoff delay in seconds
+    """
+    backoff = initial_backoff * (2**retry_count)
+    return min(backoff, max_backoff)
+
+
 def _parse_duration(duration_str: str) -> timedelta:
     """Parse duration string (e.g. '90d', '24h', '10s') into timedelta."""
     if not duration_str:
@@ -922,11 +966,8 @@ async def secret_rotation_daemon(
                 continue
 
             # Parse the rotation timestamp
-            try:
-                rotated_at = datetime.fromisoformat(rotated_at_str)
-                if rotated_at.tzinfo is None:
-                    rotated_at = rotated_at.replace(tzinfo=UTC)
-            except ValueError:
+            rotated_at = _parse_rotation_timestamp(rotated_at_str)
+            if rotated_at is None:
                 logger.warning(
                     f"Invalid rotated-at annotation '{rotated_at_str}', "
                     "waiting for reconciliation to fix it"
@@ -1002,7 +1043,6 @@ async def secret_rotation_daemon(
             # Perform rotation with retries
             rotation_success = False
             retry_count = 0
-            backoff = ROTATION_INITIAL_BACKOFF_SECONDS
 
             while retry_count < ROTATION_MAX_RETRIES and not stopped:
                 try:
@@ -1110,6 +1150,7 @@ async def secret_rotation_daemon(
                         )
                         break
 
+                    backoff = _calculate_exponential_backoff(retry_count - 1)
                     logger.warning(
                         f"Rotation attempt {retry_count}/{ROTATION_MAX_RETRIES} failed "
                         f"for client {name}: {e}. Retrying in {backoff:.1f}s"
@@ -1117,9 +1158,6 @@ async def secret_rotation_daemon(
 
                     if await stopped.wait(timeout=backoff):
                         break
-
-                    # Exponential backoff with cap
-                    backoff = min(backoff * 2, ROTATION_MAX_BACKOFF_SECONDS)
 
             if not rotation_success and not stopped:
                 # All retries exhausted - set to Degraded
