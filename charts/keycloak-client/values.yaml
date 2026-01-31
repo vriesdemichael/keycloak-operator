@@ -149,6 +149,20 @@ secretMetadata:
 # Regenerate the client secret on update
 regenerateSecret: false
 
+# Secret rotation configuration
+# Enables automated rotation of client secrets
+secretRotation:
+  # Enable automated secret rotation
+  enabled: false
+  # Rotation period (e.g., '90d', '24h', '10s')
+  # Supported units: s (seconds), m (minutes), h (hours), d (days)
+  rotationPeriod: "90d"
+  # Optional: Target time for rotation in 'HH:MM' format
+  # If set, rotation waits until this time of day
+  rotationTime: ""
+  # IANA Timezone for rotation scheduling (e.g., 'America/New_York', 'UTC')
+  timezone: "UTC"
+
 # Extra Kubernetes manifests to deploy
 # Useful for deploying ExternalSecrets, SealedSecrets, ConfigMaps, etc.
 extraManifests: []

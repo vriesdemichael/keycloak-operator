@@ -234,6 +234,41 @@ class SecretRotationConfig(BaseModel):
         description="IANA Timezone for rotation scheduling (e.g., 'America/New_York', 'UTC').",
     )
 
+    @field_validator("rotation_time", mode="before")
+    @classmethod
+    def validate_rotation_time(cls, v: str | None) -> str | None:
+        """Validate rotation_time is in HH:MM format with valid hour/minute values."""
+        if v is None:
+            return v
+
+        if not isinstance(v, str):
+            raise ValueError("rotation_time must be a string in 'HH:MM' format")
+
+        parts = v.split(":")
+        if len(parts) != 2:
+            raise ValueError(
+                f"Invalid rotation_time format '{v}'. Expected 'HH:MM' format."
+            )
+
+        try:
+            hour = int(parts[0])
+            minute = int(parts[1])
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid rotation_time format '{v}'. Hour and minute must be integers."
+            ) from e
+
+        if not (0 <= hour <= 23):
+            raise ValueError(
+                f"Invalid hour '{hour}' in rotation_time '{v}'. Hour must be 0-23."
+            )
+        if not (0 <= minute <= 59):
+            raise ValueError(
+                f"Invalid minute '{minute}' in rotation_time '{v}'. Minute must be 0-59."
+            )
+
+        return v
+
 
 class KeycloakClientSpec(BaseModel):
     """
