@@ -381,7 +381,11 @@ async def delete_keycloak_realm(
         ) from e
 
 
-@kopf.timer("keycloakrealms", interval=TIMER_INTERVAL_REALM)
+@kopf.timer(
+    "keycloakrealms",
+    idle=TIMER_INTERVAL_REALM,
+    initial_delay=lambda **_: random.uniform(0, TIMER_INTERVAL_REALM),
+)
 async def monitor_realm_health(
     spec: dict[str, Any],
     name: str,

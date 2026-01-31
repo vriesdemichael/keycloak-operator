@@ -21,8 +21,10 @@ The handlers support various client types including:
 import asyncio
 import logging
 import random
-from datetime import UTC, datetime
+import time
+from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import kopf
 from kubernetes import client
@@ -33,11 +35,20 @@ from keycloak_operator.constants import (
     TIMER_INTERVAL_CLIENT,
 )
 from keycloak_operator.models.client import KeycloakClientSpec
+from keycloak_operator.observability.metrics import (
+    SECRET_NEXT_ROTATION_TIMESTAMP,
+    SECRET_ROTATION_DURATION,
+    SECRET_ROTATION_ERRORS_TOTAL,
+    SECRET_ROTATION_RETRIES_TOTAL,
+    SECRET_ROTATION_TOTAL,
+)
 from keycloak_operator.services import KeycloakClientReconciler
 from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 from keycloak_operator.utils.kubernetes import (
+    create_client_secret,
     get_kubernetes_client,
+    validate_keycloak_reference,
 )
 
 logger = logging.getLogger(__name__)
@@ -383,7 +394,11 @@ async def delete_keycloak_client(
         ) from e
 
 
-@kopf.timer("keycloakclients", interval=TIMER_INTERVAL_CLIENT)
+@kopf.timer(
+    "keycloakclients",
+    idle=TIMER_INTERVAL_CLIENT,
+    initial_delay=lambda **_: random.uniform(0, TIMER_INTERVAL_CLIENT),
+)
 async def monitor_client_health(
     spec: dict[str, Any],
     name: str,
@@ -600,117 +615,8 @@ async def monitor_client_health(
 
                     logger.debug(f"Client credentials secret {secret_name} is valid")
 
-                    # Check for secret rotation
-                    if client_spec.secret_rotation.enabled:
-                        logger.info(
-                            f"Checking rotation for client {name}: "
-                            f"rotation_period={client_spec.secret_rotation.rotation_period}"
-                        )
-                        # Use ClientReconciler to check if rotation is due
-                        reconciler = KeycloakClientReconciler(
-                            keycloak_admin_factory=lambda kc_name,
-                            kc_ns: get_keycloak_admin_client(kc_name, kc_ns)
-                        )
-
-                        should_rotate = reconciler._should_rotate_secret(
-                            client_spec, secret
-                        )
-                        logger.info(
-                            f"Rotation check for client {name}: should_rotate={should_rotate}"
-                        )
-
-                        if should_rotate:
-                            logger.info(
-                                f"Secret rotation triggered for client {name} in timer"
-                            )
-
-                            # Need to get admin client again to perform the rotation
-                            async with await get_keycloak_admin_client(
-                                keycloak_name, keycloak_namespace
-                            ) as rotation_admin_client:
-                                # Regenerate secret in Keycloak
-                                new_secret = await rotation_admin_client.regenerate_client_secret(
-                                    client_spec.client_id,
-                                    actual_realm_name,
-                                    namespace,
-                                )
-
-                                if new_secret:
-                                    from keycloak_operator.utils.kubernetes import (
-                                        create_client_secret,
-                                        validate_keycloak_reference,
-                                    )
-
-                                    # Get Keycloak instance for endpoint URL
-                                    keycloak_instance_resource = (
-                                        validate_keycloak_reference(
-                                            keycloak_name, keycloak_namespace
-                                        )
-                                    )
-
-                                    if keycloak_instance_resource:
-                                        # Prepare secret metadata (don't mutate spec)
-                                        labels = None
-                                        annotations = None
-                                        if client_spec.secret_metadata:
-                                            labels = (
-                                                dict(client_spec.secret_metadata.labels)
-                                                if client_spec.secret_metadata.labels
-                                                else None
-                                            )
-                                            annotations = (
-                                                dict(
-                                                    client_spec.secret_metadata.annotations
-                                                )
-                                                if client_spec.secret_metadata.annotations
-                                                else None
-                                            )
-
-                                        # Add rotation timestamp annotation
-                                        if annotations is None:
-                                            annotations = {}
-                                        annotations["keycloak-operator/rotated-at"] = (
-                                            datetime.now(UTC).isoformat()
-                                        )
-
-                                        # Get owner UID for ownership
-                                        owner_uid = meta.get("uid")
-
-                                        create_client_secret(
-                                            secret_name=secret_name,
-                                            namespace=namespace,
-                                            client_id=client_spec.client_id,
-                                            client_secret=new_secret,
-                                            keycloak_url=keycloak_instance_resource[
-                                                "status"
-                                            ]["endpoints"]["public"],
-                                            realm=actual_realm_name,
-                                            update_existing=True,
-                                            labels=labels,
-                                            annotations=annotations,
-                                            owner_uid=owner_uid,
-                                            owner_name=name,
-                                        )
-
-                                        logger.info(
-                                            f"Successfully rotated secret for client {name}"
-                                        )
-
-                                        patch.status.update(
-                                            {
-                                                "lastSecretRotation": datetime.now(
-                                                    UTC
-                                                ).isoformat(),
-                                            }
-                                        )
-                                    else:
-                                        logger.warning(
-                                            f"Could not find Keycloak instance {keycloak_name} for rotation"
-                                        )
-                                else:
-                                    logger.warning(
-                                        f"Failed to regenerate secret for client {name}"
-                                    )
+                    # Note: Secret rotation is handled by the dedicated
+                    # secret_rotation_daemon, not by this health check timer.
 
                 except ApiException as e:
                     if e.status == 404:
@@ -849,3 +755,413 @@ async def monitor_client_secrets(
             )
     except Exception as e:
         logger.error(f"Unexpected error triggering reconciliation: {e}")
+
+
+# Constants for rotation daemon
+ROTATION_MAX_RETRIES = 5
+ROTATION_INITIAL_BACKOFF_SECONDS = 2.0  # Short backoff as requested
+ROTATION_MAX_BACKOFF_SECONDS = 30.0
+
+
+def _parse_duration(duration_str: str) -> timedelta:
+    """Parse duration string (e.g. '90d', '24h', '10s') into timedelta."""
+    if not duration_str:
+        return timedelta(days=90)  # Default
+
+    unit = duration_str[-1].lower()
+    if unit not in ["s", "m", "h", "d"]:
+        raise ValueError(
+            f"Invalid duration unit in '{duration_str}'. Supported units: s, m, h, d."
+        )
+
+    value = int(duration_str[:-1])
+    if value <= 0:
+        raise ValueError(
+            f"Invalid duration value '{duration_str}'. Duration must be a positive integer."
+        )
+
+    if unit == "s":
+        return timedelta(seconds=value)
+    elif unit == "m":
+        return timedelta(minutes=value)
+    elif unit == "h":
+        return timedelta(hours=value)
+    elif unit == "d":
+        return timedelta(days=value)
+
+    return timedelta(days=90)  # Should be unreachable
+
+
+def _calculate_seconds_until_rotation(
+    spec: KeycloakClientSpec,
+    rotated_at: datetime,
+    logger: logging.Logger,
+) -> float:
+    """
+    Calculate the number of seconds until the next rotation is due.
+
+    Takes into account both the rotation period and optional rotation time window.
+
+    Args:
+        spec: Client specification with rotation settings
+        rotated_at: When the secret was last rotated
+        logger: Logger for debugging
+
+    Returns:
+        Seconds until rotation is due (can be 0 if already due)
+    """
+    rotation_period = _parse_duration(spec.secret_rotation.rotation_period)
+    expiration_time = rotated_at + rotation_period
+    now = datetime.now(UTC)
+
+    # If already expired, check time window constraints
+    if now >= expiration_time:
+        # Check rotation time window
+        if spec.secret_rotation.rotation_time:
+            try:
+                target_tz = ZoneInfo(spec.secret_rotation.timezone)
+                expiration_in_tz = expiration_time.astimezone(target_tz)
+
+                target_hour, target_minute = map(
+                    int, spec.secret_rotation.rotation_time.split(":")
+                )
+
+                target_rotation_dt = expiration_in_tz.replace(
+                    hour=target_hour, minute=target_minute, second=0, microsecond=0
+                )
+
+                # If target time is earlier than expiration, move to next day
+                if target_rotation_dt < expiration_in_tz:
+                    target_rotation_dt += timedelta(days=1)
+
+                now_in_tz = now.astimezone(target_tz)
+                if now_in_tz < target_rotation_dt:
+                    # Still waiting for the time window
+                    delta = target_rotation_dt - now_in_tz
+                    return max(0.0, delta.total_seconds())
+
+            except Exception as e:
+                logger.warning(
+                    f"Error calculating rotation schedule: {e}. Returning 0 for immediate rotation."
+                )
+                return 0.0
+
+        # Period elapsed and no time window constraint (or past time window)
+        return 0.0
+
+    # Period not yet elapsed
+    delta = expiration_time - now
+    return max(0.0, delta.total_seconds())
+
+
+@kopf.daemon(
+    "keycloakclients",
+    when=lambda spec, **_: (
+        not spec.get("publicClient", False)
+        and spec.get("secretRotation", {}).get("enabled", False)
+    ),
+)
+async def secret_rotation_daemon(
+    spec: dict[str, Any],
+    name: str,
+    namespace: str,
+    status: dict[str, Any],
+    meta: dict[str, Any],
+    stopped: kopf.DaemonStopped,
+    patch: kopf.Patch,
+    memo: kopf.Memo,
+    logger: logging.Logger,
+    **kwargs: Any,
+) -> None:
+    """
+    Daemon to handle secret rotation with precise timing.
+
+    This daemon:
+    1. Reads the rotated-at annotation from the secret to determine last rotation
+    2. Calculates exactly when the next rotation is due
+    3. Sleeps precisely until that time (using stopped.wait for clean shutdown)
+    4. Performs the rotation with retry logic
+    5. On persistent failure, sets status to Degraded (manual intervention needed)
+
+    The daemon only runs for confidential clients with secretRotation.enabled=true.
+    """
+    client_spec = KeycloakClientSpec.model_validate(spec)
+    secret_name = f"{name}-credentials"
+    k8s_client = get_kubernetes_client()
+    core_api = client.CoreV1Api(k8s_client)
+
+    logger.info(f"Secret rotation daemon started for client {name}")
+
+    while not stopped:
+        try:
+            # Read the secret to get the rotated-at annotation
+            try:
+                secret = core_api.read_namespaced_secret(secret_name, namespace)
+            except ApiException as e:
+                if e.status == 404:
+                    logger.info(
+                        f"Secret {secret_name} not found, waiting for reconciliation to create it"
+                    )
+                    # Wait a bit and retry - secret may not be created yet
+                    if await stopped.wait(timeout=30):
+                        break
+                    continue
+                raise
+
+            annotations = secret.metadata.annotations or {}
+            rotated_at_str = annotations.get("keycloak-operator/rotated-at")
+
+            if not rotated_at_str:
+                logger.info(
+                    f"No rotated-at annotation on secret {secret_name}, "
+                    "waiting for reconciliation to set it"
+                )
+                # Wait for reconciliation to add the annotation
+                if await stopped.wait(timeout=60):
+                    break
+                continue
+
+            # Parse the rotation timestamp
+            try:
+                rotated_at = datetime.fromisoformat(rotated_at_str)
+                if rotated_at.tzinfo is None:
+                    rotated_at = rotated_at.replace(tzinfo=UTC)
+            except ValueError:
+                logger.warning(
+                    f"Invalid rotated-at annotation '{rotated_at_str}', "
+                    "waiting for reconciliation to fix it"
+                )
+                if await stopped.wait(timeout=60):
+                    break
+                continue
+
+            # Calculate time until next rotation
+            seconds_until_rotation = _calculate_seconds_until_rotation(
+                client_spec, rotated_at, logger
+            )
+
+            # Update metric for next rotation timestamp
+            next_rotation_timestamp = (
+                datetime.now(UTC).timestamp() + seconds_until_rotation
+            )
+            SECRET_NEXT_ROTATION_TIMESTAMP.labels(
+                namespace=namespace, client_name=name
+            ).set(next_rotation_timestamp)
+
+            if seconds_until_rotation > 0:
+                logger.info(
+                    f"Next rotation for client {name} in {seconds_until_rotation:.0f} seconds "
+                    f"({timedelta(seconds=seconds_until_rotation)})"
+                )
+                # Sleep until rotation time (or until stopped)
+                if await stopped.wait(timeout=seconds_until_rotation):
+                    break
+                continue
+
+            # Time to rotate!
+            logger.info(f"Starting secret rotation for client {name}")
+            rotation_start_time = time.time()
+
+            # Get Keycloak connection details
+            realm_ref = client_spec.realm_ref
+            target_namespace = realm_ref.namespace or namespace
+
+            # Get realm resource to find Keycloak instance
+            custom_api = client.CustomObjectsApi(k8s_client)
+            try:
+                realm_resource = custom_api.get_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=target_namespace,
+                    plural="keycloakrealms",
+                    name=realm_ref.name,
+                )
+            except ApiException as e:
+                if e.status == 404:
+                    logger.error(
+                        f"Realm {realm_ref.name} not found in {target_namespace}"
+                    )
+                    # This is a configuration error - wait and retry
+                    if await stopped.wait(timeout=60):
+                        break
+                    continue
+                raise
+
+            realm_spec = realm_resource.get("spec", {})
+            actual_realm_name = realm_spec.get("realmName", realm_ref.name)
+            keycloak_ref = realm_spec.get("keycloakRef", {})
+            keycloak_name = keycloak_ref.get("name")
+            keycloak_namespace = keycloak_ref.get("namespace", target_namespace)
+
+            if not keycloak_name:
+                logger.error(f"Realm {realm_ref.name} has no keycloakRef")
+                if await stopped.wait(timeout=60):
+                    break
+                continue
+
+            # Perform rotation with retries
+            rotation_success = False
+            retry_count = 0
+            backoff = ROTATION_INITIAL_BACKOFF_SECONDS
+
+            while retry_count < ROTATION_MAX_RETRIES and not stopped:
+                try:
+                    async with await get_keycloak_admin_client(
+                        keycloak_name, keycloak_namespace
+                    ) as admin_client:
+                        # Regenerate secret in Keycloak
+                        new_secret = await admin_client.regenerate_client_secret(
+                            client_spec.client_id,
+                            actual_realm_name,
+                            namespace,
+                        )
+
+                        if not new_secret:
+                            raise RuntimeError(
+                                f"Failed to regenerate secret for client {client_spec.client_id}"
+                            )
+
+                        # Get Keycloak instance for endpoint URL
+                        keycloak_instance = validate_keycloak_reference(
+                            keycloak_name, keycloak_namespace
+                        )
+                        if not keycloak_instance:
+                            raise RuntimeError(
+                                f"Keycloak instance {keycloak_name} not found or not ready"
+                            )
+
+                        # Prepare secret metadata
+                        labels = None
+                        new_annotations = None
+                        if client_spec.secret_metadata:
+                            labels = (
+                                dict(client_spec.secret_metadata.labels)
+                                if client_spec.secret_metadata.labels
+                                else None
+                            )
+                            new_annotations = (
+                                dict(client_spec.secret_metadata.annotations)
+                                if client_spec.secret_metadata.annotations
+                                else None
+                            )
+
+                        if new_annotations is None:
+                            new_annotations = {}
+
+                        # Update rotation timestamp
+                        new_annotations["keycloak-operator/rotated-at"] = datetime.now(
+                            UTC
+                        ).isoformat()
+
+                        # Get owner UID for ownership
+                        owner_uid = meta.get("uid")
+
+                        # Update the secret
+                        create_client_secret(
+                            secret_name=secret_name,
+                            namespace=namespace,
+                            client_id=client_spec.client_id,
+                            client_secret=new_secret,
+                            keycloak_url=keycloak_instance["status"]["endpoints"][
+                                "public"
+                            ],
+                            realm=actual_realm_name,
+                            update_existing=True,
+                            labels=labels,
+                            annotations=new_annotations,
+                            owner_uid=owner_uid,
+                            owner_name=name,
+                        )
+
+                        rotation_success = True
+                        rotation_duration = time.time() - rotation_start_time
+
+                        # Update metrics
+                        SECRET_ROTATION_TOTAL.labels(
+                            namespace=namespace, client_name=name, result="success"
+                        ).inc()
+                        SECRET_ROTATION_DURATION.labels(
+                            namespace=namespace, client_name=name
+                        ).observe(rotation_duration)
+
+                        # Update status
+                        patch.status["lastSecretRotation"] = datetime.now(
+                            UTC
+                        ).isoformat()
+                        patch.status["phase"] = "Ready"
+                        patch.status["message"] = "Secret rotated successfully"
+
+                        logger.info(
+                            f"Successfully rotated secret for client {name} "
+                            f"(took {rotation_duration:.2f}s)"
+                        )
+                        break
+
+                except Exception as e:
+                    retry_count += 1
+                    SECRET_ROTATION_RETRIES_TOTAL.labels(
+                        namespace=namespace, client_name=name
+                    ).inc()
+
+                    if retry_count >= ROTATION_MAX_RETRIES:
+                        logger.error(
+                            f"Secret rotation failed for client {name} after "
+                            f"{ROTATION_MAX_RETRIES} retries: {e}"
+                        )
+                        break
+
+                    logger.warning(
+                        f"Rotation attempt {retry_count}/{ROTATION_MAX_RETRIES} failed "
+                        f"for client {name}: {e}. Retrying in {backoff:.1f}s"
+                    )
+
+                    if await stopped.wait(timeout=backoff):
+                        break
+
+                    # Exponential backoff with cap
+                    backoff = min(backoff * 2, ROTATION_MAX_BACKOFF_SECONDS)
+
+            if not rotation_success and not stopped:
+                # All retries exhausted - set to Degraded
+                rotation_duration = time.time() - rotation_start_time
+
+                SECRET_ROTATION_TOTAL.labels(
+                    namespace=namespace, client_name=name, result="failure"
+                ).inc()
+                SECRET_ROTATION_ERRORS_TOTAL.labels(
+                    namespace=namespace,
+                    client_name=name,
+                    error_type="max_retries_exceeded",
+                ).inc()
+                SECRET_ROTATION_DURATION.labels(
+                    namespace=namespace, client_name=name
+                ).observe(rotation_duration)
+
+                patch.status["phase"] = "Degraded"
+                patch.status["message"] = (
+                    f"Secret rotation failed after {ROTATION_MAX_RETRIES} retries. "
+                    "Manual intervention required: delete the secret to trigger reconciliation."
+                )
+
+                logger.error(
+                    f"Client {name} set to Degraded due to rotation failure. "
+                    "Delete the secret to trigger reconciliation and reset the rotation timer."
+                )
+
+                # Stop the daemon - manual intervention required
+                # The daemon will restart when the resource is reconciled
+                break
+
+        except Exception as e:
+            logger.error(f"Unexpected error in rotation daemon for client {name}: {e}")
+            SECRET_ROTATION_ERRORS_TOTAL.labels(
+                namespace=namespace, client_name=name, error_type=type(e).__name__
+            ).inc()
+
+            # Wait before retrying the main loop
+            if await stopped.wait(timeout=60):
+                break
+
+    # Clear the next rotation timestamp metric when daemon stops
+    SECRET_NEXT_ROTATION_TIMESTAMP.labels(namespace=namespace, client_name=name).set(0)
+    logger.info(f"Secret rotation daemon stopped for client {name}")

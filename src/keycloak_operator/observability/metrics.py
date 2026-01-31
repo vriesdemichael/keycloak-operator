@@ -287,6 +287,43 @@ USER_FEDERATION_CONNECTION_TESTS = Counter(
     registry=None,
 )
 
+# Secret rotation metrics
+SECRET_ROTATION_TOTAL = Counter(
+    "keycloak_operator_secret_rotation_total",
+    "Total number of secret rotation attempts",
+    ["namespace", "client_name", "result"],
+    registry=None,
+)
+
+SECRET_ROTATION_ERRORS_TOTAL = Counter(
+    "keycloak_operator_secret_rotation_errors_total",
+    "Total number of secret rotation errors",
+    ["namespace", "client_name", "error_type"],
+    registry=None,
+)
+
+SECRET_ROTATION_DURATION = Histogram(
+    "keycloak_operator_secret_rotation_duration_seconds",
+    "Duration of secret rotation operations",
+    ["namespace", "client_name"],
+    buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0],
+    registry=None,
+)
+
+SECRET_NEXT_ROTATION_TIMESTAMP = Gauge(
+    "keycloak_operator_secret_next_rotation_timestamp",
+    "Unix timestamp of next scheduled secret rotation",
+    ["namespace", "client_name"],
+    registry=None,
+)
+
+SECRET_ROTATION_RETRIES_TOTAL = Counter(
+    "keycloak_operator_secret_rotation_retries_total",
+    "Total number of secret rotation retry attempts",
+    ["namespace", "client_name"],
+    registry=None,
+)
+
 
 def get_metrics_registry() -> CollectorRegistry:
     """Get or create the global metrics registry."""
@@ -324,6 +361,11 @@ def get_metrics_registry() -> CollectorRegistry:
             USER_FEDERATION_SYNCED_USERS,
             USER_FEDERATION_SYNC_ERRORS,
             USER_FEDERATION_CONNECTION_TESTS,
+            SECRET_ROTATION_TOTAL,
+            SECRET_ROTATION_ERRORS_TOTAL,
+            SECRET_ROTATION_DURATION,
+            SECRET_NEXT_ROTATION_TIMESTAMP,
+            SECRET_ROTATION_RETRIES_TOTAL,
         ]:
             # Use try-except to handle registry assignment safely
             try:
