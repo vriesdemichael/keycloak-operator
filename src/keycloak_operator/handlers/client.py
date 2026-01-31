@@ -600,6 +600,118 @@ async def monitor_client_health(
 
                     logger.debug(f"Client credentials secret {secret_name} is valid")
 
+                    # Check for secret rotation
+                    if client_spec.secret_rotation.enabled:
+                        logger.info(
+                            f"Checking rotation for client {name}: "
+                            f"rotation_period={client_spec.secret_rotation.rotation_period}"
+                        )
+                        # Use ClientReconciler to check if rotation is due
+                        reconciler = KeycloakClientReconciler(
+                            keycloak_admin_factory=lambda kc_name,
+                            kc_ns: get_keycloak_admin_client(kc_name, kc_ns)
+                        )
+
+                        should_rotate = reconciler._should_rotate_secret(
+                            client_spec, secret
+                        )
+                        logger.info(
+                            f"Rotation check for client {name}: should_rotate={should_rotate}"
+                        )
+
+                        if should_rotate:
+                            logger.info(
+                                f"Secret rotation triggered for client {name} in timer"
+                            )
+
+                            # Need to get admin client again to perform the rotation
+                            async with await get_keycloak_admin_client(
+                                keycloak_name, keycloak_namespace
+                            ) as rotation_admin_client:
+                                # Regenerate secret in Keycloak
+                                new_secret = await rotation_admin_client.regenerate_client_secret(
+                                    client_spec.client_id,
+                                    actual_realm_name,
+                                    namespace,
+                                )
+
+                                if new_secret:
+                                    from keycloak_operator.utils.kubernetes import (
+                                        create_client_secret,
+                                        validate_keycloak_reference,
+                                    )
+
+                                    # Get Keycloak instance for endpoint URL
+                                    keycloak_instance_resource = (
+                                        validate_keycloak_reference(
+                                            keycloak_name, keycloak_namespace
+                                        )
+                                    )
+
+                                    if keycloak_instance_resource:
+                                        # Prepare secret metadata (don't mutate spec)
+                                        labels = None
+                                        annotations = None
+                                        if client_spec.secret_metadata:
+                                            labels = (
+                                                dict(client_spec.secret_metadata.labels)
+                                                if client_spec.secret_metadata.labels
+                                                else None
+                                            )
+                                            annotations = (
+                                                dict(
+                                                    client_spec.secret_metadata.annotations
+                                                )
+                                                if client_spec.secret_metadata.annotations
+                                                else None
+                                            )
+
+                                        # Add rotation timestamp annotation
+                                        if annotations is None:
+                                            annotations = {}
+                                        annotations["keycloak-operator/rotated-at"] = (
+                                            datetime.now(UTC).isoformat()
+                                        )
+
+                                        # Get owner UID for ownership
+                                        owner_uid = meta.get("uid")
+
+                                        create_client_secret(
+                                            secret_name=secret_name,
+                                            namespace=namespace,
+                                            client_id=client_spec.client_id,
+                                            client_secret=new_secret,
+                                            keycloak_url=keycloak_instance_resource[
+                                                "status"
+                                            ]["endpoints"]["public"],
+                                            realm=actual_realm_name,
+                                            update_existing=True,
+                                            labels=labels,
+                                            annotations=annotations,
+                                            owner_uid=owner_uid,
+                                            owner_name=name,
+                                        )
+
+                                        logger.info(
+                                            f"Successfully rotated secret for client {name}"
+                                        )
+
+                                        patch.status.update(
+                                            {
+                                                "lastSecretRotation": datetime.now(
+                                                    UTC
+                                                ).isoformat(),
+                                            }
+                                        )
+                                    else:
+                                        logger.warning(
+                                            f"Could not find Keycloak instance {keycloak_name} for rotation"
+                                        )
+                                else:
+                                    logger.warning(
+                                        f"Failed to regenerate secret for client {name}"
+                                    )
+
                 except ApiException as e:
                     if e.status == 404:
                         logger.warning(

@@ -6,10 +6,10 @@ client creation, credential management, and OAuth2 configuration.
 """
 
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
-import pytz
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
@@ -670,6 +670,11 @@ class KeycloakClientReconciler(BaseReconciler):
                 f"Invalid duration format '{duration_str}'. Expected integer followed by unit."
             ) from e
 
+        if value <= 0:
+            raise ValidationError(
+                f"Invalid duration value '{duration_str}'. Duration must be a positive integer."
+            )
+
         if unit == "s":
             return timedelta(seconds=value)
         elif unit == "m":
@@ -697,6 +702,7 @@ class KeycloakClientReconciler(BaseReconciler):
             True if rotation is needed
         """
         if not spec.secret_rotation.enabled:
+            self.logger.debug("Rotation check: rotation not enabled")
             return False
 
         annotations = secret.metadata.annotations or {}
@@ -705,6 +711,9 @@ class KeycloakClientReconciler(BaseReconciler):
         # If never rotated but exists, mark it as rotated NOW to start the timer
         # This prevents immediate rotation on enabling the feature
         if not rotated_at_str:
+            self.logger.info(
+                f"Rotation check: no rotated-at annotation found for {spec.client_id}"
+            )
             return False
 
         try:
@@ -712,7 +721,7 @@ class KeycloakClientReconciler(BaseReconciler):
             # We assume stored time is UTC if no timezone info, but it should have it
             rotated_at = datetime.fromisoformat(rotated_at_str)
             if rotated_at.tzinfo is None:
-                rotated_at = rotated_at.replace(tzinfo=pytz.UTC)
+                rotated_at = rotated_at.replace(tzinfo=UTC)
         except ValueError:
             self.logger.warning(
                 f"Invalid 'rotated-at' annotation '{rotated_at_str}', resetting rotation timer."
@@ -724,17 +733,28 @@ class KeycloakClientReconciler(BaseReconciler):
         expiration_time = rotated_at + rotation_period
 
         # Current time in UTC
-        now = datetime.now(pytz.UTC)
+        now = datetime.now(UTC)
 
         # Basic check: Has period elapsed?
         if now < expiration_time:
+            self.logger.debug(
+                f"Rotation check for {spec.client_id}: period not elapsed. "
+                f"rotated_at={rotated_at.isoformat()}, now={now.isoformat()}, "
+                f"expiration={expiration_time.isoformat()}"
+            )
             return False
+
+        self.logger.info(
+            f"Rotation period elapsed for {spec.client_id}: "
+            f"rotated_at={rotated_at.isoformat()}, now={now.isoformat()}, "
+            f"period={rotation_period}"
+        )
 
         # Advanced check: Rotation Time Window
         if spec.secret_rotation.rotation_time:
             try:
-                # Parse target timezone
-                target_tz = pytz.timezone(spec.secret_rotation.timezone)
+                # Parse target timezone using zoneinfo (standard library)
+                target_tz = ZoneInfo(spec.secret_rotation.timezone)
 
                 # Convert expiration time to target timezone
                 expiration_in_tz = expiration_time.astimezone(target_tz)
@@ -850,6 +870,7 @@ class KeycloakClientReconciler(BaseReconciler):
                         )
 
         # If rotating or secret not found, fetch/regenerate from Keycloak
+        rotation_succeeded = False
         if (not client_secret or should_rotate) and not spec.public_client:
             if should_rotate:
                 # Atomic Rotation: Regenerate secret in Keycloak
@@ -857,6 +878,19 @@ class KeycloakClientReconciler(BaseReconciler):
                 client_secret = await admin_client.regenerate_client_secret(
                     spec.client_id, actual_realm_name, namespace
                 )
+                if client_secret is None:
+                    from ..errors import TemporaryError
+
+                    self.logger.error(
+                        f"Failed to regenerate client secret for {spec.client_id} in realm {actual_realm_name}; "
+                        "will retry reconciliation instead of updating Kubernetes secret "
+                        "with an invalid value."
+                    )
+                    raise TemporaryError(
+                        f"Failed to regenerate client secret for client {spec.client_id} "
+                        f"in realm {actual_realm_name}"
+                    )
+                rotation_succeeded = True
                 self.logger.info("Regenerated client secret (Atomic Rotation)")
             else:
                 # Just fetch existing
@@ -877,12 +911,20 @@ class KeycloakClientReconciler(BaseReconciler):
                 f"in namespace {target_namespace}"
             )
 
-        # Extract secret metadata if present
+        # Extract secret metadata if present (make copies to avoid mutating spec)
         labels = None
         annotations = None
         if spec.secret_metadata:
-            labels = spec.secret_metadata.labels
-            annotations = spec.secret_metadata.annotations
+            labels = (
+                dict(spec.secret_metadata.labels)
+                if spec.secret_metadata.labels is not None
+                else None
+            )
+            annotations = (
+                dict(spec.secret_metadata.annotations)
+                if spec.secret_metadata.annotations is not None
+                else None
+            )
 
         # Initialize annotations if needed
         if annotations is None:
@@ -891,7 +933,7 @@ class KeycloakClientReconciler(BaseReconciler):
         # Update rotation timestamp
         # We update this:
         # 1. On creation (to start the timer)
-        # 2. On rotation (to reset the timer)
+        # 2. On successful rotation (to reset the timer)
         # 3. If missing (to start the timer for existing secrets)
         is_new_secret = existing_secret is None
         has_timestamp = (
@@ -902,10 +944,10 @@ class KeycloakClientReconciler(BaseReconciler):
 
         if (
             is_new_secret
-            or should_rotate
+            or rotation_succeeded
             or (spec.secret_rotation.enabled and not has_timestamp)
         ):
-            now_iso = datetime.now(pytz.UTC).isoformat()
+            now_iso = datetime.now(UTC).isoformat()
             annotations["keycloak-operator/rotated-at"] = now_iso
 
         create_client_secret(
