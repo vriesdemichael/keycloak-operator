@@ -257,6 +257,25 @@ spec:
                     description: Annotations to add to the secret
                     additionalProperties:
                       type: string
+              secretRotation:
+                type: object
+                description: Automated secret rotation configuration
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Enable automated secret rotation
+                    default: false
+                  rotationPeriod:
+                    type: string
+                    description: Rotation period (e.g., '90d', '24h', '10s')
+                    default: "90d"
+                  rotationTime:
+                    type: string
+                    description: Target time for rotation in 'HH:MM' format
+                  timezone:
+                    type: string
+                    description: IANA Timezone for rotation scheduling
+                    default: "UTC"
               manageSecret:
                 type: boolean
                 description: Create and manage Kubernetes secret for credentials

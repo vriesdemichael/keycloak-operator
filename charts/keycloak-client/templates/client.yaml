@@ -136,4 +136,11 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   regenerateSecret: {{ .Values.regenerateSecret }}
+  secretRotation:
+    enabled: {{ .Values.secretRotation.enabled }}
+    rotationPeriod: {{ .Values.secretRotation.rotationPeriod | quote }}
+    {{- with .Values.secretRotation.rotationTime }}
+    rotationTime: {{ . | quote }}
+    {{- end }}
+    timezone: {{ .Values.secretRotation.timezone | quote }}
   {{- end }}

@@ -15,6 +15,9 @@ async def test_manage_client_credentials_passes_metadata():
     # Mock dependencies
     mock_k8s_client = MagicMock()
     mock_admin_factory = AsyncMock()
+    mock_admin_client = AsyncMock()
+    mock_admin_factory.return_value = mock_admin_client
+    mock_admin_client.get_client_secret.return_value = "test-secret"
 
     reconciler = KeycloakClientReconciler(
         k8s_client=mock_k8s_client, keycloak_admin_factory=mock_admin_factory
@@ -23,35 +26,49 @@ async def test_manage_client_credentials_passes_metadata():
     # Mock _get_realm_info to return values
     reconciler._get_realm_info = MagicMock(return_value=("realm-name", "ns", "kc", {}))  # type: ignore
 
-    # Mock validate_keycloak_reference
-    with patch(
-        "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
-    ) as mock_validate:
+    # Mock validate_keycloak_reference and get_kubernetes_client
+    # These are imported inline within the method, so patch at their source module
+    with (
+        patch(
+            "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
+        ) as mock_validate,
+        patch(
+            "keycloak_operator.utils.kubernetes.create_client_secret"
+        ) as mock_create_secret,
+        patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
+        patch("kubernetes.client.CoreV1Api") as mock_core_api_cls,
+    ):
         mock_validate.return_value = {"status": {"endpoints": {"public": "http://kc"}}}
 
-        with patch(
-            "keycloak_operator.utils.kubernetes.create_client_secret"
-        ) as mock_create_secret:
-            # Setup inputs
-            spec = KeycloakClientSpec(
-                clientId="test-client",
-                realmRef=RealmRef(name="my-realm", namespace="ns"),
-                secretMetadata=SecretMetadata(
-                    labels={"l1": "v1"}, annotations={"a1": "v1"}
-                ),
-            )
+        # Mock CoreV1Api to return 404 (secret doesn't exist)
+        mock_core_api = MagicMock()
+        mock_core_api_cls.return_value = mock_core_api
+        from kubernetes.client.rest import ApiException
 
-            # Execute
-            await reconciler.manage_client_credentials(
-                spec=spec, client_uuid="uuid", name="test-client-cr", namespace="ns"
-            )
+        mock_core_api.read_namespaced_secret.side_effect = ApiException(status=404)
 
-            # Verify
-            mock_create_secret.assert_called_once()
-            call_kwargs = mock_create_secret.call_args[1]
+        # Setup inputs
+        spec = KeycloakClientSpec(
+            clientId="test-client",
+            realmRef=RealmRef(name="my-realm", namespace="ns"),
+            secretMetadata=SecretMetadata(
+                labels={"l1": "v1"}, annotations={"a1": "v1"}
+            ),
+        )
 
-            assert call_kwargs["labels"] == {"l1": "v1"}
-            assert call_kwargs["annotations"] == {"a1": "v1"}
+        # Execute
+        await reconciler.manage_client_credentials(
+            spec=spec, client_uuid="uuid", name="test-client-cr", namespace="ns"
+        )
+
+        # Verify
+        mock_create_secret.assert_called_once()
+        call_kwargs = mock_create_secret.call_args[1]
+
+        assert call_kwargs["labels"] == {"l1": "v1"}
+        # Annotations should include user-provided AND operator-managed ones
+        assert "a1" in call_kwargs["annotations"]
+        assert call_kwargs["annotations"]["a1"] == "v1"
 
 
 @pytest.mark.asyncio
