@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
@@ -5,6 +6,10 @@ import pytest
 from pydantic import ValidationError as PydanticValidationError
 
 from keycloak_operator.errors import ValidationError
+from keycloak_operator.handlers.client import (
+    _calculate_seconds_until_rotation,
+    _parse_duration,
+)
 from keycloak_operator.models.client import KeycloakClientSpec, SecretRotationConfig
 from keycloak_operator.services.client_reconciler import KeycloakClientReconciler
 
@@ -231,3 +236,153 @@ class TestPublicClientRotation:
 
         # The key validation is that manage_client_credentials checks public_client
         # before calling regenerate_client_secret - this is an integration concern
+
+
+class TestDaemonParseDuration:
+    """Test the _parse_duration function used by the rotation daemon."""
+
+    def test_parse_duration_days(self):
+        assert _parse_duration("90d") == timedelta(days=90)
+        assert _parse_duration("1d") == timedelta(days=1)
+
+    def test_parse_duration_hours(self):
+        assert _parse_duration("24h") == timedelta(hours=24)
+        assert _parse_duration("1h") == timedelta(hours=1)
+
+    def test_parse_duration_minutes(self):
+        assert _parse_duration("10m") == timedelta(minutes=10)
+        assert _parse_duration("60m") == timedelta(minutes=60)
+
+    def test_parse_duration_seconds(self):
+        assert _parse_duration("30s") == timedelta(seconds=30)
+        assert _parse_duration("1s") == timedelta(seconds=1)
+
+    def test_parse_duration_invalid_unit(self):
+        with pytest.raises(ValueError, match="Invalid duration unit"):
+            _parse_duration("90x")
+
+    def test_parse_duration_zero_value(self):
+        with pytest.raises(ValueError, match="must be a positive integer"):
+            _parse_duration("0d")
+
+    def test_parse_duration_negative_value(self):
+        with pytest.raises(ValueError, match="must be a positive integer"):
+            _parse_duration("-1d")
+
+    def test_parse_duration_empty_string(self):
+        # Empty string returns default of 90 days
+        assert _parse_duration("") == timedelta(days=90)
+
+
+class TestCalculateSecondsUntilRotation:
+    """Test the _calculate_seconds_until_rotation function."""
+
+    @pytest.fixture
+    def logger(self):
+        return logging.getLogger("test")
+
+    @pytest.fixture
+    def base_spec(self):
+        """Create a base client spec with rotation enabled."""
+        return KeycloakClientSpec(
+            client_id="test-client",
+            realm_ref={"name": "test-realm", "namespace": "test-ns"},
+            secret_rotation=SecretRotationConfig(
+                enabled=True,
+                rotation_period="1d",
+            ),
+        )
+
+    def test_rotation_not_due(self, base_spec, logger):
+        """Test when rotation period has not elapsed."""
+        # Rotated just now
+        rotated_at = datetime.now(UTC)
+
+        seconds = _calculate_seconds_until_rotation(base_spec, rotated_at, logger)
+
+        # Should be close to 86400 (1 day in seconds)
+        assert 86300 < seconds <= 86400
+
+    def test_rotation_due_immediately(self, base_spec, logger):
+        """Test when rotation period has elapsed."""
+        # Rotated 2 days ago (period is 1 day)
+        rotated_at = datetime.now(UTC) - timedelta(days=2)
+
+        seconds = _calculate_seconds_until_rotation(base_spec, rotated_at, logger)
+
+        # Should be 0 (immediate rotation)
+        assert seconds == 0.0
+
+    def test_rotation_halfway(self, base_spec, logger):
+        """Test when rotation is halfway through the period."""
+        # Rotated 12 hours ago (period is 1 day)
+        rotated_at = datetime.now(UTC) - timedelta(hours=12)
+
+        seconds = _calculate_seconds_until_rotation(base_spec, rotated_at, logger)
+
+        # Should be approximately 12 hours (43200 seconds)
+        assert 43100 < seconds <= 43200
+
+    def test_rotation_with_time_window_not_reached(self, base_spec, logger):
+        """Test rotation time window constrains when rotation happens.
+
+        The time window calculation is relative to the expiration time, not the current time.
+        When a secret expires, we wait until the next occurrence of the target time
+        after the expiration point.
+        """
+        # Set up: rotation period of 1 second, so it expires almost immediately
+        # Target rotation time 2 hours from now - this should delay the rotation
+        base_spec.secret_rotation.rotation_period = "1s"
+
+        future_time = datetime.now(UTC) + timedelta(hours=2)
+        base_spec.secret_rotation.rotation_time = future_time.strftime("%H:%M")
+        base_spec.secret_rotation.timezone = "UTC"
+
+        # Rotated 10 seconds ago (expired, since period is 1s)
+        rotated_at = datetime.now(UTC) - timedelta(seconds=10)
+
+        seconds = _calculate_seconds_until_rotation(base_spec, rotated_at, logger)
+
+        # Should be approximately 2 hours (not 0, because of time window)
+        # The target time is 2 hours from now
+        assert 7000 < seconds <= 7200
+
+    def test_rotation_with_time_window_reached(self, base_spec, logger):
+        """Test when rotation time window has been reached."""
+        # Set target rotation time to 1 hour ago
+        past_time = datetime.now(UTC) - timedelta(hours=1)
+        base_spec.secret_rotation.rotation_time = past_time.strftime("%H:%M")
+        base_spec.secret_rotation.timezone = "UTC"
+
+        # Rotated 2 days ago (expired)
+        rotated_at = datetime.now(UTC) - timedelta(days=2)
+
+        seconds = _calculate_seconds_until_rotation(base_spec, rotated_at, logger)
+
+        # Should be 0 (time window reached)
+        assert seconds == 0.0
+
+    def test_rotation_with_invalid_timezone(self, base_spec, logger):
+        """Test that invalid timezone falls back to immediate rotation."""
+        base_spec.secret_rotation.rotation_time = "10:00"
+        base_spec.secret_rotation.timezone = "Invalid/Timezone"
+
+        # Rotated 2 days ago (expired)
+        rotated_at = datetime.now(UTC) - timedelta(days=2)
+
+        seconds = _calculate_seconds_until_rotation(base_spec, rotated_at, logger)
+
+        # Should be 0 (fallback to immediate)
+        assert seconds == 0.0
+
+    def test_rotation_short_period(self, base_spec, logger):
+        """Test with a short rotation period (seconds)."""
+        base_spec.secret_rotation.rotation_period = "60s"
+
+        # Rotated 30 seconds ago
+        rotated_at = datetime.now(UTC) - timedelta(seconds=30)
+
+        seconds = _calculate_seconds_until_rotation(base_spec, rotated_at, logger)
+
+        # Should be approximately 30 seconds
+        assert 25 < seconds <= 30

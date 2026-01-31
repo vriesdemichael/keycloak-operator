@@ -400,7 +400,11 @@ async def delete_keycloak_instance(
         ) from e
 
 
-@kopf.timer("keycloaks", interval=TIMER_INTERVAL_KEYCLOAK)
+@kopf.timer(
+    "keycloaks",
+    idle=TIMER_INTERVAL_KEYCLOAK,
+    initial_delay=lambda **_: random.uniform(0, TIMER_INTERVAL_KEYCLOAK),
+)
 async def monitor_keycloak_health(
     spec: dict[str, Any],
     name: str,
