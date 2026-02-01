@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.2...chart-operator-v0.4.3) (2026-02-01)
+
+
+### Features
+
+* **chart-client+operator:** add automated client secret rotation ([d95102f](https://github.com/vriesdemichael/keycloak-operator/commit/d95102f7d9d78d85d61df3960cb121f7eae8eac0))
+
 ## [0.4.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.1...chart-operator-v0.4.2) (2026-01-30)
 
 
