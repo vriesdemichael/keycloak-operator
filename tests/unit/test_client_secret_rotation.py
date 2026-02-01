@@ -1,6 +1,6 @@
 import logging
 from datetime import UTC, datetime, timedelta
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError as PydanticValidationError
@@ -499,3 +499,794 @@ class TestCalculateExponentialBackoff:
         # initial=2.0, retry=4 -> 2*16=32, capped at 30
         backoff = _calculate_exponential_backoff(4)
         assert backoff == ROTATION_MAX_BACKOFF_SECONDS
+
+
+class TestSecretRotationDaemon:
+    """
+    Unit tests for the secret_rotation_daemon function.
+
+    These tests mock the Kubernetes client and kopf objects to test
+    specific code paths in the daemon without requiring a real cluster.
+    """
+
+    @pytest.fixture
+    def mock_stopped(self):
+        """Create a mock DaemonStopped object."""
+        stopped = MagicMock()
+        stopped.__bool__ = MagicMock(side_effect=[False, True])  # Run once then stop
+        stopped.wait = AsyncMock(return_value=True)  # Simulate stop signal
+        return stopped
+
+    @pytest.fixture
+    def mock_patch_obj(self):
+        """Create a mock Patch object."""
+        p = MagicMock()
+        p.status = {}
+        return p
+
+    @pytest.fixture
+    def base_spec(self):
+        """Create a base client spec dict for testing."""
+        return {
+            "clientId": "test-client",
+            "realmRef": {"name": "test-realm", "namespace": "test-ns"},
+            "secretRotation": {
+                "enabled": True,
+                "rotationPeriod": "1d",
+            },
+        }
+
+    @pytest.fixture
+    def mock_secret(self):
+        """Create a mock Kubernetes secret."""
+        secret = MagicMock()
+        secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": datetime.now(UTC).isoformat()
+        }
+        return secret
+
+    @pytest.mark.asyncio
+    async def test_daemon_secret_not_found_waits(
+        self, mock_stopped, mock_patch_obj, base_spec
+    ):
+        """Test daemon waits when secret is not found."""
+        from kubernetes.client.rest import ApiException
+
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_secret.side_effect = ApiException(status=404)
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+
+            # stopped.wait returns True immediately (simulate stop)
+            mock_stopped.wait = AsyncMock(return_value=True)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            mock_stopped.wait.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_daemon_successful_rotation(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon successfully rotates secret when due."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_custom_api = MagicMock()
+
+        # Setup: secret is expired (rotation needed)
+        expired_time = datetime.now(UTC) - timedelta(days=2)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": expired_time.isoformat()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        # Realm exists with keycloakRef
+        mock_custom_api.get_namespaced_custom_object.return_value = {
+            "spec": {
+                "realmName": "test-realm",
+                "keycloakRef": {"name": "test-keycloak", "namespace": "test-ns"},
+            }
+        }
+
+        # Mock admin client
+        mock_admin_client = AsyncMock()
+        mock_admin_client.regenerate_client_secret.return_value = "new-secret-value"
+        mock_admin_client.__aenter__.return_value = mock_admin_client
+        mock_admin_client.__aexit__.return_value = None
+
+        # Mock Keycloak instance
+        mock_keycloak_instance = {
+            "status": {"endpoints": {"public": "http://keycloak:8080"}}
+        }
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.client.CustomObjectsApi"
+            ) as mock_custom_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.get_keycloak_admin_client"
+            ) as mock_get_admin,
+            patch(
+                "keycloak_operator.handlers.client.validate_keycloak_reference"
+            ) as mock_validate,
+            patch(
+                "keycloak_operator.handlers.client.create_client_secret"
+            ) as mock_create_secret,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+            mock_custom_api_cls.return_value = mock_custom_api
+            mock_get_admin.return_value = mock_admin_client
+            mock_validate.return_value = mock_keycloak_instance
+
+            # First bool check returns False (enter loop), subsequent checks return True (exit)
+            # The daemon checks `while not stopped:` then `while ... and not stopped:`
+            # For success path: outer check (False) -> inner check (False) -> success -> outer check (True)
+            mock_stopped.wait = AsyncMock(return_value=True)
+            mock_stopped.__bool__ = MagicMock(side_effect=[False, False, True])
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            # Verify rotation happened
+            mock_admin_client.regenerate_client_secret.assert_called_once()
+            mock_create_secret.assert_called_once()
+
+            # Verify status was updated
+            assert mock_patch_obj.status.get("phase") == "Ready"
+            assert "Secret rotated successfully" in mock_patch_obj.status.get(
+                "message", ""
+            )
+
+    @pytest.mark.asyncio
+    async def test_daemon_rotation_retry_on_failure(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon retries rotation on transient failure."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_custom_api = MagicMock()
+
+        # Setup: secret is expired
+        expired_time = datetime.now(UTC) - timedelta(days=2)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": expired_time.isoformat()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        # Realm exists with keycloakRef
+        mock_custom_api.get_namespaced_custom_object.return_value = {
+            "spec": {
+                "realmName": "test-realm",
+                "keycloakRef": {"name": "test-keycloak", "namespace": "test-ns"},
+            }
+        }
+
+        # Mock admin client - fails first time, succeeds second
+        mock_admin_client = AsyncMock()
+        mock_admin_client.regenerate_client_secret.side_effect = [
+            RuntimeError("Connection timeout"),
+            "new-secret-value",
+        ]
+        mock_admin_client.__aenter__.return_value = mock_admin_client
+        mock_admin_client.__aexit__.return_value = None
+
+        # Mock Keycloak instance
+        mock_keycloak_instance = {
+            "status": {"endpoints": {"public": "http://keycloak:8080"}}
+        }
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.client.CustomObjectsApi"
+            ) as mock_custom_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.get_keycloak_admin_client"
+            ) as mock_get_admin,
+            patch(
+                "keycloak_operator.handlers.client.validate_keycloak_reference"
+            ) as mock_validate,
+            patch(
+                "keycloak_operator.handlers.client.create_client_secret"
+            ) as mock_create_secret,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+            mock_custom_api_cls.return_value = mock_custom_api
+            mock_get_admin.return_value = mock_admin_client
+            mock_validate.return_value = mock_keycloak_instance
+
+            # Wait returns False (continue) for retry backoff, then True to stop
+            # Bool checks: outer(False) -> inner(False) -> fail -> backoff wait returns False
+            #              -> inner(False) -> success -> outer(True) exit
+            mock_stopped.wait = AsyncMock(side_effect=[False, True])
+            mock_stopped.__bool__ = MagicMock(side_effect=[False, False, False, True])
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            # Verify retried
+            assert mock_admin_client.regenerate_client_secret.call_count == 2
+            mock_create_secret.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_daemon_max_retries_sets_degraded(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon sets Degraded status after max retries."""
+        from keycloak_operator.handlers.client import (
+            ROTATION_MAX_RETRIES,
+            secret_rotation_daemon,
+        )
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_custom_api = MagicMock()
+
+        # Setup: secret is expired
+        expired_time = datetime.now(UTC) - timedelta(days=2)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": expired_time.isoformat()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        # Realm exists with keycloakRef
+        mock_custom_api.get_namespaced_custom_object.return_value = {
+            "spec": {
+                "realmName": "test-realm",
+                "keycloakRef": {"name": "test-keycloak", "namespace": "test-ns"},
+            }
+        }
+
+        # Mock admin client - always fails
+        mock_admin_client = AsyncMock()
+        mock_admin_client.regenerate_client_secret.side_effect = RuntimeError(
+            "Persistent failure"
+        )
+        mock_admin_client.__aenter__.return_value = mock_admin_client
+        mock_admin_client.__aexit__.return_value = None
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.client.CustomObjectsApi"
+            ) as mock_custom_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.get_keycloak_admin_client"
+            ) as mock_get_admin,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+            mock_custom_api_cls.return_value = mock_custom_api
+            mock_get_admin.return_value = mock_admin_client
+
+            # Wait returns False for all retries
+            mock_stopped.wait = AsyncMock(return_value=False)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            # Verify all retries attempted
+            assert (
+                mock_admin_client.regenerate_client_secret.call_count
+                == ROTATION_MAX_RETRIES
+            )
+
+            # Verify Degraded status was set
+            assert mock_patch_obj.status.get("phase") == "Degraded"
+            assert "Manual intervention required" in mock_patch_obj.status.get(
+                "message", ""
+            )
+
+    @pytest.mark.asyncio
+    async def test_daemon_unexpected_error_waits_and_continues(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon handles unexpected exceptions gracefully."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+
+        # Setup: secret is expired
+        expired_time = datetime.now(UTC) - timedelta(days=2)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": expired_time.isoformat()
+        }
+        # First call raises unexpected error, then returns secret
+        mock_core_api.read_namespaced_secret.side_effect = [
+            ValueError("Unexpected parse error"),
+            mock_secret,
+        ]
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+
+            # First wait is for error recovery, second is stop signal
+            mock_stopped.wait = AsyncMock(side_effect=[False, True])
+            mock_stopped.__bool__ = MagicMock(side_effect=[False, False, True])
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            # Verify error was handled and daemon continued
+            assert mock_core_api.read_namespaced_secret.call_count >= 1
+            mock_stopped.wait.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_daemon_regenerate_returns_empty_secret(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon handles case when regenerate_client_secret returns empty."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_custom_api = MagicMock()
+
+        # Setup: secret is expired
+        expired_time = datetime.now(UTC) - timedelta(days=2)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": expired_time.isoformat()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        # Realm exists with keycloakRef
+        mock_custom_api.get_namespaced_custom_object.return_value = {
+            "spec": {
+                "realmName": "test-realm",
+                "keycloakRef": {"name": "test-keycloak", "namespace": "test-ns"},
+            }
+        }
+
+        # Mock admin client - returns None (empty secret)
+        mock_admin_client = AsyncMock()
+        mock_admin_client.regenerate_client_secret.return_value = None
+        mock_admin_client.__aenter__.return_value = mock_admin_client
+        mock_admin_client.__aexit__.return_value = None
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.client.CustomObjectsApi"
+            ) as mock_custom_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.get_keycloak_admin_client"
+            ) as mock_get_admin,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+            mock_custom_api_cls.return_value = mock_custom_api
+            mock_get_admin.return_value = mock_admin_client
+
+            # Wait returns False for retries, then we exhaust retries
+            mock_stopped.wait = AsyncMock(return_value=False)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            # Should exhaust retries and set Degraded
+            assert mock_patch_obj.status.get("phase") == "Degraded"
+
+    @pytest.mark.asyncio
+    async def test_daemon_keycloak_instance_not_found(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon handles case when Keycloak instance validation fails."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_custom_api = MagicMock()
+
+        # Setup: secret is expired
+        expired_time = datetime.now(UTC) - timedelta(days=2)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": expired_time.isoformat()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        # Realm exists with keycloakRef
+        mock_custom_api.get_namespaced_custom_object.return_value = {
+            "spec": {
+                "realmName": "test-realm",
+                "keycloakRef": {"name": "test-keycloak", "namespace": "test-ns"},
+            }
+        }
+
+        # Mock admin client - succeeds
+        mock_admin_client = AsyncMock()
+        mock_admin_client.regenerate_client_secret.return_value = "new-secret"
+        mock_admin_client.__aenter__.return_value = mock_admin_client
+        mock_admin_client.__aexit__.return_value = None
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.client.CustomObjectsApi"
+            ) as mock_custom_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.get_keycloak_admin_client"
+            ) as mock_get_admin,
+            patch(
+                "keycloak_operator.handlers.client.validate_keycloak_reference"
+            ) as mock_validate,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+            mock_custom_api_cls.return_value = mock_custom_api
+            mock_get_admin.return_value = mock_admin_client
+            # Keycloak instance not found
+            mock_validate.return_value = None
+
+            mock_stopped.wait = AsyncMock(return_value=False)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            # Should exhaust retries and set Degraded
+            assert mock_patch_obj.status.get("phase") == "Degraded"
+
+    @pytest.mark.asyncio
+    async def test_daemon_no_annotation_waits(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon waits when secret has no rotation annotation."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_secret.metadata.annotations = {}
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+
+            mock_stopped.wait = AsyncMock(return_value=True)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            mock_stopped.wait.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_daemon_invalid_timestamp_waits(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon waits when timestamp annotation is invalid."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": "invalid-timestamp"
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+
+            mock_stopped.wait = AsyncMock(return_value=True)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            mock_stopped.wait.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_daemon_rotation_not_due_sleeps(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon sleeps when rotation is not yet due."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        # Setup: secret was just rotated (not due for rotation)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": datetime.now(UTC).isoformat()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+
+            # First call returns False (loop continues), second True (stop)
+            mock_stopped.wait = AsyncMock(side_effect=[False, True])
+            mock_stopped.__bool__ = MagicMock(side_effect=[False, False, True])
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            # Should have called wait with a timeout > 0 (time until rotation)
+            calls = mock_stopped.wait.call_args_list
+            assert len(calls) >= 1
+            # First call should have a positive timeout (sleep until rotation)
+            first_call_timeout = calls[0].kwargs.get(
+                "timeout", calls[0].args[0] if calls[0].args else 0
+            )
+            assert first_call_timeout > 0
+
+    @pytest.mark.asyncio
+    async def test_daemon_realm_not_found_waits(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon waits when realm resource is not found."""
+        from kubernetes.client.rest import ApiException
+
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_custom_api = MagicMock()
+
+        # Setup: secret is expired (rotation needed)
+        expired_time = datetime.now(UTC) - timedelta(days=2)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": expired_time.isoformat()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        # Realm not found
+        mock_custom_api.get_namespaced_custom_object.side_effect = ApiException(
+            status=404
+        )
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.client.CustomObjectsApi"
+            ) as mock_custom_api_cls,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+            mock_custom_api_cls.return_value = mock_custom_api
+
+            mock_stopped.wait = AsyncMock(return_value=True)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            mock_stopped.wait.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_daemon_no_keycloak_ref_waits(
+        self, mock_stopped, mock_patch_obj, base_spec, mock_secret
+    ):
+        """Test daemon waits when realm has no keycloakRef."""
+        from keycloak_operator.handlers.client import secret_rotation_daemon
+
+        # Create mocks
+        mock_core_api = MagicMock()
+        mock_custom_api = MagicMock()
+
+        # Setup: secret is expired
+        expired_time = datetime.now(UTC) - timedelta(days=2)
+        mock_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": expired_time.isoformat()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_secret
+
+        # Realm exists but has no keycloakRef
+        mock_custom_api.get_namespaced_custom_object.return_value = {
+            "spec": {"realmName": "test-realm"}  # No keycloakRef
+        }
+
+        with (
+            patch(
+                "keycloak_operator.handlers.client.get_kubernetes_client"
+            ) as mock_get_k8s,
+            patch(
+                "keycloak_operator.handlers.client.client.CoreV1Api"
+            ) as mock_core_api_cls,
+            patch(
+                "keycloak_operator.handlers.client.client.CustomObjectsApi"
+            ) as mock_custom_api_cls,
+        ):
+            mock_get_k8s.return_value = MagicMock()
+            mock_core_api_cls.return_value = mock_core_api
+            mock_custom_api_cls.return_value = mock_custom_api
+
+            mock_stopped.wait = AsyncMock(return_value=True)
+            mock_stopped.__bool__ = MagicMock(return_value=False)
+
+            await secret_rotation_daemon(
+                spec=base_spec,
+                name="test-client",
+                namespace="test-ns",
+                status={},
+                meta={"uid": "test-uid"},
+                stopped=mock_stopped,
+                patch=mock_patch_obj,
+                memo=MagicMock(),
+                logger=logging.getLogger("test"),
+            )
+
+            mock_stopped.wait.assert_called()
