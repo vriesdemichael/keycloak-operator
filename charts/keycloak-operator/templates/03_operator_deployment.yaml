@@ -144,6 +144,21 @@ spec:
           value: {{ .Values.operator.security.allowScriptMappers | quote }}
         - name: KEYCLOAK_ALLOW_IMPERSONATION
           value: {{ .Values.operator.security.allowImpersonation | quote }}
+        # OpenTelemetry tracing configuration
+        - name: OTEL_TRACING_ENABLED
+          value: {{ .Values.operator.tracing.enabled | quote }}
+        {{- if .Values.operator.tracing.enabled }}
+        - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          value: {{ .Values.operator.tracing.endpoint | quote }}
+        - name: OTEL_SERVICE_NAME
+          value: {{ .Values.operator.tracing.serviceName | quote }}
+        - name: OTEL_SAMPLE_RATE
+          value: {{ .Values.operator.tracing.sampleRate | quote }}
+        - name: OTEL_EXPORTER_OTLP_INSECURE
+          value: {{ .Values.operator.tracing.insecure | quote }}
+        - name: OTEL_PROPAGATE_TO_KEYCLOAK
+          value: {{ .Values.operator.tracing.propagateToKeycloak | quote }}
+        {{- end }}
         {{- with .Values.operator.env }}
         {{- toYaml . | nindent 8 }}
         {{- end }}

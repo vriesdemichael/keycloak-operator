@@ -193,6 +193,39 @@ operator:
     # Log level for handler entry messages (noisy)
     handlerEntryLogLevel: INFO
 
+  # OpenTelemetry distributed tracing configuration
+  # Enables end-to-end tracing from operator through Keycloak
+  tracing:
+    # Enable OpenTelemetry tracing
+    # When enabled, traces are exported to the configured OTLP collector
+    enabled: false
+
+    # OTLP collector endpoint (gRPC protocol)
+    # Examples:
+    # - "http://otel-collector.monitoring:4317" (in-cluster)
+    # - "http://tempo.monitoring:4317" (Grafana Tempo)
+    # - "http://jaeger-collector.monitoring:4317" (Jaeger)
+    endpoint: "http://localhost:4317"
+
+    # Service name for traces
+    # This identifies the operator in distributed traces
+    serviceName: "keycloak-operator"
+
+    # Trace sampling rate (0.0-1.0)
+    # 1.0 = 100% of traces, 0.1 = 10% of traces
+    # Lower values reduce overhead in high-throughput environments
+    sampleRate: 1.0
+
+    # Use insecure connection to OTLP collector (no TLS)
+    # Set to false if your collector requires TLS
+    insecure: true
+
+    # Propagate tracing configuration to managed Keycloak instances
+    # When enabled, Keycloak instances will also export traces to the same collector
+    # This enables end-to-end distributed tracing across operator and Keycloak
+    # Requires Keycloak 26.x+ (which has built-in OpenTelemetry support)
+    propagateToKeycloak: true
+
   # Environment variables for operator customization
   env: []
     # - name: LOG_LEVEL

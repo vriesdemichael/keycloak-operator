@@ -344,3 +344,238 @@ histogram_quantile(0.95,
 # Check active reconciliation count
 kopf_reconciliation_active
 ```
+
+## Distributed Tracing
+
+The Keycloak operator supports OpenTelemetry distributed tracing for end-to-end visibility into reconciliation operations. When enabled, traces are exported to an OTLP collector and can be viewed in tools like Jaeger, Tempo, or any OTEL-compatible backend.
+
+### Enabling Tracing
+
+Configure tracing in your Helm values:
+
+```yaml
+operator:
+  tracing:
+    # Enable OpenTelemetry tracing
+    enabled: true
+
+    # OTLP collector endpoint (gRPC protocol)
+    # Examples:
+    # - "http://otel-collector.monitoring:4317" (in-cluster)
+    # - "http://tempo.monitoring:4317" (Grafana Tempo)
+    # - "http://jaeger-collector.monitoring:4317" (Jaeger)
+    endpoint: "http://otel-collector.monitoring:4317"
+
+    # Service name for traces (identifies the operator)
+    serviceName: "keycloak-operator"
+
+    # Trace sampling rate (0.0-1.0)
+    # 1.0 = 100% of traces, 0.1 = 10% of traces
+    # Lower values reduce overhead in high-throughput environments
+    sampleRate: 1.0
+
+    # Use insecure connection to OTLP collector (no TLS)
+    insecure: true
+
+    # Propagate tracing to managed Keycloak instances
+    # Enables end-to-end distributed tracing
+    propagateToKeycloak: true
+```
+
+### What Gets Traced
+
+When tracing is enabled, the operator creates spans for:
+
+1. **Kopf Handlers**: Reconciliation operations for Keycloak, KeycloakRealm, and KeycloakClient resources
+2. **HTTP Requests**: All outgoing HTTP requests to Keycloak are automatically instrumented
+3. **Keycloak API Calls**: Admin API operations include trace context
+
+Each span includes semantic attributes:
+
+```
+k8s.namespace: default
+k8s.resource.name: my-keycloak
+k8s.resource.type: keycloak
+kopf.handler: handle_keycloak_create
+```
+
+### End-to-End Tracing with Keycloak
+
+When `propagateToKeycloak: true`, the operator configures managed Keycloak instances to export traces to the same collector. This enables:
+
+- Visibility into Keycloak internal operations (authentication, token issuance)
+- Trace correlation between operator reconciliation and Keycloak processing
+- Full request lifecycle from operator to Keycloak database
+
+**Requirements**: Keycloak 26.x or later (has built-in OpenTelemetry support via Quarkus)
+
+The Keycloak CR will automatically include:
+
+```yaml
+spec:
+  tracing:
+    enabled: true
+    endpoint: "http://otel-collector.monitoring:4317"
+    serviceName: "keycloak"
+    sampleRate: 1.0
+```
+
+### Viewing Traces
+
+#### Jaeger
+
+```bash
+# Port-forward Jaeger UI
+kubectl port-forward -n monitoring svc/jaeger-query 16686:16686
+
+# Open in browser: http://localhost:16686
+# Search for service: keycloak-operator
+```
+
+#### Grafana Tempo
+
+```bash
+# Access Grafana
+kubectl port-forward -n monitoring svc/grafana 3000:3000
+
+# Navigate to Explore > Tempo
+# Search by service name: keycloak-operator
+```
+
+### Trace Propagation
+
+The operator uses W3C Trace Context (`traceparent` header) for trace propagation. This is automatically added to:
+
+- Keycloak Admin API requests
+- Any HTTP requests made via httpx or aiohttp clients
+
+Example trace context header:
+
+```
+traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
+```
+
+### Debugging with Traces
+
+Traces are particularly useful for debugging:
+
+1. **Slow Reconciliations**: Identify which Keycloak API calls are slow
+2. **Failures**: See the exact sequence of operations before an error
+3. **Cross-Service Issues**: Trace requests from operator through Keycloak to database
+
+Example: Finding slow realm reconciliations
+
+1. Search for traces with `service.name = keycloak-operator`
+2. Filter by operation: `reconcile_realm`
+3. Sort by duration to find outliers
+4. Drill into spans to see individual API calls
+
+### Environment Variables
+
+The following environment variables control tracing:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `OTEL_TRACING_ENABLED` | Enable tracing | `false` |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint | `http://localhost:4317` |
+| `OTEL_SERVICE_NAME` | Service name for traces | `keycloak-operator` |
+| `OTEL_SAMPLE_RATE` | Sampling rate (0.0-1.0) | `1.0` |
+| `OTEL_EXPORTER_OTLP_INSECURE` | Use insecure connection | `true` |
+| `OTEL_PROPAGATE_TO_KEYCLOAK` | Propagate to Keycloak | `true` |
+
+### Integration Examples
+
+#### With OpenTelemetry Collector
+
+Deploy the OpenTelemetry Collector to receive and export traces:
+
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: monitoring
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+
+    processors:
+      batch:
+        timeout: 1s
+
+    exporters:
+      jaeger:
+        endpoint: jaeger-collector.monitoring:14250
+        tls:
+          insecure: true
+
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [jaeger]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - name: collector
+        image: otel/opentelemetry-collector-contrib:0.96.0
+        ports:
+        - containerPort: 4317
+          name: otlp-grpc
+        volumeMounts:
+        - name: config
+          mountPath: /etc/otelcol-contrib/config.yaml
+          subPath: config.yaml
+      volumes:
+      - name: config
+        configMap:
+          name: otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: monitoring
+spec:
+  selector:
+    app: otel-collector
+  ports:
+  - port: 4317
+    name: otlp-grpc
+```
+
+#### With Grafana Tempo
+
+```yaml
+operator:
+  tracing:
+    enabled: true
+    endpoint: "http://tempo.monitoring:4317"
+    serviceName: "keycloak-operator"
+```
+
+### Performance Considerations
+
+- **Sampling**: For high-throughput environments, reduce `sampleRate` (e.g., 0.1 for 10%)
+- **Batch Processing**: The operator uses `BatchSpanProcessor` for efficient trace export
+- **Overhead**: With 1.0 sampling, expect ~5-10% overhead on reconciliation time
+- **Storage**: Traces consume storage in your backend; configure retention appropriately
