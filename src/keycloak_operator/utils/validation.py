@@ -18,6 +18,7 @@ from urllib.parse import urlparse
 from keycloak_operator.constants import (
     MANAGEMENT_PORT_MIN_VERSION,
     MINIMUM_KEYCLOAK_VERSION,
+    TRACING_MIN_VERSION,
 )
 
 logger = logging.getLogger(__name__)
@@ -190,6 +191,49 @@ def get_health_port(image: str, version_override: str | None = None) -> int:
     if supports_management_port(image, version_override):
         return 9000
     return 8080
+
+
+def supports_tracing(image: str, version_override: str | None = None) -> bool:
+    """
+    Check if a Keycloak image supports built-in OpenTelemetry tracing.
+
+    Built-in OTEL tracing support (via Quarkus) was introduced in Keycloak 26.0.0.
+    Earlier versions (24.x, 25.x) do not have native tracing support.
+
+    Args:
+        image: Container image reference like "quay.io/keycloak/keycloak:26.4.0"
+        version_override: Optional explicit version string (e.g., "25.0.0") for custom
+            images without version tags. Takes precedence over image tag detection.
+
+    Returns:
+        True if the version supports tracing (26.0.0+), False otherwise.
+        Returns True if version cannot be determined (assume modern version).
+    """
+    # Use version override if provided, otherwise try to extract from image tag
+    version_str = version_override or _extract_version_from_image(image)
+
+    if not version_str:
+        # Can't determine version, assume it supports tracing
+        logger.debug(
+            f"Could not extract version from image '{image}' - assuming tracing support"
+        )
+        return True
+
+    try:
+        version = _parse_version(version_str)
+        tracing_min = _parse_version(TRACING_MIN_VERSION)
+        supports = version >= tracing_min
+        logger.debug(
+            f"Keycloak {version_str} {'supports' if supports else 'does not support'} "
+            f"built-in tracing (requires {TRACING_MIN_VERSION}+)"
+        )
+        return supports
+    except ValueError:
+        # Can't parse version, assume it supports tracing
+        logger.debug(
+            f"Could not parse version '{version_str}' - assuming tracing support"
+        )
+        return True
 
 
 class ValidationError(Exception):

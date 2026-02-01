@@ -65,6 +65,7 @@ MINIMUM_KEYCLOAK_VERSION = "24.0.0"  # Minimum supported Keycloak version
 MANAGEMENT_PORT_MIN_VERSION = (
     "25.0.0"  # Version when management port (9000) was introduced
 )
+TRACING_MIN_VERSION = "26.0.0"  # Version when built-in OTEL tracing was introduced
 CANONICAL_MODEL_VERSION = "26.5.2"  # Version our Pydantic models are generated from
 DEFAULT_KEYCLOAK_PORT = 8080
 DEFAULT_KEYCLOAK_HTTPS_PORT = 8443

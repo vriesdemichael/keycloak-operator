@@ -217,8 +217,9 @@ operator:
     sampleRate: 1.0
 
     # Use insecure connection to OTLP collector (no TLS)
-    # Set to false if your collector requires TLS
-    insecure: true
+    # WARNING: Defaults to false for security. Set to true only in development
+    # or when TLS termination is handled by a service mesh.
+    insecure: false
 
     # Propagate tracing configuration to managed Keycloak instances
     # When enabled, Keycloak instances will also export traces to the same collector

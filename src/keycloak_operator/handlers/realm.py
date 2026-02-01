@@ -25,6 +25,7 @@ from keycloak_operator.constants import (
     TIMER_INTERVAL_REALM,
 )
 from keycloak_operator.models.realm import KeycloakRealmSpec
+from keycloak_operator.observability.tracing import traced_handler
 from keycloak_operator.services import KeycloakRealmReconciler
 from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
@@ -160,6 +161,7 @@ async def _perform_realm_cleanup(
 @kopf.on.resume(
     "keycloakrealms", group="vriesdemichael.github.io", version="v1", backoff=1.5
 )
+@traced_handler("reconcile_realm")
 async def ensure_keycloak_realm(
     spec: dict[str, Any],
     name: str,
@@ -230,6 +232,7 @@ async def ensure_keycloak_realm(
 @kopf.on.update(
     "keycloakrealms", backoff=1.5, group="vriesdemichael.github.io", version="v1"
 )
+@traced_handler("update_realm")
 async def update_keycloak_realm(
     old: dict[str, Any],
     new: dict[str, Any],
@@ -290,6 +293,7 @@ async def update_keycloak_realm(
 @kopf.on.delete(
     "keycloakrealms", backoff=1.5, group="vriesdemichael.github.io", version="v1"
 )
+@traced_handler("delete_realm")
 async def delete_keycloak_realm(
     spec: dict[str, Any],
     name: str,

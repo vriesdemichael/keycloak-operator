@@ -35,6 +35,7 @@ from collections.abc import Callable
 from contextvars import ContextVar
 from typing import ParamSpec, TypeVar
 
+from opentelemetry import context as context_api
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
@@ -69,7 +70,7 @@ def setup_tracing(
     endpoint: str = "http://localhost:4317",
     service_name: str = "keycloak-operator",
     sample_rate: float = 1.0,
-    insecure: bool = True,
+    insecure: bool = False,
     headers: dict[str, str] | None = None,
     use_simple_processor: bool = False,
 ) -> TracerProvider | None:
@@ -158,18 +159,32 @@ def setup_tracing(
 
 
 def _instrument_http_clients() -> None:
-    """Instrument HTTP clients for automatic trace context propagation."""
+    """Instrument HTTP clients for automatic trace context propagation.
+
+    This function is idempotent - calling it multiple times is safe.
+    The instrumentors handle repeated calls gracefully.
+    """
     try:
         # Instrument httpx (used by KeycloakAdminClient)
-        HTTPXClientInstrumentor().instrument()
-        logger.debug("Instrumented httpx client")
+        # Check if already instrumented to avoid double-instrumentation
+        instrumentor = HTTPXClientInstrumentor()
+        if not instrumentor.is_instrumented_by_opentelemetry:
+            instrumentor.instrument()
+            logger.debug("Instrumented httpx client")
+        else:
+            logger.debug("httpx client already instrumented, skipping")
     except Exception as e:
         logger.warning(f"Failed to instrument httpx: {e}")
 
     try:
         # Instrument aiohttp (used by some async operations)
-        AioHttpClientInstrumentor().instrument()
-        logger.debug("Instrumented aiohttp client")
+        # Check if already instrumented to avoid double-instrumentation
+        instrumentor = AioHttpClientInstrumentor()
+        if not instrumentor.is_instrumented_by_opentelemetry:
+            instrumentor.instrument()
+            logger.debug("Instrumented aiohttp client")
+        else:
+            logger.debug("aiohttp client already instrumented, skipping")
     except Exception as e:
         logger.warning(f"Failed to instrument aiohttp: {e}")
 
@@ -251,6 +266,55 @@ def clear_resource_context() -> None:
     _resource_context.set({})
 
 
+def _detect_resource_type(operation_name: str) -> str:
+    """
+    Detect resource type from operation name.
+
+    Args:
+        operation_name: Name of the operation (e.g., "reconcile_realm")
+
+    Returns:
+        Detected resource type (keycloakrealm, keycloakclient, keycloak, or unknown)
+    """
+    op_lower = operation_name.lower()
+    if "realm" in op_lower:
+        return "keycloakrealm"
+    elif "client" in op_lower:
+        return "keycloakclient"
+    elif "keycloak" in op_lower:
+        return "keycloak"
+    return "unknown"
+
+
+def _build_span_attributes(
+    namespace: str,
+    name: str,
+    resource_type: str,
+    handler_name: str,
+) -> dict[str, str]:
+    """
+    Build span attributes dict for a traced handler.
+
+    Args:
+        namespace: Kubernetes namespace
+        name: Resource name
+        resource_type: Resource type
+        handler_name: Handler function name
+
+    Returns:
+        Dict of span attributes
+    """
+    attributes = {
+        "k8s.namespace": namespace,
+        "k8s.resource.name": name,
+        "k8s.resource.type": resource_type,
+        "kopf.handler": handler_name,
+    }
+    # Add any resource context
+    attributes.update(get_resource_context())
+    return attributes
+
+
 def traced_handler(
     operation_name: str,
     span_kind: SpanKind = SpanKind.INTERNAL,
@@ -287,26 +351,14 @@ def traced_handler(
             namespace = kwargs.get("namespace", "unknown")
             name = kwargs.get("name", "unknown")
 
-            # Determine resource type from operation name or function
-            resource_type = "unknown"
-            if "realm" in operation_name.lower():
-                resource_type = "keycloakrealm"
-            elif "client" in operation_name.lower():
-                resource_type = "keycloakclient"
-            elif "keycloak" in operation_name.lower():
-                resource_type = "keycloak"
+            # Determine resource type from operation name
+            resource_type = _detect_resource_type(operation_name)
 
             # Build span attributes
             handler_name = getattr(func, "__name__", "unknown")
-            attributes = {
-                "k8s.namespace": namespace,
-                "k8s.resource.name": name,
-                "k8s.resource.type": resource_type,
-                "kopf.handler": handler_name,
-            }
-
-            # Add any resource context
-            attributes.update(get_resource_context())
+            attributes = _build_span_attributes(
+                namespace, name, resource_type, handler_name
+            )
 
             with tracer.start_as_current_span(
                 operation_name,
@@ -329,22 +381,14 @@ def traced_handler(
             namespace = kwargs.get("namespace", "unknown")
             name = kwargs.get("name", "unknown")
 
-            resource_type = "unknown"
-            if "realm" in operation_name.lower():
-                resource_type = "keycloakrealm"
-            elif "client" in operation_name.lower():
-                resource_type = "keycloakclient"
-            elif "keycloak" in operation_name.lower():
-                resource_type = "keycloak"
+            # Determine resource type from operation name
+            resource_type = _detect_resource_type(operation_name)
 
+            # Build span attributes
             handler_name = getattr(func, "__name__", "unknown")
-            attributes = {
-                "k8s.namespace": namespace,
-                "k8s.resource.name": name,
-                "k8s.resource.type": resource_type,
-                "kopf.handler": handler_name,
-            }
-            attributes.update(get_resource_context())
+            attributes = _build_span_attributes(
+                namespace, name, resource_type, handler_name
+            )
 
             with tracer.start_as_current_span(
                 operation_name,
@@ -388,7 +432,7 @@ def inject_trace_context(headers: dict[str, str]) -> dict[str, str]:
     return headers
 
 
-def extract_trace_context(headers: dict[str, str]) -> trace.Context | None:
+def extract_trace_context(headers: dict[str, str]) -> context_api.Context | None:
     """
     Extract trace context from incoming headers.
 
@@ -405,3 +449,19 @@ def extract_trace_context(headers: dict[str, str]) -> trace.Context | None:
 def is_tracing_enabled() -> bool:
     """Check if tracing is currently enabled and initialized."""
     return _initialized and _tracer_provider is not None
+
+
+def _reset_for_testing() -> None:
+    """
+    Reset tracing state for testing purposes.
+
+    This function is intended for use in test fixtures to reset the module
+    state between tests. Do not use in production code.
+
+    Note: This is a public helper to make the testing interface explicit
+    and easier to maintain if internal structure changes.
+    """
+    global _tracer_provider, _initialized
+    _initialized = False
+    _tracer_provider = None
+    clear_resource_context()

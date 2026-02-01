@@ -42,6 +42,7 @@ from keycloak_operator.observability.metrics import (
     SECRET_ROTATION_RETRIES_TOTAL,
     SECRET_ROTATION_TOTAL,
 )
+from keycloak_operator.observability.tracing import traced_handler
 from keycloak_operator.services import KeycloakClientReconciler
 from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
@@ -175,6 +176,7 @@ async def _perform_client_cleanup(
 @kopf.on.resume(
     "keycloakclients", backoff=1.5, group="vriesdemichael.github.io", version="v1"
 )
+@traced_handler("reconcile_client")
 async def ensure_keycloak_client(
     spec: dict[str, Any],
     name: str,
@@ -244,6 +246,7 @@ async def ensure_keycloak_client(
 @kopf.on.update(
     "keycloakclients", backoff=1.5, group="vriesdemichael.github.io", version="v1"
 )
+@traced_handler("update_client")
 async def update_keycloak_client(
     old: dict[str, Any],
     new: dict[str, Any],
@@ -303,6 +306,7 @@ async def update_keycloak_client(
 @kopf.on.delete(
     "keycloakclients", backoff=1.5, group="vriesdemichael.github.io", version="v1"
 )
+@traced_handler("delete_client")
 async def delete_keycloak_client(
     spec: dict[str, Any],
     name: str,

@@ -19,6 +19,7 @@ from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanE
 from opentelemetry.trace import SpanKind, StatusCode
 
 from keycloak_operator.observability.tracing import (
+    _reset_for_testing,
     clear_resource_context,
     extract_trace_context,
     get_propagator,
@@ -53,18 +54,11 @@ def module_tracer_provider(module_in_memory_exporter):
 @pytest.fixture(autouse=True)
 def reset_tracing_state():
     """Reset tracing module state before and after each test."""
-    # Import the module to access internal state
-    import keycloak_operator.observability.tracing as tracing_module
-
-    # Reset internal state
-    tracing_module._initialized = False
-    tracing_module._tracer_provider = None
+    # Reset internal state using the public helper
+    _reset_for_testing()
     yield
     # Reset after test
-    tracing_module._initialized = False
-    tracing_module._tracer_provider = None
-    # Clear resource context
-    clear_resource_context()
+    _reset_for_testing()
 
 
 @pytest.fixture
@@ -112,9 +106,10 @@ class TestSetupTracing:
         assert is_tracing_enabled()
 
         # Verify exporter was created with correct params
+        # insecure defaults to False for security
         mock_exporter.assert_called_once_with(
             endpoint="http://localhost:4317",
-            insecure=True,
+            insecure=False,
             headers={},
         )
 
@@ -167,9 +162,10 @@ class TestSetupTracing:
             headers=custom_headers,
         )
 
+        # insecure defaults to False for security
         mock_exporter.assert_called_once_with(
             endpoint="http://collector:4317",
-            insecure=True,
+            insecure=False,
             headers=custom_headers,
         )
 
