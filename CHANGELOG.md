@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.2...operator-image-v0.7.3) (2026-02-01)
+
+
+### Features
+
+* **chart-client+operator:** add automated client secret rotation ([d95102f](https://github.com/vriesdemichael/keycloak-operator/commit/d95102f7d9d78d85d61df3960cb121f7eae8eac0))
+* **operator:** add secret rotation daemon and fix thundering herd ([0e8b4ac](https://github.com/vriesdemichael/keycloak-operator/commit/0e8b4ac21e73cdb9ab14055eeaec858ec6979112))
+
+
+### Bug Fixes
+
+* **chart-client+operator:** complete secret rotation helm chart and fix review comments ([073ac06](https://github.com/vriesdemichael/keycloak-operator/commit/073ac06e9beb1c3c20d89bc19c9ee0331c8a76d8))
+
 ## [0.7.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.1...operator-image-v0.7.2) (2026-01-30)
 
 
