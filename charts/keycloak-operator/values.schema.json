@@ -422,6 +422,48 @@
               "default": "INFO"
             }
           }
+        },
+        "tracing": {
+          "type": "object",
+          "description": "OpenTelemetry distributed tracing configuration for the operator",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable OpenTelemetry tracing. When enabled, the operator exports traces to an OTLP collector",
+              "default": false
+            },
+            "endpoint": {
+              "type": "string",
+              "description": "OTLP collector endpoint (gRPC). Must be accessible from the operator pod",
+              "default": "http://localhost:4317",
+              "examples": [
+                "http://otel-collector.observability:4317",
+                "http://jaeger-collector.tracing:4317"
+              ]
+            },
+            "serviceName": {
+              "type": "string",
+              "description": "Service name for traces. Appears in trace visualization tools",
+              "default": "keycloak-operator"
+            },
+            "sampleRate": {
+              "type": "number",
+              "description": "Trace sampling rate (0.0-1.0). 1.0 = sample all requests, 0.1 = sample 10%",
+              "default": 1.0,
+              "minimum": 0.0,
+              "maximum": 1.0
+            },
+            "insecure": {
+              "type": "boolean",
+              "description": "Use insecure (non-TLS) connection to OTLP endpoint",
+              "default": true
+            },
+            "propagateToKeycloak": {
+              "type": "boolean",
+              "description": "Propagate tracing configuration to managed Keycloak instances for end-to-end tracing",
+              "default": true
+            }
+          }
         }
       }
     },
@@ -843,6 +885,34 @@
                   "type": "string"
                 }
               }
+            }
+          }
+        },
+        "tracing": {
+          "type": "object",
+          "description": "OpenTelemetry tracing configuration for the Keycloak instance (Keycloak 26.x+ required)",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable OpenTelemetry tracing in Keycloak",
+              "default": false
+            },
+            "endpoint": {
+              "type": "string",
+              "description": "OTLP collector endpoint (gRPC)",
+              "default": "http://localhost:4317"
+            },
+            "serviceName": {
+              "type": "string",
+              "description": "Service name for traces",
+              "default": "keycloak"
+            },
+            "sampleRate": {
+              "type": "number",
+              "description": "Trace sampling rate (0.0-1.0)",
+              "default": 1.0,
+              "minimum": 0.0,
+              "maximum": 1.0
             }
           }
         }

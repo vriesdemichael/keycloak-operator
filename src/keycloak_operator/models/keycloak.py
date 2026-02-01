@@ -294,6 +294,38 @@ class RealmCapacity(BaseModel):
     )
 
 
+class KeycloakTracingConfig(BaseModel):
+    """
+    OpenTelemetry distributed tracing configuration for Keycloak.
+
+    Keycloak 26.x+ has built-in OpenTelemetry support via Quarkus.
+    This configuration enables end-to-end distributed tracing.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    enabled: bool = Field(
+        False,
+        description="Enable OpenTelemetry tracing in Keycloak",
+    )
+    endpoint: str = Field(
+        "http://localhost:4317",
+        description="OTLP collector endpoint (gRPC)",
+    )
+    service_name: str = Field(
+        "keycloak",
+        alias="serviceName",
+        description="Service name for traces",
+    )
+    sample_rate: float = Field(
+        1.0,
+        alias="sampleRate",
+        description="Trace sampling rate (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+
+
 class KeycloakSpec(BaseModel):
     """
     Specification for a Keycloak instance.
@@ -404,6 +436,12 @@ class KeycloakSpec(BaseModel):
         None,
         alias="realmCapacity",
         description="Capacity management for realms",
+    )
+
+    # OpenTelemetry tracing
+    tracing: KeycloakTracingConfig | None = Field(
+        None,
+        description="OpenTelemetry distributed tracing configuration",
     )
 
     @field_validator("image")

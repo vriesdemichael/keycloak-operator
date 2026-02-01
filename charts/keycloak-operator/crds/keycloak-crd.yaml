@@ -253,6 +253,28 @@ spec:
                   capacityMessage:
                     type: string
                     description: Message to show when capacity is reached
+              tracing:
+                type: object
+                description: OpenTelemetry distributed tracing configuration for Keycloak
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Enable OpenTelemetry tracing in Keycloak
+                    default: false
+                  endpoint:
+                    type: string
+                    description: OTLP collector endpoint (gRPC)
+                    default: "http://localhost:4317"
+                  serviceName:
+                    type: string
+                    description: Service name for traces
+                    default: "keycloak"
+                  sampleRate:
+                    type: number
+                    description: Trace sampling rate (0.0-1.0)
+                    minimum: 0
+                    maximum: 1
+                    default: 1.0
             required:
             - database
           status:

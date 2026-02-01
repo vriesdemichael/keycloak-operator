@@ -47,6 +47,7 @@ from keycloak_operator.observability.leader_election import (
 )
 from keycloak_operator.observability.logging import setup_structured_logging
 from keycloak_operator.observability.metrics import MetricsServer
+from keycloak_operator.observability.tracing import setup_tracing, shutdown_tracing
 from keycloak_operator.settings import settings as operator_settings
 from keycloak_operator.utils.rate_limiter import RateLimiter
 
@@ -200,6 +201,23 @@ async def startup_handler(
         f"namespace={RATE_LIMIT_NAMESPACE_TPS} TPS (burst={RATE_LIMIT_NAMESPACE_BURST})"
     )
 
+    # Initialize OpenTelemetry tracing
+    tracing_settings = operator_settings.tracing
+    if tracing_settings.enabled:
+        setup_tracing(
+            enabled=True,
+            endpoint=tracing_settings.endpoint,
+            service_name=tracing_settings.service_name,
+            sample_rate=tracing_settings.sample_rate,
+            insecure=tracing_settings.insecure,
+        )
+        logging.info(
+            f"OpenTelemetry tracing enabled: endpoint={tracing_settings.endpoint}, "
+            f"service={tracing_settings.service_name}, sample_rate={tracing_settings.sample_rate}"
+        )
+    else:
+        logging.info("OpenTelemetry tracing is disabled")
+
 
 @kopf.on.cleanup()
 async def cleanup_handler(settings: kopf.OperatorSettings, **_) -> None:
@@ -223,6 +241,13 @@ async def cleanup_handler(settings: kopf.OperatorSettings, **_) -> None:
             logging.info("Metrics server stopped")
         except Exception as e:
             logging.error(f"Error stopping metrics server: {e}")
+
+    # Shutdown tracing
+    try:
+        shutdown_tracing()
+        logging.info("OpenTelemetry tracing shut down")
+    except Exception as e:
+        logging.error(f"Error shutting down tracing: {e}")
 
 
 # Drift detection background task

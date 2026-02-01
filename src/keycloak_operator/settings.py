@@ -5,8 +5,47 @@ loaded from environment variables. Uses pydantic for automatic validation,
 type coercion, and documentation.
 """
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class TracingSettings(BaseModel):
+    """OpenTelemetry tracing configuration.
+
+    Controls distributed tracing for the operator and optionally
+    propagates settings to managed Keycloak instances.
+    """
+
+    enabled: bool = Field(
+        default=False,
+        description="Enable OpenTelemetry distributed tracing",
+    )
+    endpoint: str = Field(
+        default="http://localhost:4317",
+        description="OTLP collector endpoint (gRPC)",
+    )
+    service_name: str = Field(
+        default="keycloak-operator",
+        description="Service name for traces",
+    )
+    sample_rate: float = Field(
+        default=1.0,
+        description="Trace sampling rate (0.0-1.0, 1.0 = 100%)",
+        ge=0.0,
+        le=1.0,
+    )
+    propagate_to_keycloak: bool = Field(
+        default=True,
+        description="Propagate tracing settings to managed Keycloak instances",
+    )
+    insecure: bool = Field(
+        default=True,
+        description="Use insecure connection to OTLP collector (no TLS)",
+    )
+    headers: dict[str, str] = Field(
+        default_factory=dict,
+        description="Additional headers for OTLP exporter (e.g., authentication)",
+    )
 
 
 class Settings(BaseSettings):
@@ -251,6 +290,52 @@ class Settings(BaseSettings):
         "WARNING: Enabling this allows the service account to impersonate ANY user in the realm, "
         "including realm admins, effectively granting full administrative access to Keycloak.",
     )
+
+    # OpenTelemetry tracing
+    tracing_enabled: bool = Field(
+        default=False,
+        validation_alias="OTEL_TRACING_ENABLED",
+        description="Enable OpenTelemetry distributed tracing",
+    )
+    otel_exporter_otlp_endpoint: str = Field(
+        default="http://localhost:4317",
+        validation_alias="OTEL_EXPORTER_OTLP_ENDPOINT",
+        description="OTLP collector endpoint (gRPC)",
+    )
+    otel_service_name: str = Field(
+        default="keycloak-operator",
+        validation_alias="OTEL_SERVICE_NAME",
+        description="Service name for traces",
+    )
+    otel_sample_rate: float = Field(
+        default=1.0,
+        validation_alias="OTEL_SAMPLE_RATE",
+        description="Trace sampling rate (0.0-1.0, 1.0 = 100%)",
+        ge=0.0,
+        le=1.0,
+    )
+    otel_propagate_to_keycloak: bool = Field(
+        default=True,
+        validation_alias="OTEL_PROPAGATE_TO_KEYCLOAK",
+        description="Propagate tracing settings to managed Keycloak instances",
+    )
+    otel_insecure: bool = Field(
+        default=True,
+        validation_alias="OTEL_EXPORTER_OTLP_INSECURE",
+        description="Use insecure connection to OTLP collector (no TLS)",
+    )
+
+    @property
+    def tracing(self) -> TracingSettings:
+        """Get tracing settings as a nested model for convenience."""
+        return TracingSettings(
+            enabled=self.tracing_enabled,
+            endpoint=self.otel_exporter_otlp_endpoint,
+            service_name=self.otel_service_name,
+            sample_rate=self.otel_sample_rate,
+            propagate_to_keycloak=self.otel_propagate_to_keycloak,
+            insecure=self.otel_insecure,
+        )
 
     @property
     def watched_namespaces(self) -> list[str] | None:
