@@ -871,6 +871,68 @@ async def wait_for_port_forward_ready(
     )
 
 
+async def wait_for_keycloak_http_ready(
+    local_port: int,
+    timeout: int = 60,
+    interval: float = 1.0,
+) -> None:
+    """Wait for Keycloak HTTP endpoint to be ready and accepting requests.
+
+    This is more thorough than TCP connectivity - it verifies the HTTP server
+    is actually responding. This helps prevent 401 errors during authentication
+    that can occur when Keycloak's HTTP server is still initializing.
+
+    Args:
+        local_port: Local port where Keycloak is accessible (via port-forward)
+        timeout: Maximum wait time in seconds
+        interval: Check interval in seconds
+
+    Raises:
+        TimeoutError: When timeout is reached and Keycloak HTTP is not ready
+    """
+    import time
+
+    import httpx
+
+    start_time = time.time()
+    last_error = None
+
+    # Try multiple endpoints - /health/ready is preferred but may not always work
+    endpoints = [
+        "/health/ready",
+        "/health",
+        "/realms/master",  # Fallback - if master realm responds, server is ready
+    ]
+
+    while time.time() - start_time < timeout:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            for endpoint in endpoints:
+                try:
+                    url = f"http://localhost:{local_port}{endpoint}"
+                    response = await client.get(url)
+                    # Accept any 2xx or 3xx response as "ready"
+                    # Also accept 401 - it means server is up and auth is working
+                    if response.status_code < 500:
+                        logger.debug(
+                            f"Keycloak HTTP ready on port {local_port} "
+                            f"(endpoint {endpoint} returned {response.status_code})"
+                        )
+                        return
+                except httpx.ConnectError as e:
+                    last_error = f"Connection error: {e}"
+                except httpx.TimeoutException as e:
+                    last_error = f"Timeout: {e}"
+                except Exception as e:
+                    last_error = f"Error: {e}"
+
+        await asyncio.sleep(interval)
+
+    raise TimeoutError(
+        f"Keycloak HTTP on localhost:{local_port} did not become ready within {timeout}s. "
+        f"Last error: {last_error}"
+    )
+
+
 class SecretNotReadyError(Exception):
     """Raised when a secret doesn't have expected keys within timeout."""
 
