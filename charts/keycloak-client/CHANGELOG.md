@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.4.0...chart-client-v0.4.1) (2026-02-01)
+
+
+### Bug Fixes
+
+* **chart-client+operator:** complete secret rotation helm chart and fix review comments ([073ac06](https://github.com/vriesdemichael/keycloak-operator/commit/073ac06e9beb1c3c20d89bc19c9ee0331c8a76d8))
+* **chart-client:** always render secretRotation block for GitOps consistency ([2d78477](https://github.com/vriesdemichael/keycloak-operator/commit/2d784776443d0af818111efa891d121e9c87ff58))
+
 ## [0.4.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.3.7...chart-client-v0.4.0) (2026-01-29)
 
 
