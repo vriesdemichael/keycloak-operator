@@ -1,0 +1,29 @@
+number: 82
+title: "Trace-Based Test Debugging Infrastructure"
+category: development
+decision: >
+  Deploy OpenTelemetry Collector in Kind clusters during integration tests to
+  capture operator traces. Traces are written to JSONL files for post-mortem
+  analysis of test failures, enabling correlation between test runs and operator
+  behavior via timestamps.
+agent_instructions: >
+  When debugging integration test failures, check for trace files in the
+  test-logs/traces directory of CI artifacts. Use scripts/analyze-trace.py to
+  filter and visualize traces. Correlate traces with tests using [TRACE_CONTEXT]
+  log markers that include test names and timestamps. The OTEL Collector is
+  automatically deployed by kind-setup.sh and CI workflows.
+rationale: >
+  Integration test failures are often difficult to debug because the operator
+  runs in a separate pod from the test process. Traditional logging provides
+  limited visibility into the sequence of operations. By capturing distributed
+  traces, we can reconstruct the exact sequence of API calls, reconciliation
+  loops, and errors that occurred during a failed test, even when the test
+  framework doesn't provide adequate error messages.
+rejected_alternatives:
+  - alternative: "Enhanced logging only"
+    reason: "Logs lack causality information and are hard to correlate with specific tests"
+  - alternative: "Real-time trace streaming"
+    reason: "Adds complexity and latency; file-based export is simpler and sufficient for post-mortem analysis"
+  - alternative: "In-memory trace buffering in tests"
+    reason: "Requires test code changes and doesn't capture traces from the operator pod"
+provenance: guided-ai

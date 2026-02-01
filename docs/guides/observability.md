@@ -579,3 +579,73 @@ operator:
 - **Batch Processing**: The operator uses `BatchSpanProcessor` for efficient trace export
 - **Overhead**: With 1.0 sampling, expect ~5-10% overhead on reconciliation time
 - **Storage**: Traces consume storage in your backend; configure retention appropriately
+
+## Debugging Test Failures with Traces
+
+The operator's integration test infrastructure includes trace collection for post-mortem debugging of test failures.
+
+### How It Works
+
+1. **OTEL Collector Deployment**: The test cluster includes an OpenTelemetry Collector that writes traces to JSONL files
+2. **Test Context Markers**: Each test is logged with `[TRACE_CONTEXT]` markers that include test names and timestamps
+3. **Trace Retrieval**: After tests complete, traces are extracted from the collector pod and saved as artifacts
+
+### Analyzing Traces After CI Failures
+
+When integration tests fail in CI:
+
+1. Download the `test-logs-*` artifact from the failed GitHub Actions run
+2. Look in `test-logs/traces/` for `traces.jsonl`
+3. Use the analysis tool to find relevant traces:
+
+```bash
+# Show summary of all traces
+python scripts/analyze-trace.py test-logs/traces/traces.jsonl --summary
+
+# Show only error spans
+python scripts/analyze-trace.py test-logs/traces/traces.jsonl --errors-only
+
+# Filter by test name
+python scripts/analyze-trace.py test-logs/traces/traces.jsonl --filter "test_create_realm"
+
+# Show traces in tree format
+python scripts/analyze-trace.py test-logs/traces/traces.jsonl --tree
+
+# Filter by time range (use timestamps from test logs)
+python scripts/analyze-trace.py test-logs/traces/traces.jsonl \
+    --time-range "2024-01-01T10:00:00" "2024-01-01T10:05:00"
+```
+
+### Correlating Traces with Tests
+
+Test logs include markers like:
+
+```
+[TRACE_CONTEXT] START tests/integration/test_realm.py::test_create 2024-01-01T10:00:00.123456+00:00
+[TRACE_CONTEXT] END tests/integration/test_realm.py::test_create 2024-01-01T10:00:05.654321+00:00 duration=5531ms outcome=passed
+```
+
+Use these timestamps with `--time-range` to find traces for specific tests.
+
+### Local Debugging with Traces
+
+When running tests locally with `make test`, traces are collected to `.tmp/traces/`:
+
+```bash
+# Run tests
+make test
+
+# Analyze traces from the test run
+python scripts/analyze-trace.py .tmp/traces/traces.jsonl --summary
+python scripts/analyze-trace.py .tmp/traces/traces.jsonl --errors-only
+```
+
+### Trace Content
+
+Traces capture:
+
+- **Reconciliation loops**: Start/end of each reconcile operation
+- **Keycloak API calls**: HTTP method, endpoint, status code, duration
+- **Resource operations**: Create, update, delete of Keycloak resources
+- **Errors**: Exception details and stack traces
+- **Context**: Namespace, resource name, reconciliation phase
