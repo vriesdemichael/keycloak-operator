@@ -2064,12 +2064,21 @@ async def keycloak_admin_client(shared_operator, keycloak_port_forward):
         async def test_something(keycloak_admin_client):
             realm = await keycloak_admin_client.get_realm("my-realm", "my-namespace")
     """
-    from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+    from keycloak_operator.utils.keycloak_admin import (
+        KeycloakAdminClient,
+        KeycloakAdminError,
+    )
     from keycloak_operator.utils.kubernetes import get_admin_credentials
+
+    from .wait_helpers import wait_for_keycloak_http_ready
 
     local_port = await keycloak_port_forward(
         shared_operator.name, shared_operator.namespace
     )
+
+    # Wait for Keycloak HTTP to be fully ready before attempting authentication
+    # This prevents 401 errors that occur when the HTTP server is still initializing
+    await wait_for_keycloak_http_ready(local_port, timeout=60)
 
     username, password = get_admin_credentials(
         shared_operator.name, shared_operator.namespace
@@ -2081,7 +2090,27 @@ async def keycloak_admin_client(shared_operator, keycloak_port_forward):
         password=password,
     )
 
-    await admin_client.authenticate()
+    # Retry authentication with exponential backoff to handle transient failures
+    max_attempts = 3
+    last_error = None
+    for attempt in range(max_attempts):
+        try:
+            await admin_client.authenticate()
+            break
+        except KeycloakAdminError as e:
+            last_error = e
+            if attempt < max_attempts - 1:
+                wait_time = 2**attempt  # 1s, 2s, 4s
+                logger.warning(
+                    f"Authentication attempt {attempt + 1}/{max_attempts} failed: {e}. "
+                    f"Retrying in {wait_time}s..."
+                )
+                await asyncio.sleep(wait_time)
+            else:
+                raise KeycloakAdminError(
+                    f"Authentication failed after {max_attempts} attempts. "
+                    f"Last error: {last_error}"
+                ) from e
 
     yield admin_client
 
