@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: observability
+  labels:
+    app.kubernetes.io/name: otel-collector
+    app.kubernetes.io/part-of: keycloak-operator-testing
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+        app.kubernetes.io/name: otel-collector
+    spec:
+      # Init container to set proper permissions on the traces directory
+      initContainers:
+        - name: init-traces-dir
+          image: busybox:1.36
+          command: ["sh", "-c", "mkdir -p /traces && chmod 777 /traces"]
+          volumeMounts:
+            - name: traces
+              mountPath: /traces
+          securityContext:
+            runAsUser: 0
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.96.0
+          args:
+            - --config=/etc/otel/otel-collector-config.yaml
+          ports:
+            - containerPort: 4317
+              name: otlp-grpc
+              protocol: TCP
+            - containerPort: 4318
+              name: otlp-http
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otel
+            - name: traces
+              mountPath: /traces
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 13133
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+        - name: traces
+          hostPath:
+            path: /tmp/traces
+            type: DirectoryOrCreate

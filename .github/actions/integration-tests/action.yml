@@ -139,6 +139,10 @@ runs:
           --for=condition=available deployment/cert-manager-cainjector \
           --timeout=300s
 
+    - name: Deploy OTEL Collector for trace collection
+      shell: bash
+      run: ./scripts/deploy-otel-collector.sh
+
     - name: Run integration tests
       shell: bash
       env:
@@ -199,6 +203,16 @@ runs:
         kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
         kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
         kubectl get pods --all-namespaces -o wide >> test-logs/all-pods.log 2>&1 || true
+
+    - name: Retrieve traces from OTEL Collector
+      if: always()
+      shell: bash
+      run: |
+        mkdir -p test-logs/traces
+        ./scripts/retrieve-traces.sh || true
+        if [ -d ".tmp/traces" ]; then
+          cp .tmp/traces/*.jsonl test-logs/traces/ 2>/dev/null || true
+        fi
 
     - name: Upload test artifacts
       if: always()

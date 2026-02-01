@@ -83,6 +83,10 @@ setup_cluster() {
     log "Creating CNPG namespace ($CNPG_NAMESPACE)..."
     kubectl create namespace "$CNPG_NAMESPACE" --dry-run=client -o yaml | kubectl apply -f -
 
+    # Deploy OTEL Collector for trace collection during tests
+    log "Deploying OTEL Collector for trace collection..."
+    "${SCRIPT_DIR}/deploy-otel-collector.sh"
+
     success "Cluster setup completed"
 }
 

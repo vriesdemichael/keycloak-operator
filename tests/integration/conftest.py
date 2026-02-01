@@ -54,6 +54,7 @@ import tempfile
 import time
 from asyncio.subprocess import PIPE
 from collections.abc import AsyncGenerator
+from datetime import UTC
 from pathlib import Path
 from typing import Any
 
@@ -1641,6 +1642,15 @@ async def shared_operator(
                 },
             },
         },
+        # Enable tracing for debugging test failures
+        "tracing": {
+            "enabled": True,
+            "endpoint": "http://otel-collector.observability.svc.cluster.local:4317",
+            "serviceName": "keycloak-operator",
+            "sampleRate": 1.0,  # Sample all traces during tests
+            "insecure": True,  # No TLS for local collector
+            "propagateToKeycloak": True,
+        },
     }
 
     # Create values file
@@ -3109,6 +3119,73 @@ def _collect_operator_logs() -> None:
 
     except Exception as e:
         print(f"[pytest] Failed to collect operator logs: {e}", file=sys.stderr)
+
+
+# =============================================================================
+# TRACE CONTEXT FIXTURES AND HOOKS
+# =============================================================================
+# These fixtures and hooks enable trace-based debugging of test failures.
+# When tests fail, traces can be retrieved from the OTEL collector and
+# correlated with specific test runs using timestamps.
+
+
+@pytest.fixture(autouse=True)
+def test_trace_context(request):
+    """
+    Autouse fixture that logs trace context markers for each test.
+
+    This enables post-mortem trace analysis by correlating OTEL traces
+    with specific test runs. The markers include test name and timestamps.
+
+    Output format:
+        [TRACE_CONTEXT] START <test_id> <timestamp>
+        [TRACE_CONTEXT] END <test_id> <timestamp> duration=<ms>ms outcome=<passed|failed|skipped>
+    """
+    from datetime import datetime
+
+    test_id = request.node.nodeid
+    start_time = datetime.now(UTC)
+
+    # Log start marker
+    logger.info(f"[TRACE_CONTEXT] START {test_id} {start_time.isoformat()}")
+
+    yield
+
+    # Log end marker with duration (outcome set by hook below)
+    end_time = datetime.now(UTC)
+    duration_ms = int((end_time - start_time).total_seconds() * 1000)
+
+    # Store timing info for the hook to access
+    request.node._trace_start_time = start_time
+    request.node._trace_end_time = end_time
+    request.node._trace_duration_ms = duration_ms
+
+
+def pytest_runtest_makereport(item, call):
+    """
+    Hook to capture test outcome and log trace context END marker.
+
+    This runs after each test phase (setup, call, teardown).
+    We only log on the 'call' phase to get the actual test outcome.
+    """
+    if call.when == "call":
+        # Determine outcome
+        if call.excinfo is None:
+            outcome = "passed"
+        elif call.excinfo.typename == "Skipped":
+            outcome = "skipped"
+        else:
+            outcome = "failed"
+
+        # Get timing info from fixture
+        duration_ms = getattr(item, "_trace_duration_ms", 0)
+        end_time = getattr(item, "_trace_end_time", None)
+
+        if end_time:
+            logger.info(
+                f"[TRACE_CONTEXT] END {item.nodeid} {end_time.isoformat()} "
+                f"duration={duration_ms}ms outcome={outcome}"
+            )
 
 
 def pytest_sessionfinish(session, exitstatus):
