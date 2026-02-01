@@ -39,12 +39,18 @@ class TracingSettings(BaseModel):
         description="Propagate tracing settings to managed Keycloak instances",
     )
     insecure: bool = Field(
-        default=True,
-        description="Use insecure connection to OTLP collector (no TLS)",
+        default=False,
+        description="Use insecure connection to OTLP collector (no TLS). "
+        "Defaults to False for security; set to True only in development or "
+        "when TLS termination is handled by a service mesh.",
     )
     headers: dict[str, str] = Field(
         default_factory=dict,
-        description="Additional headers for OTLP exporter (e.g., authentication)",
+        description="Additional headers for OTLP exporter (e.g., authentication). "
+        "Note: Headers are not passed through from environment variables due to "
+        "complexity of dict parsing. Use OTEL_EXPORTER_OTLP_HEADERS environment "
+        "variable directly (format: 'key1=value1,key2=value2') which is read "
+        "automatically by the OpenTelemetry SDK.",
     )
 
 
@@ -320,9 +326,10 @@ class Settings(BaseSettings):
         description="Propagate tracing settings to managed Keycloak instances",
     )
     otel_insecure: bool = Field(
-        default=True,
+        default=False,
         validation_alias="OTEL_EXPORTER_OTLP_INSECURE",
-        description="Use insecure connection to OTLP collector (no TLS)",
+        description="Use insecure connection to OTLP collector (no TLS). "
+        "Defaults to False for security; set to True only in development.",
     )
 
     @property

@@ -10,6 +10,7 @@ from .health import HealthChecker
 from .logging import OperatorLogger, setup_structured_logging
 from .metrics import MetricsServer, get_metrics_registry
 from .tracing import (
+    _reset_for_testing,
     get_tracer,
     is_tracing_enabled,
     setup_tracing,
@@ -32,4 +33,5 @@ __all__ = [
     "get_tracer",
     "traced_handler",
     "is_tracing_enabled",
+    "_reset_for_testing",
 ]

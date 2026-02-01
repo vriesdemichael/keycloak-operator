@@ -21,7 +21,11 @@ from kubernetes.client.rest import ApiException
 from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
 from keycloak_operator.models.keycloak import KeycloakSpec
 from keycloak_operator.settings import settings
-from keycloak_operator.utils.validation import get_health_port, supports_management_port
+from keycloak_operator.utils.validation import (
+    get_health_port,
+    supports_management_port,
+    supports_tracing,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -227,23 +231,32 @@ def create_keycloak_deployment(
     # Add OpenTelemetry tracing configuration if enabled
     # Keycloak 26.x+ has built-in OTEL support via Quarkus
     if spec.tracing and spec.tracing.enabled:
-        logger.info(f"Enabling OpenTelemetry tracing for Keycloak {name}")
-        env_vars.extend(
-            [
-                client.V1EnvVar(name="KC_TRACING_ENABLED", value="true"),
-                client.V1EnvVar(
-                    name="KC_TRACING_ENDPOINT", value=spec.tracing.endpoint
-                ),
-                client.V1EnvVar(
-                    name="KC_TRACING_SERVICE_NAME", value=spec.tracing.service_name
-                ),
-                # Keycloak uses ratio format for sample rate (same as OTEL)
-                client.V1EnvVar(
-                    name="KC_TRACING_SAMPLER_RATIO",
-                    value=str(spec.tracing.sample_rate),
-                ),
-            ]
-        )
+        image = spec.image or DEFAULT_KEYCLOAK_IMAGE
+        version_override = spec.keycloak_version
+        if supports_tracing(image, version_override):
+            logger.info(f"Enabling OpenTelemetry tracing for Keycloak {name}")
+            env_vars.extend(
+                [
+                    client.V1EnvVar(name="KC_TRACING_ENABLED", value="true"),
+                    client.V1EnvVar(
+                        name="KC_TRACING_ENDPOINT", value=spec.tracing.endpoint
+                    ),
+                    client.V1EnvVar(
+                        name="KC_TRACING_SERVICE_NAME", value=spec.tracing.service_name
+                    ),
+                    # Keycloak uses ratio format for sample rate (same as OTEL)
+                    client.V1EnvVar(
+                        name="KC_TRACING_SAMPLER_RATIO",
+                        value=str(spec.tracing.sample_rate),
+                    ),
+                ]
+            )
+        else:
+            logger.warning(
+                f"Tracing enabled for Keycloak {name} but image version does not support "
+                f"built-in OTEL tracing (requires Keycloak 26.0.0+). Tracing will be skipped. "
+                f"Image: {image}"
+            )
 
     # Add database configuration environment variables if configured
     if spec.database and spec.database.type != "h2":

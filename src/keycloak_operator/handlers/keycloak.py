@@ -30,6 +30,7 @@ from keycloak_operator.constants import (
     RECONCILE_JITTER_MAX,
     TIMER_INTERVAL_KEYCLOAK,
 )
+from keycloak_operator.observability.tracing import traced_handler
 from keycloak_operator.services import KeycloakInstanceReconciler
 from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
@@ -175,6 +176,7 @@ async def _perform_keycloak_cleanup(
 @kopf.on.resume(
     "keycloaks", group="vriesdemichael.github.io", version="v1", backoff=1.5
 )
+@traced_handler("reconcile_keycloak")
 async def ensure_keycloak_instance(
     spec: dict[str, Any],
     name: str,
@@ -248,6 +250,7 @@ async def ensure_keycloak_instance(
 @kopf.on.update(
     "keycloaks", group="vriesdemichael.github.io", version="v1", backoff=1.5
 )
+@traced_handler("update_keycloak")
 async def update_keycloak_instance(
     old: dict[str, Any],
     new: dict[str, Any],
@@ -306,6 +309,7 @@ async def update_keycloak_instance(
 @kopf.on.delete(
     "keycloaks", group="vriesdemichael.github.io", version="v1", backoff=1.5
 )
+@traced_handler("delete_keycloak")
 async def delete_keycloak_instance(
     spec: dict[str, Any],
     name: str,
