@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/063-namespace-grant-list-authorization/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/080-atomic-client-secret-rotation/">
       
       
-        <link rel="prev" href="../062-one-keycloak-per-operator/">
+        <link rel="prev" href="../079-no-managed-keycloak-upgrades/">
       
       
-        <link rel="next" href="../064-no-force-delete-annotation/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-063: Namespace grant list authorization for clients - Keycloak Operator</title>
+        <title>ADR-080: Atomic Client Secret Rotation - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-063-namespace-grant-list-authorization-for-clients" class="md-skip">
+        <a href="#adr-080-atomic-client-secret-rotation" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-063: Namespace grant list authorization for clients
+              ADR-080: Atomic Client Secret Rotation
             
           </span>
         </div>
@@ -3359,37 +3359,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-063: Namespace grant list authorization for clients
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../063-namespace-grant-list-authorization/" class="md-nav__link">
         
   
   
@@ -3405,120 +3378,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#keep-dual-token-model-with-improvements" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Keep dual-token model with improvements
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#use-admission-webhooks-for-validation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use admission webhooks for validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#per-namespace-operators-instead-of-grant-lists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Per-namespace operators instead of grant lists
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#keycloaks-built-in-authorization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Keycloak's built-in authorization
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3976,10 +3835,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../080-atomic-client-secret-rotation/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-080: Atomic Client Secret Rotation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -3995,6 +3881,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#store-previous-secret-in-k8s" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store previous secret in K8s
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#switch-default-to-private_key_jwt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Switch default to private_key_jwt
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4106,10 +4084,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#keep-dual-token-model-with-improvements" class="md-nav__link">
+  <a href="#store-previous-secret-in-k8s" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Keep dual-token model with improvements
+        Store previous secret in K8s
       
     </span>
   </a>
@@ -4117,32 +4095,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#use-admission-webhooks-for-validation" class="md-nav__link">
+  <a href="#switch-default-to-private_key_jwt" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Use admission webhooks for validation
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#per-namespace-operators-instead-of-grant-lists" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Per-namespace operators instead of grant lists
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#keycloaks-built-in-authorization" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Keycloak's built-in authorization
+        Switch default to private_key_jwt
       
     </span>
   </a>
@@ -4171,7 +4127,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/063-namespace-grant-list-authorization.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/080-atomic-client-secret-rotation.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4179,29 +4135,23 @@
   
 
 
-<h1 id="adr-063-namespace-grant-list-authorization-for-clients">ADR-063: Namespace grant list authorization for clients<a class="headerlink" href="#adr-063-namespace-grant-list-authorization-for-clients" title="Permanent link">&para;</a></h1>
+<h1 id="adr-080-atomic-client-secret-rotation">ADR-080: Atomic Client Secret Rotation<a class="headerlink" href="#adr-080-atomic-client-secret-rotation" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> architecture
-<strong>Provenance:</strong> guided-ai</p>
+<strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Replace dual-token authorization model with declarative namespace grant list approach. Realm creation is unrestricted (controlled only by Kubernetes RBAC). Client creation requires explicit namespace authorization via clientAuthorizationGrants list in realm spec. No user-facing tokens required - authorization is purely declarative and GitOps-native.</p>
+<p>Implement atomic rotation for the standard <code>client-secret</code> authenticator without intrinsic grace periods. The operator will support a configurable rotation schedule (period + specific time window).
+Rotation involves: 1. Operator calculates eligibility based on the <code>keycloak-operator/rotated-at</code> annotation on the K8s Secret. 2. Operator calls Keycloak API to regenerate the secret (invalidating the old one immediately). 3. Operator updates the K8s Secret with the new value.
+To handle the immediate invalidation ("Atomic Rotation"), we rely on external "Day 2" operational tools like <strong>Stakater Reloader</strong> or <strong>Kyverno</strong> to detect the K8s Secret change and trigger a rolling restart of the dependent applications.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>The dual-token authorization model created complexity and deviated from GitOps principles:
-Problems with token-based auth: - Complexity: Token generation, distribution, rotation lifecycle - Manual intervention: Platform team distributing secrets - Cross-namespace coordination: Secret syncing between namespaces - Not GitOps-native: Secrets don't belong in Git, rotation causes drift - Team churn: Long-lived credentials outlive team membership
-Benefits of grant list approach: - Simplicity: No token management at all for users - GitOps-native: Authorization as declarative list in realm manifest - PR workflow: Access control through standard code review - Clear ownership: Realm team explicitly controls client access - Audit trail: Git history shows all access changes - Self-service: Teams create realms without platform intervention - Kubernetes-native: Follows RBAC patterns, integrates with existing security model
-Capacity management addresses operational scaling: - Operators can set maxRealms limit to prevent resource exhaustion - allowNewRealms flag enables graceful capacity handling - Existing realms continue working when capacity reached - Clear messaging guides users to alternative operators
-Trade-offs: - Realm teams maintain grant lists (added overhead) - Requires cross-namespace read permissions for operator - Revocation only blocks new clients, existing continue (by design)
-This aligns with ADR 003 (least privilege), ADR 004 (GitOps-first), ADR 005 (no plaintext secrets), ADR 016 (multi-namespace), and ADR 017 (K8s RBAC over Keycloak security).</p>
+<p>Keycloak's <code>client-secret</code> authenticator is a shared secret mechanism that does not support history or multiple active values. The only way to support true grace periods is to switch to <code>private_key_jwt</code> (JWKS), which requires significant changes to the consuming applications (JWT signing vs simple password).
+To provide rotation capabilities for the vast majority of users who use standard client secrets, we accept the constraint of atomic rotation and mitigate the impact via standard Kubernetes rollout mechanisms (Reloader).</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When implementing client reconciliation, always fetch the referenced realm CR and validate that the client's namespace is present in spec.clientAuthorizationGrants. Reject client creation/update if namespace not in grant list. For realm reconciliation, validate capacity limits before creating new realms. Never implement user-facing token generation, distribution, or validation - all authorization is through grant lists. Status fields must reflect current authorization state (authorizedClientNamespaces in realm, authorizationStatus in client).</p>
+<p>When implementing secret rotation, ensure you strictly adhere to the <code>client-secret</code> mechanism. Do not attempt to implement "grace periods" by storing multiple secrets, as Keycloak does not support this for this authenticator type. Direct users to use Reloader or Kyverno in the documentation. Use <code>pytz</code> or <code>zoneinfo</code> for robust timezone handling when scheduling rotations.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="keep-dual-token-model-with-improvements">Keep dual-token model with improvements<a class="headerlink" href="#keep-dual-token-model-with-improvements" title="Permanent link">&para;</a></h3>
-<p>Still requires secret distribution and management. Doesn't solve fundamental GitOps incompatibility. Complexity remains even with better tooling.</p>
-<h3 id="use-admission-webhooks-for-validation">Use admission webhooks for validation<a class="headerlink" href="#use-admission-webhooks-for-validation" title="Permanent link">&para;</a></h3>
-<p>Adds infrastructure complexity. Grant list in CRD is simpler and equally effective. Webhooks better suited for more complex validation logic we don't need here.</p>
-<h3 id="per-namespace-operators-instead-of-grant-lists">Per-namespace operators instead of grant lists<a class="headerlink" href="#per-namespace-operators-instead-of-grant-lists" title="Permanent link">&para;</a></h3>
-<p>Doesn't enable cross-namespace client provisioning. Requires multiple operator deployments. Goes against ADR 016 (multi-namespace by default).</p>
-<h3 id="keycloaks-built-in-authorization">Keycloak's built-in authorization<a class="headerlink" href="#keycloaks-built-in-authorization" title="Permanent link">&para;</a></h3>
-<p>Conflicts with ADR 017 (K8s RBAC over Keycloak security). Creates dual authentication layer. Not GitOps compatible. Operator would need Keycloak admin credentials.</p>
+<h3 id="store-previous-secret-in-k8s">Store previous secret in K8s<a class="headerlink" href="#store-previous-secret-in-k8s" title="Permanent link">&para;</a></h3>
+<p>Pointless complexity. Keycloak invalidates the old secret immediately upon regeneration, so the 'previous' secret stored in K8s would be useless for authentication.</p>
+<h3 id="switch-default-to-private_key_jwt">Switch default to private_key_jwt<a class="headerlink" href="#switch-default-to-private_key_jwt" title="Permanent link">&para;</a></h3>
+<p>Too invasive. It changes the authentication protocol for the application, breaking existing deployments.</p>
 
 
 
@@ -4237,7 +4187,7 @@ This aligns with ADR 003 (least privilege), ADR 004 (GitOps-first), ADR 005 (no 
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../062-one-keycloak-per-operator/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-062: One Keycloak instance per operator deployment">
+          <a href="../079-no-managed-keycloak-upgrades/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-079: No managed Keycloak upgrades">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4247,20 +4197,20 @@ This aligns with ADR 003 (least privilege), ADR 004 (GitOps-first), ADR 005 (no 
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-062: One Keycloak instance per operator deployment
+                ADR-079: No managed Keycloak upgrades
               </div>
             </div>
           </a>
         
         
           
-          <a href="../064-no-force-delete-annotation/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-064: No force-delete annotation for finalizers">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-064: No force-delete annotation for finalizers
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">
