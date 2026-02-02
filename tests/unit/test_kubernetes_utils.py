@@ -309,3 +309,273 @@ class TestKeycloakDeploymentJGroups:
             java_opts = env_var_dict["JAVA_OPTS_APPEND"].value
             # Should use the correct namespace
             assert "prod-keycloak-discovery.production.svc.cluster.local" in java_opts
+
+
+class TestKeycloakDeploymentTracing:
+    """Tests for OpenTelemetry tracing configuration in Keycloak deployment."""
+
+    def test_deployment_includes_tracing_env_vars_when_enabled(self):
+        """Test that tracing env vars are added when tracing is enabled."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            image="quay.io/keycloak/keycloak:26.4.0",  # Supports tracing
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+            tracing={
+                "enabled": True,
+                "endpoint": "http://otel-collector:4317",
+                "service_name": "my-keycloak",
+                "sample_rate": 0.5,
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            # Get environment variables
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # Verify tracing env vars are present
+            assert "KC_TRACING_ENABLED" in env_var_dict
+            assert env_var_dict["KC_TRACING_ENABLED"].value == "true"
+
+            assert "KC_TRACING_ENDPOINT" in env_var_dict
+            assert (
+                env_var_dict["KC_TRACING_ENDPOINT"].value
+                == "http://otel-collector:4317"
+            )
+
+            assert "KC_TRACING_SERVICE_NAME" in env_var_dict
+            assert env_var_dict["KC_TRACING_SERVICE_NAME"].value == "my-keycloak"
+
+            assert "KC_TRACING_SAMPLER_RATIO" in env_var_dict
+            assert env_var_dict["KC_TRACING_SAMPLER_RATIO"].value == "0.5"
+
+    def test_deployment_no_tracing_when_disabled(self):
+        """Test that no tracing env vars are added when tracing is disabled."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            image="quay.io/keycloak/keycloak:26.4.0",
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+            tracing={
+                "enabled": False,
+                "endpoint": "http://otel-collector:4317",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # Verify tracing env vars are NOT present
+            assert "KC_TRACING_ENABLED" not in env_var_dict
+            assert "KC_TRACING_ENDPOINT" not in env_var_dict
+            assert "KC_TRACING_SERVICE_NAME" not in env_var_dict
+            assert "KC_TRACING_SAMPLER_RATIO" not in env_var_dict
+
+    def test_deployment_no_tracing_when_not_configured(self):
+        """Test that no tracing env vars are added when tracing is not configured."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            image="quay.io/keycloak/keycloak:26.4.0",
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+            # No tracing configuration
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # Verify tracing env vars are NOT present
+            assert "KC_TRACING_ENABLED" not in env_var_dict
+            assert "KC_TRACING_ENDPOINT" not in env_var_dict
+
+    def test_deployment_no_tracing_for_unsupported_version(self, caplog):
+        """Test that tracing is skipped for Keycloak versions < 26.0.0."""
+        import logging
+
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        caplog.set_level(logging.WARNING)
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            image="quay.io/keycloak/keycloak:25.0.6",  # Does NOT support tracing
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+            tracing={
+                "enabled": True,
+                "endpoint": "http://otel-collector:4317",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # Verify tracing env vars are NOT present (unsupported version)
+            assert "KC_TRACING_ENABLED" not in env_var_dict
+            assert "KC_TRACING_ENDPOINT" not in env_var_dict
+
+            # Verify warning was logged
+            assert (
+                "does not support" in caplog.text
+                or "Tracing will be skipped" in caplog.text
+            )
+
+    def test_deployment_tracing_with_version_override(self):
+        """Test that version_override is used for tracing version check."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        # Image tag says 26.x but version_override says 25.x
+        spec = KeycloakSpec(
+            replicas=1,
+            image="quay.io/keycloak/keycloak:26.4.0",
+            keycloak_version="25.0.0",  # Override says 25.x - no tracing support
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+            tracing={
+                "enabled": True,
+                "endpoint": "http://otel-collector:4317",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # Verify tracing env vars are NOT present (version override says 25.x)
+            assert "KC_TRACING_ENABLED" not in env_var_dict
+
+    def test_deployment_tracing_uses_default_image_when_none(self):
+        """Test that default image is used for version detection when image is None."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            # image is None - should use DEFAULT_KEYCLOAK_IMAGE
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+            tracing={
+                "enabled": True,
+                "endpoint": "http://otel-collector:4317",
+                "service_name": "default-keycloak",
+                "sample_rate": 1.0,
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # The default image is 26.x, so tracing should be enabled
+            assert "KC_TRACING_ENABLED" in env_var_dict
+            assert env_var_dict["KC_TRACING_ENABLED"].value == "true"

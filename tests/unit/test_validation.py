@@ -904,6 +904,93 @@ class TestValidateCompleteResource:
         assert "realmName" in str(exc_info.value)
 
 
+class TestSupportsTracing:
+    """Test cases for Keycloak tracing support version detection."""
+
+    def test_supports_tracing_v26(self):
+        """Test that Keycloak 26.x supports tracing."""
+        from keycloak_operator.utils.validation import supports_tracing
+
+        assert supports_tracing("keycloak:26.0.0") is True
+        assert supports_tracing("keycloak:26.4.0") is True
+        assert supports_tracing("quay.io/keycloak/keycloak:26.0.0") is True
+
+    def test_supports_tracing_v27_and_beyond(self):
+        """Test that Keycloak 27.x+ supports tracing."""
+        from keycloak_operator.utils.validation import supports_tracing
+
+        assert supports_tracing("keycloak:27.0.0") is True
+        assert supports_tracing("keycloak:30.0.0") is True
+
+    def test_no_tracing_v25(self):
+        """Test that Keycloak 25.x does NOT support tracing."""
+        from keycloak_operator.utils.validation import supports_tracing
+
+        assert supports_tracing("keycloak:25.0.0") is False
+        assert supports_tracing("keycloak:25.0.6") is False
+
+    def test_no_tracing_v24(self):
+        """Test that Keycloak 24.x does NOT support tracing."""
+        from keycloak_operator.utils.validation import supports_tracing
+
+        assert supports_tracing("keycloak:24.0.0") is False
+        assert supports_tracing("keycloak:24.0.5") is False
+
+    def test_tracing_unknown_version_defaults_true(self):
+        """Test that unknown versions assume tracing support."""
+        from keycloak_operator.utils.validation import supports_tracing
+
+        # Digest-based images default to True (assume modern)
+        assert supports_tracing("keycloak@sha256:abc123") is True
+        # Non-version tags default to True
+        assert supports_tracing("keycloak:latest") is True
+        # No tag defaults to True
+        assert supports_tracing("keycloak") is True
+
+    def test_tracing_version_override_takes_precedence(self):
+        """Test that version override takes precedence over image tag."""
+        from keycloak_operator.utils.validation import supports_tracing
+
+        # Custom image with 26.x tag but actually based on 25.x
+        assert supports_tracing("myregistry/keycloak:v1.0.0", "25.0.0") is False
+        # Custom image with no version but actually based on 26.x
+        assert supports_tracing("myregistry/keycloak:latest", "26.0.0") is True
+        # Override even overrides a valid version tag
+        assert supports_tracing("keycloak:26.0.0", "25.0.0") is False
+
+    def test_tracing_version_override_none_uses_image_tag(self):
+        """Test that None version override falls back to image tag detection."""
+        from keycloak_operator.utils.validation import supports_tracing
+
+        # None override - should use image tag
+        assert supports_tracing("keycloak:25.0.0", None) is False
+        assert supports_tracing("keycloak:26.0.0", None) is True
+
+    def test_tracing_invalid_version_defaults_true(self, caplog):
+        """Test that unparseable versions default to True with warning."""
+        import logging
+
+        from keycloak_operator.utils.validation import supports_tracing
+
+        caplog.set_level(logging.DEBUG)
+
+        # Invalid version string that can't be parsed
+        assert supports_tracing("keycloak:invalid", "not-a-version") is True
+        assert "Could not parse version" in caplog.text
+
+    def test_tracing_logs_version_detection(self, caplog):
+        """Test that version detection logs are generated."""
+        import logging
+
+        from keycloak_operator.utils.validation import supports_tracing
+
+        # Need debug level to see the logs
+        caplog.set_level(logging.DEBUG)
+
+        supports_tracing("keycloak:26.0.0")
+        assert "supports" in caplog.text or "tracing" in caplog.text.lower()
+
+
 class TestKeycloakPlaceholderValidation:
     """Test cases for Keycloak environment variable placeholder validation."""
 
