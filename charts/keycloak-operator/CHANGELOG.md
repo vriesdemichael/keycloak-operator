@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.5](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.4...chart-operator-v0.4.5) (2026-02-02)
+
+
+### Features
+
+* **operator:** add OpenTelemetry distributed tracing support ([5dc4dc0](https://github.com/vriesdemichael/keycloak-operator/commit/5dc4dc0f80179970a7771890e05cb78f650c96dd)), closes [#172](https://github.com/vriesdemichael/keycloak-operator/issues/172)
+
+
+### Bug Fixes
+
+* **operator:** address Copilot review feedback for tracing ([4f8e99c](https://github.com/vriesdemichael/keycloak-operator/commit/4f8e99c0daffbf5354cf3eef7d508d0b0835384a))
+
 ## [0.4.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.3...chart-operator-v0.4.4) (2026-02-01)
 
 
