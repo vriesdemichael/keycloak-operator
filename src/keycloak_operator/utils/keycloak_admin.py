@@ -7263,6 +7263,153 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
+    # =========================================================================
+    # Organization Identity Provider Linking (Keycloak 26+)
+    # =========================================================================
+    # Organizations can have their own identity providers for member authentication
+    # API endpoints: /admin/realms/{realm}/organizations/{orgId}/identity-providers
+
+    @api_get_list("organization identity providers")
+    async def get_organization_identity_providers(
+        self,
+        realm_name: str,
+        org_id: str,
+        namespace: str = "default",
+    ) -> list[dict]:
+        """
+        Get identity providers linked to an organization.
+
+        API: GET /admin/realms/{realm}/organizations/{orgId}/identity-providers
+
+        Args:
+            realm_name: Name of the realm
+            org_id: UUID of the organization
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of linked identity provider dictionaries
+        """
+        logger.debug(
+            f"Getting identity providers for organization '{org_id}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/organizations/{org_id}/identity-providers",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            return response.json() or []
+        elif response.status_code == 404:
+            # Organization not found or feature not enabled
+            logger.debug(
+                f"Organization '{org_id}' not found or IdP linking not available"
+            )
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Failed to get organization identity providers: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_update("organization identity provider link", conflict_is_success=True)
+    async def link_organization_identity_provider(
+        self,
+        realm_name: str,
+        org_id: str,
+        idp_alias: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Link an identity provider to an organization.
+
+        API: POST /admin/realms/{realm}/organizations/{orgId}/identity-providers
+
+        Note: The redirect_uri is configured on the IdP itself, not in this link.
+        Organizations link to existing realm IdPs by their alias.
+
+        Args:
+            realm_name: Name of the realm
+            org_id: UUID of the organization
+            idp_alias: Alias of the identity provider in the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if linked successfully or already linked
+        """
+        logger.info(
+            f"Linking identity provider '{idp_alias}' to organization '{org_id}' "
+            f"in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/organizations/{org_id}/identity-providers",
+            namespace,
+            json=idp_alias,  # Keycloak expects just the alias string
+        )
+
+        if response.status_code in (200, 201, 204):
+            return True
+        elif response.status_code == 409:
+            # Already linked
+            logger.debug(
+                f"Identity provider '{idp_alias}' already linked to organization"
+            )
+            return True
+        elif response.status_code == 404:
+            raise KeycloakAdminError(
+                f"Organization '{org_id}' or IdP '{idp_alias}' not found",
+                status_code=response.status_code,
+            )
+        else:
+            raise KeycloakAdminError(
+                f"Failed to link identity provider: {response.status_code} - {response.text}",
+                status_code=response.status_code,
+            )
+
+    @api_delete("organization identity provider link")
+    async def unlink_organization_identity_provider(
+        self,
+        realm_name: str,
+        org_id: str,
+        idp_alias: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Unlink an identity provider from an organization.
+
+        API: DELETE /admin/realms/{realm}/organizations/{orgId}/identity-providers/{alias}
+
+        Args:
+            realm_name: Name of the realm
+            org_id: UUID of the organization
+            idp_alias: Alias of the identity provider to unlink
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if unlinked successfully or was not linked
+        """
+        logger.info(
+            f"Unlinking identity provider '{idp_alias}' from organization '{org_id}' "
+            f"in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/organizations/{org_id}/identity-providers/{idp_alias}",
+            namespace,
+        )
+
+        if response.status_code in (200, 204, 404):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Failed to unlink identity provider: {response.status_code}",
+                status_code=response.status_code,
+            )
+
 
 async def get_keycloak_admin_client(
     keycloak_name: str,

@@ -1502,8 +1502,7 @@ class Organization(BaseModel):
         default_factory=list,
         alias="identityProviders",
         description="Identity providers linked to this organization. "
-        "NOTE: IdP linking is not yet implemented in reconciliation - this field "
-        "is reserved for future use.",
+        "Referenced IdPs must exist in the realm before they can be linked.",
     )
 
     @field_validator("name")

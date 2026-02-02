@@ -339,6 +339,14 @@ class TestRealmReconcilerGenerationTracking:
             patch.object(
                 realm_reconciler, "configure_user_federation", new_callable=AsyncMock
             ),
+            patch.object(
+                realm_reconciler,
+                "configure_client_profiles_and_policies",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
+                realm_reconciler, "configure_organizations", new_callable=AsyncMock
+            ),
             patch(
                 "keycloak_operator.utils.kubernetes.validate_keycloak_reference",
                 return_value=None,

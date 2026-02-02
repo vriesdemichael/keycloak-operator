@@ -279,3 +279,185 @@ class TestDeleteOrganization:
         )
 
         assert result is False
+
+
+class TestGetOrganizationIdentityProviders:
+    """Tests for get_organization_identity_providers method."""
+
+    @pytest.mark.asyncio
+    async def test_returns_idps_on_success(self, mock_admin_client):
+        """Should return list of linked IdPs when successful."""
+        mock_response = MockResponse(
+            200,
+            [
+                {"alias": "google", "internalId": "idp-1"},
+                {"alias": "azure-ad", "internalId": "idp-2"},
+            ],
+        )
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        idps = await mock_admin_client.get_organization_identity_providers(
+            "test-realm", "org-id", "default"
+        )
+
+        assert len(idps) == 2
+        assert idps[0]["alias"] == "google"
+        assert idps[1]["alias"] == "azure-ad"
+        mock_admin_client._make_request.assert_called_once_with(
+            "GET",
+            "realms/test-realm/organizations/org-id/identity-providers",
+            "default",
+        )
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_404(self, mock_admin_client):
+        """Should return empty list when organization not found."""
+        mock_response = MockResponse(404)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        idps = await mock_admin_client.get_organization_identity_providers(
+            "test-realm", "nonexistent", "default"
+        )
+
+        assert idps == []
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_null_response(self, mock_admin_client):
+        """Should return empty list when response is null."""
+        mock_response = MockResponse(200, None)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        idps = await mock_admin_client.get_organization_identity_providers(
+            "test-realm", "org-id", "default"
+        )
+
+        assert idps == []
+
+    @pytest.mark.asyncio
+    async def test_returns_empty_list_on_error(self, mock_admin_client):
+        """Should return empty list on error (decorator catches error)."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        # The @api_get_list decorator catches the error and returns []
+        idps = await mock_admin_client.get_organization_identity_providers(
+            "test-realm", "org-id", "default"
+        )
+
+        assert idps == []
+
+
+class TestLinkOrganizationIdentityProvider:
+    """Tests for link_organization_identity_provider method."""
+
+    @pytest.mark.asyncio
+    async def test_returns_true_on_success(self, mock_admin_client):
+        """Should return True on successful link."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.link_organization_identity_provider(
+            "test-realm", "org-id", "google", "default"
+        )
+
+        assert result is True
+        mock_admin_client._make_request.assert_called_once_with(
+            "POST",
+            "realms/test-realm/organizations/org-id/identity-providers",
+            "default",
+            json="google",  # Just the alias string
+        )
+
+    @pytest.mark.asyncio
+    async def test_returns_true_on_201(self, mock_admin_client):
+        """Should return True on 201 Created."""
+        mock_response = MockResponse(201)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.link_organization_identity_provider(
+            "test-realm", "org-id", "azure-ad", "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_true_on_conflict(self, mock_admin_client):
+        """Should return True when IdP already linked (idempotent)."""
+        mock_response = MockResponse(409)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.link_organization_identity_provider(
+            "test-realm", "org-id", "google", "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_not_found(self, mock_admin_client):
+        """Should return False when org or IdP not found (decorator catches)."""
+        mock_response = MockResponse(404)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        # The @api_update decorator catches the error
+        result = await mock_admin_client.link_organization_identity_provider(
+            "test-realm", "org-id", "nonexistent", "default"
+        )
+
+        assert result is False
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_failure(self, mock_admin_client):
+        """Should return False on unexpected error (decorator catches error)."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.link_organization_identity_provider(
+            "test-realm", "org-id", "google", "default"
+        )
+
+        assert result is False
+
+
+class TestUnlinkOrganizationIdentityProvider:
+    """Tests for unlink_organization_identity_provider method."""
+
+    @pytest.mark.asyncio
+    async def test_returns_true_on_success(self, mock_admin_client):
+        """Should return True on successful unlink."""
+        mock_response = MockResponse(204)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.unlink_organization_identity_provider(
+            "test-realm", "org-id", "google", "default"
+        )
+
+        assert result is True
+        mock_admin_client._make_request.assert_called_once_with(
+            "DELETE",
+            "realms/test-realm/organizations/org-id/identity-providers/google",
+            "default",
+        )
+
+    @pytest.mark.asyncio
+    async def test_returns_true_on_not_found(self, mock_admin_client):
+        """Should return True when link doesn't exist (idempotent)."""
+        mock_response = MockResponse(404)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.unlink_organization_identity_provider(
+            "test-realm", "org-id", "nonexistent", "default"
+        )
+
+        assert result is True
+
+    @pytest.mark.asyncio
+    async def test_returns_false_on_failure(self, mock_admin_client):
+        """Should return False on unexpected error (decorator catches error)."""
+        mock_response = MockResponse(500)
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        result = await mock_admin_client.unlink_organization_identity_provider(
+            "test-realm", "org-id", "google", "default"
+        )
+
+        assert result is False
