@@ -375,6 +375,166 @@
         }
       }
     },
+    "clientProfiles": {
+      "type": "array",
+      "description": "Client profiles that group executors for enforcing security policies on clients",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Profile name (unique identifier)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Profile description"
+          },
+          "executors": {
+            "type": "array",
+            "description": "List of executors that enforce policies",
+            "items": {
+              "type": "object",
+              "required": ["executor"],
+              "properties": {
+                "executor": {
+                  "type": "string",
+                  "description": "Executor type (e.g., pkce-enforcer, secure-client-authenticator)"
+                },
+                "configuration": {
+                  "type": "object",
+                  "description": "Executor-specific configuration",
+                  "additionalProperties": true
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "clientPolicies": {
+      "type": "array",
+      "description": "Client policies that apply profiles to clients based on conditions",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Policy name (unique identifier)"
+          },
+          "description": {
+            "type": "string",
+            "description": "Policy description"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether the policy is enabled"
+          },
+          "conditions": {
+            "type": "array",
+            "description": "Conditions that determine when the policy applies",
+            "items": {
+              "type": "object",
+              "required": ["condition"],
+              "properties": {
+                "condition": {
+                  "type": "string",
+                  "description": "Condition type (e.g., client-access-type, client-roles)"
+                },
+                "configuration": {
+                  "type": "object",
+                  "description": "Condition-specific configuration",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "profiles": {
+            "type": "array",
+            "description": "Profile names to apply when conditions match",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "organizations": {
+      "type": "array",
+      "description": "Organizations for multi-tenancy support (Keycloak 26+)",
+      "items": {
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Organization name (unique identifier within realm)"
+          },
+          "alias": {
+            "type": "string",
+            "description": "URL-friendly alias for the organization"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description of the organization"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true,
+            "description": "Whether this organization is enabled"
+          },
+          "domains": {
+            "type": "array",
+            "description": "Email domains associated with this organization",
+            "items": {
+              "type": "object",
+              "required": ["name"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Domain name (e.g., example.com)"
+                },
+                "verified": {
+                  "type": "boolean",
+                  "default": false,
+                  "description": "Whether this domain has been verified"
+                }
+              }
+            }
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Custom attributes for the organization",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "identityProviders": {
+            "type": "array",
+            "description": "Identity providers linked to this organization",
+            "items": {
+              "type": "object",
+              "required": ["alias"],
+              "properties": {
+                "alias": {
+                  "type": "string",
+                  "description": "Alias of the identity provider configured in the realm"
+                },
+                "redirectUri": {
+                  "type": "string",
+                  "description": "Custom redirect URI for this IdP within the organization"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "userFederation": {
       "type": "array",
       "description": "User federation provider configurations (LDAP, AD, Kerberos)",

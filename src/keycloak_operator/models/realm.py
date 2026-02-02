@@ -1242,6 +1242,296 @@ class KeycloakSMTPConfig(BaseModel):
             raise ValueError("Cannot specify both password and password_secret")
 
 
+# =============================================================================
+# Client Profiles & Policies (Issue #306)
+# =============================================================================
+# These models enable declarative management of OAuth2/OIDC client behavior
+# through profiles (executor configurations) and policies (conditional rules).
+
+
+class ClientProfileExecutor(BaseModel):
+    """
+    Executor configuration for a client profile.
+
+    Executors enforce specific behaviors on clients, such as:
+    - secure-client-authenticator: Require specific authentication methods
+    - pkce-enforcer: Enforce PKCE for authorization code flow
+    - consent-required: Require user consent
+    - secure-redirect-uris-enforcer: Validate redirect URIs
+
+    Example:
+        ClientProfileExecutor(
+            executor="pkce-enforcer",
+            configuration={"auto-configure": "true"}
+        )
+    """
+
+    model_config = {"populate_by_name": True}
+
+    executor: str = Field(
+        ...,
+        description="Executor provider ID (e.g., 'pkce-enforcer', 'secure-client-authenticator')",
+    )
+    configuration: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Executor-specific configuration as key-value pairs",
+    )
+
+    @field_validator("executor")
+    @classmethod
+    def validate_executor(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Executor must be a non-empty string")
+        return v
+
+
+class ClientProfile(BaseModel):
+    """
+    Client profile defining a set of executors applied to matching clients.
+
+    Client profiles group multiple executors together under a single name.
+    Profiles are referenced by client policies to apply their executors
+    when policy conditions match.
+
+    Example YAML:
+        clientProfiles:
+          - name: fapi-advanced
+            description: FAPI 2.0 Advanced Security Profile
+            executors:
+              - executor: pkce-enforcer
+                configuration:
+                  auto-configure: "true"
+              - executor: secure-client-authenticator
+                configuration:
+                  allowed-client-authenticators:
+                    - private_key_jwt
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Profile name (unique within realm)")
+    description: str | None = Field(None, description="Human-readable description")
+    executors: list[ClientProfileExecutor] = Field(
+        default_factory=list,
+        description="List of executors that define this profile's behavior",
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Profile name must be a non-empty string")
+        return v
+
+
+class ClientPolicyCondition(BaseModel):
+    """
+    Condition that determines when a client policy applies.
+
+    Conditions evaluate client attributes to decide if the policy's
+    profiles should be applied. Multiple conditions in a policy are
+    ANDed together.
+
+    Common condition types:
+    - client-roles: Match clients with specific roles
+    - client-scopes: Match clients with specific scopes
+    - client-access-type: Match by access type (public/confidential)
+    - any-client: Match all clients
+
+    Example:
+        ClientPolicyCondition(
+            condition="client-access-type",
+            configuration={"type": ["confidential"]}
+        )
+    """
+
+    model_config = {"populate_by_name": True}
+
+    condition: str = Field(
+        ...,
+        description="Condition provider ID (e.g., 'client-access-type', 'client-roles')",
+    )
+    configuration: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Condition-specific configuration",
+    )
+
+    @field_validator("condition")
+    @classmethod
+    def validate_condition(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Condition must be a non-empty string")
+        return v
+
+
+class ClientPolicy(BaseModel):
+    """
+    Client policy that conditionally applies profiles to clients.
+
+    Policies define WHEN profiles should be applied (via conditions)
+    and WHICH profiles to apply. When all conditions match, all
+    referenced profiles' executors are enforced on the client.
+
+    Example YAML:
+        clientPolicies:
+          - name: enforce-fapi-for-confidential
+            description: Apply FAPI profile to all confidential clients
+            enabled: true
+            conditions:
+              - condition: client-access-type
+                configuration:
+                  type:
+                    - confidential
+            profiles:
+              - fapi-advanced
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique within realm)")
+    description: str | None = Field(None, description="Human-readable description")
+    enabled: bool = Field(True, description="Whether this policy is active")
+    conditions: list[ClientPolicyCondition] = Field(
+        default_factory=list,
+        description="Conditions that must ALL match for this policy to apply",
+    )
+    profiles: list[str] = Field(
+        default_factory=list,
+        description="Names of client profiles to apply when conditions match",
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Policy name must be a non-empty string")
+        return v
+
+
+# =============================================================================
+# Organization Models (Keycloak 26+, Issue #398)
+# =============================================================================
+
+
+class OrganizationDomain(BaseModel):
+    """
+    Domain configuration for an organization.
+
+    Domains are used to identify members of an organization based on their
+    email domain. Members with emails matching verified domains can be
+    automatically associated with the organization.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Domain name (e.g., 'example.com')")
+    verified: bool = Field(
+        False,
+        description="Whether this domain has been verified for the organization",
+    )
+
+
+class OrganizationIdentityProvider(BaseModel):
+    """
+    Identity provider linked to an organization.
+
+    Organizations can have their own identity providers that members use
+    for authentication. This enables federated identity for organization members.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    alias: str = Field(
+        ..., description="Alias of the identity provider configured in the realm"
+    )
+    redirect_uri: str | None = Field(
+        None,
+        alias="redirectUri",
+        description="Custom redirect URI for this IdP within the organization",
+    )
+
+
+class Organization(BaseModel):
+    """
+    Organization definition for multi-tenancy support (Keycloak 26+).
+
+    Organizations provide a way to group users and resources for multi-tenant
+    applications. Each organization can have its own members, domains, and
+    identity providers.
+
+    IMPORTANT: Organizations require Keycloak version 26.0.0 or higher.
+    The operator will validate the Keycloak version before attempting
+    to create organizations.
+
+    Example YAML:
+        organizations:
+          - name: acme-corp
+            alias: acme
+            description: ACME Corporation
+            enabled: true
+            domains:
+              - name: acme.com
+                verified: true
+            attributes:
+              industry: ["technology"]
+              tier: ["enterprise"]
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(
+        ..., description="Organization name (unique identifier within realm)"
+    )
+    alias: str | None = Field(
+        None,
+        description="URL-friendly alias for the organization (defaults to name if not provided)",
+    )
+    description: str | None = Field(
+        None, description="Human-readable description of the organization"
+    )
+    enabled: bool = Field(True, description="Whether this organization is enabled")
+    domains: list[OrganizationDomain] = Field(
+        default_factory=list,
+        description="Email domains associated with this organization",
+    )
+    attributes: dict[str, list[str]] = Field(
+        default_factory=dict,
+        description="Custom attributes for the organization",
+    )
+    identity_providers: list[OrganizationIdentityProvider] = Field(
+        default_factory=list,
+        alias="identityProviders",
+        description="Identity providers linked to this organization",
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v):
+        if not v or not isinstance(v, str):
+            raise ValueError("Organization name must be a non-empty string")
+        if len(v) > 255:
+            raise ValueError("Organization name must be 255 characters or less")
+        return v
+
+    @field_validator("alias")
+    @classmethod
+    def validate_alias(cls, v):
+        if v is None:
+            return v
+        if not isinstance(v, str):
+            raise ValueError("Organization alias must be a string")
+        if len(v) > 255:
+            raise ValueError("Organization alias must be 255 characters or less")
+        # Alias should be URL-friendly
+        invalid_chars = ["/", "\\", "?", "#", "%", "&", "=", "+", " "]
+        for char in invalid_chars:
+            if char in v:
+                raise ValueError(
+                    f"Organization alias contains invalid character: {char}"
+                )
+        return v
+
+
 class KeycloakRealmSpec(BaseModel):
     """
     Specification for a KeycloakRealm resource.
@@ -1417,6 +1707,24 @@ class KeycloakRealmSpec(BaseModel):
         default_factory=KeycloakEventsConfig,
         alias="eventsConfig",
         description="Event logging configuration",
+    )
+
+    # Client profiles and policies (Issue #306)
+    client_profiles: list[ClientProfile] = Field(
+        default_factory=list,
+        alias="clientProfiles",
+        description="Client profiles defining executor configurations for OAuth2/OIDC compliance",
+    )
+    client_policies: list[ClientPolicy] = Field(
+        default_factory=list,
+        alias="clientPolicies",
+        description="Client policies that conditionally apply profiles to clients",
+    )
+
+    # Organizations (Keycloak 26+, Issue #398)
+    organizations: list[Organization] = Field(
+        default_factory=list,
+        description="Organizations for multi-tenancy support (requires Keycloak 26.0.0+)",
     )
 
     @field_validator("realm_name")

@@ -6000,6 +6000,1285 @@ class KeycloakAdminClient:
                 status_code=response.status_code,
             )
 
+    # =========================================================================
+    # Client Profiles & Policies (Issue #306)
+    # =========================================================================
+    # These methods manage OAuth2/OIDC client profiles and policies which
+    # define and enforce client behavior requirements (e.g., FAPI compliance).
+
+    @api_get_single("client profiles")
+    async def get_client_profiles(
+        self, realm_name: str, namespace: str = "default"
+    ) -> dict[str, Any] | None:
+        """
+        Get client profiles for a realm.
+
+        Client profiles define sets of executors that enforce client behavior.
+        The response includes both realm-level profiles and global (built-in) profiles.
+
+        API: GET /admin/realms/{realm}/client-policies/profiles
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Dict with 'profiles' (realm-defined) and 'globalProfiles' (built-in),
+            or None on error
+
+        Example:
+            profiles_data = await admin_client.get_client_profiles("my-realm")
+            if profiles_data:
+                for profile in profiles_data.get("profiles", []):
+                    print(f"Profile: {profile['name']}")
+        """
+        logger.debug(f"Fetching client profiles for realm '{realm_name}'")
+
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/client-policies/profiles", namespace
+        )
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_update("client profiles")
+    async def update_client_profiles(
+        self,
+        realm_name: str,
+        profiles: list[dict[str, Any]],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update client profiles for a realm.
+
+        This replaces ALL realm-level profiles with the provided list.
+        Global profiles cannot be modified through this API.
+
+        API: PUT /admin/realms/{realm}/client-policies/profiles
+
+        Args:
+            realm_name: Name of the realm
+            profiles: List of profile configurations to set
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+
+        Example:
+            profiles = [
+                {
+                    "name": "fapi-advanced",
+                    "description": "FAPI 2.0 Advanced Security Profile",
+                    "executors": [
+                        {"executor": "pkce-enforcer", "configuration": {"auto-configure": "true"}}
+                    ]
+                }
+            ]
+            success = await admin_client.update_client_profiles("my-realm", profiles)
+        """
+        logger.info(f"Updating client profiles for realm '{realm_name}'")
+
+        # The API expects {profiles: [...]} structure
+        payload = {"profiles": profiles}
+
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/client-policies/profiles",
+            namespace,
+            json=payload,
+        )
+
+        if response.status_code in (200, 204):
+            logger.info(
+                f"Successfully updated {len(profiles)} client profiles in realm '{realm_name}'"
+            )
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_get_single("client policies")
+    async def get_client_policies(
+        self, realm_name: str, namespace: str = "default"
+    ) -> dict[str, Any] | None:
+        """
+        Get client policies for a realm.
+
+        Client policies define conditions for when profiles should be applied.
+        The response includes both realm-level policies and global (built-in) policies.
+
+        API: GET /admin/realms/{realm}/client-policies/policies
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Dict with 'policies' (realm-defined) and 'globalPolicies' (built-in),
+            or None on error
+
+        Example:
+            policies_data = await admin_client.get_client_policies("my-realm")
+            if policies_data:
+                for policy in policies_data.get("policies", []):
+                    print(f"Policy: {policy['name']}, Enabled: {policy.get('enabled', True)}")
+        """
+        logger.debug(f"Fetching client policies for realm '{realm_name}'")
+
+        response = await self._make_request(
+            "GET", f"realms/{realm_name}/client-policies/policies", namespace
+        )
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_update("client policies")
+    async def update_client_policies(
+        self,
+        realm_name: str,
+        policies: list[dict[str, Any]],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update client policies for a realm.
+
+        This replaces ALL realm-level policies with the provided list.
+        Global policies cannot be modified through this API.
+
+        API: PUT /admin/realms/{realm}/client-policies/policies
+
+        Args:
+            realm_name: Name of the realm
+            policies: List of policy configurations to set
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+
+        Example:
+            policies = [
+                {
+                    "name": "enforce-pkce-for-public",
+                    "description": "Enforce PKCE for public clients",
+                    "enabled": True,
+                    "conditions": [
+                        {"condition": "client-access-type", "configuration": {"type": ["public"]}}
+                    ],
+                    "profiles": ["fapi-baseline"]
+                }
+            ]
+            success = await admin_client.update_client_policies("my-realm", policies)
+        """
+        logger.info(f"Updating client policies for realm '{realm_name}'")
+
+        # The API expects {policies: [...]} structure
+        payload = {"policies": policies}
+
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/client-policies/policies",
+            namespace,
+            json=payload,
+        )
+
+        if response.status_code in (200, 204):
+            logger.info(
+                f"Successfully updated {len(policies)} client policies in realm '{realm_name}'"
+            )
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    # =========================================================================
+    # Authorization Services (Issue #313, #314, #315)
+    # =========================================================================
+    # These methods manage fine-grained authorization services including
+    # resource server settings, scopes, resources, policies, and permissions.
+
+    # -------------------------------------------------------------------------
+    # Resource Server Settings
+    # -------------------------------------------------------------------------
+
+    @api_get_single("resource server settings")
+    async def get_resource_server_settings(
+        self, realm_name: str, client_uuid: str, namespace: str = "default"
+    ) -> dict[str, Any] | None:
+        """
+        Get authorization resource server settings for a client.
+
+        API: GET /admin/realms/{realm}/clients/{id}/authz/resource-server
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client (not clientId)
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Resource server settings dict or None if not found
+        """
+        logger.debug(
+            f"Fetching resource server settings for client '{client_uuid}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            # Authorization not enabled on client
+            return None
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_update("resource server settings")
+    async def update_resource_server_settings(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        settings: dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update authorization resource server settings for a client.
+
+        API: PUT /admin/realms/{realm}/clients/{id}/authz/resource-server
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            settings: Resource server settings (policyEnforcementMode, decisionStrategy, etc.)
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful
+        """
+        logger.info(
+            f"Updating resource server settings for client '{client_uuid}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server",
+            namespace,
+            json=settings,
+        )
+
+        if response.status_code in (200, 204):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    # -------------------------------------------------------------------------
+    # Authorization Scopes
+    # -------------------------------------------------------------------------
+
+    @api_get_list("authorization scopes")
+    async def get_authorization_scopes(
+        self, realm_name: str, client_uuid: str, namespace: str = "default"
+    ) -> list[dict[str, Any]]:
+        """
+        Get all authorization scopes for a client's resource server.
+
+        API: GET /admin/realms/{realm}/clients/{id}/authz/resource-server/scope
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of scope representations
+        """
+        logger.debug(
+            f"Fetching authorization scopes for client '{client_uuid}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/scope",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_create("authorization scope")
+    async def create_authorization_scope(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        scope: dict[str, Any],
+        namespace: str = "default",
+    ) -> dict[str, Any] | None:
+        """
+        Create an authorization scope.
+
+        API: POST /admin/realms/{realm}/clients/{id}/authz/resource-server/scope
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            scope: Scope configuration (name, displayName, iconUri)
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Created scope with ID or None on error
+        """
+        logger.info(
+            f"Creating authorization scope '{scope.get('name')}' for client '{client_uuid}'"
+        )
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/scope",
+            namespace,
+            json=scope,
+        )
+
+        if response.status_code == 201:
+            # Response body contains the created scope
+            return response.json()
+        elif response.status_code == 409:
+            # Conflict - scope already exists
+            logger.warning(f"Scope '{scope.get('name')}' already exists")
+            return None
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_update("authorization scope")
+    async def update_authorization_scope(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        scope_id: str,
+        scope: dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an authorization scope.
+
+        API: PUT /admin/realms/{realm}/clients/{id}/authz/resource-server/scope/{scope-id}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            scope_id: UUID of the scope
+            scope: Updated scope configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful
+        """
+        logger.info(f"Updating authorization scope '{scope_id}'")
+
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/scope/{scope_id}",
+            namespace,
+            json=scope,
+        )
+
+        if response.status_code in (200, 204):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_delete("authorization scope")
+    async def delete_authorization_scope(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        scope_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Delete an authorization scope.
+
+        API: DELETE /admin/realms/{realm}/clients/{id}/authz/resource-server/scope/{scope-id}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            scope_id: UUID of the scope to delete
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if deleted or not found
+        """
+        logger.info(f"Deleting authorization scope '{scope_id}'")
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/scope/{scope_id}",
+            namespace,
+        )
+
+        if response.status_code in (200, 204, 404):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    # -------------------------------------------------------------------------
+    # Authorization Resources
+    # -------------------------------------------------------------------------
+
+    @api_get_list("authorization resources")
+    async def get_authorization_resources(
+        self, realm_name: str, client_uuid: str, namespace: str = "default"
+    ) -> list[dict[str, Any]]:
+        """
+        Get all authorization resources for a client's resource server.
+
+        API: GET /admin/realms/{realm}/clients/{id}/authz/resource-server/resource
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of resource representations
+        """
+        logger.debug(
+            f"Fetching authorization resources for client '{client_uuid}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/resource",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_create("authorization resource")
+    async def create_authorization_resource(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        resource: dict[str, Any],
+        namespace: str = "default",
+    ) -> dict[str, Any] | None:
+        """
+        Create an authorization resource.
+
+        API: POST /admin/realms/{realm}/clients/{id}/authz/resource-server/resource
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            resource: Resource configuration (name, uris, type, scopes, etc.)
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Created resource with ID or None on error
+        """
+        logger.info(
+            f"Creating authorization resource '{resource.get('name')}' for client '{client_uuid}'"
+        )
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/resource",
+            namespace,
+            json=resource,
+        )
+
+        if response.status_code == 201:
+            return response.json()
+        elif response.status_code == 409:
+            logger.warning(f"Resource '{resource.get('name')}' already exists")
+            return None
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_update("authorization resource")
+    async def update_authorization_resource(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        resource_id: str,
+        resource: dict[str, Any],
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an authorization resource.
+
+        API: PUT /admin/realms/{realm}/clients/{id}/authz/resource-server/resource/{resource-id}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            resource_id: UUID of the resource
+            resource: Updated resource configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful
+        """
+        logger.info(f"Updating authorization resource '{resource_id}'")
+
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/resource/{resource_id}",
+            namespace,
+            json=resource,
+        )
+
+        if response.status_code in (200, 204):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_delete("authorization resource")
+    async def delete_authorization_resource(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        resource_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Delete an authorization resource.
+
+        API: DELETE /admin/realms/{realm}/clients/{id}/authz/resource-server/resource/{resource-id}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            resource_id: UUID of the resource to delete
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if deleted or not found
+        """
+        logger.info(f"Deleting authorization resource '{resource_id}'")
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/resource/{resource_id}",
+            namespace,
+        )
+
+        if response.status_code in (200, 204, 404):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    # =========================================================================
+    # Authorization Policies API Methods
+    # =========================================================================
+
+    async def get_authorization_policies(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        namespace: str = "default",
+    ) -> list[dict]:
+        """
+        Get all authorization policies for a client's resource server.
+
+        API: GET /admin/realms/{realm}/clients/{id}/authz/resource-server/policy
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of policy representations
+        """
+        logger.debug(
+            f"Getting authorization policies for client '{client_uuid}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            return response.json()
+        elif response.status_code == 404:
+            logger.debug("No policies found or authorization not enabled")
+            return []
+        else:
+            logger.warning(
+                f"Failed to get authorization policies: {response.status_code}"
+            )
+            return []
+
+    async def get_authorization_policy_by_name(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        policy_name: str,
+        namespace: str = "default",
+    ) -> dict | None:
+        """
+        Get a specific authorization policy by name.
+
+        API: GET /admin/realms/{realm}/clients/{id}/authz/resource-server/policy?name={name}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            policy_name: Name of the policy
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Policy representation or None if not found
+        """
+        logger.debug(f"Getting authorization policy '{policy_name}' by name")
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy",
+            namespace,
+            params={"name": policy_name, "first": 0, "max": 1},
+        )
+
+        if response.status_code == 200:
+            policies = response.json()
+            if policies:
+                return policies[0]
+            return None
+        elif response.status_code == 404:
+            return None
+        else:
+            logger.warning(f"Failed to get policy by name: {response.status_code}")
+            return None
+
+    @api_create("authorization policy")
+    async def create_authorization_policy(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        policy_type: str,
+        policy_data: dict,
+        namespace: str = "default",
+    ) -> dict | None:
+        """
+        Create an authorization policy.
+
+        API: POST /admin/realms/{realm}/clients/{id}/authz/resource-server/policy/{type}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            policy_type: Policy type (role, user, group, client, time, js, aggregate, regex)
+            policy_data: Policy configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Created policy representation or None on failure
+        """
+        logger.info(
+            f"Creating authorization policy '{policy_data.get('name')}' of type '{policy_type}'"
+        )
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_type}",
+            namespace,
+            json_data=policy_data,
+        )
+
+        if response.status_code == 201:
+            # Try to get created policy from response or fetch by name
+            try:
+                return response.json()
+            except Exception:
+                return await self.get_authorization_policy_by_name(
+                    realm_name, client_uuid, policy_data["name"], namespace
+                )
+        elif response.status_code == 409:
+            logger.warning(f"Policy '{policy_data.get('name')}' already exists")
+            return await self.get_authorization_policy_by_name(
+                realm_name, client_uuid, policy_data["name"], namespace
+            )
+        else:
+            raise KeycloakAdminError(
+                f"Failed to create policy: {response.status_code} - {response.text}",
+                status_code=response.status_code,
+            )
+
+    @api_update("authorization policy")
+    async def update_authorization_policy(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        policy_type: str,
+        policy_id: str,
+        policy_data: dict,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an authorization policy.
+
+        API: PUT /admin/realms/{realm}/clients/{id}/authz/resource-server/policy/{type}/{policy-id}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            policy_type: Policy type (role, user, group, client, time, js, aggregate, regex)
+            policy_id: UUID of the policy to update
+            policy_data: Updated policy configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if updated successfully
+        """
+        logger.info(f"Updating authorization policy '{policy_data.get('name')}'")
+
+        # Ensure ID is set in the payload
+        policy_data["id"] = policy_id
+
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_type}/{policy_id}",
+            namespace,
+            json_data=policy_data,
+        )
+
+        if response.status_code in (200, 204):
+            return True
+        elif response.status_code == 404:
+            raise KeycloakAdminError(
+                f"Policy not found: {policy_id}", status_code=response.status_code
+            )
+        else:
+            raise KeycloakAdminError(
+                f"Failed to update policy: {response.status_code} - {response.text}",
+                status_code=response.status_code,
+            )
+
+    @api_delete("authorization policy")
+    async def delete_authorization_policy(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        policy_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Delete an authorization policy.
+
+        API: DELETE /admin/realms/{realm}/clients/{id}/authz/resource-server/policy/{policy-id}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            policy_id: UUID of the policy to delete
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if deleted or not found
+        """
+        logger.info(f"Deleting authorization policy '{policy_id}'")
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_id}",
+            namespace,
+        )
+
+        if response.status_code in (200, 204, 404):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    # =========================================================================
+    # Authorization Permissions API
+    # =========================================================================
+    # Permissions tie policies to resources/scopes, completing the authorization model.
+    # API endpoints: /admin/realms/{realm}/clients/{id}/authz/resource-server/permission
+
+    async def get_authorization_permissions(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        namespace: str = "default",
+    ) -> list[dict]:
+        """
+        Get all authorization permissions for a client's resource server.
+
+        API: GET /admin/realms/{realm}/clients/{id}/authz/resource-server/permission
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of permission dictionaries
+        """
+        logger.debug(
+            f"Getting authorization permissions for client '{client_uuid}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            return response.json() or []
+        elif response.status_code == 404:
+            logger.debug("No permissions found or authorization not enabled")
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Failed to get authorization permissions: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    async def get_authorization_permission_by_name(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        permission_name: str,
+        namespace: str = "default",
+    ) -> dict | None:
+        """
+        Get a specific authorization permission by name.
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            permission_name: Name of the permission to find
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Permission dictionary or None if not found
+        """
+        logger.debug(f"Getting authorization permission '{permission_name}' by name")
+
+        permissions = await self.get_authorization_permissions(
+            realm_name, client_uuid, namespace
+        )
+
+        for permission in permissions:
+            if permission.get("name") == permission_name:
+                return permission
+
+        return None
+
+    @api_create("authorization permission")
+    async def create_authorization_permission(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        permission_type: str,
+        permission_data: dict,
+        namespace: str = "default",
+    ) -> dict | None:
+        """
+        Create an authorization permission.
+
+        API: POST /admin/realms/{realm}/clients/{id}/authz/resource-server/permission/{permission_type}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            permission_type: Type of permission ('resource' or 'scope')
+            permission_data: Permission configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Created permission or None
+        """
+        logger.info(
+            f"Creating authorization permission '{permission_data.get('name')}' of type '{permission_type}'"
+        )
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission/{permission_type}",
+            namespace,
+            json=permission_data,
+        )
+
+        if response.status_code == 201:
+            # Get the created permission by name
+            return await self.get_authorization_permission_by_name(
+                realm_name, client_uuid, permission_data.get("name"), namespace
+            )
+        elif response.status_code == 409:
+            # Already exists, get and return existing
+            logger.debug(f"Permission '{permission_data.get('name')}' already exists")
+            return await self.get_authorization_permission_by_name(
+                realm_name, client_uuid, permission_data.get("name"), namespace
+            )
+        else:
+            raise KeycloakAdminError(
+                f"Failed to create permission: {response.status_code} - {response.text}",
+                status_code=response.status_code,
+            )
+
+    @api_update("authorization permission")
+    async def update_authorization_permission(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        permission_type: str,
+        permission_id: str,
+        permission_data: dict,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an authorization permission.
+
+        API: PUT /admin/realms/{realm}/clients/{id}/authz/resource-server/permission/{permission_type}/{permission_id}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            permission_type: Type of permission ('resource' or 'scope')
+            permission_id: UUID of the permission to update
+            permission_data: Updated permission configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful
+        """
+        logger.info(
+            f"Updating authorization permission '{permission_data.get('name')}'"
+        )
+
+        # Ensure ID is in the payload
+        permission_data["id"] = permission_id
+
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission/{permission_type}/{permission_id}",
+            namespace,
+            json=permission_data,
+        )
+
+        if response.status_code in (200, 204):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Failed to update permission: {response.status_code} - {response.text}",
+                status_code=response.status_code,
+            )
+
+    @api_delete("authorization permission")
+    async def delete_authorization_permission(
+        self,
+        realm_name: str,
+        client_uuid: str,
+        permission_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Delete an authorization permission.
+
+        API: DELETE /admin/realms/{realm}/clients/{id}/authz/resource-server/permission/{permission_id}
+
+        Args:
+            realm_name: Name of the realm
+            client_uuid: Internal UUID of the client
+            permission_id: UUID of the permission to delete
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if deleted or not found
+        """
+        logger.info(f"Deleting authorization permission '{permission_id}'")
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission/{permission_id}",
+            namespace,
+        )
+
+        if response.status_code in (200, 204, 404):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    # =========================================================================
+    # Organizations API (Keycloak 26+)
+    # =========================================================================
+    # Organizations provide multi-tenancy support in Keycloak 26.0.0+
+    # API endpoints: /admin/realms/{realm}/organizations
+
+    async def get_organizations(
+        self,
+        realm_name: str,
+        namespace: str = "default",
+    ) -> list[dict]:
+        """
+        Get all organizations in a realm.
+
+        API: GET /admin/realms/{realm}/organizations
+
+        Args:
+            realm_name: Name of the realm
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of organization dictionaries
+        """
+        logger.debug(f"Getting organizations for realm '{realm_name}'")
+
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/organizations",
+            namespace,
+        )
+
+        if response.status_code == 200:
+            return response.json() or []
+        elif response.status_code == 404:
+            # Organizations feature might not be enabled
+            logger.debug(
+                "Organizations endpoint not found - feature may not be enabled"
+            )
+            return []
+        else:
+            raise KeycloakAdminError(
+                f"Failed to get organizations: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    async def get_organization_by_name(
+        self,
+        realm_name: str,
+        org_name: str,
+        namespace: str = "default",
+    ) -> dict | None:
+        """
+        Get an organization by name.
+
+        Args:
+            realm_name: Name of the realm
+            org_name: Name of the organization
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Organization dictionary or None if not found
+        """
+        logger.debug(f"Getting organization '{org_name}' in realm '{realm_name}'")
+
+        # Search by name
+        response = await self._make_request(
+            "GET",
+            f"realms/{realm_name}/organizations",
+            namespace,
+            params={"search": org_name, "exact": "true"},
+        )
+
+        if response.status_code == 200:
+            orgs = response.json() or []
+            for org in orgs:
+                if org.get("name") == org_name:
+                    return org
+            return None
+        elif response.status_code == 404:
+            return None
+        else:
+            raise KeycloakAdminError(
+                f"Failed to get organization: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_create("organization")
+    async def create_organization(
+        self,
+        realm_name: str,
+        organization_data: dict,
+        namespace: str = "default",
+    ) -> dict | None:
+        """
+        Create an organization.
+
+        API: POST /admin/realms/{realm}/organizations
+
+        Args:
+            realm_name: Name of the realm
+            organization_data: Organization configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Created organization or None
+        """
+        logger.info(
+            f"Creating organization '{organization_data.get('name')}' in realm '{realm_name}'"
+        )
+
+        response = await self._make_request(
+            "POST",
+            f"realms/{realm_name}/organizations",
+            namespace,
+            json=organization_data,
+        )
+
+        if response.status_code == 201:
+            # Get the created organization by name
+            return await self.get_organization_by_name(
+                realm_name, organization_data.get("name"), namespace
+            )
+        elif response.status_code == 409:
+            # Already exists
+            logger.debug(
+                f"Organization '{organization_data.get('name')}' already exists"
+            )
+            return await self.get_organization_by_name(
+                realm_name, organization_data.get("name"), namespace
+            )
+        else:
+            raise KeycloakAdminError(
+                f"Failed to create organization: {response.status_code} - {response.text}",
+                status_code=response.status_code,
+            )
+
+    @api_update("organization")
+    async def update_organization(
+        self,
+        realm_name: str,
+        org_id: str,
+        organization_data: dict,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Update an organization.
+
+        API: PUT /admin/realms/{realm}/organizations/{id}
+
+        Args:
+            realm_name: Name of the realm
+            org_id: UUID of the organization
+            organization_data: Updated organization configuration
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful
+        """
+        logger.info(f"Updating organization '{organization_data.get('name')}'")
+
+        # Ensure ID is in the payload
+        organization_data["id"] = org_id
+
+        response = await self._make_request(
+            "PUT",
+            f"realms/{realm_name}/organizations/{org_id}",
+            namespace,
+            json=organization_data,
+        )
+
+        if response.status_code in (200, 204):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Failed to update organization: {response.status_code} - {response.text}",
+                status_code=response.status_code,
+            )
+
+    @api_delete("organization")
+    async def delete_organization(
+        self,
+        realm_name: str,
+        org_id: str,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Delete an organization.
+
+        API: DELETE /admin/realms/{realm}/organizations/{id}
+
+        Args:
+            realm_name: Name of the realm
+            org_id: UUID of the organization
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if deleted or not found
+        """
+        logger.info(f"Deleting organization '{org_id}'")
+
+        response = await self._make_request(
+            "DELETE",
+            f"realms/{realm_name}/organizations/{org_id}",
+            namespace,
+        )
+
+        if response.status_code in (200, 204, 404):
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
 
 async def get_keycloak_admin_client(
     keycloak_name: str,

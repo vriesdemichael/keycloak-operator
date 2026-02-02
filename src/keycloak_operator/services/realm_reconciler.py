@@ -182,6 +182,16 @@ class KeycloakRealmReconciler(BaseReconciler):
         if realm_spec.default_groups:
             await self.configure_default_groups(realm_spec, name, namespace)
 
+        # Configure client profiles and policies (Issue #306)
+        if realm_spec.client_profiles or realm_spec.client_policies:
+            await self.configure_client_profiles_and_policies(
+                realm_spec, name, namespace
+            )
+
+        # Configure organizations (Issue #398, Keycloak 26+)
+        if realm_spec.organizations:
+            await self.configure_organizations(realm_spec, name, namespace)
+
         # Return status information
         operator_ref = realm_spec.operator_ref
         target_namespace = operator_ref.namespace
@@ -2832,6 +2842,252 @@ class KeycloakRealmReconciler(BaseReconciler):
                 self.logger.warning(
                     f"Failed to remove default group '{group_path}': {e}"
                 )
+
+    async def configure_client_profiles_and_policies(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure client profiles and policies for the realm.
+
+        Client profiles define sets of executors that enforce client behavior
+        (e.g., PKCE, secure authentication, redirect URI validation).
+        Client policies define conditions for when profiles should be applied.
+
+        This is a full replace operation - all realm-level profiles/policies
+        are replaced with the desired state from the CR.
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(
+            f"Configuring client profiles and policies for realm {spec.realm_name}"
+        )
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # Configure client profiles
+        if spec.client_profiles:
+            try:
+                # Convert our models to Keycloak API format
+                profiles_payload = []
+                for profile in spec.client_profiles:
+                    profile_dict: dict[str, Any] = {
+                        "name": profile.name,
+                    }
+                    if profile.description:
+                        profile_dict["description"] = profile.description
+                    if profile.executors:
+                        profile_dict["executors"] = [
+                            {
+                                "executor": executor.executor,
+                                "configuration": executor.configuration,
+                            }
+                            for executor in profile.executors
+                        ]
+                    profiles_payload.append(profile_dict)
+
+                success = await admin_client.update_client_profiles(
+                    realm_name, profiles_payload, namespace
+                )
+                if success:
+                    self.logger.info(
+                        f"Successfully configured {len(profiles_payload)} client profiles"
+                    )
+                else:
+                    self.logger.warning("Failed to update client profiles")
+            except Exception as e:
+                self.logger.warning(f"Failed to configure client profiles: {e}")
+        else:
+            # No profiles specified - clear all realm-level profiles
+            try:
+                await admin_client.update_client_profiles(realm_name, [], namespace)
+                self.logger.debug("Cleared all realm-level client profiles")
+            except Exception as e:
+                self.logger.warning(f"Failed to clear client profiles: {e}")
+
+        # Configure client policies
+        if spec.client_policies:
+            try:
+                # Convert our models to Keycloak API format
+                policies_payload = []
+                for policy in spec.client_policies:
+                    policy_dict: dict[str, Any] = {
+                        "name": policy.name,
+                        "enabled": policy.enabled,
+                    }
+                    if policy.description:
+                        policy_dict["description"] = policy.description
+                    if policy.conditions:
+                        policy_dict["conditions"] = [
+                            {
+                                "condition": condition.condition,
+                                "configuration": condition.configuration,
+                            }
+                            for condition in policy.conditions
+                        ]
+                    if policy.profiles:
+                        policy_dict["profiles"] = policy.profiles
+                    policies_payload.append(policy_dict)
+
+                success = await admin_client.update_client_policies(
+                    realm_name, policies_payload, namespace
+                )
+                if success:
+                    self.logger.info(
+                        f"Successfully configured {len(policies_payload)} client policies"
+                    )
+                else:
+                    self.logger.warning("Failed to update client policies")
+            except Exception as e:
+                self.logger.warning(f"Failed to configure client policies: {e}")
+        else:
+            # No policies specified - clear all realm-level policies
+            try:
+                await admin_client.update_client_policies(realm_name, [], namespace)
+                self.logger.debug("Cleared all realm-level client policies")
+            except Exception as e:
+                self.logger.warning(f"Failed to clear client policies: {e}")
+
+    async def configure_organizations(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure organizations for the realm (Keycloak 26+).
+
+        Organizations provide multi-tenancy support, allowing users to be grouped
+        by organization with their own domains and identity providers.
+
+        This method performs a full reconciliation:
+        - Creates organizations that don't exist
+        - Updates organizations that have changed
+        - Deletes organizations not in the spec
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+
+        Note:
+            Organizations require Keycloak 26.0.0 or higher. The admin client
+            methods will return empty results or 404 if the feature is not
+            available.
+        """
+        self.logger.info(f"Configuring organizations for realm {spec.realm_name}")
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # Get existing organizations from Keycloak
+        try:
+            existing_orgs = await admin_client.get_organizations(realm_name, namespace)
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to get organizations (feature may not be enabled): {e}"
+            )
+            return
+
+        # Build a map of existing organizations by name
+        existing_by_name: dict[str, dict[str, Any]] = {}
+        for org in existing_orgs:
+            org_name = org.get("name")
+            if org_name:
+                existing_by_name[org_name] = org
+
+        # Track desired organization names for deletion detection
+        desired_names: set[str] = set()
+
+        # Process each desired organization
+        for org in spec.organizations or []:
+            desired_names.add(org.name)
+
+            # Convert our model to Keycloak API format
+            org_payload: dict[str, Any] = {
+                "name": org.name,
+                "enabled": org.enabled,
+            }
+
+            if org.alias:
+                org_payload["alias"] = org.alias
+            if org.description:
+                org_payload["description"] = org.description
+
+            # Convert domains
+            if org.domains:
+                org_payload["domains"] = [
+                    {"name": domain.name, "verified": domain.verified}
+                    for domain in org.domains
+                ]
+
+            # Convert attributes
+            if org.attributes:
+                org_payload["attributes"] = org.attributes
+
+            # Note: Identity providers are linked separately via their own API
+            # This is a TODO for full IdP linking support
+
+            existing_org = existing_by_name.get(org.name)
+
+            if existing_org:
+                # Update existing organization
+                org_id = existing_org.get("id")
+                if org_id:
+                    try:
+                        await admin_client.update_organization(
+                            realm_name, org_id, org_payload, namespace
+                        )
+                        self.logger.info(f"Updated organization '{org.name}'")
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to update organization '{org.name}': {e}"
+                        )
+            else:
+                # Create new organization
+                try:
+                    await admin_client.create_organization(
+                        realm_name, org_payload, namespace
+                    )
+                    self.logger.info(f"Created organization '{org.name}'")
+                except Exception as e:
+                    self.logger.warning(
+                        f"Failed to create organization '{org.name}': {e}"
+                    )
+
+        # Delete organizations that are not in the spec
+        for org_name, existing_org in existing_by_name.items():
+            if org_name not in desired_names:
+                org_id = existing_org.get("id")
+                if org_id:
+                    try:
+                        await admin_client.delete_organization(
+                            realm_name, org_id, namespace
+                        )
+                        self.logger.info(
+                            f"Deleted organization '{org_name}' (not in spec)"
+                        )
+                    except Exception as e:
+                        self.logger.warning(
+                            f"Failed to delete organization '{org_name}': {e}"
+                        )
+
+        self.logger.info(
+            f"Organizations configuration complete: "
+            f"{len(desired_names)} desired, {len(existing_orgs)} existed"
+        )
 
     async def do_update(
         self,

@@ -222,6 +222,12 @@ class KeycloakClientReconciler(BaseReconciler):
                 client_spec, client_uuid, name, namespace
             )
 
+        # Configure authorization services (resources and scopes)
+        if client_spec.settings.authorization_services_enabled:
+            await self.configure_authorization_settings(
+                client_spec, client_uuid, name, namespace
+            )
+
         # Return status information
         realm_ref = client_spec.realm_ref
         target_namespace = realm_ref.namespace
@@ -1538,6 +1544,802 @@ class KeycloakClientReconciler(BaseReconciler):
             raise ReconciliationError(
                 f"Unexpected error managing service account roles: {exc}"
             ) from exc
+
+    async def configure_authorization_settings(
+        self,
+        spec: KeycloakClientSpec,
+        client_uuid: str,
+        name: str,
+        namespace: str,
+    ) -> None:
+        """
+        Configure fine-grained authorization settings (resources and scopes).
+
+        This method manages the authorization services configuration for clients
+        that have authorizationServicesEnabled=true, including:
+        - Resource server settings (policy enforcement mode, decision strategy)
+        - Authorization scopes (read, write, delete, etc.)
+        - Protected resources (APIs, documents, etc.)
+
+        Args:
+            spec: Keycloak client specification
+            client_uuid: Client UUID in Keycloak
+            name: Resource name
+            namespace: Resource namespace
+        """
+        if not spec.settings.authorization_services_enabled:
+            self.logger.debug(
+                f"Authorization services disabled for client {spec.client_id}; skipping"
+            )
+            return
+
+        self.logger.info(
+            f"Configuring authorization settings for client {spec.client_id}"
+        )
+
+        # Get realm info and admin client
+        realm_ref = spec.realm_ref
+        target_namespace = realm_ref.namespace
+        realm_resource_name = realm_ref.name
+        actual_realm_name, keycloak_namespace, keycloak_name, _ = self._get_realm_info(
+            realm_resource_name, target_namespace
+        )
+
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, keycloak_namespace, rate_limiter=self.rate_limiter
+        )
+
+        try:
+            # Get authorization settings from spec (may be None)
+            authz_settings = spec.authorization_settings
+
+            # Update resource server settings if specified
+            if authz_settings:
+                server_settings = {
+                    "policyEnforcementMode": authz_settings.policy_enforcement_mode,
+                    "decisionStrategy": authz_settings.decision_strategy,
+                    "allowRemoteResourceManagement": authz_settings.allow_remote_resource_management,
+                }
+                await admin_client.update_resource_server_settings(
+                    actual_realm_name, client_uuid, server_settings, namespace
+                )
+                self.logger.info(
+                    f"Updated resource server settings for client {spec.client_id}"
+                )
+
+                # Configure authorization scopes
+                await self._reconcile_authorization_scopes(
+                    admin_client,
+                    actual_realm_name,
+                    client_uuid,
+                    authz_settings.scopes,
+                    namespace,
+                    spec.client_id,
+                )
+
+                # Configure authorization resources
+                await self._reconcile_authorization_resources(
+                    admin_client,
+                    actual_realm_name,
+                    client_uuid,
+                    authz_settings.resources,
+                    namespace,
+                    spec.client_id,
+                )
+
+                # Configure authorization policies (if specified)
+                if authz_settings.policies:
+                    await self._reconcile_authorization_policies(
+                        admin_client,
+                        actual_realm_name,
+                        client_uuid,
+                        authz_settings.policies,
+                        namespace,
+                        spec.client_id,
+                    )
+
+                # Configure authorization permissions (if specified)
+                # Permissions must be reconciled AFTER policies since they reference policies
+                if authz_settings.permissions:
+                    await self._reconcile_authorization_permissions(
+                        admin_client,
+                        actual_realm_name,
+                        client_uuid,
+                        authz_settings.permissions,
+                        namespace,
+                        spec.client_id,
+                    )
+
+        except KeycloakAdminError as exc:
+            self.logger.error(
+                f"Failed to configure authorization settings for {spec.client_id}: {exc}"
+            )
+            raise ReconciliationError(
+                f"Authorization configuration failed: {exc}", retryable=False
+            ) from exc
+        except Exception as exc:
+            self.logger.error(
+                f"Unexpected error configuring authorization for {spec.client_id}: {exc}"
+            )
+            raise ReconciliationError(
+                f"Unexpected error configuring authorization: {exc}"
+            ) from exc
+
+        self.logger.info(
+            f"Authorization settings configuration completed for {spec.client_id}"
+        )
+
+    async def _reconcile_authorization_scopes(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        client_uuid: str,
+        desired_scopes: list,
+        namespace: str,
+        client_id: str,
+    ) -> None:
+        """
+        Reconcile authorization scopes to match desired state.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            client_uuid: Client UUID
+            desired_scopes: List of desired AuthorizationScope objects
+            namespace: Namespace for rate limiting
+            client_id: Client ID for logging
+        """
+        # Get existing scopes
+        existing_scopes = await admin_client.get_authorization_scopes(
+            realm_name, client_uuid, namespace
+        )
+        existing_by_name = {s.get("name"): s for s in existing_scopes}
+
+        # Build desired scope names set
+        desired_names = {scope.name for scope in desired_scopes}
+
+        # Create or update scopes
+        for scope in desired_scopes:
+            scope_dict = {
+                "name": scope.name,
+                "displayName": scope.display_name,
+                "iconUri": scope.icon_uri,
+            }
+            # Remove None values
+            scope_dict = {k: v for k, v in scope_dict.items() if v is not None}
+
+            existing = existing_by_name.get(scope.name)
+            if existing:
+                # Update if changed
+                needs_update = (
+                    existing.get("displayName") != scope.display_name
+                    or existing.get("iconUri") != scope.icon_uri
+                )
+                if needs_update:
+                    scope_dict["id"] = existing.get("id")
+                    await admin_client.update_authorization_scope(
+                        realm_name,
+                        client_uuid,
+                        existing.get("id"),
+                        scope_dict,
+                        namespace,
+                    )
+                    self.logger.info(
+                        f"Updated authorization scope '{scope.name}' for client {client_id}"
+                    )
+            else:
+                # Create new scope
+                result = await admin_client.create_authorization_scope(
+                    realm_name, client_uuid, scope_dict, namespace
+                )
+                if result:
+                    self.logger.info(
+                        f"Created authorization scope '{scope.name}' for client {client_id}"
+                    )
+                else:
+                    self.logger.warning(
+                        f"Failed to create authorization scope '{scope.name}' for client {client_id}"
+                    )
+
+        # Delete scopes that are no longer desired
+        for existing_scope in existing_scopes:
+            scope_name = existing_scope.get("name")
+            if scope_name and scope_name not in desired_names:
+                await admin_client.delete_authorization_scope(
+                    realm_name, client_uuid, existing_scope.get("id"), namespace
+                )
+                self.logger.info(
+                    f"Deleted authorization scope '{scope_name}' from client {client_id}"
+                )
+
+    async def _reconcile_authorization_resources(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        client_uuid: str,
+        desired_resources: list,
+        namespace: str,
+        client_id: str,
+    ) -> None:
+        """
+        Reconcile authorization resources to match desired state.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            client_uuid: Client UUID
+            desired_resources: List of desired AuthorizationResource objects
+            namespace: Namespace for rate limiting
+            client_id: Client ID for logging
+        """
+        # Get existing resources
+        existing_resources = await admin_client.get_authorization_resources(
+            realm_name, client_uuid, namespace
+        )
+        existing_by_name = {r.get("name"): r for r in existing_resources}
+
+        # Build desired resource names set
+        desired_names = {resource.name for resource in desired_resources}
+
+        # Get scopes to resolve scope names to IDs
+        existing_scopes = await admin_client.get_authorization_scopes(
+            realm_name, client_uuid, namespace
+        )
+        scope_name_to_id = {s.get("name"): s.get("id") for s in existing_scopes}
+
+        # Create or update resources
+        for resource in desired_resources:
+            # Convert scope names to scope objects with IDs
+            scope_refs = []
+            for scope_name in resource.scopes:
+                scope_id = scope_name_to_id.get(scope_name)
+                if scope_id:
+                    scope_refs.append({"id": scope_id, "name": scope_name})
+                else:
+                    self.logger.warning(
+                        f"Scope '{scope_name}' not found for resource '{resource.name}'"
+                    )
+
+            resource_dict = {
+                "name": resource.name,
+                "displayName": resource.display_name,
+                "type": resource.type,
+                "uris": resource.uris,
+                "scopes": scope_refs,
+                "ownerManagedAccess": resource.owner_managed_access,
+                "attributes": resource.attributes if resource.attributes else None,
+            }
+            # Remove None values
+            resource_dict = {k: v for k, v in resource_dict.items() if v is not None}
+
+            existing = existing_by_name.get(resource.name)
+            if existing:
+                # Update resource
+                resource_dict["_id"] = existing.get("_id")
+                await admin_client.update_authorization_resource(
+                    realm_name,
+                    client_uuid,
+                    existing.get("_id"),
+                    resource_dict,
+                    namespace,
+                )
+                self.logger.info(
+                    f"Updated authorization resource '{resource.name}' for client {client_id}"
+                )
+            else:
+                # Create new resource
+                result = await admin_client.create_authorization_resource(
+                    realm_name, client_uuid, resource_dict, namespace
+                )
+                if result:
+                    self.logger.info(
+                        f"Created authorization resource '{resource.name}' for client {client_id}"
+                    )
+                else:
+                    self.logger.warning(
+                        f"Failed to create authorization resource '{resource.name}' for client {client_id}"
+                    )
+
+        # Delete resources that are no longer desired
+        # Note: Skip the default resource created by Keycloak
+        for existing_resource in existing_resources:
+            resource_name = existing_resource.get("name")
+            if resource_name and resource_name not in desired_names:
+                # Don't delete the default "Default Resource" unless explicitly desired
+                if resource_name == "Default Resource":
+                    self.logger.debug(
+                        f"Keeping default resource 'Default Resource' for client {client_id}"
+                    )
+                    continue
+                await admin_client.delete_authorization_resource(
+                    realm_name, client_uuid, existing_resource.get("_id"), namespace
+                )
+                self.logger.info(
+                    f"Deleted authorization resource '{resource_name}' from client {client_id}"
+                )
+
+    async def _reconcile_authorization_policies(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        client_uuid: str,
+        policies: Any,
+        namespace: str,
+        client_id: str,
+    ) -> None:
+        """
+        Reconcile authorization policies to match desired state.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            client_uuid: Client UUID
+            policies: AuthorizationPolicies object containing all policy types
+            namespace: Namespace for rate limiting
+            client_id: Client ID for logging
+        """
+        from keycloak_operator.models.client import (
+            AggregatePolicy,
+            ClientPolicy,
+            GroupPolicy,
+            JavaScriptPolicy,
+            RegexPolicy,
+            RolePolicy,
+            TimePolicy,
+            UserPolicy,
+        )
+
+        # Get existing policies from Keycloak
+        existing_policies = await admin_client.get_authorization_policies(
+            realm_name, client_uuid, namespace
+        )
+        existing_by_name = {p.get("name"): p for p in existing_policies}
+
+        # Track which policy names we want to keep
+        desired_policy_names: set[str] = set()
+
+        # Helper function to convert policy model to Keycloak API format
+        def _to_keycloak_policy(policy: Any, policy_type: str) -> tuple[str, dict]:
+            """Convert a policy model to Keycloak API format."""
+            base = {
+                "name": policy.name,
+                "description": policy.description,
+                "logic": policy.logic,
+            }
+
+            if policy_type == "role":
+                role_policy: RolePolicy = policy
+                # Convert roles to Keycloak format
+                roles_config = []
+                for role in role_policy.roles:
+                    role_ref = {"id": role.id, "required": role.required}
+                    # If no ID, use name for resolution
+                    if not role.id:
+                        role_ref["id"] = role.name  # Will be resolved at API call
+                    roles_config.append(role_ref)
+                base["roles"] = roles_config
+                base["fetchRoles"] = role_policy.fetch_roles
+
+            elif policy_type == "user":
+                user_policy: UserPolicy = policy
+                base["users"] = user_policy.users
+
+            elif policy_type == "group":
+                group_policy: GroupPolicy = policy
+                base["groups"] = group_policy.groups
+                base["groupsClaim"] = group_policy.groups_claim
+
+            elif policy_type == "client":
+                client_policy: ClientPolicy = policy
+                base["clients"] = client_policy.clients
+
+            elif policy_type == "time":
+                time_policy: TimePolicy = policy
+                if time_policy.not_before:
+                    base["notBefore"] = time_policy.not_before
+                if time_policy.not_on_or_after:
+                    base["notOnOrAfter"] = time_policy.not_on_or_after
+                if time_policy.day_month is not None:
+                    base["dayMonth"] = str(time_policy.day_month)
+                if time_policy.day_month_end is not None:
+                    base["dayMonthEnd"] = str(time_policy.day_month_end)
+                if time_policy.month is not None:
+                    base["month"] = str(time_policy.month)
+                if time_policy.month_end is not None:
+                    base["monthEnd"] = str(time_policy.month_end)
+                if time_policy.year is not None:
+                    base["year"] = str(time_policy.year)
+                if time_policy.year_end is not None:
+                    base["yearEnd"] = str(time_policy.year_end)
+                if time_policy.hour is not None:
+                    base["hour"] = str(time_policy.hour)
+                if time_policy.hour_end is not None:
+                    base["hourEnd"] = str(time_policy.hour_end)
+                if time_policy.minute is not None:
+                    base["minute"] = str(time_policy.minute)
+                if time_policy.minute_end is not None:
+                    base["minuteEnd"] = str(time_policy.minute_end)
+
+            elif policy_type == "regex":
+                regex_policy: RegexPolicy = policy
+                base["targetClaim"] = regex_policy.target_claim
+                base["pattern"] = regex_policy.pattern
+
+            elif policy_type == "aggregate":
+                aggregate_policy: AggregatePolicy = policy
+                base["decisionStrategy"] = aggregate_policy.decision_strategy
+                base["policies"] = aggregate_policy.policies
+
+            elif policy_type == "js":
+                js_policy: JavaScriptPolicy = policy
+                base["code"] = js_policy.code
+
+            return policy_type, base
+
+        # Process each policy type in order (non-aggregate first, then aggregate)
+        policy_configs: list[tuple[str, dict]] = []
+
+        # Role policies
+        for policy in policies.role_policies:
+            desired_policy_names.add(policy.name)
+            policy_configs.append(_to_keycloak_policy(policy, "role"))
+
+        # User policies
+        for policy in policies.user_policies:
+            desired_policy_names.add(policy.name)
+            policy_configs.append(_to_keycloak_policy(policy, "user"))
+
+        # Group policies
+        for policy in policies.group_policies:
+            desired_policy_names.add(policy.name)
+            policy_configs.append(_to_keycloak_policy(policy, "group"))
+
+        # Client policies
+        for policy in policies.client_policies:
+            desired_policy_names.add(policy.name)
+            policy_configs.append(_to_keycloak_policy(policy, "client"))
+
+        # Time policies
+        for policy in policies.time_policies:
+            desired_policy_names.add(policy.name)
+            policy_configs.append(_to_keycloak_policy(policy, "time"))
+
+        # Regex policies
+        for policy in policies.regex_policies:
+            desired_policy_names.add(policy.name)
+            policy_configs.append(_to_keycloak_policy(policy, "regex"))
+
+        # JavaScript policies (only if explicitly allowed)
+        if policies.javascript_policies:
+            if not policies.allow_javascript_policies:
+                self.logger.warning(
+                    f"JavaScript policies defined for client {client_id} but "
+                    "allowJavaScriptPolicies is false. Skipping JavaScript policies. "
+                    "SECURITY: JavaScript policies execute code on the Keycloak server."
+                )
+            else:
+                self.logger.warning(
+                    f"SECURITY WARNING: JavaScript policies are enabled for client {client_id}. "
+                    "This allows code execution on the Keycloak server."
+                )
+                for policy in policies.javascript_policies:
+                    desired_policy_names.add(policy.name)
+                    policy_configs.append(_to_keycloak_policy(policy, "js"))
+
+        # Aggregate policies (must be processed last as they reference other policies)
+        aggregate_configs: list[tuple[str, dict]] = []
+        for policy in policies.aggregate_policies:
+            desired_policy_names.add(policy.name)
+            aggregate_configs.append(_to_keycloak_policy(policy, "aggregate"))
+
+        # Create/update non-aggregate policies first
+        for policy_type, policy_data in policy_configs:
+            existing = existing_by_name.get(policy_data["name"])
+            if existing:
+                # Update existing policy
+                await admin_client.update_authorization_policy(
+                    realm_name,
+                    client_uuid,
+                    policy_type,
+                    existing.get("id"),
+                    policy_data,
+                    namespace,
+                )
+                self.logger.info(
+                    f"Updated {policy_type} policy '{policy_data['name']}' for client {client_id}"
+                )
+            else:
+                # Create new policy
+                result = await admin_client.create_authorization_policy(
+                    realm_name, client_uuid, policy_type, policy_data, namespace
+                )
+                if result:
+                    self.logger.info(
+                        f"Created {policy_type} policy '{policy_data['name']}' for client {client_id}"
+                    )
+                else:
+                    self.logger.warning(
+                        f"Failed to create {policy_type} policy '{policy_data['name']}' for client {client_id}"
+                    )
+
+        # Now create/update aggregate policies (they reference other policies by name)
+        # Refresh existing policies to get IDs of newly created policies
+        if aggregate_configs:
+            existing_policies = await admin_client.get_authorization_policies(
+                realm_name, client_uuid, namespace
+            )
+            existing_by_name = {p.get("name"): p for p in existing_policies}
+            policy_name_to_id = {p.get("name"): p.get("id") for p in existing_policies}
+
+            for policy_type, policy_data in aggregate_configs:
+                # Resolve policy names to IDs for aggregate policies
+                if "policies" in policy_data:
+                    resolved_policy_ids = []
+                    for policy_name in policy_data["policies"]:
+                        policy_id = policy_name_to_id.get(policy_name)
+                        if policy_id:
+                            resolved_policy_ids.append(policy_id)
+                        else:
+                            self.logger.warning(
+                                f"Referenced policy '{policy_name}' not found for aggregate policy '{policy_data['name']}'"
+                            )
+                    policy_data["policies"] = resolved_policy_ids
+
+                existing = existing_by_name.get(policy_data["name"])
+                if existing:
+                    await admin_client.update_authorization_policy(
+                        realm_name,
+                        client_uuid,
+                        policy_type,
+                        existing.get("id"),
+                        policy_data,
+                        namespace,
+                    )
+                    self.logger.info(
+                        f"Updated aggregate policy '{policy_data['name']}' for client {client_id}"
+                    )
+                else:
+                    result = await admin_client.create_authorization_policy(
+                        realm_name, client_uuid, policy_type, policy_data, namespace
+                    )
+                    if result:
+                        self.logger.info(
+                            f"Created aggregate policy '{policy_data['name']}' for client {client_id}"
+                        )
+
+        # Delete policies that are no longer desired
+        # Skip built-in policies (those starting with "Default" or system-created)
+        for existing_policy in existing_policies:
+            policy_name = existing_policy.get("name")
+            policy_type = existing_policy.get("type")
+            if policy_name and policy_name not in desired_policy_names:
+                # Skip built-in "Default Policy" and "Default Permission"
+                if policy_name.startswith("Default "):
+                    self.logger.debug(
+                        f"Keeping built-in policy '{policy_name}' for client {client_id}"
+                    )
+                    continue
+                # Skip permission types (they are handled separately)
+                if policy_type in ("resource", "scope"):
+                    continue
+
+                await admin_client.delete_authorization_policy(
+                    realm_name, client_uuid, existing_policy.get("id"), namespace
+                )
+                self.logger.info(
+                    f"Deleted authorization policy '{policy_name}' from client {client_id}"
+                )
+
+    async def _reconcile_authorization_permissions(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        client_uuid: str,
+        permissions: Any,
+        namespace: str,
+        client_id: str,
+    ) -> None:
+        """
+        Reconcile authorization permissions to match desired state.
+
+        Permissions tie policies to resources/scopes. They must be reconciled
+        AFTER policies since they reference policies by name.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            client_uuid: Client UUID
+            permissions: AuthorizationPermissions object containing permission types
+            namespace: Namespace for rate limiting
+            client_id: Client ID for logging
+        """
+
+        # Get existing permissions from Keycloak
+        existing_permissions = await admin_client.get_authorization_permissions(
+            realm_name, client_uuid, namespace
+        )
+        existing_by_name = {p.get("name"): p for p in existing_permissions}
+
+        # Get policies to resolve policy names to IDs
+        existing_policies = await admin_client.get_authorization_policies(
+            realm_name, client_uuid, namespace
+        )
+        policy_name_to_id = {p.get("name"): p.get("id") for p in existing_policies}
+
+        # Get resources to resolve resource names to IDs
+        existing_resources = await admin_client.get_authorization_resources(
+            realm_name, client_uuid, namespace
+        )
+        resource_name_to_id = {r.get("name"): r.get("_id") for r in existing_resources}
+
+        # Get scopes to resolve scope names to IDs
+        existing_scopes = await admin_client.get_authorization_scopes(
+            realm_name, client_uuid, namespace
+        )
+        scope_name_to_id = {s.get("name"): s.get("id") for s in existing_scopes}
+
+        # Track which permission names we want to keep
+        desired_permission_names: set[str] = set()
+
+        # Helper to resolve policy names to IDs
+        def _resolve_policies(policy_names: list[str]) -> list[str]:
+            resolved = []
+            for name in policy_names:
+                policy_id = policy_name_to_id.get(name)
+                if policy_id:
+                    resolved.append(policy_id)
+                else:
+                    self.logger.warning(
+                        f"Policy '{name}' not found for permission, skipping"
+                    )
+            return resolved
+
+        # Helper to resolve resource names to IDs
+        def _resolve_resources(resource_names: list[str]) -> list[str]:
+            resolved = []
+            for name in resource_names:
+                resource_id = resource_name_to_id.get(name)
+                if resource_id:
+                    resolved.append(resource_id)
+                else:
+                    self.logger.warning(
+                        f"Resource '{name}' not found for permission, skipping"
+                    )
+            return resolved
+
+        # Helper to resolve scope names to IDs
+        def _resolve_scopes(scope_names: list[str]) -> list[str]:
+            resolved = []
+            for name in scope_names:
+                scope_id = scope_name_to_id.get(name)
+                if scope_id:
+                    resolved.append(scope_id)
+                else:
+                    self.logger.warning(
+                        f"Scope '{name}' not found for permission, skipping"
+                    )
+            return resolved
+
+        # Process resource permissions
+        for permission in permissions.resource_permissions:
+            desired_permission_names.add(permission.name)
+
+            permission_data = {
+                "name": permission.name,
+                "description": permission.description,
+                "decisionStrategy": permission.decision_strategy,
+                "resources": _resolve_resources(permission.resources),
+                "policies": _resolve_policies(permission.policies),
+            }
+
+            # Add resourceType if specified
+            if permission.resource_type:
+                permission_data["resourceType"] = permission.resource_type
+
+            # Remove None values
+            permission_data = {
+                k: v for k, v in permission_data.items() if v is not None
+            }
+
+            existing = existing_by_name.get(permission.name)
+            if existing:
+                # Update existing permission
+                await admin_client.update_authorization_permission(
+                    realm_name,
+                    client_uuid,
+                    "resource",
+                    existing.get("id"),
+                    permission_data,
+                    namespace,
+                )
+                self.logger.info(
+                    f"Updated resource permission '{permission.name}' for client {client_id}"
+                )
+            else:
+                # Create new permission
+                result = await admin_client.create_authorization_permission(
+                    realm_name, client_uuid, "resource", permission_data, namespace
+                )
+                if result:
+                    self.logger.info(
+                        f"Created resource permission '{permission.name}' for client {client_id}"
+                    )
+                else:
+                    self.logger.warning(
+                        f"Failed to create resource permission '{permission.name}' for client {client_id}"
+                    )
+
+        # Process scope permissions
+        for permission in permissions.scope_permissions:
+            desired_permission_names.add(permission.name)
+
+            permission_data = {
+                "name": permission.name,
+                "description": permission.description,
+                "decisionStrategy": permission.decision_strategy,
+                "scopes": _resolve_scopes(permission.scopes),
+                "policies": _resolve_policies(permission.policies),
+            }
+
+            # Add resources if specified (optional for scope permissions)
+            if permission.resources:
+                permission_data["resources"] = _resolve_resources(permission.resources)
+
+            # Add resourceType if specified
+            if permission.resource_type:
+                permission_data["resourceType"] = permission.resource_type
+
+            # Remove None values
+            permission_data = {
+                k: v for k, v in permission_data.items() if v is not None
+            }
+
+            existing = existing_by_name.get(permission.name)
+            if existing:
+                # Update existing permission
+                await admin_client.update_authorization_permission(
+                    realm_name,
+                    client_uuid,
+                    "scope",
+                    existing.get("id"),
+                    permission_data,
+                    namespace,
+                )
+                self.logger.info(
+                    f"Updated scope permission '{permission.name}' for client {client_id}"
+                )
+            else:
+                # Create new permission
+                result = await admin_client.create_authorization_permission(
+                    realm_name, client_uuid, "scope", permission_data, namespace
+                )
+                if result:
+                    self.logger.info(
+                        f"Created scope permission '{permission.name}' for client {client_id}"
+                    )
+                else:
+                    self.logger.warning(
+                        f"Failed to create scope permission '{permission.name}' for client {client_id}"
+                    )
+
+        # Delete permissions that are no longer desired
+        # Skip built-in permissions (those starting with "Default")
+        for existing_permission in existing_permissions:
+            permission_name = existing_permission.get("name")
+            if permission_name and permission_name not in desired_permission_names:
+                # Skip built-in "Default Permission"
+                if permission_name.startswith("Default "):
+                    self.logger.debug(
+                        f"Keeping built-in permission '{permission_name}' for client {client_id}"
+                    )
+                    continue
+
+                await admin_client.delete_authorization_permission(
+                    realm_name, client_uuid, existing_permission.get("id"), namespace
+                )
+                self.logger.info(
+                    f"Deleted authorization permission '{permission_name}' from client {client_id}"
+                )
 
     async def do_update(
         self,
