@@ -270,6 +270,621 @@ class SecretRotationConfig(BaseModel):
         return v
 
 
+# =============================================================================
+# Authorization Settings Models
+# =============================================================================
+
+
+class AuthorizationScope(BaseModel):
+    """
+    Authorization scope definition.
+
+    Scopes define the actions that can be performed on resources
+    (e.g., 'read', 'write', 'delete').
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Scope name (e.g., 'read', 'write')")
+    display_name: str | None = Field(
+        None, alias="displayName", description="Human-readable display name"
+    )
+    icon_uri: str | None = Field(
+        None, alias="iconUri", description="Icon URI for UI display"
+    )
+
+
+class AuthorizationResource(BaseModel):
+    """
+    Protected resource definition.
+
+    Resources represent the objects being protected by authorization policies
+    (e.g., APIs, documents, users).
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Resource name (unique identifier)")
+    display_name: str | None = Field(
+        None, alias="displayName", description="Human-readable display name"
+    )
+    type: str | None = Field(
+        None,
+        description="Resource type for grouping (e.g., 'urn:my-api:resources:documents')",
+    )
+    uris: list[str] = Field(
+        default_factory=list, description="URIs associated with this resource"
+    )
+    scopes: list[str] = Field(
+        default_factory=list, description="Scope names that apply to this resource"
+    )
+    owner_managed_access: bool = Field(
+        False,
+        alias="ownerManagedAccess",
+        description="Enable owner-managed access for this resource",
+    )
+    attributes: dict[str, list[str]] = Field(
+        default_factory=dict, description="Resource attributes"
+    )
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("Resource name cannot be empty")
+        return v
+
+
+class AuthorizationSettings(BaseModel):
+    """
+    Authorization services settings for a client.
+
+    Contains the resource server configuration including enforcement mode,
+    decision strategy, scopes, and resources.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    policy_enforcement_mode: str = Field(
+        "ENFORCING",
+        alias="policyEnforcementMode",
+        description="Policy enforcement mode: ENFORCING, PERMISSIVE, or DISABLED",
+    )
+    decision_strategy: str = Field(
+        "UNANIMOUS",
+        alias="decisionStrategy",
+        description="Decision strategy: UNANIMOUS or AFFIRMATIVE",
+    )
+    allow_remote_resource_management: bool = Field(
+        True,
+        alias="allowRemoteResourceManagement",
+        description="Allow remote resource management via Protection API",
+    )
+    scopes: list[AuthorizationScope] = Field(
+        default_factory=list, description="Authorization scopes"
+    )
+    resources: list[AuthorizationResource] = Field(
+        default_factory=list, description="Protected resources"
+    )
+    policies: "AuthorizationPolicies | None" = Field(
+        None, description="Authorization policies"
+    )
+    permissions: "AuthorizationPermissions | None" = Field(
+        None, description="Authorization permissions (tie policies to resources/scopes)"
+    )
+
+    @field_validator("policy_enforcement_mode")
+    @classmethod
+    def validate_enforcement_mode(cls, v: str) -> str:
+        valid_modes = ["ENFORCING", "PERMISSIVE", "DISABLED"]
+        if v.upper() not in valid_modes:
+            raise ValueError(f"Policy enforcement mode must be one of {valid_modes}")
+        return v.upper()
+
+    @field_validator("decision_strategy")
+    @classmethod
+    def validate_decision_strategy(cls, v: str) -> str:
+        valid_strategies = ["UNANIMOUS", "AFFIRMATIVE", "CONSENSUS"]
+        if v.upper() not in valid_strategies:
+            raise ValueError(f"Decision strategy must be one of {valid_strategies}")
+        return v.upper()
+
+
+# =============================================================================
+# Authorization Policy Models
+# =============================================================================
+
+
+class RolePolicyRole(BaseModel):
+    """A role reference for role-based policies."""
+
+    model_config = {"populate_by_name": True}
+
+    id: str | None = Field(
+        None, description="Role ID (resolved at reconciliation time)"
+    )
+    name: str = Field(..., description="Role name")
+    required: bool = Field(False, description="Whether this role is required")
+
+
+class RolePolicy(BaseModel):
+    """
+    Role-based authorization policy.
+
+    Grants access based on realm or client role assignments.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique identifier)")
+    description: str | None = Field(None, description="Policy description")
+    logic: str = Field(
+        "POSITIVE",
+        description="Policy logic: POSITIVE (grant if match) or NEGATIVE (deny if match)",
+    )
+    roles: list[RolePolicyRole] = Field(
+        default_factory=list, description="List of roles that grant access"
+    )
+    fetch_roles: bool = Field(
+        True,
+        alias="fetchRoles",
+        description="Whether to fetch roles from userinfo endpoint",
+    )
+
+    @field_validator("logic")
+    @classmethod
+    def validate_logic(cls, v: str) -> str:
+        valid = ["POSITIVE", "NEGATIVE"]
+        if v.upper() not in valid:
+            raise ValueError(f"Logic must be one of {valid}")
+        return v.upper()
+
+
+class UserPolicy(BaseModel):
+    """
+    User-based authorization policy.
+
+    Grants access to specific users by username.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique identifier)")
+    description: str | None = Field(None, description="Policy description")
+    logic: str = Field(
+        "POSITIVE",
+        description="Policy logic: POSITIVE (grant if match) or NEGATIVE (deny if match)",
+    )
+    users: list[str] = Field(
+        default_factory=list, description="List of usernames that are granted access"
+    )
+
+    @field_validator("logic")
+    @classmethod
+    def validate_logic(cls, v: str) -> str:
+        valid = ["POSITIVE", "NEGATIVE"]
+        if v.upper() not in valid:
+            raise ValueError(f"Logic must be one of {valid}")
+        return v.upper()
+
+
+class GroupPolicy(BaseModel):
+    """
+    Group-based authorization policy.
+
+    Grants access based on group membership.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique identifier)")
+    description: str | None = Field(None, description="Policy description")
+    logic: str = Field(
+        "POSITIVE",
+        description="Policy logic: POSITIVE (grant if match) or NEGATIVE (deny if match)",
+    )
+    groups: list[str] = Field(
+        default_factory=list,
+        description="List of group paths (e.g., '/admin', '/org/team')",
+    )
+    groups_claim: str = Field(
+        "groups",
+        alias="groupsClaim",
+        description="Name of the claim containing group information",
+    )
+
+    @field_validator("logic")
+    @classmethod
+    def validate_logic(cls, v: str) -> str:
+        valid = ["POSITIVE", "NEGATIVE"]
+        if v.upper() not in valid:
+            raise ValueError(f"Logic must be one of {valid}")
+        return v.upper()
+
+
+class ClientPolicy(BaseModel):
+    """
+    Client-based authorization policy.
+
+    Grants access to specific OAuth2 clients.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique identifier)")
+    description: str | None = Field(None, description="Policy description")
+    logic: str = Field(
+        "POSITIVE",
+        description="Policy logic: POSITIVE (grant if match) or NEGATIVE (deny if match)",
+    )
+    clients: list[str] = Field(
+        default_factory=list, description="List of client IDs that are granted access"
+    )
+
+    @field_validator("logic")
+    @classmethod
+    def validate_logic(cls, v: str) -> str:
+        valid = ["POSITIVE", "NEGATIVE"]
+        if v.upper() not in valid:
+            raise ValueError(f"Logic must be one of {valid}")
+        return v.upper()
+
+
+class TimePolicy(BaseModel):
+    """
+    Time-based authorization policy.
+
+    Grants access based on time constraints.
+    All time fields are optional - only specified constraints are enforced.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique identifier)")
+    description: str | None = Field(None, description="Policy description")
+    logic: str = Field(
+        "POSITIVE",
+        description="Policy logic: POSITIVE (grant if match) or NEGATIVE (deny if match)",
+    )
+
+    # Date range constraints (ISO 8601 format: yyyy-MM-dd HH:mm:ss)
+    not_before: str | None = Field(
+        None, alias="notBefore", description="Policy is not valid before this date/time"
+    )
+    not_on_or_after: str | None = Field(
+        None,
+        alias="notOnOrAfter",
+        description="Policy is not valid on or after this date/time",
+    )
+
+    # Day of month range (1-31)
+    day_month: int | None = Field(
+        None, alias="dayMonth", ge=1, le=31, description="Start day of month (1-31)"
+    )
+    day_month_end: int | None = Field(
+        None, alias="dayMonthEnd", ge=1, le=31, description="End day of month (1-31)"
+    )
+
+    # Month range (1-12)
+    month: int | None = Field(
+        None, ge=1, le=12, description="Start month (1=January, 12=December)"
+    )
+    month_end: int | None = Field(
+        None, alias="monthEnd", ge=1, le=12, description="End month (1-12)"
+    )
+
+    # Year range
+    year: int | None = Field(None, ge=1900, le=2100, description="Start year")
+    year_end: int | None = Field(
+        None, alias="yearEnd", ge=1900, le=2100, description="End year"
+    )
+
+    # Hour range (0-23)
+    hour: int | None = Field(None, ge=0, le=23, description="Start hour (0-23)")
+    hour_end: int | None = Field(
+        None, alias="hourEnd", ge=0, le=23, description="End hour (0-23)"
+    )
+
+    # Minute range (0-59)
+    minute: int | None = Field(None, ge=0, le=59, description="Start minute (0-59)")
+    minute_end: int | None = Field(
+        None, alias="minuteEnd", ge=0, le=59, description="End minute (0-59)"
+    )
+
+    @field_validator("logic")
+    @classmethod
+    def validate_logic(cls, v: str) -> str:
+        valid = ["POSITIVE", "NEGATIVE"]
+        if v.upper() not in valid:
+            raise ValueError(f"Logic must be one of {valid}")
+        return v.upper()
+
+
+class RegexPolicy(BaseModel):
+    """
+    Regex-based authorization policy.
+
+    Grants access based on regex matching against a token claim.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique identifier)")
+    description: str | None = Field(None, description="Policy description")
+    logic: str = Field(
+        "POSITIVE",
+        description="Policy logic: POSITIVE (grant if match) or NEGATIVE (deny if match)",
+    )
+    target_claim: str = Field(
+        ..., alias="targetClaim", description="Name of the claim to match against"
+    )
+    pattern: str = Field(..., description="Regex pattern to match")
+
+    @field_validator("logic")
+    @classmethod
+    def validate_logic(cls, v: str) -> str:
+        valid = ["POSITIVE", "NEGATIVE"]
+        if v.upper() not in valid:
+            raise ValueError(f"Logic must be one of {valid}")
+        return v.upper()
+
+
+class AggregatePolicy(BaseModel):
+    """
+    Aggregate authorization policy.
+
+    Combines multiple policies using a decision strategy.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique identifier)")
+    description: str | None = Field(None, description="Policy description")
+    logic: str = Field(
+        "POSITIVE",
+        description="Policy logic: POSITIVE (grant if match) or NEGATIVE (deny if match)",
+    )
+    decision_strategy: str = Field(
+        "UNANIMOUS",
+        alias="decisionStrategy",
+        description="How to combine policy results: UNANIMOUS, AFFIRMATIVE, or CONSENSUS",
+    )
+    policies: list[str] = Field(
+        default_factory=list,
+        description="Names of policies to aggregate (must be defined in the same CR)",
+    )
+
+    @field_validator("logic")
+    @classmethod
+    def validate_logic(cls, v: str) -> str:
+        valid = ["POSITIVE", "NEGATIVE"]
+        if v.upper() not in valid:
+            raise ValueError(f"Logic must be one of {valid}")
+        return v.upper()
+
+    @field_validator("decision_strategy")
+    @classmethod
+    def validate_decision_strategy(cls, v: str) -> str:
+        valid = ["UNANIMOUS", "AFFIRMATIVE", "CONSENSUS"]
+        if v.upper() not in valid:
+            raise ValueError(f"Decision strategy must be one of {valid}")
+        return v.upper()
+
+
+class JavaScriptPolicy(BaseModel):
+    """
+    JavaScript-based authorization policy.
+
+    WARNING: JavaScript policies require the 'upload-scripts' feature to be enabled
+    in Keycloak, which is disabled by default for security reasons. Use with caution.
+
+    The policy code has access to evaluation context with user, client, and resource info.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Policy name (unique identifier)")
+    description: str | None = Field(None, description="Policy description")
+    logic: str = Field(
+        "POSITIVE",
+        description="Policy logic: POSITIVE (grant if match) or NEGATIVE (deny if match)",
+    )
+    code: str = Field(
+        ...,
+        description="JavaScript code for the policy. Must set result via 'context.grant()' or 'context.deny()'",
+    )
+
+    @field_validator("logic")
+    @classmethod
+    def validate_logic(cls, v: str) -> str:
+        valid = ["POSITIVE", "NEGATIVE"]
+        if v.upper() not in valid:
+            raise ValueError(f"Logic must be one of {valid}")
+        return v.upper()
+
+
+class AuthorizationPolicies(BaseModel):
+    """
+    Container for all authorization policy types.
+
+    Policies define WHO can access resources. They are referenced by permissions
+    to create the complete authorization model.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    # Security setting for JavaScript policies
+    allow_javascript_policies: bool = Field(
+        False,
+        alias="allowJavaScriptPolicies",
+        description=(
+            "SECURITY: Enable JavaScript policies. Disabled by default. "
+            "Requires 'upload-scripts' feature in Keycloak server."
+        ),
+    )
+
+    # Policy types
+    role_policies: list[RolePolicy] = Field(
+        default_factory=list,
+        alias="rolePolicies",
+        description="Role-based policies",
+    )
+    user_policies: list[UserPolicy] = Field(
+        default_factory=list,
+        alias="userPolicies",
+        description="User-based policies",
+    )
+    group_policies: list[GroupPolicy] = Field(
+        default_factory=list,
+        alias="groupPolicies",
+        description="Group-based policies",
+    )
+    client_policies: list[ClientPolicy] = Field(
+        default_factory=list,
+        alias="clientPolicies",
+        description="Client-based policies",
+    )
+    time_policies: list[TimePolicy] = Field(
+        default_factory=list,
+        alias="timePolicies",
+        description="Time-based policies",
+    )
+    regex_policies: list[RegexPolicy] = Field(
+        default_factory=list,
+        alias="regexPolicies",
+        description="Regex-based policies",
+    )
+    aggregate_policies: list[AggregatePolicy] = Field(
+        default_factory=list,
+        alias="aggregatePolicies",
+        description="Aggregate policies (combine other policies)",
+    )
+    javascript_policies: list[JavaScriptPolicy] = Field(
+        default_factory=list,
+        alias="javascriptPolicies",
+        description="JavaScript policies (requires allowJavaScriptPolicies=true)",
+    )
+
+
+# =============================================================================
+# Authorization Permission Models
+# =============================================================================
+
+
+class ResourcePermission(BaseModel):
+    """
+    Resource-based authorization permission.
+
+    Defines access rights for specific resources with associated policies.
+    This permission type grants access to entire resources (all scopes).
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Permission name (unique identifier)")
+    description: str | None = Field(None, description="Permission description")
+    decision_strategy: str = Field(
+        "UNANIMOUS",
+        alias="decisionStrategy",
+        description="How to combine policy results: UNANIMOUS, AFFIRMATIVE, or CONSENSUS",
+    )
+    resources: list[str] = Field(
+        default_factory=list,
+        description="Resource names this permission applies to",
+    )
+    resource_type: str | None = Field(
+        None,
+        alias="resourceType",
+        description="Apply to all resources of this type (alternative to listing resources)",
+    )
+    policies: list[str] = Field(
+        default_factory=list,
+        description="Policy names that control access to these resources",
+    )
+
+    @field_validator("decision_strategy")
+    @classmethod
+    def validate_decision_strategy(cls, v: str) -> str:
+        valid = ["UNANIMOUS", "AFFIRMATIVE", "CONSENSUS"]
+        if v.upper() not in valid:
+            raise ValueError(f"Decision strategy must be one of {valid}")
+        return v.upper()
+
+
+class ScopePermission(BaseModel):
+    """
+    Scope-based authorization permission.
+
+    Defines access rights for specific scopes, optionally on specific resources.
+    This permission type provides finer-grained control than resource permissions.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Permission name (unique identifier)")
+    description: str | None = Field(None, description="Permission description")
+    decision_strategy: str = Field(
+        "UNANIMOUS",
+        alias="decisionStrategy",
+        description="How to combine policy results: UNANIMOUS, AFFIRMATIVE, or CONSENSUS",
+    )
+    resources: list[str] = Field(
+        default_factory=list,
+        description="Resource names to scope this permission to (optional)",
+    )
+    resource_type: str | None = Field(
+        None,
+        alias="resourceType",
+        description="Apply to all resources of this type (alternative to listing resources)",
+    )
+    scopes: list[str] = Field(
+        default_factory=list,
+        description="Scope names this permission applies to",
+    )
+    policies: list[str] = Field(
+        default_factory=list,
+        description="Policy names that control access to these scopes",
+    )
+
+    @field_validator("decision_strategy")
+    @classmethod
+    def validate_decision_strategy(cls, v: str) -> str:
+        valid = ["UNANIMOUS", "AFFIRMATIVE", "CONSENSUS"]
+        if v.upper() not in valid:
+            raise ValueError(f"Decision strategy must be one of {valid}")
+        return v.upper()
+
+    @field_validator("scopes")
+    @classmethod
+    def validate_scopes_not_empty(cls, v: list[str]) -> list[str]:
+        if not v:
+            raise ValueError("Scope permission must have at least one scope")
+        return v
+
+
+class AuthorizationPermissions(BaseModel):
+    """
+    Container for all authorization permission types.
+
+    Permissions tie policies to resources/scopes to create the complete
+    authorization model. They define WHAT can be accessed and link to
+    policies that define WHO can access.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    resource_permissions: list[ResourcePermission] = Field(
+        default_factory=list,
+        alias="resourcePermissions",
+        description="Resource-based permissions (grant access to entire resources)",
+    )
+    scope_permissions: list[ScopePermission] = Field(
+        default_factory=list,
+        alias="scopePermissions",
+        description="Scope-based permissions (grant access to specific scopes)",
+    )
+
+
 class KeycloakClientSpec(BaseModel):
     """
     Specification for a KeycloakClient resource.
@@ -357,6 +972,13 @@ class KeycloakClientSpec(BaseModel):
         default_factory=list,
         alias="clientRoles",
         description="Client-specific roles to create",
+    )
+
+    # Authorization services configuration
+    authorization_settings: AuthorizationSettings | None = Field(
+        None,
+        alias="authorizationSettings",
+        description="Fine-grained authorization settings (requires authorizationServicesEnabled in settings)",
     )
 
     # Advanced configuration
@@ -727,3 +1349,7 @@ class KeycloakClient(BaseModel):
     class Config:
         populate_by_name = True
         extra = "forbid"
+
+
+# Resolve forward references for AuthorizationSettings -> AuthorizationPolicies/AuthorizationPermissions
+AuthorizationSettings.model_rebuild()

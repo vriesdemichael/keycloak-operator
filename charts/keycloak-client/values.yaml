@@ -76,6 +76,155 @@ frontchannelLogout: true
 # Authorization settings
 authorizationServicesEnabled: false
 
+# Fine-grained authorization configuration (optional)
+# Only used when authorizationServicesEnabled: true
+authorizationSettings:
+  # Policy enforcement mode: ENFORCING, PERMISSIVE, or DISABLED
+  policyEnforcementMode: ENFORCING
+  # Decision strategy: UNANIMOUS or AFFIRMATIVE
+  decisionStrategy: UNANIMOUS
+  # Allow remote resource management via Protection API
+  allowRemoteResourceManagement: true
+
+  # Authorization scopes (actions like read, write, delete)
+  scopes: []
+    # - name: read
+    #   displayName: Read Access
+    # - name: write
+    #   displayName: Write Access
+    # - name: delete
+    #   displayName: Delete Access
+
+  # Protected resources (APIs, documents, etc.)
+  resources: []
+    # - name: Documents API
+    #   type: urn:my-api:resources:documents
+    #   uris:
+    #     - /api/documents/*
+    #   scopes:
+    #     - read
+    #     - write
+    #     - delete
+    #
+    # - name: Users API
+    #   type: urn:my-api:resources:users
+    #   uris:
+    #     - /api/users/*
+    #   scopes:
+    #     - read
+    #     - write
+
+  # Authorization policies (WHO can access resources)
+  policies:
+    # SECURITY: Enable JavaScript policies (disabled by default)
+    allowJavaScriptPolicies: false
+
+    # Role-based policies
+    rolePolicies: []
+      # - name: admin-policy
+      #   description: Grants access to users with admin role
+      #   logic: POSITIVE
+      #   roles:
+      #     - name: admin
+      #       required: false
+      #   fetchRoles: true
+
+    # User-based policies
+    userPolicies: []
+      # - name: specific-users-policy
+      #   description: Grants access to specific users
+      #   users:
+      #     - alice
+      #     - bob
+
+    # Group-based policies
+    groupPolicies: []
+      # - name: engineering-policy
+      #   description: Grants access to engineering group
+      #   groups:
+      #     - /engineering
+      #     - /engineering/backend
+      #   groupsClaim: groups
+
+    # Client-based policies
+    clientPolicies: []
+      # - name: trusted-clients-policy
+      #   description: Grants access to trusted clients
+      #   clients:
+      #     - trusted-service-a
+      #     - trusted-service-b
+
+    # Time-based policies
+    timePolicies: []
+      # - name: business-hours-policy
+      #   description: Grants access during business hours
+      #   hour: 9
+      #   hourEnd: 17
+      #   # Also supports: notBefore, notOnOrAfter, dayMonth, dayMonthEnd,
+      #   # month, monthEnd, year, yearEnd, minute, minuteEnd
+
+    # Regex-based policies
+    regexPolicies: []
+      # - name: email-domain-policy
+      #   description: Grants access to users with specific email domain
+      #   targetClaim: email
+      #   pattern: ".*@example\\.com$"
+
+    # Aggregate policies (combine other policies)
+    aggregatePolicies: []
+      # - name: admin-or-business-hours
+      #   description: Grants access to admins OR during business hours
+      #   decisionStrategy: AFFIRMATIVE
+      #   policies:
+      #     - admin-policy
+      #     - business-hours-policy
+
+    # JavaScript policies (requires allowJavaScriptPolicies: true)
+    # WARNING: Requires 'upload-scripts' feature enabled in Keycloak
+    javascriptPolicies: []
+      # - name: custom-js-policy
+      #   description: Custom JavaScript policy
+      #   code: |
+      #     var context = $evaluation.getContext();
+      #     var identity = context.getIdentity();
+      #     if (identity.getAttributes().containsValue('custom-attr', 'allowed')) {
+      #       $evaluation.grant();
+      #     }
+
+  # Authorization permissions (tie policies to resources/scopes)
+  # Permissions define WHAT can be accessed by linking policies to resources/scopes
+  permissions:
+    # Resource-based permissions (grant access to entire resources)
+    resourcePermissions: []
+      # - name: view-all-documents
+      #   description: Allow viewing all documents
+      #   decisionStrategy: UNANIMOUS
+      #   resources:
+      #     - Document Resource
+      #   policies:
+      #     - admin-policy
+      #     - viewer-policy
+
+    # Scope-based permissions (grant access to specific scopes)
+    scopePermissions: []
+      # - name: read-documents
+      #   description: Allow reading documents
+      #   decisionStrategy: AFFIRMATIVE
+      #   resources:
+      #     - Document Resource
+      #   scopes:
+      #     - read
+      #   policies:
+      #     - user-policy
+      #
+      # - name: write-admin-only
+      #   description: Only admins can write
+      #   scopes:
+      #     - write
+      #     - delete
+      #   policies:
+      #     - admin-policy
+
 # Advanced settings
 alwaysDisplayInConsole: false
 fullScopeAllowed: true

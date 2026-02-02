@@ -178,6 +178,320 @@
           "description": "Override for operator's ServiceAccount name"
         }
       }
+    },
+    "authorizationSettings": {
+      "type": "object",
+      "description": "Fine-grained authorization settings (requires authorizationServicesEnabled)",
+      "properties": {
+        "policyEnforcementMode": {
+          "type": "string",
+          "description": "Policy enforcement mode",
+          "enum": ["ENFORCING", "PERMISSIVE", "DISABLED"],
+          "default": "ENFORCING"
+        },
+        "decisionStrategy": {
+          "type": "string",
+          "description": "Decision strategy for policy evaluation",
+          "enum": ["UNANIMOUS", "AFFIRMATIVE", "CONSENSUS"],
+          "default": "UNANIMOUS"
+        },
+        "allowRemoteResourceManagement": {
+          "type": "boolean",
+          "description": "Allow remote resource management via Protection API",
+          "default": true
+        },
+        "scopes": {
+          "type": "array",
+          "description": "Authorization scopes (actions like read, write, delete)",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Scope name (e.g., 'read', 'write')"
+              },
+              "displayName": {
+                "type": "string",
+                "description": "Human-readable display name"
+              },
+              "iconUri": {
+                "type": "string",
+                "description": "Icon URI for UI display"
+              }
+            }
+          }
+        },
+        "resources": {
+          "type": "array",
+          "description": "Protected resources (APIs, documents, etc.)",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Resource name (unique identifier)"
+              },
+              "displayName": {
+                "type": "string",
+                "description": "Human-readable display name"
+              },
+              "type": {
+                "type": "string",
+                "description": "Resource type for grouping (e.g., 'urn:my-api:resources:documents')"
+              },
+              "uris": {
+                "type": "array",
+                "description": "URIs associated with this resource",
+                "items": {"type": "string"}
+              },
+              "scopes": {
+                "type": "array",
+                "description": "Scope names that apply to this resource",
+                "items": {"type": "string"}
+              },
+              "ownerManagedAccess": {
+                "type": "boolean",
+                "description": "Enable owner-managed access for this resource",
+                "default": false
+              },
+              "attributes": {
+                "type": "object",
+                "description": "Resource attributes",
+                "additionalProperties": {
+                  "type": "array",
+                  "items": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "policies": {
+          "type": "object",
+          "description": "Authorization policies (WHO can access resources)",
+          "properties": {
+            "allowJavaScriptPolicies": {
+              "type": "boolean",
+              "description": "SECURITY: Enable JavaScript policies. Disabled by default.",
+              "default": false
+            },
+            "rolePolicies": {
+              "type": "array",
+              "description": "Role-based policies",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {"type": "string", "description": "Policy name"},
+                  "description": {"type": "string"},
+                  "logic": {"type": "string", "enum": ["POSITIVE", "NEGATIVE"], "default": "POSITIVE"},
+                  "roles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": ["name"],
+                      "properties": {
+                        "name": {"type": "string"},
+                        "required": {"type": "boolean", "default": false}
+                      }
+                    }
+                  },
+                  "fetchRoles": {"type": "boolean", "default": true}
+                }
+              }
+            },
+            "userPolicies": {
+              "type": "array",
+              "description": "User-based policies",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {"type": "string"},
+                  "description": {"type": "string"},
+                  "logic": {"type": "string", "enum": ["POSITIVE", "NEGATIVE"], "default": "POSITIVE"},
+                  "users": {"type": "array", "items": {"type": "string"}}
+                }
+              }
+            },
+            "groupPolicies": {
+              "type": "array",
+              "description": "Group-based policies",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {"type": "string"},
+                  "description": {"type": "string"},
+                  "logic": {"type": "string", "enum": ["POSITIVE", "NEGATIVE"], "default": "POSITIVE"},
+                  "groups": {"type": "array", "items": {"type": "string"}},
+                  "groupsClaim": {"type": "string", "default": "groups"}
+                }
+              }
+            },
+            "clientPolicies": {
+              "type": "array",
+              "description": "Client-based policies",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {"type": "string"},
+                  "description": {"type": "string"},
+                  "logic": {"type": "string", "enum": ["POSITIVE", "NEGATIVE"], "default": "POSITIVE"},
+                  "clients": {"type": "array", "items": {"type": "string"}}
+                }
+              }
+            },
+            "timePolicies": {
+              "type": "array",
+              "description": "Time-based policies",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {"type": "string"},
+                  "description": {"type": "string"},
+                  "logic": {"type": "string", "enum": ["POSITIVE", "NEGATIVE"], "default": "POSITIVE"},
+                  "notBefore": {"type": "string"},
+                  "notOnOrAfter": {"type": "string"},
+                  "dayMonth": {"type": "integer", "minimum": 1, "maximum": 31},
+                  "dayMonthEnd": {"type": "integer", "minimum": 1, "maximum": 31},
+                  "month": {"type": "integer", "minimum": 1, "maximum": 12},
+                  "monthEnd": {"type": "integer", "minimum": 1, "maximum": 12},
+                  "year": {"type": "integer"},
+                  "yearEnd": {"type": "integer"},
+                  "hour": {"type": "integer", "minimum": 0, "maximum": 23},
+                  "hourEnd": {"type": "integer", "minimum": 0, "maximum": 23},
+                  "minute": {"type": "integer", "minimum": 0, "maximum": 59},
+                  "minuteEnd": {"type": "integer", "minimum": 0, "maximum": 59}
+                }
+              }
+            },
+            "regexPolicies": {
+              "type": "array",
+              "description": "Regex-based policies",
+              "items": {
+                "type": "object",
+                "required": ["name", "targetClaim", "pattern"],
+                "properties": {
+                  "name": {"type": "string"},
+                  "description": {"type": "string"},
+                  "logic": {"type": "string", "enum": ["POSITIVE", "NEGATIVE"], "default": "POSITIVE"},
+                  "targetClaim": {"type": "string"},
+                  "pattern": {"type": "string"}
+                }
+              }
+            },
+            "aggregatePolicies": {
+              "type": "array",
+              "description": "Aggregate policies (combine other policies)",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {"type": "string"},
+                  "description": {"type": "string"},
+                  "logic": {"type": "string", "enum": ["POSITIVE", "NEGATIVE"], "default": "POSITIVE"},
+                  "decisionStrategy": {"type": "string", "enum": ["UNANIMOUS", "AFFIRMATIVE", "CONSENSUS"], "default": "UNANIMOUS"},
+                  "policies": {"type": "array", "items": {"type": "string"}}
+                }
+              }
+            },
+            "javascriptPolicies": {
+              "type": "array",
+              "description": "JavaScript policies (requires allowJavaScriptPolicies=true)",
+              "items": {
+                "type": "object",
+                "required": ["name", "code"],
+                "properties": {
+                  "name": {"type": "string"},
+                  "description": {"type": "string"},
+                  "logic": {"type": "string", "enum": ["POSITIVE", "NEGATIVE"], "default": "POSITIVE"},
+                  "code": {"type": "string"}
+                }
+              }
+            }
+          }
+        },
+        "permissions": {
+          "type": "object",
+          "description": "Authorization permissions (tie policies to resources/scopes)",
+          "properties": {
+            "resourcePermissions": {
+              "type": "array",
+              "description": "Resource-based permissions (grant access to entire resources)",
+              "items": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": {"type": "string", "description": "Permission name (unique identifier)"},
+                  "description": {"type": "string", "description": "Permission description"},
+                  "decisionStrategy": {
+                    "type": "string",
+                    "enum": ["UNANIMOUS", "AFFIRMATIVE", "CONSENSUS"],
+                    "default": "UNANIMOUS",
+                    "description": "How to combine policy results"
+                  },
+                  "resources": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Resource names this permission applies to"
+                  },
+                  "resourceType": {
+                    "type": "string",
+                    "description": "Apply to all resources of this type"
+                  },
+                  "policies": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Policy names that control access"
+                  }
+                }
+              }
+            },
+            "scopePermissions": {
+              "type": "array",
+              "description": "Scope-based permissions (grant access to specific scopes)",
+              "items": {
+                "type": "object",
+                "required": ["name", "scopes"],
+                "properties": {
+                  "name": {"type": "string", "description": "Permission name (unique identifier)"},
+                  "description": {"type": "string", "description": "Permission description"},
+                  "decisionStrategy": {
+                    "type": "string",
+                    "enum": ["UNANIMOUS", "AFFIRMATIVE", "CONSENSUS"],
+                    "default": "UNANIMOUS",
+                    "description": "How to combine policy results"
+                  },
+                  "resources": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Resource names to scope this permission to (optional)"
+                  },
+                  "resourceType": {
+                    "type": "string",
+                    "description": "Apply to all resources of this type"
+                  },
+                  "scopes": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "minItems": 1,
+                    "description": "Scope names this permission applies to"
+                  },
+                  "policies": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Policy names that control access"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

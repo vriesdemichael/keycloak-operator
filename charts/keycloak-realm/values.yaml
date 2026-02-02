@@ -355,6 +355,112 @@ eventsConfig:
   adminEventsEnabled: true  # Required for drift detection
   adminEventsDetailsEnabled: true  # Recommended for drift detection
 
+# Client Profiles (optional)
+# Define client profiles that group executors for enforcing security policies
+# Profiles apply validation and restrictions to clients based on their configuration
+clientProfiles: []
+  # Example: Enforce PKCE for public clients
+  # - name: pkce-enforced
+  #   description: "Requires PKCE for OAuth2 authorization code flow"
+  #   executors:
+  #     - executor: pkce-enforcer
+  #       configuration:
+  #         auto-configure: "true"
+  #
+  # Example: Enforce secure client authentication
+  # - name: secure-authenticator
+  #   description: "Requires secure client authentication methods"
+  #   executors:
+  #     - executor: secure-client-authenticator
+  #       configuration:
+  #         allowed-client-authenticators:
+  #           - client-jwt
+  #           - client-x509
+  #
+  # Example: Enforce confidential client settings
+  # - name: confidential-client-profile
+  #   description: "Security profile for confidential clients"
+  #   executors:
+  #     - executor: confidential-client-accept-implicit-grant-disabled
+  #     - executor: secure-signature-algorithm
+  #       configuration:
+  #         default-algorithm: "PS256"
+
+# Client Policies (optional)
+# Define policies that apply client profiles based on conditions
+# Policies determine when and to which clients the profiles are applied
+clientPolicies: []
+  # Example: Apply PKCE to all public clients
+  # - name: pkce-for-public-clients
+  #   description: "Enforces PKCE for all public clients"
+  #   enabled: true
+  #   conditions:
+  #     - condition: client-access-type
+  #       configuration:
+  #         is-confidential-client: "false"
+  #   profiles:
+  #     - pkce-enforced
+  #
+  # Example: Apply secure authentication to confidential clients
+  # - name: secure-auth-for-confidential
+  #   description: "Requires secure authentication for confidential clients"
+  #   enabled: true
+  #   conditions:
+  #     - condition: client-access-type
+  #       configuration:
+  #         is-confidential-client: "true"
+  #   profiles:
+  #     - secure-authenticator
+  #     - confidential-client-profile
+  #
+  # Example: Apply profile based on client roles
+  # - name: api-client-policy
+  #   description: "Policy for clients with api-access role"
+  #   enabled: true
+  #   conditions:
+  #     - condition: client-roles
+  #       configuration:
+  #         roles:
+  #           - api-access
+  #   profiles:
+    #     - secure-authenticator
+
+# Organizations (optional, Keycloak 26+ only)
+# Organizations provide multi-tenancy support, allowing users to be grouped
+# by organization with their own domains and identity providers.
+# NOTE: Requires Keycloak version 26.0.0 or higher.
+organizations: []
+  # Example: Basic organization
+  # - name: acme-corp
+  #   alias: acme
+  #   description: "ACME Corporation"
+  #   enabled: true
+  #   domains:
+  #     - name: acme.com
+  #       verified: true
+  #     - name: acme-corp.org
+  #       verified: false
+  #   attributes:
+  #     industry:
+  #       - technology
+  #     tier:
+  #       - enterprise
+  #
+  # Example: Organization with identity provider
+  # - name: partner-org
+  #   alias: partner
+  #   description: "Partner Organization with SSO"
+  #   enabled: true
+  #   domains:
+  #     - name: partner.example.com
+  #       verified: true
+  #   identityProviders:
+  #     - alias: partner-saml-idp
+  #       redirectUri: https://app.example.com/auth/partner
+  #   attributes:
+  #     partnership_level:
+  #       - gold
+
 # Extra Kubernetes manifests to deploy
 # Useful for deploying ExternalSecrets, SealedSecrets, ConfigMaps, etc.
 extraManifests: []
