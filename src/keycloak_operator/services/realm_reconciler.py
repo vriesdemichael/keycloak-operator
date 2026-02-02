@@ -26,7 +26,8 @@ from .base_reconciler import BaseReconciler, StatusProtocol
 
 if TYPE_CHECKING:
     from ..models.keycloak_api import ComponentRepresentation
-    from ..models.realm import KeycloakUserFederation
+    from ..models.realm import KeycloakUserFederation, OrganizationIdentityProvider
+    from ..utils.keycloak_admin import KeycloakAdminClient
 
 
 class KeycloakRealmReconciler(BaseReconciler):
@@ -3035,10 +3036,8 @@ class KeycloakRealmReconciler(BaseReconciler):
             if org.attributes:
                 org_payload["attributes"] = org.attributes
 
-            # Note: Identity providers are linked separately via their own API
-            # This is a TODO for full IdP linking support
-
             existing_org = existing_by_name.get(org.name)
+            org_id: str | None = None
 
             if existing_org:
                 # Update existing organization
@@ -3056,14 +3055,28 @@ class KeycloakRealmReconciler(BaseReconciler):
             else:
                 # Create new organization
                 try:
-                    await admin_client.create_organization(
+                    created_org = await admin_client.create_organization(
                         realm_name, org_payload, namespace
                     )
                     self.logger.info(f"Created organization '{org.name}'")
+                    # Get the ID from the created org response
+                    if created_org:
+                        org_id = created_org.get("id")
                 except Exception as e:
                     self.logger.warning(
                         f"Failed to create organization '{org.name}': {e}"
                     )
+
+            # Reconcile identity provider links for this organization
+            if org_id and org.identity_providers is not None:
+                await self._reconcile_organization_idp_links(
+                    admin_client,
+                    realm_name,
+                    org_id,
+                    org.name,
+                    org.identity_providers,
+                    namespace,
+                )
 
         # Delete organizations that are not in the spec
         for org_name, existing_org in existing_by_name.items():
@@ -3086,6 +3099,77 @@ class KeycloakRealmReconciler(BaseReconciler):
             f"Organizations configuration complete: "
             f"{len(desired_names)} desired, {len(existing_orgs)} existed"
         )
+
+    async def _reconcile_organization_idp_links(
+        self,
+        admin_client: KeycloakAdminClient,
+        realm_name: str,
+        org_id: str,
+        org_name: str,
+        desired_idps: list[OrganizationIdentityProvider],
+        namespace: str,
+    ) -> None:
+        """
+        Reconcile identity provider links for an organization.
+
+        This method ensures the organization has exactly the IdPs specified in the spec:
+        - Links IdPs that are in the spec but not currently linked
+        - Unlinks IdPs that are currently linked but not in the spec
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Name of the realm
+            org_id: UUID of the organization
+            org_name: Name of the organization (for logging)
+            desired_idps: List of desired identity provider links
+            namespace: Namespace for rate limiting
+        """
+        # Get currently linked IdPs
+        try:
+            current_idps = await admin_client.get_organization_identity_providers(
+                realm_name, org_id, namespace
+            )
+        except Exception as e:
+            self.logger.warning(
+                f"Failed to get IdPs for organization '{org_name}': {e}"
+            )
+            return
+
+        # Build set of currently linked IdP aliases
+        current_aliases: set[str] = {
+            idp.get("alias") for idp in current_idps if idp.get("alias")
+        }
+
+        # Build set of desired IdP aliases
+        desired_aliases: set[str] = {idp.alias for idp in desired_idps}
+
+        # Link new IdPs
+        to_link = desired_aliases - current_aliases
+        for alias in to_link:
+            try:
+                await admin_client.link_organization_identity_provider(
+                    realm_name, org_id, alias, namespace
+                )
+                self.logger.info(f"Linked IdP '{alias}' to organization '{org_name}'")
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to link IdP '{alias}' to organization '{org_name}': {e}"
+                )
+
+        # Unlink removed IdPs
+        to_unlink = current_aliases - desired_aliases
+        for alias in to_unlink:
+            try:
+                await admin_client.unlink_organization_identity_provider(
+                    realm_name, org_id, alias, namespace
+                )
+                self.logger.info(
+                    f"Unlinked IdP '{alias}' from organization '{org_name}'"
+                )
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to unlink IdP '{alias}' from organization '{org_name}': {e}"
+                )
 
     async def do_update(
         self,

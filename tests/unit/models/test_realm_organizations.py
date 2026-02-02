@@ -152,7 +152,7 @@ class TestOrganization:
         assert org.alias is None
 
     def test_organization_with_identity_providers(self):
-        """Should support identity providers (reserved for future use)."""
+        """Should support identity providers linked to the organization."""
         org = Organization(
             name="test",
             identity_providers=[
