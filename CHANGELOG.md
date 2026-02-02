@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.3...operator-image-v0.7.4) (2026-02-02)
+
+
+### Features
+
+* **operator:** add OpenTelemetry distributed tracing support ([5dc4dc0](https://github.com/vriesdemichael/keycloak-operator/commit/5dc4dc0f80179970a7771890e05cb78f650c96dd)), closes [#172](https://github.com/vriesdemichael/keycloak-operator/issues/172)
+* **operator:** add trace-based debugging infrastructure for integration tests ([cf91123](https://github.com/vriesdemichael/keycloak-operator/commit/cf9112378d007d45e76b75f2e167dd21ce8f8ac7))
+
+
+### Bug Fixes
+
+* **operator:** address Copilot review feedback for tracing ([4f8e99c](https://github.com/vriesdemichael/keycloak-operator/commit/4f8e99c0daffbf5354cf3eef7d508d0b0835384a))
+
+
+### Documentation
+
+* **operator:** document trace-based debugging workflow in ADR 082 and TESTING.md ([1fb607a](https://github.com/vriesdemichael/keycloak-operator/commit/1fb607ab33d8646d5d7f0e219480098c41028cbf))
+
 ## [0.7.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.2...operator-image-v0.7.3) (2026-02-01)
 
 
