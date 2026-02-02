@@ -48,6 +48,8 @@ def parse_timestamp(ts: str | int | None) -> datetime | None:
                 except ValueError:
                     continue
         except Exception:
+            # Silently ignore any parsing errors - this is a best-effort parsing function
+            # that tries multiple formats. Returning None signals parsing failure.
             pass
     return None
 
