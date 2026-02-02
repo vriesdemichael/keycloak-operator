@@ -20,15 +20,13 @@ agent_instructions: >
   - Include k8s.namespace, k8s.resource.name, and k8s.resource.type attributes in spans
   - Use `get_tracer(__name__)` for module-specific tracers when creating manual spans
 
-  When testing tracing:
-  - Unit tests should mock the OTLP exporter
-  - Integration tests can use an in-memory span processor for verification
-  - The `use_simple_processor=True` option ensures immediate span export in tests
-
-  When configuring tracing:
+  When configuring tracing for production:
   - Sample rate of 1.0 is default (100% traces) - recommend 0.1-0.5 for production
   - OTEL dependencies are always installed (not optional) for consistency
   - Keycloak 26.x+ required for end-to-end tracing via Quarkus OTEL support
+
+  For debugging test failures using traces, see ADR 082 (Trace-Based Test Debugging
+  Infrastructure).
 
 rationale: >
   Distributed tracing provides critical observability for debugging reconciliation issues,
