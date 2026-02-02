@@ -81,7 +81,7 @@ authorizationServicesEnabled: false
 authorizationSettings:
   # Policy enforcement mode: ENFORCING, PERMISSIVE, or DISABLED
   policyEnforcementMode: ENFORCING
-  # Decision strategy: UNANIMOUS or AFFIRMATIVE
+  # Decision strategy: UNANIMOUS, AFFIRMATIVE, or CONSENSUS
   decisionStrategy: UNANIMOUS
   # Allow remote resource management via Protection API
   allowRemoteResourceManagement: true

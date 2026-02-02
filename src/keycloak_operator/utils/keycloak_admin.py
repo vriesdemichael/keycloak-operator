@@ -6627,6 +6627,7 @@ class KeycloakAdminClient:
     # Authorization Policies API Methods
     # =========================================================================
 
+    @api_get_list("authorization policies")
     async def get_authorization_policies(
         self,
         realm_name: str,
@@ -6656,16 +6657,7 @@ class KeycloakAdminClient:
             namespace,
         )
 
-        if response.status_code == 200:
-            return response.json()
-        elif response.status_code == 404:
-            logger.debug("No policies found or authorization not enabled")
-            return []
-        else:
-            logger.warning(
-                f"Failed to get authorization policies: {response.status_code}"
-            )
-            return []
+        return response.json() or []
 
     async def get_authorization_policy_by_name(
         self,
@@ -6740,7 +6732,7 @@ class KeycloakAdminClient:
             "POST",
             f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_type}",
             namespace,
-            json_data=policy_data,
+            json=policy_data,
         )
 
         if response.status_code == 201:
@@ -6797,7 +6789,7 @@ class KeycloakAdminClient:
             "PUT",
             f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_type}/{policy_id}",
             namespace,
-            json_data=policy_data,
+            json=policy_data,
         )
 
         if response.status_code in (200, 204):
@@ -6856,6 +6848,7 @@ class KeycloakAdminClient:
     # Permissions tie policies to resources/scopes, completing the authorization model.
     # API endpoints: /admin/realms/{realm}/clients/{id}/authz/resource-server/permission
 
+    @api_get_list("authorization permissions")
     async def get_authorization_permissions(
         self,
         realm_name: str,
@@ -6885,16 +6878,7 @@ class KeycloakAdminClient:
             namespace,
         )
 
-        if response.status_code == 200:
-            return response.json() or []
-        elif response.status_code == 404:
-            logger.debug("No permissions found or authorization not enabled")
-            return []
-        else:
-            raise KeycloakAdminError(
-                f"Failed to get authorization permissions: {response.status_code}",
-                status_code=response.status_code,
-            )
+        return response.json() or []
 
     async def get_authorization_permission_by_name(
         self,

@@ -183,14 +183,12 @@ class KeycloakRealmReconciler(BaseReconciler):
             await self.configure_default_groups(realm_spec, name, namespace)
 
         # Configure client profiles and policies (Issue #306)
-        if realm_spec.client_profiles or realm_spec.client_policies:
-            await self.configure_client_profiles_and_policies(
-                realm_spec, name, namespace
-            )
+        # Always call to allow clearing when fields are empty
+        await self.configure_client_profiles_and_policies(realm_spec, name, namespace)
 
         # Configure organizations (Issue #398, Keycloak 26+)
-        if realm_spec.organizations:
-            await self.configure_organizations(realm_spec, name, namespace)
+        # Always call to allow clearing when field is empty
+        await self.configure_organizations(realm_spec, name, namespace)
 
         # Return status information
         operator_ref = realm_spec.operator_ref
