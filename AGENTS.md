@@ -838,7 +838,9 @@ When you do get stuck or dramatically deviate from your original plan you should
 - You will work from a new branch that is branched from the latest commit on main.
 
 ## Debugging a failed cicd run
-When a CICD run has failed you need to take several things into account:
-- Which CICD run to debug (context from git or does the user specify a different branch)
-- It is usually the integration tests of security task that causes failures. For security issues there will be comments on the PR. For integration tasks you can use the logs from the cicd workflow in gh actions (retrieve it using the gh cli). Next to the logs of the integration tests with a report on test failures you can use the operator logs which are attached as an artifacts to the gh workflow run. Reason about what you need to debug, sometimes it is something obvious, other times you need to cross reference the operator logs.
-- ALWAYS use the gh cli. The repository is vriesdemichael/keycloak-operator , DO NOT try to look up the name. It has tripped you up before many times and makes you forget the entire conversation context.
+When a CICD run has failed:
+- For security issues: check PR comments from github-advanced-security
+- For integration test failures: read **ADR 082 (Trace-Based Test Debugging Infrastructure)** in `docs/decisions/` for the complete debugging workflow
+- Use `gh run download <run_id> --repo vriesdemichael/keycloak-operator` to retrieve artifacts (operator logs, traces, events)
+- Quick trace analysis: `python scripts/analyze-trace.py test-logs/traces/traces.jsonl --errors-only`
+- ALWAYS use the gh cli. The repository is vriesdemichael/keycloak-operator, DO NOT try to look up the name.

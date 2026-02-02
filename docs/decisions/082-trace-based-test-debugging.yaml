@@ -2,28 +2,153 @@ number: 82
 title: "Trace-Based Test Debugging Infrastructure"
 category: development
 decision: >
-  Deploy OpenTelemetry Collector in Kind clusters during integration tests to
-  capture operator traces. Traces are written to JSONL files for post-mortem
-  analysis of test failures, enabling correlation between test runs and operator
-  behavior via timestamps.
+  Deploy OpenTelemetry Collector in Kind clusters during integration tests to capture
+  operator traces. Traces are written to JSONL files for post-mortem analysis of test
+  failures, enabling correlation between test runs and operator behavior via timestamps.
+
+  ## Infrastructure Overview
+
+  The tracing infrastructure is automatically deployed by `scripts/kind-setup.sh` (locally)
+  and the CI workflow (GitHub Actions). Components:
+
+  - **OTEL Collector**: Deployed to `observability` namespace via `scripts/deploy-otel-collector.sh`
+  - **Manifests**: `k8s/testing/otel-collector/` (ConfigMap, Deployment, Service)
+  - **Operator config**: Sends traces to `http://otel-collector.observability.svc.cluster.local:4317`
+  - **Output**: Traces written to `/traces/traces.jsonl` inside the collector pod
+
+  ## Trace Collection Flow
+
+  1. Operator emits spans via OTLP gRPC to the collector
+  2. Collector writes spans to JSONL file (one JSON object per line)
+  3. After tests: `scripts/retrieve-traces.sh` copies traces to host
+  4. Local: `.tmp/traces/traces.jsonl`
+  5. CI: `test-logs/traces/traces.jsonl` (uploaded as artifact)
+
+  ## Debugging Workflow: Local (make test)
+
+  ```bash
+  # Run tests (traces collected automatically)
+  make test
+
+  # Quick summary of all traces
+  python scripts/analyze-trace.py .tmp/traces/traces.jsonl --summary
+
+  # Show only error spans (most useful for debugging)
+  python scripts/analyze-trace.py .tmp/traces/traces.jsonl --errors-only
+
+  # Filter by test name pattern
+  python scripts/analyze-trace.py .tmp/traces/traces.jsonl --filter "test_create_realm"
+
+  # Show trace hierarchy as tree
+  python scripts/analyze-trace.py .tmp/traces/traces.jsonl --tree
+
+  # Raw inspection with jq
+  cat .tmp/traces/traces.jsonl | jq 'select(.status.status_code == "ERROR")'
+  ```
+
+  ## Debugging Workflow: CI (GitHub Actions)
+
+  ```bash
+  # Find the failed workflow run ID
+  gh run list --repo vriesdemichael/keycloak-operator --branch <branch> --limit 5
+
+  # Download artifacts (includes traces, operator logs, events)
+  gh run download <run_id> --repo vriesdemichael/keycloak-operator --name test-logs-<run_id> --dir ./ci-logs
+
+  # Analyze traces
+  python scripts/analyze-trace.py ci-logs/traces/traces.jsonl --errors-only
+
+  # Cross-reference with operator logs
+  cat ci-logs/operator-logs.log | grep -i error
+  ```
+
+  ## Correlating Traces with Tests
+
+  Test output includes `[TRACE_CONTEXT]` markers that provide exact timestamps:
+
+  ```
+  [TRACE_CONTEXT] START tests/integration/test_realm.py::test_create 2024-01-01T10:00:00.123456+00:00
+  [TRACE_CONTEXT] END tests/integration/test_realm.py::test_create 2024-01-01T10:00:05.654321+00:00 duration=5531ms outcome=passed
+  ```
+
+  Use these timestamps to filter traces for a specific test:
+
+  ```bash
+  python scripts/analyze-trace.py traces.jsonl \
+      --time-range "2024-01-01T10:00:00" "2024-01-01T10:00:06"
+  ```
+
+  ## Key Span Attributes for Debugging
+
+  When analyzing traces, look for these attributes:
+
+  - `http.status_code`: HTTP response code from Keycloak (401, 403, 404, 500 indicate issues)
+  - `http.url`: The Keycloak API endpoint being called
+  - `http.method`: GET, POST, PUT, DELETE
+  - `k8s.resource.name`: Name of the CR being reconciled
+  - `k8s.resource.namespace`: Namespace of the CR
+  - `k8s.resource.kind`: Type (Keycloak, KeycloakRealm, KeycloakClient)
+  - `error`: Boolean indicating span represents an error
+  - `exception.message`: Error message if exception occurred
+  - `exception.stacktrace`: Full stack trace for exceptions
+
+  ## Common Debugging Scenarios
+
+  **Test times out waiting for Ready:**
+  - Use `--errors-only` to find failed API calls
+  - Check `http.status_code` for 401 (auth), 404 (not found), 500 (server error)
+  - Look at span duration to find slow operations
+
+  **Flaky test passes sometimes:**
+  - Compare traces from passing vs failing runs
+  - Look for race conditions (operations happening in unexpected order)
+  - Check if retries are happening (multiple spans for same operation)
+
+  **Authentication errors:**
+  - Filter for `http.status_code == 401`
+  - Check if credentials secret exists
+  - Verify service account setup for realm
+
+  ## analyze-trace.py Options Reference
+
+  ```
+  python scripts/analyze-trace.py <file> [options]
+
+  Options:
+    --summary         Show statistics: span counts, error rates, duration percentiles
+    --errors-only     Only show spans with errors or non-2xx status codes
+    --filter PATTERN  Filter spans by name pattern (regex supported)
+    --time-range START END  Filter by timestamp range (ISO 8601 format)
+    --tree            Display traces as hierarchical tree structure
+    --trace-id ID     Show all spans for a specific trace ID
+  ```
+
 agent_instructions: >
-  When debugging integration test failures, check for trace files in the
-  test-logs/traces directory of CI artifacts. Use scripts/analyze-trace.py to
-  filter and visualize traces. Correlate traces with tests using [TRACE_CONTEXT]
-  log markers that include test names and timestamps. The OTEL Collector is
-  automatically deployed by kind-setup.sh and CI workflows.
+  When debugging integration test failures (locally or in CI), read the full decision
+  description above for the complete trace-based debugging workflow. Quick commands:
+  `python scripts/analyze-trace.py <file> --errors-only` for error identification,
+  `--time-range` to filter by test timestamps from [TRACE_CONTEXT] markers in test output.
+  Traces are in `.tmp/traces/` locally or `test-logs/traces/` in CI artifacts.
+
 rationale: >
-  Integration test failures are often difficult to debug because the operator
-  runs in a separate pod from the test process. Traditional logging provides
-  limited visibility into the sequence of operations. By capturing distributed
-  traces, we can reconstruct the exact sequence of API calls, reconciliation
-  loops, and errors that occurred during a failed test, even when the test
-  framework doesn't provide adequate error messages.
+  Integration test failures are often difficult to debug because the operator runs in a
+  separate pod from the test process. Traditional logging provides limited visibility into
+  the sequence of operations. By capturing distributed traces, we can reconstruct the exact
+  sequence of API calls, reconciliation loops, and errors that occurred during a failed
+  test, even when the test framework doesn't provide adequate error messages.
+
+  The JSONL format was chosen for simplicity - each line is a complete JSON object that
+  can be processed with standard tools like jq, grep, or custom scripts. No trace backend
+  (Jaeger, Tempo) is required for test debugging.
+
 rejected_alternatives:
   - alternative: "Enhanced logging only"
     reason: "Logs lack causality information and are hard to correlate with specific tests"
-  - alternative: "Real-time trace streaming"
-    reason: "Adds complexity and latency; file-based export is simpler and sufficient for post-mortem analysis"
+  - alternative: "Real-time trace streaming to Jaeger/Tempo"
+    reason: "Adds complexity and external dependencies; file-based export is simpler and sufficient for post-mortem analysis"
   - alternative: "In-memory trace buffering in tests"
     reason: "Requires test code changes and doesn't capture traces from the operator pod"
+  - alternative: "Structured logging with correlation IDs"
+    reason: "Already implemented but lacks the span hierarchy and timing information that traces provide"
+
 provenance: guided-ai

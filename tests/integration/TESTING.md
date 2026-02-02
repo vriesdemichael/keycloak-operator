@@ -644,6 +644,55 @@ cat .tmp/test-logs/events.log  # Kubernetes events
    kubectl delete namespace test-<uuid>
    ```
 
+### Debugging with Traces
+
+Integration tests collect OpenTelemetry traces from the operator for post-mortem debugging.
+For the complete workflow and all options, see **ADR 082: Trace-Based Test Debugging Infrastructure** in `docs/decisions/`.
+
+**Local debugging (after `make test`):**
+```bash
+# Traces are automatically collected to .tmp/traces/traces.jsonl
+
+# Quick summary
+python scripts/analyze-trace.py .tmp/traces/traces.jsonl --summary
+
+# Show only error spans (most useful)
+python scripts/analyze-trace.py .tmp/traces/traces.jsonl --errors-only
+
+# Filter by test name
+python scripts/analyze-trace.py .tmp/traces/traces.jsonl --filter "test_create_realm"
+```
+
+**CI debugging (after failed GitHub Actions workflow):**
+```bash
+# Download artifacts
+gh run download <run_id> --repo vriesdemichael/keycloak-operator --name test-logs-<run_id> --dir ./ci-logs
+
+# Analyze traces
+python scripts/analyze-trace.py ci-logs/traces/traces.jsonl --errors-only
+```
+
+**Correlating with specific tests:**
+
+Test output includes `[TRACE_CONTEXT]` markers with timestamps:
+```
+[TRACE_CONTEXT] START tests/integration/test_realm.py::test_create 2024-01-01T10:00:00.123456+00:00
+[TRACE_CONTEXT] END tests/integration/test_realm.py::test_create 2024-01-01T10:00:05.654321+00:00 duration=5531ms outcome=passed
+```
+
+Use these timestamps to filter traces:
+```bash
+python scripts/analyze-trace.py traces.jsonl --time-range "2024-01-01T10:00:00" "2024-01-01T10:00:06"
+```
+
+**Key span attributes to look for:**
+- `http.status_code`: 401 (auth issue), 404 (not found), 500 (server error)
+- `http.url`: The Keycloak API endpoint
+- `error`: Boolean indicating error span
+- `exception.message`: Error details
+
+See ADR 082 for complete debugging workflows and all available options.
+
 ## Common Pitfalls
 
 ### ❌ Forgetting port-forward
