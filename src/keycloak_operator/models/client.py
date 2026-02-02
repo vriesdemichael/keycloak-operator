@@ -353,7 +353,7 @@ class AuthorizationSettings(BaseModel):
     decision_strategy: str = Field(
         "UNANIMOUS",
         alias="decisionStrategy",
-        description="Decision strategy: UNANIMOUS or AFFIRMATIVE",
+        description="Decision strategy: UNANIMOUS, AFFIRMATIVE, or CONSENSUS",
     )
     allow_remote_resource_management: bool = Field(
         True,

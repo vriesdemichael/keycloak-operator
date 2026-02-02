@@ -1501,7 +1501,9 @@ class Organization(BaseModel):
     identity_providers: list[OrganizationIdentityProvider] = Field(
         default_factory=list,
         alias="identityProviders",
-        description="Identity providers linked to this organization",
+        description="Identity providers linked to this organization. "
+        "NOTE: IdP linking is not yet implemented in reconciliation - this field "
+        "is reserved for future use.",
     )
 
     @field_validator("name")
