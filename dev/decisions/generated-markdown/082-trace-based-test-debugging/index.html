@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/038-ruff-for-formatting-and-linting/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/082-trace-based-test-debugging/">
       
       
-        <link rel="prev" href="../037-support-for-operator-managed-and-external-keycloak-instances/">
+        <link rel="prev" href="../081-opentelemetry-distributed-tracing/">
       
       
-        <link rel="next" href="../039-token-rotation-and-bootstrap-flows/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-038: Ruff for formatting and linting - Keycloak Operator</title>
+        <title>ADR-082: Trace-Based Test Debugging Infrastructure - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-038-ruff-for-formatting-and-linting" class="md-skip">
+        <a href="#adr-082-trace-based-test-debugging-infrastructure" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-038: Ruff for formatting and linting
+              ADR-082: Trace-Based Test Debugging Infrastructure
             
           </span>
         </div>
@@ -2659,37 +2659,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-038: Ruff for formatting and linting
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../038-ruff-for-formatting-and-linting/" class="md-nav__link">
         
   
   
@@ -2705,98 +2678,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#black-isort-flake8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Black + isort + Flake8
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pylint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pylint
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4010,10 +3891,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../082-trace-based-test-debugging/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-082: Trace-Based Test Debugging Infrastructure
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4029,6 +3937,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#infrastructure-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Infrastructure Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trace-collection-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trace Collection Flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#debugging-workflow-local-make-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Debugging Workflow: Local (make test)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4106,10 +4078,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
+  <a href="#infrastructure-overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rationale
+        Infrastructure Overview
       
     </span>
   </a>
@@ -4117,10 +4089,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
+  <a href="#trace-collection-flow" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Agent Instructions
+        Trace Collection Flow
       
     </span>
   </a>
@@ -4128,41 +4100,13 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
+  <a href="#debugging-workflow-local-make-test" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Rejected Alternatives
+        Debugging Workflow: Local (make test)
       
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#black-isort-flake8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Black + isort + Flake8
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pylint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pylint
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -4183,7 +4127,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/038-ruff-for-formatting-and-linting.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/082-trace-based-test-debugging.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4191,20 +4135,67 @@
   
 
 
-<h1 id="adr-038-ruff-for-formatting-and-linting">ADR-038: Ruff for formatting and linting<a class="headerlink" href="#adr-038-ruff-for-formatting-and-linting" title="Permanent link">&para;</a></h1>
+<h1 id="adr-082-trace-based-test-debugging-infrastructure">ADR-082: Trace-Based Test Debugging Infrastructure<a class="headerlink" href="#adr-082-trace-based-test-debugging-infrastructure" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> development
-<strong>Provenance:</strong> human</p>
+<strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use Ruff for both code formatting and linting. Ruff replaces multiple tools (Black, isort, Flake8, etc.) with a single fast tool.</p>
+<p>Deploy OpenTelemetry Collector in Kind clusters during integration tests to capture operator traces. Traces are written to JSONL files for post-mortem analysis of test failures, enabling correlation between test runs and operator behavior via timestamps.</p>
+<h2 id="infrastructure-overview">Infrastructure Overview<a class="headerlink" href="#infrastructure-overview" title="Permanent link">&para;</a></h2>
+<p>The tracing infrastructure is automatically deployed by <code>scripts/kind-setup.sh</code> (locally) and the CI workflow (GitHub Actions). Components:
+- <strong>OTEL Collector</strong>: Deployed to <code>observability</code> namespace via <code>scripts/deploy-otel-collector.sh</code> - <strong>Manifests</strong>: <code>k8s/testing/otel-collector/</code> (ConfigMap, Deployment, Service) - <strong>Operator config</strong>: Sends traces to <code>http://otel-collector.observability.svc.cluster.local:4317</code> - <strong>Output</strong>: Traces written to <code>/traces/traces.jsonl</code> inside the collector pod</p>
+<h2 id="trace-collection-flow">Trace Collection Flow<a class="headerlink" href="#trace-collection-flow" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Operator emits spans via OTLP gRPC to the collector 2. Collector writes spans to JSONL file (one JSON object per line) 3. After tests: <code>scripts/retrieve-traces.sh</code> copies traces to host 4. Local: <code>.tmp/traces/traces.jsonl</code> 5. CI: <code>test-logs/traces/traces.jsonl</code> (uploaded as artifact)</li>
+</ol>
+<h2 id="debugging-workflow-local-make-test">Debugging Workflow: Local (make test)<a class="headerlink" href="#debugging-workflow-local-make-test" title="Permanent link">&para;</a></h2>
+<p>```bash # Run tests (traces collected automatically) make test</p>
+<h1 id="quick-summary-of-all-traces-python-scriptsanalyze-tracepy-tmptracestracesjsonl-summary">Quick summary of all traces python scripts/analyze-trace.py .tmp/traces/traces.jsonl --summary<a class="headerlink" href="#quick-summary-of-all-traces-python-scriptsanalyze-tracepy-tmptracestracesjsonl-summary" title="Permanent link">&para;</a></h1>
+<h1 id="show-only-error-spans-most-useful-for-debugging-python-scriptsanalyze-tracepy-tmptracestracesjsonl-errors-only">Show only error spans (most useful for debugging) python scripts/analyze-trace.py .tmp/traces/traces.jsonl --errors-only<a class="headerlink" href="#show-only-error-spans-most-useful-for-debugging-python-scriptsanalyze-tracepy-tmptracestracesjsonl-errors-only" title="Permanent link">&para;</a></h1>
+<h1 id="filter-by-test-name-pattern-python-scriptsanalyze-tracepy-tmptracestracesjsonl-filter-test_create_realm">Filter by test name pattern python scripts/analyze-trace.py .tmp/traces/traces.jsonl --filter "test_create_realm"<a class="headerlink" href="#filter-by-test-name-pattern-python-scriptsanalyze-tracepy-tmptracestracesjsonl-filter-test_create_realm" title="Permanent link">&para;</a></h1>
+<h1 id="show-trace-hierarchy-as-tree-python-scriptsanalyze-tracepy-tmptracestracesjsonl-tree">Show trace hierarchy as tree python scripts/analyze-trace.py .tmp/traces/traces.jsonl --tree<a class="headerlink" href="#show-trace-hierarchy-as-tree-python-scriptsanalyze-tracepy-tmptracestracesjsonl-tree" title="Permanent link">&para;</a></h1>
+<h1 id="raw-inspection-with-jq-cat-tmptracestracesjsonl-jq-selectstatusstatus_code-error">Raw inspection with jq cat .tmp/traces/traces.jsonl | jq 'select(.status.status_code == "ERROR")' ```<a class="headerlink" href="#raw-inspection-with-jq-cat-tmptracestracesjsonl-jq-selectstatusstatus_code-error" title="Permanent link">&para;</a></h1>
+<h2 id="debugging-workflow-ci-github-actions">Debugging Workflow: CI (GitHub Actions)<a class="headerlink" href="#debugging-workflow-ci-github-actions" title="Permanent link">&para;</a></h2>
+<p>```bash # Find the failed workflow run ID gh run list --repo vriesdemichael/keycloak-operator --branch <branch> --limit 5</p>
+<h1 id="download-artifacts-includes-traces-operator-logs-events-gh-run-download-repo-vriesdemichaelkeycloak-operator-name-test-logs-dir-ci-logs">Download artifacts (includes traces, operator logs, events) gh run download <run_id> --repo vriesdemichael/keycloak-operator --name test-logs-<run_id> --dir ./ci-logs<a class="headerlink" href="#download-artifacts-includes-traces-operator-logs-events-gh-run-download-repo-vriesdemichaelkeycloak-operator-name-test-logs-dir-ci-logs" title="Permanent link">&para;</a></h1>
+<h1 id="analyze-traces-python-scriptsanalyze-tracepy-ci-logstracestracesjsonl-errors-only">Analyze traces python scripts/analyze-trace.py ci-logs/traces/traces.jsonl --errors-only<a class="headerlink" href="#analyze-traces-python-scriptsanalyze-tracepy-ci-logstracestracesjsonl-errors-only" title="Permanent link">&para;</a></h1>
+<h1 id="cross-reference-with-operator-logs-cat-ci-logsoperator-logslog-grep-i-error">Cross-reference with operator logs cat ci-logs/operator-logs.log | grep -i error ```<a class="headerlink" href="#cross-reference-with-operator-logs-cat-ci-logsoperator-logslog-grep-i-error" title="Permanent link">&para;</a></h1>
+<h2 id="correlating-traces-with-tests">Correlating Traces with Tests<a class="headerlink" href="#correlating-traces-with-tests" title="Permanent link">&para;</a></h2>
+<p>Test output includes <code>[TRACE_CONTEXT]</code> markers that provide exact timestamps:
+<code>[TRACE_CONTEXT] START tests/integration/test_realm.py::test_create 2024-01-01T10:00:00.123456+00:00 [TRACE_CONTEXT] END tests/integration/test_realm.py::test_create 2024-01-01T10:00:05.654321+00:00 duration=5531ms outcome=passed</code>
+Use these timestamps to filter traces for a specific test:
+```bash python scripts/analyze-trace.py traces.jsonl \
+    --time-range "2024-01-01T10:00:00" "2024-01-01T10:00:06"
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>## Key Span Attributes for Debugging
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>When analyzing traces, look for these attributes:
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>- `http.status_code`: HTTP response code from Keycloak (401, 403, 404, 500 indicate issues) - `http.url`: The Keycloak API endpoint being called - `http.method`: GET, POST, PUT, DELETE - `k8s.resource.name`: Name of the CR being reconciled - `k8s.resource.namespace`: Namespace of the CR - `k8s.resource.kind`: Type (Keycloak, KeycloakRealm, KeycloakClient) - `error`: Boolean indicating span represents an error - `exception.message`: Error message if exception occurred - `exception.stacktrace`: Full stack trace for exceptions
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>## Common Debugging Scenarios
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>**Test times out waiting for Ready:** - Use `--errors-only` to find failed API calls - Check `http.status_code` for 401 (auth), 404 (not found), 500 (server error) - Look at span duration to find slow operations
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>**Flaky test passes sometimes:** - Compare traces from passing vs failing runs - Look for race conditions (operations happening in unexpected order) - Check if retries are happening (multiple spans for same operation)
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>**Authentication errors:** - Filter for `http.status_code == 401` - Check if credentials secret exists - Verify service account setup for realm
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>## analyze-trace.py Options Reference
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>``` python scripts/analyze-trace.py &lt;file&gt; [options]
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>Options:
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>  --summary         Show statistics: span counts, error rates, duration percentiles
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>  --errors-only     Only show spans with errors or non-2xx status codes
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>  --filter PATTERN  Filter spans by name pattern (regex supported)
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>  --time-range START END  Filter by timestamp range (ISO 8601 format)
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>  --tree            Display traces as hierarchical tree structure
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>  --trace-id ID     Show all spans for a specific trace ID
+</span></code></pre></div></p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Ruff is 10-100x faster than legacy Python linters. Single tool replaces Black (formatting), isort (imports), Flake8 (linting), pyupgrade, etc. Reduces dependencies and configuration complexity. Written in Rust for speed. Same team makes ty type checker - good ecosystem integration. Pre-commit hooks run faster with Ruff.</p>
+<p>Integration test failures are often difficult to debug because the operator runs in a separate pod from the test process. Traditional logging provides limited visibility into the sequence of operations. By capturing distributed traces, we can reconstruct the exact sequence of API calls, reconciliation loops, and errors that occurred during a failed test, even when the test framework doesn't provide adequate error messages.
+The JSONL format was chosen for simplicity - each line is a complete JSON object that can be processed with standard tools like jq, grep, or custom scripts. No trace backend (Jaeger, Tempo) is required for test debugging.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Run 'ruff format' for code formatting. Run 'ruff check --fix' for linting. Configure Ruff in pyproject.toml. Use 'make format' and 'make lint' targets. Never introduce Black, isort, Flake8, or other legacy linters. Ruff handles all Python code quality checks.</p>
+<p>When debugging integration test failures (locally or in CI), read the full decision description above for the complete trace-based debugging workflow. Quick commands: <code>python scripts/analyze-trace.py &lt;file&gt; --errors-only</code> for error identification, <code>--time-range</code> to filter by test timestamps from [TRACE_CONTEXT] markers in test output. Traces are in <code>.tmp/traces/</code> locally or <code>test-logs/traces/</code> in CI artifacts.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="black-isort-flake8">Black + isort + Flake8<a class="headerlink" href="#black-isort-flake8" title="Permanent link">&para;</a></h3>
-<p>Slow, multiple tools to configure and maintain. Ruff is drop-in replacement that's much faster.</p>
-<h3 id="pylint">Pylint<a class="headerlink" href="#pylint" title="Permanent link">&para;</a></h3>
-<p>Very slow, overly verbose. Ruff covers same checks with better performance.</p>
+<h3 id="enhanced-logging-only">Enhanced logging only<a class="headerlink" href="#enhanced-logging-only" title="Permanent link">&para;</a></h3>
+<p>Logs lack causality information and are hard to correlate with specific tests</p>
+<h3 id="real-time-trace-streaming-to-jaegertempo">Real-time trace streaming to Jaeger/Tempo<a class="headerlink" href="#real-time-trace-streaming-to-jaegertempo" title="Permanent link">&para;</a></h3>
+<p>Adds complexity and external dependencies; file-based export is simpler and sufficient for post-mortem analysis</p>
+<h3 id="in-memory-trace-buffering-in-tests">In-memory trace buffering in tests<a class="headerlink" href="#in-memory-trace-buffering-in-tests" title="Permanent link">&para;</a></h3>
+<p>Requires test code changes and doesn't capture traces from the operator pod</p>
+<h3 id="structured-logging-with-correlation-ids">Structured logging with correlation IDs<a class="headerlink" href="#structured-logging-with-correlation-ids" title="Permanent link">&para;</a></h3>
+<p>Already implemented but lacks the span hierarchy and timing information that traces provide</p>
 
 
 
@@ -4240,7 +4231,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../037-support-for-operator-managed-and-external-keycloak-instances/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-037: Support for operator-managed and external Keycloak instances">
+          <a href="../081-opentelemetry-distributed-tracing/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-081: OpenTelemetry Distributed Tracing">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4250,20 +4241,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-037: Support for operator-managed and external Keycloak instances
+                ADR-081: OpenTelemetry Distributed Tracing
               </div>
             </div>
           </a>
         
         
           
-          <a href="../039-token-rotation-and-bootstrap-flows/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-039: Token rotation and bootstrap flows">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-039: Token rotation and bootstrap flows
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">

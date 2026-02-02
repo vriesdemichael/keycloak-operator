@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/038-ruff-for-formatting-and-linting/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/081-opentelemetry-distributed-tracing/">
       
       
-        <link rel="prev" href="../037-support-for-operator-managed-and-external-keycloak-instances/">
+        <link rel="prev" href="../080-atomic-client-secret-rotation/">
       
       
-        <link rel="next" href="../039-token-rotation-and-bootstrap-flows/">
+        <link rel="next" href="../082-trace-based-test-debugging/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-038: Ruff for formatting and linting - Keycloak Operator</title>
+        <title>ADR-081: OpenTelemetry Distributed Tracing - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-038-ruff-for-formatting-and-linting" class="md-skip">
+        <a href="#adr-081-opentelemetry-distributed-tracing" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-038: Ruff for formatting and linting
+              ADR-081: OpenTelemetry Distributed Tracing
             
           </span>
         </div>
@@ -2659,37 +2659,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-038: Ruff for formatting and linting
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../038-ruff-for-formatting-and-linting/" class="md-nav__link">
         
   
   
@@ -2705,98 +2678,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#black-isort-flake8" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Black + isort + Flake8
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#pylint" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Pylint
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -3982,10 +3863,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../081-opentelemetry-distributed-tracing/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-081: OpenTelemetry Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4001,6 +3909,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#make-otel-dependencies-optional" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Make OTEL dependencies optional
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-zipkin-format-instead-of-otlp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use Zipkin format instead of OTLP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implement-custom-tracing-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implement custom tracing solution
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4140,10 +4151,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#black-isort-flake8" class="md-nav__link">
+  <a href="#make-otel-dependencies-optional" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Black + isort + Flake8
+        Make OTEL dependencies optional
       
     </span>
   </a>
@@ -4151,10 +4162,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#pylint" class="md-nav__link">
+  <a href="#use-zipkin-format-instead-of-otlp" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Pylint
+        Use Zipkin format instead of OTLP
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#implement-custom-tracing-solution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Implement custom tracing solution
       
     </span>
   </a>
@@ -4183,7 +4205,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/038-ruff-for-formatting-and-linting.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/081-opentelemetry-distributed-tracing.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4191,20 +4213,27 @@
   
 
 
-<h1 id="adr-038-ruff-for-formatting-and-linting">ADR-038: Ruff for formatting and linting<a class="headerlink" href="#adr-038-ruff-for-formatting-and-linting" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> development
-<strong>Provenance:</strong> human</p>
+<h1 id="adr-081-opentelemetry-distributed-tracing">ADR-081: OpenTelemetry Distributed Tracing<a class="headerlink" href="#adr-081-opentelemetry-distributed-tracing" title="Permanent link">&para;</a></h1>
+<p><strong>Category:</strong> architecture
+<strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use Ruff for both code formatting and linting. Ruff replaces multiple tools (Black, isort, Flake8, etc.) with a single fast tool.</p>
+<p>Implement OpenTelemetry distributed tracing for the Keycloak operator with optional propagation to managed Keycloak instances. Tracing is disabled by default but can be enabled via Helm values or environment variables.
+Key design choices: 1. Use OTLP gRPC exporter for wide compatibility with observability backends (Jaeger, Tempo, etc.) 2. Auto-instrument httpx and aiohttp HTTP clients for automatic trace context propagation 3. Provide <code>@traced_handler</code> decorator for semantic spans on Kopf handlers 4. Propagate tracing config to Keycloak instances (26.x+) when <code>propagateToKeycloak: true</code> 5. Use W3C Trace Context (traceparent header) for cross-service propagation</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Ruff is 10-100x faster than legacy Python linters. Single tool replaces Black (formatting), isort (imports), Flake8 (linting), pyupgrade, etc. Reduces dependencies and configuration complexity. Written in Rust for speed. Same team makes ty type checker - good ecosystem integration. Pre-commit hooks run faster with Ruff.</p>
+<p>Distributed tracing provides critical observability for debugging reconciliation issues, identifying slow Keycloak API calls, and understanding the full request lifecycle.
+OpenTelemetry was chosen as the standard because: - Industry-standard with wide backend support (Jaeger, Tempo, Honeycomb, etc.) - First-class Python support with auto-instrumentation for HTTP clients - W3C Trace Context ensures interoperability with Keycloak's built-in OTEL support - CNCF graduated project with long-term support guarantee
+Tracing is disabled by default to avoid overhead for users who don't need it, and to not require an OTLP collector in minimal deployments.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Run 'ruff format' for code formatting. Run 'ruff check --fix' for linting. Configure Ruff in pyproject.toml. Use 'make format' and 'make lint' targets. Never introduce Black, isort, Flake8, or other legacy linters. Ruff handles all Python code quality checks.</p>
+<p>When adding new Keycloak API interactions: - HTTP clients are auto-instrumented, no manual trace context injection needed - For Kopf handlers that would benefit from tracing, use the <code>@traced_handler</code> decorator - Include k8s.namespace, k8s.resource.name, and k8s.resource.type attributes in spans - Use <code>get_tracer(__name__)</code> for module-specific tracers when creating manual spans
+When configuring tracing for production: - Sample rate of 1.0 is default (100% traces) - recommend 0.1-0.5 for production - OTEL dependencies are always installed (not optional) for consistency - Keycloak 26.x+ required for end-to-end tracing via Quarkus OTEL support
+For debugging test failures using traces, see ADR 082 (Trace-Based Test Debugging Infrastructure).</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="black-isort-flake8">Black + isort + Flake8<a class="headerlink" href="#black-isort-flake8" title="Permanent link">&para;</a></h3>
-<p>Slow, multiple tools to configure and maintain. Ruff is drop-in replacement that's much faster.</p>
-<h3 id="pylint">Pylint<a class="headerlink" href="#pylint" title="Permanent link">&para;</a></h3>
-<p>Very slow, overly verbose. Ruff covers same checks with better performance.</p>
+<h3 id="make-otel-dependencies-optional">Make OTEL dependencies optional<a class="headerlink" href="#make-otel-dependencies-optional" title="Permanent link">&para;</a></h3>
+<p>Adds complexity with optional dependencies and conditional imports. The overhead of always-installed deps is minimal (~5MB), and consistent environments prevent subtle bugs.</p>
+<h3 id="use-zipkin-format-instead-of-otlp">Use Zipkin format instead of OTLP<a class="headerlink" href="#use-zipkin-format-instead-of-otlp" title="Permanent link">&para;</a></h3>
+<p>OTLP is the native OpenTelemetry protocol with better tooling support. Zipkin format would require additional translation and limits backend choices.</p>
+<h3 id="implement-custom-tracing-solution">Implement custom tracing solution<a class="headerlink" href="#implement-custom-tracing-solution" title="Permanent link">&para;</a></h3>
+<p>OpenTelemetry provides a battle-tested, vendor-neutral solution. Custom implementation would add maintenance burden without benefits.</p>
 
 
 
@@ -4240,7 +4269,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../037-support-for-operator-managed-and-external-keycloak-instances/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-037: Support for operator-managed and external Keycloak instances">
+          <a href="../080-atomic-client-secret-rotation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-080: Atomic Client Secret Rotation">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4250,20 +4279,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-037: Support for operator-managed and external Keycloak instances
+                ADR-080: Atomic Client Secret Rotation
               </div>
             </div>
           </a>
         
         
           
-          <a href="../039-token-rotation-and-bootstrap-flows/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-039: Token rotation and bootstrap flows">
+          <a href="../082-trace-based-test-debugging/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-082: Trace-Based Test Debugging Infrastructure">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-039: Token rotation and bootstrap flows
+                ADR-082: Trace-Based Test Debugging Infrastructure
               </div>
             </div>
             <div class="md-footer__button md-icon">

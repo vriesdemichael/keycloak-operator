@@ -1748,6 +1748,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.keycloak.KeycloakTracingConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakTracingConfig
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.keycloak.RealmCapacity" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5726,6 +5737,17 @@
     <span class="md-ellipsis">
       
         supports_management_port
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.validation.supports_tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        supports_tracing
       
     </span>
   </a>
@@ -8784,6 +8806,62 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/081-opentelemetry-distributed-tracing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-081: OpenTelemetry Distributed Tracing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/082-trace-based-test-debugging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-082: Trace-Based Test Debugging Infrastructure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -9141,6 +9219,17 @@
     <span class="md-ellipsis">
       
         KeycloakTLSConfig
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.models.keycloak.KeycloakTracingConfig" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakTracingConfig
       
     </span>
   </a>
@@ -13133,6 +13222,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.validation.supports_tracing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        supports_tracing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.utils.validation.validate_client_id" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -14724,6 +14824,55 @@ as observed by the operator.</p>
 
 
         <p>TLS configuration for Keycloak instance.</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.keycloak.KeycloakTracingConfig" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">KeycloakTracingConfig</span>
+
+
+<a href="#keycloak_operator.models.keycloak.KeycloakTracingConfig" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>OpenTelemetry distributed tracing configuration for Keycloak.</p>
+<p>Keycloak 26.x+ has built-in OpenTelemetry support via Quarkus.
+This configuration enables end-to-end distributed tracing.</p>
 
 
 
@@ -46831,6 +46980,109 @@ images without version tags. Takes precedence over image tag detection.</p>
             <td>
               <div class="doc-md-description">
                 <p>True if the version supports management port (25.0.0+), False otherwise.</p>
+              </div>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Returns True if version cannot be determined (assume modern version).</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="keycloak_operator.utils.validation.supports_tracing" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">supports_tracing</span>
+
+
+<a href="#keycloak_operator.utils.validation.supports_tracing" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">supports_tracing</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">version_override</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Check if a Keycloak image supports built-in OpenTelemetry tracing.</p>
+<p>Built-in OTEL tracing support (via Quarkus) was introduced in Keycloak 26.0.0.
+Earlier versions (24.x, 25.x) do not have native tracing support.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>image</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Container image reference like "quay.io/keycloak/keycloak:26.4.0"</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>version_override</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Optional explicit version string (e.g., "25.0.0") for custom
+images without version tags. Takes precedence over image tag detection.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>True if the version supports tracing (26.0.0+), False otherwise.</p>
               </div>
             </td>
           </tr>
