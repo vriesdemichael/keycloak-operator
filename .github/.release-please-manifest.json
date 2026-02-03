@@ -2,5 +2,5 @@
   ".": "0.7.4",
   "charts/keycloak-operator": "0.4.6",
   "charts/keycloak-client": "0.4.2",
-  "charts/keycloak-realm": "0.4.0"
+  "charts/keycloak-realm": "0.4.1"
 }
