@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.4...operator-image-v0.7.5) (2026-02-03)
+
+
+### Features
+
+* **chart-client+chart-operator+chart-realm+operator:** add authorization and organization feature parity ([9979fd0](https://github.com/vriesdemichael/keycloak-operator/commit/9979fd07e10d53ac2fe654f9cdc927e06780f8e7))
+* **operator:** implement organization IdP linking and add integration tests ([5c60496](https://github.com/vriesdemichael/keycloak-operator/commit/5c604961bbf236c8192c295ad975a6ded4bd06b1)), closes [#454](https://github.com/vriesdemichael/keycloak-operator/issues/454)
+
+
+### Bug Fixes
+
+* **operator:** address PR review comments and add unit tests ([d0aa0d6](https://github.com/vriesdemichael/keycloak-operator/commit/d0aa0d6b95dd29825f7bb9c5aefeeb126f07ecc6))
+
 ## [0.7.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.3...operator-image-v0.7.4) (2026-02-02)
 
 
