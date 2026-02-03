@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak-client
 description: A Helm chart for deploying Keycloak clients with authorization
 type: application
-version: 0.4.1
+version: 0.4.2
 appVersion: "1.0.0"
 keywords:
   - keycloak
