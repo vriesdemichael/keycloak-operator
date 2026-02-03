@@ -400,15 +400,12 @@ class TestCreateAuthorizationPolicy:
         assert policy["name"] == "admin-policy"
 
     @pytest.mark.asyncio
-    async def test_returns_existing_on_conflict(self, mock_admin_client):
-        """Should return existing policy on conflict (409)."""
-        mock_conflict_response = MockResponse(409)
-        mock_get_response = MockResponse(
-            200,
-            [{"id": "pol-1", "name": "admin-policy", "type": "role"}],
-        )
+    async def test_returns_none_on_conflict(self, mock_admin_client):
+        """Should return None on conflict (409), decorator handles gracefully."""
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
         mock_admin_client._make_request = AsyncMock(
-            side_effect=[mock_conflict_response, mock_get_response]
+            side_effect=KeycloakAdminError("Conflict", status_code=409)
         )
 
         policy = await mock_admin_client.create_authorization_policy(
@@ -419,17 +416,20 @@ class TestCreateAuthorizationPolicy:
             "default",
         )
 
-        assert policy is not None
-        assert policy["name"] == "admin-policy"
+        # The @api_create decorator catches 409 and returns None
+        assert policy is None
 
     @pytest.mark.asyncio
     async def test_returns_none_on_failure(self, mock_admin_client):
-        """Should return None on unexpected status code (decorator catches error)."""
-        mock_response = MockResponse(500, text="Internal Server Error")
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        """Should return None on unexpected error (decorator catches error)."""
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Internal Server Error", status_code=500)
+        )
 
         # The @api_create decorator catches the error and returns None
-        policy = await mock_admin_client.create_authorization_policy(
+        result = await mock_admin_client.create_authorization_policy(
             "test-realm",
             "client-uuid",
             "role",
@@ -437,7 +437,7 @@ class TestCreateAuthorizationPolicy:
             "default",
         )
 
-        assert policy is None
+        assert result is None
 
 
 class TestUpdateAuthorizationPolicy:
@@ -462,10 +462,14 @@ class TestUpdateAuthorizationPolicy:
 
     @pytest.mark.asyncio
     async def test_returns_false_on_not_found(self, mock_admin_client):
-        """Should return False when policy doesn't exist."""
-        mock_response = MockResponse(404)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        """Should return False when policy doesn't exist (decorator catches error)."""
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Not Found", status_code=404)
+        )
+
+        # The @api_update decorator catches the error and returns False
         result = await mock_admin_client.update_authorization_policy(
             "test-realm",
             "client-uuid",
@@ -647,10 +651,14 @@ class TestUpdateAuthorizationPermission:
 
     @pytest.mark.asyncio
     async def test_returns_false_on_not_found(self, mock_admin_client):
-        """Should return False when permission doesn't exist."""
-        mock_response = MockResponse(404)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        """Should return False when permission doesn't exist (decorator catches error)."""
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Not Found", status_code=404)
+        )
+
+        # The @api_update decorator catches the error and returns False
         result = await mock_admin_client.update_authorization_permission(
             "test-realm",
             "client-uuid",

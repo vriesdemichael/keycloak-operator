@@ -2074,15 +2074,21 @@ class KeycloakClientReconciler(BaseReconciler):
             for policy_type, policy_data in aggregate_configs:
                 # Resolve policy names to IDs for aggregate policies
                 if "policies" in policy_data:
+                    original_policy_names = policy_data["policies"]
                     resolved_policy_ids = []
-                    for policy_name in policy_data["policies"]:
+                    missing_policies = []
+                    for policy_name in original_policy_names:
                         policy_id = policy_name_to_id.get(policy_name)
                         if policy_id:
                             resolved_policy_ids.append(policy_id)
                         else:
-                            self.logger.warning(
-                                f"Referenced policy '{policy_name}' not found for aggregate policy '{policy_data['name']}'"
-                            )
+                            missing_policies.append(policy_name)
+
+                    if missing_policies:
+                        raise ReconciliationError(
+                            f"Aggregate policy '{policy_data['name']}' references non-existent policies: {missing_policies}. "
+                            f"Ensure all referenced policies are defined before the aggregate policy."
+                        )
                     policy_data["policies"] = resolved_policy_ids
 
                 existing = existing_by_name.get(policy_data["name"])
@@ -2181,43 +2187,59 @@ class KeycloakClientReconciler(BaseReconciler):
         # Track which permission names we want to keep
         desired_permission_names: set[str] = set()
 
-        # Helper to resolve policy names to IDs
-        def _resolve_policies(policy_names: list[str]) -> list[str]:
+        # Helper to resolve policy names to IDs (raises error if any not found)
+        def _resolve_policies(
+            policy_names: list[str], permission_name: str
+        ) -> list[str]:
             resolved = []
+            missing = []
             for name in policy_names:
                 policy_id = policy_name_to_id.get(name)
                 if policy_id:
                     resolved.append(policy_id)
                 else:
-                    self.logger.warning(
-                        f"Policy '{name}' not found for permission, skipping"
-                    )
+                    missing.append(name)
+            if missing:
+                raise ReconciliationError(
+                    f"Permission '{permission_name}' references non-existent policies: {missing}. "
+                    f"Ensure all referenced policies are defined."
+                )
             return resolved
 
-        # Helper to resolve resource names to IDs
-        def _resolve_resources(resource_names: list[str]) -> list[str]:
+        # Helper to resolve resource names to IDs (raises error if any not found)
+        def _resolve_resources(
+            resource_names: list[str], permission_name: str
+        ) -> list[str]:
             resolved = []
+            missing = []
             for name in resource_names:
                 resource_id = resource_name_to_id.get(name)
                 if resource_id:
                     resolved.append(resource_id)
                 else:
-                    self.logger.warning(
-                        f"Resource '{name}' not found for permission, skipping"
-                    )
+                    missing.append(name)
+            if missing:
+                raise ReconciliationError(
+                    f"Permission '{permission_name}' references non-existent resources: {missing}. "
+                    f"Ensure all referenced resources are defined."
+                )
             return resolved
 
-        # Helper to resolve scope names to IDs
-        def _resolve_scopes(scope_names: list[str]) -> list[str]:
+        # Helper to resolve scope names to IDs (raises error if any not found)
+        def _resolve_scopes(scope_names: list[str], permission_name: str) -> list[str]:
             resolved = []
+            missing = []
             for name in scope_names:
                 scope_id = scope_name_to_id.get(name)
                 if scope_id:
                     resolved.append(scope_id)
                 else:
-                    self.logger.warning(
-                        f"Scope '{name}' not found for permission, skipping"
-                    )
+                    missing.append(name)
+            if missing:
+                raise ReconciliationError(
+                    f"Permission '{permission_name}' references non-existent scopes: {missing}. "
+                    f"Ensure all referenced scopes are defined."
+                )
             return resolved
 
         # Process resource permissions
@@ -2228,8 +2250,8 @@ class KeycloakClientReconciler(BaseReconciler):
                 "name": permission.name,
                 "description": permission.description,
                 "decisionStrategy": permission.decision_strategy,
-                "resources": _resolve_resources(permission.resources),
-                "policies": _resolve_policies(permission.policies),
+                "resources": _resolve_resources(permission.resources, permission.name),
+                "policies": _resolve_policies(permission.policies, permission.name),
             }
 
             # Add resourceType if specified
@@ -2277,13 +2299,15 @@ class KeycloakClientReconciler(BaseReconciler):
                 "name": permission.name,
                 "description": permission.description,
                 "decisionStrategy": permission.decision_strategy,
-                "scopes": _resolve_scopes(permission.scopes),
-                "policies": _resolve_policies(permission.policies),
+                "scopes": _resolve_scopes(permission.scopes, permission.name),
+                "policies": _resolve_policies(permission.policies, permission.name),
             }
 
             # Add resources if specified (optional for scope permissions)
             if permission.resources:
-                permission_data["resources"] = _resolve_resources(permission.resources)
+                permission_data["resources"] = _resolve_resources(
+                    permission.resources, permission.name
+                )
 
             # Add resourceType if specified
             if permission.resource_type:

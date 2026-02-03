@@ -205,10 +205,14 @@ class TestUpdateOrganization:
 
     @pytest.mark.asyncio
     async def test_returns_false_on_not_found(self, mock_admin_client):
-        """Should return False when organization doesn't exist."""
-        mock_response = MockResponse(404)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        """Should return False when organization doesn't exist (decorator catches error)."""
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Not Found", status_code=404)
+        )
+
+        # The @api_update decorator catches the error and returns False
         result = await mock_admin_client.update_organization(
             "test-realm",
             "nonexistent",
@@ -221,8 +225,11 @@ class TestUpdateOrganization:
     @pytest.mark.asyncio
     async def test_returns_false_on_failure(self, mock_admin_client):
         """Should return False on unexpected error (decorator catches error)."""
-        mock_response = MockResponse(500)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Internal Server Error", status_code=500)
+        )
 
         # The @api_update decorator catches the error and returns False
         result = await mock_admin_client.update_organization(
@@ -258,8 +265,11 @@ class TestDeleteOrganization:
     @pytest.mark.asyncio
     async def test_returns_true_on_not_found(self, mock_admin_client):
         """Should return True when organization doesn't exist (idempotent)."""
-        mock_response = MockResponse(404)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Not Found", status_code=404)
+        )
 
         result = await mock_admin_client.delete_organization(
             "test-realm", "nonexistent", "default"
@@ -270,10 +280,13 @@ class TestDeleteOrganization:
     @pytest.mark.asyncio
     async def test_returns_false_on_failure(self, mock_admin_client):
         """Should return False on unexpected error (decorator catches error)."""
-        mock_response = MockResponse(500)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
-        # The @api_delete decorator catches the error and returns False
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Internal Server Error", status_code=500)
+        )
+
+        # The @api_delete decorator catches 500 and returns False
         result = await mock_admin_client.delete_organization(
             "test-realm", "org-id", "default"
         )
@@ -383,8 +396,11 @@ class TestLinkOrganizationIdentityProvider:
     @pytest.mark.asyncio
     async def test_returns_true_on_conflict(self, mock_admin_client):
         """Should return True when IdP already linked (idempotent)."""
-        mock_response = MockResponse(409)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Conflict", status_code=409)
+        )
 
         result = await mock_admin_client.link_organization_identity_provider(
             "test-realm", "org-id", "google", "default"
@@ -394,11 +410,14 @@ class TestLinkOrganizationIdentityProvider:
 
     @pytest.mark.asyncio
     async def test_returns_false_on_not_found(self, mock_admin_client):
-        """Should return False when org or IdP not found (decorator catches)."""
-        mock_response = MockResponse(404)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        """Should return False when org or IdP not found (decorator catches error)."""
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
-        # The @api_update decorator catches the error
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Not Found", status_code=404)
+        )
+
+        # The @api_update decorator catches the re-raised error and returns False
         result = await mock_admin_client.link_organization_identity_provider(
             "test-realm", "org-id", "nonexistent", "default"
         )
@@ -408,9 +427,13 @@ class TestLinkOrganizationIdentityProvider:
     @pytest.mark.asyncio
     async def test_returns_false_on_failure(self, mock_admin_client):
         """Should return False on unexpected error (decorator catches error)."""
-        mock_response = MockResponse(500)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Internal Server Error", status_code=500)
+        )
+
+        # The @api_update decorator catches the error and returns False
         result = await mock_admin_client.link_organization_identity_provider(
             "test-realm", "org-id", "google", "default"
         )
@@ -441,8 +464,11 @@ class TestUnlinkOrganizationIdentityProvider:
     @pytest.mark.asyncio
     async def test_returns_true_on_not_found(self, mock_admin_client):
         """Should return True when link doesn't exist (idempotent)."""
-        mock_response = MockResponse(404)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Not Found", status_code=404)
+        )
 
         result = await mock_admin_client.unlink_organization_identity_provider(
             "test-realm", "org-id", "nonexistent", "default"
@@ -453,9 +479,13 @@ class TestUnlinkOrganizationIdentityProvider:
     @pytest.mark.asyncio
     async def test_returns_false_on_failure(self, mock_admin_client):
         """Should return False on unexpected error (decorator catches error)."""
-        mock_response = MockResponse(500)
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
 
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Internal Server Error", status_code=500)
+        )
+
+        # The @api_delete decorator catches the error and returns False
         result = await mock_admin_client.unlink_organization_identity_provider(
             "test-realm", "org-id", "google", "default"
         )

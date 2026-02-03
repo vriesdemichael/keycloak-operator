@@ -155,6 +155,8 @@ class KeycloakAdminError(ExternalServiceError):
     def __init__(
         self, message: str, status_code: int | None = None, retryable: bool = True
     ):
+        self.status_code = status_code
+
         if status_code:
             message = f"HTTP {status_code}: {message}"
 
