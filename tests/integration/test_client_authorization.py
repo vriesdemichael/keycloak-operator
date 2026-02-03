@@ -104,6 +104,7 @@ class TestClientAuthorization:
             AuthorizationResource,
             AuthorizationScope,
             AuthorizationSettings,
+            KeycloakClientSettings,
             KeycloakClientSpec,
             RealmRef,
             ResourcePermission,
@@ -134,11 +135,13 @@ class TestClientAuthorization:
         client_spec = KeycloakClientSpec(
             realm_ref=RealmRef(name=realm_name, namespace=namespace),
             client_id=client_name,
-            name="Authorization Test Client",
+            client_name="Authorization Test Client",
             public_client=False,
-            authorization_services_enabled=True,
-            service_accounts_enabled=True,
-            authorization=AuthorizationSettings(
+            settings=KeycloakClientSettings(
+                authorization_services_enabled=True,
+                service_accounts_enabled=True,
+            ),
+            authorization_settings=AuthorizationSettings(
                 policy_enforcement_mode="ENFORCING",
                 decision_strategy="UNANIMOUS",
                 scopes=[
@@ -256,8 +259,8 @@ class TestClientAuthorization:
             )
 
             # Verify client exists with authorization enabled
-            client_repr = await keycloak_admin_client.get_client_by_client_id(
-                realm_name, client_name, namespace
+            client_repr = await keycloak_admin_client.get_client_by_name(
+                client_name, realm_name, namespace
             )
             assert client_repr is not None, f"Client {client_name} should exist"
             assert client_repr.authorization_services_enabled is True, (
@@ -371,6 +374,7 @@ class TestClientAuthorization:
             AuthorizationResource,
             AuthorizationScope,
             AuthorizationSettings,
+            KeycloakClientSettings,
             KeycloakClientSpec,
             RealmRef,
             RolePolicy,
@@ -401,11 +405,13 @@ class TestClientAuthorization:
         client_spec = KeycloakClientSpec(
             realm_ref=RealmRef(name=realm_name, namespace=namespace),
             client_id=client_name,
-            name="Scope Permission Test Client",
+            client_name="Scope Permission Test Client",
             public_client=False,
-            authorization_services_enabled=True,
-            service_accounts_enabled=True,
-            authorization=AuthorizationSettings(
+            settings=KeycloakClientSettings(
+                authorization_services_enabled=True,
+                service_accounts_enabled=True,
+            ),
+            authorization_settings=AuthorizationSettings(
                 policy_enforcement_mode="ENFORCING",
                 scopes=[
                     AuthorizationScope(name="view"),
@@ -496,8 +502,8 @@ class TestClientAuthorization:
             )
 
             # Verify client and get UUID
-            client_repr = await keycloak_admin_client.get_client_by_client_id(
-                realm_name, client_name, namespace
+            client_repr = await keycloak_admin_client.get_client_by_name(
+                client_name, realm_name, namespace
             )
             assert client_repr is not None
             client_uuid = client_repr.id
