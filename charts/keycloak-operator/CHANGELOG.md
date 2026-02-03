@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.6](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.5...chart-operator-v0.4.6) (2026-02-03)
+
+
+### Features
+
+* **chart-client+chart-operator+chart-realm+operator:** add authorization and organization feature parity ([9979fd0](https://github.com/vriesdemichael/keycloak-operator/commit/9979fd07e10d53ac2fe654f9cdc927e06780f8e7))
+
+
+### Bug Fixes
+
+* **operator:** address PR review comments and add unit tests ([d0aa0d6](https://github.com/vriesdemichael/keycloak-operator/commit/d0aa0d6b95dd29825f7bb9c5aefeeb126f07ecc6))
+
 ## [0.4.5](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.4...chart-operator-v0.4.5) (2026-02-02)
 
 
