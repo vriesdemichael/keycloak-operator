@@ -941,7 +941,7 @@ spec:
                           type: string
                     identityProviders:
                       type: array
-                      description: "Identity providers linked to this organization. NOTE: IdP linking is not yet implemented - reserved for future use."
+                      description: "Identity providers linked to this organization. IdPs must exist in the realm's identity providers configuration."
                       items:
                         type: object
                         required:

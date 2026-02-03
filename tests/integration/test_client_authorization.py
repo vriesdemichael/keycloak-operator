@@ -444,7 +444,7 @@ class TestClientAuthorization:
                         ScopePermission(
                             name="edit-profile-permission",
                             description="Users can edit their profile",
-                            resource="profile",
+                            resources=["profile"],
                             scopes=["edit"],
                             policies=["user-policy"],
                         ),

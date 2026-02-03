@@ -886,12 +886,14 @@ class TestReconcileAuthorizationPermissions:
         admin_mock.delete_authorization_permission.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_warns_on_missing_policy(
+    async def test_raises_error_on_missing_policy(
         self,
         reconciler: KeycloakClientReconciler,
         admin_mock: MagicMock,
     ) -> None:
-        """Warning should be logged when referenced policy doesn't exist."""
+        """Error should be raised when referenced policy doesn't exist."""
+        from keycloak_operator.errors import ReconciliationError
+
         admin_mock.get_authorization_policies.return_value = []  # No policies
         admin_mock.get_authorization_resources.return_value = [
             {"_id": "resource-1", "name": "Document"}
@@ -908,19 +910,27 @@ class TestReconcileAuthorizationPermissions:
             ]
         )
 
-        await reconciler._reconcile_authorization_permissions(
-            admin_mock, "test-realm", "client-uuid", permissions, "default", "my-client"
-        )
+        with pytest.raises(ReconciliationError) as exc_info:
+            await reconciler._reconcile_authorization_permissions(
+                admin_mock,
+                "test-realm",
+                "client-uuid",
+                permissions,
+                "default",
+                "my-client",
+            )
 
-        reconciler.logger.warning.assert_called()
+        assert "nonexistent-policy" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_warns_on_missing_resource(
+    async def test_raises_error_on_missing_resource(
         self,
         reconciler: KeycloakClientReconciler,
         admin_mock: MagicMock,
     ) -> None:
-        """Warning should be logged when referenced resource doesn't exist."""
+        """Error should be raised when referenced resource doesn't exist."""
+        from keycloak_operator.errors import ReconciliationError
+
         admin_mock.get_authorization_policies.return_value = []
         admin_mock.get_authorization_resources.return_value = []  # No resources
         admin_mock.get_authorization_scopes.return_value = []
@@ -934,19 +944,27 @@ class TestReconcileAuthorizationPermissions:
             ]
         )
 
-        await reconciler._reconcile_authorization_permissions(
-            admin_mock, "test-realm", "client-uuid", permissions, "default", "my-client"
-        )
+        with pytest.raises(ReconciliationError) as exc_info:
+            await reconciler._reconcile_authorization_permissions(
+                admin_mock,
+                "test-realm",
+                "client-uuid",
+                permissions,
+                "default",
+                "my-client",
+            )
 
-        reconciler.logger.warning.assert_called()
+        assert "NonexistentResource" in str(exc_info.value)
 
     @pytest.mark.asyncio
-    async def test_warns_on_missing_scope(
+    async def test_raises_error_on_missing_scope(
         self,
         reconciler: KeycloakClientReconciler,
         admin_mock: MagicMock,
     ) -> None:
-        """Warning should be logged when referenced scope doesn't exist."""
+        """Error should be raised when referenced scope doesn't exist."""
+        from keycloak_operator.errors import ReconciliationError
+
         admin_mock.get_authorization_policies.return_value = []
         admin_mock.get_authorization_resources.return_value = []
         admin_mock.get_authorization_scopes.return_value = []  # No scopes
@@ -960,8 +978,14 @@ class TestReconcileAuthorizationPermissions:
             ]
         )
 
-        await reconciler._reconcile_authorization_permissions(
-            admin_mock, "test-realm", "client-uuid", permissions, "default", "my-client"
-        )
+        with pytest.raises(ReconciliationError) as exc_info:
+            await reconciler._reconcile_authorization_permissions(
+                admin_mock,
+                "test-realm",
+                "client-uuid",
+                permissions,
+                "default",
+                "my-client",
+            )
 
-        reconciler.logger.warning.assert_called()
+        assert "nonexistent-scope" in str(exc_info.value)

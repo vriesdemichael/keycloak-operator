@@ -6682,22 +6682,21 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Getting authorization policy '{policy_name}' by name")
 
-        response = await self._make_request(
-            "GET",
-            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy",
-            namespace,
-            params={"name": policy_name, "first": 0, "max": 1},
-        )
-
-        if response.status_code == 200:
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy",
+                namespace,
+                params={"name": policy_name, "first": 0, "max": 1},
+            )
             policies = response.json()
             if policies:
                 return policies[0]
             return None
-        elif response.status_code == 404:
-            return None
-        else:
-            logger.warning(f"Failed to get policy by name: {response.status_code}")
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                return None
+            logger.warning(f"Failed to get policy by name: {exc}")
             return None
 
     @api_create("authorization policy")
@@ -6728,14 +6727,13 @@ class KeycloakAdminClient:
             f"Creating authorization policy '{policy_data.get('name')}' of type '{policy_type}'"
         )
 
-        response = await self._make_request(
-            "POST",
-            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_type}",
-            namespace,
-            json=policy_data,
-        )
-
-        if response.status_code == 201:
+        try:
+            response = await self._make_request(
+                "POST",
+                f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_type}",
+                namespace,
+                json=policy_data,
+            )
             # Try to get created policy from response or fetch by name
             try:
                 return response.json()
@@ -6743,16 +6741,13 @@ class KeycloakAdminClient:
                 return await self.get_authorization_policy_by_name(
                     realm_name, client_uuid, policy_data["name"], namespace
                 )
-        elif response.status_code == 409:
-            logger.warning(f"Policy '{policy_data.get('name')}' already exists")
-            return await self.get_authorization_policy_by_name(
-                realm_name, client_uuid, policy_data["name"], namespace
-            )
-        else:
-            raise KeycloakAdminError(
-                f"Failed to create policy: {response.status_code} - {response.text}",
-                status_code=response.status_code,
-            )
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 409:
+                logger.warning(f"Policy '{policy_data.get('name')}' already exists")
+                return await self.get_authorization_policy_by_name(
+                    realm_name, client_uuid, policy_data["name"], namespace
+                )
+            raise
 
     @api_update("authorization policy")
     async def update_authorization_policy(
@@ -6785,24 +6780,20 @@ class KeycloakAdminClient:
         # Ensure ID is set in the payload
         policy_data["id"] = policy_id
 
-        response = await self._make_request(
-            "PUT",
-            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_type}/{policy_id}",
-            namespace,
-            json=policy_data,
-        )
-
-        if response.status_code in (200, 204):
+        try:
+            await self._make_request(
+                "PUT",
+                f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_type}/{policy_id}",
+                namespace,
+                json=policy_data,
+            )
             return True
-        elif response.status_code == 404:
-            raise KeycloakAdminError(
-                f"Policy not found: {policy_id}", status_code=response.status_code
-            )
-        else:
-            raise KeycloakAdminError(
-                f"Failed to update policy: {response.status_code} - {response.text}",
-                status_code=response.status_code,
-            )
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                raise KeycloakAdminError(
+                    f"Policy not found: {policy_id}", status_code=404
+                ) from exc
+            raise
 
     @api_delete("authorization policy")
     async def delete_authorization_policy(
@@ -6828,19 +6819,18 @@ class KeycloakAdminClient:
         """
         logger.info(f"Deleting authorization policy '{policy_id}'")
 
-        response = await self._make_request(
-            "DELETE",
-            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_id}",
-            namespace,
-        )
-
-        if response.status_code in (200, 204, 404):
-            return True
-        else:
-            raise KeycloakAdminError(
-                f"Unexpected status code: {response.status_code}",
-                status_code=response.status_code,
+        try:
+            await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/policy/{policy_id}",
+                namespace,
             )
+            return True
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                # Already deleted or doesn't exist - that's fine
+                return True
+            raise
 
     # =========================================================================
     # Authorization Permissions API
@@ -6939,29 +6929,27 @@ class KeycloakAdminClient:
             f"Creating authorization permission '{permission_data.get('name')}' of type '{permission_type}'"
         )
 
-        response = await self._make_request(
-            "POST",
-            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission/{permission_type}",
-            namespace,
-            json=permission_data,
-        )
-
-        if response.status_code == 201:
+        try:
+            await self._make_request(
+                "POST",
+                f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission/{permission_type}",
+                namespace,
+                json=permission_data,
+            )
             # Get the created permission by name
             return await self.get_authorization_permission_by_name(
                 realm_name, client_uuid, permission_data.get("name"), namespace
             )
-        elif response.status_code == 409:
-            # Already exists, get and return existing
-            logger.debug(f"Permission '{permission_data.get('name')}' already exists")
-            return await self.get_authorization_permission_by_name(
-                realm_name, client_uuid, permission_data.get("name"), namespace
-            )
-        else:
-            raise KeycloakAdminError(
-                f"Failed to create permission: {response.status_code} - {response.text}",
-                status_code=response.status_code,
-            )
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 409:
+                # Already exists, get and return existing
+                logger.debug(
+                    f"Permission '{permission_data.get('name')}' already exists"
+                )
+                return await self.get_authorization_permission_by_name(
+                    realm_name, client_uuid, permission_data.get("name"), namespace
+                )
+            raise
 
     @api_update("authorization permission")
     async def update_authorization_permission(
@@ -6996,20 +6984,13 @@ class KeycloakAdminClient:
         # Ensure ID is in the payload
         permission_data["id"] = permission_id
 
-        response = await self._make_request(
+        await self._make_request(
             "PUT",
             f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission/{permission_type}/{permission_id}",
             namespace,
             json=permission_data,
         )
-
-        if response.status_code in (200, 204):
-            return True
-        else:
-            raise KeycloakAdminError(
-                f"Failed to update permission: {response.status_code} - {response.text}",
-                status_code=response.status_code,
-            )
+        return True
 
     @api_delete("authorization permission")
     async def delete_authorization_permission(
@@ -7035,19 +7016,18 @@ class KeycloakAdminClient:
         """
         logger.info(f"Deleting authorization permission '{permission_id}'")
 
-        response = await self._make_request(
-            "DELETE",
-            f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission/{permission_id}",
-            namespace,
-        )
-
-        if response.status_code in (200, 204, 404):
-            return True
-        else:
-            raise KeycloakAdminError(
-                f"Unexpected status code: {response.status_code}",
-                status_code=response.status_code,
+        try:
+            await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/clients/{client_uuid}/authz/resource-server/permission/{permission_id}",
+                namespace,
             )
+            return True
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                # Already deleted or doesn't exist - that's fine
+                return True
+            raise
 
     # =========================================================================
     # Organizations API (Keycloak 26+)
@@ -7074,25 +7054,21 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Getting organizations for realm '{realm_name}'")
 
-        response = await self._make_request(
-            "GET",
-            f"realms/{realm_name}/organizations",
-            namespace,
-        )
-
-        if response.status_code == 200:
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/organizations",
+                namespace,
+            )
             return response.json() or []
-        elif response.status_code == 404:
-            # Organizations feature might not be enabled
-            logger.debug(
-                "Organizations endpoint not found - feature may not be enabled"
-            )
-            return []
-        else:
-            raise KeycloakAdminError(
-                f"Failed to get organizations: {response.status_code}",
-                status_code=response.status_code,
-            )
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                # Organizations feature might not be enabled
+                logger.debug(
+                    "Organizations endpoint not found - feature may not be enabled"
+                )
+                return []
+            raise
 
     async def get_organization_by_name(
         self,
@@ -7113,27 +7089,23 @@ class KeycloakAdminClient:
         """
         logger.debug(f"Getting organization '{org_name}' in realm '{realm_name}'")
 
-        # Search by name
-        response = await self._make_request(
-            "GET",
-            f"realms/{realm_name}/organizations",
-            namespace,
-            params={"search": org_name, "exact": "true"},
-        )
-
-        if response.status_code == 200:
+        try:
+            # Search by name
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/organizations",
+                namespace,
+                params={"search": org_name, "exact": "true"},
+            )
             orgs = response.json() or []
             for org in orgs:
                 if org.get("name") == org_name:
                     return org
             return None
-        elif response.status_code == 404:
-            return None
-        else:
-            raise KeycloakAdminError(
-                f"Failed to get organization: {response.status_code}",
-                status_code=response.status_code,
-            )
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                return None
+            raise
 
     @api_create("organization")
     async def create_organization(
@@ -7159,31 +7131,27 @@ class KeycloakAdminClient:
             f"Creating organization '{organization_data.get('name')}' in realm '{realm_name}'"
         )
 
-        response = await self._make_request(
-            "POST",
-            f"realms/{realm_name}/organizations",
-            namespace,
-            json=organization_data,
-        )
-
-        if response.status_code == 201:
+        try:
+            await self._make_request(
+                "POST",
+                f"realms/{realm_name}/organizations",
+                namespace,
+                json=organization_data,
+            )
             # Get the created organization by name
             return await self.get_organization_by_name(
                 realm_name, organization_data.get("name"), namespace
             )
-        elif response.status_code == 409:
-            # Already exists
-            logger.debug(
-                f"Organization '{organization_data.get('name')}' already exists"
-            )
-            return await self.get_organization_by_name(
-                realm_name, organization_data.get("name"), namespace
-            )
-        else:
-            raise KeycloakAdminError(
-                f"Failed to create organization: {response.status_code} - {response.text}",
-                status_code=response.status_code,
-            )
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 409:
+                # Already exists
+                logger.debug(
+                    f"Organization '{organization_data.get('name')}' already exists"
+                )
+                return await self.get_organization_by_name(
+                    realm_name, organization_data.get("name"), namespace
+                )
+            raise
 
     @api_update("organization")
     async def update_organization(
@@ -7212,20 +7180,13 @@ class KeycloakAdminClient:
         # Ensure ID is in the payload
         organization_data["id"] = org_id
 
-        response = await self._make_request(
+        await self._make_request(
             "PUT",
             f"realms/{realm_name}/organizations/{org_id}",
             namespace,
             json=organization_data,
         )
-
-        if response.status_code in (200, 204):
-            return True
-        else:
-            raise KeycloakAdminError(
-                f"Failed to update organization: {response.status_code} - {response.text}",
-                status_code=response.status_code,
-            )
+        return True
 
     @api_delete("organization")
     async def delete_organization(
@@ -7249,19 +7210,18 @@ class KeycloakAdminClient:
         """
         logger.info(f"Deleting organization '{org_id}'")
 
-        response = await self._make_request(
-            "DELETE",
-            f"realms/{realm_name}/organizations/{org_id}",
-            namespace,
-        )
-
-        if response.status_code in (200, 204, 404):
-            return True
-        else:
-            raise KeycloakAdminError(
-                f"Unexpected status code: {response.status_code}",
-                status_code=response.status_code,
+        try:
+            await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/organizations/{org_id}",
+                namespace,
             )
+            return True
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                # Already deleted or doesn't exist - that's fine
+                return True
+            raise
 
     # =========================================================================
     # Organization Identity Provider Linking (Keycloak 26+)
@@ -7293,25 +7253,21 @@ class KeycloakAdminClient:
             f"Getting identity providers for organization '{org_id}' in realm '{realm_name}'"
         )
 
-        response = await self._make_request(
-            "GET",
-            f"realms/{realm_name}/organizations/{org_id}/identity-providers",
-            namespace,
-        )
-
-        if response.status_code == 200:
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/organizations/{org_id}/identity-providers",
+                namespace,
+            )
             return response.json() or []
-        elif response.status_code == 404:
-            # Organization not found or feature not enabled
-            logger.debug(
-                f"Organization '{org_id}' not found or IdP linking not available"
-            )
-            return []
-        else:
-            raise KeycloakAdminError(
-                f"Failed to get organization identity providers: {response.status_code}",
-                status_code=response.status_code,
-            )
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                # Organization not found or feature not enabled
+                logger.debug(
+                    f"Organization '{org_id}' not found or IdP linking not available"
+                )
+                return []
+            raise
 
     @api_update("organization identity provider link", conflict_is_success=True)
     async def link_organization_identity_provider(
@@ -7343,31 +7299,28 @@ class KeycloakAdminClient:
             f"in realm '{realm_name}'"
         )
 
-        response = await self._make_request(
-            "POST",
-            f"realms/{realm_name}/organizations/{org_id}/identity-providers",
-            namespace,
-            json=idp_alias,  # Keycloak expects just the alias string
-        )
-
-        if response.status_code in (200, 201, 204):
-            return True
-        elif response.status_code == 409:
-            # Already linked
-            logger.debug(
-                f"Identity provider '{idp_alias}' already linked to organization"
+        try:
+            await self._make_request(
+                "POST",
+                f"realms/{realm_name}/organizations/{org_id}/identity-providers",
+                namespace,
+                json=idp_alias,  # Keycloak expects just the alias string
             )
             return True
-        elif response.status_code == 404:
-            raise KeycloakAdminError(
-                f"Organization '{org_id}' or IdP '{idp_alias}' not found",
-                status_code=response.status_code,
-            )
-        else:
-            raise KeycloakAdminError(
-                f"Failed to link identity provider: {response.status_code} - {response.text}",
-                status_code=response.status_code,
-            )
+        except KeycloakAdminError as exc:
+            status = getattr(exc, "status_code", None)
+            if status == 409:
+                # Already linked
+                logger.debug(
+                    f"Identity provider '{idp_alias}' already linked to organization"
+                )
+                return True
+            if status == 404:
+                raise KeycloakAdminError(
+                    f"Organization '{org_id}' or IdP '{idp_alias}' not found",
+                    status_code=404,
+                ) from exc
+            raise
 
     @api_delete("organization identity provider link")
     async def unlink_organization_identity_provider(
@@ -7396,19 +7349,18 @@ class KeycloakAdminClient:
             f"in realm '{realm_name}'"
         )
 
-        response = await self._make_request(
-            "DELETE",
-            f"realms/{realm_name}/organizations/{org_id}/identity-providers/{idp_alias}",
-            namespace,
-        )
-
-        if response.status_code in (200, 204, 404):
-            return True
-        else:
-            raise KeycloakAdminError(
-                f"Failed to unlink identity provider: {response.status_code}",
-                status_code=response.status_code,
+        try:
+            await self._make_request(
+                "DELETE",
+                f"realms/{realm_name}/organizations/{org_id}/identity-providers/{idp_alias}",
+                namespace,
             )
+            return True
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                # Already unlinked or doesn't exist - that's fine
+                return True
+            raise
 
 
 async def get_keycloak_admin_client(

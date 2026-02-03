@@ -446,7 +446,7 @@ organizations: []
   #     tier:
   #       - enterprise
   #
-  # Example: Organization with identity provider (NOTE: IdP linking not yet implemented)
+  # Example: Organization with identity provider linking
   # - name: partner-org
   #   alias: partner
   #   description: "Partner Organization with SSO"
@@ -454,9 +454,8 @@ organizations: []
   #   domains:
   #     - name: partner.example.com
   #       verified: true
-  #   # identityProviders: # Reserved for future use - not yet implemented
-  #   #   - alias: partner-saml-idp
-  #   #     redirectUri: https://app.example.com/auth/partner
+  #   identityProviders:
+  #     - alias: partner-saml-idp  # Must exist in the realm's identity providers
   #   attributes:
   #     partnership_level:
   #       - gold
