@@ -173,13 +173,18 @@ jobs:
           echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          # Check if any required job failed
+          # Check if any required job failed or was cancelled
           if [[ "${{ needs.unit-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.code-quality.result }}" == "failure" ]] || \
              [[ "${{ needs.docs-validation.result }}" == "failure" ]] || \
              [[ "${{ needs.security-scans.result }}" == "failure" ]] || \
-             [[ "${{ needs.integration-tests.result }}" == "failure" ]]; then
-            echo "❌ Required checks failed" >> $GITHUB_STEP_SUMMARY
+             [[ "${{ needs.integration-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.unit-tests.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.code-quality.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.docs-validation.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.security-scans.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.integration-tests.result }}" == "cancelled" ]]; then
+            echo "❌ Required checks failed or were cancelled" >> $GITHUB_STEP_SUMMARY
             echo "passed=false" >> $GITHUB_OUTPUT
             exit 1
           fi
