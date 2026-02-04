@@ -148,7 +148,10 @@ runs:
       env:
         INTEGRATION_COVERAGE: "true"
         KEYCLOAK_VERSION: ${{ inputs.keycloak-version }}
-      run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
+      # Use -n 2 instead of -n auto to reduce CPU pressure on CI runners
+      # kopf 1.42+ processes events instantly (no batching), which causes CPU spikes
+      # when many K8s events are generated in parallel
+      run: uv run --group test pytest tests/integration/ -v -n 2 --dist=loadscope
 
     - name: Combine and convert integration coverage to XML
       shell: bash

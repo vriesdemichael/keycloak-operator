@@ -1292,8 +1292,8 @@ async def sample_keycloak_spec_factory(
                 },
             },
             "resources": {
-                "requests": {"cpu": "200m", "memory": "512Mi"},
-                "limits": {"cpu": "500m", "memory": "1Gi"},
+                "requests": {"cpu": "100m", "memory": "512Mi"},
+                "limits": {"cpu": "250m", "memory": "1Gi"},
             },
         }
 
@@ -1335,8 +1335,8 @@ async def sample_keycloak_spec(cnpg_cluster, test_namespace) -> dict[str, Any]:
             },
         },
         "resources": {
-            "requests": {"cpu": "200m", "memory": "512Mi"},
-            "limits": {"cpu": "500m", "memory": "1Gi"},
+            "requests": {"cpu": "100m", "memory": "512Mi"},
+            "limits": {"cpu": "250m", "memory": "1Gi"},
         },
     }
 
@@ -1617,13 +1617,16 @@ async def shared_operator(
                     "client": 10,
                 },
             },
-            # Increase memory for CI stability - kopf 1.42+ uses more memory
+            # Increase resources for CI stability - kopf 1.42+ processes events
+            # instantly (no batching), so give operator plenty of CPU headroom
             "resources": {
                 "limits": {
                     "memory": "768Mi",
+                    "cpu": "750m",
                 },
                 "requests": {
                     "memory": "256Mi",
+                    "cpu": "100m",
                 },
             },
         },
