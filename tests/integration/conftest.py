@@ -1617,6 +1617,15 @@ async def shared_operator(
                     "client": 10,
                 },
             },
+            # Increase memory for CI stability - kopf 1.42+ uses more memory
+            "resources": {
+                "limits": {
+                    "memory": "768Mi",
+                },
+                "requests": {
+                    "memory": "256Mi",
+                },
+            },
         },
         "webhooks": {
             # Enable admission webhooks (default behavior)
