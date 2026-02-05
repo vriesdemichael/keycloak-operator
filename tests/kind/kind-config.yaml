@@ -5,7 +5,9 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: keycloak-operator-test
 
-# Multi-node configuration for testing leader election and HA scenarios
+# Single-node configuration to minimize resource usage on CI runners.
+# Multi-replica Keycloak tests work fine on a single node (no hard anti-affinity).
+# Kind automatically allows scheduling on control-plane for single-node clusters.
 nodes:
 - role: control-plane
   extraPortMappings:
@@ -17,6 +19,3 @@ nodes:
   - containerPort: 30080
     hostPort: 30080
     protocol: TCP
-
-- role: worker
-- role: worker
