@@ -848,7 +848,7 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.10.11" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "kopf", specifier = ">=1.37.0" },
+    { name = "kopf", specifier = "==1.40.1" },
     { name = "kubernetes", specifier = ">=28.0.0" },
     { name = "opentelemetry-api", specifier = ">=1.25.0" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.25.0" },
