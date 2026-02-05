@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.5...operator-image-v0.7.6) (2026-02-05)
+
+
+### Bug Fixes
+
+* **operator-image:** pin kopf to 1.40.1 to avoid memory leak ([b386b91](https://github.com/vriesdemichael/keycloak-operator/commit/b386b917da8d8b18357a7fd8a91db5e0a717dc7a))
+
 ## [0.7.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.4...operator-image-v0.7.5) (2026-02-03)
 
 
