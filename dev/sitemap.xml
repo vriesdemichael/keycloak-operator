@@ -373,6 +373,10 @@
          <lastmod>2026-02-05</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/083-kopf-version-pin/</loc>
+         <lastmod>2026-02-05</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/test-cleanup-strategy/</loc>
          <lastmod>2026-02-05</lastmod>
     </url>
