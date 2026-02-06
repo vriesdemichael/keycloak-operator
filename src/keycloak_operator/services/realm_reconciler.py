@@ -2982,6 +2982,13 @@ class KeycloakRealmReconciler(BaseReconciler):
         """
         self.logger.info(f"Configuring organizations for realm {spec.realm_name}")
 
+        # Early return if organizations feature is not enabled
+        if not spec.organizations_enabled:
+            self.logger.debug(
+                "Organizations feature not enabled (organizationsEnabled=false), skipping"
+            )
+            return
+
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
         keycloak_name = "keycloak"
