@@ -209,7 +209,7 @@ class TestConfigureOrganizations:
         # Should not raise, but log a warning
         await reconciler.configure_organizations(spec, "test-realm", "default")
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
         admin_mock.create_organization.assert_not_called()
 
     @pytest.mark.asyncio
@@ -232,7 +232,7 @@ class TestConfigureOrganizations:
         # Should not raise, but log a warning
         await reconciler.configure_organizations(spec, "test-realm", "default")
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_handles_update_organization_failure(
@@ -257,7 +257,7 @@ class TestConfigureOrganizations:
         # Should not raise, but log a warning
         await reconciler.configure_organizations(spec, "test-realm", "default")
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_handles_delete_organization_failure(
@@ -280,7 +280,7 @@ class TestConfigureOrganizations:
         # Should not raise, but log a warning
         await reconciler.configure_organizations(spec, "test-realm", "default")
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_reconciles_idp_links_for_new_organization(
@@ -422,7 +422,7 @@ class TestReconcileOrganizationIdpLinks:
             admin_mock, "test-realm", "org-1", "acme-corp", desired_idps, "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
         admin_mock.link_organization_identity_provider.assert_not_called()
 
     @pytest.mark.asyncio
@@ -445,7 +445,7 @@ class TestReconcileOrganizationIdpLinks:
             admin_mock, "test-realm", "org-1", "acme-corp", desired_idps, "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_handles_unlink_idp_failure(
@@ -468,7 +468,7 @@ class TestReconcileOrganizationIdpLinks:
             admin_mock, "test-realm", "org-1", "acme-corp", desired_idps, "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_links_multiple_idps(
@@ -631,7 +631,7 @@ class TestConfigureClientProfilesAndPolicies:
             spec, "test-realm", "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_handles_policy_update_failure(
@@ -655,7 +655,7 @@ class TestConfigureClientProfilesAndPolicies:
             spec, "test-realm", "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_logs_warning_on_profile_update_returns_false(
@@ -678,7 +678,7 @@ class TestConfigureClientProfilesAndPolicies:
             spec, "test-realm", "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_logs_warning_on_policy_update_returns_false(
@@ -701,7 +701,7 @@ class TestConfigureClientProfilesAndPolicies:
             spec, "test-realm", "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_creates_multiple_profiles(
@@ -838,7 +838,7 @@ class TestConfigureClientProfilesAndPolicies:
             spec, "test-realm", "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_handles_clear_policies_failure(
@@ -860,4 +860,4 @@ class TestConfigureClientProfilesAndPolicies:
             spec, "test-realm", "default"
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]

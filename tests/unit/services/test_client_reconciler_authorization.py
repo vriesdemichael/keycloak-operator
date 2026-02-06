@@ -209,7 +209,7 @@ class TestReconcileAuthorizationScopes:
             "my-client",
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_multiple_scopes_created(
@@ -379,7 +379,7 @@ class TestReconcileAuthorizationResources:
             "my-client",
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_create_resource_failure_logs_warning(
@@ -404,7 +404,7 @@ class TestReconcileAuthorizationResources:
             "my-client",
         )
 
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
 
 class TestReconcileAuthorizationPolicies:
@@ -620,7 +620,7 @@ class TestReconcileAuthorizationPolicies:
         # Policy should NOT be created
         admin_mock.create_authorization_policy.assert_not_called()
         # Should log a warning
-        reconciler.logger.warning.assert_called()
+        reconciler.logger.warning.assert_called()  # type: ignore[union-attr]
 
     @pytest.mark.asyncio
     async def test_javascript_policy_created_when_allowed(
@@ -644,7 +644,7 @@ class TestReconcileAuthorizationPolicies:
         # Should log a security warning
         assert any(
             "SECURITY WARNING" in str(call)
-            for call in reconciler.logger.warning.call_args_list
+            for call in reconciler.logger.warning.call_args_list  # type: ignore[union-attr]
         )
 
     @pytest.mark.asyncio

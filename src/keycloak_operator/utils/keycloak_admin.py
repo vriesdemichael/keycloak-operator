@@ -7070,6 +7070,39 @@ class KeycloakAdminClient:
                 return []
             raise
 
+    async def get_organization(
+        self,
+        realm_name: str,
+        org_id: str,
+        namespace: str = "default",
+    ) -> dict | None:
+        """
+        Get an organization by ID.
+
+        API: GET /admin/realms/{realm}/organizations/{id}
+
+        Args:
+            realm_name: Name of the realm
+            org_id: ID of the organization
+            namespace: Namespace for rate limiting
+
+        Returns:
+            Organization dictionary or None if not found
+        """
+        logger.debug(f"Getting organization '{org_id}' in realm '{realm_name}'")
+
+        try:
+            response = await self._make_request(
+                "GET",
+                f"realms/{realm_name}/organizations/{org_id}",
+                namespace,
+            )
+            return response.json()
+        except KeycloakAdminError as exc:
+            if getattr(exc, "status_code", None) == 404:
+                return None
+            raise
+
     async def get_organization_by_name(
         self,
         realm_name: str,
@@ -7078,6 +7111,10 @@ class KeycloakAdminClient:
     ) -> dict | None:
         """
         Get an organization by name.
+
+        This method first searches for the organization by name, then fetches
+        the full details by ID to ensure all fields (including attributes)
+        are returned.
 
         Args:
             realm_name: Name of the realm
@@ -7100,6 +7137,12 @@ class KeycloakAdminClient:
             orgs = response.json() or []
             for org in orgs:
                 if org.get("name") == org_name:
+                    # Fetch full details by ID to get all fields including attributes
+                    org_id = org.get("id")
+                    if org_id:
+                        return await self.get_organization(
+                            realm_name, org_id, namespace
+                        )
                     return org
             return None
         except KeycloakAdminError as exc:

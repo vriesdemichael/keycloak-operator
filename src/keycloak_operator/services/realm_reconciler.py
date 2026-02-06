@@ -3060,7 +3060,7 @@ class KeycloakRealmReconciler(BaseReconciler):
                     )
                     self.logger.info(f"Created organization '{org.name}'")
                     # Get the ID from the created org response
-                    if created_org:
+                    if created_org and isinstance(created_org, dict):
                         org_id = created_org.get("id")
                 except Exception as e:
                     self.logger.warning(

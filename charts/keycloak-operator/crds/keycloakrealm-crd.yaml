@@ -894,6 +894,10 @@ spec:
                       description: Profile names to apply when conditions match
                       items:
                         type: string
+              organizationsEnabled:
+                type: boolean
+                default: false
+                description: Enable organizations feature for multi-tenancy (requires Keycloak 26.0.0+). Must be set to true to use the organizations field.
               organizations:
                 type: array
                 description: Organizations for multi-tenancy support (Keycloak 26+)

@@ -75,21 +75,13 @@ async def _cleanup_resource(
         )
 
 
-async def _check_keycloak_version_supports_organizations(
-    keycloak_admin_client, namespace: str
-) -> bool:
-    """Check if Keycloak version supports organizations (26.0.0+)."""
-    try:
-        # Try to access the organizations endpoint
-        response = await keycloak_admin_client._make_request(
-            "GET",
-            "realms/master/organizations",
-            namespace,
-        )
-        # 200 = feature available, 404 = feature not available
-        return response.status_code == 200
-    except Exception:
-        return False
+def _check_keycloak_version_supports_organizations(keycloak_admin_client) -> bool:
+    """Check if Keycloak version supports organizations (26.0.0+).
+
+    Uses the adapter's detected version which is populated during authentication.
+    Organizations feature was introduced in Keycloak 26.0.0.
+    """
+    return keycloak_admin_client.adapter.major_version >= 26
 
 
 @pytest.mark.integration
@@ -115,8 +107,8 @@ class TestRealmOrganizations:
         - Organizations can be retrieved via the admin API
         """
         # Check if Keycloak supports organizations
-        supports_orgs = await _check_keycloak_version_supports_organizations(
-            keycloak_admin_client, test_namespace
+        supports_orgs = _check_keycloak_version_supports_organizations(
+            keycloak_admin_client
         )
         if not supports_orgs:
             pytest.skip(
@@ -263,8 +255,8 @@ class TestRealmOrganizations:
         - The IdP is properly linked to the organization
         """
         # Check if Keycloak supports organizations
-        supports_orgs = await _check_keycloak_version_supports_organizations(
-            keycloak_admin_client, test_namespace
+        supports_orgs = _check_keycloak_version_supports_organizations(
+            keycloak_admin_client
         )
         if not supports_orgs:
             pytest.skip(
@@ -438,8 +430,8 @@ class TestRealmOrganizations:
         - Other organizations remain intact
         """
         # Check if Keycloak supports organizations
-        supports_orgs = await _check_keycloak_version_supports_organizations(
-            keycloak_admin_client, test_namespace
+        supports_orgs = _check_keycloak_version_supports_organizations(
+            keycloak_admin_client
         )
         if not supports_orgs:
             pytest.skip(
@@ -515,6 +507,18 @@ class TestRealmOrganizations:
             assert "org-to-delete" in org_names
             logger.info("✓ Verified both organizations exist initially")
 
+            # Get current generation before patching
+            current_resource = await k8s_custom_objects.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+            current_generation = current_resource.get("metadata", {}).get(
+                "generation", 1
+            )
+
             # Update spec to remove one organization
             updated_spec = KeycloakRealmSpec(
                 operator_ref=OperatorRef(namespace=operator_namespace),
@@ -533,6 +537,13 @@ class TestRealmOrganizations:
                 ],
             )
 
+            updated_manifest = {
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "KeycloakRealm",
+                "metadata": {"name": realm_name, "namespace": namespace},
+                "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True),
+            }
+
             # Patch the realm
             await k8s_custom_objects.patch_namespaced_custom_object(
                 group="vriesdemichael.github.io",
@@ -540,14 +551,13 @@ class TestRealmOrganizations:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
-                body={
-                    "spec": updated_spec.model_dump(by_alias=True, exclude_unset=True)
-                },
+                body=updated_manifest,
             )
 
             logger.info("Patched realm to remove org-to-delete")
 
             # Wait for reconciliation to complete after the patch
+            # Use min_generation to ensure we wait for the NEW reconciliation cycle
             await wait_for_reconciliation_complete(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -555,6 +565,7 @@ class TestRealmOrganizations:
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
+                min_generation=current_generation + 1,
                 timeout=60,
                 operator_namespace=operator_namespace,
             )
