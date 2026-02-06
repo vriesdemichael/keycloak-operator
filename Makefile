@@ -146,8 +146,24 @@ kind-load-keycloak-optimized: build-keycloak-optimized ## Build and load optimiz
 	kind load docker-image keycloak-optimized:$(KEYCLOAK_VERSION) --name keycloak-operator-test
 	@echo "✓ Optimized Keycloak image loaded into Kind"
 
+.PHONY: build-keycloak-optimized-tracing
+build-keycloak-optimized-tracing: ## Build optimized Keycloak image with tracing support
+	@echo "Building optimized Keycloak image with tracing (OTEL) support..."
+	docker build -f images/keycloak-optimized/Dockerfile \
+		--build-arg KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) \
+		--build-arg TRACING_ENABLED=true \
+		-t keycloak-optimized-tracing:$(KEYCLOAK_VERSION) \
+		.
+	@echo "✓ Optimized Keycloak tracing image built successfully"
+
+.PHONY: kind-load-keycloak-optimized-tracing
+kind-load-keycloak-optimized-tracing: build-keycloak-optimized-tracing ## Build and load tracing Keycloak into Kind
+	@echo "Loading optimized Keycloak tracing image into Kind cluster..."
+	kind load docker-image keycloak-optimized-tracing:$(KEYCLOAK_VERSION) --name keycloak-operator-test
+	@echo "✓ Optimized Keycloak tracing image loaded into Kind"
+
 .PHONY: build-all-test
-build-all-test: build-test kind-load-keycloak-optimized ## Build and load all test images
+build-all-test: build-test kind-load-keycloak-optimized kind-load-keycloak-optimized-tracing ## Build and load all test images
 
 # ============================================================================
 # Integration Testing - Execution (INTERNAL TARGETS)
@@ -174,7 +190,7 @@ _test-integration: ensure-test-cluster build-all-test
 
 # Internal target - do not use directly, use 'make test' instead
 .PHONY: _test-integration-coverage
-_test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized
+_test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized kind-load-keycloak-optimized-tracing
 	@echo "Running integration tests with coverage enabled..."
 	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 	@echo "Combining coverage data..."

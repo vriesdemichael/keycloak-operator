@@ -63,6 +63,24 @@ spec:
               port: 13133
             initialDelaySeconds: 5
             periodSeconds: 10
+        # Sidecar with shell utilities for trace retrieval via kubectl cp/exec.
+        # The main collector image is distroless and lacks tar/sh/cat, making
+        # kubectl cp impossible. This busybox sidecar shares the traces volume
+        # and sleeps indefinitely, providing a target for kubectl cp.
+        - name: trace-access
+          image: busybox:1.36
+          command: ["sh", "-c", "sleep infinity"]
+          volumeMounts:
+            - name: traces
+              mountPath: /traces
+              readOnly: true
+          resources:
+            requests:
+              cpu: 1m
+              memory: 4Mi
+            limits:
+              cpu: 10m
+              memory: 16Mi
       volumes:
         - name: config
           configMap:

@@ -22,6 +22,14 @@ ENV KC_HTTP_ENABLED=true
 # Enable proxy headers forwarding
 ENV KC_PROXY_HEADERS=xforwarded
 
+# Optional: enable OpenTelemetry tracing support (Keycloak 26.x+ via Quarkus).
+# KC_TRACING_ENABLED is a build-time option; the OTEL provider must be compiled
+# in during `kc.sh build`. Pass --build-arg TRACING_ENABLED=true to include it.
+# Runtime env vars (KC_TRACING_ENDPOINT, KC_TRACING_SAMPLER_RATIO) still control
+# whether traces are actually exported.
+ARG TRACING_ENABLED=false
+ENV KC_TRACING_ENABLED=${TRACING_ENABLED}
+
 WORKDIR /opt/keycloak
 
 # Build the optimized Keycloak image
