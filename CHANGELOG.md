@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.6...operator-image-v0.7.7) (2026-02-06)
+
+
+### Bug Fixes
+
+* **operator:** fix organization tests being skipped ([#463](https://github.com/vriesdemichael/keycloak-operator/issues/463)) ([50b96db](https://github.com/vriesdemichael/keycloak-operator/commit/50b96db28a6707bb315cdbceea5b097e137a5fd8))
+* **operator:** skip organization config when feature not enabled ([12a3a0f](https://github.com/vriesdemichael/keycloak-operator/commit/12a3a0f2a485fb44b87acbba4348547f8f1929d1))
+
 ## [0.7.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.5...operator-image-v0.7.6) (2026-02-05)
 
 
