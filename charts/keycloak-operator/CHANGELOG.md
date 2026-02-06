@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.9](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.8...chart-operator-v0.4.9) (2026-02-06)
+
+
+### Bug Fixes
+
+* **operator:** fix organization tests being skipped ([#463](https://github.com/vriesdemichael/keycloak-operator/issues/463)) ([50b96db](https://github.com/vriesdemichael/keycloak-operator/commit/50b96db28a6707bb315cdbceea5b097e137a5fd8))
+
 ## [0.4.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.7...chart-operator-v0.4.8) (2026-02-05)
 
 
