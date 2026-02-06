@@ -60,11 +60,24 @@ class TestGetOrganizationByName:
     @pytest.mark.asyncio
     async def test_returns_organization_when_found(self, mock_admin_client):
         """Should return organization when it exists."""
-        mock_response = MockResponse(
+        # First call: search returns list of orgs
+        mock_search_response = MockResponse(
             200,
             [{"id": "org-1", "name": "acme-corp", "alias": "acme"}],
         )
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        # Second call: get by ID returns full details
+        mock_get_response = MockResponse(
+            200,
+            {
+                "id": "org-1",
+                "name": "acme-corp",
+                "alias": "acme",
+                "attributes": {"tier": ["enterprise"]},
+            },
+        )
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=[mock_search_response, mock_get_response]
+        )
 
         org = await mock_admin_client.get_organization_by_name(
             "test-realm", "acme-corp", "default"
@@ -72,11 +85,11 @@ class TestGetOrganizationByName:
 
         assert org is not None
         assert org["name"] == "acme-corp"
-        # Verify search params were used
-        mock_admin_client._make_request.assert_called_once()
-        call_kwargs = mock_admin_client._make_request.call_args[1]
-        assert call_kwargs["params"]["search"] == "acme-corp"
-        assert call_kwargs["params"]["exact"] == "true"
+        # Verify search params were used in first call
+        assert mock_admin_client._make_request.call_count == 2
+        first_call_kwargs = mock_admin_client._make_request.call_args_list[0][1]
+        assert first_call_kwargs["params"]["search"] == "acme-corp"
+        assert first_call_kwargs["params"]["exact"] == "true"
 
     @pytest.mark.asyncio
     async def test_returns_none_when_not_found(self, mock_admin_client):
@@ -105,14 +118,27 @@ class TestGetOrganizationByName:
     @pytest.mark.asyncio
     async def test_filters_by_exact_name(self, mock_admin_client):
         """Should filter results to find exact name match."""
-        mock_response = MockResponse(
+        # First call: search returns multiple orgs
+        mock_search_response = MockResponse(
             200,
             [
                 {"id": "org-1", "name": "acme", "alias": "acme"},
                 {"id": "org-2", "name": "acme-corp", "alias": "acme-corp"},
             ],
         )
-        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+        # Second call: get by ID returns full details for org-2
+        mock_get_response = MockResponse(
+            200,
+            {
+                "id": "org-2",
+                "name": "acme-corp",
+                "alias": "acme-corp",
+                "attributes": {},
+            },
+        )
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=[mock_search_response, mock_get_response]
+        )
 
         org = await mock_admin_client.get_organization_by_name(
             "test-realm", "acme-corp", "default"
@@ -129,14 +155,19 @@ class TestCreateOrganization:
     @pytest.mark.asyncio
     async def test_returns_organization_on_success(self, mock_admin_client):
         """Should return created organization on success."""
-        # create_organization calls get_organization_by_name on success
+        # create_organization calls get_organization_by_name on success,
+        # which in turn calls get_organization to fetch full details
         mock_create_response = MockResponse(201, {})
-        mock_get_response = MockResponse(
+        mock_search_response = MockResponse(
             200,
             [{"id": "org-1", "name": "acme-corp", "alias": "acme"}],
         )
+        mock_get_response = MockResponse(
+            200,
+            {"id": "org-1", "name": "acme-corp", "alias": "acme", "attributes": {}},
+        )
         mock_admin_client._make_request = AsyncMock(
-            side_effect=[mock_create_response, mock_get_response]
+            side_effect=[mock_create_response, mock_search_response, mock_get_response]
         )
 
         org = await mock_admin_client.create_organization(
@@ -151,13 +182,22 @@ class TestCreateOrganization:
     @pytest.mark.asyncio
     async def test_returns_existing_on_conflict(self, mock_admin_client):
         """Should return existing organization on conflict (409)."""
+        # On conflict, get_organization_by_name is called, which calls get_organization
         mock_conflict_response = MockResponse(409)
-        mock_get_response = MockResponse(
+        mock_search_response = MockResponse(
             200,
             [{"id": "org-1", "name": "acme-corp", "alias": "acme"}],
         )
+        mock_get_response = MockResponse(
+            200,
+            {"id": "org-1", "name": "acme-corp", "alias": "acme", "attributes": {}},
+        )
         mock_admin_client._make_request = AsyncMock(
-            side_effect=[mock_conflict_response, mock_get_response]
+            side_effect=[
+                mock_conflict_response,
+                mock_search_response,
+                mock_get_response,
+            ]
         )
 
         org = await mock_admin_client.create_organization(

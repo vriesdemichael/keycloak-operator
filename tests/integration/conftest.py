@@ -1109,96 +1109,6 @@ def shared_cnpg_info(operator_namespace: str) -> dict[str, Any]:
 
 
 @pytest.fixture
-async def cnpg_cluster(
-    k8s_client, test_namespace, cnpg_installed
-) -> dict[str, Any] | None:
-    """Create a minimal CloudNativePG Cluster and return standard PostgreSQL connection details.
-
-    Returns PostgreSQL connection information (type: postgresql, host: cluster-name-rw, etc)
-    instead of CNPG-specific references. This allows tests to use standard database configuration.
-
-    Returns None if CNPG is not installed.
-    """
-    if not cnpg_installed:
-        # CNPG not available; returning None will let sample_keycloak_spec
-        # fall back to traditional database configuration (which may fail
-        # if connectivity is required). Tests depending on DB will be skipped.
-        return None
-
-    from kubernetes import dynamic
-
-    dyn = dynamic.DynamicClient(k8s_client)
-    cluster_api = dyn.resources.get(api_version="postgresql.cnpg.io/v1", kind="Cluster")
-
-    cluster_name = "kc-test-cnpg"
-    db_name = "keycloak"
-
-    cluster_manifest = {
-        "apiVersion": "postgresql.cnpg.io/v1",
-        "kind": "Cluster",
-        "metadata": {"name": cluster_name, "namespace": test_namespace},
-        "spec": {
-            "instances": 1,
-            "primaryUpdateStrategy": "unsupervised",
-            "storage": {"size": "1Gi"},
-            # Minimal bootstrap with application database/user creation handled by defaults
-            "bootstrap": {"initdb": {"database": db_name, "owner": "app"}},
-            # Disable superuser secret creation to keep things simple
-            "enableSuperuserAccess": False,
-            # Resources kept tiny for CI
-            "resources": {
-                "requests": {"cpu": "100m", "memory": "128Mi"},
-                "limits": {"cpu": "200m", "memory": "256Mi"},
-            },
-        },
-    }
-
-    # Create cluster (ignore AlreadyExists to allow reuse within namespace lifetime)
-    try:
-        cluster_api.create(body=cluster_manifest, namespace=test_namespace)
-    except ApiException as e:
-        if e.status != 409:  # 409 AlreadyExists
-            raise
-
-    # Wait for cluster to report healthy phase & application secret present
-    import time
-
-    start_time = time.time()
-    timeout = 420
-    interval = 5
-
-    while time.time() - start_time < timeout:
-        try:
-            obj = cluster_api.get(name=cluster_name, namespace=test_namespace)
-            phase = obj.to_dict().get("status", {}).get("phase")
-            if phase == "Cluster in healthy state":
-                # Confirm app secret existence
-                core = client.CoreV1Api(k8s_client)
-                try:
-                    core.read_namespaced_secret(f"{cluster_name}-app", test_namespace)
-                    break  # Success
-                except ApiException:
-                    pass  # Secret not ready yet, continue waiting
-        except ApiException:
-            pass  # Cluster status not available yet, continue waiting
-        await asyncio.sleep(interval)
-    else:
-        pytest.skip("CNPG cluster was not ready in time")
-
-    # Return standard PostgreSQL connection details
-    # Use FQDN so that any namespace can reach the database
-    return {
-        "type": "postgresql",
-        "host": f"{cluster_name}-rw.{test_namespace}.svc.cluster.local",
-        "port": 5432,
-        "database": db_name,
-        "username": "app",
-        "password_secret": f"{cluster_name}-app",
-        "password_secret_namespace": test_namespace,
-    }
-
-
-@pytest.fixture
 def sample_realm_spec() -> KeycloakRealmSpec:
     """Return a sample Keycloak realm specification using Pydantic model."""
     return KeycloakRealmSpec(
@@ -1303,42 +1213,6 @@ async def sample_keycloak_spec_factory(
     for namespace, name in copied_secrets:
         with contextlib.suppress(ApiException):
             await k8s_core_v1.delete_namespaced_secret(name, namespace)
-
-
-@pytest.fixture
-async def sample_keycloak_spec(cnpg_cluster, test_namespace) -> dict[str, Any]:
-    """Return a sample Keycloak instance specification with database config.
-
-    Uses cnpg_cluster fixture to get database connection details.
-    Returns a dict ready to use as CR spec (not Pydantic model, as KeycloakSpec
-    is complex and tests typically work with dict manifests).
-
-    NOTE: This fixture creates the CNPG in test_namespace. If you need to use
-    this spec in a different namespace (like test_keycloak_namespace), use
-    sample_keycloak_spec_factory instead to ensure secrets are copied properly.
-    """
-    if cnpg_cluster is None:
-        pytest.skip("CNPG not available, cannot create Keycloak instance")
-
-    return {
-        "replicas": 1,
-        "image": get_keycloak_test_image(),
-        "database": {
-            "type": cnpg_cluster["type"],
-            "host": cnpg_cluster["host"],
-            "port": cnpg_cluster["port"],
-            "database": cnpg_cluster["database"],
-            "username": cnpg_cluster["username"],
-            "passwordSecret": {
-                "name": cnpg_cluster["password_secret"],
-                "key": "password",
-            },
-        },
-        "resources": {
-            "requests": {"cpu": "200m", "memory": "512Mi"},
-            "limits": {"cpu": "500m", "memory": "1Gi"},
-        },
-    }
 
 
 def build_realm_manifest(

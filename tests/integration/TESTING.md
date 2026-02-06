@@ -92,36 +92,45 @@ async def test_simple_client_creation(
 @pytest.mark.timeout(600)  # Longer timeout for dedicated instance
 async def test_complex_feature(
     k8s_custom_objects,
-    test_namespace,
-    sample_keycloak_spec,
+    test_keycloak_namespace,
+    sample_keycloak_spec_factory,
     wait_for_keycloak_ready,
 ):
     """Complex test requiring dedicated Keycloak instance."""
     import uuid
     keycloak_name = f"dedicated-{uuid.uuid4().hex[:8]}"
+    namespace = test_keycloak_namespace
+
+    # Get spec with proper secret handling
+    spec = await sample_keycloak_spec_factory(namespace)
 
     try:
         # Create dedicated instance
-        k8s_custom_objects.create_namespaced_custom_object(
+        await k8s_custom_objects.create_namespaced_custom_object(
             group="vriesdemichael.github.io",
             version="v1",
-            namespace=test_namespace,
+            namespace=namespace,
             plural="keycloaks",
-            body={**sample_keycloak_spec, "metadata": {"name": keycloak_name}},
+            body={
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "Keycloak",
+                "metadata": {"name": keycloak_name, "namespace": namespace},
+                "spec": spec,
+            },
         )
 
         # Wait for ready (can take 60+ seconds)
-        await wait_for_keycloak_ready(keycloak_name, test_namespace, timeout=600)
+        await wait_for_keycloak_ready(keycloak_name, namespace, timeout=600)
 
         # Test logic here...
 
     finally:
         # ALWAYS cleanup dedicated resources
         with contextlib.suppress(ApiException):
-            k8s_custom_objects.delete_namespaced_custom_object(
+            await k8s_custom_objects.delete_namespaced_custom_object(
                 group="vriesdemichael.github.io",
                 version="v1",
-                namespace=test_namespace,
+                namespace=namespace,
                 plural="keycloaks",
                 name=keycloak_name,
             )
@@ -457,7 +466,7 @@ k8s_apps_v1: client.AppsV1Api
 k8s_custom_objects: client.CustomObjectsApi
 
 # Sample specs (templates)
-sample_keycloak_spec: dict
+sample_keycloak_spec_factory: Callable[[str], Awaitable[dict]]  # Factory for Keycloak specs
 sample_realm_spec: dict
 sample_client_spec: dict
 ```

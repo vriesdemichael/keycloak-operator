@@ -1723,6 +1723,12 @@ class KeycloakRealmSpec(BaseModel):
     )
 
     # Organizations (Keycloak 26+, Issue #398)
+    organizations_enabled: bool = Field(
+        False,
+        alias="organizationsEnabled",
+        description="Enable organizations feature for multi-tenancy (requires Keycloak 26.0.0+). "
+        "Must be set to true to use the organizations field.",
+    )
     organizations: list[Organization] = Field(
         default_factory=list,
         description="Organizations for multi-tenancy support (requires Keycloak 26.0.0+)",
@@ -1909,6 +1915,11 @@ class KeycloakRealmSpec(BaseModel):
                 config["dockerAuthenticationFlow"] = self.docker_authentication_flow
             if self.first_broker_login_flow:
                 config["firstBrokerLoginFlow"] = self.first_broker_login_flow
+
+        # Add organizations configuration (Keycloak 26+)
+        # This must be set in the realm config for the organizations feature to work
+        if self.organizations_enabled:
+            config["organizationsEnabled"] = True
 
         return config
 

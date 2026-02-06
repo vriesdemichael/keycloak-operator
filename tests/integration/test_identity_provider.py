@@ -400,6 +400,7 @@ async def test_realm_with_github_identity_provider_example(
         logger.info(f"Created realm CR with GitHub IDP: {realm_name}")
 
         # Use wait helper instead of fixed sleep for faster and more reliable testing
+        # Use 90s timeout for reliability under parallel test load
         await wait_for_resource_ready(
             k8s_custom_objects,
             group="vriesdemichael.github.io",
@@ -407,7 +408,8 @@ async def test_realm_with_github_identity_provider_example(
             namespace=test_namespace,
             plural="keycloakrealms",
             name=realm_name,
-            timeout=30,
+            timeout=90,
+            operator_namespace=operator_namespace,
         )
 
         # Get the CR status to verify it was accepted

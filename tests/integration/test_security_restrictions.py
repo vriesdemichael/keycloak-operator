@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import contextlib
 import uuid
 
 import pytest
-from kubernetes.client.rest import ApiException
 
+from .cleanup_utils import delete_custom_resource_with_retry
 from .wait_helpers import wait_for_resource_failed, wait_for_resource_ready
 
 
@@ -16,7 +15,7 @@ from .wait_helpers import wait_for_resource_failed, wait_for_resource_ready
 class TestSecurityRestrictions:
     """Test security restrictions for clients."""
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)  # 90s realm + 90s client + 60s margin for cleanup
     async def test_service_account_admin_role_blocked(
         self,
         k8s_custom_objects,
@@ -109,24 +108,28 @@ class TestSecurityRestrictions:
             )
 
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakclients",
-                    name=client_name,
-                )
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            # Clean up client first (depends on realm)
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=60,
+            )
+            # Then clean up realm
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=60,
+            )
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)  # 90s realm + 90s client + 60s margin for cleanup
     async def test_service_account_realm_admin_blocked(
         self,
         k8s_custom_objects,
@@ -213,24 +216,28 @@ class TestSecurityRestrictions:
                 operator_namespace=operator_namespace,
             )
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakclients",
-                    name=client_name,
-                )
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            # Clean up client first (depends on realm)
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=60,
+            )
+            # Then clean up realm
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=60,
+            )
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)  # 90s realm + 90s client + 60s margin for cleanup
     async def test_service_account_manage_realm_blocked(
         self,
         k8s_custom_objects,
@@ -317,24 +324,28 @@ class TestSecurityRestrictions:
                 operator_namespace=operator_namespace,
             )
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakclients",
-                    name=client_name,
-                )
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            # Clean up client first (depends on realm)
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=60,
+            )
+            # Then clean up realm
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=60,
+            )
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)  # 90s realm + 90s client + 60s margin for cleanup
     async def test_service_account_impersonation_blocked(
         self,
         k8s_custom_objects,
@@ -421,24 +432,28 @@ class TestSecurityRestrictions:
                 operator_namespace=operator_namespace,
             )
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakclients",
-                    name=client_name,
-                )
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            # Clean up client first (depends on realm)
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=60,
+            )
+            # Then clean up realm
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=60,
+            )
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)  # 90s realm + 90s client + 60s margin for cleanup
     async def test_saml_script_mapper_blocked(
         self,
         k8s_custom_objects,
@@ -528,24 +543,28 @@ class TestSecurityRestrictions:
                 operator_namespace=operator_namespace,
             )
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakclients",
-                    name=client_name,
-                )
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            # Clean up client first (depends on realm)
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=60,
+            )
+            # Then clean up realm
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=60,
+            )
 
-    @pytest.mark.timeout(180)
+    @pytest.mark.timeout(240)  # 90s realm + 90s client + 60s margin for cleanup
     async def test_script_mapper_blocked(
         self,
         k8s_custom_objects,
@@ -634,19 +653,23 @@ class TestSecurityRestrictions:
                 operator_namespace=operator_namespace,
             )
         finally:
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakclients",
-                    name=client_name,
-                )
-            with contextlib.suppress(ApiException):
-                await k8s_custom_objects.delete_namespaced_custom_object(
-                    group="vriesdemichael.github.io",
-                    version="v1",
-                    namespace=namespace,
-                    plural="keycloakrealms",
-                    name=realm_name,
-                )
+            # Clean up client first (depends on realm)
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakclients",
+                name=client_name,
+                timeout=60,
+            )
+            # Then clean up realm
+            await delete_custom_resource_with_retry(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                timeout=60,
+            )
