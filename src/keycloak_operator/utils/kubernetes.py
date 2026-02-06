@@ -375,12 +375,16 @@ def create_keycloak_deployment(
     # pre-compiled configuration from the image's build stage. This dramatically
     # reduces startup time (20-30s vs 70s+). Runtime-only configuration (DB
     # connection details, credentials, feature toggles) still works via env vars.
-    kc_args = [
-        "start",
-        "--optimized",
-        "--http-enabled=true",
-        "--proxy-headers=xforwarded",
-    ]
+    # Only use --optimized with images pre-built via 'kc.sh build'.
+    kc_args = ["start"]
+    if spec.optimized:
+        kc_args.append("--optimized")
+    kc_args.extend(
+        [
+            "--http-enabled=true",
+            "--proxy-headers=xforwarded",
+        ]
+    )
 
     # Build container ports - management port only for 25.x+
     container_ports = [

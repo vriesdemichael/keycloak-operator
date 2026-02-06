@@ -623,6 +623,44 @@ class TestKeycloakDeploymentOptimized:
             assert "--http-enabled=true" in container.args
             assert "--proxy-headers=xforwarded" in container.args
 
+    def test_deployment_args_exclude_optimized_flag_when_disabled(self):
+        """Test that --optimized is NOT in args when spec.optimized is False."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            optimized=False,
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+
+            # Verify args include start but NOT --optimized
+            assert "start" in container.args
+            assert "--optimized" not in container.args
+            # Other flags should still be present
+            assert "--http-enabled=true" in container.args
+            assert "--proxy-headers=xforwarded" in container.args
+
 
 class TestKeycloakDeploymentJvmOptions:
     """Tests for JVM options passthrough in Keycloak deployment."""
