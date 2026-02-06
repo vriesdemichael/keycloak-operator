@@ -54,6 +54,63 @@ class TestGetOrganizations:
         assert orgs == []
 
 
+class TestGetOrganization:
+    """Tests for get_organization method (get by ID)."""
+
+    @pytest.mark.asyncio
+    async def test_returns_organization_when_found(self, mock_admin_client):
+        """Should return organization when it exists."""
+        mock_response = MockResponse(
+            200,
+            {
+                "id": "org-1",
+                "name": "acme-corp",
+                "alias": "acme",
+                "attributes": {"tier": ["enterprise"]},
+            },
+        )
+        mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+        org = await mock_admin_client.get_organization("test-realm", "org-1", "default")
+
+        assert org is not None
+        assert org["id"] == "org-1"
+        assert org["name"] == "acme-corp"
+        assert org["attributes"]["tier"] == ["enterprise"]
+        mock_admin_client._make_request.assert_called_once_with(
+            "GET",
+            "realms/test-realm/organizations/org-1",
+            "default",
+        )
+
+    @pytest.mark.asyncio
+    async def test_returns_none_when_not_found(self, mock_admin_client):
+        """Should return None when organization doesn't exist."""
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Not Found", status_code=404)
+        )
+
+        org = await mock_admin_client.get_organization(
+            "test-realm", "nonexistent-id", "default"
+        )
+
+        assert org is None
+
+    @pytest.mark.asyncio
+    async def test_raises_on_other_error(self, mock_admin_client):
+        """Should raise on non-404 errors."""
+        from keycloak_operator.utils.keycloak_admin import KeycloakAdminError
+
+        mock_admin_client._make_request = AsyncMock(
+            side_effect=KeycloakAdminError("Internal Server Error", status_code=500)
+        )
+
+        with pytest.raises(KeycloakAdminError):
+            await mock_admin_client.get_organization("test-realm", "org-1", "default")
+
+
 class TestGetOrganizationByName:
     """Tests for get_organization_by_name method."""
 
@@ -114,6 +171,26 @@ class TestGetOrganizationByName:
         )
 
         assert org is None
+
+    @pytest.mark.asyncio
+    async def test_returns_org_without_id_as_fallback(self, mock_admin_client):
+        """Should return org from search if it has no ID (edge case fallback)."""
+        # Search returns org without ID field
+        mock_search_response = MockResponse(
+            200,
+            [{"name": "acme-corp", "alias": "acme"}],  # No id field
+        )
+        mock_admin_client._make_request = AsyncMock(return_value=mock_search_response)
+
+        org = await mock_admin_client.get_organization_by_name(
+            "test-realm", "acme-corp", "default"
+        )
+
+        # Should return the org from search result directly (fallback path)
+        assert org is not None
+        assert org["name"] == "acme-corp"
+        # Only one call made - no get by ID since there's no ID
+        mock_admin_client._make_request.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_filters_by_exact_name(self, mock_admin_client):
