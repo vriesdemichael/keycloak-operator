@@ -70,9 +70,12 @@ KNOWN_SKIP_REASONS = {
     "partial:prometheus",
     "partial:app-config",
     "partial:spec",
+    "partial:idp-config",
+    "partial:federation-mappers",
     "external:fluxcd",
     "external:prometheus",
     "external:cert-manager",
+    "external:kyverno:no-schema",  # When Kyverno schema can't be loaded
     "external chart: ingress-nginx",
     "helm-values unknown chart",
 }
@@ -86,6 +89,11 @@ class SchemaValidator:
         "cert-manager": "cert-manager-values.schema.json",
         "cloudnative-pg": "cnpg-operator-values.schema.json",
         # ingress-nginx doesn't publish a values.schema.json
+    }
+
+    # External CRD schema mappings (kind -> schema file in scripts/schemas/external/)
+    EXTERNAL_CRD_SCHEMAS: dict[str, str] = {
+        "ClusterPolicy": "kyverno-clusterpolicy.schema.json",
     }
 
     def __init__(self, project_root: Path):
@@ -211,6 +219,23 @@ class SchemaValidator:
                 return schema
 
         return None
+
+    def _load_external_crd_schema(self, kind: str) -> dict[str, Any] | None:
+        """Load external CRD schema for a kind (e.g., Kyverno ClusterPolicy)."""
+        if kind in self._crd_schemas:
+            return self._crd_schemas[kind]
+
+        if kind not in self.EXTERNAL_CRD_SCHEMAS:
+            return None
+
+        schema_file = self.external_schemas_path / self.EXTERNAL_CRD_SCHEMAS[kind]
+        if not schema_file.exists():
+            return None
+
+        with open(schema_file) as f:
+            schema = json.load(f)
+            self._crd_schemas[kind] = schema
+            return schema
 
     def get_crd_spec_fields(self, kind: str) -> set[str]:
         """
@@ -939,6 +964,9 @@ class SchemaValidator:
 
         # Check for known K8s core resources
         k8s_core_kinds = {
+            "Deployment",
+            "StatefulSet",
+            "DaemonSet",
             "Service",
             "ConfigMap",
             "Secret",
@@ -960,6 +988,7 @@ class SchemaValidator:
 
         # Check for external operators/tools
         external_apis = {
+            "kyverno.io": "kyverno",
             "kustomize.toolkit.fluxcd.io": "fluxcd",
             "monitoring.coreos.com": "prometheus",
             "cert-manager.io": "cert-manager",
@@ -999,6 +1028,8 @@ class SchemaValidator:
                 "certificates": "partial:cnpg",  # CNPG TLS config
                 "groups": "partial:prometheus",
                 "spring": "partial:app-config",  # Spring Boot config
+                "config": "partial:idp-config",  # Identity provider config fragments
+                "mappers": "partial:federation-mappers",  # User federation mappers
             }
             for key in partial_patterns:
                 if key in content or raw.strip().startswith(f"{key}:"):
@@ -1266,6 +1297,38 @@ class SchemaValidator:
 
         return errors
 
+    def _validate_external_crd(
+        self, ref: ExtractedReference, kind: str
+    ) -> list[ValidationError] | None:
+        """Validate external CRD resources (e.g., Kyverno ClusterPolicy).
+
+        Returns:
+            List of validation errors if validation was performed.
+            None if validation cannot be performed (should be skipped).
+        """
+        if not isinstance(ref.content, dict):
+            return None
+
+        schema = self._load_external_crd_schema(kind)
+        if not schema:
+            # Schema unavailable - return None to indicate skip
+            # The caller should handle this by recording a skip
+            return None
+
+        # Validate the spec portion against the schema using full JSON Schema validation
+        spec_schema = schema.get("properties", {}).get("spec", {})
+        spec_content = ref.content.get("spec", {})
+
+        if not spec_schema or not spec_content:
+            # No spec to validate - counts as passed (empty errors)
+            return []
+
+        # Use the full validation method for proper additionalProperties handling
+        # and recursive validation of nested objects
+        return self._validate_object_against_schema(
+            spec_content, spec_schema, "spec", ref
+        )
+
     def _record_validation(
         self,
         ref_errors: list[ValidationError] | ValidationError | None,
@@ -1427,8 +1490,31 @@ class SchemaValidator:
         if category in category_validators:
             self._record_validation(category_validators[category](ref), errors, stats)
         elif category.startswith("external:"):
-            # External operators (FluxCD, Prometheus, cert-manager)
-            self._record_skip(category, ref, stats, skipped_reasons, unknown_snippets)
+            # External operators - validate if we have a schema, otherwise skip
+            external_name = category.split(":", 1)[1]
+            # Map external names to CRD kinds we can validate
+            external_kind_map = {
+                "kyverno": "ClusterPolicy",
+            }
+            if external_name in external_kind_map:
+                kind = external_kind_map[external_name]
+                validation_result = self._validate_external_crd(ref, kind)
+                if validation_result is None:
+                    # Schema unavailable or content not validatable - skip
+                    self._record_skip(
+                        f"external:{external_name}:no-schema",
+                        ref,
+                        stats,
+                        skipped_reasons,
+                        unknown_snippets,
+                    )
+                else:
+                    self._record_validation(validation_result, errors, stats)
+            else:
+                # No schema available (FluxCD, Prometheus, cert-manager)
+                self._record_skip(
+                    category, ref, stats, skipped_reasons, unknown_snippets
+                )
         elif category.startswith("partial:"):
             partial_type = category.split(":", 1)[1]
             # Validate K8s partial types we have schemas for
