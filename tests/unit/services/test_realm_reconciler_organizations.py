@@ -60,6 +60,31 @@ class TestConfigureOrganizations:
     """Tests for configure_organizations method."""
 
     @pytest.mark.asyncio
+    async def test_skips_when_organizations_not_enabled(
+        self,
+        reconciler: KeycloakRealmReconciler,
+        admin_mock: MagicMock,
+    ) -> None:
+        """Should skip organization processing when organizations_enabled is False."""
+        spec = KeycloakRealmSpec(
+            operator_ref=OperatorRef(namespace="keycloak-system"),
+            realm_name="test-realm",
+            organizations_enabled=False,
+            organizations=[
+                Organization(
+                    name="acme-corp",
+                    alias="acme",
+                )
+            ],
+        )
+
+        await reconciler.configure_organizations(spec, "test-realm", "default")
+
+        # Should not call any organization methods
+        admin_mock.get_organizations.assert_not_called()
+        admin_mock.create_organization.assert_not_called()
+
+    @pytest.mark.asyncio
     async def test_creates_new_organization(
         self,
         reconciler: KeycloakRealmReconciler,
@@ -69,6 +94,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(
                     name="acme-corp",
@@ -97,6 +123,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(
                     name="acme-corp",
@@ -124,6 +151,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(
                     name="acme-corp",
@@ -152,6 +180,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(
                     name="acme-corp",
@@ -180,6 +209,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(name="keep-org"),
             ],
@@ -201,6 +231,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(name="acme-corp"),
             ],
@@ -224,6 +255,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(name="acme-corp"),
             ],
@@ -249,6 +281,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(name="acme-corp"),
             ],
@@ -274,6 +307,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[],  # No orgs desired - existing should be deleted
         )
 
@@ -292,6 +326,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(
                     name="acme-corp",
@@ -321,6 +356,7 @@ class TestConfigureOrganizations:
         spec = KeycloakRealmSpec(
             operator_ref=OperatorRef(namespace="keycloak-system"),
             realm_name="test-realm",
+            organizations_enabled=True,
             organizations=[
                 Organization(
                     name="acme-corp",
