@@ -46,6 +46,7 @@ Since rotation is atomic, your applications must pick up the new secret immediat
 2. Annotate your **Application Deployment** (not the Secret):
 
 ```yaml
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: my-app
