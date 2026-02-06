@@ -392,7 +392,7 @@ When tracing is enabled, the operator creates spans for:
 
 Each span includes semantic attributes:
 
-```
+```text
 k8s.namespace: default
 k8s.resource.name: my-keycloak
 k8s.resource.type: keycloak
@@ -412,6 +412,10 @@ When `propagateToKeycloak: true`, the operator configures managed Keycloak insta
 The Keycloak CR will automatically include:
 
 ```yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: Keycloak
+metadata:
+  name: example
 spec:
   tracing:
     enabled: true
@@ -451,7 +455,7 @@ The operator uses W3C Trace Context (`traceparent` header) for trace propagation
 
 Example trace context header:
 
-```
+```text
 traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
 ```
 

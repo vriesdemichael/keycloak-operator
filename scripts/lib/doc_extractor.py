@@ -349,6 +349,14 @@ def detect_yaml_context(
     if parsed.keys() & cnpg_keys and "spec" not in parsed:
         return ReferenceContext.K8S_OTHER, ""
 
+    # Check for partial config snippets that should be categorized (not UNKNOWN)
+    partial_config_keys = {
+        "config",  # Identity provider config fragments
+        "mappers",  # User federation mappers
+    }
+    if parsed.keys() & partial_config_keys and len(parsed) == 1:
+        return ReferenceContext.K8S_OTHER, ""
+
     # Check if top-level keys match Helm values structure
     top_keys = set(parsed.keys())
 
