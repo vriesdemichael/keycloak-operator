@@ -623,6 +623,13 @@ keycloak:
   # - JIT tuning: ["-XX:CompileThresholdScaling=0.3"]
   jvmOptions: []
 
+  # Use --optimized startup mode. Set to true (default) when using a pre-built
+  # Keycloak image (like the optimized images published by this project). Set to
+  # false when using the stock quay.io/keycloak/keycloak image that has not been
+  # pre-built with 'kc.sh build'. The --optimized flag skips build-time config
+  # discovery at startup, reducing startup time from ~70s to ~20-30s.
+  optimized: true
+
 # ============================================================================
 # Extra Kubernetes Manifests
 # ============================================================================

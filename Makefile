@@ -163,10 +163,10 @@ kind-load-keycloak-optimized-tracing: build-keycloak-optimized-tracing ## Build 
 	@echo "✓ Optimized Keycloak tracing image loaded into Kind"
 
 # Tracing detection: mirrors _is_tracing_enabled() in tests/integration/conftest.py
-# - OTEL_TEST_TRACING_ENABLED explicitly set → use that
+# - OTEL_TEST_TRACING_ENABLED explicitly set → normalize to lowercase, then match
 # - CI env var set → tracing disabled (CI default)
 # - Neither set → tracing enabled (local dev default)
-_TRACING_ENABLED := $(if $(OTEL_TEST_TRACING_ENABLED),$(filter true yes 1,$(OTEL_TEST_TRACING_ENABLED)),$(if $(CI),false,true))
+_TRACING_ENABLED := $(if $(OTEL_TEST_TRACING_ENABLED),$(if $(filter true yes 1,$(shell printf '%s' '$(OTEL_TEST_TRACING_ENABLED)' | tr '[:upper:]' '[:lower:]')),true,false),$(if $(CI),false,true))
 
 .PHONY: kind-load-keycloak-selected
 kind-load-keycloak-selected: ## Build and load the correct Keycloak image variant based on tracing config
