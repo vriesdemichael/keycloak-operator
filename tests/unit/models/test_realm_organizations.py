@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from keycloak_operator.models.realm import (
+    KeycloakRealmSpec,
     Organization,
     OrganizationDomain,
     OrganizationIdentityProvider,
@@ -165,3 +166,49 @@ class TestOrganization:
         assert len(org.identity_providers) == 2
         assert org.identity_providers[0].alias == "google"
         assert org.identity_providers[1].alias == "azure-ad"
+
+
+class TestOrganizationsEnabled:
+    """Tests for organizations_enabled field in KeycloakRealmSpec."""
+
+    def _create_realm_spec(self, **kwargs):
+        """Create a minimal valid KeycloakRealmSpec."""
+        defaults = {
+            "realmName": "test-realm",
+            "operatorRef": {"namespace": "keycloak"},
+        }
+        defaults.update(kwargs)
+        return KeycloakRealmSpec(**defaults)
+
+    def test_organizations_enabled_defaults_to_false(self):
+        """Should default organizations_enabled to False."""
+        spec = self._create_realm_spec()
+        assert spec.organizations_enabled is False
+
+    def test_organizations_enabled_can_be_set_true(self):
+        """Should allow setting organizations_enabled to True."""
+        spec = self._create_realm_spec(organizationsEnabled=True)
+        assert spec.organizations_enabled is True
+
+    def test_to_keycloak_config_includes_organizations_enabled(self):
+        """Should include organizationsEnabled in config when True."""
+        spec = self._create_realm_spec(organizationsEnabled=True)
+        config = spec.to_keycloak_config()
+        assert config["organizationsEnabled"] is True
+
+    def test_to_keycloak_config_excludes_organizations_enabled_when_false(self):
+        """Should not include organizationsEnabled in config when False."""
+        spec = self._create_realm_spec(organizationsEnabled=False)
+        config = spec.to_keycloak_config()
+        assert "organizationsEnabled" not in config
+
+    def test_to_keycloak_config_with_organizations_list(self):
+        """Should include organizationsEnabled when organizations are defined."""
+        spec = self._create_realm_spec(
+            organizationsEnabled=True,
+            organizations=[Organization(name="acme-corp")],
+        )
+        config = spec.to_keycloak_config()
+        assert config["organizationsEnabled"] is True
+        # Note: organizations list is not included in to_keycloak_config()
+        # as it's handled by the reconciler separately
