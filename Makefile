@@ -162,8 +162,24 @@ kind-load-keycloak-optimized-tracing: build-keycloak-optimized-tracing ## Build 
 	kind load docker-image keycloak-optimized-tracing:$(KEYCLOAK_VERSION) --name keycloak-operator-test
 	@echo "✓ Optimized Keycloak tracing image loaded into Kind"
 
+# Tracing detection: mirrors _is_tracing_enabled() in tests/integration/conftest.py
+# - OTEL_TEST_TRACING_ENABLED explicitly set → use that
+# - CI env var set → tracing disabled (CI default)
+# - Neither set → tracing enabled (local dev default)
+_TRACING_ENABLED := $(if $(OTEL_TEST_TRACING_ENABLED),$(filter true yes 1,$(OTEL_TEST_TRACING_ENABLED)),$(if $(CI),false,true))
+
+.PHONY: kind-load-keycloak-selected
+kind-load-keycloak-selected: ## Build and load the correct Keycloak image variant based on tracing config
+	@if [ "$(_TRACING_ENABLED)" = "true" ]; then \
+		echo "Tracing enabled — loading keycloak-optimized-tracing image"; \
+		$(MAKE) kind-load-keycloak-optimized-tracing; \
+	else \
+		echo "Tracing disabled — loading keycloak-optimized image"; \
+		$(MAKE) kind-load-keycloak-optimized; \
+	fi
+
 .PHONY: build-all-test
-build-all-test: build-test kind-load-keycloak-optimized kind-load-keycloak-optimized-tracing ## Build and load all test images
+build-all-test: build-test kind-load-keycloak-selected ## Build and load all test images
 
 # ============================================================================
 # Integration Testing - Execution (INTERNAL TARGETS)
@@ -190,7 +206,7 @@ _test-integration: ensure-test-cluster build-all-test
 
 # Internal target - do not use directly, use 'make test' instead
 .PHONY: _test-integration-coverage
-_test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-optimized kind-load-keycloak-optimized-tracing
+_test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-selected
 	@echo "Running integration tests with coverage enabled..."
 	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 	@echo "Combining coverage data..."
