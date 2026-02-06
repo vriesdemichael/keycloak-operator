@@ -615,6 +615,14 @@ keycloak:
       cpu: 500m
       memory: 1Gi
 
+  # JVM options for Keycloak pods
+  # Passed as JAVA_OPTS_APPEND alongside JGroups clustering options
+  # Examples:
+  # - Heap sizing: ["-Xms512m", "-Xmx2048m"]
+  # - GC tuning: ["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200"]
+  # - JIT tuning: ["-XX:CompileThresholdScaling=0.3"]
+  jvmOptions: []
+
 # ============================================================================
 # Extra Kubernetes Manifests
 # ============================================================================

@@ -579,3 +579,246 @@ class TestKeycloakDeploymentTracing:
             # The default image is 26.x, so tracing should be enabled
             assert "KC_TRACING_ENABLED" in env_var_dict
             assert env_var_dict["KC_TRACING_ENABLED"].value == "true"
+
+
+class TestKeycloakDeploymentOptimized:
+    """Tests for the --optimized startup flag in Keycloak deployment."""
+
+    def test_deployment_args_include_optimized_flag(self):
+        """Test that container args include --optimized to skip build-time discovery."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+
+            # Verify command is kc.sh
+            assert container.command == ["/opt/keycloak/bin/kc.sh"]
+
+            # Verify args include start and --optimized
+            assert "start" in container.args
+            assert "--optimized" in container.args
+            assert "--http-enabled=true" in container.args
+            assert "--proxy-headers=xforwarded" in container.args
+
+
+class TestKeycloakDeploymentJvmOptions:
+    """Tests for JVM options passthrough in Keycloak deployment."""
+
+    def test_deployment_jvm_options_in_java_opts_append(self):
+        """Test that spec.jvm_options are appended to JAVA_OPTS_APPEND."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            jvm_options=["-Xms512m", "-Xmx2048m", "-XX:+UseG1GC"],
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            java_opts = env_var_dict["JAVA_OPTS_APPEND"].value
+            # JGroups DNS query should still be present
+            assert "-Djgroups.dns.query=" in java_opts
+            # Custom JVM options should be appended
+            assert "-Xms512m" in java_opts
+            assert "-Xmx2048m" in java_opts
+            assert "-XX:+UseG1GC" in java_opts
+
+    def test_deployment_no_jvm_options_only_jgroups(self):
+        """Test that JAVA_OPTS_APPEND contains only JGroups when no jvm_options."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            java_opts = env_var_dict["JAVA_OPTS_APPEND"].value
+            # Should only contain JGroups DNS query
+            assert java_opts == (
+                "-Djgroups.dns.query=my-keycloak-discovery.test-ns.svc.cluster.local"
+            )
+
+    def test_deployment_jit_tuning_option(self):
+        """Test CompileThresholdScaling JVM option flows through correctly."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            jvm_options=["-XX:CompileThresholdScaling=0.3"],
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            java_opts = env_var_dict["JAVA_OPTS_APPEND"].value
+            assert "-XX:CompileThresholdScaling=0.3" in java_opts
+
+
+class TestKeycloakDeploymentConnectionPool:
+    """Tests for database connection pool configuration in Keycloak deployment."""
+
+    def test_deployment_includes_db_pool_env_vars(self):
+        """Test that DB pool sizing env vars are set from spec defaults."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            # Default pool config: min_connections=5, max_connections=20
+            assert "KC_DB_POOL_INITIAL_SIZE" in env_var_dict
+            assert env_var_dict["KC_DB_POOL_INITIAL_SIZE"].value == "5"
+
+            assert "KC_DB_POOL_MIN_SIZE" in env_var_dict
+            assert env_var_dict["KC_DB_POOL_MIN_SIZE"].value == "5"
+
+            assert "KC_DB_POOL_MAX_SIZE" in env_var_dict
+            assert env_var_dict["KC_DB_POOL_MAX_SIZE"].value == "20"
+
+    def test_deployment_custom_pool_sizes(self):
+        """Test that custom connection pool sizes are propagated."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+                "connection_pool": {
+                    "min_connections": 10,
+                    "max_connections": 50,
+                },
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            assert env_var_dict["KC_DB_POOL_INITIAL_SIZE"].value == "10"
+            assert env_var_dict["KC_DB_POOL_MIN_SIZE"].value == "10"
+            assert env_var_dict["KC_DB_POOL_MAX_SIZE"].value == "50"

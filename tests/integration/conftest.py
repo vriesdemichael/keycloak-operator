@@ -95,6 +95,11 @@ def get_keycloak_test_image() -> str:
     This ensures consistency between local testing (KEYCLOAK_VERSION)
     and CI (KEYCLOAK_IMAGE or KEYCLOAK_VERSION).
 
+    When tracing is enabled and no explicit KEYCLOAK_IMAGE is set,
+    the tracing variant (keycloak-optimized-tracing) is selected.
+    KC_TRACING_ENABLED is a build-time option in Keycloak, so we need
+    an image that was built with OTEL support compiled in.
+
     Returns:
         Full image reference like "keycloak-optimized:26.4.1"
     """
@@ -103,10 +108,142 @@ def get_keycloak_test_image() -> str:
 
     if keycloak_image_env:
         return keycloak_image_env
-    elif keycloak_version_env:
-        return f"keycloak-optimized:{keycloak_version_env}"
-    else:
-        return f"keycloak-optimized:{DEFAULT_KEYCLOAK_OPTIMIZED_VERSION}"
+
+    version = keycloak_version_env or DEFAULT_KEYCLOAK_OPTIMIZED_VERSION
+    image_name = (
+        "keycloak-optimized-tracing" if _is_tracing_enabled() else "keycloak-optimized"
+    )
+    return f"{image_name}:{version}"
+
+
+def _is_tracing_enabled() -> bool:
+    """Determine whether OTEL tracing should be enabled for tests.
+
+    Tracing generates large trace files (~400MB) which are useful for local
+    debugging but bloat CI artifacts. Defaults:
+      - Local dev (CI env var unset): enabled
+      - CI (CI env var set):          disabled
+
+    Override explicitly with OTEL_TEST_TRACING_ENABLED=true/false.
+    """
+    explicit = os.environ.get("OTEL_TEST_TRACING_ENABLED")
+    if explicit is not None:
+        return explicit.lower() in ("1", "true", "yes")
+    # Default: enabled locally, disabled in CI
+    return os.environ.get("CI") is None
+
+
+async def _warmup_keycloak_jvm(
+    keycloak_name: str, namespace: str, logger: logging.Logger
+) -> None:
+    """Pre-warm Keycloak JVM by exercising hot code paths.
+
+    Creates and deletes 3 throwaway realms (each with 2 clients), which triggers:
+    - JIT C1 compilation of realm/client CRUD, JSON serialization, token handling
+    - Hibernate L1/L2 and query plan cache warm-up
+    - Infinispan distributed cache entry creation
+    - JDBC connection pool filling with active connections
+
+    Realms are created sequentially so the JVM has time to compile between calls,
+    rather than queueing work under contention. The operations themselves ARE the
+    warm-up — no artificial sleeps needed.
+
+    This runs inside the session-scoped shared_operator fixture, before any real
+    tests execute, so every test benefits from a warm JVM.
+    """
+    import socket
+    import subprocess
+
+    from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
+    from keycloak_operator.utils.kubernetes import get_admin_credentials
+
+    from .wait_helpers import wait_for_keycloak_http_ready, wait_for_port_forward_ready
+
+    logger.info("Starting Keycloak JVM warm-up phase...")
+    warmup_start = time.time()
+
+    # Set up port-forward (same pattern as the keycloak_port_forward fixture)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("", 0))
+        local_port = s.getsockname()[1]
+
+    service_name = f"{keycloak_name}-keycloak"
+    cmd = [
+        "kubectl",
+        "port-forward",
+        f"svc/{service_name}",
+        f"{local_port}:8080",
+        "-n",
+        namespace,
+    ]
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
+    )
+
+    try:
+        await wait_for_port_forward_ready(local_port, timeout=30, interval=0.5)
+        await wait_for_keycloak_http_ready(local_port, timeout=60)
+
+        username, password = get_admin_credentials(keycloak_name, namespace)
+        admin_client = KeycloakAdminClient(
+            server_url=f"http://localhost:{local_port}",
+            username=username,
+            password=password,
+        )
+        await admin_client.authenticate()
+
+        warmup_realms = []
+        for i in range(3):
+            realm_name = f"_warmup-{i}"
+            await admin_client.create_realm(
+                {"realm": realm_name, "enabled": True}, namespace
+            )
+            warmup_realms.append(realm_name)
+
+            # Create 2 clients per realm to exercise client CRUD + protocol mappers
+            for j in range(2):
+                await admin_client.create_client(
+                    {
+                        "clientId": f"warmup-client-{i}-{j}",
+                        "enabled": True,
+                        "publicClient": False,
+                        "redirectUris": ["http://localhost/*"],
+                        "protocolMappers": [
+                            {
+                                "name": "warmup-mapper",
+                                "protocol": "openid-connect",
+                                "protocolMapper": "oidc-usermodel-attribute-mapper",
+                                "config": {
+                                    "user.attribute": "test",
+                                    "claim.name": "test",
+                                    "jsonType.label": "String",
+                                    "id.token.claim": "true",
+                                    "access.token.claim": "true",
+                                },
+                            }
+                        ],
+                    },
+                    realm_name,
+                    namespace,
+                )
+
+        # Delete all warmup realms (cascade-deletes clients)
+        for realm_name in warmup_realms:
+            await admin_client.delete_realm(realm_name, namespace)
+
+        await admin_client.close()
+
+        elapsed = time.time() - warmup_start
+        logger.info(f"✓ Keycloak JVM warm-up complete ({elapsed:.1f}s)")
+
+    except Exception as e:
+        logger.warning(f"JVM warm-up failed (non-fatal, tests will still run): {e}")
+    finally:
+        proc.terminate()
+        try:
+            proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
 
 
 # ============================================================================
@@ -1469,6 +1606,10 @@ async def shared_operator(
             "replicas": 1,
             "image": keycloak_image,  # Use optimized image for faster startup
             "version": keycloak_version,
+            # Lower JIT compilation thresholds so hot methods compile sooner
+            # (C1: 1500→500, C2: 10000→3000 invocations). The warm-up phase
+            # triggers enough invocations to hit C1, and real tests push into C2.
+            "jvmOptions": ["-XX:CompileThresholdScaling=0.3"],
             "database": {
                 "cnpg": {
                     "enabled": cnpg_installed,
@@ -1490,6 +1631,21 @@ async def shared_operator(
                     "realm": 10,
                     "client": 10,
                 },
+            },
+            # Enable tracing for debugging test failures
+            # NOTE: must be under operator, not top-level, to match chart path
+            # operator.tracing.enabled in values.yaml
+            #
+            # Tracing is opt-in: enabled by default for local dev (no CI env var),
+            # disabled by default in CI where 400MB trace files bloat artifacts.
+            # Override with OTEL_TEST_TRACING_ENABLED=true/false.
+            "tracing": {
+                "enabled": _is_tracing_enabled(),
+                "endpoint": "http://otel-collector.observability.svc.cluster.local:4317",
+                "serviceName": "keycloak-operator",
+                "sampleRate": 1.0,  # Sample all traces during tests
+                "insecure": True,  # No TLS for local collector
+                "propagateToKeycloak": True,
             },
         },
         "webhooks": {
@@ -1515,15 +1671,6 @@ async def shared_operator(
                     "roles": True,
                 },
             },
-        },
-        # Enable tracing for debugging test failures
-        "tracing": {
-            "enabled": True,
-            "endpoint": "http://otel-collector.observability.svc.cluster.local:4317",
-            "serviceName": "keycloak-operator",
-            "sampleRate": 1.0,  # Sample all traces during tests
-            "insecure": True,  # No TLS for local collector
-            "propagateToKeycloak": True,
         },
     }
 
@@ -1779,6 +1926,11 @@ async def shared_operator(
                 pytest.fail(f"Keycloak instance not ready in time (timeout: 300s): {e}")
 
         logger.info("✓ Keycloak instance ready")
+
+        # Pre-warm the JVM before tests start — exercises realm/client CRUD,
+        # token handling, Hibernate caches, and JIT compilation so that real
+        # tests hit a warm Keycloak (P90 drops from ~1000ms to ~100-200ms).
+        await _warmup_keycloak_jvm(keycloak_name, operator_namespace, logger)
 
         # Wait for webhook server to be ready (if webhooks enabled)
         logger.info("Waiting for webhook server to be ready...")

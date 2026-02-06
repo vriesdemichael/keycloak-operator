@@ -216,14 +216,20 @@ def create_keycloak_deployment(
     # This enables Keycloak replicas to discover each other via DNS_PING
     # The kubernetes cache stack uses TCP transport with DNS-based discovery
     discovery_service_dns = f"{name}-discovery.{namespace}.svc.cluster.local"
+
+    # Build JAVA_OPTS_APPEND: JGroups DNS query + any user-specified JVM options
+    java_opts_parts = [f"-Djgroups.dns.query={discovery_service_dns}"]
+    if spec.jvm_options:
+        java_opts_parts.extend(spec.jvm_options)
+
     env_vars.extend(
         [
             # Switch from UDP multicast to TCP with DNS discovery
             client.V1EnvVar(name="KC_CACHE_STACK", value="kubernetes"),
-            # Configure JGroups to query the headless service for peer discovery
+            # JGroups peer discovery + custom JVM options from CRD spec
             client.V1EnvVar(
                 name="JAVA_OPTS_APPEND",
-                value=f"-Djgroups.dns.query={discovery_service_dns}",
+                value=" ".join(java_opts_parts),
             ),
         ]
     )
@@ -342,9 +348,39 @@ def create_keycloak_deployment(
                             )
                         )
 
+        # Configure database connection pool sizing
+        # Pre-warming connections at startup avoids lazy initialization latency
+        # during the first reconciliation wave
+        pool = spec.database.connection_pool
+        env_vars.extend(
+            [
+                client.V1EnvVar(
+                    name="KC_DB_POOL_INITIAL_SIZE",
+                    value=str(pool.min_connections),
+                ),
+                client.V1EnvVar(
+                    name="KC_DB_POOL_MIN_SIZE",
+                    value=str(pool.min_connections),
+                ),
+                client.V1EnvVar(
+                    name="KC_DB_POOL_MAX_SIZE",
+                    value=str(pool.max_connections),
+                ),
+            ]
+        )
+
     # Container configuration
     # Use production mode with HTTP enabled for ingress TLS termination
-    # Note: --optimized flag omitted to allow runtime database configuration
+    # The --optimized flag tells Keycloak to skip build-time discovery and use
+    # pre-compiled configuration from the image's build stage. This dramatically
+    # reduces startup time (20-30s vs 70s+). Runtime-only configuration (DB
+    # connection details, credentials, feature toggles) still works via env vars.
+    kc_args = [
+        "start",
+        "--optimized",
+        "--http-enabled=true",
+        "--proxy-headers=xforwarded",
+    ]
 
     # Build container ports - management port only for 25.x+
     container_ports = [
@@ -360,7 +396,7 @@ def create_keycloak_deployment(
         name="keycloak",
         image=image,
         command=["/opt/keycloak/bin/kc.sh"],
-        args=["start", "--http-enabled=true", "--proxy-headers=xforwarded"],
+        args=kc_args,
         ports=container_ports,
         env=env_vars,
         resources=client.V1ResourceRequirements(

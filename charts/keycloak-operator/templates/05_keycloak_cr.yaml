@@ -59,6 +59,11 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.keycloak.jvmOptions }}
+  jvmOptions:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- if and .Values.operator.tracing.enabled .Values.operator.tracing.propagateToKeycloak }}
   # OpenTelemetry tracing configuration (propagated from operator)
   # Keycloak 26.x+ has built-in OTEL support via Quarkus
