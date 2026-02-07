@@ -1399,3 +1399,66 @@ def get_admin_credentials(name: str, namespace: str) -> tuple[str, str]:
     except Exception as e:
         logger.error(f"Unexpected error getting admin credentials: {e}")
         raise
+
+
+def get_deployment_pods(
+    deployment_name: str, namespace: str, k8s_client: client.ApiClient
+) -> list[Any]:
+    """
+    Get all pods belonging to a deployment.
+
+    Args:
+        deployment_name: Name of the deployment
+        namespace: Namespace
+        k8s_client: Kubernetes API client
+
+    Returns:
+        List of V1Pod objects
+    """
+    try:
+        core_api = client.CoreV1Api(k8s_client)
+
+        # Derive instance name from deployment name (deployment_name = instance_name + "-keycloak")
+        if not deployment_name.endswith("-keycloak"):
+            logger.warning(
+                f"Deployment name {deployment_name} does not match expected pattern"
+            )
+            return []
+
+        instance_name = deployment_name[:-9]  # Remove "-keycloak"
+        label_selector = f"vriesdemichael.github.io/keycloak-instance={instance_name}"
+
+        pods = core_api.list_namespaced_pod(
+            namespace=namespace, label_selector=label_selector
+        )
+        return pods.items
+    except ApiException as e:
+        logger.error(f"Failed to list pods for deployment {deployment_name}: {e}")
+        return []
+
+
+def get_pod_logs(
+    name: str, namespace: str, k8s_client: client.ApiClient, tail_lines: int = 50
+) -> str:
+    """
+    Get logs from a pod.
+
+    Args:
+        name: Name of the pod
+        namespace: Namespace of the pod
+        k8s_client: Kubernetes API client
+        tail_lines: Number of lines to retrieve
+
+    Returns:
+        String containing logs
+    """
+    try:
+        core_api = client.CoreV1Api(k8s_client)
+        return core_api.read_namespaced_pod_log(
+            name=name, namespace=namespace, tail_lines=tail_lines
+        )
+    except ApiException as e:
+        # Don't log warning for 400 (container creating) as it's normal during startup
+        if e.status != 400:
+            logger.warning(f"Failed to get logs for pod {name}: {e}")
+        return ""

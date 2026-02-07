@@ -12,6 +12,7 @@ from kubernetes.client.rest import ApiException
 
 from ..constants import DEFAULT_KEYCLOAK_IMAGE
 from ..errors import (
+    ConfigurationError,
     DatabaseValidationError,
     ExternalServiceError,
     TemporaryError,
@@ -355,26 +356,29 @@ class KeycloakInstanceReconciler(BaseReconciler):
             await self.ensure_ingress(keycloak_spec, name, namespace)
 
         # Wait for deployment to be ready
-        deployment_ready = await self.wait_for_deployment_ready(name, namespace)
+        deployment_ready, error_message = await self.wait_for_deployment_ready(
+            name, namespace
+        )
 
         # Extract generation for status tracking
         generation = kwargs.get("meta", {}).get("generation", 0)
 
         if not deployment_ready:
-            self.update_status_degraded(
-                status, "Deployment created but not ready within timeout", generation
-            )
-            # Set additional status fields via StatusWrapper
-            status.deployment = f"{name}-keycloak"
-            status.service = f"{name}-keycloak"
-            status.endpoints = {
-                "admin": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
-                "public": f"http://{name}-keycloak.{namespace}.svc.cluster.local:8080",
-            }
-            return {}
+            if error_message:
+                # Fatal configuration/build error detected
+                raise ConfigurationError(
+                    error_message,
+                    user_action="Update image to match configuration or disable 'optimized' mode.",
+                )
+            else:
+                # Timeout waiting for readiness - retry later
+                raise TemporaryError(
+                    "Deployment created but not ready within timeout", delay=30
+                )
 
         # Update status to ready and set additional status information
         self.update_status_ready(status, "Keycloak instance is ready", generation)
+
         # Set additional status fields via StatusWrapper to avoid conflicts with Kopf
         status.deployment = f"{name}-keycloak"
         status.service = f"{name}-keycloak"
@@ -987,7 +991,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
     async def wait_for_deployment_ready(
         self, name: str, namespace: str, max_wait_time: int = 300
-    ) -> bool:
+    ) -> tuple[bool, str | None]:
         """
         Wait for deployment to be ready.
 
@@ -997,7 +1001,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
             max_wait_time: Maximum wait time in seconds
 
         Returns:
-            True if deployment became ready, False if timed out
+            Tuple of (ready: bool, error_message: str | None)
         """
         import asyncio
 
@@ -1024,7 +1028,17 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     self.logger.info(
                         f"Deployment {deployment_name} is ready ({ready_replicas}/{desired_replicas})"
                     )
-                    return True
+                    return True, None
+
+                # Check for fatal build/configuration errors in pod logs
+                build_error = self._check_pod_logs_for_build_errors(
+                    deployment_name, namespace
+                )
+                if build_error:
+                    self.logger.error(
+                        f"Deployment {deployment_name} failed: {build_error}"
+                    )
+                    return False, build_error
 
                 self.logger.debug(
                     f"Waiting for deployment readiness: {ready_replicas}/{desired_replicas} replicas ready"
@@ -1039,7 +1053,76 @@ class KeycloakInstanceReconciler(BaseReconciler):
         self.logger.warning(
             f"Deployment {deployment_name} did not become ready within {max_wait_time} seconds"
         )
-        return False
+        return False, None
+
+    def _check_pod_logs_for_build_errors(
+        self, deployment_name: str, namespace: str
+    ) -> str | None:
+        """
+        Check pod logs for known build/configuration mismatch errors.
+
+        Returns:
+            Error message if a known error is found, None otherwise.
+        """
+        from ..utils.kubernetes import get_deployment_pods, get_pod_logs
+
+        pods = get_deployment_pods(deployment_name, namespace, self.kubernetes_client)
+
+        # Check pods that are not ready
+        for pod in pods:
+            # We care about pods that are crashing or in error state
+            should_check = False
+            if pod.status.phase == "Failed":
+                should_check = True
+            elif (
+                pod.status.phase in ["Running", "Pending"]
+                and pod.status.container_statuses
+            ):
+                for status in pod.status.container_statuses:
+                    if status.state.waiting and status.state.waiting.reason in [
+                        "CrashLoopBackOff",
+                        "CreateContainerConfigError",
+                        "Error",
+                    ]:
+                        should_check = True
+                        break
+                    if (
+                        status.state.terminated
+                        and status.state.terminated.exit_code != 0
+                    ):
+                        should_check = True
+                        break
+
+            if should_check:
+                logs = get_pod_logs(
+                    pod.metadata.name,
+                    namespace,
+                    self.kubernetes_client,
+                    tail_lines=50,
+                )
+
+                # Signature 1: Optimized flag mismatch
+                if (
+                    "The '--optimized' flag was used for first ever server start"
+                    in logs
+                ):
+                    return (
+                        "Configuration Error: The 'optimized' flag is enabled, but the image was not built with 'kc.sh build'. "
+                        "Please either: 1) Use a pre-built optimized image, or 2) Set 'optimized: false' in your Keycloak spec."
+                    )
+
+                # Signature 2: Build option mismatch (Tracing, Features, etc.)
+                if (
+                    "The following build time options have values that differ from what is persisted"
+                    in logs
+                ):
+                    return (
+                        "Configuration Error: Requested features (e.g. Tracing, DB, Cache) differ from what was built into the image. "
+                        "When using 'optimized: true', you cannot change build-time options at runtime. "
+                        "Please rebuild your image with the new configuration or disable 'optimized' mode."
+                    )
+
+        return None
 
     async def _delete_dependent_resources(
         self, keycloak_name: str, keycloak_namespace: str
