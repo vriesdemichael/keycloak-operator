@@ -1,0 +1,27 @@
+number: 46
+title: Multiple operator support with explicit references
+category: architecture
+decision: Support multiple operator instances in same cluster. Each operator instance
+  has unique OPERATOR_INSTANCE_ID. Resources track which operator instance created
+  them via Keycloak resource attributes.
+agent_instructions: 'Use ownership tracking from src/keycloak_operator/utils/ownership.py.
+  Each operator deployment sets OPERATOR_INSTANCE_ID environment variable. Operators
+  add ownership attributes to Keycloak resources: io.kubernetes.operator-instance,
+  io.kubernetes.cr-namespace, io.kubernetes.cr-name. Use is_owned_by_this_operator()
+  to check ownership before updates. Use create_ownership_attributes() when creating
+  resources. Realm CRD has operatorRef field specifying which operator instance to
+  use. Only reconcile resources owned by this instance or without ownership (for adoption).'
+rationale: Multiple operators needed for scaling (sharding by realm) or multi-tenancy
+  (different teams run own operators). Ownership tracking via Keycloak attributes
+  prevents conflicts - operators only touch resources they created. OPERATOR_INSTANCE_ID
+  enables clear identification of which operator owns which resources. Enables gradual
+  operator version rollouts (blue-green). Multi-tenant clusters can isolate operator
+  instances by team/environment. Ownership validation prevents split-brain scenarios.
+provenance: human
+rejected_alternatives:
+- alternative: Single operator per cluster
+  reason: Doesn't scale. Can't separate operator responsibilities. Forces all teams
+    to share single operator instance.
+- alternative: Implicit operator selection via namespace
+  reason: Fragile. Namespace moves break association. Not explicit enough for security-critical
+    decisions.
