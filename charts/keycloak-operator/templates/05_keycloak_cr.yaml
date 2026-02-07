@@ -16,6 +16,7 @@ metadata:
 spec:
   replicas: {{ .Values.keycloak.replicas }}
   image: {{ .Values.keycloak.image }}:{{ .Values.keycloak.version }}
+  optimized: {{ .Values.keycloak.optimized }}
 
   {{- if .Values.keycloak.database.cnpg.enabled }}
   database:

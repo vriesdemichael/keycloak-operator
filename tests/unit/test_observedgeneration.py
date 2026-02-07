@@ -178,7 +178,7 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
                 new_callable=AsyncMock,
-                return_value=True,
+                return_value=(True, None),
             ),
         ):
             await keycloak_reconciler.do_reconcile(
@@ -213,9 +213,20 @@ class TestKeycloakReconcilerGenerationTracking:
 
         with (
             patch.object(
+                keycloak_reconciler, "ensure_admin_access", new_callable=AsyncMock
+            ),
+            patch.object(
+                keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
+            ),
+            patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
+            patch.object(
+                keycloak_reconciler, "ensure_discovery_service", new_callable=AsyncMock
+            ),
+            patch.object(
                 keycloak_reconciler,
-                "validate_production_settings",
+                "wait_for_deployment_ready",
                 new_callable=AsyncMock,
+                return_value=(True, None),
             ),
             patch.object(
                 keycloak_reconciler, "ensure_admin_access", new_callable=AsyncMock
@@ -285,7 +296,7 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
                 new_callable=AsyncMock,
-                return_value=False,
+                return_value=(True, None),
             ),
         ):
             await keycloak_reconciler.do_reconcile(

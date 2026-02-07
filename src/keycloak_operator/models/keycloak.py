@@ -378,6 +378,15 @@ class KeycloakSpec(BaseModel):
     jvm_options: list[str] = Field(
         default_factory=list, alias="jvmOptions", description="JVM options for Keycloak"
     )
+    optimized: bool = Field(
+        False,
+        description="Use --optimized startup flag. Set to true when using a pre-built "
+        "Keycloak image (e.g. keycloak-optimized). Set to false for stock "
+        "quay.io/keycloak/keycloak images that have not been pre-built with "
+        "'kc.sh build'. Defaults to false for backward compatibility; the "
+        "operator Helm chart should explicitly set this to true when using a "
+        "pre-built optimized image.",
+    )
 
     # Operational settings
     startup_probe: KubernetesProbeConfig = Field(

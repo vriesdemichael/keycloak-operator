@@ -164,8 +164,12 @@ async def _warmup_keycloak_jvm(
 
     # Set up port-forward (same pattern as the keycloak_port_forward fixture)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind(("", 0))
+        s.bind(("127.0.0.1", 0))
         local_port = s.getsockname()[1]
+
+    # Include xdist worker ID in realm names to avoid collisions when
+    # multiple workers run the session-scoped warm-up concurrently
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
 
     service_name = f"{keycloak_name}-keycloak"
     cmd = [
@@ -176,9 +180,7 @@ async def _warmup_keycloak_jvm(
         "-n",
         namespace,
     ]
-    proc = subprocess.Popen(
-        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
-    )
+    proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     try:
         await wait_for_port_forward_ready(local_port, timeout=30, interval=0.5)
@@ -194,7 +196,7 @@ async def _warmup_keycloak_jvm(
 
         warmup_realms = []
         for i in range(3):
-            realm_name = f"_warmup-{i}"
+            realm_name = f"_warmup-{worker_id}-{i}"
             await admin_client.create_realm(
                 {"realm": realm_name, "enabled": True}, namespace
             )

@@ -215,6 +215,10 @@ spec:
                 - -Xms512m
                 - -Xmx2048m
                 - -XX:+UseG1GC
+              optimized:
+                type: boolean
+                default: true
+                description: Use --optimized startup flag. Set to true when using a pre-built Keycloak image. Set to false for stock images that have not been pre-built with kc.sh build.
               serviceAccount:
                 type: string
                 description: Service account name for Keycloak pods (for workload identity)
