@@ -199,7 +199,8 @@ class TestKeycloakDeploymentJGroups:
         mock_apps_api = MagicMock()
 
         spec = KeycloakSpec(
-            replicas=2,
+            replicas=1,
+            optimized=True,
             database={
                 "type": "postgresql",
                 "host": "db",
