@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.8](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.7...operator-image-v0.7.8) (2026-02-08)
+
+
+### Features
+
+* **operator:** detect build mismatch and raise permanent ConfigurationError ([9cf1bee](https://github.com/vriesdemichael/keycloak-operator/commit/9cf1beeb448cee11887138ef36709b7470fd8619))
+
+
+### Bug Fixes
+
+* **chart-operator+operator:** address PR review comments and add conditional --optimized flag ([3cd442c](https://github.com/vriesdemichael/keycloak-operator/commit/3cd442c3804de6885ed46d6f3e2eab8008091779))
+* **chart-operator+operator:** change optimized default to false and address review comments ([a749e47](https://github.com/vriesdemichael/keycloak-operator/commit/a749e471a075088f51330cf54bed991fc4195fde))
+* **operator:** fix unit test failures and load both keycloak image variants ([3414949](https://github.com/vriesdemichael/keycloak-operator/commit/3414949db99f939cc963da43e90b58485d425a92))
+
 ## [0.7.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.6...operator-image-v0.7.7) (2026-02-06)
 
 
