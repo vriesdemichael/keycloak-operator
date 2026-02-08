@@ -993,8 +993,7 @@ class TestCheckPodLogsForBuildErrors:
             KeycloakInstanceReconciler,
         )
 
-        with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
-            reconciler = KeycloakInstanceReconciler()
+        reconciler = KeycloakInstanceReconciler(k8s_client=MagicMock())
         return reconciler
 
     def _make_pod(
@@ -1199,8 +1198,7 @@ class TestWaitForDeploymentReady:
             KeycloakInstanceReconciler,
         )
 
-        with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
-            reconciler = KeycloakInstanceReconciler()
+        reconciler = KeycloakInstanceReconciler(k8s_client=MagicMock())
         return reconciler
 
     @pytest.mark.asyncio
@@ -1309,8 +1307,7 @@ class TestDoReconcileBuildMismatchFlow:
             KeycloakInstanceReconciler,
         )
 
-        with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
-            reconciler = KeycloakInstanceReconciler()
+        reconciler = KeycloakInstanceReconciler(k8s_client=MagicMock())
 
         # Mock all methods called before wait_for_deployment_ready in do_reconcile
         reconciler.validate_production_settings = AsyncMock(  # type: ignore[method-assign]
