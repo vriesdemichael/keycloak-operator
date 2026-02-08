@@ -178,8 +178,13 @@ kind-load-keycloak-selected: ## Build and load the correct Keycloak image varian
 		$(MAKE) kind-load-keycloak-optimized; \
 	fi
 
+.PHONY: kind-load-keycloak-all
+kind-load-keycloak-all: ## Build and load BOTH optimized Keycloak images (for build mismatch tests)
+	$(MAKE) kind-load-keycloak-optimized
+	$(MAKE) kind-load-keycloak-optimized-tracing
+
 .PHONY: build-all-test
-build-all-test: build-test kind-load-keycloak-selected ## Build and load all test images
+build-all-test: build-test kind-load-keycloak-all ## Build and load all test images
 
 # ============================================================================
 # Integration Testing - Execution (INTERNAL TARGETS)
@@ -206,7 +211,7 @@ _test-integration: ensure-test-cluster build-all-test
 
 # Internal target - do not use directly, use 'make test' instead
 .PHONY: _test-integration-coverage
-_test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-selected
+_test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-all
 	@echo "Running integration tests with coverage enabled..."
 	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
 	@echo "Combining coverage data..."
