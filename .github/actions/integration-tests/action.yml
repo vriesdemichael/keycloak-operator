@@ -109,6 +109,15 @@ runs:
         docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ inputs.keycloak-version }}
         kind load docker-image keycloak-optimized:${{ inputs.keycloak-version }} --name ${{ inputs.cluster-name }}
 
+    - name: Pull and load Keycloak optimized-tracing image
+      shell: bash
+      env:
+        KEYCLOAK_IMAGE: ${{ inputs.registry }}/${{ inputs.image-name }}/keycloak-optimized-tracing:${{ inputs.keycloak-version }}
+      run: |
+        docker pull "${KEYCLOAK_IMAGE}"
+        docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized-tracing:${{ inputs.keycloak-version }}
+        kind load docker-image keycloak-optimized-tracing:${{ inputs.keycloak-version }} --name ${{ inputs.cluster-name }}
+
     - name: Install CloudNativePG operator
       shell: bash
       run: |
