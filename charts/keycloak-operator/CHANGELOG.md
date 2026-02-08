@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.11](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.10...chart-operator-v0.4.11) (2026-02-08)
+
+
+### Bug Fixes
+
+* **chart-operator+operator:** address PR review comments and add conditional --optimized flag ([3cd442c](https://github.com/vriesdemichael/keycloak-operator/commit/3cd442c3804de6885ed46d6f3e2eab8008091779))
+
 ## [0.4.10](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.9...chart-operator-v0.4.10) (2026-02-06)
 
 
