@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from keycloak_operator.errors.operator_errors import TemporaryError
 from keycloak_operator.services.base_reconciler import BaseReconciler
 from keycloak_operator.services.client_reconciler import KeycloakClientReconciler
 from keycloak_operator.services.keycloak_reconciler import KeycloakInstanceReconciler
@@ -213,6 +214,11 @@ class TestKeycloakReconcilerGenerationTracking:
 
         with (
             patch.object(
+                keycloak_reconciler,
+                "validate_production_settings",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
                 keycloak_reconciler, "ensure_admin_access", new_callable=AsyncMock
             ),
             patch.object(
@@ -228,22 +234,6 @@ class TestKeycloakReconcilerGenerationTracking:
                 new_callable=AsyncMock,
                 return_value=(True, None),
             ),
-            patch.object(
-                keycloak_reconciler, "ensure_admin_access", new_callable=AsyncMock
-            ),
-            patch.object(
-                keycloak_reconciler, "ensure_deployment", new_callable=AsyncMock
-            ),
-            patch.object(keycloak_reconciler, "ensure_service", new_callable=AsyncMock),
-            patch.object(
-                keycloak_reconciler, "ensure_discovery_service", new_callable=AsyncMock
-            ),
-            patch.object(
-                keycloak_reconciler,
-                "wait_for_deployment_ready",
-                new_callable=AsyncMock,
-                return_value=True,
-            ),
         ):
             await keycloak_reconciler.do_reconcile(
                 spec=spec,
@@ -258,10 +248,10 @@ class TestKeycloakReconcilerGenerationTracking:
             assert status.phase == "Ready"
 
     @pytest.mark.asyncio
-    async def test_do_reconcile_degraded_state_includes_generation(
+    async def test_do_reconcile_not_ready_raises_temporary_error(
         self, keycloak_reconciler
     ):
-        """Test that degraded state also includes generation tracking."""
+        """Test that deployment not ready raises TemporaryError for retry."""
         status = MockStatus()
         spec = {
             "image": "quay.io/keycloak/keycloak:26.4.0",
@@ -296,20 +286,17 @@ class TestKeycloakReconcilerGenerationTracking:
                 keycloak_reconciler,
                 "wait_for_deployment_ready",
                 new_callable=AsyncMock,
-                return_value=(True, None),
+                return_value=(False, None),
             ),
         ):
-            await keycloak_reconciler.do_reconcile(
-                spec=spec,
-                name="test-keycloak",
-                namespace="test-namespace",
-                status=status,
-                **kwargs,
-            )
-
-            # Should set degraded status with generation
-            assert status.observedGeneration == 99
-            assert status.phase == "Degraded"
+            with pytest.raises(TemporaryError, match="not ready"):
+                await keycloak_reconciler.do_reconcile(
+                    spec=spec,
+                    name="test-keycloak",
+                    namespace="test-namespace",
+                    status=status,
+                    **kwargs,
+                )
 
 
 class TestRealmReconcilerGenerationTracking:

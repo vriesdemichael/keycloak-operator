@@ -2,10 +2,15 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+from kubernetes.client.rest import ApiException
+
 from keycloak_operator.utils.kubernetes import (
     create_client_secret,
     create_keycloak_deployment,
     create_keycloak_discovery_service,
+    get_deployment_pods,
+    get_pod_logs,
 )
 
 
@@ -863,3 +868,523 @@ class TestKeycloakDeploymentConnectionPool:
             assert env_var_dict["KC_DB_POOL_INITIAL_SIZE"].value == "10"
             assert env_var_dict["KC_DB_POOL_MIN_SIZE"].value == "10"
             assert env_var_dict["KC_DB_POOL_MAX_SIZE"].value == "50"
+
+
+class TestGetDeploymentPods:
+    """Tests for get_deployment_pods helper function."""
+
+    def test_get_deployment_pods_success(self):
+        """Test successful pod listing for a deployment."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+        mock_pod = MagicMock()
+        mock_pod.metadata.name = "my-keycloak-keycloak-abc123"
+        mock_core_api.list_namespaced_pod.return_value = MagicMock(items=[mock_pod])
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            pods = get_deployment_pods(
+                "my-keycloak-keycloak", "test-ns", mock_k8s_client
+            )
+
+        assert len(pods) == 1
+        assert pods[0].metadata.name == "my-keycloak-keycloak-abc123"
+        mock_core_api.list_namespaced_pod.assert_called_once_with(
+            namespace="test-ns",
+            label_selector="vriesdemichael.github.io/keycloak-instance=my-keycloak",
+        )
+
+    def test_get_deployment_pods_invalid_name_pattern(self):
+        """Test that invalid deployment name returns empty list."""
+        mock_k8s_client = MagicMock()
+
+        pods = get_deployment_pods("bad-name", "test-ns", mock_k8s_client)
+
+        assert pods == []
+
+    def test_get_deployment_pods_api_error(self):
+        """Test that API errors return empty list."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+        mock_core_api.list_namespaced_pod.side_effect = ApiException(status=500)
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            pods = get_deployment_pods(
+                "my-keycloak-keycloak", "test-ns", mock_k8s_client
+            )
+
+        assert pods == []
+
+    def test_get_deployment_pods_no_pods(self):
+        """Test empty pod list returned when no pods match."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+        mock_core_api.list_namespaced_pod.return_value = MagicMock(items=[])
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            pods = get_deployment_pods(
+                "my-keycloak-keycloak", "test-ns", mock_k8s_client
+            )
+
+        assert pods == []
+
+
+class TestGetPodLogs:
+    """Tests for get_pod_logs helper function."""
+
+    def test_get_pod_logs_success(self):
+        """Test successful log retrieval."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_pod_log.return_value = (
+            "2025-01-01 Starting Keycloak\n2025-01-01 Ready"
+        )
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            logs = get_pod_logs("my-pod", "test-ns", mock_k8s_client)
+
+        assert "Starting Keycloak" in logs
+        mock_core_api.read_namespaced_pod_log.assert_called_once_with(
+            name="my-pod", namespace="test-ns", tail_lines=50
+        )
+
+    def test_get_pod_logs_custom_tail_lines(self):
+        """Test log retrieval with custom tail_lines parameter."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_pod_log.return_value = "log line"
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            get_pod_logs("my-pod", "test-ns", mock_k8s_client, tail_lines=100)
+
+        mock_core_api.read_namespaced_pod_log.assert_called_once_with(
+            name="my-pod", namespace="test-ns", tail_lines=100
+        )
+
+    def test_get_pod_logs_api_error_non_400(self):
+        """Test that non-400 API errors return empty string and log warning."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_pod_log.side_effect = ApiException(status=500)
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            logs = get_pod_logs("my-pod", "test-ns", mock_k8s_client)
+
+        assert logs == ""
+
+    def test_get_pod_logs_api_error_400_silent(self):
+        """Test that 400 errors (container creating) are silent."""
+        mock_k8s_client = MagicMock()
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_pod_log.side_effect = ApiException(status=400)
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            logs = get_pod_logs("my-pod", "test-ns", mock_k8s_client)
+
+        assert logs == ""
+
+
+class TestCheckPodLogsForBuildErrors:
+    """Tests for _check_pod_logs_for_build_errors in KeycloakInstanceReconciler."""
+
+    @pytest.fixture
+    def reconciler(self):
+        """Create a minimal KeycloakInstanceReconciler for testing."""
+        from keycloak_operator.services.keycloak_reconciler import (
+            KeycloakInstanceReconciler,
+        )
+
+        with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
+            reconciler = KeycloakInstanceReconciler()
+        return reconciler
+
+    def _make_pod(
+        self,
+        name="test-pod",
+        phase="Running",
+        waiting_reason=None,
+        terminated_exit_code=None,
+    ):
+        """Helper to create a mock pod with specific status."""
+        pod = MagicMock()
+        pod.metadata.name = name
+        pod.status.phase = phase
+
+        if waiting_reason or terminated_exit_code is not None:
+            container_status = MagicMock()
+            if waiting_reason:
+                container_status.state.waiting.reason = waiting_reason
+                container_status.state.terminated = None
+            elif terminated_exit_code is not None:
+                container_status.state.waiting = None
+                container_status.state.terminated.exit_code = terminated_exit_code
+            else:
+                container_status.state.waiting = None
+                container_status.state.terminated = None
+            pod.status.container_statuses = [container_status]
+        else:
+            pod.status.container_statuses = None
+
+        return pod
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_no_pods_returns_none(self, mock_logs, mock_pods, reconciler):
+        """Test returns None when no pods exist."""
+        mock_pods.return_value = []
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        assert result is None
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_healthy_pod_not_checked(self, mock_logs, mock_pods, reconciler):
+        """Test that healthy running pods are not checked."""
+        pod = self._make_pod(phase="Running")
+        # No container_statuses means no waiting/terminated state to check
+        pod.status.container_statuses = None
+        mock_pods.return_value = [pod]
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        assert result is None
+        mock_logs.assert_not_called()
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_failed_pod_checked(self, mock_logs, mock_pods, reconciler):
+        """Test that Failed pods have their logs checked."""
+        pod = self._make_pod(phase="Failed")
+        mock_pods.return_value = [pod]
+        mock_logs.return_value = "Normal startup log without errors"
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        assert result is None
+        mock_logs.assert_called_once()
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_crashloopbackoff_detected_optimized_mismatch(
+        self, mock_logs, mock_pods, reconciler
+    ):
+        """Test detecting optimized flag mismatch in CrashLoopBackOff pod."""
+        pod = self._make_pod(phase="Running", waiting_reason="CrashLoopBackOff")
+        mock_pods.return_value = [pod]
+        mock_logs.return_value = (
+            "ERROR: The '--optimized' flag was used for first ever server start. "
+            "Please run the 'build' command first."
+        )
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        assert result is not None
+        assert "optimized" in result.lower()
+        assert "not built with 'kc.sh build'" in result
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_crashloopbackoff_detected_build_option_mismatch(
+        self, mock_logs, mock_pods, reconciler
+    ):
+        """Test detecting build option mismatch in CrashLoopBackOff pod."""
+        pod = self._make_pod(phase="Running", waiting_reason="CrashLoopBackOff")
+        mock_pods.return_value = [pod]
+        mock_logs.return_value = (
+            "ERROR: The following build time options have values that differ from what is persisted: "
+            "kc.spi-connections-jpa-default-migration-strategy"
+        )
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        assert result is not None
+        assert "Requested features" in result
+        assert "differ" in result
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_terminated_nonzero_exit_code(self, mock_logs, mock_pods, reconciler):
+        """Test that pods with terminated containers (non-zero exit) are checked."""
+        pod = self._make_pod(phase="Running", terminated_exit_code=1)
+        mock_pods.return_value = [pod]
+        mock_logs.return_value = (
+            "The '--optimized' flag was used for first ever server start"
+        )
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        assert result is not None
+        assert "optimized" in result.lower()
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_error_waiting_reason(self, mock_logs, mock_pods, reconciler):
+        """Test that pods with Error waiting reason are checked."""
+        pod = self._make_pod(phase="Running", waiting_reason="Error")
+        mock_pods.return_value = [pod]
+        mock_logs.return_value = "Some unrelated error message"
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        # Error is checked but log doesn't match known patterns
+        assert result is None
+        mock_logs.assert_called_once()
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_create_container_config_error(self, mock_logs, mock_pods, reconciler):
+        """Test that CreateContainerConfigError waiting reason triggers check."""
+        pod = self._make_pod(
+            phase="Pending", waiting_reason="CreateContainerConfigError"
+        )
+        mock_pods.return_value = [pod]
+        mock_logs.return_value = "Some container config problem"
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        assert result is None
+        mock_logs.assert_called_once()
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_multiple_pods_first_match_wins(self, mock_logs, mock_pods, reconciler):
+        """Test that when multiple pods have issues, first match is returned."""
+        pod1 = self._make_pod(
+            name="pod-1", phase="Running", waiting_reason="CrashLoopBackOff"
+        )
+        pod2 = self._make_pod(
+            name="pod-2", phase="Running", waiting_reason="CrashLoopBackOff"
+        )
+        mock_pods.return_value = [pod1, pod2]
+        mock_logs.side_effect = [
+            "The '--optimized' flag was used for first ever server start",
+            "The following build time options have values that differ from what is persisted",
+        ]
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        # First pod matches optimized flag error
+        assert "optimized" in result.lower()
+        # Only first pod's logs were needed
+        assert mock_logs.call_count == 1
+
+    @patch("keycloak_operator.utils.kubernetes.get_deployment_pods")
+    @patch("keycloak_operator.utils.kubernetes.get_pod_logs")
+    def test_terminated_zero_exit_code_not_checked(
+        self, mock_logs, mock_pods, reconciler
+    ):
+        """Test that pods with zero exit code terminated containers are NOT checked."""
+        pod = MagicMock()
+        pod.metadata.name = "test-pod"
+        pod.status.phase = "Running"
+        container_status = MagicMock()
+        container_status.state.waiting = None
+        container_status.state.terminated.exit_code = 0
+        pod.status.container_statuses = [container_status]
+        mock_pods.return_value = [pod]
+
+        result = reconciler._check_pod_logs_for_build_errors("test-keycloak", "test-ns")
+
+        assert result is None
+        mock_logs.assert_not_called()
+
+
+class TestWaitForDeploymentReady:
+    """Tests for wait_for_deployment_ready in KeycloakInstanceReconciler."""
+
+    @pytest.fixture
+    def reconciler(self):
+        """Create a minimal KeycloakInstanceReconciler for testing."""
+        from keycloak_operator.services.keycloak_reconciler import (
+            KeycloakInstanceReconciler,
+        )
+
+        with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
+            reconciler = KeycloakInstanceReconciler()
+        return reconciler
+
+    @pytest.mark.asyncio
+    async def test_deployment_ready_immediately(self, reconciler):
+        """Test when deployment is already ready."""
+        mock_apps_api = MagicMock()
+        mock_deployment = MagicMock()
+        mock_deployment.status.ready_replicas = 1
+        mock_deployment.spec.replicas = 1
+        mock_apps_api.read_namespaced_deployment_status.return_value = mock_deployment
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            ready, error = await reconciler.wait_for_deployment_ready(
+                "test", "test-ns", max_wait_time=10
+            )
+
+        assert ready is True
+        assert error is None
+
+    @pytest.mark.asyncio
+    async def test_deployment_timeout(self, reconciler):
+        """Test when deployment never becomes ready (timeout)."""
+        mock_apps_api = MagicMock()
+        mock_deployment = MagicMock()
+        mock_deployment.status.ready_replicas = 0
+        mock_deployment.spec.replicas = 1
+        mock_apps_api.read_namespaced_deployment_status.return_value = mock_deployment
+
+        with (
+            patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api),
+            patch.object(
+                reconciler,
+                "_check_pod_logs_for_build_errors",
+                return_value=None,
+            ),
+            patch("asyncio.sleep", return_value=None),
+        ):
+            ready, error = await reconciler.wait_for_deployment_ready(
+                "test", "test-ns", max_wait_time=5
+            )
+
+        assert ready is False
+        assert error is None
+
+    @pytest.mark.asyncio
+    async def test_deployment_build_error_detected(self, reconciler):
+        """Test when build error is detected in pod logs."""
+        mock_apps_api = MagicMock()
+        mock_deployment = MagicMock()
+        mock_deployment.status.ready_replicas = 0
+        mock_deployment.spec.replicas = 1
+        mock_apps_api.read_namespaced_deployment_status.return_value = mock_deployment
+
+        build_error_msg = "Configuration Error: The 'optimized' flag is enabled"
+
+        with (
+            patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api),
+            patch.object(
+                reconciler,
+                "_check_pod_logs_for_build_errors",
+                return_value=build_error_msg,
+            ),
+        ):
+            ready, error = await reconciler.wait_for_deployment_ready(
+                "test", "test-ns", max_wait_time=300
+            )
+
+        assert ready is False
+        assert error == build_error_msg
+
+    @pytest.mark.asyncio
+    async def test_deployment_api_exception_continues(self, reconciler):
+        """Test that API exceptions don't crash the wait loop."""
+        mock_apps_api = MagicMock()
+        # First call raises, second call returns ready
+        mock_deployment_ready = MagicMock()
+        mock_deployment_ready.status.ready_replicas = 1
+        mock_deployment_ready.spec.replicas = 1
+
+        mock_apps_api.read_namespaced_deployment_status.side_effect = [
+            ApiException(status=503),
+            mock_deployment_ready,
+        ]
+
+        with (
+            patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api),
+            patch("asyncio.sleep", return_value=None),
+        ):
+            ready, error = await reconciler.wait_for_deployment_ready(
+                "test", "test-ns", max_wait_time=300
+            )
+
+        assert ready is True
+        assert error is None
+
+
+class TestDoReconcileBuildMismatchFlow:
+    """Tests for do_reconcile error handling with build mismatch detection."""
+
+    @pytest.fixture
+    def reconciler(self):
+        """Create a KeycloakInstanceReconciler with all pre-wait methods mocked."""
+        from unittest.mock import AsyncMock
+
+        from keycloak_operator.services.keycloak_reconciler import (
+            KeycloakInstanceReconciler,
+        )
+
+        with patch("keycloak_operator.services.keycloak_reconciler.client.ApiClient"):
+            reconciler = KeycloakInstanceReconciler()
+
+        # Mock all methods called before wait_for_deployment_ready in do_reconcile
+        reconciler.validate_production_settings = AsyncMock(  # type: ignore[method-assign]
+            return_value={"host": "db", "port": 5432}
+        )
+        reconciler.ensure_admin_access = AsyncMock()  # type: ignore[method-assign]
+        reconciler.ensure_deployment = AsyncMock()  # type: ignore[method-assign]
+        reconciler.ensure_service = AsyncMock()  # type: ignore[method-assign]
+        reconciler.ensure_discovery_service = AsyncMock()  # type: ignore[method-assign]
+
+        return reconciler
+
+    @pytest.mark.asyncio
+    async def test_raises_configuration_error_on_build_mismatch(self, reconciler):
+        """Test that ConfigurationError is raised when build error is detected."""
+        from unittest.mock import AsyncMock
+
+        from keycloak_operator.errors.operator_errors import ConfigurationError
+
+        reconciler.wait_for_deployment_ready = AsyncMock(
+            return_value=(False, "Configuration Error: optimized flag mismatch")
+        )
+
+        status = MagicMock()
+        spec = {
+            "image": "quay.io/keycloak/keycloak:26.4.0",
+            "replicas": 1,
+            "optimized": True,
+            "ingress": {"enabled": False},
+            "database": {
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentialsSecret": "db-creds",
+            },
+        }
+
+        with pytest.raises(ConfigurationError):
+            await reconciler.do_reconcile(
+                spec=spec,
+                name="test",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 1},
+            )
+
+    @pytest.mark.asyncio
+    async def test_raises_temporary_error_on_timeout(self, reconciler):
+        """Test that TemporaryError is raised when deployment times out."""
+        from unittest.mock import AsyncMock
+
+        from keycloak_operator.errors.operator_errors import TemporaryError
+
+        reconciler.wait_for_deployment_ready = AsyncMock(return_value=(False, None))
+
+        status = MagicMock()
+        spec = {
+            "image": "quay.io/keycloak/keycloak:26.4.0",
+            "replicas": 1,
+            "optimized": False,
+            "ingress": {"enabled": False},
+            "database": {
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentialsSecret": "db-creds",
+            },
+        }
+
+        with pytest.raises(TemporaryError, match="not ready"):
+            await reconciler.do_reconcile(
+                spec=spec,
+                name="test",
+                namespace="test-ns",
+                status=status,
+                meta={"generation": 1},
+            )
