@@ -1,16 +1,26 @@
 import asyncio
 import logging
+import os
 
 import pytest
 from kubernetes import client
 
+from keycloak_operator.constants import DEFAULT_KEYCLOAK_OPTIMIZED_VERSION
+
 logger = logging.getLogger(__name__)
 
-# Constants from Kind cluster state
-STOCK_IMAGE = "quay.io/keycloak/keycloak:26.0.0"
+# Use KEYCLOAK_VERSION env var (set by CI and Makefile) or fall back to the constant
+_KEYCLOAK_VERSION = os.environ.get(
+    "KEYCLOAK_VERSION", DEFAULT_KEYCLOAK_OPTIMIZED_VERSION
+)
+
+# Stock image for mismatch detection (deliberately old/stock)
+STOCK_IMAGE = f"quay.io/keycloak/keycloak:{_KEYCLOAK_VERSION}"
 # Use full names as reported by crictl to ensure Kind finds them locally
-OPTIMIZED_NO_TRACING = "docker.io/library/keycloak-optimized:26.5.2"
-OPTIMIZED_WITH_TRACING = "docker.io/library/keycloak-optimized-tracing:26.5.2"
+OPTIMIZED_NO_TRACING = f"docker.io/library/keycloak-optimized:{_KEYCLOAK_VERSION}"
+OPTIMIZED_WITH_TRACING = (
+    f"docker.io/library/keycloak-optimized-tracing:{_KEYCLOAK_VERSION}"
+)
 
 
 @pytest.mark.asyncio
