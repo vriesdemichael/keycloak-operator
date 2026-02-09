@@ -475,5 +475,72 @@ class TestRateLimiterEdgeCases:
         await limiter.acquire("test", timeout=0.5)
 
 
+class TestRecordBudget:
+    """Test _record_budget per-namespace token reporting."""
+
+    @pytest.mark.asyncio
+    async def test_record_budget_uses_namespace_bucket(self):
+        """_record_budget reads available_tokens from the namespace bucket."""
+        limiter = RateLimiter(
+            global_rate=10.0,
+            global_burst=10,
+            namespace_rate=5.0,
+            namespace_burst=5,
+        )
+
+        # Acquire a token to create the namespace bucket
+        await limiter.acquire("my-ns", timeout=1.0)
+
+        with patch(
+            "keycloak_operator.observability.metrics.RATE_LIMIT_BUDGET_AVAILABLE"
+        ) as mock_budget:
+            limiter._record_budget("my-ns")
+
+            mock_budget.labels.assert_called_with(namespace="my-ns")
+            # The set call should receive the available_tokens value
+            set_args = mock_budget.labels().set.call_args
+            assert set_args is not None
+            recorded_value = set_args[0][0]
+            # After one acquisition from a 5-capacity bucket, should be ~4
+            assert 3.5 < recorded_value <= 5.0
+
+    @pytest.mark.asyncio
+    async def test_record_budget_missing_namespace_returns_early(self):
+        """_record_budget returns early if namespace bucket doesn't exist."""
+        limiter = RateLimiter(
+            global_rate=10.0,
+            global_burst=10,
+            namespace_rate=5.0,
+            namespace_burst=5,
+        )
+
+        with patch(
+            "keycloak_operator.observability.metrics.RATE_LIMIT_BUDGET_AVAILABLE"
+        ) as mock_budget:
+            limiter._record_budget("nonexistent-ns")
+
+            # Should not call .labels() because bucket is None
+            mock_budget.labels.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_record_budget_exception_swallowed(self):
+        """_record_budget swallows exceptions gracefully."""
+        limiter = RateLimiter(
+            global_rate=10.0,
+            global_burst=10,
+            namespace_rate=5.0,
+            namespace_burst=5,
+        )
+
+        await limiter.acquire("my-ns", timeout=1.0)
+
+        with patch(
+            "keycloak_operator.observability.metrics.RATE_LIMIT_BUDGET_AVAILABLE"
+        ) as mock_budget:
+            mock_budget.labels.side_effect = RuntimeError("metric broken")
+            # Should not raise
+            limiter._record_budget("my-ns")
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
