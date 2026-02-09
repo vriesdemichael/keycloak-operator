@@ -92,7 +92,7 @@ spec:
         # No reconciliation activity (operator may be stuck)
         - alert: KeycloakOperatorNoActivity
           expr: |
-            rate(kopf_reconciliation_total[10m]) == 0
+            rate(keycloak_operator_reconciliation_total[10m]) == 0
             and
             sum(keycloak_operator_active_resources) > 0
           for: 15m

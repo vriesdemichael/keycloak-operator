@@ -962,34 +962,64 @@ class DriftDetector:
         """
         Update Prometheus metrics based on drift results.
 
+        Aggregates counts per label set so the gauge reflects the actual number
+        of drift items, not just a boolean 0/1.  Resets the gauge to 0 for the
+        current resource_type when no items of that drift category are found.
+
         Args:
             drift_results: List of drift results
             resource_type: Type of resource being checked
         """
-        # Reset gauges for this resource type
-        # Note: We can't easily reset specific labels, so we'll just update
-        # This means old metrics may persist until they're overwritten
+        # Count drift items per category and label set
+        orphaned_counts: dict[tuple[str, str], int] = {}
+        config_drift_counts: dict[tuple[str, str], int] = {}
+        unmanaged_counts: dict[str, int] = {}
 
         for drift in drift_results:
             if drift.drift_type == "orphaned":
-                # Set orphaned resource metric
-                ORPHANED_RESOURCES.labels(
-                    resource_type=drift.resource_type,
-                    operator_instance=settings.operator_instance_id,
-                ).set(1)
-
+                key = (drift.resource_type, settings.operator_instance_id)
+                orphaned_counts[key] = orphaned_counts.get(key, 0) + 1
             elif drift.drift_type == "config_drift":
-                # Set config drift metric
-                CONFIG_DRIFT.labels(
-                    resource_type=drift.resource_type,
-                    cr_namespace=drift.cr_namespace or "unknown",
-                ).set(1)
-
+                key = (drift.resource_type, drift.cr_namespace or "unknown")
+                config_drift_counts[key] = config_drift_counts.get(key, 0) + 1
             elif drift.drift_type == "unmanaged":
-                # Set unmanaged resource metric
+                key = drift.resource_type
+                unmanaged_counts[key] = unmanaged_counts.get(key, 0) + 1
+
+        # Set aggregated counts (or reset to 0 if no items found)
+        if orphaned_counts:
+            for (rt, oi), count in orphaned_counts.items():
+                ORPHANED_RESOURCES.labels(
+                    resource_type=rt,
+                    operator_instance=oi,
+                ).set(count)
+        else:
+            ORPHANED_RESOURCES.labels(
+                resource_type=resource_type,
+                operator_instance=settings.operator_instance_id,
+            ).set(0)
+
+        if config_drift_counts:
+            for (rt, ns), count in config_drift_counts.items():
+                CONFIG_DRIFT.labels(
+                    resource_type=rt,
+                    cr_namespace=ns,
+                ).set(count)
+        else:
+            CONFIG_DRIFT.labels(
+                resource_type=resource_type,
+                cr_namespace="unknown",
+            ).set(0)
+
+        if unmanaged_counts:
+            for rt, count in unmanaged_counts.items():
                 UNMANAGED_RESOURCES.labels(
-                    resource_type=drift.resource_type,
-                ).set(1)
+                    resource_type=rt,
+                ).set(count)
+        else:
+            UNMANAGED_RESOURCES.labels(
+                resource_type=resource_type,
+            ).set(0)
 
     async def remediate_drift(self, drift_results: list[DriftResult]) -> None:
         """
