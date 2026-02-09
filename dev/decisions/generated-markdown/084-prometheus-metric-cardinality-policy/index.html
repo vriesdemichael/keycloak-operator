@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/024-helm-as-deployment-mechanism/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/084-prometheus-metric-cardinality-policy/">
       
       
-        <link rel="prev" href="../023-make-for-development-automation/">
+        <link rel="prev" href="../083-kopf-version-pin/">
       
       
-        <link rel="next" href="../025-realm-and-client-as-primary-crd-resource-types/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-024: Helm as deployment mechanism - Keycloak Operator</title>
+        <title>ADR-084: Prometheus Metric Hygiene Policy - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-024-helm-as-deployment-mechanism" class="md-skip">
+        <a href="#adr-084-prometheus-metric-hygiene-policy" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-024: Helm as deployment mechanism
+              ADR-084: Prometheus Metric Hygiene Policy
             
           </span>
         </div>
@@ -2267,37 +2267,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-024: Helm as deployment mechanism
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../024-helm-as-deployment-mechanism/" class="md-nav__link">
         
   
   
@@ -2313,98 +2286,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#plain-kubernetes-manifests" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Plain Kubernetes manifests
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kustomize" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Kustomize
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4066,10 +3947,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../084-prometheus-metric-cardinality-policy/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-084: Prometheus Metric Hygiene Policy
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4085,6 +3993,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keep-resource_name-labels-but-add-recording-rules-to-pre-aggregate" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep resource_name labels but add recording rules to pre-aggregate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-opentelemetry-for-per-resource-metrics-and-prometheus-for-aggregates" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use OpenTelemetry for per-resource metrics and Prometheus for aggregates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allow-subsystem-specific-prefixes-keycloak_api_-keycloak_operator_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Allow subsystem-specific prefixes (keycloak_api_, keycloak_operator_)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-metric-label-allowlists-enforced-at-scrape-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use metric label allowlists enforced at scrape time
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4196,10 +4218,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#plain-kubernetes-manifests" class="md-nav__link">
+  <a href="#keep-resource_name-labels-but-add-recording-rules-to-pre-aggregate" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Plain Kubernetes manifests
+        Keep resource_name labels but add recording rules to pre-aggregate
       
     </span>
   </a>
@@ -4207,10 +4229,32 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#kustomize" class="md-nav__link">
+  <a href="#use-opentelemetry-for-per-resource-metrics-and-prometheus-for-aggregates" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Kustomize
+        Use OpenTelemetry for per-resource metrics and Prometheus for aggregates
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allow-subsystem-specific-prefixes-keycloak_api_-keycloak_operator_" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Allow subsystem-specific prefixes (keycloak_api_, keycloak_operator_)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-metric-label-allowlists-enforced-at-scrape-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use metric label allowlists enforced at scrape time
       
     </span>
   </a>
@@ -4239,7 +4283,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/024-helm-as-deployment-mechanism.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/084-prometheus-metric-cardinality-policy.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4247,20 +4291,76 @@
   
 
 
-<h1 id="adr-024-helm-as-deployment-mechanism">ADR-024: Helm as deployment mechanism<a class="headerlink" href="#adr-024-helm-as-deployment-mechanism" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> development
-<strong>Provenance:</strong> human</p>
+<h1 id="adr-084-prometheus-metric-hygiene-policy">ADR-084: Prometheus Metric Hygiene Policy<a class="headerlink" href="#adr-084-prometheus-metric-hygiene-policy" title="Permanent link">&para;</a></h1>
+<p><strong>Category:</strong> architecture
+<strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Use Helm charts as the primary deployment mechanism for the operator and CRD resources. Plain manifests and Kustomize are not supported.</p>
+<p>All Prometheus metrics emitted by the operator must follow these hygiene rules:</p>
+<ol>
+<li>
+<p>Naming: Every metric must use the keycloak_operator_ prefix. No exceptions for
+   subsystem-specific prefixes (e.g. keycloak_api_). A single prefix enables simple
+   service discovery via {<strong>name</strong>=~"keycloak_operator_.*"} and consistent dashboarding.</p>
+</li>
+<li>
+<p>Cardinality: Labels must have bounded cardinality. A label is bounded when its value
+   set is determined by a finite enum or a constrained system property (like namespace count),
+   not by the number of managed resources. Labels whose values grow with CRs (resource names,
+   client names, pod names) are prohibited because each unique combination creates a permanent
+   time series in Prometheus.</p>
+</li>
+<li>
+<p>Per-resource observability: Use structured logging, not metrics, for per-resource
+   visibility. Logs are ephemeral and searchable; metrics are aggregated and expensive to
+   store per-identity.</p>
+</li>
+<li>
+<p>No dead metrics: Every registered metric must be emitted somewhere in the codebase.
+   Metrics that exist only as declarations without any .labels().set()/.inc()/.observe()
+   calls are misleading and must be removed or wired up.</p>
+</li>
+<li>
+<p>Terminology accuracy: Metric names must reflect what they actually measure. Avoid
+   overloaded terms (e.g. "token" can mean JWT, rate limiter permit, or session cookie).
+   Prefer domain-specific names like admin_session over token when referring to Keycloak
+   admin auth sessions, and budget over tokens when referring to rate limiter capacity.</p>
+</li>
+</ol>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Plain manifests allow no configuration - users get a default operator in a default namespace with no flexibility. Kustomize provides some flexibility but easily breaks when required parameters are not overridden, leading to invalid deployments. Helm provides proper configuration management with values.yaml, type validation, and defaults. Helm integrates well with GitOps tools (ArgoCD, Flux) through native Helm support. Helm charts can be properly versioned and published to registries, enabling version pinning and upgrades. Helm's templating catches configuration errors at render time, not deployment time.</p>
+<p>High-cardinality labels are the primary cause of Prometheus performance degradation. Each unique label combination creates a separate time series that Prometheus must store, index, and query. With N managed resources and a resource_name label, a single metric creates N time series per scrape interval. At scale (hundreds of realms, thousands of clients), this produces millions of time series, leading to OOM, slow queries, and increased storage costs.</p>
+<p>A consistent naming prefix is a standard Prometheus convention (see prometheus.io/docs/practices/naming). Mixed prefixes make it impossible to write simple relabeling rules, scrape configs, or PromQL queries that target all operator metrics. Users should not need to know internal subsystem boundaries to find metrics.</p>
+<p>Dead metrics (declared but never emitted) create false expectations. Users build dashboards and alerts referencing metrics that always return zero, then file bug reports. Every metric in the registry must be backed by actual instrumentation.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Always provide Helm charts for deployable components. Do not create plain Kubernetes manifests or Kustomize overlays as alternatives. When users ask for deployment options, direct them to Helm charts. All configuration options must be exposed as Helm values with sensible defaults.</p>
+<p>When adding or modifying Prometheus metrics, enforce these rules:</p>
+<p>ALLOWED labels (bounded cardinality):
+  resource_type  - finite enum: keycloak, realm, client
+  namespace      - bounded by cluster namespace count, typically &lt;100
+  phase/status   - finite enum: Ready, Failed, Pending, Degraded, etc.
+  operation      - finite enum: reconcile, update, delete
+  error_type     - finite enum: circuit_breaker, api_error, timeout, etc.
+  result         - finite enum: success, failure
+  retryable      - boolean: true, false
+  limit_type     - finite enum: global, namespace
+  action/reason  - finite enums for remediation actions
+  operator_instance - single value per deployment
+  instance_id    - single value per pod</p>
+<p>PROHIBITED labels (unbounded cardinality):
+  name / resource_name / cr_name      - grows with managed resources
+  client_name / federation_name       - grows with managed resources
+  instance_name / cluster_name        - arbitrary user-chosen strings
+  previous_leader / new_leader        - ephemeral pod names
+  Any label whose distinct value count scales with the number of CRs</p>
+<p>Before adding a new metric, check: 1. Does it use keycloak_operator_ prefix? 2. Are ALL labels bounded? Ask: "if a user has 10,000 clients, how many time series?" 3. Is there an actual emission call in the codebase, or is it just a declaration? 4. Could this information be served better by a log line with correlation IDs?</p>
+<p>The canonical metric definitions live in src/keycloak_operator/observability/metrics.py. The MetricsCollector class provides the interface; handlers must not use raw metric objects directly.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="plain-kubernetes-manifests">Plain Kubernetes manifests<a class="headerlink" href="#plain-kubernetes-manifests" title="Permanent link">&para;</a></h3>
-<p>No configuration options. Users stuck with hardcoded defaults for namespace, resources, images, etc.</p>
-<h3 id="kustomize">Kustomize<a class="headerlink" href="#kustomize" title="Permanent link">&para;</a></h3>
-<p>Easy to miss required parameter overrides, resulting in broken deployments. Less GitOps tool support than Helm.</p>
+<h3 id="keep-resource_name-labels-but-add-recording-rules-to-pre-aggregate">Keep resource_name labels but add recording rules to pre-aggregate<a class="headerlink" href="#keep-resource_name-labels-but-add-recording-rules-to-pre-aggregate" title="Permanent link">&para;</a></h3>
+<p>Recording rules reduce query cost but not ingestion or storage cost. The raw high-cardinality series still consume memory and disk. Also adds operational complexity for users who must deploy the recording rules alongside the operator.</p>
+<h3 id="use-opentelemetry-for-per-resource-metrics-and-prometheus-for-aggregates">Use OpenTelemetry for per-resource metrics and Prometheus for aggregates<a class="headerlink" href="#use-opentelemetry-for-per-resource-metrics-and-prometheus-for-aggregates" title="Permanent link">&para;</a></h3>
+<p>Adds an infrastructure dependency (OTel collector, backend). Structured logging with correlation IDs already provides per-resource observability without the cardinality problem and without requiring additional infrastructure.</p>
+<h3 id="allow-subsystem-specific-prefixes-keycloak_api_-keycloak_operator_">Allow subsystem-specific prefixes (keycloak_api_, keycloak_operator_)<a class="headerlink" href="#allow-subsystem-specific-prefixes-keycloak_api_-keycloak_operator_" title="Permanent link">&para;</a></h3>
+<p>Users should not need internal knowledge of operator architecture to discover metrics. A single prefix enables {<strong>name</strong>=~'keycloak_operator_.*'} for all operator metrics.</p>
+<h3 id="use-metric-label-allowlists-enforced-at-scrape-time">Use metric label allowlists enforced at scrape time<a class="headerlink" href="#use-metric-label-allowlists-enforced-at-scrape-time" title="Permanent link">&para;</a></h3>
+<p>Pushes the problem to the user's Prometheus config. The operator should emit clean metrics by default, not require users to filter out cardinality bombs.</p>
 
 
 
@@ -4296,7 +4396,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../023-make-for-development-automation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-023: Make for development automation">
+          <a href="../083-kopf-version-pin/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-083: Hard Pin kopf to 1.40.1 Due to Memory Leak">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4306,20 +4406,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-023: Make for development automation
+                ADR-083: Hard Pin kopf to 1.40.1 Due to Memory Leak
               </div>
             </div>
           </a>
         
         
           
-          <a href="../025-realm-and-client-as-primary-crd-resource-types/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-025: Realm and Client as primary CRD resource types">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-025: Realm and Client as primary CRD resource types
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">

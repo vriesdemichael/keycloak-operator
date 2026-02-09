@@ -4495,6 +4495,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/084-prometheus-metric-cardinality-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-084: Prometheus Metric Hygiene Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5198,7 +5226,7 @@
 <p><strong>Rate Limiting:</strong>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="c1"># Check rate limit metrics</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8080/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>rate_limit
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8081/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>rate_limit
 </span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
 </span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="c1"># Increase rate limits if needed</span>
 </span><span id="__span-8-6"><a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>helm<span class="w"> </span>upgrade<span class="w"> </span>keycloak-operator<span class="w"> </span>./charts/keycloak-operator<span class="w"> </span><span class="se">\</span>
@@ -5960,14 +5988,14 @@
 <p><strong>Diagnosis:</strong></p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-63-1"><a id="__codelineno-63-1" name="__codelineno-63-1" href="#__codelineno-63-1"></a><span class="c1"># Check rate limit metrics</span>
 </span><span id="__span-63-2"><a id="__codelineno-63-2" name="__codelineno-63-2" href="#__codelineno-63-2"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-63-3"><a id="__codelineno-63-3" name="__codelineno-63-3" href="#__codelineno-63-3"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8080/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>rate_limit
+</span><span id="__span-63-3"><a id="__codelineno-63-3" name="__codelineno-63-3" href="#__codelineno-63-3"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8081/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>rate_limit
 </span><span id="__span-63-4"><a id="__codelineno-63-4" name="__codelineno-63-4" href="#__codelineno-63-4"></a>
 </span><span id="__span-63-5"><a id="__codelineno-63-5" name="__codelineno-63-5" href="#__codelineno-63-5"></a><span class="c1"># Check operator resource usage</span>
 </span><span id="__span-63-6"><a id="__codelineno-63-6" name="__codelineno-63-6" href="#__codelineno-63-6"></a>kubectl<span class="w"> </span>top<span class="w"> </span>pod<span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system
 </span><span id="__span-63-7"><a id="__codelineno-63-7" name="__codelineno-63-7" href="#__codelineno-63-7"></a>
 </span><span id="__span-63-8"><a id="__codelineno-63-8" name="__codelineno-63-8" href="#__codelineno-63-8"></a><span class="c1"># Check reconciliation metrics</span>
 </span><span id="__span-63-9"><a id="__codelineno-63-9" name="__codelineno-63-9" href="#__codelineno-63-9"></a>kubectl<span class="w"> </span><span class="nb">exec</span><span class="w"> </span>-n<span class="w"> </span>keycloak-operator-system<span class="w"> </span>deployment/keycloak-operator<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-63-10"><a id="__codelineno-63-10" name="__codelineno-63-10" href="#__codelineno-63-10"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8080/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>reconcile
+</span><span id="__span-63-10"><a id="__codelineno-63-10" name="__codelineno-63-10" href="#__codelineno-63-10"></a><span class="w">  </span>curl<span class="w"> </span>-s<span class="w"> </span>localhost:8081/metrics<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>reconcile
 </span></code></pre></div>
 <p><strong>Solutions:</strong></p>
 <p><strong>Increase Rate Limits:</strong>

@@ -4634,6 +4634,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/084-prometheus-metric-cardinality-policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-084: Prometheus Metric Hygiene Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5482,25 +5510,25 @@
 </span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">    </span><span class="nt">userinfo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://keycloak.example.com/realms/my-realm/protocol/openid-connect/userinfo</span>
 </span></code></pre></div>
 <h2 id="prometheus-metrics">Prometheus Metrics<a class="headerlink" href="#prometheus-metrics" title="Permanent link">&para;</a></h2>
-<p>The operator exposes Prometheus metrics on port 8080 at <code>/metrics</code>.</p>
+<p>The operator exposes Prometheus metrics on port 8081 at <code>/metrics</code>.</p>
 <h3 id="available-metrics">Available Metrics<a class="headerlink" href="#available-metrics" title="Permanent link">&para;</a></h3>
 <h4 id="reconciliation-metrics">Reconciliation Metrics<a class="headerlink" href="#reconciliation-metrics" title="Permanent link">&para;</a></h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a># Reconciliation operations counter
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>kopf_reconciliation_total{resource_type=&quot;keycloak|realm|client&quot;, namespace=&quot;...&quot;, name=&quot;...&quot;, operation=&quot;reconcile|update|delete&quot;}
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>keycloak_operator_reconciliation_total{resource_type=&quot;keycloak|realm|client&quot;, namespace=&quot;...&quot;, result=&quot;success|failure&quot;}
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
 </span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a># Reconciliation duration histogram
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>kopf_reconciliation_duration_seconds{resource_type=&quot;...&quot;, namespace=&quot;...&quot;, name=&quot;...&quot;, operation=&quot;...&quot;}
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>keycloak_operator_reconciliation_duration_seconds{resource_type=&quot;...&quot;, namespace=&quot;...&quot;, operation=&quot;reconcile|update|delete&quot;}
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a># Active reconciliations gauge
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>kopf_reconciliation_active{resource_type=&quot;...&quot;, namespace=&quot;...&quot;, operation=&quot;...&quot;}
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a># Active resources gauge
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>keycloak_operator_active_resources{resource_type=&quot;...&quot;, namespace=&quot;...&quot;, phase=&quot;Ready|Failed|Pending&quot;}
 </span></code></pre></div>
 <h4 id="resource-status-metrics">Resource Status Metrics<a class="headerlink" href="#resource-status-metrics" title="Permanent link">&para;</a></h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a># Resource status by phase
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>keycloak_operator_resource_status{resource_type=&quot;keycloak|realm|client&quot;, namespace=&quot;...&quot;, phase=&quot;Ready|Failed|Pending&quot;}
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>keycloak_operator_active_resources{resource_type=&quot;keycloak|realm|client&quot;, namespace=&quot;...&quot;, phase=&quot;Ready|Failed|Pending&quot;}
 </span></code></pre></div>
 <h4 id="error-metrics">Error Metrics<a class="headerlink" href="#error-metrics" title="Permanent link">&para;</a></h4>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a># Error counter by type
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>keycloak_operator_errors_total{error_type=&quot;...&quot;, resource_type=&quot;...&quot;, namespace=&quot;...&quot;}
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>keycloak_operator_reconciliation_errors_total{error_type=&quot;...&quot;, resource_type=&quot;...&quot;, namespace=&quot;...&quot;, retryable=&quot;true|false&quot;}
 </span></code></pre></div>
 <h3 id="scraping-metrics">Scraping Metrics<a class="headerlink" href="#scraping-metrics" title="Permanent link">&para;</a></h3>
 <p>Configure Prometheus to scrape the operator:</p>
@@ -5513,8 +5541,8 @@
 </span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nt">spec</span><span class="p">:</span>
 </span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">  </span><span class="nt">ports</span><span class="p">:</span>
 </span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metrics</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8080</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">      </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8081</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">      </span><span class="nt">targetPort</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8081</span>
 </span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span><span class="nt">selector</span><span class="p">:</span>
 </span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">    </span><span class="nt">app</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-operator</span>
 </span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="nn">---</span>
@@ -5567,8 +5595,8 @@
 <h2 id="health-checks">Health Checks<a class="headerlink" href="#health-checks" title="Permanent link">&para;</a></h2>
 <p>The operator pod exposes health endpoints:</p>
 <ul>
-<li><strong>Liveness</strong>: HTTP GET on <code>/healthz</code> (port 8080)</li>
-<li><strong>Readiness</strong>: HTTP GET on <code>/ready</code> (port 8080)</li>
+<li><strong>Liveness</strong>: HTTP GET on <code>/healthz</code> (port 8081)</li>
+<li><strong>Readiness</strong>: HTTP GET on <code>/ready</code> (port 8081)</li>
 </ul>
 <h2 id="gitops-integration">GitOps Integration<a class="headerlink" href="#gitops-integration" title="Permanent link">&para;</a></h2>
 <h3 id="argo-cd-health-assessment">Argo CD Health Assessment<a class="headerlink" href="#argo-cd-health-assessment" title="Permanent link">&para;</a></h3>
