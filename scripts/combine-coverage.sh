@@ -37,17 +37,29 @@ if [ -d "${COVERAGE_DIR}" ]; then
     fi
 fi
 
-# Combine coverage data
-log "Combining coverage files..."
-if command -v uv >/dev/null 2>&1; then
-    # Use uv run to ensure correct environment
-    uv run coverage combine .coverage "${COVERAGE_DIR}/.coverage"* 2>/dev/null || true
-    log "Combined coverage data into ${COMBINED_DATA}"
-else
-    # Fallback to direct coverage command
-    coverage combine .coverage "${COVERAGE_DIR}/.coverage"* 2>/dev/null || true
-    log "Combined coverage data into ${COMBINED_DATA}"
+# Build list of coverage files to combine
+COMBINE_ARGS=()
+if [ -f ".coverage" ]; then
+    COMBINE_ARGS+=(".coverage")
 fi
+# Add integration coverage files (glob may expand to nothing)
+for f in "${COVERAGE_DIR}"/.coverage*; do
+    [ -e "$f" ] && COMBINE_ARGS+=("$f")
+done
+
+if [ ${#COMBINE_ARGS[@]} -eq 0 ]; then
+    error "No coverage files found to combine"
+    exit 1
+fi
+
+# Combine coverage data
+log "Combining ${#COMBINE_ARGS[@]} coverage file(s)..."
+if command -v uv >/dev/null 2>&1; then
+    uv run coverage combine "${COMBINE_ARGS[@]}"
+else
+    coverage combine "${COMBINE_ARGS[@]}"
+fi
+log "Combined coverage data into ${COMBINED_DATA}"
 
 # Generate reports
 log "Generating coverage reports..."
