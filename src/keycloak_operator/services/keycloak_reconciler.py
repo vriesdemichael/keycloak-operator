@@ -607,7 +607,11 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 connection_info, resource_name=name, namespace=namespace
             )
 
-            # Record CNPG cluster status if this is a CNPG-backed database
+            # Record CNPG cluster status for PostgreSQL databases.
+            # The spec model only allows "postgresql" as the type value —
+            # CNPG is the deployment mechanism (CloudNativePG operator),
+            # not a separate database type. Per ADR 015, CNPG is the
+            # first-class database backend for this operator.
             if spec.database.type == "postgresql":
                 self._record_cnpg_status(namespace, connection_test_passed)
 

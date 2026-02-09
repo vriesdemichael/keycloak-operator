@@ -324,14 +324,18 @@ class RateLimiter:
             pass  # Metrics are optional - gracefully handle errors
 
     def _record_budget(self, namespace: str) -> None:
-        """Record remaining rate limit budget after acquisition."""
+        """Record remaining per-namespace rate limit budget after acquisition."""
         try:
             from keycloak_operator.observability.metrics import (
                 RATE_LIMIT_BUDGET_AVAILABLE,
             )
 
+            bucket = self.namespace_buckets.get(namespace)
+            if bucket is None:
+                return
+
             RATE_LIMIT_BUDGET_AVAILABLE.labels(
                 namespace=namespace,
-            ).set(self.global_bucket.available_tokens())
+            ).set(bucket.available_tokens())
         except Exception:
             pass  # Metrics are optional
