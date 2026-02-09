@@ -96,7 +96,7 @@ docs-clean: ## Clean generated documentation
 
 .PHONY: test-unit
 test-unit: ## Run unit tests with coverage (network disabled to catch accidental external calls)
-	uv run --group test pytest tests/unit/ -v --disable-socket --allow-unix-socket --cov=keycloak_operator --cov-report=
+	KUBECONFIG=/dev/null uv run --group test pytest tests/unit/ -v --disable-socket --allow-unix-socket --cov=keycloak_operator --cov-report=
 
 # ============================================================================
 # Integration Testing - Test Images

@@ -28,7 +28,6 @@ from aiohttp.web import (
     json_response,
 )
 from prometheus_client import (
-    CONTENT_TYPE_LATEST,
     CollectorRegistry,
     Counter,
     Gauge,
@@ -617,7 +616,12 @@ class MetricsServer:
         try:
             registry = get_metrics_registry()
             metrics_data = generate_latest(registry)
-            return Response(body=metrics_data, content_type=CONTENT_TYPE_LATEST)
+            return Response(
+                body=metrics_data,
+                content_type="text/plain",
+                charset="utf-8",
+                headers={"X-Content-Type-Options": "nosniff"},
+            )
         except Exception as e:
             logger.error(f"Failed to generate metrics: {e}")
             return Response(
