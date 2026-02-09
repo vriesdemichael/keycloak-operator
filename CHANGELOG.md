@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.9](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.8...operator-image-v0.7.9) (2026-02-09)
+
+
+### Bug Fixes
+
+* **chart-operator+operator:** address PR review comments ([0295cc5](https://github.com/vriesdemichael/keycloak-operator/commit/0295cc59b036fa6c0fcc334a27af8bd69b96bde0))
+* **chart-operator+operator:** reduce Prometheus metric cardinality ([5ea9409](https://github.com/vriesdemichael/keycloak-operator/commit/5ea9409614d20dc85cc7be4d2bfd03b23f4888d8)), closes [#171](https://github.com/vriesdemichael/keycloak-operator/issues/171)
+* **operator:** fix local coverage combination in make test-unit ([9041ed5](https://github.com/vriesdemichael/keycloak-operator/commit/9041ed5719ea1470d91cf78a451493f483f45fff))
+
 ## [0.7.8](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.7...operator-image-v0.7.8) (2026-02-08)
 
 
