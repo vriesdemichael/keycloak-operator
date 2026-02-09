@@ -451,7 +451,7 @@ Schedule upgrades during low-traffic periods:
 ```bash
 # Check current traffic
 kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -s localhost:8080/metrics | grep keycloak_api_requests_total
+  curl -s localhost:8081/metrics | grep keycloak_operator_reconciliation_total
 
 # Notify users of maintenance window
 # Perform upgrade

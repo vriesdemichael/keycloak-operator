@@ -398,12 +398,12 @@ async def delete_keycloak_client(
         ) from e
 
 
-@kopf.timer(
+@kopf.daemon(
     "keycloakclients",
-    idle=TIMER_INTERVAL_CLIENT,
-    initial_delay=lambda **_: random.uniform(0, TIMER_INTERVAL_CLIENT),
+    cancellation_timeout=10.0,
 )
 async def monitor_client_health(
+    stopped: kopf.DaemonStopped,
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -414,15 +414,21 @@ async def monitor_client_health(
     **kwargs: Any,
 ) -> None:
     """
-    Periodic health check for KeycloakClients.
+    Periodic health check daemon for KeycloakClients.
 
-    This timer verifies that clients still exist in Keycloak and
+    This daemon verifies that clients still exist in Keycloak and
     that their configuration matches the desired state.
+
+    Uses a daemon instead of a timer to work around Kopf 1.40.x not
+    supporting callable ``initial_delay`` (lambda). The daemon sleeps
+    a random jitter on startup to spread reconciliation load, then
+    loops at TIMER_INTERVAL_CLIENT between iterations.
 
     The interval is configurable via TIMER_INTERVAL_CLIENT environment variable.
     Default: 300 seconds (5 minutes).
 
     Args:
+        stopped: Kopf daemon stopped flag for graceful shutdown
         spec: KeycloakClient resource specification
         name: Name of the KeycloakClient resource
         namespace: Namespace where the resource exists
@@ -430,21 +436,50 @@ async def monitor_client_health(
         meta: Resource metadata
         memo: Kopf memo for accessing shared state like rate_limiter
 
-    Returns:
-        Dictionary with updated status, or None if no changes needed
-
     """
-    # Skip health checks for resources being deleted
-    deletion_timestamp = meta.get("deletionTimestamp")
-    if deletion_timestamp:
-        return
+    # Random jitter on startup to prevent thundering herd
+    initial_jitter = random.uniform(0, TIMER_INTERVAL_CLIENT)
+    await stopped.wait(initial_jitter)
 
+    while not stopped:
+        # Skip health checks for resources being deleted
+        deletion_timestamp = meta.get("deletionTimestamp")
+        if deletion_timestamp:
+            return
+
+        current_phase = status.get("phase", "Unknown")
+
+        # Skip health checks for non-stable phases
+        # Unknown/Pending = not yet reconciled
+        # Provisioning/Updating/Reconciling = active reconciliation in progress
+        # Failed = terminal state, no point health-checking
+        if current_phase not in (
+            "Failed",
+            "Pending",
+            "Unknown",
+            "Provisioning",
+            "Updating",
+            "Reconciling",
+        ):
+            await _run_client_health_check(
+                spec, name, namespace, status, patch, meta, memo
+            )
+
+        # Wait for next interval or until stopped
+        await stopped.wait(TIMER_INTERVAL_CLIENT)
+
+
+async def _run_client_health_check(
+    spec: dict[str, Any],
+    name: str,
+    namespace: str,
+    status: dict[str, Any],
+    patch: kopf.Patch,
+    meta: dict[str, Any],
+    memo: kopf.Memo,
+) -> None:
+    """Execute one health check iteration for a KeycloakClient."""
     current_phase = status.get("phase", "Unknown")
-
-    # Skip health checks for failed, pending, or unknown clients
-    # Unknown = resource just created, reconciliation hasn't started yet
-    if current_phase in ["Failed", "Pending", "Unknown"]:
-        return
 
     logger.debug(f"Checking health of KeycloakClient {name} in {namespace}")
 
@@ -990,7 +1025,7 @@ async def secret_rotation_daemon(
                 datetime.now(UTC).timestamp() + seconds_until_rotation
             )
             SECRET_NEXT_ROTATION_TIMESTAMP.labels(
-                namespace=namespace, client_name=name
+                namespace=namespace,
             ).set(next_rotation_timestamp)
 
             if seconds_until_rotation > 0:
@@ -1122,10 +1157,10 @@ async def secret_rotation_daemon(
 
                         # Update metrics
                         SECRET_ROTATION_TOTAL.labels(
-                            namespace=namespace, client_name=name, result="success"
+                            namespace=namespace, result="success"
                         ).inc()
                         SECRET_ROTATION_DURATION.labels(
-                            namespace=namespace, client_name=name
+                            namespace=namespace,
                         ).observe(rotation_duration)
 
                         # Update status
@@ -1144,7 +1179,7 @@ async def secret_rotation_daemon(
                 except Exception as e:
                     retry_count += 1
                     SECRET_ROTATION_RETRIES_TOTAL.labels(
-                        namespace=namespace, client_name=name
+                        namespace=namespace,
                     ).inc()
 
                     if retry_count >= ROTATION_MAX_RETRIES:
@@ -1168,15 +1203,14 @@ async def secret_rotation_daemon(
                 rotation_duration = time.time() - rotation_start_time
 
                 SECRET_ROTATION_TOTAL.labels(
-                    namespace=namespace, client_name=name, result="failure"
+                    namespace=namespace, result="failure"
                 ).inc()
                 SECRET_ROTATION_ERRORS_TOTAL.labels(
                     namespace=namespace,
-                    client_name=name,
                     error_type="max_retries_exceeded",
                 ).inc()
                 SECRET_ROTATION_DURATION.labels(
-                    namespace=namespace, client_name=name
+                    namespace=namespace,
                 ).observe(rotation_duration)
 
                 patch.status["phase"] = "Degraded"
@@ -1197,7 +1231,7 @@ async def secret_rotation_daemon(
         except Exception as e:
             logger.error(f"Unexpected error in rotation daemon for client {name}: {e}")
             SECRET_ROTATION_ERRORS_TOTAL.labels(
-                namespace=namespace, client_name=name, error_type=type(e).__name__
+                namespace=namespace, error_type=type(e).__name__
             ).inc()
 
             # Wait before retrying the main loop
@@ -1205,5 +1239,5 @@ async def secret_rotation_daemon(
                 break
 
     # Clear the next rotation timestamp metric when daemon stops
-    SECRET_NEXT_ROTATION_TIMESTAMP.labels(namespace=namespace, client_name=name).set(0)
+    SECRET_NEXT_ROTATION_TIMESTAMP.labels(namespace=namespace).set(0)
     logger.info(f"Secret rotation daemon stopped for client {name}")

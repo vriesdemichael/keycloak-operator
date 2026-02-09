@@ -288,6 +288,8 @@ class KeycloakAdminClient:
         timeout: int = 60,
         rate_limiter: "RateLimiter | None" = None,
         version: str | None = None,
+        keycloak_name: str | None = None,
+        keycloak_namespace: str | None = None,
     ) -> None:
         """
         Initialize Keycloak Admin client.
@@ -302,6 +304,8 @@ class KeycloakAdminClient:
             timeout: Request timeout in seconds
             rate_limiter: Optional rate limiter for API call throttling
             version: Keycloak version string (e.g., "24.0.5"). If None, auto-detected.
+            keycloak_name: Name of the Keycloak instance (for metrics labelling)
+            keycloak_namespace: Namespace of the Keycloak instance (for metrics labelling)
         """
         self.server_url = server_url.rstrip("/")
         self.username = username
@@ -311,6 +315,8 @@ class KeycloakAdminClient:
         self.verify_ssl = verify_ssl
         self.timeout = timeout
         self.rate_limiter = rate_limiter
+        self.keycloak_name = keycloak_name
+        self.keycloak_namespace = keycloak_namespace
 
         # Initialize adapter based on provided version or default to latest
         # Ideally we auto-detect, but we need auth first.
@@ -325,8 +331,31 @@ class KeycloakAdminClient:
         self.access_token: str | None = None
         self.refresh_token: str | None = None
         self.token_expires_at: float | None = None
+        self._session_tracked: bool = False
 
         logger.info(f"Initialized Keycloak Admin client for {server_url}")
+
+    def _record_session_metrics(self) -> None:
+        """Record admin session Prometheus metrics after auth or token refresh."""
+        try:
+            from keycloak_operator.observability.metrics import (
+                ADMIN_SESSION_EXPIRES_TIMESTAMP,
+                ADMIN_SESSIONS_ACTIVE,
+            )
+
+            # Record session expiry timestamp
+            if self.token_expires_at and self.keycloak_namespace and self.keycloak_name:
+                ADMIN_SESSION_EXPIRES_TIMESTAMP.labels(
+                    namespace=self.keycloak_namespace,
+                    keycloak_instance=self.keycloak_name,
+                ).set(self.token_expires_at)
+
+            # Increment active sessions on first authentication
+            if not self._session_tracked:
+                self._session_tracked = True
+                ADMIN_SESSIONS_ACTIVE.inc()
+        except Exception:
+            pass  # Metrics are optional
 
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create httpx client (lazy initialization with caching).
@@ -381,6 +410,18 @@ class KeycloakAdminClient:
         here as it's shared across multiple KeycloakAdminClient instances.
         The cached client will be reused until the operator shuts down.
         """
+        # Decrement active sessions gauge if we had an active session
+        if self._session_tracked:
+            self._session_tracked = False
+            try:
+                from keycloak_operator.observability.metrics import (
+                    ADMIN_SESSIONS_ACTIVE,
+                )
+
+                ADMIN_SESSIONS_ACTIVE.dec()
+            except Exception:
+                pass  # Metrics are optional
+
         # Clear authentication tokens but don't close the shared httpx client
         self.access_token = None
         self.refresh_token = None
@@ -432,6 +473,9 @@ class KeycloakAdminClient:
             self.token_expires_at = time.time() + token_data.get("expires_in", 300)
 
             logger.debug("Successfully authenticated with Keycloak")
+
+            # Record session metrics
+            self._record_session_metrics()
 
             if self.auto_detect_version and not self._version_detected:
                 await self._detect_server_version()
@@ -519,6 +563,9 @@ class KeycloakAdminClient:
             self.token_expires_at = time.time() + token_data.get("expires_in", 300)
 
             logger.debug("Successfully refreshed access token")
+
+            # Record updated session expiry
+            self._record_session_metrics()
 
         except httpx.HTTPError as e:
             logger.error(f"Failed to refresh token: {e}")
@@ -7486,6 +7533,8 @@ async def get_keycloak_admin_client(
             password=password,
             verify_ssl=verify_ssl,
             rate_limiter=rate_limiter,
+            keycloak_name=keycloak_name,
+            keycloak_namespace=namespace,
         )
 
         # Test authentication

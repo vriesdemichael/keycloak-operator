@@ -223,6 +223,9 @@ class RateLimiter:
         # Both tokens acquired successfully
         logger.debug(f"Rate limit tokens acquired for namespace '{namespace}'")
 
+        # Record remaining budget for observability
+        self._record_budget(namespace)
+
     def get_metrics(self) -> dict:
         """
         Get current rate limiter state for metrics/observability.
@@ -319,3 +322,16 @@ class RateLimiter:
             ).inc()
         except Exception:
             pass  # Metrics are optional - gracefully handle errors
+
+    def _record_budget(self, namespace: str) -> None:
+        """Record remaining rate limit budget after acquisition."""
+        try:
+            from keycloak_operator.observability.metrics import (
+                RATE_LIMIT_BUDGET_AVAILABLE,
+            )
+
+            RATE_LIMIT_BUDGET_AVAILABLE.labels(
+                namespace=namespace,
+            ).set(self.global_bucket.available_tokens())
+        except Exception:
+            pass  # Metrics are optional

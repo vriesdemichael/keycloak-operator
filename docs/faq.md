@@ -109,8 +109,8 @@ helm upgrade keycloak-operator ./charts/keycloak-operator \
 
 **Metrics available:**
 ```promql
-keycloak_api_rate_limit_wait_seconds
-keycloak_api_rate_limit_acquired_total
+keycloak_operator_api_rate_limit_wait_seconds
+keycloak_operator_api_rate_limit_acquired_total
 ```
 
 ---

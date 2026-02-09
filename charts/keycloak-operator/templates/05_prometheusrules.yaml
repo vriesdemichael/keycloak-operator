@@ -38,9 +38,9 @@ spec:
         # Critical: All Keycloak instances failed
         - alert: KeycloakOperatorAllInstancesFailed
           expr: |
-            sum(keycloak_operator_resource_status{resource_type="keycloak", phase="Ready"}) == 0
+            sum(keycloak_operator_active_resources{resource_type="keycloak", phase="Ready"}) == 0
             and
-            sum(keycloak_operator_resource_status{resource_type="keycloak"}) > 0
+            sum(keycloak_operator_active_resources{resource_type="keycloak"}) > 0
           for: 10m
           labels:
             severity: critical
@@ -53,7 +53,7 @@ spec:
         # Circuit breaker stuck open
         - alert: KeycloakOperatorCircuitBreakerOpen
           expr: |
-            increase(keycloak_operator_errors_total{error_type="circuit_breaker"}[5m]) > 0
+            increase(keycloak_operator_reconciliation_errors_total{error_type="circuit_breaker"}[5m]) > 0
           for: 5m
           labels:
             severity: warning
@@ -94,7 +94,7 @@ spec:
           expr: |
             rate(kopf_reconciliation_total[10m]) == 0
             and
-            sum(keycloak_operator_resource_status) > 0
+            sum(keycloak_operator_active_resources) > 0
           for: 15m
           labels:
             severity: warning

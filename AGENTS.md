@@ -532,10 +532,10 @@ await admin_client.create_client(client_config, realm_name, namespace)
 ### Metrics
 
 Prometheus metrics for monitoring:
-- `keycloak_api_rate_limit_wait_seconds{namespace, limit_type}`
-- `keycloak_api_rate_limit_acquired_total{namespace, limit_type}`
-- `keycloak_api_rate_limit_timeouts_total{namespace, limit_type}`
-- `keycloak_api_tokens_available{namespace}`
+- `keycloak_operator_api_rate_limit_wait_seconds{namespace, limit_type}`
+- `keycloak_operator_api_rate_limit_acquired_total{namespace, limit_type}`
+- `keycloak_operator_api_rate_limit_timeouts_total{namespace, limit_type}`
+- `keycloak_operator_api_rate_limit_budget_available{namespace}`
 
 ## Keycloak API Reference
 

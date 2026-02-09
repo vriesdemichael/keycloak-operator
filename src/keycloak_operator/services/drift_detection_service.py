@@ -975,7 +975,6 @@ class DriftDetector:
                 # Set orphaned resource metric
                 ORPHANED_RESOURCES.labels(
                     resource_type=drift.resource_type,
-                    resource_name=drift.resource_name,
                     operator_instance=settings.operator_instance_id,
                 ).set(1)
 
@@ -983,16 +982,13 @@ class DriftDetector:
                 # Set config drift metric
                 CONFIG_DRIFT.labels(
                     resource_type=drift.resource_type,
-                    resource_name=drift.resource_name,
                     cr_namespace=drift.cr_namespace or "unknown",
-                    cr_name=drift.cr_name or "unknown",
                 ).set(1)
 
             elif drift.drift_type == "unmanaged":
                 # Set unmanaged resource metric
                 UNMANAGED_RESOURCES.labels(
                     resource_type=drift.resource_type,
-                    resource_name=drift.resource_name,
                 ).set(1)
 
     async def remediate_drift(self, drift_results: list[DriftResult]) -> None:

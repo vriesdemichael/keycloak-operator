@@ -244,10 +244,10 @@ env:
 ### Monitoring
 
 Prometheus metrics available at `:8081/metrics`:
-- `keycloak_api_rate_limit_wait_seconds` - Time waiting for tokens
-- `keycloak_api_rate_limit_acquired_total` - Successful token acquisitions
-- `keycloak_api_rate_limit_timeouts_total` - Rate limit timeout errors
-- `keycloak_api_tokens_available` - Current available tokens per namespace
+- `keycloak_operator_api_rate_limit_wait_seconds` - Time waiting for tokens
+- `keycloak_operator_api_rate_limit_acquired_total` - Successful token acquisitions
+- `keycloak_operator_api_rate_limit_timeouts_total` - Rate limit timeout errors
+- `keycloak_operator_api_rate_limit_budget_available` - Current available tokens per namespace
 
 ## 🤝 Contributing
 

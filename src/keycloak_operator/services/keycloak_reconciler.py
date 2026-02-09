@@ -607,6 +607,10 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 connection_info, resource_name=name, namespace=namespace
             )
 
+            # Record CNPG cluster status if this is a CNPG-backed database
+            if spec.database.type == "postgresql":
+                self._record_cnpg_status(namespace, connection_test_passed)
+
             if not connection_test_passed:
                 raise ExternalServiceError(
                     service="Database",
@@ -633,6 +637,16 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 retryable=True,
                 user_action="Check database configuration and Kubernetes connectivity",
             ) from e
+
+    @staticmethod
+    def _record_cnpg_status(namespace: str, healthy: bool) -> None:
+        """Record CNPG cluster status to Prometheus metrics."""
+        try:
+            from keycloak_operator.observability.metrics import CNPG_CLUSTER_STATUS
+
+            CNPG_CLUSTER_STATUS.labels(namespace=namespace).set(1 if healthy else 0)
+        except Exception:
+            pass  # Metrics are optional
 
     async def _validate_database_secret(
         self, spec: KeycloakSpec, namespace: str

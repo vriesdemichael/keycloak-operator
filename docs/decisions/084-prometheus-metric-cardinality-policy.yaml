@@ -1,0 +1,92 @@
+number: 84
+title: "Prometheus Metric Cardinality Reduction Policy"
+category: architecture
+decision: >
+  Enforce strict label cardinality controls on all Prometheus metrics emitted by the operator.
+  High-cardinality labels (resource names, instance names, client names) are prohibited on
+  metrics because they create unbounded time series that degrade Prometheus performance.
+
+
+  Specific changes applied:
+
+  1. Removed high-cardinality labels: name, resource_name, instance_name, cluster_name,
+     client_name, cr_name, federation_name, previous_leader, new_leader from all metrics.
+
+  2. Standardized all metric names to use keycloak_operator_ prefix for Prometheus
+     discoverability (renamed keycloak_api_* and keycloak_unmanaged_* prefixes).
+
+  3. Renamed token/session metrics to use domain-accurate terminology:
+     token_expires_timestamp -> admin_session_expires_timestamp,
+     operational_tokens_active -> admin_sessions_active,
+     tokens_available -> budget_available.
+
+  4. Deleted 5 metrics for features that do not exist and never will (user federation
+     sync is a Keycloak-internal concern): USER_FEDERATION_SYNC_DURATION,
+     USER_FEDERATION_SYNCED_USERS, USER_FEDERATION_SYNC_ERRORS,
+     USER_FEDERATION_CONNECTION_TESTS, AUTHORIZATION_FAILURES_TOTAL.
+
+  5. Leader election metrics have namespace label removed because the operator runs in
+     a single namespace (scaled deployment model, not multi-namespace leader election).
+
+agent_instructions: >
+  When adding new Prometheus metrics to the operator, follow these rules strictly:
+
+
+  ALLOWED labels (bounded cardinality):
+  - resource_type (keycloak, realm, client - finite enum)
+  - namespace (bounded by cluster namespaces, typically <100)
+  - phase/status (finite enum: Ready, Failed, Pending, etc.)
+  - operation (finite enum: reconcile, update, delete)
+  - error_type (finite enum: circuit_breaker, api_error, etc.)
+  - result (finite enum: success, failure)
+  - retryable (boolean: true, false)
+  - limit_type (finite enum: global, namespace)
+  - action, reason (finite enums for remediation)
+  - operator_instance (single value per deployment)
+  - instance_id (single value per pod)
+
+
+  PROHIBITED labels (unbounded cardinality):
+  - name / resource_name / cr_name (unique per resource - unbounded)
+  - client_name / federation_name (unique per client/federation - unbounded)
+  - instance_name / cluster_name (names are unbounded strings)
+  - previous_leader / new_leader (pod names are ephemeral)
+  - Any label whose value set grows with the number of managed resources
+
+
+  All metric names MUST use the keycloak_operator_ prefix.
+  Use structured logging (not metrics) for per-resource observability.
+  See src/keycloak_operator/observability/metrics.py for the canonical metric definitions.
+
+rationale: >
+  High-cardinality labels cause Prometheus storage and query performance issues. Each unique
+  label combination creates a separate time series. With N managed resources, a metric with
+  a resource_name label creates N time series per scrape interval. In production environments
+  with hundreds of realms and clients, this leads to millions of time series, causing
+  Prometheus OOM and slow queries.
+
+
+  The keycloak_api_ prefix was inconsistent with the keycloak_operator_ prefix used by most
+  metrics, making service discovery and dashboarding harder. Standardizing to a single prefix
+  enables simple relabeling rules and PromQL patterns like {__name__=~"keycloak_operator_.*"}.
+
+
+  The token/session terminology was confusing because "token" means JWT access tokens in the
+  OAuth2 ROPC auth context but means bucket permits in the rate limiter context. Renaming to
+  admin_session and budget removes this ambiguity.
+
+
+  User federation sync metrics were deleted because sync is a Keycloak-internal operation
+  that the operator cannot observe or control. The operator can only check federation
+  connection status, which is what the surviving keycloak_operator_user_federation_status
+  metric tracks.
+
+rejected_alternatives:
+  - alternative: "Keep resource_name labels but add a recording rule to aggregate"
+    reason: "Recording rules reduce query cost but not storage cost. The raw high-cardinality series still consume memory and disk. Also adds operational complexity."
+  - alternative: "Use a separate metrics backend (e.g., OpenTelemetry) for per-resource metrics"
+    reason: "Adds infrastructure dependency. Structured logging already provides per-resource observability without the cardinality problem."
+  - alternative: "Keep separate prefixes (keycloak_api_ for API metrics, keycloak_operator_ for operator metrics)"
+    reason: "Makes service discovery harder. Users need to know which prefix to use for each metric. Single prefix enables simple glob patterns."
+
+provenance: guided-ai

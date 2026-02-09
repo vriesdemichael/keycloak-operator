@@ -3,6 +3,11 @@ Prometheus metrics for the Keycloak operator.
 
 This module provides comprehensive metrics collection for monitoring
 operator performance, resource reconciliation, and system health.
+
+Metric naming conventions (per ADR-048 and issue #171):
+- All metrics use the ``keycloak_operator_`` prefix for Prometheus discoverability
+- Labels are kept to operationally essential dimensions to limit cardinality
+- High-cardinality labels (resource names, instance names) are excluded
 """
 
 import logging
@@ -36,11 +41,14 @@ logger = logging.getLogger(__name__)
 # Global metrics registry
 _metrics_registry: CollectorRegistry | None = None
 
-# Metrics definitions
+# ---------------------------------------------------------------------------
+# Reconciliation metrics
+# ---------------------------------------------------------------------------
+
 RECONCILIATION_TOTAL = Counter(
     "keycloak_operator_reconciliation_total",
     "Total number of reconciliation attempts",
-    ["resource_type", "namespace", "name", "result"],
+    ["resource_type", "namespace", "result"],
     registry=None,  # Will be set during initialization
 )
 
@@ -66,79 +74,72 @@ ACTIVE_RESOURCES = Gauge(
     registry=None,
 )
 
+# Generation-based skip metrics
+RECONCILIATION_SKIPPED_TOTAL = Counter(
+    "keycloak_operator_reconciliation_skipped_total",
+    "Total number of reconciliations skipped due to generation match",
+    ["resource_type", "namespace"],
+    registry=None,
+)
+
+# ---------------------------------------------------------------------------
+# Database metrics
+# ---------------------------------------------------------------------------
+
 DATABASE_CONNECTION_STATUS = Gauge(
     "keycloak_operator_database_connection_status",
     "Database connection status (1=healthy, 0=unhealthy)",
-    ["resource_name", "namespace", "database_type"],
-    registry=None,
-)
-
-
-TOKEN_EXPIRES_TIMESTAMP = Gauge(
-    "keycloak_operator_token_expires_timestamp",
-    "Unix timestamp when operational token expires",
-    ["namespace", "secret_name"],
-    registry=None,
-)
-
-AUTHORIZATION_FAILURES_TOTAL = Counter(
-    "keycloak_operator_authorization_failures_total",
-    "Total number of authorization failures",
-    ["namespace", "reason"],
-    registry=None,
-)
-
-OPERATIONAL_TOKENS_ACTIVE = Gauge(
-    "keycloak_operator_operational_tokens_active",
-    "Number of active operational tokens",
-    [],
-    registry=None,
-)
-
-# Rate limiting metrics
-RATE_LIMIT_WAIT_SECONDS = Histogram(
-    "keycloak_api_rate_limit_wait_seconds",
-    "Time spent waiting for rate limit tokens",
-    ["namespace", "limit_type"],
-    buckets=[0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
-    registry=None,
-)
-
-RATE_LIMIT_ACQUIRED_TOTAL = Counter(
-    "keycloak_api_rate_limit_acquired_total",
-    "Total rate limit tokens successfully acquired",
-    ["namespace", "limit_type"],
-    registry=None,
-)
-
-RATE_LIMIT_TIMEOUTS_TOTAL = Counter(
-    "keycloak_api_rate_limit_timeouts_total",
-    "Total rate limit timeout errors",
-    ["namespace", "limit_type"],
-    registry=None,
-)
-
-RATE_LIMIT_TOKENS_AVAILABLE = Gauge(
-    "keycloak_api_tokens_available",
-    "Currently available rate limit tokens",
-    ["namespace"],
+    ["namespace", "database_type"],
     registry=None,
 )
 
 DATABASE_CONNECTION_DURATION = Histogram(
     "keycloak_operator_database_connection_duration_seconds",
     "Time spent testing database connections",
-    ["resource_name", "namespace", "database_type"],
+    ["namespace", "database_type"],
     buckets=[0.1, 0.5, 1.0, 2.0, 5.0, 10.0],
     registry=None,
 )
 
+# ---------------------------------------------------------------------------
+# Admin session metrics (renamed from token_expires / operational_tokens)
+# ---------------------------------------------------------------------------
+
+ADMIN_SESSION_EXPIRES_TIMESTAMP = Gauge(
+    "keycloak_operator_admin_session_expires_timestamp",
+    "Unix timestamp when admin session JWT expires",
+    ["namespace", "keycloak_instance"],
+    registry=None,
+)
+
+ADMIN_SESSIONS_ACTIVE = Gauge(
+    "keycloak_operator_admin_sessions_active",
+    "Number of active admin sessions to Keycloak instances",
+    [],
+    registry=None,
+)
+
+# ---------------------------------------------------------------------------
+# Keycloak instance & CNPG status metrics
+# ---------------------------------------------------------------------------
+
 KEYCLOAK_INSTANCE_STATUS = Gauge(
     "keycloak_operator_keycloak_instance_status",
     "Keycloak instance status (1=running, 0=not running)",
-    ["instance_name", "namespace"],
+    ["namespace"],
     registry=None,
 )
+
+CNPG_CLUSTER_STATUS = Gauge(
+    "keycloak_operator_cnpg_cluster_status",
+    "CloudNativePG cluster status (1=healthy, 0=unhealthy)",
+    ["namespace"],
+    registry=None,
+)
+
+# ---------------------------------------------------------------------------
+# RBAC metrics
+# ---------------------------------------------------------------------------
 
 RBAC_VALIDATIONS = Counter(
     "keycloak_operator_rbac_validations_total",
@@ -147,62 +148,94 @@ RBAC_VALIDATIONS = Counter(
     registry=None,
 )
 
-CNPG_CLUSTER_STATUS = Gauge(
-    "keycloak_operator_cnpg_cluster_status",
-    "CloudNativePG cluster status (1=healthy, 0=unhealthy)",
-    ["cluster_name", "namespace"],
+# ---------------------------------------------------------------------------
+# Rate limiting metrics (prefix fixed: keycloak_api_ -> keycloak_operator_api_)
+# ---------------------------------------------------------------------------
+
+RATE_LIMIT_WAIT_SECONDS = Histogram(
+    "keycloak_operator_api_rate_limit_wait_seconds",
+    "Time spent waiting for rate limit tokens",
+    ["namespace", "limit_type"],
+    buckets=[0.001, 0.01, 0.1, 0.5, 1.0, 2.0, 5.0, 10.0, 30.0],
     registry=None,
 )
 
-# Leader election metrics
+RATE_LIMIT_ACQUIRED_TOTAL = Counter(
+    "keycloak_operator_api_rate_limit_acquired_total",
+    "Total rate limit tokens successfully acquired",
+    ["namespace", "limit_type"],
+    registry=None,
+)
+
+RATE_LIMIT_TIMEOUTS_TOTAL = Counter(
+    "keycloak_operator_api_rate_limit_timeouts_total",
+    "Total rate limit timeout errors",
+    ["namespace", "limit_type"],
+    registry=None,
+)
+
+RATE_LIMIT_BUDGET_AVAILABLE = Gauge(
+    "keycloak_operator_api_rate_limit_budget_available",
+    "Currently available rate limit budget (token bucket permits)",
+    ["namespace"],
+    registry=None,
+)
+
+# ---------------------------------------------------------------------------
+# Leader election metrics (namespace label removed – single-namespace deploy)
+# ---------------------------------------------------------------------------
+
 LEADER_ELECTION_STATUS = Gauge(
     "keycloak_operator_leader_election_status",
     "Leader election status (1=leader, 0=follower)",
-    ["instance_id", "namespace"],
+    ["instance_id"],
     registry=None,
 )
 
 LEADER_ELECTION_CHANGES = Counter(
     "keycloak_operator_leader_election_changes_total",
     "Total number of leader election changes",
-    ["previous_leader", "new_leader", "namespace"],
+    [],
     registry=None,
 )
 
 LEADER_ELECTION_LEASE_RENEWALS = Counter(
     "keycloak_operator_leader_election_lease_renewals_total",
     "Total number of leader election lease renewals",
-    ["instance_id", "namespace", "result"],
+    ["instance_id", "result"],
     registry=None,
 )
 
 LEADER_ELECTION_LEASE_DURATION = Histogram(
     "keycloak_operator_leader_election_lease_duration_seconds",
     "Duration of leader election lease renewals",
-    ["instance_id", "namespace"],
+    ["instance_id"],
     buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
     registry=None,
 )
 
+# ---------------------------------------------------------------------------
 # Drift detection metrics
+# ---------------------------------------------------------------------------
+
 ORPHANED_RESOURCES = Gauge(
     "keycloak_operator_orphaned_resources",
     "Number of orphaned Keycloak resources (created by this operator, CR deleted)",
-    ["resource_type", "resource_name", "operator_instance"],
+    ["resource_type", "operator_instance"],
     registry=None,
 )
 
 CONFIG_DRIFT = Gauge(
     "keycloak_operator_config_drift",
     "Number of resources with configuration drift (CR exists but state differs)",
-    ["resource_type", "resource_name", "cr_namespace", "cr_name"],
+    ["resource_type", "cr_namespace"],
     registry=None,
 )
 
 UNMANAGED_RESOURCES = Gauge(
-    "keycloak_unmanaged_resources",
+    "keycloak_operator_unmanaged_resources",
     "Number of Keycloak resources not managed by any operator",
-    ["resource_type", "resource_name"],
+    ["resource_type"],
     registry=None,
 )
 
@@ -242,70 +275,39 @@ DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP = Gauge(
     registry=None,
 )
 
-# Generation-based skip metrics
-RECONCILIATION_SKIPPED_TOTAL = Counter(
-    "keycloak_operator_reconciliation_skipped_total",
-    "Total number of reconciliations skipped due to generation match",
-    ["resource_type", "namespace", "name"],
-    registry=None,
-)
+# ---------------------------------------------------------------------------
+# User Federation metrics (sync metrics deleted – Keycloak-internal concern)
+# ---------------------------------------------------------------------------
 
-# User Federation metrics
 USER_FEDERATION_STATUS = Gauge(
     "keycloak_operator_user_federation_status",
     "User federation provider status (1=connected, 0=disconnected)",
-    ["realm", "federation_name", "provider_id"],
+    ["realm", "provider_id"],
     registry=None,
 )
 
-USER_FEDERATION_SYNC_DURATION = Histogram(
-    "keycloak_operator_user_federation_sync_duration_seconds",
-    "Duration of user federation sync operations",
-    ["realm", "federation_name", "sync_type"],
-    buckets=[1.0, 5.0, 10.0, 30.0, 60.0, 120.0, 300.0],
-    registry=None,
-)
-
-USER_FEDERATION_SYNCED_USERS = Gauge(
-    "keycloak_operator_user_federation_synced_users",
-    "Number of users imported from federation provider",
-    ["realm", "federation_name"],
-    registry=None,
-)
-
-USER_FEDERATION_SYNC_ERRORS = Counter(
-    "keycloak_operator_user_federation_sync_errors_total",
-    "Total number of federation sync errors",
-    ["realm", "federation_name", "error_type"],
-    registry=None,
-)
-
-USER_FEDERATION_CONNECTION_TESTS = Counter(
-    "keycloak_operator_user_federation_connection_tests_total",
-    "Total number of federation connection test attempts",
-    ["realm", "federation_name", "result"],
-    registry=None,
-)
-
+# ---------------------------------------------------------------------------
 # Secret rotation metrics
+# ---------------------------------------------------------------------------
+
 SECRET_ROTATION_TOTAL = Counter(
     "keycloak_operator_secret_rotation_total",
     "Total number of secret rotation attempts",
-    ["namespace", "client_name", "result"],
+    ["namespace", "result"],
     registry=None,
 )
 
 SECRET_ROTATION_ERRORS_TOTAL = Counter(
     "keycloak_operator_secret_rotation_errors_total",
     "Total number of secret rotation errors",
-    ["namespace", "client_name", "error_type"],
+    ["namespace", "error_type"],
     registry=None,
 )
 
 SECRET_ROTATION_DURATION = Histogram(
     "keycloak_operator_secret_rotation_duration_seconds",
     "Duration of secret rotation operations",
-    ["namespace", "client_name"],
+    ["namespace"],
     buckets=[0.1, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0],
     registry=None,
 )
@@ -313,14 +315,14 @@ SECRET_ROTATION_DURATION = Histogram(
 SECRET_NEXT_ROTATION_TIMESTAMP = Gauge(
     "keycloak_operator_secret_next_rotation_timestamp",
     "Unix timestamp of next scheduled secret rotation",
-    ["namespace", "client_name"],
+    ["namespace"],
     registry=None,
 )
 
 SECRET_ROTATION_RETRIES_TOTAL = Counter(
     "keycloak_operator_secret_rotation_retries_total",
     "Total number of secret rotation retry attempts",
-    ["namespace", "client_name"],
+    ["namespace"],
     registry=None,
 )
 
@@ -338,11 +340,18 @@ def get_metrics_registry() -> CollectorRegistry:
             RECONCILIATION_DURATION,
             RECONCILIATION_ERRORS,
             ACTIVE_RESOURCES,
+            RECONCILIATION_SKIPPED_TOTAL,
             DATABASE_CONNECTION_STATUS,
             DATABASE_CONNECTION_DURATION,
+            ADMIN_SESSION_EXPIRES_TIMESTAMP,
+            ADMIN_SESSIONS_ACTIVE,
             KEYCLOAK_INSTANCE_STATUS,
-            RBAC_VALIDATIONS,
             CNPG_CLUSTER_STATUS,
+            RBAC_VALIDATIONS,
+            RATE_LIMIT_WAIT_SECONDS,
+            RATE_LIMIT_ACQUIRED_TOTAL,
+            RATE_LIMIT_TIMEOUTS_TOTAL,
+            RATE_LIMIT_BUDGET_AVAILABLE,
             LEADER_ELECTION_STATUS,
             LEADER_ELECTION_CHANGES,
             LEADER_ELECTION_LEASE_RENEWALS,
@@ -355,12 +364,7 @@ def get_metrics_registry() -> CollectorRegistry:
             DRIFT_CHECK_DURATION,
             DRIFT_CHECK_ERRORS_TOTAL,
             DRIFT_CHECK_LAST_SUCCESS_TIMESTAMP,
-            RECONCILIATION_SKIPPED_TOTAL,
             USER_FEDERATION_STATUS,
-            USER_FEDERATION_SYNC_DURATION,
-            USER_FEDERATION_SYNCED_USERS,
-            USER_FEDERATION_SYNC_ERRORS,
-            USER_FEDERATION_CONNECTION_TESTS,
             SECRET_ROTATION_TOTAL,
             SECRET_ROTATION_ERRORS_TOTAL,
             SECRET_ROTATION_DURATION,
@@ -399,7 +403,7 @@ class MetricsCollector:
         Args:
             resource_type: Type of resource being reconciled
             namespace: Namespace of the resource
-            name: Name of the resource
+            name: Name of the resource (used for logging only, not in metrics)
             operation: Type of operation being performed
         """
         start_time = time.time()
@@ -429,7 +433,6 @@ class MetricsCollector:
             RECONCILIATION_TOTAL.labels(
                 resource_type=resource_type,
                 namespace=namespace,
-                name=name,
                 result=result,
             ).inc()
 
@@ -454,23 +457,17 @@ class MetricsCollector:
         ).set(count)
 
     @property
-    def token_expires(self):
-        """Gauge for token expiry timestamps."""
-        return TOKEN_EXPIRES_TIMESTAMP
+    def admin_session_expires(self):
+        """Gauge for admin session expiry timestamps."""
+        return ADMIN_SESSION_EXPIRES_TIMESTAMP
 
     @property
-    def authorization_failures(self):
-        """Counter for authorization failures."""
-        return AUTHORIZATION_FAILURES_TOTAL
-
-    @property
-    def operational_tokens_active(self):
-        """Gauge for active operational tokens."""
-        return OPERATIONAL_TOKENS_ACTIVE
+    def admin_sessions_active(self):
+        """Gauge for active admin sessions."""
+        return ADMIN_SESSIONS_ACTIVE
 
     def record_database_connection_test(
         self,
-        resource_name: str,
         namespace: str,
         database_type: str,
         success: bool,
@@ -480,37 +477,31 @@ class MetricsCollector:
         Record database connection test results.
 
         Args:
-            resource_name: Name of the Keycloak resource
             namespace: Namespace of the resource
             database_type: Type of database
             success: Whether the connection test succeeded
             duration: Time taken for the test
         """
         DATABASE_CONNECTION_STATUS.labels(
-            resource_name=resource_name,
             namespace=namespace,
             database_type=database_type,
         ).set(1 if success else 0)
 
         DATABASE_CONNECTION_DURATION.labels(
-            resource_name=resource_name,
             namespace=namespace,
             database_type=database_type,
         ).observe(duration)
 
-    def update_keycloak_instance_status(
-        self, instance_name: str, namespace: str, running: bool
-    ):
+    def update_keycloak_instance_status(self, namespace: str, running: bool):
         """
         Update Keycloak instance status.
 
         Args:
-            instance_name: Name of the Keycloak instance
             namespace: Namespace of the instance
             running: Whether the instance is running
         """
         KEYCLOAK_INSTANCE_STATUS.labels(
-            instance_name=instance_name, namespace=namespace
+            namespace=namespace,
         ).set(1 if running else 0)
 
     def record_rbac_validation(
@@ -530,73 +521,49 @@ class MetricsCollector:
             result="success" if success else "failure",
         ).inc()
 
-    def update_cnpg_cluster_status(
-        self, cluster_name: str, namespace: str, healthy: bool
-    ):
+    def update_cnpg_cluster_status(self, namespace: str, healthy: bool):
         """
         Update CloudNativePG cluster status.
 
         Args:
-            cluster_name: Name of the CNPG cluster
             namespace: Namespace of the cluster
             healthy: Whether the cluster is healthy
         """
-        CNPG_CLUSTER_STATUS.labels(cluster_name=cluster_name, namespace=namespace).set(
-            1 if healthy else 0
-        )
+        CNPG_CLUSTER_STATUS.labels(namespace=namespace).set(1 if healthy else 0)
 
-    def update_leader_election_status(
-        self, instance_id: str, namespace: str, is_leader: bool
-    ):
+    def update_leader_election_status(self, instance_id: str, is_leader: bool):
         """
         Update leader election status.
 
         Args:
             instance_id: Unique identifier for this operator instance
-            namespace: Namespace where the operator is running
             is_leader: Whether this instance is currently the leader
         """
-        LEADER_ELECTION_STATUS.labels(instance_id=instance_id, namespace=namespace).set(
+        LEADER_ELECTION_STATUS.labels(instance_id=instance_id).set(
             1 if is_leader else 0
         )
 
-    def record_leader_election_change(
-        self, previous_leader: str, new_leader: str, namespace: str
-    ):
-        """
-        Record a leader election change event.
+    def record_leader_election_change(self):
+        """Record a leader election change event."""
+        LEADER_ELECTION_CHANGES.inc()
 
-        Args:
-            previous_leader: ID of the previous leader
-            new_leader: ID of the new leader
-            namespace: Namespace where the election occurred
-        """
-        LEADER_ELECTION_CHANGES.labels(
-            previous_leader=previous_leader,
-            new_leader=new_leader,
-            namespace=namespace,
-        ).inc()
-
-    def record_lease_renewal(
-        self, instance_id: str, namespace: str, success: bool, duration: float
-    ):
+    def record_lease_renewal(self, instance_id: str, success: bool, duration: float):
         """
         Record a leader election lease renewal attempt.
 
         Args:
             instance_id: Unique identifier for this operator instance
-            namespace: Namespace where the operator is running
             success: Whether the lease renewal succeeded
             duration: Time taken for the renewal operation
         """
         result = "success" if success else "failure"
 
         LEADER_ELECTION_LEASE_RENEWALS.labels(
-            instance_id=instance_id, namespace=namespace, result=result
+            instance_id=instance_id, result=result
         ).inc()
 
         LEADER_ELECTION_LEASE_DURATION.labels(
-            instance_id=instance_id, namespace=namespace
+            instance_id=instance_id,
         ).observe(duration)
 
     def record_reconciliation_skip(
@@ -611,12 +578,11 @@ class MetricsCollector:
         Args:
             resource_type: Type of resource (e.g., 'keycloak', 'realm', 'client')
             namespace: Namespace of the resource
-            name: Name of the resource
+            name: Name of the resource (for logging only, not in metric labels)
         """
         RECONCILIATION_SKIPPED_TOTAL.labels(
             resource_type=resource_type,
             namespace=namespace,
-            name=name,
         ).inc()
 
 

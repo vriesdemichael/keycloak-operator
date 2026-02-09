@@ -61,16 +61,11 @@ class TestLeaderElectionFailureScenarios:
                 monitor.on_leadership_acquired()
 
                 # Verify leadership change was recorded
-                mock_metrics.record_leader_election_change.assert_called_once_with(
-                    previous_leader="old-leader",
-                    new_leader=monitor.instance_id,
-                    namespace=monitor.namespace,
-                )
+                mock_metrics.record_leader_election_change.assert_called_once_with()
 
                 # Verify status was updated
                 mock_metrics.update_leader_election_status.assert_called_once_with(
                     instance_id=monitor.instance_id,
-                    namespace=monitor.namespace,
                     is_leader=True,
                 )
 
@@ -90,7 +85,6 @@ class TestLeaderElectionFailureScenarios:
             # Verify status was updated
             mock_metrics.update_leader_election_status.assert_called_once_with(
                 instance_id=monitor.instance_id,
-                namespace=monitor.namespace,
                 is_leader=False,
             )
 
@@ -133,7 +127,6 @@ class TestLeaderElectionFailureScenarios:
                     mock_lost.assert_called_once()
                     mock_metrics.update_leader_election_status.assert_called_once_with(
                         instance_id=monitor.instance_id,
-                        namespace=monitor.namespace,
                         is_leader=False,
                     )
 
@@ -157,7 +150,6 @@ class TestLeaderElectionFailureScenarios:
                     mock_acquired.assert_called_once()
                     mock_metrics.update_leader_election_status.assert_called_once_with(
                         instance_id=monitor.instance_id,
-                        namespace=monitor.namespace,
                         is_leader=True,
                     )
 
@@ -237,7 +229,6 @@ class TestLeaderElectionFailureScenarios:
 
             mock_metrics.record_lease_renewal.assert_called_once_with(
                 instance_id=monitor.instance_id,
-                namespace=monitor.namespace,
                 success=True,
                 duration=0.123,
             )
@@ -251,7 +242,6 @@ class TestLeaderElectionFailureScenarios:
 
             mock_metrics.record_lease_renewal.assert_called_once_with(
                 instance_id=monitor.instance_id,
-                namespace=monitor.namespace,
                 success=False,
                 duration=5.0,
             )

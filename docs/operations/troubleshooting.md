@@ -143,7 +143,7 @@ kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
 ```bash
 # Check rate limit metrics
 kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -s localhost:8080/metrics | grep rate_limit
+  curl -s localhost:8081/metrics | grep rate_limit
 
 # Increase rate limits if needed
 helm upgrade keycloak-operator ./charts/keycloak-operator \
@@ -1112,14 +1112,14 @@ kubectl port-forward -n <namespace> <pod-name> 8080:8080
 ```bash
 # Check rate limit metrics
 kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -s localhost:8080/metrics | grep rate_limit
+  curl -s localhost:8081/metrics | grep rate_limit
 
 # Check operator resource usage
 kubectl top pod -n keycloak-operator-system
 
 # Check reconciliation metrics
 kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -s localhost:8080/metrics | grep reconcile
+  curl -s localhost:8081/metrics | grep reconcile
 ```
 
 **Solutions:**
