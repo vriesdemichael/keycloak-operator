@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.13](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.12...chart-operator-v0.4.13) (2026-02-09)
+
+
+### Bug Fixes
+
+* **chart-operator+operator:** address PR review comments ([0295cc5](https://github.com/vriesdemichael/keycloak-operator/commit/0295cc59b036fa6c0fcc334a27af8bd69b96bde0))
+* **chart-operator+operator:** reduce Prometheus metric cardinality ([5ea9409](https://github.com/vriesdemichael/keycloak-operator/commit/5ea9409614d20dc85cc7be4d2bfd03b23f4888d8)), closes [#171](https://github.com/vriesdemichael/keycloak-operator/issues/171)
+
 ## [0.4.12](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.11...chart-operator-v0.4.12) (2026-02-08)
 
 
