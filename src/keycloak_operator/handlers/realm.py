@@ -385,12 +385,12 @@ async def delete_keycloak_realm(
         ) from e
 
 
-@kopf.timer(
+@kopf.daemon(
     "keycloakrealms",
-    idle=TIMER_INTERVAL_REALM,
-    initial_delay=lambda **_: random.uniform(0, TIMER_INTERVAL_REALM),
+    cancellation_timeout=10.0,
 )
 async def monitor_realm_health(
+    stopped: kopf.DaemonStopped,
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -401,15 +401,21 @@ async def monitor_realm_health(
     **_kwargs: Any,
 ) -> None:
     """
-    Periodic health check for KeycloakRealms.
+    Periodic health check daemon for KeycloakRealms.
 
-    This timer verifies that realms still exist in Keycloak and
+    This daemon verifies that realms still exist in Keycloak and
     that their configuration matches the desired state.
+
+    Uses a daemon instead of a timer to work around Kopf 1.40.x not
+    supporting callable ``initial_delay`` (lambda). The daemon sleeps
+    a random jitter on startup to spread reconciliation load, then
+    loops at TIMER_INTERVAL_REALM between iterations.
 
     The interval is configurable via TIMER_INTERVAL_REALM environment variable.
     Default: 600 seconds (10 minutes).
 
     Args:
+        stopped: Kopf daemon stopped flag for graceful shutdown
         spec: KeycloakRealm resource specification
         name: Name of the KeycloakRealm resource
         namespace: Namespace where the resource exists
@@ -419,17 +425,49 @@ async def monitor_realm_health(
         memo: Kopf memo for accessing shared state like rate_limiter
 
     """
-    # Skip health checks for resources being deleted
-    deletion_timestamp = meta.get("deletionTimestamp")
-    if deletion_timestamp:
-        return
+    # Random jitter on startup to prevent thundering herd
+    initial_jitter = random.uniform(0, TIMER_INTERVAL_REALM)
+    await stopped.wait(initial_jitter)
 
+    while not stopped:
+        # Skip health checks for resources being deleted
+        deletion_timestamp = meta.get("deletionTimestamp")
+        if deletion_timestamp:
+            return
+
+        current_phase = status.get("phase", "Unknown")
+
+        # Skip health checks for non-stable phases
+        # Unknown/Pending = not yet reconciled
+        # Provisioning/Updating/Reconciling = active reconciliation in progress
+        # Failed = terminal state, no point health-checking
+        if current_phase not in (
+            "Failed",
+            "Pending",
+            "Unknown",
+            "Provisioning",
+            "Updating",
+            "Reconciling",
+        ):
+            await _run_realm_health_check(
+                spec, name, namespace, status, patch, meta, memo
+            )
+
+        # Wait for next interval or until stopped
+        await stopped.wait(TIMER_INTERVAL_REALM)
+
+
+async def _run_realm_health_check(
+    spec: dict[str, Any],
+    name: str,
+    namespace: str,
+    status: dict[str, Any],
+    patch: kopf.Patch,
+    meta: dict[str, Any],
+    memo: kopf.Memo,
+) -> None:
+    """Execute one health check iteration for a KeycloakRealm."""
     current_phase = status.get("phase", "Unknown")
-
-    # Skip health checks for failed, pending, or unknown realms
-    # Unknown = resource just created, reconciliation hasn't started yet
-    if current_phase in ["Failed", "Pending", "Unknown"]:
-        return
 
     logger.debug(f"Checking health of KeycloakRealm {name} in {namespace}")
 
@@ -649,6 +687,21 @@ async def _verify_identity_providers(
         return False
 
 
+def _record_federation_status(
+    realm_name: str, provider_id: str, connected: bool
+) -> None:
+    """Record user federation provider status to Prometheus metrics."""
+    try:
+        from keycloak_operator.observability.metrics import USER_FEDERATION_STATUS
+
+        USER_FEDERATION_STATUS.labels(
+            realm=realm_name,
+            provider_id=provider_id,
+        ).set(1 if connected else 0)
+    except Exception:
+        pass  # Metrics are optional
+
+
 async def _test_user_federation(
     admin_client: Any, realm_name: str, namespace: str, federation_specs: list
 ) -> bool:
@@ -680,10 +733,20 @@ async def _test_user_federation(
                 if isinstance(federation_spec, dict)
                 else federation_spec.name
             )
-            if expected_name not in provider_names:
+            connected = expected_name in provider_names
+            _record_federation_status(realm_name, expected_name or "", connected)
+            if not connected:
                 return False
 
         return True
 
     except Exception:
+        # Record all providers as disconnected on error
+        for federation_spec in federation_specs:
+            expected_name = (
+                federation_spec.get("name")
+                if isinstance(federation_spec, dict)
+                else getattr(federation_spec, "name", "")
+            )
+            _record_federation_status(realm_name, expected_name or "", False)
         return False

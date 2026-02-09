@@ -103,13 +103,13 @@ The operator exposes the following metrics for drift detection:
 
 ```prometheus
 # Number of orphaned resources (created by this operator, CR deleted)
-keycloak_operator_orphaned_resources{resource_type, resource_name, operator_instance}
+keycloak_operator_orphaned_resources{resource_type, operator_instance}
 
 # Number of resources with configuration drift
-keycloak_operator_config_drift{resource_type, resource_name, cr_namespace, cr_name}
+keycloak_operator_config_drift{resource_type, cr_namespace}
 
 # Number of unmanaged resources (not created by any operator)
-keycloak_unmanaged_resources{resource_type, resource_name}
+keycloak_operator_unmanaged_resources{resource_type}
 ```
 
 ### Remediation Metrics
@@ -160,7 +160,6 @@ spec:
             summary: "Orphaned Keycloak resources detected"
             description: |
               {{ $value }} orphaned {{ $labels.resource_type }} resource(s) detected.
-              Resource: {{ $labels.resource_name }}
               Operator: {{ $labels.operator_instance }}
 
         # Alert on configuration drift
@@ -173,8 +172,7 @@ spec:
           annotations:
             summary: "Keycloak configuration drift detected"
             description: |
-              Configuration drift detected for {{ $labels.resource_type }}: {{ $labels.resource_name }}
-              CR: {{ $labels.cr_namespace }}/{{ $labels.cr_name }}
+              Configuration drift detected for {{ $labels.resource_type }} in {{ $labels.cr_namespace }}
 
         # Alert on drift check failures
         - alert: KeycloakDriftCheckFailure
@@ -218,7 +216,7 @@ spec:
 3. **Check metrics** (after next drift scan):
    ```bash
    curl http://localhost:8081/metrics | grep orphaned_resources
-   # keycloak_operator_orphaned_resources{resource_type="realm",resource_name="my-realm",...} 1
+    # keycloak_operator_orphaned_resources{resource_type="realm",...} 1
    ```
 
 4. **Manual cleanup** (if auto-remediation is disabled):
@@ -262,8 +260,8 @@ Find Keycloak resources not managed by any operator:
 curl http://localhost:8081/metrics | grep unmanaged_resources
 
 # Example output:
-# keycloak_unmanaged_resources{resource_type="realm",resource_name="legacy-realm"} 1
-# keycloak_unmanaged_resources{resource_type="client",resource_name="manual-client"} 1
+# keycloak_operator_unmanaged_resources{resource_type="realm"} 1
+# keycloak_operator_unmanaged_resources{resource_type="client"} 1
 ```
 
 These are resources that existed before the operator or were created manually.

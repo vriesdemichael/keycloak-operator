@@ -197,9 +197,6 @@ mappers:
 The operator exposes Prometheus metrics for federation monitoring:
 
 - `keycloak_operator_user_federation_status` - Connection status (1=connected)
-- `keycloak_operator_user_federation_synced_users` - Imported user count
-- `keycloak_operator_user_federation_sync_errors_total` - Sync error count
-- `keycloak_operator_user_federation_sync_duration_seconds` - Sync duration
 
 ## Status
 

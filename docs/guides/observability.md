@@ -145,7 +145,7 @@ status:
 
 ## Prometheus Metrics
 
-The operator exposes Prometheus metrics on port 8080 at `/metrics`.
+The operator exposes Prometheus metrics on port 8081 at `/metrics`.
 
 ### Available Metrics
 
@@ -153,27 +153,27 @@ The operator exposes Prometheus metrics on port 8080 at `/metrics`.
 
 ```prometheus
 # Reconciliation operations counter
-kopf_reconciliation_total{resource_type="keycloak|realm|client", namespace="...", name="...", operation="reconcile|update|delete"}
+keycloak_operator_reconciliation_total{resource_type="keycloak|realm|client", namespace="...", result="success|failure"}
 
 # Reconciliation duration histogram
-kopf_reconciliation_duration_seconds{resource_type="...", namespace="...", name="...", operation="..."}
+keycloak_operator_reconciliation_duration_seconds{resource_type="...", namespace="...", operation="reconcile|update|delete"}
 
-# Active reconciliations gauge
-kopf_reconciliation_active{resource_type="...", namespace="...", operation="..."}
+# Active resources gauge
+keycloak_operator_active_resources{resource_type="...", namespace="...", phase="Ready|Failed|Pending"}
 ```
 
 #### Resource Status Metrics
 
 ```prometheus
 # Resource status by phase
-keycloak_operator_resource_status{resource_type="keycloak|realm|client", namespace="...", phase="Ready|Failed|Pending"}
+keycloak_operator_active_resources{resource_type="keycloak|realm|client", namespace="...", phase="Ready|Failed|Pending"}
 ```
 
 #### Error Metrics
 
 ```prometheus
 # Error counter by type
-keycloak_operator_errors_total{error_type="...", resource_type="...", namespace="..."}
+keycloak_operator_reconciliation_errors_total{error_type="...", resource_type="...", namespace="...", retryable="true|false"}
 ```
 
 ### Scraping Metrics
@@ -190,8 +190,8 @@ metadata:
 spec:
   ports:
     - name: metrics
-      port: 8080
-      targetPort: 8080
+      port: 8081
+      targetPort: 8081
   selector:
     app: keycloak-operator
 ---
@@ -255,8 +255,8 @@ Logs include structured fields:
 
 The operator pod exposes health endpoints:
 
-- **Liveness**: HTTP GET on `/healthz` (port 8080)
-- **Readiness**: HTTP GET on `/ready` (port 8080)
+- **Liveness**: HTTP GET on `/healthz` (port 8081)
+- **Readiness**: HTTP GET on `/ready` (port 8081)
 
 ## GitOps Integration
 

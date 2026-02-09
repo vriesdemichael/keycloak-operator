@@ -24,6 +24,22 @@ from keycloak_operator.settings import settings
 logger = logging.getLogger(__name__)
 
 
+def _record_rbac_metric(
+    source_namespace: str, target_namespace: str, allowed: bool
+) -> None:
+    """Record RBAC validation result to Prometheus metrics."""
+    try:
+        from keycloak_operator.observability.metrics import RBAC_VALIDATIONS
+
+        RBAC_VALIDATIONS.labels(
+            source_namespace=source_namespace,
+            target_namespace=target_namespace,
+            result="success" if allowed else "failure",
+        ).inc()
+    except Exception:
+        pass  # Metrics are optional
+
+
 async def check_namespace_access(
     namespace: str, operator_namespace: str
 ) -> tuple[bool, str | None]:
@@ -69,6 +85,9 @@ async def check_namespace_access(
         # Check the status
         allowed = result.status.allowed
 
+        # Record RBAC validation metric
+        _record_rbac_metric(operator_namespace, namespace, allowed)
+
         if not allowed:
             reason = result.status.reason or "Unknown reason"
             error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
@@ -85,6 +104,7 @@ async def check_namespace_access(
 
     except ApiException as e:
         if e.status == 403:
+            _record_rbac_metric(operator_namespace, namespace, False)
             error_msg = ERROR_NAMESPACE_ACCESS_DENIED.format(
                 namespace, operator_namespace, operator_namespace, namespace
             )

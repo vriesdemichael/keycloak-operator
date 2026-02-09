@@ -404,12 +404,22 @@ async def delete_keycloak_instance(
         ) from e
 
 
-@kopf.timer(
+def _record_instance_status(namespace: str, running: bool) -> None:
+    """Record Keycloak instance status to Prometheus metrics."""
+    try:
+        from keycloak_operator.observability.metrics import KEYCLOAK_INSTANCE_STATUS
+
+        KEYCLOAK_INSTANCE_STATUS.labels(namespace=namespace).set(1 if running else 0)
+    except Exception:
+        pass  # Metrics are optional
+
+
+@kopf.daemon(
     "keycloaks",
-    idle=TIMER_INTERVAL_KEYCLOAK,
-    initial_delay=lambda **_: random.uniform(0, TIMER_INTERVAL_KEYCLOAK),
+    cancellation_timeout=10.0,
 )
 async def monitor_keycloak_health(
+    stopped: kopf.DaemonStopped,
     spec: dict[str, Any],
     name: str,
     namespace: str,
@@ -420,24 +430,27 @@ async def monitor_keycloak_health(
     **kwargs: Any,
 ) -> None:
     """
-        Periodic health check for Keycloak instances.
+        Periodic health check daemon for Keycloak instances.
 
-        This timer handler checks the health of Keycloak instances and updates
+        This daemon checks the health of Keycloak instances and updates
         their status accordingly.
+
+        Uses a daemon instead of a timer to work around Kopf 1.40.x not
+        supporting callable ``initial_delay`` (lambda). The daemon sleeps
+        a random jitter on startup to spread reconciliation load, then
+        loops at TIMER_INTERVAL_KEYCLOAK between iterations.
 
         The interval is configurable via TIMER_INTERVAL_KEYCLOAK environment variable.
         Default: 600 seconds (10 minutes).
 
         Args:
+            stopped: Kopf daemon stopped flag for graceful shutdown
             spec: Keycloak resource specification
             name: Name of the Keycloak resource
             namespace: Namespace where the resource exists
             status: Current status of the resource
             meta: Resource metadata
             memo: Kopf memo for accessing shared state like rate_limiter
-
-        Returns:
-            Dictionary with updated status information, or None if no changes
 
     Implementation includes:
         ✅ Check if Keycloak deployment is running and ready
@@ -448,17 +461,49 @@ async def monitor_keycloak_health(
         ⚠️  Generate events for significant status changes - Future enhancement
         ⚠️  Implement alerting for persistent failures - Future enhancement
     """
-    # Skip health checks for resources being deleted
-    deletion_timestamp = meta.get("deletionTimestamp")
-    if deletion_timestamp:
-        return
+    # Random jitter on startup to prevent thundering herd
+    initial_jitter = random.uniform(0, TIMER_INTERVAL_KEYCLOAK)
+    await stopped.wait(initial_jitter)
 
+    while not stopped:
+        # Skip health checks for resources being deleted
+        deletion_timestamp = meta.get("deletionTimestamp")
+        if deletion_timestamp:
+            return
+
+        current_phase = status.get("phase", "Unknown")
+
+        # Skip health checks for non-stable phases
+        # Unknown/Pending = not yet reconciled
+        # Provisioning/Updating/Reconciling = active reconciliation in progress
+        # Failed = terminal state, no point health-checking
+        if current_phase not in (
+            "Failed",
+            "Pending",
+            "Unknown",
+            "Provisioning",
+            "Updating",
+            "Reconciling",
+        ):
+            await _run_keycloak_health_check(
+                spec, name, namespace, status, patch, meta, memo
+            )
+
+        # Wait for next interval or until stopped
+        await stopped.wait(TIMER_INTERVAL_KEYCLOAK)
+
+
+async def _run_keycloak_health_check(
+    spec: dict[str, Any],
+    name: str,
+    namespace: str,
+    status: StatusProtocol,
+    patch: kopf.Patch,
+    meta: dict[str, Any],
+    memo: kopf.Memo,
+) -> None:
+    """Execute one health check iteration for a Keycloak instance."""
     current_phase = status.get("phase", "Unknown")
-
-    # Skip health checks for failed, pending, or unknown instances
-    # Unknown = resource just created, reconciliation hasn't started yet
-    if current_phase in ["Failed", "Pending", "Unknown"]:
-        return
 
     logger.debug(f"Checking health of Keycloak instance {name} in {namespace}")
 
@@ -640,6 +685,8 @@ async def monitor_keycloak_health(
             patch.status["message"] = "Keycloak instance is healthy"
             patch.status["lastHealthCheck"] = current_time
 
+        _record_instance_status(namespace, running=True)
+
     except Exception as e:
         logger.error(f"Health check failed for Keycloak instance {name}: {e}")
         from datetime import datetime
@@ -648,3 +695,4 @@ async def monitor_keycloak_health(
         patch.status["phase"] = "Degraded"
         patch.status["message"] = f"Health check failed: {str(e)}"
         patch.status["lastHealthCheck"] = current_time
+        _record_instance_status(namespace, running=False)

@@ -293,6 +293,14 @@ class DatabaseConnectionManager:
                 duration=duration,
             )
 
+            # Record Prometheus metrics
+            self._record_connection_metrics(
+                namespace=namespace or "",
+                database_type=db_type or "unknown",
+                success=success,
+                duration=duration,
+            )
+
             return success
 
         except Exception as e:
@@ -308,7 +316,38 @@ class DatabaseConnectionManager:
                 error=str(e),
             )
 
+            # Record Prometheus metrics for failure
+            self._record_connection_metrics(
+                namespace=namespace or "",
+                database_type=db_type or "unknown",
+                success=False,
+                duration=duration,
+            )
+
             return False
+
+    @staticmethod
+    def _record_connection_metrics(
+        namespace: str, database_type: str, success: bool, duration: float
+    ) -> None:
+        """Record database connection test results to Prometheus metrics."""
+        try:
+            from keycloak_operator.observability.metrics import (
+                DATABASE_CONNECTION_DURATION,
+                DATABASE_CONNECTION_STATUS,
+            )
+
+            DATABASE_CONNECTION_STATUS.labels(
+                namespace=namespace,
+                database_type=database_type,
+            ).set(1 if success else 0)
+
+            DATABASE_CONNECTION_DURATION.labels(
+                namespace=namespace,
+                database_type=database_type,
+            ).observe(duration)
+        except Exception:
+            pass  # Metrics are optional
 
     async def _test_postgresql_connection(
         self,

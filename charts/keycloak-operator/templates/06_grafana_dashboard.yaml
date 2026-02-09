@@ -123,7 +123,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum by(resource_type) (keycloak_operator_resource_status{phase=\"Ready\"})",
+              "expr": "sum by(resource_type) (keycloak_operator_active_resources{phase=\"Ready\"})",
               "legendFormat": "{{`{{ resource_type }}`}} - Ready",
               "refId": "A"
             },
@@ -132,7 +132,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum by(resource_type) (keycloak_operator_resource_status{phase=\"Failed\"})",
+              "expr": "sum by(resource_type) (keycloak_operator_active_resources{phase=\"Failed\"})",
               "legendFormat": "{{`{{ resource_type }}`}} - Failed",
               "refId": "B"
             },
@@ -141,7 +141,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum by(resource_type) (keycloak_operator_resource_status{phase=\"Pending\"})",
+              "expr": "sum by(resource_type) (keycloak_operator_active_resources{phase=\"Pending\"})",
               "legendFormat": "{{`{{ resource_type }}`}} - Pending",
               "refId": "C"
             }
@@ -779,7 +779,7 @@ data:
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "sum by(error_type, resource_type) (rate(keycloak_operator_errors_total[5m]))",
+              "expr": "sum by(error_type, resource_type) (rate(keycloak_operator_reconciliation_errors_total[5m]))",
               "legendFormat": "{{`{{ error_type }}`}} - {{`{{ resource_type }}`}}",
               "refId": "A"
             }

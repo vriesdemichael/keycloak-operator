@@ -59,17 +59,13 @@ class LeaderElectionMonitor:
 
         # Record leadership change if we know the previous leader
         if self.previous_leader and self.previous_leader != self.instance_id:
-            metrics_collector.record_leader_election_change(
-                previous_leader=self.previous_leader,
-                new_leader=self.instance_id,
-                namespace=self.namespace,
-            )
+            metrics_collector.record_leader_election_change()
 
         # Update leadership status
         self.is_leader = True
         self.previous_leader = self.instance_id
         metrics_collector.update_leader_election_status(
-            instance_id=self.instance_id, namespace=self.namespace, is_leader=True
+            instance_id=self.instance_id, is_leader=True
         )
 
     def on_leadership_lost(self):
@@ -79,7 +75,7 @@ class LeaderElectionMonitor:
         # Update leadership status
         self.is_leader = False
         metrics_collector.update_leader_election_status(
-            instance_id=self.instance_id, namespace=self.namespace, is_leader=False
+            instance_id=self.instance_id, is_leader=False
         )
 
     async def check_leadership_status(self) -> bool:
@@ -106,7 +102,6 @@ class LeaderElectionMonitor:
             # Update metrics
             metrics_collector.update_leader_election_status(
                 instance_id=self.instance_id,
-                namespace=self.namespace,
                 is_leader=self.is_leader,
             )
 
@@ -176,7 +171,6 @@ class LeaderElectionMonitor:
         """
         metrics_collector.record_lease_renewal(
             instance_id=self.instance_id,
-            namespace=self.namespace,
             success=success,
             duration=duration,
         )
