@@ -848,7 +848,7 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.10.11" },
     { name = "asyncpg", specifier = ">=0.29.0" },
     { name = "httpx", specifier = ">=0.27.0" },
-    { name = "kopf", specifier = "==1.40.1" },
+    { name = "kopf", specifier = "==1.42.5" },
     { name = "kubernetes", specifier = ">=28.0.0" },
     { name = "opentelemetry-api", specifier = ">=1.25.0" },
     { name = "opentelemetry-exporter-otlp", specifier = ">=1.25.0" },
@@ -925,7 +925,7 @@ test = [
 
 [[package]]
 name = "kopf"
-version = "1.40.1"
+version = "1.42.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -934,9 +934,9 @@ dependencies = [
     { name = "python-json-logger" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a4/bf/af26ae297b2f2617388189d041febd204c36b7ff894a2cf35ec87b55f68e/kopf-1.40.1.tar.gz", hash = "sha256:083ca04bd9b44d6dd7438a7653793be5e42936f7e6657ce9585d554b1408b71a", size = 1195137, upload-time = "2026-01-22T20:30:36.001Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/86/2c/abfb69435f80f31ca069adbe6d327e2cbd533f89e605e95a648d957eb721/kopf-1.42.5.tar.gz", hash = "sha256:3a66895197e3e6bf3484681112cd59d4e2700db853adcfd313344eb3a0559600", size = 1213383, upload-time = "2026-02-07T08:42:47.454Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/34/09/32909e745bc5d78e0b04c8ac35087176905fbcd9e1415085c6ec99372126/kopf-1.40.1-py3-none-any.whl", hash = "sha256:664dce02a22b51d8cc32e890cc706afe1c5c7ed7f60072b0eb4c8a8a26b12ea0", size = 211553, upload-time = "2026-01-22T20:30:34.213Z" },
+    { url = "https://files.pythonhosted.org/packages/fc/99/0e52246e61df9540c9f578a7b828b91de7cdf57009b75e88120760d346d2/kopf-1.42.5-py3-none-any.whl", hash = "sha256:a799aa36c47bb45a43a3044b1b18617369a2a455590b14a1ed4c773c29b0c3d1", size = 216427, upload-time = "2026-02-07T08:42:45.49Z" },
 ]
 
 [[package]]
