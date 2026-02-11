@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.10](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.9...operator-image-v0.7.10) (2026-02-11)
+
+
+### Bug Fixes
+
+* **operator-image:** bump cryptography from 46.0.3 to 46.0.5 ([a8ed76e](https://github.com/vriesdemichael/keycloak-operator/commit/a8ed76e955e23d524040f02668803066e2639c10))
+
 ## [0.7.9](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.8...operator-image-v0.7.9) (2026-02-09)
 
 
