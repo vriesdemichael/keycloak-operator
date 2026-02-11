@@ -111,9 +111,9 @@ class TestRealmOrganizations:
             keycloak_admin_client
         )
         if not supports_orgs:
-            pytest.skip(
-                "Keycloak version does not support organizations (requires 26+)"
-            )
+            # fmt: off
+            pytest.skip("Keycloak version does not support organizations (requires 26+)")  # type: ignore
+            # fmt: on
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"org-test-{suffix}"
@@ -259,9 +259,9 @@ class TestRealmOrganizations:
             keycloak_admin_client
         )
         if not supports_orgs:
-            pytest.skip(
-                "Keycloak version does not support organizations (requires 26+)"
-            )
+            # fmt: off
+            pytest.skip("Keycloak version does not support organizations (requires 26+)")  # type: ignore
+            # fmt: on
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"org-idp-{suffix}"
@@ -434,9 +434,9 @@ class TestRealmOrganizations:
             keycloak_admin_client
         )
         if not supports_orgs:
-            pytest.skip(
-                "Keycloak version does not support organizations (requires 26+)"
-            )
+            # fmt: off
+            pytest.skip("Keycloak version does not support organizations (requires 26+)")  # type: ignore
+            # fmt: on
 
         suffix = uuid.uuid4().hex[:8]
         realm_name = f"org-del-{suffix}"
