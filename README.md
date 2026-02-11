@@ -2,11 +2,9 @@
 
 [![CI/CD Pipeline (Unified)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd-unified.yml/badge.svg)](https://github.com/vriesdemichael/keycloak-operator/actions/workflows/ci-cd-unified.yml)
 [![codecov](https://codecov.io/gh/vriesdemichael/keycloak-operator/branch/main/graph/badge.svg)](https://codecov.io/gh/vriesdemichael/keycloak-operator)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/vriesdemichael/keycloak-operator/badge)](https://securityscorecards.dev/viewer/?uri=github.com/vriesdemichael/keycloak-operator)
-[![Snyk Security](https://snyk.io/test/github/vriesdemichael/keycloak-operator/badge.svg)](https://snyk.io/test/github/vriesdemichael/keycloak-operator)
-[![Docker Image](https://ghcr-badge.egpl.dev/vriesdemichael/keycloak-operator/size?color=%2344cc11&tag=latest&label=image+size&trim=)](https://github.com/vriesdemichael/keycloak-operator/pkgs/container/keycloak-operator)
+[![Helm Chart](https://img.shields.io/badge/dynamic/yaml?url=https://raw.githubusercontent.com/vriesdemichael/keycloak-operator/main/charts/keycloak-operator/Chart.yaml&query=$.version&label=chart&color=blue)](https://github.com/vriesdemichael/keycloak-operator/pkgs/container/charts%2Fkeycloak-operator)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/downloads/)
 
 A Kubernetes operator for managing Keycloak instances, realms, and OAuth2/OIDC clients declaratively with full GitOps compatibility.
 
@@ -35,14 +33,14 @@ kubectl apply -f examples/02-realm-example.yaml
 kubectl apply -f examples/03-client-example.yaml
 ```
 
-**📖 [Full Quick Start Guide →](docs/quickstart/README.md)**
+**📖 [Full Quick Start Guide →](https://vriesdemichael.github.io/keycloak-operator/latest/quickstart/)**
 
 ## ✨ Features
 
 - **Declarative Configuration** - Manage Keycloak entirely through Kubernetes resources
-- **Admission Webhooks** - Immediate validation feedback with clear error messages ([docs](docs/admission-webhooks.md))
+- **Admission Webhooks** - Immediate validation feedback with clear error messages ([docs](https://vriesdemichael.github.io/keycloak-operator/latest/admission-webhooks/))
 - **GitOps Ready** - Full observability with status conditions and `observedGeneration` tracking
-- **Drift Detection** - Automatic detection of orphaned resources and configuration drift ([docs](docs/drift-detection.md))
+- **Drift Detection** - Automatic detection of orphaned resources and configuration drift ([docs](https://vriesdemichael.github.io/keycloak-operator/latest/guides/drift-detection/))
 - **Cross-Namespace Support** - Secure delegation model for multi-tenant environments
 - **Production Ready** - Rate limiting, exponential backoff, and comprehensive monitoring
 - **Comprehensive Test Coverage** - Unit and integration tests with coverage tracking
@@ -60,12 +58,12 @@ kubectl apply -f examples/03-client-example.yaml
 
 ### Quick Links
 
-- **[Quick Start Guide](https://vriesdemichael.github.io/keycloak-operator/latest/quickstart/README/)** - Get started in 10 minutes
-- **[Architecture](https://vriesdemichael.github.io/keycloak-operator/latest/architecture/)** - How the operator works
+- **[Quick Start Guide](https://vriesdemichael.github.io/keycloak-operator/latest/quickstart/)** - Get started in 10 minutes
+- **[Architecture](https://vriesdemichael.github.io/keycloak-operator/latest/concepts/architecture/)** - How the operator works
 - **[Admission Webhooks](https://vriesdemichael.github.io/keycloak-operator/latest/admission-webhooks/)** - Resource validation and quotas
-- **[Security Model](https://vriesdemichael.github.io/keycloak-operator/latest/security/)** - Secret-based authorization explained
-- **[Drift Detection](https://vriesdemichael.github.io/keycloak-operator/latest/drift-detection/)** - Orphan detection and auto-remediation
-- **[Observability](https://vriesdemichael.github.io/keycloak-operator/latest/observability/)** - Metrics, logs, and status conditions
+- **[Security Model](https://vriesdemichael.github.io/keycloak-operator/latest/concepts/security/)** - Secret-based authorization explained
+- **[Drift Detection](https://vriesdemichael.github.io/keycloak-operator/latest/guides/drift-detection/)** - Orphan detection and auto-remediation
+- **[Observability](https://vriesdemichael.github.io/keycloak-operator/latest/guides/observability/)** - Metrics, logs, and status conditions
 - **[Versioning](https://vriesdemichael.github.io/keycloak-operator/latest/versioning/)** - How to access older documentation and chart versions
 - **[Development Guide](https://vriesdemichael.github.io/keycloak-operator/latest/development/)** - Contributing to the project
 
@@ -186,7 +184,7 @@ The operator uses a **namespace grant authorization model** combining Kubernetes
 - **GitOps Native**: All authorization is declarative and stored in Git
 - **Auditability**: All access changes tracked in Git history and Kubernetes audit logs
 
-Read the [Security Model](docs/concepts/security.md) documentation for detailed authorization architecture.
+Read the [Security Model](https://vriesdemichael.github.io/keycloak-operator/latest/concepts/security/) documentation for detailed authorization architecture.
 
 ## 📈 Monitoring
 
@@ -206,7 +204,7 @@ Key metrics:
 - Reconciliation duration (p50/p95/p99)
 - Resource counts by phase
 
-See [Observability](docs/observability.md) for full details.
+See [Observability](https://vriesdemichael.github.io/keycloak-operator/latest/guides/observability/) for full details.
 
 ## 🚦 Rate Limiting
 
@@ -270,7 +268,7 @@ make quality
 make test-unit
 ```
 
-See [Development Guide](docs/development.md) and [AGENTS.md](AGENTS.md) for more details.
+See [Development Guide](https://vriesdemichael.github.io/keycloak-operator/latest/development/) and [AGENTS.md](AGENTS.md) for more details.
 
 ## 📝 License
 
@@ -280,4 +278,4 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 - [GitHub Repository](https://github.com/vriesdemichael/keycloak-operator)
 - [Issue Tracker](https://github.com/vriesdemichael/keycloak-operator/issues)
-- [Documentation](docs/)
+- [Documentation](https://vriesdemichael.github.io/keycloak-operator/latest/)
