@@ -1077,8 +1077,9 @@ async def test_nested_config_drift_detection(
         keycloak_admin_client,
         realm_name=realm_name,
         namespace=test_namespace,
-        condition_func=lambda r: r.events_enabled is True
-        and r.admin_events_enabled is True,
+        condition_func=lambda r: (
+            r.events_enabled is True and r.admin_events_enabled is True
+        ),
         condition_description="eventsEnabled=True and adminEventsEnabled=True",
         timeout=30,
     )

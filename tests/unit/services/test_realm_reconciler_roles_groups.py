@@ -216,9 +216,9 @@ class TestConfigureCompositeRoles:
         child_role = RoleRepresentation(name="user", id="user-id")
         admin_mock.get_realm_roles = AsyncMock(return_value=[parent_role, child_role])
         admin_mock.get_realm_role_by_name = AsyncMock(
-            side_effect=lambda realm, name, ns: parent_role
-            if name == "admin"
-            else child_role
+            side_effect=lambda realm, name, ns: (
+                parent_role if name == "admin" else child_role
+            )
         )
 
         spec = KeycloakRealmSpec(
@@ -271,9 +271,9 @@ class TestConfigureCompositeRoles:
         # Mock the new role lookup
         new_role = RoleRepresentation(name="new-role", id="new-id")
         admin_mock.get_realm_role_by_name = AsyncMock(
-            side_effect=lambda realm, name, ns: parent_role
-            if name == "admin"
-            else new_role
+            side_effect=lambda realm, name, ns: (
+                parent_role if name == "admin" else new_role
+            )
         )
 
         await reconciler.configure_realm_roles(spec, "test-realm", "default")
@@ -823,9 +823,9 @@ class TestRoleUpdateCoverage:
         parent_role = RoleRepresentation(name="parent", id="parent-id")
         admin_mock.get_realm_roles = AsyncMock(return_value=[parent_role])
         admin_mock.get_realm_role_by_name = AsyncMock(
-            side_effect=lambda realm, name, ns: parent_role
-            if name == "parent"
-            else None  # Child not found
+            side_effect=lambda realm, name, ns: (
+                parent_role if name == "parent" else None
+            )  # Child not found
         )
 
         spec = KeycloakRealmSpec(
@@ -1458,9 +1458,9 @@ class TestGroupMapBuildingCoverage:
         admin_mock.get_groups = AsyncMock(return_value=[parent_group])
         # Mock get_group_by_path to return existing groups
         admin_mock.get_group_by_path = AsyncMock(
-            side_effect=lambda realm, path, ns: parent_group
-            if path == "/parent"
-            else child_group
+            side_effect=lambda realm, path, ns: (
+                parent_group if path == "/parent" else child_group
+            )
         )
 
         spec = KeycloakRealmSpec(
@@ -1495,9 +1495,9 @@ class TestCompositeRoleCoverage:
 
         admin_mock.get_realm_roles = AsyncMock(return_value=[parent_role, child_role])
         admin_mock.get_realm_role_by_name = AsyncMock(
-            side_effect=lambda realm, name, ns: parent_role
-            if name == "parent"
-            else child_role
+            side_effect=lambda realm, name, ns: (
+                parent_role if name == "parent" else child_role
+            )
         )
         admin_mock.get_realm_role_composites = AsyncMock(
             return_value=[child_role]  # Current composites match desired
@@ -1533,9 +1533,9 @@ class TestCompositeRoleCoverage:
 
         admin_mock.get_realm_roles = AsyncMock(return_value=[parent_role, child_role])
         admin_mock.get_realm_role_by_name = AsyncMock(
-            side_effect=lambda realm, name, ns: parent_role
-            if name == "parent"
-            else child_role
+            side_effect=lambda realm, name, ns: (
+                parent_role if name == "parent" else child_role
+            )
         )
         admin_mock.get_realm_role_composites = AsyncMock(
             return_value=[child_role]  # Already has child
