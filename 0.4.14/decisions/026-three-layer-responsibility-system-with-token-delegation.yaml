@@ -1,0 +1,37 @@
+number: 26
+title: Three-layer responsibility system with token delegation
+category: architecture
+status: superseded
+superseded_by: 63
+decision: 'Three-layer system: operator team manages Keycloak instances and issues
+  admission tokens, realm teams manage realms and issue operational tokens, application
+  teams manage clients. Authorization is managed through a token system that allows
+  delegation between layers without requiring PRs or manual approval.'
+agent_instructions: 'Use token-based authorization from src/keycloak_operator/utils/token_manager.py.
+  Operators generate admission tokens for realm creation. Realms validate admission
+  tokens and generate operational tokens for client management. Clients validate operational
+  tokens before reconciliation. Token types: admission (realm authorization) and operational
+  (client authorization). Tokens stored as secrets, metadata in ConfigMap with SHA-256
+  hashing. Token rotation handled by src/keycloak_operator/handlers/token_rotation.py.
+  CRD models use AuthorizationSecretRef for token references.'
+rationale: |
+  Three-layer separation matches organizational structure: platform teams
+  run Keycloak, security teams manage realms, developers manage OAuth clients. Token-based
+  delegation enables self-service and reduces operational burden. Once a token is
+  issued, teams can independently create resources without cross-team PRs or manual
+  approvals. This scales better than centralized control as organization grows. Tokens
+  provide audit trail of who authorized what. Automatic rotation with grace periods
+  ensures security without downtime.
+
+  Superseded: 2025-11-10 by Namespace Grant List (ADR-063).
+provenance: human
+rejected_alternatives:
+- alternative: Centralized management - all resources created by operator team
+  reason: Doesn't scale. Creates bottleneck and slows down application teams. Operator
+    team overwhelmed with requests.
+- alternative: Direct RBAC without tokens
+  reason: RBAC alone can't express 'this team can create clients in this specific
+    realm'. Tokens provide fine-grained delegation.
+- alternative: Manual approval via PRs for every resource
+  reason: Slow, doesn't scale, requires synchronization between teams. Defeats purpose
+    of self-service.
