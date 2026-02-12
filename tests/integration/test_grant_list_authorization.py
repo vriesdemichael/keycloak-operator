@@ -235,8 +235,9 @@ class TestGrantListAuthorization:
                 plural="keycloakclients",
                 namespace=client_namespace,
                 name=client_name,
-                condition_func=lambda res: res.get("status", {}).get("phase")
-                == "Failed",
+                condition_func=lambda res: (
+                    res.get("status", {}).get("phase") == "Failed"
+                ),
                 timeout=60,
             )
 

@@ -3144,7 +3144,7 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Build set of currently linked IdP aliases
         current_aliases: set[str] = {
-            idp.get("alias") for idp in current_idps if idp.get("alias")
+            str(idp.get("alias")) for idp in current_idps if idp.get("alias")
         }
 
         # Build set of desired IdP aliases
