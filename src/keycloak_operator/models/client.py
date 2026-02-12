@@ -8,7 +8,7 @@ with proper validation and GitOps compatibility.
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from keycloak_operator.models.types import (
     KeycloakConfigMap,
@@ -23,6 +23,20 @@ class RealmRef(BaseModel):
 
     name: str = Field(..., description="Name of the KeycloakRealm CR")
     namespace: str = Field(..., description="Namespace of the KeycloakRealm CR")
+
+
+class KeycloakClientSecretRef(BaseModel):
+    """
+    Reference to an existing Kubernetes secret containing the client secret.
+
+    Used when manually managing the client secret instead of letting the operator
+    generate one.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Secret name")
+    key: str = Field(..., description="Key in secret data containing the client secret")
 
 
 class KeycloakClientScope(BaseModel):
@@ -1002,6 +1016,15 @@ class KeycloakClientSpec(BaseModel):
         alias="secretMetadata",
         description="Metadata to attach to the managed secret.",
     )
+    client_secret: KeycloakClientSecretRef | None = Field(
+        None,
+        alias="clientSecret",
+        description=(
+            "Reference to an existing secret containing the client secret. "
+            "If set, this secret is used instead of generating one. "
+            "Cannot be used with secret rotation."
+        ),
+    )
 
     # Secret rotation settings
     secret_rotation: SecretRotationConfig = Field(
@@ -1016,6 +1039,26 @@ class KeycloakClientSpec(BaseModel):
         alias="manageSecret",
         description="Create and manage Kubernetes secret for credentials",
     )
+
+    @model_validator(mode="after")
+    def validate_secret_configuration(self) -> "KeycloakClientSpec":
+        """Validate secret configuration constraints."""
+        # Check client_secret vs secret_rotation
+        if self.client_secret and self.secret_rotation.enabled:
+            raise ValueError(
+                "Manual client secret (clientSecret) cannot be used with automated "
+                "secret rotation (secretRotation.enabled=true). Disable rotation "
+                "to use a manual secret."
+            )
+
+        # Check client_secret vs public_client
+        if self.client_secret and self.public_client:
+            raise ValueError(
+                "Manual client secret (clientSecret) cannot be used with public clients. "
+                "Public clients do not use client secrets."
+            )
+
+        return self
 
     @field_validator("client_id")
     @classmethod

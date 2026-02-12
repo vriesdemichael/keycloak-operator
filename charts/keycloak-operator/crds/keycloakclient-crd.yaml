@@ -25,6 +25,10 @@ spec:
           spec:
             type: object
             description: Specification for a Keycloak client
+            not:
+              required:
+                - clientSecret
+                - secretRotation
             properties:
               clientId:
                 type: string
@@ -694,6 +698,19 @@ spec:
                     description: Annotations to add to the secret
                     additionalProperties:
                       type: string
+              clientSecret:
+                type: object
+                description: Reference to an existing secret containing the client secret. If set, this secret is used instead of generating one. Cannot be used with secret rotation.
+                properties:
+                  name:
+                    type: string
+                    description: Secret name
+                  key:
+                    type: string
+                    description: Key in secret data containing the client secret
+                required:
+                - name
+                - key
               secretRotation:
                 type: object
                 description: Automated secret rotation configuration

@@ -349,6 +349,11 @@ Configure how client credentials are managed.
 | `manageSecret` | boolean | No | `true` | Create and manage Kubernetes secret for credentials |
 | `secretMetadata.labels` | map[`string`]`string` | No | `{}` | Labels to add to the managed secret |
 | `secretMetadata.annotations` | map[`string`]`string` | No | `{}` | Annotations to add to the managed secret |
+| `clientSecret.name` | `string` | No | - | Name of existing secret containing the client secret |
+| `clientSecret.key` | `string` | No | - | Key in secret data containing the value |
+
+**Manual Client Secret:**
+To use an existing secret instead of generating one, specify `clientSecret`. This is useful for migrations or when secrets are managed externally (e.g., by SealedSecrets or ExternalSecrets). When set, `secretRotation` must be disabled.
 
 **Automatic Features:**
 - **Recreation:** If the managed secret is deleted, the operator automatically recreates it.
@@ -365,6 +370,19 @@ spec:
       app: webapp
     annotations:
       description: "Credentials for webapp"
+```
+
+**Example - Manual Secret:**
+```yaml
+spec:
+  clientId: legacy-app
+  manageSecret: true
+  # Use existing secret "legacy-secret"
+  clientSecret:
+    name: legacy-client-secret
+    key: client-secret
+  secretRotation:
+    enabled: false  # Must be disabled when using manual secret
 ```
 
 The operator creates a secret with the following keys:

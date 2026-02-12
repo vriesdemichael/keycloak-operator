@@ -5,6 +5,7 @@ This module handles the lifecycle of Keycloak clients including
 client creation, credential management, and OAuth2 configuration.
 """
 
+import base64
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -850,6 +851,7 @@ class KeycloakClientReconciler(BaseReconciler):
 
         # Determine if we need to regenerate/rotate
         should_rotate = False
+        rotation_succeeded = False
         client_secret = None
 
         if existing_secret:
@@ -862,22 +864,79 @@ class KeycloakClientReconciler(BaseReconciler):
 
             # If not rotating, try to use existing secret from K8s if available
             # This avoids fetching from Keycloak API if not needed
-            if not should_rotate:
-                import base64
+            if (
+                not should_rotate
+                and existing_secret.data
+                and "client-secret" in existing_secret.data
+            ):
+                try:
+                    client_secret = base64.b64decode(
+                        existing_secret.data["client-secret"]
+                    ).decode("utf-8")
+                except Exception:
+                    self.logger.warning(
+                        "Could not decode existing secret from K8s, fetching from Keycloak"
+                    )
 
-                if existing_secret.data and "client-secret" in existing_secret.data:
-                    try:
-                        client_secret = base64.b64decode(
-                            existing_secret.data["client-secret"]
-                        ).decode("utf-8")
-                    except Exception:
-                        self.logger.warning(
-                            "Could not decode existing secret from K8s, fetching from Keycloak"
-                        )
+        # Handle manual secret configuration (Issue 495)
+        # If client_secret is set in spec, we use that instead of generating/rotating
+        if spec.client_secret:
+            self.logger.info(
+                f"Using manual client secret from {spec.client_secret.name}/{spec.client_secret.key}"
+            )
+            # Read the referenced secret
+            try:
+                # Use k8s client to read the manual secret
+                # It must be in the same namespace as the client CR
+                manual_secret = core_api.read_namespaced_secret(
+                    spec.client_secret.name, namespace
+                )
 
-        # If rotating or secret not found, fetch/regenerate from Keycloak
-        rotation_succeeded = False
-        if (not client_secret or should_rotate) and not spec.public_client:
+                if (
+                    not manual_secret.data
+                    or spec.client_secret.key not in manual_secret.data
+                ):
+                    raise ReconciliationError(
+                        f"Key '{spec.client_secret.key}' not found in secret '{spec.client_secret.name}'"
+                    )
+
+                client_secret = base64.b64decode(
+                    manual_secret.data[spec.client_secret.key]
+                ).decode("utf-8")
+
+                # Check if Keycloak needs update
+                # We fetch the current secret from Keycloak to compare
+                current_kc_secret = await admin_client.get_client_secret(
+                    spec.client_id, actual_realm_name, namespace
+                )
+
+                if current_kc_secret != client_secret:
+                    self.logger.info(
+                        f"Updating Keycloak client {spec.client_id} with manual secret"
+                    )
+                    # Update Keycloak with the manual secret
+                    # Note: We use update_client endpoint for this as there isn't a direct "set secret" endpoint
+                    # that takes a value, usually it's part of the ClientRepresentation
+                    client_update = {"id": client_uuid, "secret": client_secret}
+                    await admin_client.update_client(
+                        client_uuid, client_update, actual_realm_name, namespace
+                    )
+
+                # Ensure we don't try to rotate manual secrets
+                # Treat as succeeded so we update the output secret
+                rotation_succeeded = True
+
+            except K8sApiException as e:
+                raise ReconciliationError(
+                    f"Failed to read manual client secret '{spec.client_secret.name}': {e}"
+                ) from e
+            except Exception as e:
+                raise ReconciliationError(
+                    f"Error processing manual client secret: {e}"
+                ) from e
+
+        # If rotating or secret not found (and not manual), fetch/regenerate from Keycloak
+        elif (not client_secret or should_rotate) and not spec.public_client:
             if should_rotate:
                 # Atomic Rotation: Regenerate secret in Keycloak
                 # This INVALIDATES the old secret immediately
