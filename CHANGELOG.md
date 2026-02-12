@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.11](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.10...operator-image-v0.7.11) (2026-02-12)
+
+
+### Documentation
+
+* update readme badges and links ([#494](https://github.com/vriesdemichael/keycloak-operator/issues/494)) ([9dddfa8](https://github.com/vriesdemichael/keycloak-operator/commit/9dddfa8b6ccc1fbf5ba19237eaa197ddd26dafb6))
+
 ## [0.7.10](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.9...operator-image-v0.7.10) (2026-02-11)
 
 
