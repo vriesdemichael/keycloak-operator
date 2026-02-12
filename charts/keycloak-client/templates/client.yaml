@@ -135,6 +135,11 @@ spec:
   secretMetadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
+  {{- if and .Values.clientSecret .Values.clientSecret.name }}
+  clientSecret:
+    name: {{ .Values.clientSecret.name }}
+    key: {{ .Values.clientSecret.key | default "client-secret" }}
+  {{- end }}
   regenerateSecret: {{ .Values.regenerateSecret }}
   secretRotation:
     enabled: {{ .Values.secretRotation.enabled }}

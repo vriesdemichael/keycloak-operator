@@ -298,6 +298,13 @@ secretMetadata:
 # Regenerate the client secret on update
 regenerateSecret: false
 
+# Manual client secret configuration (Optional)
+# If set, uses this existing secret instead of generating one
+# Cannot be used with secret rotation
+clientSecret:
+  # name: my-existing-secret
+  # key: client-secret
+
 # Secret rotation configuration
 # Enables automated rotation of client secrets
 secretRotation:
