@@ -533,83 +533,81 @@ async def _run_client_health_check(
                 logger.warning(f"Failed to get realm {realm_ref.name}: {e}")
             return
 
-        async with await get_keycloak_admin_client(
+        admin_client = await get_keycloak_admin_client(
             keycloak_name, keycloak_namespace
-        ) as admin_client:
-            # Check if client exists in Keycloak
-            # Use actual_realm_name (from realm spec) not realm_ref.name (CR name)
-            existing_client = await admin_client.get_client_by_name(
-                client_spec.client_id, actual_realm_name, namespace
-            )
+        )
+        # Check if client exists in Keycloak
+        # Use actual_realm_name (from realm spec) not realm_ref.name (CR name)
+        existing_client = await admin_client.get_client_by_name(
+            client_spec.client_id, actual_realm_name, namespace
+        )
 
-            if not existing_client:
-                logger.warning(f"Client {client_spec.client_id} missing from Keycloak")
+        if not existing_client:
+            logger.warning(f"Client {client_spec.client_id} missing from Keycloak")
+            patch.status.update(
+                {
+                    "phase": "Degraded",
+                    "message": "Client missing from Keycloak, will recreate",
+                    "lastHealthCheck": datetime.now(UTC).isoformat(),
+                }
+            )
+            return
+
+        # Verify client configuration matches spec
+        # Compare current Keycloak client config with desired spec
+        try:
+            desired_config = client_spec.to_keycloak_config()
+            config_matches = True
+
+            # Check critical configuration fields
+            if existing_client.enabled != desired_config.get("enabled", True):
+                config_matches = False
+                logger.warning(f"Client {client_spec.client_id} enabled state mismatch")
+
+            if existing_client.public_client != desired_config.get(
+                "publicClient", False
+            ):
+                config_matches = False
+                logger.warning(
+                    f"Client {client_spec.client_id} public client setting mismatch"
+                )
+
+            # Check redirect URIs if specified
+            if desired_config.get("redirectUris"):
+                existing_uris = set(existing_client.redirect_uris or [])
+                desired_uris = set(desired_config.get("redirectUris", []))
+                if existing_uris != desired_uris:
+                    config_matches = False
+                    logger.warning(
+                        f"Client {client_spec.client_id} redirect URIs mismatch"
+                    )
+
+            # Check web origins if specified
+            if desired_config.get("webOrigins"):
+                existing_origins = set(existing_client.web_origins or [])
+                desired_origins = set(desired_config.get("webOrigins", []))
+                if existing_origins != desired_origins:
+                    config_matches = False
+                    logger.warning(
+                        f"Client {client_spec.client_id} web origins mismatch"
+                    )
+
+            if not config_matches:
+                logger.info(
+                    f"Client {client_spec.client_id} configuration drift detected"
+                )
                 patch.status.update(
                     {
                         "phase": "Degraded",
-                        "message": "Client missing from Keycloak, will recreate",
+                        "message": "Configuration drift detected",
                         "lastHealthCheck": datetime.now(UTC).isoformat(),
                     }
                 )
                 return
 
-            # Verify client configuration matches spec
-            # Compare current Keycloak client config with desired spec
-            try:
-                desired_config = client_spec.to_keycloak_config()
-                config_matches = True
-
-                # Check critical configuration fields
-                if existing_client.enabled != desired_config.get("enabled", True):
-                    config_matches = False
-                    logger.warning(
-                        f"Client {client_spec.client_id} enabled state mismatch"
-                    )
-
-                if existing_client.public_client != desired_config.get(
-                    "publicClient", False
-                ):
-                    config_matches = False
-                    logger.warning(
-                        f"Client {client_spec.client_id} public client setting mismatch"
-                    )
-
-                # Check redirect URIs if specified
-                if desired_config.get("redirectUris"):
-                    existing_uris = set(existing_client.redirect_uris or [])
-                    desired_uris = set(desired_config.get("redirectUris", []))
-                    if existing_uris != desired_uris:
-                        config_matches = False
-                        logger.warning(
-                            f"Client {client_spec.client_id} redirect URIs mismatch"
-                        )
-
-                # Check web origins if specified
-                if desired_config.get("webOrigins"):
-                    existing_origins = set(existing_client.web_origins or [])
-                    desired_origins = set(desired_config.get("webOrigins", []))
-                    if existing_origins != desired_origins:
-                        config_matches = False
-                        logger.warning(
-                            f"Client {client_spec.client_id} web origins mismatch"
-                        )
-
-                if not config_matches:
-                    logger.info(
-                        f"Client {client_spec.client_id} configuration drift detected"
-                    )
-                    patch.status.update(
-                        {
-                            "phase": "Degraded",
-                            "message": "Configuration drift detected",
-                            "lastHealthCheck": datetime.now(UTC).isoformat(),
-                        }
-                    )
-                    return
-
-            except Exception as e:
-                logger.warning(f"Failed to verify client configuration: {e}")
-                # Don't fail health check for verification errors
+        except Exception as e:
+            logger.warning(f"Failed to verify client configuration: {e}")
+            # Don't fail health check for verification errors
 
         # Check credentials secret exists and is valid
         if not client_spec.public_client:
@@ -1085,96 +1083,92 @@ async def secret_rotation_daemon(
 
             while retry_count < ROTATION_MAX_RETRIES and not stopped:
                 try:
-                    async with await get_keycloak_admin_client(
+                    admin_client = await get_keycloak_admin_client(
                         keycloak_name, keycloak_namespace
-                    ) as admin_client:
-                        # Regenerate secret in Keycloak
-                        new_secret = await admin_client.regenerate_client_secret(
-                            client_spec.client_id,
-                            actual_realm_name,
-                            namespace,
+                    )
+                    # Regenerate secret in Keycloak
+                    new_secret = await admin_client.regenerate_client_secret(
+                        client_spec.client_id,
+                        actual_realm_name,
+                        namespace,
+                    )
+
+                    if not new_secret:
+                        raise RuntimeError(
+                            f"Failed to regenerate secret for client {client_spec.client_id}"
                         )
 
-                        if not new_secret:
-                            raise RuntimeError(
-                                f"Failed to regenerate secret for client {client_spec.client_id}"
-                            )
-
-                        # Get Keycloak instance for endpoint URL
-                        keycloak_instance = validate_keycloak_reference(
-                            keycloak_name, keycloak_namespace
-                        )
-                        if not keycloak_instance:
-                            raise RuntimeError(
-                                f"Keycloak instance {keycloak_name} not found or not ready"
-                            )
-
-                        # Prepare secret metadata
-                        labels = None
-                        new_annotations = None
-                        if client_spec.secret_metadata:
-                            labels = (
-                                dict(client_spec.secret_metadata.labels)
-                                if client_spec.secret_metadata.labels
-                                else None
-                            )
-                            new_annotations = (
-                                dict(client_spec.secret_metadata.annotations)
-                                if client_spec.secret_metadata.annotations
-                                else None
-                            )
-
-                        if new_annotations is None:
-                            new_annotations = {}
-
-                        # Update rotation timestamp
-                        new_annotations["keycloak-operator/rotated-at"] = datetime.now(
-                            UTC
-                        ).isoformat()
-
-                        # Get owner UID for ownership
-                        owner_uid = meta.get("uid")
-
-                        # Update the secret
-                        create_client_secret(
-                            secret_name=secret_name,
-                            namespace=namespace,
-                            client_id=client_spec.client_id,
-                            client_secret=new_secret,
-                            keycloak_url=keycloak_instance["status"]["endpoints"][
-                                "public"
-                            ],
-                            realm=actual_realm_name,
-                            update_existing=True,
-                            labels=labels,
-                            annotations=new_annotations,
-                            owner_uid=owner_uid,
-                            owner_name=name,
+                    # Get Keycloak instance for endpoint URL
+                    keycloak_instance = validate_keycloak_reference(
+                        keycloak_name, keycloak_namespace
+                    )
+                    if not keycloak_instance:
+                        raise RuntimeError(
+                            f"Keycloak instance {keycloak_name} not found or not ready"
                         )
 
-                        rotation_success = True
-                        rotation_duration = time.time() - rotation_start_time
-
-                        # Update metrics
-                        SECRET_ROTATION_TOTAL.labels(
-                            namespace=namespace, result="success"
-                        ).inc()
-                        SECRET_ROTATION_DURATION.labels(
-                            namespace=namespace,
-                        ).observe(rotation_duration)
-
-                        # Update status
-                        patch.status["lastSecretRotation"] = datetime.now(
-                            UTC
-                        ).isoformat()
-                        patch.status["phase"] = "Ready"
-                        patch.status["message"] = "Secret rotated successfully"
-
-                        logger.info(
-                            f"Successfully rotated secret for client {name} "
-                            f"(took {rotation_duration:.2f}s)"
+                    # Prepare secret metadata
+                    labels = None
+                    new_annotations = None
+                    if client_spec.secret_metadata:
+                        labels = (
+                            dict(client_spec.secret_metadata.labels)
+                            if client_spec.secret_metadata.labels
+                            else None
                         )
-                        break
+                        new_annotations = (
+                            dict(client_spec.secret_metadata.annotations)
+                            if client_spec.secret_metadata.annotations
+                            else None
+                        )
+
+                    if new_annotations is None:
+                        new_annotations = {}
+
+                    # Update rotation timestamp
+                    new_annotations["keycloak-operator/rotated-at"] = datetime.now(
+                        UTC
+                    ).isoformat()
+
+                    # Get owner UID for ownership
+                    owner_uid = meta.get("uid")
+
+                    # Update the secret
+                    create_client_secret(
+                        secret_name=secret_name,
+                        namespace=namespace,
+                        client_id=client_spec.client_id,
+                        client_secret=new_secret,
+                        keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
+                        realm=actual_realm_name,
+                        update_existing=True,
+                        labels=labels,
+                        annotations=new_annotations,
+                        owner_uid=owner_uid,
+                        owner_name=name,
+                    )
+
+                    rotation_success = True
+                    rotation_duration = time.time() - rotation_start_time
+
+                    # Update metrics
+                    SECRET_ROTATION_TOTAL.labels(
+                        namespace=namespace, result="success"
+                    ).inc()
+                    SECRET_ROTATION_DURATION.labels(
+                        namespace=namespace,
+                    ).observe(rotation_duration)
+
+                    # Update status
+                    patch.status["lastSecretRotation"] = datetime.now(UTC).isoformat()
+                    patch.status["phase"] = "Ready"
+                    patch.status["message"] = "Secret rotated successfully"
+
+                    logger.info(
+                        f"Successfully rotated secret for client {name} "
+                        f"(took {rotation_duration:.2f}s)"
+                    )
+                    break
 
                 except Exception as e:
                     retry_count += 1

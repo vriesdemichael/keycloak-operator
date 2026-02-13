@@ -197,10 +197,15 @@ class TestRecordSessionMetrics:
 
 
 # ---------------------------------------------------------------------------
-# KeycloakAdminClient.close() session decrement
+# KeycloakAdminClient.close() is a no-op (cached clients preserve tokens)
 # ---------------------------------------------------------------------------
 class TestCloseSessionDecrement:
-    """Test that close() decrements active sessions gauge."""
+    """Test that close() is a no-op for cached admin clients.
+
+    Admin clients are cached globally and reuse tokens across reconciliation
+    cycles. close() must NOT clear tokens or decrement metrics, because the
+    client will be reused by the next caller via the cache.
+    """
 
     def _make_client(self, **overrides):
         """Create a minimal KeycloakAdminClient for testing."""
@@ -219,15 +224,14 @@ class TestCloseSessionDecrement:
 
     @pytest.mark.asyncio
     @patch("keycloak_operator.observability.metrics.ADMIN_SESSIONS_ACTIVE")
-    async def test_close_decrements_when_tracked(self, mock_active):
-        """close() decrements gauge when session was tracked."""
+    async def test_close_does_not_decrement(self, mock_active):
+        """close() does NOT decrement gauge (client is cached and reused)."""
         client = self._make_client()
         client._session_tracked = True
 
         await client.close()
 
-        mock_active.dec.assert_called_once()
-        assert client._session_tracked is False
+        mock_active.dec.assert_not_called()
 
     @pytest.mark.asyncio
     @patch("keycloak_operator.observability.metrics.ADMIN_SESSIONS_ACTIVE")
@@ -241,8 +245,8 @@ class TestCloseSessionDecrement:
         mock_active.dec.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_close_clears_tokens(self):
-        """close() clears authentication state regardless of metrics."""
+    async def test_close_preserves_tokens(self):
+        """close() preserves tokens for reuse by cached client."""
         client = self._make_client()
         client.access_token = "some-token"
         client.refresh_token = "some-refresh"
@@ -250,9 +254,9 @@ class TestCloseSessionDecrement:
 
         await client.close()
 
-        assert client.access_token is None
-        assert client.refresh_token is None
-        assert client.token_expires_at is None
+        assert client.access_token == "some-token"
+        assert client.refresh_token == "some-refresh"
+        assert client.token_expires_at == 9999.0
 
 
 # ---------------------------------------------------------------------------
