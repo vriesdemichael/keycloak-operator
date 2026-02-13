@@ -345,6 +345,7 @@ collect-test-logs: ## Collect logs and diagnostics from test cluster
 	@kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide > .tmp/test-logs/test-resources.log 2>&1 || true
 	@kubectl get events --all-namespaces --sort-by='.lastTimestamp' > .tmp/test-logs/events.log 2>&1 || true
 	@kubectl get pods --all-namespaces -o wide > .tmp/test-logs/all-pods.log 2>&1 || true
+	@if [ "$(_TRACING_ENABLED)" = "true" ]; then ./scripts/retrieve-traces.sh || true; fi
 	@echo "[$(shell date -u +%Y-%m-%dT%H:%M:%SZ)] ✓ Test logs collected in .tmp/test-logs/"
 
 # ============================================================================
@@ -410,6 +411,21 @@ clean: ## Clean development artifacts
 .PHONY: clean-all
 clean-all: clean kind-teardown ## Clean everything including Kind cluster
 	docker system prune -f
+
+# ============================================================================
+# Trace Visualization (HUMAN ONLY - not for AI agents)
+# These targets launch interactive UIs for human developers.
+# AI agents should use scripts/analyze-trace.py for trace analysis instead.
+# ============================================================================
+
+.PHONY: trace-ui
+trace-ui: ## Start Jaeger UI and load traces from .tmp/traces/ (human only)
+	@./scripts/trace-ui.sh
+
+.PHONY: trace-ui-stop
+trace-ui-stop: ## Stop the Jaeger trace viewer container
+	@docker rm -f keycloak-operator-jaeger 2>/dev/null || true
+	@echo "✓ Jaeger container stopped"
 
 # ============================================================================
 # Default
