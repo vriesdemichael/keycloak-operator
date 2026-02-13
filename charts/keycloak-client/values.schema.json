@@ -139,7 +139,7 @@
       "description": "Regenerate client secret on update"
     },
     "clientSecret": {
-      "type": "object",
+      "type": ["object", "null"],
       "description": "Manual client secret configuration",
       "properties": {
         "name": {
@@ -153,6 +153,7 @@
       }
     },
     "extraManifests": {
+
       "type": "array",
       "description": "Extra Kubernetes manifests to deploy (e.g., ExternalSecrets, SealedSecrets, ConfigMaps)",
       "items": {

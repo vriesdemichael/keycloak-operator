@@ -10,32 +10,12 @@ metadata:
   annotations:
     {{- . | nindent 4 }}
   {{- end }}
+
 spec:
-  clientId: {{ include "keycloak-client.clientId" . }}
-
-  {{- with .Values.description }}
-  description: {{ . }}
-  {{- end }}
-
-  # Realm reference
   realmRef:
-    name: {{ required "realmRef.name is required" .Values.realmRef.name }}
-    namespace: {{ required "realmRef.namespace is required" .Values.realmRef.namespace }}
-
-  # Client type
-  publicClient: {{ .Values.publicClient }}
-  bearerOnly: {{ .Values.bearerOnly }}
-  protocol: {{ .Values.protocol }}
-
-  {{- with .Values.redirectUris }}
-  redirectUris:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
-
-  {{- with .Values.webOrigins }}
-  webOrigins:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    name: {{ .Values.realmRef.name }}
+    namespace: {{ .Values.realmRef.namespace | default .Release.Namespace }}
+  clientId: {{ .Values.clientId }}
 
   {{- with .Values.postLogoutRedirectUris }}
   postLogoutRedirectUris:
@@ -141,6 +121,7 @@ spec:
     key: {{ .Values.clientSecret.key | default "client-secret" }}
   {{- end }}
   regenerateSecret: {{ .Values.regenerateSecret }}
+  {{- if not (and .Values.clientSecret .Values.clientSecret.name) }}
   secretRotation:
     enabled: {{ .Values.secretRotation.enabled }}
     rotationPeriod: {{ .Values.secretRotation.rotationPeriod | quote }}
@@ -148,4 +129,6 @@ spec:
     rotationTime: {{ . | quote }}
     {{- end }}
     timezone: {{ .Values.secretRotation.timezone | quote }}
+  {{- end }}
+
   {{- end }}

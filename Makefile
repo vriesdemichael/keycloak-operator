@@ -201,19 +201,25 @@ build-all-test: build-test kind-load-keycloak-all ## Build and load all test ima
 # 1. Tears down any existing cluster
 # 2. Creates a fresh cluster
 # 3. Runs all tests in the correct order
+#
+# Arguments:
+#   TESTS: Path to specific test file or directory (default: tests/integration/)
+#   Example: make test TESTS=tests/integration/test_specific.py
 # ============================================================================
+
+TESTS ?= tests/integration/
 
 # Internal target - do not use directly, use 'make test' instead
 .PHONY: _test-integration
 _test-integration: ensure-test-cluster build-all-test
 	@echo "Running integration tests (tests deploy operator via Helm)..."
-	TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
+	TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest $(TESTS) -v -n auto --dist=loadscope
 
 # Internal target - do not use directly, use 'make test' instead
 .PHONY: _test-integration-coverage
 _test-integration-coverage: ensure-test-cluster kind-load-test-coverage kind-load-keycloak-all
 	@echo "Running integration tests with coverage enabled..."
-	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest tests/integration/ -v -n auto --dist=loadscope
+	INTEGRATION_COVERAGE=true TEST_IMAGE_TAG=$(TEST_IMAGE_TAG) KEYCLOAK_VERSION=$(KEYCLOAK_VERSION) uv run pytest $(TESTS) -v -n auto --dist=loadscope
 	@echo "Combining coverage data..."
 	./scripts/combine-coverage.sh
 

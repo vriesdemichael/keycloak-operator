@@ -25,10 +25,9 @@ spec:
           spec:
             type: object
             description: Specification for a Keycloak client
-            not:
-              required:
-                - clientSecret
-                - secretRotation
+            x-kubernetes-validations:
+              - rule: "!has(self.clientSecret) || !has(self.secretRotation) || !self.secretRotation.enabled"
+                message: "Manual client secret (clientSecret) cannot be used with automated secret rotation (secretRotation.enabled=true)."
             properties:
               clientId:
                 type: string
