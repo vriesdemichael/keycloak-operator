@@ -239,6 +239,12 @@ def api_delete(
 _httpx_client_cache: dict[tuple[str, bool], tuple[httpx.AsyncClient, int]] = {}
 _cache_lock = asyncio.Lock()
 
+# Global cache for KeycloakAdminClient instances - one per Keycloak instance
+# Key: (keycloak_name, namespace), Value: (KeycloakAdminClient, event_loop_id)
+# The cached client's _ensure_authenticated() handles token refresh/expiry
+# automatically before every API call, so no external token management is needed.
+_admin_client_cache: dict[tuple[str, str], tuple["KeycloakAdminClient", int]] = {}
+
 
 class KeycloakAdminError(Exception):
     """Base exception for Keycloak Admin API errors."""
@@ -406,26 +412,14 @@ class KeycloakAdminClient:
         """
         Close method for compatibility with async context manager.
 
-        Note: With the caching strategy, we don't actually close the httpx client
-        here as it's shared across multiple KeycloakAdminClient instances.
-        The cached client will be reused until the operator shuts down.
+        This is a no-op because both the httpx client and the admin client
+        itself are cached globally and reused across reconciliation cycles.
+        Tokens are preserved for reuse; _ensure_authenticated() handles
+        refresh/expiry automatically before every API call.
         """
-        # Decrement active sessions gauge if we had an active session
-        if self._session_tracked:
-            self._session_tracked = False
-            try:
-                from keycloak_operator.observability.metrics import (
-                    ADMIN_SESSIONS_ACTIVE,
-                )
-
-                ADMIN_SESSIONS_ACTIVE.dec()
-            except Exception:
-                pass  # Metrics are optional
-
-        # Clear authentication tokens but don't close the shared httpx client
-        self.access_token = None
-        self.refresh_token = None
-        self.token_expires_at = None
+        # No-op: tokens and httpx client are cached and reused.
+        # _ensure_authenticated() handles token refresh before each request.
+        pass
 
     async def __aenter__(self) -> "KeycloakAdminClient":
         """Async context manager entry."""
@@ -7460,12 +7454,11 @@ async def get_keycloak_admin_client(
     verify_ssl: bool = False,
 ) -> KeycloakAdminClient:
     """
-    Factory function to create KeycloakAdminClient for a specific instance.
+    Get or create a cached KeycloakAdminClient for a specific instance.
 
-    This function handles:
-    - Looking up Keycloak instance details from Kubernetes
-    - Retrieving admin credentials from secrets
-    - Creating configured admin client with rate limiting
+    The client is cached per (keycloak_name, namespace) pair and reused
+    across reconciliation cycles. Token refresh/expiry is handled
+    automatically by _ensure_authenticated() before every API call.
 
     Args:
         keycloak_name: Name of the Keycloak instance
@@ -7474,8 +7467,31 @@ async def get_keycloak_admin_client(
         verify_ssl: Whether to verify SSL certificates (default: False for development)
 
     Returns:
-        Configured KeycloakAdminClient instance
+        Configured KeycloakAdminClient instance (may be cached)
     """
+    cache_key = (keycloak_name, namespace)
+    current_loop_id = id(asyncio.get_running_loop())
+
+    # Check cache first
+    async with _cache_lock:
+        if cache_key in _admin_client_cache:
+            cached_client, loop_id = _admin_client_cache[cache_key]
+            if loop_id == current_loop_id:
+                # Update rate_limiter if provided (may change between calls)
+                if rate_limiter is not None:
+                    cached_client.rate_limiter = rate_limiter
+                logger.debug(
+                    f"Reusing cached admin client for {keycloak_name} in {namespace}"
+                )
+                return cached_client
+            else:
+                # Client from a different event loop (e.g. test teardown/setup)
+                del _admin_client_cache[cache_key]
+                logger.debug(
+                    f"Discarding stale admin client for {keycloak_name} "
+                    f"(event loop mismatch)"
+                )
+
     from kubernetes import client as k8s_client
 
     from keycloak_operator.utils.kubernetes import get_kubernetes_client
@@ -7526,7 +7542,7 @@ async def get_keycloak_admin_client(
                 f"Could not retrieve admin credentials for {keycloak_name}"
             ) from e
 
-        # Create and return admin client
+        # Create and authenticate admin client
         admin_client = KeycloakAdminClient(
             server_url=server_url,
             username=username,
@@ -7537,12 +7553,23 @@ async def get_keycloak_admin_client(
             keycloak_namespace=namespace,
         )
 
-        # Test authentication
+        # Authenticate once; subsequent calls use _ensure_authenticated()
+        # which refreshes via refresh_token (no Argon2) or re-authenticates
         await admin_client.authenticate()
 
-        logger.info(f"Successfully created admin client for {keycloak_name}")
+        # Cache the authenticated client
+        async with _cache_lock:
+            _admin_client_cache[cache_key] = (admin_client, current_loop_id)
+
+        logger.info(f"Created and cached admin client for {keycloak_name}")
         return admin_client
 
     except Exception as e:
         logger.error(f"Failed to create admin client: {e}")
         raise KeycloakAdminError(f"Admin client creation failed: {e}") from e
+
+
+async def clear_admin_client_cache() -> None:
+    """Clear all cached admin clients. Used in tests and operator shutdown."""
+    async with _cache_lock:
+        _admin_client_cache.clear()

@@ -481,77 +481,71 @@ async def _run_realm_health_check(
         # The 'name' parameter here is the KeycloakRealm's metadata.name, NOT the Keycloak CR name
         keycloak_name = "keycloak"
 
-        async with await get_keycloak_admin_client(
-            keycloak_name, target_namespace
-        ) as admin_client:
-            # Check if realm exists in Keycloak
-            realm_name = realm_spec.realm_name
-            existing_realm = await admin_client.get_realm(realm_name, namespace)
+        admin_client = await get_keycloak_admin_client(keycloak_name, target_namespace)
+        # Check if realm exists in Keycloak
+        realm_name = realm_spec.realm_name
+        existing_realm = await admin_client.get_realm(realm_name, namespace)
 
-            if not existing_realm:
-                logger.warning(f"Realm {realm_name} missing from Keycloak")
+        if not existing_realm:
+            logger.warning(f"Realm {realm_name} missing from Keycloak")
+            patch.status["phase"] = "Degraded"
+            patch.status["message"] = "Realm missing from Keycloak, will recreate"
+            patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
+            return
+
+        # Verify realm configuration matches spec
+        try:
+            current_realm = await admin_client.get_realm(realm_name, namespace)
+            config_matches = current_realm if current_realm else False
+        except Exception as e:
+            logger.warning(f"Failed to verify realm configuration: {e}")
+            config_matches = False
+        if not config_matches:
+            logger.info(f"Realm {realm_name} configuration drift detected")
+            patch.status["phase"] = "Degraded"
+            patch.status["message"] = "Configuration drift detected"
+            patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
+            return
+
+        # Check authentication flows
+        if realm_spec.authentication_flows:
+            flows_valid = await _verify_authentication_flows(
+                admin_client, realm_name, namespace, realm_spec.authentication_flows
+            )
+            if not flows_valid:
                 patch.status["phase"] = "Degraded"
-                patch.status["message"] = "Realm missing from Keycloak, will recreate"
+                patch.status["message"] = "Authentication flows configuration mismatch"
                 patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
                 return
 
-            # Verify realm configuration matches spec
-            try:
-                current_realm = await admin_client.get_realm(realm_name, namespace)
-                config_matches = current_realm if current_realm else False
-            except Exception as e:
-                logger.warning(f"Failed to verify realm configuration: {e}")
-                config_matches = False
-            if not config_matches:
-                logger.info(f"Realm {realm_name} configuration drift detected")
+        # Check identity providers
+        if realm_spec.identity_providers:
+            idps_valid = await _verify_identity_providers(
+                admin_client, realm_name, namespace, realm_spec.identity_providers
+            )
+            if not idps_valid:
                 patch.status["phase"] = "Degraded"
-                patch.status["message"] = "Configuration drift detected"
+                patch.status["message"] = "Identity provider configuration mismatch"
                 patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
                 return
 
-            # Check authentication flows
-            if realm_spec.authentication_flows:
-                flows_valid = await _verify_authentication_flows(
-                    admin_client, realm_name, namespace, realm_spec.authentication_flows
-                )
-                if not flows_valid:
-                    patch.status["phase"] = "Degraded"
-                    patch.status["message"] = (
-                        "Authentication flows configuration mismatch"
-                    )
-                    patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
-                    return
-
-            # Check identity providers
-            if realm_spec.identity_providers:
-                idps_valid = await _verify_identity_providers(
-                    admin_client, realm_name, namespace, realm_spec.identity_providers
-                )
-                if not idps_valid:
-                    patch.status["phase"] = "Degraded"
-                    patch.status["message"] = "Identity provider configuration mismatch"
-                    patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
-                    return
-
-            # Check user federation connections
-            if realm_spec.user_federation:
-                federation_healthy = await _test_user_federation(
-                    admin_client, realm_name, namespace, realm_spec.user_federation
-                )
-                if not federation_healthy:
-                    patch.status["phase"] = "Degraded"
-                    patch.status["message"] = (
-                        "User federation connection issues detected"
-                    )
-                    patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
-                    return
-
-            # Everything looks good
-            if current_phase != "Ready":
-                logger.info(f"KeycloakRealm {name} health check passed")
-                patch.status["phase"] = "Ready"
-                patch.status["message"] = "Realm is healthy and properly configured"
+        # Check user federation connections
+        if realm_spec.user_federation:
+            federation_healthy = await _test_user_federation(
+                admin_client, realm_name, namespace, realm_spec.user_federation
+            )
+            if not federation_healthy:
+                patch.status["phase"] = "Degraded"
+                patch.status["message"] = "User federation connection issues detected"
                 patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
+                return
+
+        # Everything looks good
+        if current_phase != "Ready":
+            logger.info(f"KeycloakRealm {name} health check passed")
+            patch.status["phase"] = "Ready"
+            patch.status["message"] = "Realm is healthy and properly configured"
+            patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
 
     except Exception as e:
         logger.error(f"Health check failed for KeycloakRealm {name}: {e}")
