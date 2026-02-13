@@ -96,8 +96,6 @@ class TestClientSecretManual:
             fullnameOverride=client_name,
             # Configure manual secret
             clientSecret={"name": manual_secret_name, "key": manual_secret_key},
-            # Explicitly disable rotation (though default is false)
-            secretRotation={"enabled": False},
         )
 
         await wait_for_resource_ready(
