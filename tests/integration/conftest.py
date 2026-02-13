@@ -1341,8 +1341,8 @@ async def sample_keycloak_spec_factory(
                 },
             },
             "resources": {
-                "requests": {"cpu": "200m", "memory": "512Mi"},
-                "limits": {"cpu": "500m", "memory": "1Gi"},
+                "requests": {"cpu": "2000m", "memory": "2Gi"},
+                "limits": {"cpu": "3300m", "memory": "4Gi"},
             },
         }
 
@@ -1608,6 +1608,16 @@ async def shared_operator(
             "replicas": 1,
             "image": keycloak_image,  # Use optimized image for faster startup
             "version": keycloak_version,
+            "resources": {
+                "requests": {
+                    "cpu": "3000m",
+                    "memory": "4Gi",
+                },
+                "limits": {
+                    "cpu": "3000m",
+                    "memory": "4Gi",
+                },
+            },
             # Lower JIT compilation thresholds so hot methods compile sooner
             # (C1: 1500→500, C2: 10000→3000 invocations). The warm-up phase
             # triggers enough invocations to hit C1, and real tests push into C2.
@@ -1725,6 +1735,31 @@ async def shared_operator(
                 pytest.fail(f"Failed to install operator via Helm: {error_msg}")
 
             logger.info("✓ Operator installed/upgraded via Helm")
+
+            # Patch CNPG cluster with resources (since chart doesn't support it yet)
+            if cnpg_installed:
+                logger.info("Patching CNPG cluster resources...")
+                cnpg_patch = {
+                    "spec": {
+                        "resources": {
+                            "requests": {"cpu": "100m", "memory": "256Mi"},
+                            "limits": {"cpu": "500m", "memory": "512Mi"},
+                        }
+                    }
+                }
+                try:
+                    await k8s_custom_objects.patch_namespaced_custom_object(
+                        group="postgresql.cnpg.io",
+                        version="v1",
+                        namespace=operator_namespace,
+                        plural="clusters",
+                        name="keycloak-cnpg",
+                        body=cnpg_patch,
+                    )
+                    logger.info("✓ CNPG cluster resources patched")
+                except ApiException as e:
+                    logger.warning(f"Failed to patch CNPG resources: {e}")
+
         finally:
             # Release lock (file will auto-close via context manager)
             fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
