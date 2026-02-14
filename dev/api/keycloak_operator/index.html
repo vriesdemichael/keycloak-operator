@@ -4847,6 +4847,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cleanup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.close" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -13210,6 +13221,17 @@
     <span class="md-ellipsis">
       
         authenticate
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.cleanup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        cleanup
       
     </span>
   </a>
@@ -38054,6 +38076,28 @@ request and response data using Pydantic models.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.cleanup" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">cleanup</span>
+
+
+<a href="#keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.cleanup" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">cleanup</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Cleanup resources and metrics when client is discarded from cache.</p>
+<p>This method is called when the client is removed from the global cache
+(e.g. on operator shutdown or when replaced by a new instance).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="keycloak_operator.utils.keycloak_admin.KeycloakAdminClient.close" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">close</span>
 
@@ -55074,7 +55118,7 @@ success = await admin_client.update_identity_provider(
     <div class="doc doc-contents ">
 
         <p>Get or create a cached KeycloakAdminClient for a specific instance.</p>
-<p>The client is cached per (keycloak_name, namespace) pair and reused
+<p>The client is cached per (keycloak_name, namespace, verify_ssl) tuple and reused
 across reconciliation cycles. Token refresh/expiry is handled
 automatically by _ensure_authenticated() before every API call.</p>
 
