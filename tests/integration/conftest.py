@@ -1341,8 +1341,8 @@ async def sample_keycloak_spec_factory(
                 },
             },
             "resources": {
-                "requests": {"cpu": "2000m", "memory": "2Gi"},
-                "limits": {"cpu": "3300m", "memory": "4Gi"},
+                "requests": {"cpu": "1000m", "memory": "500Mi"},
+                "limits": {"cpu": "2500m", "memory": "4Gi"},
             },
         }
 

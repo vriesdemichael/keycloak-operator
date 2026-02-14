@@ -47,6 +47,13 @@ class TestKeycloakReconciler:
         # Get spec with secret copied to target namespace
         spec = await sample_keycloak_spec_factory(namespace)
 
+        # Explicitly lower the resources for this test to avoid scheduling issues
+        spec["resources"] = {
+            "requests": {"cpu": "200m", "memory": "500Mi"},
+            "limits": {"cpu": "500m", "memory": "1024Mi"},
+        }
+
+
         keycloak_manifest = {
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
@@ -170,6 +177,12 @@ class TestKeycloakReconciler:
         # Get spec with secret copied to target namespace
         base_spec = await sample_keycloak_spec_factory(namespace)
 
+        # Explicitly lower the resources for this test to avoid scheduling issues
+        base_spec["resources"] = {
+            "requests": {"cpu": "200m", "memory": "500Mi"},
+            "limits": {"cpu": "500m", "memory": "1024Mi"},
+        }
+
         # Modify spec to use 2 replicas
         custom_spec = {**base_spec, "replicas": 2}
 
@@ -235,6 +248,12 @@ class TestKeycloakReconciler:
 
         # Get spec with secret copied to target namespace
         spec = await sample_keycloak_spec_factory(namespace)
+
+        # Explicitly lower the resources for this test to avoid scheduling issues
+        spec["resources"] = {
+            "requests": {"cpu": "200m", "memory": "500Mi"},
+            "limits": {"cpu": "500m", "memory": "1024Mi"},
+        }
 
         keycloak_manifest = {
             "apiVersion": "vriesdemichael.github.io/v1",
@@ -322,6 +341,12 @@ class TestKeycloakReconciler:
         # Get spec with secret copied to target namespace
         spec = await sample_keycloak_spec_factory(namespace)
 
+        # Explicitly lower the resources for this test to avoid scheduling issues
+        spec["resources"] = {
+            "requests": {"cpu": "200m", "memory": "500Mi"},
+            "limits": {"cpu": "500m", "memory": "1024Mi"},
+        }
+
         keycloak_manifest = {
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
@@ -408,6 +433,12 @@ class TestKeycloakReconciler:
 
         # Get spec with secret copied to target namespace
         base_spec = await sample_keycloak_spec_factory(namespace)
+
+        # Explicitly lower the resources for this test to avoid scheduling issues
+        base_spec["resources"] = {
+            "requests": {"cpu": "200m", "memory": "500Mi"},
+            "limits": {"cpu": "500m", "memory": "1024Mi"},
+        }
         cluster_spec = {**base_spec, "replicas": 2}
 
         keycloak_manifest = {
