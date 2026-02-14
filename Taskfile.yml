@@ -23,29 +23,19 @@ tasks:
   # ============================================================================
   # Development Setup
   # ============================================================================
-  dev:install:
-    desc: Install development dependencies
-    cmd: uv sync --group dev
-    sources:
-      - pyproject.toml
-      - uv.lock
-    generates:
-      - .venv/bin/python
-
   dev:hooks:
     desc: Install pre-commit hooks
     cmds:
       - uv run --group quality pre-commit install
       - uv run --group quality pre-commit install --hook-type commit-msg
-    status:
-      - test -f .git/hooks/pre-commit
-      - test -f .git/hooks/commit-msg
 
   dev:setup:
-    desc: Complete development setup (install deps + hooks)
-    deps: [dev:install, dev:hooks]
+    desc: Complete development setup
+    cmds:
+      - command -v uv >/dev/null 2>&1 || { echo "❌ uv is required. Install from https://astral.sh/uv"; exit 1; }
+      - task: dev:hooks
 
-  models:generate:
+  keycloak:models:
     desc: Generate Pydantic models from Keycloak OpenAPI specs
     cmd: uv run --group model-generation python scripts/generate_keycloak_models.py
     sources:
@@ -53,6 +43,19 @@ tasks:
       - keycloak-api-spec.yaml
     generates:
       - src/keycloak_operator/models/keycloak_api.py
+
+  keycloak:verify-api:
+    desc: Verify Keycloak API stability across versions
+    cmd: uv run python scripts/verify_api_stability.py --check-all
+
+  crds:schemas:
+    desc: Generate JSON schemas from CRDs for IDE autocomplete
+    cmd: uv run python scripts/generate-crd-schemas.py
+    sources:
+      - charts/keycloak-operator/crds/*.yaml
+      - scripts/generate-crd-schemas.py
+    generates:
+      - _schemas/**/*.json
 
   # ============================================================================
   # Code Quality
@@ -69,9 +72,28 @@ tasks:
     desc: Run type checking with ty
     cmd: uv run --group quality ty check
 
+  quality:_python:
+    internal: true
+    cmds:
+      - task: quality:format
+      - task: quality:lint
+      - task: quality:type-check
+
+  quality:helm:
+    desc: Lint all Helm charts
+    cmds:
+      - helm lint charts/keycloak-operator
+      - helm lint charts/keycloak-realm
+      - helm lint charts/keycloak-client
+
   quality:check:
-    desc: Run all quality checks
-    deps: [quality:format, quality:lint, quality:type-check]
+    desc: Run all quality and validation checks
+    deps:
+      - quality:_python
+      - quality:helm
+      - quality:validate-decisions
+      - quality:validate-docs
+      - quality:validate-crd-pydantic
 
   quality:validate-decisions:
     desc: Validate Decision Records (Architecture/Development)
@@ -254,9 +276,13 @@ tasks:
     desc: Deploy OTEL collector
     cmd: ./scripts/deploy-otel-collector.sh
 
+  infra:ldap:
+    desc: Deploy OpenLDAP for user federation testing
+    cmd: ./scripts/install-openldap.sh
+
   infra:all:
     desc: Install all infrastructure
-    deps: [infra:cnpg, infra:cert-manager, infra:otel]
+    deps: [infra:cnpg, infra:cert-manager, infra:otel, infra:ldap]
 
   # ============================================================================
   # Integration Tests
@@ -369,7 +395,4 @@ tasks:
   # ============================================================================
   # Compatibility Aliases (Optional, for transition)
   # ============================================================================
-  install: { deps: [dev:install] }
-  setup: { deps: [dev:setup] }
-  quality: { deps: [quality:check] }
   test: { deps: [test:all] }

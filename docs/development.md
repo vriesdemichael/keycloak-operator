@@ -288,19 +288,25 @@ class RealmSecurity(BaseModel):
     )
 ```
 
-### 2. Update the CRD Schema
+### 2. Update Keycloak API Models
 
-The CRD schemas are auto-generated from Pydantic models, but you need to regenerate them:
+If the Keycloak version is bumped, or you need to update the Pydantic models for the Keycloak Admin API:
 
 ```bash
-# Regenerate CRD schemas
-task models:generate
-
-# Or manually:
-uv run python scripts/generate-crds.py
+# Regenerate Keycloak API models from OpenAPI spec
+task keycloak:models
 ```
 
-### 3. Update the Reconciler
+### 3. Generate CRD JSON Schemas
+
+To update the JSON schemas used for IDE autocomplete (based on the CRD YAML files):
+
+```bash
+# Generate JSON schemas for IDEs
+task crds:schemas
+```
+
+### 4. Update the Reconciler
 
 Add logic to handle the new field in the appropriate reconciler:
 
