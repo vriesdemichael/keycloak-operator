@@ -24,7 +24,7 @@ canonical_version:
 # Format: version, date, commit, result
 #
 # To validate a new version:
-#   KEYCLOAK_VERSION=X.Y.Z make test
+#   KEYCLOAK_VERSION=X.Y.Z task test:all
 # If all tests pass, add entry here with commit hash
 validated_versions:
   - version: "24.0.0"

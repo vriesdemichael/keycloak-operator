@@ -160,14 +160,14 @@ tasks:
           --build-arg CREATED={{.CREATED}} \
           -f images/operator/Dockerfile --target production -t keycloak-operator:{{.TEST_IMAGE_TAG}} .
       - echo "✓ Operator image built"
-      - mkdir -p .tmp/.task && touch .tmp/.task/image_build_operator
+      - mkdir -p .tmp/.task && touch .task/image_build_operator
     sources:
       - images/operator/Dockerfile
       - src/**/*.py
       - pyproject.toml
       - uv.lock
     generates:
-      - .tmp/.task/image_build_operator
+      - .task/image_build_operator
 
   image:load-operator:
     desc: Load operator image into Kind
@@ -185,14 +185,14 @@ tasks:
           --build-arg CREATED={{.CREATED}} \
           -f images/operator/Dockerfile --target test -t keycloak-operator:{{.TEST_IMAGE_TAG}} .
       - echo "✓ Operator coverage image built"
-      - mkdir -p .tmp/.task && touch .tmp/.task/image_build_coverage
+      - mkdir -p .tmp/.task && touch .task/image_build_coverage
     sources:
       - images/operator/Dockerfile
       - src/**/*.py
       - pyproject.toml
       - uv.lock
     generates:
-      - .tmp/.task/image_build_coverage
+      - .task/image_build_coverage
 
   image:load-coverage:
     desc: Load coverage image into Kind
@@ -208,32 +208,43 @@ tasks:
           --build-arg KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
           -t keycloak-optimized:{{.KEYCLOAK_VERSION}} \
           .
-      - mkdir -p .tmp/.task && touch .tmp/.task/image_build_keycloak
+      - mkdir -p .tmp/.task && touch .task/image_build_keycloak
     sources:
       - images/keycloak-optimized/Dockerfile
     generates:
-      - .tmp/.task/image_build_keycloak
+      - .task/image_build_keycloak
 
   image:load-keycloak:
     desc: Load optimized Keycloak into Kind
     deps: [image:build-keycloak, cluster:create]
     cmd: kind load docker-image keycloak-optimized:{{.KEYCLOAK_VERSION}} --name {{.CLUSTER_NAME}}
 
-  image:build-keycloak-tracing:
-    desc: Build optimized Keycloak image with tracing
+  image:load-keycloak-tracing:
+    desc: Load tracing Keycloak into Kind
+    deps: [image:build-keycloak-tracing, cluster:create]
+    cmd: kind load docker-image keycloak-optimized-tracing:{{.KEYCLOAK_VERSION}} --name {{.CLUSTER_NAME}}
+
+  image:load-selected:
+    desc: Load the correct Keycloak image variant based on tracing config
+    vars:
+      TRACING_ENABLED:
+        sh: |
+          if [ -n "$OTEL_TEST_TRACING_ENABLED" ]; then
+             echo "$OTEL_TEST_TRACING_ENABLED" | tr '[:upper:]' '[:lower:]' | grep -qE "true|yes|1" && echo "true" || echo "false"
+          elif [ -n "$CI" ]; then
+             echo "false"
+          else
+             echo "true"
+          fi
     cmds:
-      - echo "Building optimized Keycloak image with tracing..."
       - |
-        docker build -f images/keycloak-optimized/Dockerfile \
-          --build-arg KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
-          --build-arg TRACING_ENABLED=true \
-          -t keycloak-optimized-tracing:{{.KEYCLOAK_VERSION}} \
-          .
-      - mkdir -p .tmp/.task && touch .tmp/.task/image_build_keycloak_tracing
-    sources:
-      - images/keycloak-optimized/Dockerfile
-    generates:
-      - .tmp/.task/image_build_keycloak_tracing
+        if [ "{{.TRACING_ENABLED}}" = "true" ]; then
+          echo "Tracing enabled — loading keycloak-optimized-tracing image"
+          task image:load-keycloak-tracing
+        else
+          echo "Tracing disabled — loading keycloak-optimized image"
+          task image:load-keycloak
+        fi
 
   image:load-all:
     desc: Load all test images
@@ -243,9 +254,10 @@ tasks:
   # Cluster & Infrastructure
   # ============================================================================
   cluster:create:
-    desc: Ensure Kind cluster exists (Idempotent)
+    desc: Ensure Kind cluster exists and is responsive (Idempotent)
     status:
       - kind get clusters | grep -q "^{{.CLUSTER_NAME}}$"
+      - kubectl cluster-info
     cmd: ./scripts/kind-setup.sh
 
   cluster:destroy:
@@ -290,22 +302,35 @@ tasks:
   test:run-integration:
     desc: Run pytest for integration tests (Internal/CI)
     cmds:
+      - mkdir -p .tmp/test-logs
       - echo "Running integration tests..."
-      - INTEGRATION_COVERAGE=true TEST_IMAGE_TAG={{.TEST_IMAGE_TAG}} KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} uv run pytest {{.TESTS}} -v -n auto --dist=loadscope
-      - ./scripts/combine-coverage.sh
+      - |
+        set -o pipefail
+        INTEGRATION_COVERAGE={{default "false" .COVERAGE}} \
+        TEST_IMAGE_TAG={{.TEST_IMAGE_TAG}} \
+        KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
+        uv run pytest {{.TESTS}} -v -n auto --dist=loadscope {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log
+      - |
+        if [ "{{.COVERAGE}}" = "true" ]; then
+          echo "Combining coverage data..."
+          ./scripts/combine-coverage.sh
+        fi
 
   test:integration:
     desc: Run integration tests (reusing cluster if available)
-    deps: [cluster:create, infra:all, image:load-all]
+    deps: [cluster:create, infra:all, image:load-operator, image:load-selected]
     cmds:
-      - echo "Running integration tests..."
-      - TEST_IMAGE_TAG={{.TEST_IMAGE_TAG}} KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} uv run pytest {{.TESTS}} -v -n auto --dist=loadscope
+      - task: test:run-integration
+        vars: { CLI_ARGS: "{{.CLI_ARGS}}" }
 
   test:integration-coverage:
     desc: Run integration tests with coverage
-    deps: [cluster:create, infra:all, image:load-coverage, image:load-keycloak, image:load-keycloak-tracing]
+    deps: [cluster:create, infra:all, image:load-coverage, image:load-selected]
     cmds:
       - task: test:run-integration
+        vars:
+          COVERAGE: "true"
+          CLI_ARGS: "{{.CLI_ARGS}}"
 
   # ============================================================================
   # Main Flows
@@ -369,6 +394,19 @@ tasks:
       - kubectl get events --all-namespaces --sort-by='.lastTimestamp' > .tmp/test-logs/events.log 2>&1 || true
       - kubectl get pods --all-namespaces -o wide > .tmp/test-logs/all-pods.log 2>&1 || true
       - if [ "{{.TRACING_ENABLED}}" = "true" ]; then ./scripts/retrieve-traces.sh || true; fi
+
+  # ============================================================================
+  # Trace Visualization
+  # ============================================================================
+  trace:ui:
+    desc: Start Jaeger UI and load traces from .tmp/traces/ (human only)
+    cmd: ./scripts/trace-ui.sh
+
+  trace:ui-stop:
+    desc: Stop the Jaeger trace viewer container
+    cmds:
+      - docker rm -f keycloak-operator-jaeger 2>/dev/null || true
+      - echo "✓ Jaeger container stopped"
 
   # ============================================================================
   # Cleanup

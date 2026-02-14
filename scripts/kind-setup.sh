@@ -6,7 +6,7 @@
 # Produces: Running cluster with operator and CNPG namespaces created
 # Used by: Taskfile cluster:create task
 #
-# Note: CRDs, RBAC, and operator deployment are handled by 'make deploy'
+# Note: CRDs, RBAC, and operator deployment are handled by the test harness.
 
 set -e
 
@@ -121,9 +121,9 @@ main() {
     log "To use this cluster, run: kubectl config use-context kind-$CLUSTER_NAME"
     log ""
     log "Next steps:"
-    log "  1. Run 'make deploy' to install operator, CNPG, and test Keycloak"
-    log "  2. Run 'make test' to run the complete test suite"
-    log "  3. Run 'make kind-teardown' to cleanup when done"
+    log "  1. Run 'task infra:all' to install operator dependencies (CNPG, etc.)"
+    log "  2. Run 'task test:all' to run the complete test suite"
+    log "  3. Run 'task cluster:destroy' to cleanup when done"
 }
 
 # Handle command line arguments
@@ -132,7 +132,7 @@ case "${1:-}" in
         echo "Usage: $0 [options]"
         echo ""
         echo "Creates a bare Kind cluster for Keycloak operator development."
-        echo "CRDs, RBAC, and operator deployment are handled by 'make deploy'."
+        echo "CRDs, RBAC, and operator deployment are handled by the test harness."
         echo ""
         echo "Options:"
         echo "  --help, -h      Show this help message"
