@@ -2521,6 +2521,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.client.KeycloakClientSecretRef" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakClientSecretRef
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.client.KeycloakClientSettings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2559,6 +2570,17 @@
     <span class="md-ellipsis">
       
         validate_redirect_uris
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.client.KeycloakClientSpec.validate_secret_configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_secret_configuration
       
     </span>
   </a>
@@ -6463,6 +6485,17 @@
     <span class="md-ellipsis">
       
         api_update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.clear_admin_client_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clear_admin_client_cache
       
     </span>
   </a>
@@ -10858,6 +10891,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.client.KeycloakClientSecretRef" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakClientSecretRef
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.client.KeycloakClientSettings" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10896,6 +10940,17 @@
     <span class="md-ellipsis">
       
         validate_redirect_uris
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.client.KeycloakClientSpec.validate_secret_configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_secret_configuration
       
     </span>
   </a>
@@ -14800,6 +14855,17 @@
     <span class="md-ellipsis">
       
         api_update
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.keycloak_admin.clear_admin_client_cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        clear_admin_client_cache
       
     </span>
   </a>
@@ -19713,6 +19779,55 @@ client provisioning with cross-namespace support.</p>
 
 
 
+<h2 id="keycloak_operator.models.client.KeycloakClientSecretRef" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">KeycloakClientSecretRef</span>
+
+
+<a href="#keycloak_operator.models.client.KeycloakClientSecretRef" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>Reference to an existing Kubernetes secret containing the client secret.</p>
+<p>Used when manually managing the client secret instead of letting the operator
+generate one.</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="keycloak_operator.models.client.KeycloakClientSettings" class="doc doc-heading">
             <span class="doc doc-object-name doc-class-name">KeycloakClientSettings</span>
 
@@ -19864,6 +19979,26 @@ including authentication, authorization, and protocol settings.</p>
 - ✗ In domain: https://</em>.example.com or <a href="http://example">http://example</a>*.com
 - ✗ Bare wildcard: * (too permissive, blocked since Keycloak 22.x)</p>
 <p>Wildcards can only appear at the END of the URI.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.models.client.KeycloakClientSpec.validate_secret_configuration" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">validate_secret_configuration</span>
+
+
+<a href="#keycloak_operator.models.client.KeycloakClientSpec.validate_secret_configuration" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">validate_secret_configuration</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Validate secret configuration constraints.</p>
 
 
     </div>
@@ -37934,9 +38069,10 @@ request and response data using Pydantic models.</p>
     <div class="doc doc-contents ">
 
         <p>Close method for compatibility with async context manager.</p>
-<p>Note: With the caching strategy, we don't actually close the httpx client
-here as it's shared across multiple KeycloakAdminClient instances.
-The cached client will be reused until the operator shuts down.</p>
+<p>This is a no-op because both the httpx client and the admin client
+itself are cached globally and reused across reconciliation cycles.
+Tokens are preserved for reuse; _ensure_authenticated() handles
+refresh/expiry automatically before every API call.</p>
 
 
     </div>
@@ -54894,6 +55030,30 @@ success = await admin_client.update_identity_provider(
 <div class="doc doc-object doc-function">
 
 
+<h2 id="keycloak_operator.utils.keycloak_admin.clear_admin_client_cache" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">clear_admin_client_cache</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.utils.keycloak_admin.clear_admin_client_cache" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">clear_admin_client_cache</span><span class="p">()</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Clear all cached admin clients. Used in tests and operator shutdown.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h2 id="keycloak_operator.utils.keycloak_admin.get_keycloak_admin_client" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">get_keycloak_admin_client</span>
 
@@ -54913,11 +55073,10 @@ success = await admin_client.update_identity_provider(
 
     <div class="doc doc-contents ">
 
-        <p>Factory function to create KeycloakAdminClient for a specific instance.</p>
-<p>This function handles:
-- Looking up Keycloak instance details from Kubernetes
-- Retrieving admin credentials from secrets
-- Creating configured admin client with rate limiting</p>
+        <p>Get or create a cached KeycloakAdminClient for a specific instance.</p>
+<p>The client is cached per (keycloak_name, namespace) pair and reused
+across reconciliation cycles. Token refresh/expiry is handled
+automatically by _ensure_authenticated() before every API call.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -55014,7 +55173,7 @@ success = await admin_client.update_identity_provider(
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Configured KeycloakAdminClient instance</p>
+                <p>Configured KeycloakAdminClient instance (may be cached)</p>
               </div>
             </td>
           </tr>
