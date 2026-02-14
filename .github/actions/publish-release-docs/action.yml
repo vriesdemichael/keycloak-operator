@@ -22,16 +22,7 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - uses: astral-sh/setup-uv@v7
-
-    - name: Install yq for YAML parsing
-      shell: bash
-      env:
-        YQ_VERSION: ${{ inputs.yq-version }}
-      run: |
-        wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 -O /tmp/yq
-        sudo mv /tmp/yq /usr/local/bin/yq
-        sudo chmod +x /usr/local/bin/yq
+    - uses: ./.github/actions/setup-task
 
     - name: Configure Git
       shell: bash
@@ -39,16 +30,6 @@ runs:
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Get chart version
-      id: version
-      shell: bash
-      run: |
-        # Use yq for robust YAML parsing instead of grep/awk
-        VERSION=$(yq eval '.version' ${{ inputs.chart-path }}/Chart.yaml)
-        echo "version=${VERSION}" >> $GITHUB_OUTPUT
-
     - name: Deploy versioned docs with mike
       shell: bash
-      run: |
-        uv run --group docs mike deploy --push --update-aliases ${{ steps.version.outputs.version }} latest
-        uv run --group docs mike set-default --push latest
+      run: task docs:publish-release

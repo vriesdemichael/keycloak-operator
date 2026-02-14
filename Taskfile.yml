@@ -86,6 +86,19 @@ tasks:
       - helm lint charts/keycloak-realm
       - helm lint charts/keycloak-client
 
+  quality:security:
+    desc: Run security scans (pip-audit, safety, trivy)
+    cmds:
+      - uv run --group security pip-audit --desc
+      - uv run --group security safety check --json
+      - |
+        if command -v trivy >/dev/null 2>&1; then
+          echo "🔍 Running Trivy image scan..."
+          trivy image keycloak-operator:{{.TEST_IMAGE_TAG}} --severity CRITICAL,HIGH --exit-code 1
+        else
+          echo "⚠️ trivy not installed, skipping image scan. Install from https://aquasecurity.github.io/trivy/"
+        fi
+
   quality:check:
     desc: Run all quality and validation checks
     deps:
@@ -139,6 +152,22 @@ tasks:
       - rm -rf site/
       - rm -rf docs/decisions/generated-markdown/
 
+  docs:publish-dev:
+    desc: Build and publish development documentation to GitHub Pages
+    cmds:
+      - task: docs:generate-decisions
+      - uv run --group docs mike deploy --push dev
+
+  docs:publish-release:
+    desc: Build and publish versioned release documentation to GitHub Pages
+    vars:
+      VERSION:
+        sh: yq eval '.version' charts/keycloak-operator/Chart.yaml
+    cmds:
+      - task: docs:generate-decisions
+      - uv run --group docs mike deploy --push --update-aliases {{.VERSION}} latest
+      - uv run --group docs mike set-default --push latest
+
   # ============================================================================
   # Unit Testing
   # ============================================================================
@@ -160,7 +189,7 @@ tasks:
           --build-arg CREATED={{.CREATED}} \
           -f images/operator/Dockerfile --target production -t keycloak-operator:{{.TEST_IMAGE_TAG}} .
       - echo "✓ Operator image built"
-      - mkdir -p .tmp/.task && touch .task/image_build_operator
+      - mkdir -p .task && touch .task/image_build_operator
     sources:
       - images/operator/Dockerfile
       - src/**/*.py
@@ -185,7 +214,7 @@ tasks:
           --build-arg CREATED={{.CREATED}} \
           -f images/operator/Dockerfile --target test -t keycloak-operator:{{.TEST_IMAGE_TAG}} .
       - echo "✓ Operator coverage image built"
-      - mkdir -p .tmp/.task && touch .task/image_build_coverage
+      - mkdir -p .task && touch .task/image_build_coverage
     sources:
       - images/operator/Dockerfile
       - src/**/*.py
@@ -208,7 +237,7 @@ tasks:
           --build-arg KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
           -t keycloak-optimized:{{.KEYCLOAK_VERSION}} \
           .
-      - mkdir -p .tmp/.task && touch .task/image_build_keycloak
+      - mkdir -p .task && touch .task/image_build_keycloak
     sources:
       - images/keycloak-optimized/Dockerfile
     generates:
@@ -218,6 +247,22 @@ tasks:
     desc: Load optimized Keycloak into Kind
     deps: [image:build-keycloak, cluster:create]
     cmd: kind load docker-image keycloak-optimized:{{.KEYCLOAK_VERSION}} --name {{.CLUSTER_NAME}}
+
+  image:build-keycloak-tracing:
+    desc: Build optimized Keycloak image with tracing
+    cmds:
+      - echo "Building optimized Keycloak image with tracing..."
+      - |
+        docker build -f images/keycloak-optimized/Dockerfile \
+          --build-arg KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
+          --build-arg TRACING_ENABLED=true \
+          -t keycloak-optimized-tracing:{{.KEYCLOAK_VERSION}} \
+          .
+      - mkdir -p .task && touch .task/image_build_keycloak_tracing
+    sources:
+      - images/keycloak-optimized/Dockerfile
+    generates:
+      - .task/image_build_keycloak_tracing
 
   image:load-keycloak-tracing:
     desc: Load tracing Keycloak into Kind
@@ -237,14 +282,7 @@ tasks:
              echo "true"
           fi
     cmds:
-      - |
-        if [ "{{.TRACING_ENABLED}}" = "true" ]; then
-          echo "Tracing enabled — loading keycloak-optimized-tracing image"
-          task image:load-keycloak-tracing
-        else
-          echo "Tracing disabled — loading keycloak-optimized image"
-          task image:load-keycloak
-        fi
+      - task: '{{if eq .TRACING_ENABLED "true"}}image:load-keycloak-tracing{{else}}image:load-keycloak{{end}}'
 
   image:load-all:
     desc: Load all test images
@@ -255,6 +293,7 @@ tasks:
   # ============================================================================
   cluster:create:
     desc: Recreate Kind cluster (Fresh state)
+    run: once
     cmd: ./scripts/kind-setup.sh
 
   cluster:destroy:
@@ -277,15 +316,29 @@ tasks:
 
   infra:otel:
     desc: Deploy OTEL collector
+    deps: [cluster:create]
     cmd: ./scripts/deploy-otel-collector.sh
 
   infra:ldap:
     desc: Deploy OpenLDAP for user federation testing
+    deps: [cluster:create]
     cmd: ./scripts/install-openldap.sh
 
   infra:all:
     desc: Install all infrastructure
     deps: [infra:cnpg, infra:cert-manager, infra:otel, infra:ldap]
+
+  # ============================================================================
+  # Helm Charts
+  # ============================================================================
+  charts:update-version:
+    desc: Update operator chart version and image tag
+    vars:
+      VERSION: '{{default .VERSION .OPERATOR_VERSION}}'
+    cmds:
+      - yq eval -i '.image.tag = "v{{.VERSION}}"' charts/keycloak-operator/values.yaml
+      - yq eval -i '.appVersion = "v{{.VERSION}}"' charts/keycloak-operator/Chart.yaml
+      - echo "Updated operator chart to version v{{.VERSION}}"
 
   # ============================================================================
   # Integration Tests
@@ -312,7 +365,8 @@ tasks:
     deps: [cluster:create, infra:all, image:load-operator, image:load-selected]
     cmds:
       - task: test:run-integration
-        vars: { CLI_ARGS: "{{.CLI_ARGS}}" }
+        vars:
+          CLI_ARGS: "{{.CLI_ARGS}}"
 
   test:integration-coverage:
     desc: Run integration tests with coverage (guaranteed fresh cluster)
@@ -349,9 +403,9 @@ tasks:
       # Run integration tests (with error handling)
       - |
         set -o pipefail
-        task test:integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log || {
+        {{.ROOT_DIR}}/.tmp/bin/task test:integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log || {
           echo "[{{.TIMESTAMP}}] ❌ Integration tests failed" | tee -a .tmp/test-pre-commit.log
-          task logs:collect
+          {{.ROOT_DIR}}/.tmp/bin/task logs:collect
           exit 1
         }
 

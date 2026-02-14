@@ -14,22 +14,8 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - uses: astral-sh/setup-uv@v7
-
-    - name: Build ADR documentation
-      shell: bash
-      run: bash scripts/build-adr-docs.sh
-
-    - name: Generate CRD JSON schemas
-      shell: bash
-      run: uv run python scripts/generate-crd-schemas.py
-
-    - name: Configure Git for mike
-      shell: bash
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
+    - uses: ./.github/actions/setup-task
 
     - name: Deploy dev docs with mike
       shell: bash
-      run: uv run --group docs mike deploy --push dev
+      run: task docs:publish-dev
