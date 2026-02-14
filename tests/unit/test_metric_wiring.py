@@ -232,6 +232,7 @@ class TestCloseSessionDecrement:
         await client.close()
 
         mock_active.dec.assert_not_called()
+        assert client._session_tracked is True
 
     @pytest.mark.asyncio
     @patch("keycloak_operator.observability.metrics.ADMIN_SESSIONS_ACTIVE")

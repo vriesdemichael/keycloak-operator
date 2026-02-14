@@ -62,6 +62,8 @@ import pytest
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
+from keycloak_operator.utils.keycloak_admin import clear_admin_client_cache
+
 from keycloak_operator.constants import (
     DEFAULT_KEYCLOAK_OPTIMIZED_VERSION,
 )
@@ -672,6 +674,17 @@ def configure_env():
     from keycloak_operator.settings import settings
 
     settings.operator_instance_id = "keycloak-operator-test-system"
+
+
+@pytest.fixture(autouse=True)
+async def reset_admin_client_cache() -> None:
+    """Clear the admin client cache before each test to ensure isolation.
+
+    This prevents one test from using a stale client cached by a previous test,
+    which could lead to race conditions or invalid state (e.g. if the previous
+    test closed the event loop).
+    """
+    await clear_admin_client_cache()
 
 
 @pytest.fixture(scope="session")
@@ -1610,12 +1623,12 @@ async def shared_operator(
             "version": keycloak_version,
             "resources": {
                 "requests": {
-                    "cpu": "3000m",
-                    "memory": "4Gi",
+                    "cpu": "1000m",
+                    "memory": "1Gi",
                 },
                 "limits": {
-                    "cpu": "3000m",
-                    "memory": "4Gi",
+                    "cpu": "2000m",
+                    "memory": "2Gi",
                 },
             },
             # Lower JIT compilation thresholds so hot methods compile sooner

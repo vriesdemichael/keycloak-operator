@@ -498,7 +498,6 @@ def main() -> None:
         # It's okay, I'll assume it exists or I'll remove the call if not found.
         # Actually line 397 in previous view had it.
         # If I replaced main, I need to keep the calls valid.
-        pass
         # Re-implement simple tree logic for now since I can't see print_tree
         traces_by_id = defaultdict(list)
         for span in filtered[: args.limit]:
