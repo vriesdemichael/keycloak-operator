@@ -18,7 +18,7 @@ This project uses [release-please](https://github.com/googleapis/release-please)
 2. **Make Changes & Commit**
    ```bash
    # Run checks before committing
-   make test-pre-commit
+   task test:all
 
    # If checks pass, commit your changes IF THEY DONT YOU FIX THE ISSUES FIRST!!!
    git add .
@@ -36,7 +36,7 @@ This project uses [release-please](https://github.com/googleapis/release-please)
    - Release-please automatically creates/updates release PRs
    - Release PRs auto-merge when all checks pass
 
-**Important**: Always run `make test-pre-commit` before committing to ensure your code passes linting, formatting, and type checking. This prevents CI failures and speeds up the review process.
+**Important**: Always run `task test:all` before committing to ensure your code passes linting, formatting, and type checking. This prevents CI failures and speeds up the review process.
 
 ### Branch Naming Convention
 

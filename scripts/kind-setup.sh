@@ -4,7 +4,7 @@
 # Purpose: Creates a minimal Kind cluster with required namespaces
 # Prerequisites: kind, kubectl, docker
 # Produces: Running cluster with operator and CNPG namespaces created
-# Used by: Makefile setup-cluster target
+# Used by: Taskfile cluster:create task
 #
 # Note: CRDs, RBAC, and operator deployment are handled by 'make deploy'
 

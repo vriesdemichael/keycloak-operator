@@ -18,10 +18,12 @@ runs:
       with:
         enable-cache: true
 
+    - uses: ./.github/actions/setup-task
+
     - name: Validate documentation schemas
       shell: bash
-      run: make validate-docs
+      run: task quality:validate-docs
 
     - name: Validate CRD-Pydantic schema sync
       shell: bash
-      run: make validate-crd-pydantic
+      run: task quality:validate-crd-pydantic

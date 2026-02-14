@@ -26,9 +26,11 @@ runs:
       with:
         enable-cache: true
 
+    - uses: ./.github/actions/setup-task
+
     - name: Run quality checks
       shell: bash
-      run: make quality
+      run: task quality:check
 
     - name: Install yq for decision record validation
       shell: bash
@@ -44,5 +46,5 @@ runs:
 
     - name: Validate Decision Records
       shell: bash
-      run: uv run --group quality scripts/adr_validator.py --validate
+      run: task quality:validate-decisions
       if: hashFiles('docs/decisions/*.yaml') != ''

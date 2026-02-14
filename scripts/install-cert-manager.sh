@@ -4,7 +4,7 @@
 # Purpose: Installs cert-manager for webhook certificate management
 # Prerequisites: kubectl, running Kubernetes cluster
 # Produces: cert-manager installed and ready
-# Used by: Makefile deploy target
+# Used by: Taskfile infra:cert-manager task
 #
 # Note: Required for admission webhooks to function
 

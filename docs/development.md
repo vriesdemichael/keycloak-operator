@@ -14,7 +14,7 @@ Before starting development, ensure you have these tools installed:
 | **kubectl** | 1.26+ | Kubernetes CLI | [kubernetes.io](https://kubernetes.io/docs/tasks/tools/) |
 | **kind** | 0.20+ | Local Kubernetes clusters | [kind.sigs.k8s.io](https://kind.sigs.k8s.io) |
 | **helm** | 3.8+ | Package manager | [helm.sh](https://helm.sh) |
-| **make** | Latest | Build automation | Usually pre-installed on Linux/macOS |
+| **go-task** | Latest | Build automation | [taskfile.dev](https://taskfile.dev) |
 | **yq** | 4.x | YAML processing | [github.com/mikefarah/yq](https://github.com/mikefarah/yq) |
 | **jq** | 1.6+ | JSON processing | Usually available via package manager |
 
@@ -28,11 +28,11 @@ git clone https://github.com/vriesdemichael/keycloak-operator.git
 cd keycloak-operator
 
 # Install all dependencies and pre-commit hooks
-make setup
+task dev:setup
 
 # Or manually:
 uv sync --group dev --group docs
-make install-hooks
+task dev:hooks
 ```
 
 This will:
@@ -46,8 +46,8 @@ This will:
 Pre-commit hooks automatically run code quality checks before each commit:
 
 ```bash
-# Install hooks (done automatically with 'make setup')
-make install-hooks
+# Install hooks (done automatically with 'task dev:setup')
+task dev:hooks
 
 # Run hooks manually on all files
 uv run --group quality pre-commit run --all-files
@@ -69,19 +69,19 @@ The project enforces high code quality standards. Always run quality checks befo
 
 ```bash
 # Run all quality checks (linting, formatting, type checking)
-make quality
+task quality:check
 
 # Individual checks
-make format          # Format code with Ruff
-make lint           # Lint code with Ruff (with auto-fix)
-make type-check     # Type check with Basedpyright
+task quality:format          # Format code with Ruff
+task quality:lint           # Lint code with Ruff (with auto-fix)
+task quality:type-check     # Type check with Basedpyright
 ```
 
 **Development Workflow:**
 1. Make your code changes
-2. Run `make quality` to fix formatting and find issues
+2. Run `task quality:check` to fix formatting and find issues
 3. Fix any type errors or linting issues
-4. Run `make test-unit` to verify unit tests pass
+4. Run `task test:unit` to verify unit tests pass
 5. Commit your changes (pre-commit hooks will run automatically)
 
 **Note:** Pre-commit hooks enforce these standards automatically, but you can also run them manually.
@@ -116,7 +116,7 @@ Fast tests that mock Kubernetes and Keycloak interactions:
 
 ```bash
 # Run all unit tests
-make test-unit
+task test:unit
 
 # Run specific test file
 uv run pytest tests/unit/test_keycloak_admin.py
@@ -137,7 +137,7 @@ Real Kubernetes tests using Kind clusters:
 
 ```bash
 # Run complete test suite (creates fresh cluster, runs tests)
-make test
+task test:all
 ```
 
 **Integration test workflow:**
@@ -163,7 +163,7 @@ See [Testing Guide](development/testing.md) for detailed testing patterns and be
 
 ```bash
 # Required before committing operator or chart changes
-make test-pre-commit
+task test:all
 ```
 
 This ensures:
@@ -294,7 +294,7 @@ The CRD schemas are auto-generated from Pydantic models, but you need to regener
 
 ```bash
 # Regenerate CRD schemas
-make generate-crds
+task models:generate
 
 # Or manually:
 uv run python scripts/generate-crds.py
@@ -384,7 +384,7 @@ Update the CRD reference documentation:
 ### 7. Run Complete Test Suite
 
 ```bash
-make test-pre-commit
+task test:all
 ```
 
 ## How to Add New Reconciliation Logic
@@ -571,11 +571,11 @@ To add a new explicit page:
 
 | Symptom | Cause | Resolution |
 |---------|-------|------------|
-| `ModuleNotFoundError` | Dependencies not installed | Run `uv sync` or `make setup` |
+| `ModuleNotFoundError` | Dependencies not installed | Run `uv sync` or `task dev:setup` |
 | `No module named 'keycloak_operator'` | Not using uv run | Always use `uv run <command>` or activate venv |
 | Type errors block tests | Missing type annotations | Run `uv run ty check` and fix issues |
-| Pre-commit hook fails | Code quality issues | Run `make quality` to auto-fix |
-| Integration tests fail | Cluster not ready | Run `make kind-teardown && make test` |
+| Pre-commit hook fails | Code quality issues | Run `task quality:check` to auto-fix |
+| Integration tests fail | Cluster not ready | Run `task cluster:reset && task test:all` |
 | Port conflicts in tests | Previous test run still active | Run `pkill -f port-forward` |
 | Missing API docs | Module not referenced | Add `::: dotted.path` in markdown |
 | 404 for docs page | Wrong nav path | Check `mkdocs.yml` navigation |
@@ -583,7 +583,7 @@ To add a new explicit page:
 
 ### Development Tips
 
-1. **Fast iteration**: Use `make test` which handles cluster management automatically
+1. **Fast iteration**: Use `task test:integration` which handles cluster management automatically
 2. **Debug tests**: Add `--pdb` flag to pytest to drop into debugger on failure
 3. **Parallel testing**: Integration tests run with 8 workers by default, use unique names
 4. **Rate limiting**: Tests automatically respect rate limits, don't bypass them
@@ -602,7 +602,7 @@ To add a new explicit page:
 
 3. **Run complete test suite**:
    ```bash
-   make test-pre-commit
+   task test:all
    ```
 
 4. **Commit with conventional commits**:

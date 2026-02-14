@@ -1,0 +1,18 @@
+name: 'Setup Task'
+description: 'Install go-task'
+
+inputs:
+  version:
+    description: 'Task version'
+    required: false
+    default: 'v3.41.0'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Task
+      shell: bash
+      run: |
+        if ! command -v task &> /dev/null; then
+          sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b /usr/local/bin ${{ inputs.version }}
+        fi

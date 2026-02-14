@@ -59,6 +59,8 @@ runs:
         enable-cache: true
         cache-dependency-glob: "pyproject.toml"
 
+    - uses: ./.github/actions/setup-task
+
     - name: Download operator image
       uses: actions/download-artifact@v6
       with:
@@ -67,7 +69,12 @@ runs:
 
     - name: Load operator image
       shell: bash
-      run: docker load --input /tmp/operator-test.tar
+      run: |
+        docker load --input /tmp/operator-test.tar
+        # Satisfy Taskfile caching
+        mkdir -p .tmp/.task
+        touch .tmp/.task/image_build_operator
+        touch .tmp/.task/image_build_coverage
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
@@ -118,61 +125,18 @@ runs:
         docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized-tracing:${{ inputs.keycloak-version }}
         kind load docker-image keycloak-optimized-tracing:${{ inputs.keycloak-version }} --name ${{ inputs.cluster-name }}
 
-    - name: Install CloudNativePG operator
+    - name: Install Infrastructure
       shell: bash
-      run: |
-        helm repo add cnpg https://cloudnative-pg.github.io/charts
-        helm repo update
-        helm upgrade --install cnpg cnpg/cloudnative-pg \
-          --namespace cnpg-system \
-          --create-namespace \
-          --wait \
-          --timeout=300s
-
-        kubectl wait -n cnpg-system \
-          --for=condition=available deployment/cnpg-cloudnative-pg \
-          --timeout=300s
-
-    - name: Install cert-manager
-      shell: bash
-      run: |
-        kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.14.4/cert-manager.yaml
-
-        kubectl wait -n cert-manager \
-          --for=condition=available deployment/cert-manager \
-          --timeout=300s
-        kubectl wait -n cert-manager \
-          --for=condition=available deployment/cert-manager-webhook \
-          --timeout=300s
-        kubectl wait -n cert-manager \
-          --for=condition=available deployment/cert-manager-cainjector \
-          --timeout=300s
-
-    - name: Deploy OTEL Collector for trace collection
-      shell: bash
-      run: ./scripts/deploy-otel-collector.sh
+      run: task infra:all
 
     - name: Run integration tests
       shell: bash
       env:
         INTEGRATION_COVERAGE: "true"
         KEYCLOAK_VERSION: ${{ inputs.keycloak-version }}
-      run: uv run --group test pytest tests/integration/ -v -n auto --dist=loadscope
-
-    - name: Combine and convert integration coverage to XML
-      shell: bash
-      if: always() && inputs.github-actor != 'dependabot[bot]'
       run: |
-        if [ -d ".tmp/coverage" ] && [ "$(ls -A .tmp/coverage/.coverage.* 2>/dev/null)" ]; then
-          echo "Found coverage files, combining..."
-          uv run coverage combine .tmp/coverage/.coverage.*
-          echo "Converting to XML..."
-          uv run coverage xml -o coverage-integration.xml
-          echo "Integration coverage XML generated"
-        else
-          echo "No coverage files found to combine"
-          exit 1
-        fi
+        task test:run-integration
+        mv coverage.xml coverage-integration.xml
 
     - name: Upload integration coverage to Codecov
       uses: codecov/codecov-action@v5
@@ -197,31 +161,7 @@ runs:
     - name: Collect logs and diagnostics
       if: always()
       shell: bash
-      run: |
-        mkdir -p test-logs
-
-        kubectl cluster-info | tee test-logs/cluster-info.log
-
-        for pod in $(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}'); do
-          namespace=$(echo $pod | cut -d/ -f1)
-          podname=$(echo $pod | cut -d/ -f2)
-          kubectl logs -n $namespace $podname --all-containers=true --tail=10000 >> test-logs/operator-logs.log 2>&1 || true
-        done
-
-        kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide >> test-logs/operator-status.log 2>&1 || true
-        kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide >> test-logs/test-resources.log 2>&1 || true
-        kubectl get events --all-namespaces --sort-by='.lastTimestamp' >> test-logs/events.log 2>&1 || true
-        kubectl get pods --all-namespaces -o wide >> test-logs/all-pods.log 2>&1 || true
-
-    - name: Retrieve traces from OTEL Collector
-      if: always()
-      shell: bash
-      run: |
-        mkdir -p test-logs/traces
-        ./scripts/retrieve-traces.sh || true
-        if [ -d ".tmp/traces" ]; then
-          cp .tmp/traces/*.jsonl test-logs/traces/ 2>/dev/null || true
-        fi
+      run: task logs:collect
 
     - name: Upload test artifacts
       if: always()

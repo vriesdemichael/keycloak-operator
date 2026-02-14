@@ -1,0 +1,375 @@
+version: '3'
+
+vars:
+  VERSION:
+    sh: grep '^version = ' pyproject.toml | cut -d'"' -f2
+  REVISION:
+    sh: git rev-parse HEAD
+  CREATED:
+    sh: date -u +'%Y-%m-%dT%H:%M:%SZ'
+  KEYCLOAK_VERSION: 26.5.2
+  TEST_IMAGE_TAG: test
+  TESTS: tests/integration/
+  CLUSTER_NAME: keycloak-operator-test
+
+env:
+  UV_LINK_MODE: copy
+
+tasks:
+  default:
+    desc: Show help
+    cmd: task --list
+
+  # ============================================================================
+  # Development Setup
+  # ============================================================================
+  dev:install:
+    desc: Install development dependencies
+    cmd: uv sync --group dev
+    sources:
+      - pyproject.toml
+      - uv.lock
+    generates:
+      - .venv/bin/python
+
+  dev:hooks:
+    desc: Install pre-commit hooks
+    cmds:
+      - uv run --group quality pre-commit install
+      - uv run --group quality pre-commit install --hook-type commit-msg
+    status:
+      - test -f .git/hooks/pre-commit
+      - test -f .git/hooks/commit-msg
+
+  dev:setup:
+    desc: Complete development setup (install deps + hooks)
+    deps: [dev:install, dev:hooks]
+
+  models:generate:
+    desc: Generate Pydantic models from Keycloak OpenAPI specs
+    cmd: uv run --group model-generation python scripts/generate_keycloak_models.py
+    sources:
+      - scripts/generate_keycloak_models.py
+      - keycloak-api-spec.yaml
+    generates:
+      - src/keycloak_operator/models/keycloak_api.py
+
+  # ============================================================================
+  # Code Quality
+  # ============================================================================
+  quality:format:
+    desc: Format code with ruff
+    cmd: uv run --group quality ruff format
+
+  quality:lint:
+    desc: Lint code with ruff
+    cmd: uv run --group quality ruff check --fix
+
+  quality:type-check:
+    desc: Run type checking with ty
+    cmd: uv run --group quality ty check
+
+  quality:check:
+    desc: Run all quality checks
+    deps: [quality:format, quality:lint, quality:type-check]
+
+  quality:validate-decisions:
+    desc: Validate Decision Records (Architecture/Development)
+    cmd: |
+      if [ -n "$(ls docs/decisions/*.yaml 2>/dev/null)" ]; then
+        uv run scripts/adr_validator.py --validate;
+      else
+        echo "No decision record files found";
+      fi
+
+  quality:validate-docs:
+    desc: Validate documentation examples against schemas
+    cmd: uv run --group dev python scripts/lib/schema_validator.py --fail-on-error
+
+  quality:validate-crd-pydantic:
+    desc: Validate CRD schemas match Pydantic models
+    cmd: uv run --group dev python scripts/lib/crd_pydantic_validator.py --fail-on-error
+
+  # ============================================================================
+  # Documentation
+  # ============================================================================
+  docs:generate-decisions:
+    desc: Generate markdown from decision record YAML files
+    cmd: ./scripts/build-adr-docs.sh
+    sources:
+      - docs/decisions/*.yaml
+    generates:
+      - docs/decisions/generated-markdown/*.md
+
+  docs:build:
+    desc: Build documentation site
+    deps: [docs:generate-decisions]
+    cmd: uv run --group docs mkdocs build
+    sources:
+      - docs/**/*
+      - mkdocs.yml
+    generates:
+      - site/index.html
+
+  docs:clean:
+    desc: Clean generated documentation
+    cmds:
+      - rm -rf site/
+      - rm -rf docs/decisions/generated-markdown/
+
+  # ============================================================================
+  # Unit Testing
+  # ============================================================================
+  test:unit:
+    desc: Run unit tests with coverage
+    cmd: KUBECONFIG=/dev/null uv run --group test pytest tests/unit/ -v --disable-socket --allow-unix-socket --cov=keycloak_operator --cov-report=
+
+  # ============================================================================
+  # Images
+  # ============================================================================
+  image:build-operator:
+    desc: Build operator production image
+    cmds:
+      - echo "Building operator production image..."
+      - |
+        docker build \
+          --build-arg VERSION={{.VERSION}} \
+          --build-arg REVISION={{.REVISION}} \
+          --build-arg CREATED={{.CREATED}} \
+          -f images/operator/Dockerfile --target production -t keycloak-operator:{{.TEST_IMAGE_TAG}} .
+      - echo "✓ Operator image built"
+      - mkdir -p .tmp/.task && touch .tmp/.task/image_build_operator
+    sources:
+      - images/operator/Dockerfile
+      - src/**/*.py
+      - pyproject.toml
+      - uv.lock
+    generates:
+      - .tmp/.task/image_build_operator
+
+  image:load-operator:
+    desc: Load operator image into Kind
+    deps: [image:build-operator, cluster:create]
+    cmd: kind load docker-image keycloak-operator:{{.TEST_IMAGE_TAG}} --name {{.CLUSTER_NAME}}
+
+  image:build-coverage:
+    desc: Build operator test image with coverage
+    cmds:
+      - echo "Building operator test image with coverage..."
+      - |
+        docker build \
+          --build-arg VERSION={{.VERSION}} \
+          --build-arg REVISION={{.REVISION}} \
+          --build-arg CREATED={{.CREATED}} \
+          -f images/operator/Dockerfile --target test -t keycloak-operator:{{.TEST_IMAGE_TAG}} .
+      - echo "✓ Operator coverage image built"
+      - mkdir -p .tmp/.task && touch .tmp/.task/image_build_coverage
+    sources:
+      - images/operator/Dockerfile
+      - src/**/*.py
+      - pyproject.toml
+      - uv.lock
+    generates:
+      - .tmp/.task/image_build_coverage
+
+  image:load-coverage:
+    desc: Load coverage image into Kind
+    deps: [image:build-coverage, cluster:create]
+    cmd: kind load docker-image keycloak-operator:{{.TEST_IMAGE_TAG}} --name {{.CLUSTER_NAME}}
+
+  image:build-keycloak:
+    desc: Build optimized Keycloak image
+    cmds:
+      - echo "Building optimized Keycloak image..."
+      - |
+        docker build -f images/keycloak-optimized/Dockerfile \
+          --build-arg KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
+          -t keycloak-optimized:{{.KEYCLOAK_VERSION}} \
+          .
+      - mkdir -p .tmp/.task && touch .tmp/.task/image_build_keycloak
+    sources:
+      - images/keycloak-optimized/Dockerfile
+    generates:
+      - .tmp/.task/image_build_keycloak
+
+  image:load-keycloak:
+    desc: Load optimized Keycloak into Kind
+    deps: [image:build-keycloak, cluster:create]
+    cmd: kind load docker-image keycloak-optimized:{{.KEYCLOAK_VERSION}} --name {{.CLUSTER_NAME}}
+
+  image:build-keycloak-tracing:
+    desc: Build optimized Keycloak image with tracing
+    cmds:
+      - echo "Building optimized Keycloak image with tracing..."
+      - |
+        docker build -f images/keycloak-optimized/Dockerfile \
+          --build-arg KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
+          --build-arg TRACING_ENABLED=true \
+          -t keycloak-optimized-tracing:{{.KEYCLOAK_VERSION}} \
+          .
+      - mkdir -p .tmp/.task && touch .tmp/.task/image_build_keycloak_tracing
+    sources:
+      - images/keycloak-optimized/Dockerfile
+    generates:
+      - .tmp/.task/image_build_keycloak_tracing
+
+  image:load-all:
+    desc: Load all test images
+    deps: [image:load-operator, image:load-keycloak, image:load-keycloak-tracing]
+
+  # ============================================================================
+  # Cluster & Infrastructure
+  # ============================================================================
+  cluster:create:
+    desc: Ensure Kind cluster exists (Idempotent)
+    status:
+      - kind get clusters | grep -q "^{{.CLUSTER_NAME}}$"
+    cmd: ./scripts/kind-setup.sh
+
+  cluster:destroy:
+    desc: Destroy Kind cluster
+    cmd: ./scripts/kind-teardown.sh
+
+  cluster:reset:
+    desc: Recreate Kind cluster (Fresh)
+    cmds:
+      - task: cluster:destroy
+      - task: cluster:create
+
+  infra:cnpg:
+    desc: Install CNPG operator (Idempotent)
+    deps: [cluster:create]
+    status:
+      - kubectl get deployment -n cnpg-system cnpg-cloudnative-pg
+    cmd: ./scripts/install-cnpg.sh
+
+  infra:cert-manager:
+    desc: Install cert-manager (Idempotent)
+    deps: [cluster:create]
+    status:
+      - kubectl get deployment -n cert-manager cert-manager
+    cmd: ./scripts/install-cert-manager.sh
+
+  infra:otel:
+    desc: Deploy OTEL collector
+    cmd: ./scripts/deploy-otel-collector.sh
+
+  infra:all:
+    desc: Install all infrastructure
+    deps: [infra:cnpg, infra:cert-manager, infra:otel]
+
+  # ============================================================================
+  # Integration Tests
+  # ============================================================================
+  test:run-integration:
+    desc: Run pytest for integration tests (Internal/CI)
+    cmds:
+      - echo "Running integration tests..."
+      - INTEGRATION_COVERAGE=true TEST_IMAGE_TAG={{.TEST_IMAGE_TAG}} KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} uv run pytest {{.TESTS}} -v -n auto --dist=loadscope
+      - ./scripts/combine-coverage.sh
+
+  test:integration:
+    desc: Run integration tests (reusing cluster if available)
+    deps: [cluster:create, infra:all, image:load-all]
+    cmds:
+      - echo "Running integration tests..."
+      - TEST_IMAGE_TAG={{.TEST_IMAGE_TAG}} KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} uv run pytest {{.TESTS}} -v -n auto --dist=loadscope
+
+  test:integration-coverage:
+    desc: Run integration tests with coverage
+    deps: [cluster:create, infra:all, image:load-coverage, image:load-keycloak, image:load-keycloak-tracing]
+    cmds:
+      - task: test:run-integration
+
+  # ============================================================================
+  # Main Flows
+  # ============================================================================
+  test:all:
+    desc: Full test suite (Quality + Unit + Integration with fresh cluster)
+    vars:
+      TIMESTAMP:
+        sh: date -u +%Y-%m-%dT%H:%M:%SZ
+    cmds:
+      - mkdir -p .tmp/test-logs
+      - 'echo "[{{.TIMESTAMP}}] Starting full test suite..." | tee -a .tmp/test-pre-commit.log'
+
+      - task: quality:check
+      - task: quality:validate-docs
+
+      # Clean start for integration tests
+      - task: cluster:reset
+
+      - task: test:unit
+
+      # Setup infrastructure
+      - task: infra:all
+
+      # Run integration tests (with error handling)
+      - |
+        set -o pipefail
+        task test:integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log || {
+          echo "[{{.TIMESTAMP}}] ❌ Integration tests failed" | tee -a .tmp/test-pre-commit.log
+          task logs:collect
+          exit 1
+        }
+
+      - task: logs:collect
+      - 'echo "[{{.TIMESTAMP}}] ✓ All tests passed!" | tee -a .tmp/test-pre-commit.log'
+
+  logs:collect:
+    desc: Collect logs and diagnostics
+    vars:
+      TRACING_ENABLED:
+        sh: |
+          if [ -n "$OTEL_TEST_TRACING_ENABLED" ]; then
+             echo "$OTEL_TEST_TRACING_ENABLED" | tr '[:upper:]' '[:lower:]' | grep -qE "true|yes|1" && echo "true" || echo "false"
+          elif [ -n "$CI" ]; then
+             echo "false"
+          else
+             echo "true"
+          fi
+    cmds:
+      - mkdir -p .tmp/test-logs
+      - kubectl cluster-info > .tmp/test-logs/cluster-info.log 2>&1 || true
+      - |
+        for pod in $(kubectl get pods --all-namespaces -l app.kubernetes.io/name=keycloak-operator -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{"\n"}{end}' 2>/dev/null); do
+          namespace=$(echo $pod | cut -d/ -f1)
+          podname=$(echo $pod | cut -d/ -f2)
+          echo "=== Logs from $namespace/$podname ===" >> .tmp/test-logs/operator-logs.log
+          kubectl logs -n $namespace $podname --all-containers=true --tail=2000 >> .tmp/test-logs/operator-logs.log 2>&1 || true
+        done
+      - kubectl get deployment -l app.kubernetes.io/name=keycloak-operator --all-namespaces -o wide > .tmp/test-logs/operator-status.log 2>&1 || true
+      - kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide > .tmp/test-logs/test-resources.log 2>&1 || true
+      - kubectl get events --all-namespaces --sort-by='.lastTimestamp' > .tmp/test-logs/events.log 2>&1 || true
+      - kubectl get pods --all-namespaces -o wide > .tmp/test-logs/all-pods.log 2>&1 || true
+      - if [ "{{.TRACING_ENABLED}}" = "true" ]; then ./scripts/retrieve-traces.sh || true; fi
+
+  # ============================================================================
+  # Cleanup
+  # ============================================================================
+  clean:state:
+    desc: Reset Keycloak/DB state
+    cmd: ./scripts/clean-integration-state.sh
+
+  clean:resources:
+    desc: Clean up stuck test namespaces
+    cmd: ./scripts/clean-test-resources.sh --force
+
+  clean:
+    desc: Clean artifacts
+    cmds:
+      - rm -rf .pytest_cache/ htmlcov/ .coverage .coverage.* test-logs/ .tmp/
+      - docker image prune -f
+
+  clean:all:
+    desc: Clean everything
+    deps: [clean, cluster:destroy]
+    cmd: docker system prune -f
+
+  # ============================================================================
+  # Compatibility Aliases (Optional, for transition)
+  # ============================================================================
+  install: { deps: [dev:install] }
+  setup: { deps: [dev:setup] }
+  quality: { deps: [quality:check] }
+  test: { deps: [test:all] }
