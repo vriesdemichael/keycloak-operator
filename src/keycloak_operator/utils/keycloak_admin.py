@@ -7557,9 +7557,22 @@ async def get_keycloak_admin_client(
         # which refreshes via refresh_token (no Argon2) or re-authenticates
         await admin_client.authenticate()
 
-        # Cache the authenticated client
+        # Cache the authenticated client using double-check pattern
         async with _cache_lock:
-            _admin_client_cache[cache_key] = (admin_client, current_loop_id)
+            # Check again if another coroutine cached it while we were authenticating
+            if cache_key in _admin_client_cache:
+                cached_msg_client, lid = _admin_client_cache[cache_key]
+                if lid == current_loop_id:
+                    logger.info(
+                        f"Reusing cached admin client for {keycloak_name} (race condition handling)"
+                    )
+                    # Use the one created by another coroutine
+                    admin_client = cached_msg_client
+                else:
+                    # Stale entry in cache, overwrite it
+                    _admin_client_cache[cache_key] = (admin_client, current_loop_id)
+            else:
+                _admin_client_cache[cache_key] = (admin_client, current_loop_id)
 
         logger.info(f"Created and cached admin client for {keycloak_name}")
         return admin_client
