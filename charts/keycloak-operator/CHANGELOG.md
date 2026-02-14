@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.17](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.16...chart-operator-v0.4.17) (2026-02-14)
+
+
+### Features
+
+* **chart-client+operator:** add support for manual client secrets (issue [#495](https://github.com/vriesdemichael/keycloak-operator/issues/495)) ([06359dd](https://github.com/vriesdemichael/keycloak-operator/commit/06359ddbac14ab27194663929610efd759ea2eab))
+
+
+### Bug Fixes
+
+* **chart-client+operator:** resolve helm validation and ci failures ([e634fe3](https://github.com/vriesdemichael/keycloak-operator/commit/e634fe39ad9eabffb3139b84af5ba6d7ccc019c0))
+
 ## [0.4.16](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.15...chart-operator-v0.4.16) (2026-02-12)
 
 
