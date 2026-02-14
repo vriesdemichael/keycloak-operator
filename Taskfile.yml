@@ -254,21 +254,12 @@ tasks:
   # Cluster & Infrastructure
   # ============================================================================
   cluster:create:
-    desc: Ensure Kind cluster exists and is responsive (Idempotent)
-    status:
-      - kind get clusters | grep -q "^{{.CLUSTER_NAME}}$"
-      - kubectl cluster-info
+    desc: Recreate Kind cluster (Fresh state)
     cmd: ./scripts/kind-setup.sh
 
   cluster:destroy:
     desc: Destroy Kind cluster
     cmd: ./scripts/kind-teardown.sh
-
-  cluster:reset:
-    desc: Recreate Kind cluster (Fresh)
-    cmds:
-      - task: cluster:destroy
-      - task: cluster:create
 
   infra:cnpg:
     desc: Install CNPG operator (Idempotent)
@@ -317,14 +308,14 @@ tasks:
         fi
 
   test:integration:
-    desc: Run integration tests (reusing cluster if available)
+    desc: Run integration tests (guaranteed fresh cluster)
     deps: [cluster:create, infra:all, image:load-operator, image:load-selected]
     cmds:
       - task: test:run-integration
         vars: { CLI_ARGS: "{{.CLI_ARGS}}" }
 
   test:integration-coverage:
-    desc: Run integration tests with coverage
+    desc: Run integration tests with coverage (guaranteed fresh cluster)
     deps: [cluster:create, infra:all, image:load-coverage, image:load-selected]
     cmds:
       - task: test:run-integration
@@ -348,7 +339,7 @@ tasks:
       - task: quality:validate-docs
 
       # Clean start for integration tests
-      - task: cluster:reset
+      - task: cluster:create
 
       - task: test:unit
 
@@ -411,14 +402,6 @@ tasks:
   # ============================================================================
   # Cleanup
   # ============================================================================
-  clean:state:
-    desc: Reset Keycloak/DB state
-    cmd: ./scripts/clean-integration-state.sh
-
-  clean:resources:
-    desc: Clean up stuck test namespaces
-    cmd: ./scripts/clean-test-resources.sh --force
-
   clean:
     desc: Clean artifacts
     cmds:

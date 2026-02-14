@@ -298,10 +298,9 @@ task test:all
 
 Before commiting your work you will run `task test:all`, which is a complete flow that:
 1. Runs code quality checks
-2. Tears down any existing cluster
-3. Creates fresh cluster
-4. Runs unit tests
-5. Runs integration tests
+2. Recreates Kind cluster (fresh state)
+3. Runs unit tests
+4. Runs integration tests
 
 IMPORTANT!! It is imperative that you DO NOT separate these steps to speed up the process. You MUST always run `task test:all` before committing any changes to the operator code, the test code or the charts.
 Without running this pre-commit directive you are prohibited to make commits. Any attempt to do so will be a severe blow to your reputation and you will be caught!
@@ -354,17 +353,17 @@ open htmlcov/index.html  # or xdg-open on Linux
 
 **Cluster and Deployment Management:**
 
-The operator uses a **fresh cluster strategy** for reliability. Clusters are recreated for every test run.
+The operator uses a **fresh cluster strategy** for reliability. Clusters are recreated for every integration test run.
 
 ```bash
 # Available Taskfile targets (run 'task --list' for full list)
 task test:all                         # Run complete test suite (fresh cluster)
-task cluster:create                   # Create fresh Kind cluster
+task cluster:create                   # Recreate fresh Kind cluster
 task cluster:destroy                # Destroy Kind cluster completely
 ```
 
 **Testing Flow:**
-1. `task test:all` → Teardown → Setup → Build → Run all tests
+1. `task test:all` → Quality → Fresh Cluster → Unit Tests → Integration Tests
 
 
 **Script Architecture:**
@@ -372,7 +371,7 @@ task cluster:destroy                # Destroy Kind cluster completely
 The project uses a modular script architecture for maintainability:
 - `scripts/common.sh` - Shared logging functions (log, error, success, warn)
 - `scripts/config.sh` - Shared constants (cluster names, versions, namespaces)
-- `scripts/kind-setup.sh` - Creates bare Kind cluster with namespaces
+- `scripts/kind-setup.sh` - Recreates Kind cluster with namespaces
 - `scripts/kind-teardown.sh` - Complete cleanup of cluster and resources
 - `scripts/install-cnpg.sh` - Installs CloudNativePG operator via Helm
 - `scripts/deploy-test-keycloak.sh` - Creates test Keycloak with CNPG database

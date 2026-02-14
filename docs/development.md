@@ -141,13 +141,12 @@ task test:all
 ```
 
 **Integration test workflow:**
-1. Creates Kind cluster (if not exists)
+1. Recreates Kind cluster
 2. Installs CloudNativePG operator
 3. Deploys test Keycloak instance
 4. Builds operator container image
 5. Deploys operator via Helm
 6. Runs tests against real cluster
-7. (Optional) Cleans up cluster
 
 **When to write integration tests:**
 - Testing end-to-end resource creation/update/deletion
