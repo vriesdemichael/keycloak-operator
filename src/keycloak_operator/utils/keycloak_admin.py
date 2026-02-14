@@ -240,10 +240,14 @@ _httpx_client_cache: dict[tuple[str, bool], tuple[httpx.AsyncClient, int]] = {}
 _cache_lock = asyncio.Lock()
 
 # Global cache for KeycloakAdminClient instances - one per Keycloak instance
-# Key: (keycloak_name, namespace), Value: (KeycloakAdminClient, event_loop_id)
+# Key: (keycloak_name, namespace, verify_ssl), Value: (KeycloakAdminClient, event_loop_id)
 # The cached client's _ensure_authenticated() handles token refresh/expiry
 # automatically before every API call, so no external token management is needed.
-_admin_client_cache: dict[tuple[str, str], tuple["KeycloakAdminClient", int]] = {}
+_admin_client_cache: dict[tuple[str, str, bool], tuple["KeycloakAdminClient", int]] = {}
+
+# Map of pending creations to avoid thundering herd
+# Key: (keycloak_name, namespace, verify_ssl), Value: asyncio.Future
+_pending_creations: dict[tuple[str, str, bool], asyncio.Future] = {}
 
 
 class KeycloakAdminError(Exception):
@@ -420,6 +424,25 @@ class KeycloakAdminClient:
         # No-op: tokens and httpx client are cached and reused.
         # _ensure_authenticated() handles token refresh before each request.
         pass
+
+    def cleanup(self) -> None:
+        """
+        Cleanup resources and metrics when client is discarded from cache.
+
+        This method is called when the client is removed from the global cache
+        (e.g. on operator shutdown or when replaced by a new instance).
+        """
+        # Decrement active sessions gauge if we had an active session
+        if self._session_tracked:
+            self._session_tracked = False
+            try:
+                from keycloak_operator.observability.metrics import (
+                    ADMIN_SESSIONS_ACTIVE,
+                )
+
+                ADMIN_SESSIONS_ACTIVE.dec()
+            except Exception:
+                pass  # Metrics are optional
 
     async def __aenter__(self) -> "KeycloakAdminClient":
         """Async context manager entry."""
@@ -7456,7 +7479,7 @@ async def get_keycloak_admin_client(
     """
     Get or create a cached KeycloakAdminClient for a specific instance.
 
-    The client is cached per (keycloak_name, namespace) pair and reused
+    The client is cached per (keycloak_name, namespace, verify_ssl) tuple and reused
     across reconciliation cycles. Token refresh/expiry is handled
     automatically by _ensure_authenticated() before every API call.
 
@@ -7469,11 +7492,12 @@ async def get_keycloak_admin_client(
     Returns:
         Configured KeycloakAdminClient instance (may be cached)
     """
-    cache_key = (keycloak_name, namespace)
+    cache_key = (keycloak_name, namespace, verify_ssl)
     current_loop_id = id(asyncio.get_running_loop())
 
-    # Check cache first
+    # Check cache and pending creations with lock
     async with _cache_lock:
+        # 1. Check existing cache
         if cache_key in _admin_client_cache:
             cached_client, loop_id = _admin_client_cache[cache_key]
             if loop_id == current_loop_id:
@@ -7486,12 +7510,29 @@ async def get_keycloak_admin_client(
                 return cached_client
             else:
                 # Client from a different event loop (e.g. test teardown/setup)
+                cached_client.cleanup()
                 del _admin_client_cache[cache_key]
                 logger.debug(
                     f"Discarding stale admin client for {keycloak_name} "
                     f"(event loop mismatch)"
                 )
 
+        # 2. Check pending creations to avoid thundering herd
+        if cache_key in _pending_creations:
+            future = _pending_creations[cache_key]
+            creator = False
+        else:
+            # We are the creator
+            future = asyncio.Future()
+            _pending_creations[cache_key] = future
+            creator = True
+
+    # If we are waiting for another coroutine to create the client
+    if not creator:
+        logger.debug(f"Waiting for pending admin client creation for {keycloak_name}")
+        return await future
+
+    # We are the creator
     from kubernetes import client as k8s_client
 
     from keycloak_operator.utils.kubernetes import get_kubernetes_client
@@ -7557,32 +7598,32 @@ async def get_keycloak_admin_client(
         # which refreshes via refresh_token (no Argon2) or re-authenticates
         await admin_client.authenticate()
 
-        # Cache the authenticated client using double-check pattern
+        # Success - cache the result and resolve pending futures
+        future.set_result(admin_client)
         async with _cache_lock:
-            # Check again if another coroutine cached it while we were authenticating
-            if cache_key in _admin_client_cache:
-                cached_msg_client, lid = _admin_client_cache[cache_key]
-                if lid == current_loop_id:
-                    logger.info(
-                        f"Reusing cached admin client for {keycloak_name} (race condition handling)"
-                    )
-                    # Use the one created by another coroutine
-                    admin_client = cached_msg_client
-                else:
-                    # Stale entry in cache, overwrite it
-                    _admin_client_cache[cache_key] = (admin_client, current_loop_id)
-            else:
-                _admin_client_cache[cache_key] = (admin_client, current_loop_id)
+            _admin_client_cache[cache_key] = (admin_client, current_loop_id)
+            # Remove our future from pending
+            if cache_key in _pending_creations:
+                del _pending_creations[cache_key]
 
         logger.info(f"Created and cached admin client for {keycloak_name}")
         return admin_client
 
     except Exception as e:
         logger.error(f"Failed to create admin client: {e}")
+        # Signal failure to waiters
+        future.set_exception(e)
+        async with _cache_lock:
+            # Clean up pending map
+            if cache_key in _pending_creations:
+                del _pending_creations[cache_key]
         raise KeycloakAdminError(f"Admin client creation failed: {e}") from e
 
 
 async def clear_admin_client_cache() -> None:
     """Clear all cached admin clients. Used in tests and operator shutdown."""
     async with _cache_lock:
+        # Cleanup metrics for all clients before clearing
+        for client, _ in _admin_client_cache.values():
+            client.cleanup()
         _admin_client_cache.clear()

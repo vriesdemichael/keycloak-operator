@@ -199,7 +199,7 @@ class TestRecordSessionMetrics:
 # ---------------------------------------------------------------------------
 # KeycloakAdminClient.close() is a no-op (cached clients preserve tokens)
 # ---------------------------------------------------------------------------
-class TestCloseSessionDecrement:
+class TestCloseSessionNoop:
     """Test that close() is a no-op for cached admin clients.
 
     Admin clients are cached globally and reuse tokens across reconciliation
