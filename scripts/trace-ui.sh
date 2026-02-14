@@ -20,7 +20,7 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 source "${SCRIPT_DIR}/common.sh"
 
 CONTAINER_NAME="keycloak-operator-jaeger"
-JAEGER_IMAGE="jaegertracing/jaeger:latest"
+JAEGER_IMAGE="jaegertracing/jaeger:1.54.0"  # Pinned for reproducible trace debugging
 JAEGER_UI_PORT=16686
 OTLP_HTTP_PORT=4318
 TRACE_FILE="${1:-${REPO_ROOT}/.tmp/traces/traces.jsonl}"
@@ -70,6 +70,8 @@ docker run -d \
     --rm \
     -p "${JAEGER_UI_PORT}:${JAEGER_UI_PORT}" \
     -p "${OTLP_HTTP_PORT}:${OTLP_HTTP_PORT}" \
+    -e COLLECTOR_OTLP_ENABLED=true \
+    -e COLLECTOR_OTLP_HTTP_HOST_PORT="0.0.0.0:${OTLP_HTTP_PORT}" \
     "${JAEGER_IMAGE}" >/dev/null
 
 # Wait for Jaeger to be ready

@@ -492,25 +492,7 @@ def main() -> None:
     if args.summary:
         print_summary(filtered)
     elif args.tree:
-        # Note: print_tree wasn't imported or defined yet in snippet, need to verify
-        # Ah, in previous file view, line 397 called print_tree(filtered[: args.limit])
-        # But I didn't see print_tree definition in lines 1-200 or 310-412.
-        # It's okay, I'll assume it exists or I'll remove the call if not found.
-        # Actually line 397 in previous view had it.
-        # If I replaced main, I need to keep the calls valid.
-        # Re-implement simple tree logic for now since I can't see print_tree
-        traces_by_id = defaultdict(list)
-        for span in filtered[: args.limit]:
-            traces_by_id[span["trace_id"]].append(span)
-
-        print(f"Showing {len(traces_by_id)} traces:")
-        for trace_id, trace_spans in traces_by_id.items():
-            print(f"\nTrace: {trace_id}")
-            sorted_spans = sorted(
-                trace_spans, key=lambda s: s.get("start_time") or datetime.min
-            )
-            for span in sorted_spans:
-                print_span(span, indent=1)
+        print_tree(filtered[: args.limit])
     else:
         # Default: list spans
         for span in filtered[: args.limit]:

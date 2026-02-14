@@ -62,13 +62,12 @@ import pytest
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.utils.keycloak_admin import clear_admin_client_cache
-
 from keycloak_operator.constants import (
     DEFAULT_KEYCLOAK_OPTIMIZED_VERSION,
 )
 from keycloak_operator.models.client import KeycloakClientSpec, RealmRef
 from keycloak_operator.models.realm import KeycloakRealmSpec, OperatorRef
+from keycloak_operator.utils.keycloak_admin import clear_admin_client_cache
 
 from .cleanup_utils import (
     CleanupTracker,
@@ -1354,8 +1353,8 @@ async def sample_keycloak_spec_factory(
                 },
             },
             "resources": {
-                "requests": {"cpu": "1000m", "memory": "500Mi"},
-                "limits": {"cpu": "2500m", "memory": "4Gi"},
+                "requests": {"cpu": "200m", "memory": "512Mi"},
+                "limits": {"cpu": "2000m", "memory": "2Gi"},
             },
         }
 
@@ -1755,8 +1754,8 @@ async def shared_operator(
                 cnpg_patch = {
                     "spec": {
                         "resources": {
-                            "requests": {"cpu": "100m", "memory": "256Mi"},
-                            "limits": {"cpu": "500m", "memory": "512Mi"},
+                            "requests": {"cpu": "200m", "memory": "256Mi"},
+                            "limits": {"cpu": "500m", "memory": "1Gi"},
                         }
                     }
                 }

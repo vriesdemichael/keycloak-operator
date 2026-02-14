@@ -493,13 +493,8 @@ async def _run_realm_health_check(
             patch.status["lastHealthCheck"] = datetime.now(UTC).isoformat()
             return
 
-        # Verify realm configuration matches spec
-        try:
-            current_realm = await admin_client.get_realm(realm_name, namespace)
-            config_matches = current_realm if current_realm else False
-        except Exception as e:
-            logger.warning(f"Failed to verify realm configuration: {e}")
-            config_matches = False
+        # Verify realm configuration matches spec using the already-fetched realm
+        config_matches = existing_realm if existing_realm else False
         if not config_matches:
             logger.info(f"Realm {realm_name} configuration drift detected")
             patch.status["phase"] = "Degraded"
