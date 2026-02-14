@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.12](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.11...operator-image-v0.7.12) (2026-02-14)
+
+
+### Features
+
+* **chart-client+operator:** add support for manual client secrets (issue [#495](https://github.com/vriesdemichael/keycloak-operator/issues/495)) ([06359dd](https://github.com/vriesdemichael/keycloak-operator/commit/06359ddbac14ab27194663929610efd759ea2eab))
+
+
+### Bug Fixes
+
+* address PR review comments ([c7d39bd](https://github.com/vriesdemichael/keycloak-operator/commit/c7d39bdfe727c6a102c81af8b8b87f80db29daa1))
+* **chart-client+operator:** resolve helm validation and ci failures ([e634fe3](https://github.com/vriesdemichael/keycloak-operator/commit/e634fe39ad9eabffb3139b84af5ba6d7ccc019c0))
+* **operator:** keycloak admin tokens are now being reused instead of recreated for every interaction ([0bc4ca7](https://github.com/vriesdemichael/keycloak-operator/commit/0bc4ca75aa19c343adffd1fbec9a310e994ce04a))
+
 ## [0.7.11](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.10...operator-image-v0.7.11) (2026-02-12)
 
 
