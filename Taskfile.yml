@@ -432,6 +432,13 @@ tasks:
         KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
         uv run pytest {{.TESTS}} -v -n auto --dist=loadscope --reruns 2 --reruns-delay 1 {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log || EXIT_CODE=$?
 
+        # If pytest failed, exit now without doing coverage retrieval or combination
+        # This prevents confusing logs about coverage failure when tests already failed
+        if [ ${EXIT_CODE:-0} -ne 0 ]; then
+          echo "❌ Integration tests failed with exit code $EXIT_CODE. Skipping coverage collection."
+          exit $EXIT_CODE
+        fi
+
         if [ "{{default "false" .COVERAGE}}" = "true" ]; then
           echo "Combining coverage data..."
           bash scripts/combine-coverage.sh || true
@@ -441,7 +448,7 @@ tasks:
 
   test:integration:
     desc: Run integration tests (guaranteed fresh cluster)
-    deps: [cluster:create, infra:all, image:load-operator, image:load-selected]
+    deps: [cluster:create, infra:all, image:load-operator, image:load-all]
     cmds:
       - task: test:run-integration
         vars:
@@ -449,7 +456,7 @@ tasks:
 
   test:integration-coverage:
     desc: Run integration tests with coverage (guaranteed fresh cluster)
-    deps: [cluster:create, infra:all, image:load-coverage, image:load-selected]
+    deps: [cluster:create, infra:all, image:load-coverage, image:load-all]
     cmds:
       - task: test:run-integration
         vars:

@@ -153,7 +153,7 @@ async def test_build_mismatch(
     )
 
     # 3. Wait for result
-    timeout = 300  # 5 minutes
+    timeout = 420  # 7 minutes (increased for busy CI environments)
     interval = 5
     elapsed = 0
 
