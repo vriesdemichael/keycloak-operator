@@ -188,7 +188,7 @@ tasks:
   # ============================================================================
   test:unit:
     desc: Run unit tests with coverage
-    cmd: KUBECONFIG=/dev/null uv run --group test pytest tests/unit/ -v --disable-socket --allow-unix-socket --cov=keycloak_operator --cov-report=xml --cov-report=termxml --cov-report=term
+    cmd: KUBECONFIG=/dev/null uv run --group test pytest tests/unit/ -v --disable-socket --allow-unix-socket --cov=keycloak_operator --cov-report=xml --cov-report=term
 
   # ============================================================================
   # Images
