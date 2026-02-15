@@ -96,10 +96,6 @@ runs:
         kubectl get nodes
         kubectl get pods -A
 
-    - name: Load operator image into Kind
-      shell: bash
-      run: kind load docker-image keycloak-operator:test --name ${{ inputs.cluster-name }}
-
     - name: Log in to GHCR
       uses: docker/login-action@v3
       with:
@@ -107,35 +103,33 @@ runs:
         username: ${{ inputs.github-actor }}
         password: ${{ inputs.github-token }}
 
-    - name: Pull and load Keycloak optimized image
+    - name: Prepare Keycloak optimized image
       shell: bash
       env:
         KEYCLOAK_IMAGE: ${{ inputs.registry }}/${{ inputs.image-name }}/keycloak-optimized:${{ inputs.keycloak-version }}
       run: |
         docker pull "${KEYCLOAK_IMAGE}"
         docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ inputs.keycloak-version }}
-        kind load docker-image keycloak-optimized:${{ inputs.keycloak-version }} --name ${{ inputs.cluster-name }}
+        mkdir -p .task && touch .task/image_build_keycloak
 
-    - name: Pull and load Keycloak optimized-tracing image
+    - name: Prepare Keycloak optimized-tracing image
       shell: bash
       env:
         KEYCLOAK_IMAGE: ${{ inputs.registry }}/${{ inputs.image-name }}/keycloak-optimized-tracing:${{ inputs.keycloak-version }}
       run: |
         docker pull "${KEYCLOAK_IMAGE}"
         docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized-tracing:${{ inputs.keycloak-version }}
-        kind load docker-image keycloak-optimized-tracing:${{ inputs.keycloak-version }} --name ${{ inputs.cluster-name }}
-
-    - name: Install Infrastructure
-      shell: bash
-      run: task infra:all
+        mkdir -p .task && touch .task/image_build_keycloak_tracing
 
     - name: Run integration tests
       shell: bash
       env:
         INTEGRATION_COVERAGE: "true"
         KEYCLOAK_VERSION: ${{ inputs.keycloak-version }}
+        CLUSTER_NAME: ${{ inputs.cluster-name }}
+        KIND_RETAIN_CLUSTER: "true"
       run: |
-        task test:run-integration
+        task test:integration-coverage
         mv coverage.xml coverage-integration.xml
 
     - name: Upload integration coverage to Codecov

@@ -44,6 +44,10 @@ create_cluster() {
 
     # Check if cluster already exists
     if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
+        if [ "${KIND_RETAIN_CLUSTER:-false}" == "true" ]; then
+            log "Cluster '$CLUSTER_NAME' exists and KIND_RETAIN_CLUSTER is true. Skipping creation."
+            return
+        fi
         warn "Cluster '$CLUSTER_NAME' already exists. Deleting and recreating..."
         kind delete cluster --name "$CLUSTER_NAME"
     fi
