@@ -87,9 +87,17 @@ runs:
         version: ${{ inputs.kind-version }}
         kubectl_version: ${{ inputs.kubectl-version }}
 
+    - name: Set up Helm
+      uses: azure/setup-helm@v4
+      with:
+        version: 'v3.14.0'
+
     - name: Verify Kind installation
       shell: bash
-      run: kind version
+      run: |
+        kind version
+        helm version
+        kubectl version --client
 
     - name: Log in to GHCR
       uses: docker/login-action@v3
