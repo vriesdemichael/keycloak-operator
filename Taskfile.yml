@@ -47,6 +47,10 @@ tasks:
             exit 1
           fi
         done
+        if ! command -v trivy >/dev/null 2>&1; then
+          echo "⚠️  trivy is recommended for security scans but not installed."
+          echo "   Install from https://aquasecurity.github.io/trivy/"
+        fi
       - task: dev:hooks
 
   keycloak:models:
