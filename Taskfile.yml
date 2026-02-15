@@ -107,9 +107,11 @@ tasks:
       - uv run --group security pip-audit --desc
       - uv run --group security safety check --json
       - |
-        if command -v trivy >/dev/null 2>&1; then
+        if [ -z "$CI" ] && command -v trivy >/dev/null 2>&1; then
           echo "🔍 Running Trivy image scan..."
           trivy image keycloak-operator:{{.TEST_IMAGE_TAG}} --severity CRITICAL,HIGH --exit-code 1
+        elif [ -n "$CI" ]; then
+          echo "ℹ️ Skipping Trivy in CI (handled by action)"
         else
           echo "⚠️ trivy not installed, skipping image scan. Install from https://aquasecurity.github.io/trivy/"
         fi
