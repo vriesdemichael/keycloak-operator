@@ -116,10 +116,6 @@ runs:
         docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized-tracing:${{ inputs.keycloak-version }}
         mkdir -p .task && touch .task/image_build_keycloak_tracing
 
-    - name: Load operator image into Kind (Cleanup)
-      # Removed: Taskfile handles loading via image:load-operator
-      run: echo "Skipped manual load - handled by Taskfile"
-
     - name: Run integration tests
       shell: bash
       env:
