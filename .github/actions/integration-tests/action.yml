@@ -171,5 +171,7 @@ runs:
       uses: actions/upload-artifact@v5
       with:
         name: test-logs-${{ inputs.run-id }}
-        path: test-logs/
+        path: |
+          .tmp/test-logs/
+          .tmp/test-integration.log
         retention-days: 7
