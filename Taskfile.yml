@@ -151,7 +151,7 @@ tasks:
   # ============================================================================
   docs:generate-decisions:
     desc: Generate markdown from decision record YAML files
-    cmd: ./scripts/build-adr-docs.sh
+    cmd: bash scripts/build-adr-docs.sh
     sources:
       - docs/decisions/*.yaml
     generates:
@@ -345,35 +345,35 @@ tasks:
   cluster:create:
     desc: Recreate Kind cluster (Fresh state)
     run: once
-    cmd: ./scripts/kind-setup.sh
+    cmd: bash scripts/kind-setup.sh
 
   cluster:destroy:
     desc: Destroy Kind cluster
-    cmd: ./scripts/kind-teardown.sh
+    cmd: bash scripts/kind-teardown.sh
 
   infra:cnpg:
     desc: Install CNPG operator (Idempotent)
     deps: [cluster:create]
     status:
       - kubectl get deployment -n cnpg-system cnpg-cloudnative-pg
-    cmd: ./scripts/install-cnpg.sh
+    cmd: bash scripts/install-cnpg.sh
 
   infra:cert-manager:
     desc: Install cert-manager (Idempotent)
     deps: [cluster:create]
     status:
       - kubectl get deployment -n cert-manager cert-manager
-    cmd: ./scripts/install-cert-manager.sh
+    cmd: bash scripts/install-cert-manager.sh
 
   infra:otel:
     desc: Deploy OTEL collector
     deps: [cluster:create]
-    cmd: ./scripts/deploy-otel-collector.sh
+    cmd: bash scripts/deploy-otel-collector.sh
 
   infra:ldap:
     desc: Deploy OpenLDAP for user federation testing
     deps: [cluster:create]
-    cmd: ./scripts/install-openldap.sh
+    cmd: bash scripts/install-openldap.sh
 
   infra:all:
     desc: Install all infrastructure
@@ -433,7 +433,7 @@ tasks:
       - |
         if [ "{{default "false" .COVERAGE}}" = "true" ]; then
           echo "Combining coverage data..."
-          ./scripts/combine-coverage.sh
+          bash scripts/combine-coverage.sh
         fi
 
   test:integration:
@@ -514,14 +514,14 @@ tasks:
       - kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces -o wide > .tmp/test-logs/test-resources.log 2>&1 || true
       - kubectl get events --all-namespaces --sort-by='.lastTimestamp' > .tmp/test-logs/events.log 2>&1 || true
       - kubectl get pods --all-namespaces -o wide > .tmp/test-logs/all-pods.log 2>&1 || true
-      - if [ "{{.TRACING_ENABLED}}" = "true" ]; then ./scripts/retrieve-traces.sh || true; fi
+      - if [ "{{.TRACING_ENABLED}}" = "true" ]; then bash scripts/retrieve-traces.sh || true; fi
 
   # ============================================================================
   # Trace Visualization
   # ============================================================================
   trace:ui:
     desc: Start Jaeger UI and load traces from .tmp/traces/ (human only)
-    cmd: ./scripts/trace-ui.sh
+    cmd: bash scripts/trace-ui.sh
 
   trace:ui-stop:
     desc: Stop the Jaeger trace viewer container

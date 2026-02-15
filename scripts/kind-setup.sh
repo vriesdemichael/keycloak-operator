@@ -89,7 +89,7 @@ setup_cluster() {
 
     # Deploy OTEL Collector for trace collection during tests
     log "Deploying OTEL Collector for trace collection..."
-    "${SCRIPT_DIR}/deploy-otel-collector.sh"
+    bash "${SCRIPT_DIR}/deploy-otel-collector.sh"
 
     success "Cluster setup completed"
 }
