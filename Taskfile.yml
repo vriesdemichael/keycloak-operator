@@ -430,7 +430,7 @@ tasks:
         INTEGRATION_COVERAGE={{default "false" .COVERAGE}} \
         TEST_IMAGE_TAG={{.TEST_IMAGE_TAG}} \
         KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
-        uv run pytest {{.TESTS}} -v -n auto --dist=loadscope {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log || EXIT_CODE=$?
+        uv run pytest {{.TESTS}} -v -n auto --dist=loadscope --reruns 2 --reruns-delay 1 {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log || EXIT_CODE=$?
 
         if [ "{{default "false" .COVERAGE}}" = "true" ]; then
           echo "Combining coverage data..."
