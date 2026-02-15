@@ -426,15 +426,18 @@ tasks:
       - echo "Running integration tests..."
       - |
         set -o pipefail
+        EXIT_CODE=0
         INTEGRATION_COVERAGE={{default "false" .COVERAGE}} \
         TEST_IMAGE_TAG={{.TEST_IMAGE_TAG}} \
         KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
-        uv run pytest {{.TESTS}} -v -n auto --dist=loadscope {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log
-      - |
+        uv run pytest {{.TESTS}} -v -n auto --dist=loadscope {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log || EXIT_CODE=$?
+
         if [ "{{default "false" .COVERAGE}}" = "true" ]; then
           echo "Combining coverage data..."
-          bash scripts/combine-coverage.sh
+          bash scripts/combine-coverage.sh || true
         fi
+
+        exit $EXIT_CODE
 
   test:integration:
     desc: Run integration tests (guaranteed fresh cluster)
