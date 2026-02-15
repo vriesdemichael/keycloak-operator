@@ -15,6 +15,7 @@ rationale: Taskfile provides a modern, robust alternative to Make with better cr
   syntax (YAML). It supports checksum-based caching (sources/generates) and status
   checks natively, enabling true idempotency. This allows us to unify CI/CD and local
   development workflows using the exact same commands.
+supersedes: 23
 provenance: autonomous-ai
 rejected_alternatives:
 - alternative: Keep Makefile

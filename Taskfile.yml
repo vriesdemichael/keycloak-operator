@@ -32,7 +32,21 @@ tasks:
   dev:setup:
     desc: Complete development setup
     cmds:
-      - command -v uv >/dev/null 2>&1 || { echo "❌ uv is required. Install from https://astral.sh/uv"; exit 1; }
+      - |
+        for tool in uv docker kind helm yq jq; do
+          if ! command -v $tool >/dev/null 2>&1; then
+            echo "❌ $tool is required but not installed."
+            case $tool in
+              uv) echo "   Install from https://astral.sh/uv" ;;
+              docker) echo "   Install from https://docs.docker.com/get-docker/" ;;
+              kind) echo "   Install from https://kind.sigs.k8s.io/" ;;
+              helm) echo "   Install from https://helm.sh/docs/intro/install/" ;;
+              yq) echo "   Install from https://github.com/mikefarah/yq" ;;
+              jq) echo "   Install via your package manager" ;;
+            esac
+            exit 1
+          fi
+        done
       - task: dev:hooks
 
   keycloak:models:
@@ -41,6 +55,7 @@ tasks:
     sources:
       - scripts/generate_keycloak_models.py
       - keycloak-api-spec.yaml
+      - scripts/keycloak_versions.yaml
     generates:
       - src/keycloak_operator/models/keycloak_api.py
 
@@ -173,7 +188,7 @@ tasks:
   # ============================================================================
   test:unit:
     desc: Run unit tests with coverage
-    cmd: KUBECONFIG=/dev/null uv run --group test pytest tests/unit/ -v --disable-socket --allow-unix-socket --cov=keycloak_operator --cov-report=
+    cmd: KUBECONFIG=/dev/null uv run --group test pytest tests/unit/ -v --disable-socket --allow-unix-socket --cov=keycloak_operator --cov-report=xml --cov-report=termxml --cov-report=term
 
   # ============================================================================
   # Images
@@ -195,6 +210,8 @@ tasks:
       - src/**/*.py
       - pyproject.toml
       - uv.lock
+      - README.md
+      - LICENSE
     generates:
       - .task/image_build_operator
 
@@ -220,6 +237,11 @@ tasks:
       - src/**/*.py
       - pyproject.toml
       - uv.lock
+      - README.md
+      - LICENSE
+      - .coveragerc
+      - images/operator/coveragerc.container
+      - images/operator/test-inject/**/*
     generates:
       - .task/image_build_coverage
 
@@ -288,6 +310,29 @@ tasks:
     desc: Load all test images
     deps: [image:load-operator, image:load-keycloak, image:load-keycloak-tracing]
 
+  image:publish:
+    desc: Build and push operator production image
+    vars:
+      PLATFORMS: '{{default "linux/amd64" .PLATFORMS}}'
+      # Convert newline-separated tags/labels to docker flags
+      DOCKER_TAGS:
+        sh: echo "{{.TAGS}}" | sed 's/^/--tag /' | tr '\n' ' '
+      DOCKER_LABELS:
+        sh: echo "{{.LABELS}}" | sed 's/^/--label "/; s/$/"/' | tr '\n' ' '
+    cmds:
+      - |
+        docker buildx build \
+          --platform {{.PLATFORMS}} \
+          --build-arg VERSION={{.VERSION}} \
+          --build-arg REVISION={{.REVISION}} \
+          --build-arg CREATED={{.CREATED}} \
+          -f images/operator/Dockerfile --target production \
+          --push \
+          {{.DOCKER_TAGS}} \
+          {{.DOCKER_LABELS}} \
+          --metadata-file .task/image-metadata.json \
+          .
+
   # ============================================================================
   # Cluster & Infrastructure
   # ============================================================================
@@ -340,6 +385,31 @@ tasks:
       - yq eval -i '.appVersion = "v{{.VERSION}}"' charts/keycloak-operator/Chart.yaml
       - echo "Updated operator chart to version v{{.VERSION}}"
 
+  charts:publish:
+    desc: Package and push a Helm chart to OCI registry
+    vars:
+      CHART_VERSION:
+        sh: yq eval '.version' charts/{{.CHART_NAME}}/Chart.yaml
+    cmds:
+      - mkdir -p .tmp/charts
+      - helm package charts/{{.CHART_NAME}} -d .tmp/charts
+      - |
+        OUTPUT=$(helm push .tmp/charts/{{.CHART_NAME}}-{{.CHART_VERSION}}.tgz oci://{{.REGISTRY_URL}}/{{.REGISTRY_OWNER}}/charts 2>&1)
+        echo "$OUTPUT"
+        echo "$OUTPUT" | grep -oP 'Digest: \Ksha256:[a-fA-F0-9]+' > .task/{{.CHART_NAME}}-digest
+
+  charts:tag-primary:
+    desc: Create and push primary version tag for operator chart
+    vars:
+      CHART_VERSION:
+        sh: yq eval '.version' charts/keycloak-operator/Chart.yaml
+    cmds:
+      - |
+        PRIMARY_TAG="v{{.CHART_VERSION}}"
+        COMMIT_SHA=$(git rev-parse HEAD)
+        git tag "$PRIMARY_TAG" "$COMMIT_SHA" 2>/dev/null || echo "Tag $PRIMARY_TAG already exists"
+        git push origin "$PRIMARY_TAG" 2>/dev/null || echo "Tag $PRIMARY_TAG already pushed"
+
   # ============================================================================
   # Integration Tests
   # ============================================================================
@@ -355,7 +425,7 @@ tasks:
         KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
         uv run pytest {{.TESTS}} -v -n auto --dist=loadscope {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log
       - |
-        if [ "{{.COVERAGE}}" = "true" ]; then
+        if [ "{{default "false" .COVERAGE}}" = "true" ]; then
           echo "Combining coverage data..."
           ./scripts/combine-coverage.sh
         fi
@@ -403,9 +473,9 @@ tasks:
       # Run integration tests (with error handling)
       - |
         set -o pipefail
-        {{.ROOT_DIR}}/.tmp/bin/task test:integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log || {
+        task test:integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log || {
           echo "[{{.TIMESTAMP}}] ❌ Integration tests failed" | tee -a .tmp/test-pre-commit.log
-          {{.ROOT_DIR}}/.tmp/bin/task logs:collect
+          task logs:collect
           exit 1
         }
 

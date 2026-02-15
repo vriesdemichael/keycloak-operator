@@ -59,7 +59,7 @@ runs:
         enable-cache: true
         cache-dependency-glob: "pyproject.toml"
 
-    - uses: ./.github/actions/setup-task
+    - uses: ./.github/actions/setup-tools
 
     - name: Download operator image
       uses: actions/download-artifact@v6
@@ -72,9 +72,9 @@ runs:
       run: |
         docker load --input /tmp/operator-test.tar
         # Satisfy Taskfile caching
-        mkdir -p .tmp/.task
-        touch .tmp/.task/image_build_operator
-        touch .tmp/.task/image_build_coverage
+        mkdir -p .task
+        touch .task/image_build_operator
+        touch .task/image_build_coverage
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3

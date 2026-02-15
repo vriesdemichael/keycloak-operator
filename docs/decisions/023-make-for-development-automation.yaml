@@ -1,15 +1,15 @@
 number: 23
+status: superseded
+superseded_by: 85
 title: Make for development automation
 category: development
 decision: Use Make as the primary interface for all development tasks. All common
   workflows (testing, quality checks, deployment, cluster management) must have corresponding
   Make targets.
-agent_instructions: Always check the Makefile for existing targets before running
-  commands directly. Use 'make help' to see available targets. When adding new development
-  workflows, create corresponding Make targets with descriptive help text. Never document
-  raw commands in guides - reference Make targets instead (e.g., 'make test-integration'
-  not 'uv run pytest tests/integration'). Make targets provide consistent interface
-  across different environments.
+agent_instructions: >
+  This decision is SUPERSEDED by ADR-085. Use Taskfile instead of Make.
+  Always check the Taskfile.yml for existing tasks before running
+  commands directly. Use 'task --list' to see available tasks.
 rationale: Make provides a standardized, discoverable interface for all development
   tasks. Developers and AI agents can run 'make help' to see all available commands.
   Make targets abstract away complexity (uv, pytest flags, cluster setup) into simple,

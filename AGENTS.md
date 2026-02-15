@@ -371,10 +371,10 @@ task cluster:destroy                # Destroy Kind cluster completely
 The project uses a modular script architecture for maintainability:
 - `scripts/common.sh` - Shared logging functions (log, error, success, warn)
 - `scripts/config.sh` - Shared constants (cluster names, versions, namespaces)
-- `scripts/kind-setup.sh` - Recreates Kind cluster with namespaces
-- `scripts/kind-teardown.sh` - Complete cleanup of cluster and resources
-- `scripts/install-cnpg.sh` - Installs CloudNativePG operator via Helm
-- `scripts/deploy-test-keycloak.sh` - Creates test Keycloak with CNPG database
+- `scripts/kind-setup.sh` - Used by `task cluster:create`
+- `scripts/kind-teardown.sh` - Used by `task cluster:destroy`
+- `scripts/install-cnpg.sh` - Used by `task infra:cnpg`
+- `scripts/deploy-test-keycloak.sh` - Creates test Keycloak with CNPG database (Internal)
 
 All scripts are idempotent and source common utilities for consistency.
 
@@ -436,7 +436,7 @@ echo "#!/bin/bash" > .tmp/debug-script.sh
 
 # Cleanup when done
 rm -rf .tmp/
-# Or use: make clean
+# Or use: task clean
 ```
 
 ### Guidelines
@@ -545,7 +545,7 @@ This project uses **type-safe Pydantic models** auto-generated from the official
 
 **OpenAPI Spec:** `keycloak-api-spec.yaml` (from https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml)
 **Generated Models:** `src/keycloak_operator/models/keycloak_api.py` (many models, in a very large file DO NOT UPDATE THIS FILE MANUALLY)
-**Generation Script:** `scripts/generate-keycloak-models.sh`
+**Generation Script:** `task keycloak:models`
 **Validation Layer:** `_make_validated_request()` in `keycloak_admin.py`
 
 ### Using the Pydantic Models
@@ -585,7 +585,7 @@ def create_realm(self, realm_config: dict[str, Any]) -> dict[str, Any]:
 curl -o keycloak-api-spec.yaml https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml
 
 # 2. Regenerate models
-./scripts/generate-keycloak-models.sh
+./task keycloak:models
 
 # 3. Review changes
 git diff src/keycloak_operator/models/keycloak_api.py

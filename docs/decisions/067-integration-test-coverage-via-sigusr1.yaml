@@ -8,7 +8,7 @@ decision: Coverage data from integration tests running in Kubernetes pods must b
 agent_instructions: When modifying integration test infrastructure, preserve the coverage
   collection mechanism. The operator listens for SIGUSR1 and calls coverage.save().
   The pytest_sessionfinish hook in conftest.py triggers coverage retrieval by calling
-  scripts/retrieve-coverage.sh, which sends SIGUSR1 to PID 1 in the operator pod,
+  an internal script which sends SIGUSR1 to PID 1 in the operator pod,
   waits for flush, then retrieves files via kubectl cp. Never rely on atexit handlers
   for coverage in containerized tests - they're unreliable with Kubernetes pod termination.
   Coverage config differs between host (.coveragerc) and container (images/operator/coveragerc.container)

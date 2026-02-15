@@ -18,7 +18,7 @@ runs:
       with:
         enable-cache: true
 
-    - uses: ./.github/actions/setup-task
+    - uses: ./.github/actions/setup-tools
 
     - name: Validate documentation schemas
       shell: bash

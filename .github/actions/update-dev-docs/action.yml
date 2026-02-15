@@ -14,7 +14,7 @@ runs:
       with:
         python-version: ${{ inputs.python-version }}
 
-    - uses: ./.github/actions/setup-task
+    - uses: ./.github/actions/setup-tools
 
     - name: Deploy dev docs with mike
       shell: bash

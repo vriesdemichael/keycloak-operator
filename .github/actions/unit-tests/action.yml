@@ -24,7 +24,7 @@ runs:
       with:
         enable-cache: true
 
-    - uses: ./.github/actions/setup-task
+    - uses: ./.github/actions/setup-tools
 
     - name: Run unit tests
       shell: bash

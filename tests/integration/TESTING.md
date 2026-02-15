@@ -658,7 +658,7 @@ cat .tmp/test-logs/events.log  # Kubernetes events
 Integration tests collect OpenTelemetry traces from the operator for post-mortem debugging.
 For the complete workflow and all options, see **ADR 082: Trace-Based Test Debugging Infrastructure** in `docs/decisions/`.
 
-**Local debugging (after `make test`):**
+**Local debugging (after `task test:all`):**
 ```bash
 # Traces are automatically collected to .tmp/traces/traces.jsonl
 
@@ -789,7 +789,7 @@ Integration tests support coverage collection from the operator running in Kuber
 
 ```bash
 # Run complete test suite with coverage (recommended)
-make test
+task test:all
 
 # Or set environment variable manually
 INTEGRATION_COVERAGE=true uv run pytest tests/integration/ -v -n auto --dist=loadscope

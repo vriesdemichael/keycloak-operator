@@ -48,7 +48,7 @@ runs:
         touch .task/image_build_operator
         touch .task/image_build_coverage
 
-    - uses: ./.github/actions/setup-task
+    - uses: ./.github/actions/setup-tools
 
     - name: Run dependency and image security scans
       shell: bash

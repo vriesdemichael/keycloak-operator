@@ -29,17 +29,11 @@ cd keycloak-operator
 
 # Install all dependencies and pre-commit hooks
 task dev:setup
-
-# Or manually:
-uv sync --group dev --group docs
-task dev:hooks
 ```
 
 This will:
-- Create a virtual environment managed by uv
-- Install all Python dependencies (runtime, dev, docs, quality)
 - Set up pre-commit hooks for code quality
-- Configure your local environment
+- Verify your local environment has all required tools (docker, kind, helm, yq, etc.)
 
 ### Pre-commit Hooks
 
@@ -576,8 +570,8 @@ To add a new explicit page:
 
 | Symptom | Cause | Resolution |
 |---------|-------|------------|
-| `ModuleNotFoundError` | Dependencies not installed | Run `uv sync` or `task dev:setup` |
-| `No module named 'keycloak_operator'` | Not using uv run | Always use `uv run <command>` or activate venv |
+| `ModuleNotFoundError` | Dependencies not installed | Run `task dev:setup` |
+| `No module named 'keycloak_operator'` | Not using uv run | Always use `uv run <command>` |
 | Type errors block tests | Missing type annotations | Run `uv run ty check` and fix issues |
 | Pre-commit hook fails | Code quality issues | Run `task quality:check` to auto-fix |
 | Integration tests fail | Cluster not ready | Run `task cluster:reset && task test:all` |

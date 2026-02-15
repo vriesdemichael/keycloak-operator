@@ -4,11 +4,11 @@ category: development
 decision: >
   Integration tests must always run on a freshly created Kind cluster.
   The "cluster reuse" workflow is abandoned in favor of reproducibility and reliability.
-  The `make test` command will alias `make test-pre-commit` which performs a full teardown and setup.
+  The `task test:all` command will alias `task test:all` which performs a full teardown and setup.
 agent_instructions: >
   Do not attempt to optimize testing by reusing existing clusters.
   Always expect and use the full teardown/setup cycle.
-  The `make test` command is the single source of truth for running the full test suite.
+  The `task test:all` command is the single source of truth for running the full test suite.
 rationale: >
   Cluster reuse and cleanup logic proved to be flaky and complex ("messy cleanup").
   Recreating the cluster ensures a pristine environment for every test run, eliminating state leakage and "works on my machine" issues.

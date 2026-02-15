@@ -4,7 +4,7 @@ category: development
 decision: Use Ruff for both code formatting and linting. Ruff replaces multiple tools
   (Black, isort, Flake8, etc.) with a single fast tool.
 agent_instructions: Run 'ruff format' for code formatting. Run 'ruff check --fix'
-  for linting. Configure Ruff in pyproject.toml. Use 'make format' and 'make lint'
+  for linting. Configure Ruff in pyproject.toml. Use 'task quality:format' and 'task quality:lint'
   targets. Never introduce Black, isort, Flake8, or other legacy linters. Ruff handles
   all Python code quality checks.
 rationale: Ruff is 10-100x faster than legacy Python linters. Single tool replaces

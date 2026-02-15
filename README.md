@@ -259,7 +259,7 @@ git clone https://github.com/vriesdemichael/keycloak-operator.git
 cd keycloak-operator
 
 # Install dependencies
-task dev:install
+task dev:setup
 
 # Run quality checks
 task quality:check

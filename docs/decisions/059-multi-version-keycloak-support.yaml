@@ -29,7 +29,7 @@ agent_instructions: |
   3. **Create adapter** (if needed): Add new adapter class in `compatibility/adapters.py` for version-specific conversions
   4. **Register adapter**: Update `get_adapter()` factory function to return appropriate adapter
   5. **Add unit tests**: Test adapter conversions in `tests/unit/test_compatibility.py`
-  6. **Validate manually**: Run full integration test suite with `KEYCLOAK_VERSION=27.0.0 make test`
+  6. **Validate manually**: Run full integration test suite with `KEYCLOAK_VERSION=27.0.0 task test:all`
   7. **Document validation**: Update `scripts/keycloak_versions.yaml` with validation date and commit
 
   ## Updating the Canonical Model Version
@@ -37,12 +37,12 @@ agent_instructions: |
   When updating the canonical model version (e.g., from 26.5.2 to 27.0.0):
 
   1. **Download new spec**: `curl -o keycloak-api-spec.yaml https://www.keycloak.org/docs-api/27.0.0/rest-api/openapi.yaml`
-  2. **Regenerate models**: `uv run scripts/generate_keycloak_models.py`
+  2. **Regenerate models**: `task keycloak:models`
   3. **Review changes**: `git diff src/keycloak_operator/models/keycloak_api.py`
   4. **Update constants**: Set `CANONICAL_MODEL_VERSION = "27.0.0"` in `constants.py`
   5. **Update keycloak_versions.yaml**: Change `canonical_version.version` to new version
   6. **Fix breaking changes**: Update adapters for any removed/changed fields
-  7. **Run full test suite**: `make test` to ensure all tests pass
+  7. **Run full test suite**: `task test:all` to ensure all tests pass
   8. **Document in ADR notes**: Add breaking changes to the rationale section of this ADR
 
   ## Validating a Keycloak Version
@@ -50,7 +50,7 @@ agent_instructions: |
   To validate support for a specific Keycloak version:
 
   1. Set environment variable: `export KEYCLOAK_VERSION=24.0.0`
-  2. Run full test suite: `make test`
+  2. Run full test suite: `task test:all`
   3. If tests pass, document in `scripts/keycloak_versions.yaml` under `validated_versions`
   4. Include: version, date, commit hash, and pass/fail status
 
