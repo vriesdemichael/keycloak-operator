@@ -314,7 +314,7 @@ tasks:
 
   image:load-all:
     desc: Load all test images
-    deps: [image:load-operator, image:load-keycloak, image:load-keycloak-tracing]
+    deps: [image:load-keycloak, image:load-keycloak-tracing]
 
   image:publish:
     desc: Build and push operator production image
@@ -387,7 +387,8 @@ tasks:
     vars:
       VERSION: '{{default .VERSION .OPERATOR_VERSION}}'
     cmds:
-      - yq eval -i '.image.tag = "v{{.VERSION}}"' charts/keycloak-operator/values.yaml
+      - yq eval '.operator.image.tag' charts/keycloak-operator/values.yaml > /dev/null
+      - yq eval -i '.operator.image.tag = "v{{.VERSION}}"' charts/keycloak-operator/values.yaml
       - yq eval -i '.appVersion = "v{{.VERSION}}"' charts/keycloak-operator/Chart.yaml
       - echo "Updated operator chart to version v{{.VERSION}}"
 
@@ -430,7 +431,7 @@ tasks:
         INTEGRATION_COVERAGE={{default "false" .COVERAGE}} \
         TEST_IMAGE_TAG={{.TEST_IMAGE_TAG}} \
         KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
-        uv run pytest {{.TESTS}} -v -n auto --dist=loadscope --reruns 2 --reruns-delay 1 {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log || EXIT_CODE=$?
+        uv run --group test pytest {{.TESTS}} -v -n auto --dist=loadscope --reruns 2 --reruns-delay 1 {{.CLI_ARGS}} 2>&1 | tee .tmp/test-integration.log || EXIT_CODE=$?
 
         # If pytest failed, exit now without doing coverage retrieval or combination
         # This prevents confusing logs about coverage failure when tests already failed
