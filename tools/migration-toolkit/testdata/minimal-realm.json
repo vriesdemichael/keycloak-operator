@@ -1,0 +1,27 @@
+{
+  "realm": "minimal-test",
+  "enabled": true,
+  "displayName": "Minimal Test Realm",
+  "clients": [
+    {
+      "clientId": "account",
+      "name": "${client_account}",
+      "enabled": true,
+      "publicClient": true
+    },
+    {
+      "clientId": "my-app",
+      "name": "My Application",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ]
+    }
+  ]
+}

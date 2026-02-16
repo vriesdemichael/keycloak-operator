@@ -1,0 +1,605 @@
+{
+  "realm": "maximal-test",
+  "enabled": true,
+  "displayName": "Maximal Test Realm",
+  "displayNameHtml": "<div class='logo'></div><h1>Maximal Test</h1>",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "editUsernameAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": true,
+  "verifyEmail": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 30,
+  "loginTheme": "custom-theme",
+  "adminTheme": "keycloak",
+  "accountTheme": "keycloak.v3",
+  "emailTheme": "custom-email",
+  "defaultLocale": "en",
+  "supportedLocales": ["en", "de", "fr", "es", "ja"],
+  "internationalizationEnabled": true,
+  "accessTokenLifespan": 300,
+  "accessTokenLifespanForImplicitFlow": 900,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "offlineSessionIdleTimeout": 2592000,
+  "offlineSessionMaxLifespanEnabled": true,
+  "offlineSessionMaxLifespan": 5184000,
+  "clientSessionIdleTimeout": 1800,
+  "clientSessionMaxLifespan": 3600,
+  "passwordPolicy": "hashIterations(210000) and length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername and notEmail and passwordHistory(5) and forceExpiredPasswordChange(90)",
+  "smtpServer": {
+    "host": "smtp.example.com",
+    "port": "465",
+    "from": "keycloak@example.com",
+    "fromDisplayName": "Authentication System",
+    "replyTo": "support@example.com",
+    "envelopeFrom": "bounce@example.com",
+    "ssl": "true",
+    "starttls": "false",
+    "auth": "true",
+    "user": "keycloak-smtp",
+    "password": "smtp-password-value"
+  },
+  "attributes": {
+    "frontendUrl": "https://auth.example.com",
+    "cibaBackchannelTokenDeliveryMode": "poll",
+    "cibaExpiresIn": "120"
+  },
+  "defaultDefaultClientScopes": ["profile", "email", "roles", "web-origins", "acr"],
+  "defaultOptionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"],
+  "roles": {
+    "realm": [
+      {"name": "offline_access", "description": "Built-in role"},
+      {"name": "uma_authorization", "description": "Built-in role"},
+      {"name": "default-roles-maximal-test", "description": "Composite default role"},
+      {
+        "name": "admin",
+        "description": "Global administrator",
+        "attributes": {"level": ["100"]}
+      },
+      {
+        "name": "developer",
+        "description": "Developer role"
+      },
+      {
+        "name": "viewer",
+        "description": "Read-only viewer"
+      },
+      {
+        "name": "manager",
+        "description": "Manager with composite roles",
+        "composite": true,
+        "composites": {
+          "realm": ["developer", "viewer"]
+        }
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "platform",
+      "attributes": {"team": ["Platform"]},
+      "realmRoles": ["developer"],
+      "subGroups": [
+        {
+          "name": "sre",
+          "realmRoles": ["admin"],
+          "subGroups": [
+            {
+              "name": "on-call",
+              "attributes": {"pagerduty": ["true"]}
+            }
+          ]
+        },
+        {
+          "name": "dev",
+          "realmRoles": ["developer"]
+        }
+      ]
+    },
+    {
+      "name": "external",
+      "realmRoles": ["viewer"],
+      "clientRoles": {
+        "api-service": ["read-only"]
+      }
+    }
+  ],
+  "defaultGroups": ["/platform"],
+  "clientScopes": [
+    {
+      "name": "api-read",
+      "description": "API read access",
+      "protocol": "openid-connect",
+      "attributes": {
+        "display.on.consent.screen": "true",
+        "consent.screen.text": "Read access to API resources"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "api",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "name": "api-write",
+      "description": "API write access",
+      "protocol": "openid-connect",
+      "protocolMappers": [
+        {
+          "name": "write-scope-claim",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "config": {
+            "claim.name": "scope",
+            "claim.value": "api:write"
+          }
+        }
+      ]
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "azure-ad",
+      "providerId": "oidc",
+      "displayName": "Azure AD",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "azure-client-id",
+        "clientSecret": "azure-client-secret-value",
+        "authorizationUrl": "https://login.microsoftonline.com/tenant-id/oauth2/v2.0/authorize",
+        "tokenUrl": "https://login.microsoftonline.com/tenant-id/oauth2/v2.0/token",
+        "userInfoUrl": "https://graph.microsoft.com/oidc/userinfo",
+        "defaultScope": "openid profile email"
+      }
+    },
+    {
+      "alias": "github",
+      "providerId": "github",
+      "displayName": "GitHub",
+      "enabled": true,
+      "trustEmail": true,
+      "config": {
+        "clientId": "github-client-id",
+        "clientSecret": "github-secret-value",
+        "defaultScope": "user:email"
+      }
+    }
+  ],
+  "eventsEnabled": true,
+  "eventsListeners": ["jboss-logging", "metrics-listener"],
+  "enabledEventTypes": ["LOGIN", "LOGOUT", "LOGIN_ERROR", "REGISTER", "CODE_TO_TOKEN", "CODE_TO_TOKEN_ERROR"],
+  "eventsExpiration": 604800,
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+  "clientProfiles": {
+    "profiles": [
+      {
+        "name": "pkce-enforced",
+        "description": "Requires PKCE for authorization code flow",
+        "executors": [
+          {
+            "executor": "pkce-enforcer",
+            "configuration": {"auto-configure": "true"}
+          }
+        ]
+      }
+    ]
+  },
+  "clientPolicies": {
+    "policies": [
+      {
+        "name": "pkce-for-public-clients",
+        "description": "Enforces PKCE for all public clients",
+        "enabled": true,
+        "conditions": [
+          {
+            "condition": "client-access-type",
+            "configuration": {"is-confidential-client": "false"}
+          }
+        ],
+        "profiles": ["pkce-enforced"]
+      }
+    ]
+  },
+  "authenticationFlows": [
+    {
+      "alias": "custom-browser-flow",
+      "providerId": "basic-flow",
+      "topLevel": true
+    }
+  ],
+  "requiredActions": [
+    {
+      "alias": "CONFIGURE_TOTP",
+      "name": "Configure OTP",
+      "enabled": true
+    }
+  ],
+  "browserFlow": "custom-browser-flow",
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "webAuthnPolicyRpEntityName": "keycloak",
+  "browserSecurityHeaders": {
+    "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    "xContentTypeOptions": "nosniff",
+    "xFrameOptions": "SAMEORIGIN"
+  },
+  "scopeMappings": [
+    {
+      "clientScope": "api-read",
+      "roles": ["viewer"]
+    }
+  ],
+  "defaultRole": {
+    "name": "default-roles-maximal-test",
+    "composites": {"realm": ["viewer"]}
+  },
+  "components": {
+    "org.keycloak.storage.UserStorageProvider": [
+      {
+        "name": "corporate-ldap",
+        "providerId": "ldap",
+        "enabled": true,
+        "priority": 0,
+        "config": {
+          "connectionUrl": ["ldap://ldap.example.com:389"],
+          "bindDn": ["cn=admin,dc=example,dc=com"],
+          "bindCredential": ["ldap-bind-password"],
+          "usersDn": ["ou=People,dc=example,dc=com"],
+          "vendor": ["other"],
+          "usernameLdapAttribute": ["uid"],
+          "uuidLdapAttribute": ["entryUUID"],
+          "rdnLdapAttribute": ["uid"],
+          "userObjectClasses": ["inetOrgPerson,organizationalPerson"],
+          "editMode": ["READ_ONLY"],
+          "startTls": ["false"],
+          "trustEmail": ["true"],
+          "importEnabled": ["true"],
+          "fullSyncPeriod": ["604800"],
+          "changedSyncPeriod": ["86400"]
+        },
+        "subComponents": {
+          "org.keycloak.storage.ldap.mappers.LDAPStorageMapper": [
+            {
+              "name": "email",
+              "providerId": "user-attribute-ldap-mapper",
+              "config": {
+                "ldap.attribute": ["mail"],
+                "user.model.attribute": ["email"],
+                "read.only": ["true"]
+              }
+            },
+            {
+              "name": "first-name",
+              "providerId": "user-attribute-ldap-mapper",
+              "config": {
+                "ldap.attribute": ["givenName"],
+                "user.model.attribute": ["firstName"],
+                "read.only": ["true"]
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "account",
+      "name": "${client_account}",
+      "enabled": true,
+      "publicClient": true
+    },
+    {
+      "clientId": "account-console",
+      "enabled": true,
+      "publicClient": true
+    },
+    {
+      "clientId": "admin-cli",
+      "name": "${client_admin-cli}",
+      "enabled": true,
+      "publicClient": true
+    },
+    {
+      "clientId": "broker",
+      "enabled": true
+    },
+    {
+      "clientId": "realm-management",
+      "enabled": true
+    },
+    {
+      "clientId": "security-admin-console",
+      "enabled": true,
+      "publicClient": true
+    },
+    {
+      "clientId": "frontend-spa",
+      "name": "Frontend SPA",
+      "description": "Single-page application",
+      "enabled": true,
+      "publicClient": true,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "consentRequired": false,
+      "fullScopeAllowed": true,
+      "frontchannelLogout": true,
+      "redirectUris": [
+        "https://app.example.com/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "https://app.example.com",
+        "http://localhost:3000"
+      ],
+      "baseUrl": "https://app.example.com",
+      "rootUrl": "https://app.example.com",
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://app.example.com/logout",
+        "access.token.lifespan": "600",
+        "client.session.idle.timeout": "1800"
+      },
+      "defaultClientScopes": ["profile", "email", "api-read"],
+      "optionalClientScopes": ["api-write", "offline_access"],
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        },
+        {
+          "name": "department",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "config": {
+            "claim.name": "department",
+            "user.attribute": "department",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ],
+      "surrogateAuthRequired": false,
+      "nodeReRegistrationTimeout": -1
+    },
+    {
+      "clientId": "api-service",
+      "name": "API Backend Service",
+      "description": "Backend API with service account",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "protocol": "openid-connect",
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "api-service-secret-12345",
+      "defaultClientScopes": ["profile", "email"],
+      "attributes": {
+        "access.token.lifespan": "300"
+      }
+    },
+    {
+      "clientId": "authz-client",
+      "name": "Authorization Client",
+      "description": "Client with fine-grained authorization",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": true,
+      "serviceAccountsEnabled": true,
+      "authorizationServicesEnabled": true,
+      "secret": "authz-client-secret-value",
+      "redirectUris": ["https://authz.example.com/*"],
+      "authorizationSettings": {
+        "policyEnforcementMode": "ENFORCING",
+        "decisionStrategy": "UNANIMOUS",
+        "allowRemoteResourceManagement": true,
+        "scopes": [
+          {"name": "read", "displayName": "Read Access"},
+          {"name": "write", "displayName": "Write Access"},
+          {"name": "delete", "displayName": "Delete Access"}
+        ],
+        "resources": [
+          {
+            "name": "Default Resource",
+            "type": "urn:authz-client:resources:default",
+            "uris": ["/*"],
+            "ownerManagedAccess": false
+          },
+          {
+            "name": "Documents API",
+            "type": "urn:authz-client:resources:documents",
+            "uris": ["/api/documents/*"],
+            "scopes": [
+              {"name": "read"},
+              {"name": "write"},
+              {"name": "delete"}
+            ],
+            "attributes": {
+              "category": ["api"]
+            }
+          },
+          {
+            "name": "Users API",
+            "type": "urn:authz-client:resources:users",
+            "uris": ["/api/users/*"],
+            "scopes": [
+              {"name": "read"},
+              {"name": "write"}
+            ]
+          }
+        ],
+        "policies": [
+          {
+            "name": "Default Policy",
+            "type": "role",
+            "logic": "POSITIVE"
+          },
+          {
+            "name": "Default Permission",
+            "type": "resource"
+          },
+          {
+            "name": "admin-policy",
+            "description": "Grants access to admins",
+            "type": "role",
+            "logic": "POSITIVE",
+            "roles": [
+              {"id": "admin", "required": false}
+            ]
+          },
+          {
+            "name": "viewer-policy",
+            "description": "Grants access to viewers",
+            "type": "role",
+            "logic": "POSITIVE",
+            "roles": [
+              {"id": "viewer", "required": false}
+            ]
+          },
+          {
+            "name": "engineering-group-policy",
+            "description": "Grants access to engineering group",
+            "type": "group",
+            "config": {
+              "groups": "[{\"path\":\"/engineering\"}]",
+              "groupsClaim": "groups"
+            }
+          },
+          {
+            "name": "business-hours-policy",
+            "description": "Restricts to business hours",
+            "type": "time",
+            "config": {
+              "hour": "9",
+              "hourEnd": "17"
+            }
+          },
+          {
+            "name": "email-regex-policy",
+            "description": "Restricts to company email",
+            "type": "regex",
+            "config": {
+              "targetClaim": "email",
+              "pattern": ".*@example\\.com$"
+            }
+          },
+          {
+            "name": "combined-policy",
+            "description": "Admin or during business hours",
+            "type": "aggregate",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "applyPolicies": "[\"admin-policy\",\"business-hours-policy\"]"
+            }
+          },
+          {
+            "name": "view-documents",
+            "description": "Permission to view documents",
+            "type": "resource",
+            "decisionStrategy": "UNANIMOUS",
+            "config": {
+              "resources": "[\"Documents API\"]",
+              "applyPolicies": "[\"viewer-policy\"]"
+            }
+          },
+          {
+            "name": "read-documents-scope",
+            "description": "Read scope for documents",
+            "type": "scope",
+            "decisionStrategy": "AFFIRMATIVE",
+            "config": {
+              "scopes": "[\"read\"]",
+              "resources": "[\"Documents API\"]",
+              "applyPolicies": "[\"viewer-policy\",\"combined-policy\"]"
+            }
+          },
+          {
+            "name": "admin-write-scope",
+            "description": "Admin write access",
+            "type": "scope",
+            "config": {
+              "scopes": "[\"write\",\"delete\"]",
+              "applyPolicies": "[\"admin-policy\"]"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin@example.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "hashedSaltedValue": "abcdef1234567890",
+          "hashIterations": 210000,
+          "algorithm": "pbkdf2-sha256",
+          "salt": "salt-value"
+        }
+      ],
+      "realmRoles": ["admin"],
+      "groups": ["/platform/sre"]
+    },
+    {
+      "username": "developer1",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "dev1@example.com",
+      "firstName": "Dev",
+      "lastName": "One",
+      "realmRoles": ["developer"],
+      "groups": ["/platform/dev"]
+    },
+    {
+      "username": "viewer1",
+      "enabled": true,
+      "email": "viewer@example.com",
+      "firstName": "View",
+      "lastName": "Only",
+      "realmRoles": ["viewer"],
+      "groups": ["/external"]
+    }
+  ]
+}
