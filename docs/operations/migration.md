@@ -475,5 +475,6 @@ Document your upgrade:
 
 - [End-to-End Setup Guide](../how-to/end-to-end-setup.md)
 - [Backup & Restore Guide](../how-to/backup-restore.md)
+- [Realm Export Guide](../how-to/export-realms.md)
 - [Troubleshooting Guide](./troubleshooting.md)
 - [Security Model](../concepts/security.md)
