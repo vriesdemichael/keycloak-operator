@@ -43,22 +43,3 @@ runs:
           # Install verified binary
           sudo install -m 0755 /tmp/yq /usr/local/bin/yq
         fi
-
-    - name: Install yq
-      shell: bash
-      run: |
-        if ! command -v yq &> /dev/null; then
-          set -euo pipefail
-          YQ_VERSION="${{ inputs.yq-version }}"
-          YQ_BASE_URL="https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}"
-
-          # Download yq binary and its corresponding SHA256 checksum
-          wget -q "${YQ_BASE_URL}/yq_linux_amd64" -O /tmp/yq
-          wget -q "${YQ_BASE_URL}/yq_linux_amd64.sha256" -O /tmp/yq.sha256
-
-          # Verify checksum before installing
-          (cd /tmp && sha256sum -c yq.sha256)
-
-          # Install verified binary
-          sudo install -m 0755 /tmp/yq /usr/local/bin/yq
-        fi

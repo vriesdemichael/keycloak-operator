@@ -124,6 +124,12 @@ runs:
         docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized-tracing:${{ inputs.keycloak-version }}
         mkdir -p .task && touch .task/image_build_keycloak_tracing
 
+    - name: Download unit coverage artifact
+      uses: actions/download-artifact@v6
+      with:
+        name: unit-coverage
+        path: .
+
     - name: Run integration tests
       shell: bash
       env:
@@ -138,6 +144,7 @@ runs:
         # 2. Installs infra (CNPG, etc.)
         # 3. Loads images (skips build due to .task/ artifacts)
         # 4. Runs tests
+        # 5. Combines coverage (unit + integration)
         task test:integration-coverage
         task_status=$?
         if [ "$task_status" -ne 0 ]; then
@@ -149,43 +156,26 @@ runs:
           echo "ERROR: coverage.xml not found after running integration tests; coverage generation likely failed." >&2
           exit 1
         fi
-        mv coverage.xml coverage-integration.xml
+        # coverage.xml is now the combined report
 
-    - name: Download unit coverage artifact
-      uses: actions/download-artifact@v6
-      with:
-        name: unit-coverage
-        path: .
-
-    - name: Upload unit coverage to Codecov
+    - name: Upload combined coverage to Codecov
       uses: codecov/codecov-action@v5
       if: always() && inputs.github-actor != 'dependabot[bot]'
       with:
         files: coverage.xml
-        flags: unit
-        name: unit-tests
+        flags: combined
+        name: k8s-${{ inputs.kind-version }}-keycloak-${{ inputs.keycloak-version }}
         token: ${{ inputs.codecov-token }}
         disable_search: true
         fail_ci_if_error: true
 
-    - name: Upload integration coverage to Codecov
-      uses: codecov/codecov-action@v5
-      if: always() && inputs.github-actor != 'dependabot[bot]'
-      with:
-        files: coverage-integration.xml
-        flags: integration
-        name: integration-tests
-        token: ${{ inputs.codecov-token }}
-        disable_search: true
-        fail_ci_if_error: true
-
-    - name: Upload integration coverage artifact
+    - name: Upload combined coverage artifact
       uses: actions/upload-artifact@v5
       if: always() && inputs.github-actor != 'dependabot[bot]'
       with:
-        name: integration-coverage
+        name: combined-coverage
         path: |
-          coverage-integration.xml
+          coverage.xml
         retention-days: 7
 
     - name: Collect logs and diagnostics
