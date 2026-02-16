@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.7.16](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.15...operator-image-v0.7.16) (2026-02-16)
+
+
+### Documentation
+
+* add migration toolkit documentation and Taskfile targets ([f184802](https://github.com/vriesdemichael/keycloak-operator/commit/f184802c0216e3b856d83bd231aa13ca20978a76))
+* add migration-toolkit conventional commit scope and release-please config ([613336b](https://github.com/vriesdemichael/keycloak-operator/commit/613336bdf7d38a9725945346e1f5bb6dfcc9a156))
+* add realm export and migration guide ([8c820fd](https://github.com/vriesdemichael/keycloak-operator/commit/8c820fd6fc24ad9b19d9760d01e7da11c175a506))
+
 ## [0.7.15](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.14...operator-image-v0.7.15) (2026-02-16)
 
 
