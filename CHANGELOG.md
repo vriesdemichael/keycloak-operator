@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.14](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.13...operator-image-v0.7.14) (2026-02-16)
+
+
+### Bug Fixes
+
+* **operator:** address remaining review comments ([5281bc4](https://github.com/vriesdemichael/keycloak-operator/commit/5281bc41a0a7dfa3b626a1bee9c21687ca8719d1))
+* **operator:** address review comments for Taskfile migration ([de9bbe6](https://github.com/vriesdemichael/keycloak-operator/commit/de9bbe68bfc098738584ed67ee36ea55eee1168a))
+
 ## [0.7.13](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.12...operator-image-v0.7.13) (2026-02-14)
 
 
