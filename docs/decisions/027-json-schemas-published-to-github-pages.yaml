@@ -3,7 +3,7 @@ title: JSON schemas published to GitHub Pages
 category: development
 decision: Publish CRD JSON schemas to GitHub Pages for IDE validation and auto-completion.
   Schemas are available at https://vriesdemichael.github.io/keycloak-operator/schemas/
-agent_instructions: Generate schemas with scripts/generate-crd-schemas.py when CRDs
+agent_instructions: Generate schemas with 'task crds:schemas' when CRDs
   change. Publish to GitHub Pages at https://vriesdemichael.github.io/keycloak-operator/schemas/.
   Regenerate before releasing new operator versions to keep schemas in sync with CRD
   changes.

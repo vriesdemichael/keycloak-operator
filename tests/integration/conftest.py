@@ -386,7 +386,7 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
         logger.info("✓ Kind cluster is accessible")
     except Exception as e:
         pytest.fail(
-            f"Kind cluster not accessible. Run 'make kind-setup' first.\nError: {e}"
+            f"Kind cluster not accessible. Run 'task cluster:create' first.\nError: {e}"
         )
 
     # 2. Check CNPG operator is installed
@@ -399,7 +399,7 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
     except ApiException as e:
         if e.status == 404:
             pytest.fail(
-                "CNPG operator not installed. Run 'make kind-setup' which installs CNPG automatically."
+                "CNPG operator not installed. Run 'task cluster:create' which installs CNPG automatically."
             )
         raise
 
@@ -432,7 +432,7 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
         if not control_plane_nodes:
             pytest.fail(
                 "No Kind control plane node found. Is the Kind cluster running?\n"
-                "Run: make kind-setup"
+                "Run: task cluster:create"
             )
 
         # Use the first control plane node found
@@ -457,8 +457,8 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
             pytest.fail(
                 "Operator image 'keycloak-operator' not found in Kind cluster.\n"
                 "Run:\n"
-                "  make docker-build\n"
-                "  make kind-load"
+                "  task image:build-operator\n"
+                "  task image:load-operator"
             )
         logger.info("✓ Operator image is loaded in Kind")
     except subprocess.TimeoutExpired:
@@ -1803,7 +1803,7 @@ async def shared_operator(
         if not ready:
             pytest.fail(
                 "Operator deployment not ready in time (timeout: 120s). "
-                "Check if operator image was loaded correctly with 'make kind-load'."
+                "Check if operator image was loaded correctly with 'task image:load-operator'."
             )
 
         logger.info("✓ Operator deployment ready")

@@ -4,8 +4,8 @@ category: development
 decision: Integration tests deploy operator via Helm into real Kind clusters. No mocked
   Kubernetes API. Tests validate production deployment path.
 agent_instructions: Integration tests use test_namespace fixture for isolation. Deploy
-  operator via 'make test-integration' which uses Helm install. Tests run against
-  real Kind cluster (scripts/kind-setup.sh). Use port-forward (keycloak_port_forward
+  operator via 'task test:integration' which uses Helm install. Tests run against
+  real Kind cluster (task cluster:create). Use port-forward (keycloak_port_forward
   fixture) for accessing Keycloak from test host. Read tests/integration/TESTING.md
   for detailed patterns.
 rationale: 'Production parity: Helm deployment matches what users deploy. Catch real

@@ -259,13 +259,13 @@ git clone https://github.com/vriesdemichael/keycloak-operator.git
 cd keycloak-operator
 
 # Install dependencies
-make install
+task dev:setup
 
 # Run quality checks
-make quality
+task quality:check
 
 # Run unit tests
-make test-unit
+task test:unit
 ```
 
 See [Development Guide](https://vriesdemichael.github.io/keycloak-operator/latest/development/) and [AGENTS.md](AGENTS.md) for more details.

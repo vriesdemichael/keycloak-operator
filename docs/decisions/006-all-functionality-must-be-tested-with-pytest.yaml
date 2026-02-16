@@ -5,7 +5,7 @@ decision: Every feature, handler, and reconciliation logic must have pytest test
   No untested code in production.
 agent_instructions: When implementing features, write tests first or alongside implementation.
   Unit tests required for all reconcilers and utility functions. Integration tests
-  required for all CRD operations. Refuse to merge code without tests. Run 'make test-pre-commit'
+  required for all CRD operations. Refuse to merge code without tests. Run 'task test:all'
   before committing.
 rationale: 'Quality assurance: Tests catch regressions and validate behavior. pytest
   ecosystem: Rich plugin ecosystem (pytest-asyncio, pytest-kubernetes, coverage).

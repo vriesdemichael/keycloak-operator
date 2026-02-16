@@ -15,16 +15,16 @@ Both are critical for maintaining code quality and preventing regressions.
 
 ```bash
 # Run all tests (quality + unit + integration)
-make test
+task test:all
 
 # Run only unit tests (fast)
-make test-unit
+task test:unit
 
 # Run only integration tests
-make test-integration
+task test:integration
 
 # Pre-commit: fresh cluster + all tests
-make test-pre-commit
+task test:all
 ```
 
 ## Unit Testing
@@ -423,16 +423,16 @@ async def test_feature_name(
 
 ```bash
 # All tests (recommended)
-make test
+task test:all
 
 # Only unit tests (fast)
-make test-unit
+task test:unit
 
 # Only integration tests (reuses cluster)
-make test-integration
+task test:integration
 
 # Fresh cluster + all tests (pre-commit)
-make test-pre-commit
+task test:all
 ```
 
 ### Advanced Commands
@@ -460,14 +460,11 @@ uv run pytest tests/integration/ --pdb
 ### Cluster Management
 
 ```bash
-# Reset integration state (keeps cluster)
-make clean-integration-state
-
 # Destroy cluster completely
-make kind-teardown
+task cluster:destroy
 
 # Create fresh cluster
-make kind-setup
+task cluster:create
 
 # Check cluster status
 kubectl cluster-info
@@ -658,6 +655,6 @@ When contributing, ensure:
 4. ✅ Tests follow parallel-safe patterns
 5. ✅ Tests use wait helpers for debugging
 6. ✅ Tests clean up resources
-7. ✅ Run `make test-pre-commit` before pushing
+7. ✅ Run `task test:all` before pushing
 
 Return to [Development Guide](../development.md).

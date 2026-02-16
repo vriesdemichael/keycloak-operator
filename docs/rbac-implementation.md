@@ -297,7 +297,7 @@ kubectl auth can-i get secrets \
 Run the integration tests:
 
 ```bash
-make test-integration
+task test:integration
 ```
 
 This validates:

@@ -61,25 +61,25 @@ runs:
           org.opencontainers.image.source=https://github.com/vriesdemichael/keycloak-operator
           org.opencontainers.image.url=https://github.com/vriesdemichael/keycloak-operator
 
+    - uses: ./.github/actions/setup-tools
+
     - name: Build and push
       id: build
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        file: images/operator/Dockerfile
-        target: production
-        platforms: linux/amd64
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
-        build-args: |
-          VERSION=${{ steps.version.outputs.version }}
-          REVISION=${{ steps.version.outputs.revision }}
-          CREATED=${{ steps.version.outputs.created }}
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
-        provenance: true
-        sbom: true
+      shell: bash
+      env:
+        TAGS: ${{ steps.meta.outputs.tags }}
+        LABELS: ${{ steps.meta.outputs.labels }}
+      run: |
+        task image:publish \
+          VERSION="${{ inputs.operator-version }}" \
+          REVISION="${{ github.sha }}" \
+          CREATED="$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          TAGS="$TAGS" \
+          LABELS="$LABELS"
+
+        # Extract digest for attestation
+        DIGEST=$(jq -r '.["containerimage.digest"]' .task/image-metadata.json)
+        echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
     - name: Generate SBOM
       uses: anchore/sbom-action@v0

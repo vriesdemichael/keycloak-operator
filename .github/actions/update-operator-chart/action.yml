@@ -15,14 +15,12 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - uses: ./.github/actions/setup-tools
+
     - name: Update chart values
       shell: bash
       run: |
-        VERSION="v${{ inputs.operator-version }}"
-
-        sed -i "s|tag: \"v.*\"|tag: \"${VERSION}\"|g" charts/keycloak-operator/values.yaml
-        sed -i "s|appVersion: \"v.*\"|appVersion: \"${VERSION}\"|g" charts/keycloak-operator/Chart.yaml
-
+        task charts:update-version OPERATOR_VERSION="${{ inputs.operator-version }}"
         git diff
 
     - name: Check for changes

@@ -1,12 +1,5 @@
 # Changelog
 
-## [0.7.13](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.12...operator-image-v0.7.13) (2026-02-14)
-
-
-### Bug Fixes
-
-* **operator:** address review comments ([ee9b705](https://github.com/vriesdemichael/keycloak-operator/commit/ee9b705cb1984c584352d9d7b22de75e370f5f30))
-
 ## [0.7.12](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.11...operator-image-v0.7.12) (2026-02-14)
 
 
