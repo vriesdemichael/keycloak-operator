@@ -633,11 +633,11 @@ Use these timestamps with `--time-range` to find traces for specific tests.
 
 ### Local Debugging with Traces
 
-When running tests locally with `make test`, traces are collected to `.tmp/traces/`:
+When running tests locally with `task test:all`, traces are collected to `.tmp/traces/`:
 
 ```bash
 # Run tests
-make test
+task test:all
 
 # Analyze traces from the test run
 python scripts/analyze-trace.py .tmp/traces/traces.jsonl --summary

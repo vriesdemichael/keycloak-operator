@@ -7,7 +7,7 @@ agent_instructions: Import models from keycloak_operator.models.keycloak_api (e.
   RealmRepresentation, ClientRepresentation). Use these models for all Keycloak API
   interactions, never construct dicts manually. Use _make_validated_request() in KeycloakAdminClient
   for automatic validation. Never edit src/keycloak_operator/models/keycloak_api.py
-  manually - regenerate with scripts/generate-keycloak-models.sh when OpenAPI spec
+  manually - regenerate with task keycloak:models when OpenAPI spec
   updates.
 rationale: 'Data validation: Pydantic validates all request/response data against Keycloak
   API schema, catching errors before sending invalid data. This prevents runtime failures

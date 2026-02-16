@@ -45,7 +45,7 @@ The optimized image uses the same version tag as the upstream Keycloak image it'
 
 ```bash
 # Build with default version (26.4.1)
-make build-keycloak-optimized
+task image:build-keycloak
 
 # Build with specific version
 docker build \
@@ -55,7 +55,7 @@ docker build \
   images/keycloak-optimized/
 
 # Load into Kind cluster
-make kind-load-keycloak-optimized
+task image:load-keycloak
 ```
 
 ### CI/CD Build

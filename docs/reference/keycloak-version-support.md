@@ -181,7 +181,7 @@ To validate support for a specific Keycloak version:
 
 ```bash
 # Set the version and run the full test suite
-KEYCLOAK_VERSION=26.3.0 make test
+KEYCLOAK_VERSION=26.3.0 task test:all
 ```
 
 This will:

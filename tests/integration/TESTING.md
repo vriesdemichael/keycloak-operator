@@ -582,7 +582,7 @@ async def test_feature_name(
 
 ```bash
 # Run complete test suite (quality + fresh cluster + unit + integration with coverage)
-make test
+task test:all
 
 # Run specific test
 uv run pytest tests/integration/test_example.py::TestClass::test_method -v
@@ -599,7 +599,7 @@ uv run pytest tests/integration/ -v -s
 
 ### Test Logging and Diagnostics
 
-When running `make test-pre-commit`, comprehensive logging is automatically enabled:
+When running `task test:all`, comprehensive logging is automatically enabled:
 
 **Logs are written to:**
 - `.tmp/test-pre-commit.log` - Complete timestamped log of all test steps
@@ -621,8 +621,8 @@ When running `make test-pre-commit`, comprehensive logging is automatically enab
 
 **Example usage:**
 ```bash
-# Run pre-commit tests
-make test-pre-commit
+# Run tests
+task test:all
 
 # If tests fail, check the logs:
 cat .tmp/test-pre-commit.log  # Full execution log with timestamps
@@ -658,7 +658,7 @@ cat .tmp/test-logs/events.log  # Kubernetes events
 Integration tests collect OpenTelemetry traces from the operator for post-mortem debugging.
 For the complete workflow and all options, see **ADR 082: Trace-Based Test Debugging Infrastructure** in `docs/decisions/`.
 
-**Local debugging (after `make test`):**
+**Local debugging (after `task test:all`):**
 ```bash
 # Traces are automatically collected to .tmp/traces/traces.jsonl
 
@@ -789,7 +789,7 @@ Integration tests support coverage collection from the operator running in Kuber
 
 ```bash
 # Run complete test suite with coverage (recommended)
-make test
+task test:all
 
 # Or set environment variable manually
 INTEGRATION_COVERAGE=true uv run pytest tests/integration/ -v -n auto --dist=loadscope

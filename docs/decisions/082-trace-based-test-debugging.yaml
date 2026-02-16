@@ -8,10 +8,10 @@ decision: >
 
   ## Infrastructure Overview
 
-  The tracing infrastructure is automatically deployed by `scripts/kind-setup.sh` (locally)
+  The tracing infrastructure is automatically deployed by `task cluster:create` (locally)
   and the CI workflow (GitHub Actions). Components:
 
-  - **OTEL Collector**: Deployed to `observability` namespace via `scripts/deploy-otel-collector.sh`
+  - **OTEL Collector**: Deployed to `observability` namespace via `task infra:otel`
   - **Manifests**: `k8s/testing/otel-collector/` (ConfigMap, Deployment, Service)
   - **Operator config**: Sends traces to `http://otel-collector.observability.svc.cluster.local:4317`
   - **Output**: Traces written to `/traces/traces.jsonl` inside the collector pod
@@ -20,15 +20,15 @@ decision: >
 
   1. Operator emits spans via OTLP gRPC to the collector
   2. Collector writes spans to JSONL file (one JSON object per line)
-  3. After tests: `scripts/retrieve-traces.sh` copies traces to host
+  3. After tests: traces are automatically retrieved by the test harness (or manually via `task logs:collect`)
   4. Local: `.tmp/traces/traces.jsonl`
   5. CI: `test-logs/traces/traces.jsonl` (uploaded as artifact)
 
-  ## Debugging Workflow: Local (make test)
+  ## Debugging Workflow: Local (task test:all)
 
   ```bash
   # Run tests (traces collected automatically)
-  make test
+  task test:all
 
   # Quick summary of all traces
   python scripts/analyze-trace.py .tmp/traces/traces.jsonl --summary

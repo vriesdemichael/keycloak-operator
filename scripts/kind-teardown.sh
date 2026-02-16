@@ -4,7 +4,7 @@
 # Purpose: Completely removes Kind cluster and associated resources
 # Prerequisites: kind, kubectl, docker
 # Removes: Cluster, kubectl context, temporary files
-# Used by: Makefile kind-teardown target, test cleanup
+# Used by: Taskfile cluster:destroy task, test cleanup
 
 set -e
 

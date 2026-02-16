@@ -4,7 +4,7 @@
 # Purpose: Installs CNPG operator using Helm
 # Prerequisites: kubectl, helm
 # Produces: Running CNPG operator and CRDs
-# Used by: Makefile install-cnpg target
+# Used by: Taskfile infra:cnpg task
 #
 # This script is idempotent and safe to re-run.
 

@@ -31,35 +31,25 @@ runs:
       shell: bash
       run: echo "${{ inputs.github-token }}" | helm registry login ${{ inputs.registry-url }} -u ${{ inputs.github-actor }} --password-stdin
 
-    - name: Get chart version
-      id: version
-      shell: bash
-      run: |
-        VERSION=$(yq eval '.version' ${{ inputs.chart-path }}/Chart.yaml)
-        echo "version=${VERSION}" >> $GITHUB_OUTPUT
-        echo "Publishing ${{ inputs.chart-name }} chart version: ${VERSION}"
+    - uses: ./.github/actions/setup-tools
 
-    - name: Package chart
-      id: package
-      shell: bash
-      run: |
-        helm package ${{ inputs.chart-path }}
-        PACKAGE_FILE=$(ls ${{ inputs.chart-name }}-*.tgz)
-        echo "file=${PACKAGE_FILE}" >> $GITHUB_OUTPUT
-
-    - name: Push chart to OCI registry
+    - name: Package and push chart
       id: push
       shell: bash
       run: |
-        OUTPUT=$(helm push ${{ steps.package.outputs.file }} oci://${{ inputs.registry-url }}/${{ inputs.registry-owner }}/charts 2>&1)
-        echo "$OUTPUT"
-        # Extract digest from output (format: "Digest: sha256:abc123...")
-        DIGEST=$(echo "$OUTPUT" | grep -oP 'Digest: \Ksha256:[a-fA-F0-9]+' || echo "")
+        task charts:publish \
+          CHART_NAME="${{ inputs.chart-name }}" \
+          REGISTRY_URL="${{ inputs.registry-url }}" \
+          REGISTRY_OWNER="${{ inputs.registry-owner }}"
+
+        # Extract digest for attestation
+        DIGEST=$(cat .task/${{ inputs.chart-name }}-digest)
         echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
-        if [[ -z "$DIGEST" ]]; then
-          echo "::error::Failed to extract digest from helm push output"
-          exit 1
-        fi
+
+    - name: Create primary version tag
+      if: inputs.chart-name == 'keycloak-operator'
+      shell: bash
+      run: task charts:tag-primary
 
     # Docker login is required for attest-build-provenance to push attestations
     # (Helm registry login doesn't share credentials with Docker)

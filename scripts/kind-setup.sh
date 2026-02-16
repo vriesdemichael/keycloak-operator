@@ -4,9 +4,9 @@
 # Purpose: Creates a minimal Kind cluster with required namespaces
 # Prerequisites: kind, kubectl, docker
 # Produces: Running cluster with operator and CNPG namespaces created
-# Used by: Makefile setup-cluster target
+# Used by: Taskfile cluster:create task
 #
-# Note: CRDs, RBAC, and operator deployment are handled by 'make deploy'
+# Note: CRDs, RBAC, and operator deployment are handled by the test harness.
 
 set -e
 
@@ -44,6 +44,10 @@ create_cluster() {
 
     # Check if cluster already exists
     if kind get clusters | grep -q "^${CLUSTER_NAME}$"; then
+        if [ "${KIND_RETAIN_CLUSTER:-false}" == "true" ]; then
+            log "Cluster '$CLUSTER_NAME' exists and KIND_RETAIN_CLUSTER is true. Skipping creation."
+            return
+        fi
         warn "Cluster '$CLUSTER_NAME' already exists. Deleting and recreating..."
         kind delete cluster --name "$CLUSTER_NAME"
     fi
@@ -85,7 +89,7 @@ setup_cluster() {
 
     # Deploy OTEL Collector for trace collection during tests
     log "Deploying OTEL Collector for trace collection..."
-    "${SCRIPT_DIR}/deploy-otel-collector.sh"
+    bash "${SCRIPT_DIR}/deploy-otel-collector.sh"
 
     success "Cluster setup completed"
 }
@@ -121,9 +125,9 @@ main() {
     log "To use this cluster, run: kubectl config use-context kind-$CLUSTER_NAME"
     log ""
     log "Next steps:"
-    log "  1. Run 'make deploy' to install operator, CNPG, and test Keycloak"
-    log "  2. Run 'make test' to run the complete test suite"
-    log "  3. Run 'make kind-teardown' to cleanup when done"
+    log "  1. Run 'task infra:all' to install operator dependencies (CNPG, etc.)"
+    log "  2. Run 'task test:all' to run the complete test suite"
+    log "  3. Run 'task cluster:destroy' to cleanup when done"
 }
 
 # Handle command line arguments
@@ -132,7 +136,7 @@ case "${1:-}" in
         echo "Usage: $0 [options]"
         echo ""
         echo "Creates a bare Kind cluster for Keycloak operator development."
-        echo "CRDs, RBAC, and operator deployment are handled by 'make deploy'."
+        echo "CRDs, RBAC, and operator deployment are handled by the test harness."
         echo ""
         echo "Options:"
         echo "  --help, -h      Show this help message"

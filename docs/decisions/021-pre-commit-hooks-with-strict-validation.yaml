@@ -3,9 +3,9 @@ title: Pre-commit hooks with strict validation
 category: development
 decision: 'Enforce code quality locally with pre-commit hooks: ruff (lint/format),
   ty (type check), mkdocs build, Helm lint, conventional commit validation, ADR validation.'
-agent_instructions: Install hooks with 'make install-hooks' or 'uv run pre-commit
+agent_instructions: Install hooks with 'task dev:hooks' or 'uv run pre-commit
   install'. Hooks run automatically on 'git commit'. Fix issues before committing.
-  Run manually with 'make quality' or 'uv run pre-commit run --all-files'. CI runs
+  Run manually with 'task quality:check' or 'uv run pre-commit run --all-files'. CI runs
   same checks - if it passes locally, it passes in CI. Never skip pre-commit hooks
   (--no-verify) without strong justification.
 rationale: 'Fast feedback: Catch issues before push, not after CI fails. Consistency:

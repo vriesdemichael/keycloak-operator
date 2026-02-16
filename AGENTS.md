@@ -194,13 +194,13 @@ This is an alternative Keycloak operator project built to replace the existing r
 - First class support for CNPG as gitops database
 
 ## Development Setup
-During development the environment is setup using uv and make.
-Always prefer the make command for actions over manually doing them unless the configured actions are not sufficient.
+During development the environment is setup using uv and task.
+Always prefer the task command for actions over manually doing them unless the configured actions are not sufficient.
 
 The operator is installed in a container image, which can be deployed on a kubernetes cluster.
 The folder k8s provides manifests for the CRDs, monitoring, RBAC and the operator itself.
 
-The makefile should provide you with all the necessary actions to build, run and test the operator.
+The Taskfile should provide you with all the necessary actions to build, run and test the operator.
 
 
 ### Requirements
@@ -209,6 +209,7 @@ The makefile should provide you with all the necessary actions to build, run and
 - **Kind (Kubernetes in Docker)** - Required for local integration testing
 - Docker - Required for Kind cluster creation
 - kubectl - Kubernetes command-line tool
+- go-task - Task runner
 - CRD definitions for Keycloak resources
 - RBAC policies and service account configuration
 - Build and test automation for Python-based operator
@@ -220,7 +221,7 @@ The following is expected to be installed.
 - helm
 - kubectl
 - uv
-- make
+- go-task
 - yq
 - jq
 
@@ -249,7 +250,7 @@ This project uses Decision Records to document important architectural and devel
 **Creating Decision Records**:
 ```bash
 # Validate all decisions
-make validate-decisions
+task quality:validate-decisions
 
 # Create new decision record (see docs/decisions/README.md for template)
 cat <<'YAML' | uv run scripts/adr_validator.py --create
@@ -279,7 +280,7 @@ When you are done with changes to the code run.
 - `uv run ty check`
 - `uv run ruff format`
 
-You can run this in one swoop with `make quality`
+You can run this in one swoop with `task quality:check`
 
 Fix any issues that you find, after fixing them run the command again to see that you did not create new errors. Repeat until nothing is left.
 
@@ -287,25 +288,24 @@ Testing:
 After you are done with changes to the code, run the unit tests first.
 Only after these succeed will you run the integration test suite. This takes a LONG time, as it spins up a kind cluster to do so.
 
-For testing use `make test-unit` and `make test` (which runs the full suite).
+For testing use `task test:unit` and `task test:all` (which runs the full suite).
 
 **Testing workflow:**
 ```bash
 # Run full test suite (quality + unit + integration with fresh cluster)
-make test
+task test:all
 ```
 
-Before commiting your work you will run `make test`, which is a complete flow that:
+Before commiting your work you will run `task test:all`, which is a complete flow that:
 1. Runs code quality checks
-2. Tears down any existing cluster
-3. Creates fresh cluster
-4. Runs unit tests
-5. Runs integration tests
+2. Recreates Kind cluster (fresh state)
+3. Runs unit tests
+4. Runs integration tests
 
-IMPORTANT!! It is imperative that you DO NOT separate these steps to speed up the process. You MUST always run `make test` before committing any changes to the operator code, the test code or the charts.
+IMPORTANT!! It is imperative that you DO NOT separate these steps to speed up the process. You MUST always run `task test:all` before committing any changes to the operator code, the test code or the charts.
 Without running this pre-commit directive you are prohibited to make commits. Any attempt to do so will be a severe blow to your reputation and you will be caught!
 
-**Important**: Always use `uv run <command>` when running Python commands directly, or use the Makefile targets which handle dependencies automatically. When you try to run scripts with python directly you will run into issues with dependencies.
+**Important**: Always use `uv run <command>` when running Python commands directly, or use the Taskfile tasks which handle dependencies automatically. When you try to run scripts with python directly you will run into issues with dependencies.
 
 ### Testing Infrastructure
 
@@ -319,11 +319,11 @@ This project has comprehensive testing infrastructure with coverage collection:
 **Testing Commands (following 2025 best practices):**
 ```bash
 # Complete test suite with coverage (recommended)
-make test                        # Quality + unit + integration tests (fresh cluster)
+task test:all                        # Quality + unit + integration tests (fresh cluster)
 
 # Individual test types
-make test-unit                   # Fast unit tests only (generates .coverage)
-make quality                     # Linting and formatting
+task test:unit                   # Fast unit tests only (generates .coverage)
+task quality:check                     # Linting and formatting
 ```
 
 **Coverage Workflow:**
@@ -343,8 +343,8 @@ make quality                     # Linting and formatting
 
 **Enabling Coverage:**
 ```bash
-# Coverage is enabled by default in make test
-make test
+# Coverage is enabled by default in task test:all
+task test:all
 
 # View coverage report locally after running tests
 coverage html
@@ -353,17 +353,17 @@ open htmlcov/index.html  # or xdg-open on Linux
 
 **Cluster and Deployment Management:**
 
-The operator uses a **fresh cluster strategy** for reliability. Clusters are recreated for every test run.
+The operator uses a **fresh cluster strategy** for reliability. Clusters are recreated for every integration test run.
 
 ```bash
-# Available Make targets (run 'make help' for full list)
-make test                         # Run complete test suite (fresh cluster)
-make kind-setup                   # Create fresh Kind cluster
-make kind-teardown                # Destroy Kind cluster completely
+# Available Taskfile targets (run 'task --list' for full list)
+task test:all                         # Run complete test suite (fresh cluster)
+task cluster:create                   # Recreate fresh Kind cluster
+task cluster:destroy                # Destroy Kind cluster completely
 ```
 
 **Testing Flow:**
-1. `make test` → Teardown → Setup → Build → Run all tests
+1. `task test:all` → Quality → Fresh Cluster → Unit Tests → Integration Tests
 
 
 **Script Architecture:**
@@ -371,10 +371,10 @@ make kind-teardown                # Destroy Kind cluster completely
 The project uses a modular script architecture for maintainability:
 - `scripts/common.sh` - Shared logging functions (log, error, success, warn)
 - `scripts/config.sh` - Shared constants (cluster names, versions, namespaces)
-- `scripts/kind-setup.sh` - Creates bare Kind cluster with namespaces
-- `scripts/kind-teardown.sh` - Complete cleanup of cluster and resources
-- `scripts/install-cnpg.sh` - Installs CloudNativePG operator via Helm
-- `scripts/deploy-test-keycloak.sh` - Creates test Keycloak with CNPG database
+- `scripts/kind-setup.sh` - Used by `task cluster:create`
+- `scripts/kind-teardown.sh` - Used by `task cluster:destroy`
+- `scripts/install-cnpg.sh` - Used by `task infra:cnpg`
+- `scripts/deploy-test-keycloak.sh` - Creates test Keycloak with CNPG database (Internal)
 
 All scripts are idempotent and source common utilities for consistency.
 
@@ -436,7 +436,7 @@ echo "#!/bin/bash" > .tmp/debug-script.sh
 
 # Cleanup when done
 rm -rf .tmp/
-# Or use: make clean
+# Or use: task clean
 ```
 
 ### Guidelines
@@ -545,7 +545,7 @@ This project uses **type-safe Pydantic models** auto-generated from the official
 
 **OpenAPI Spec:** `keycloak-api-spec.yaml` (from https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml)
 **Generated Models:** `src/keycloak_operator/models/keycloak_api.py` (many models, in a very large file DO NOT UPDATE THIS FILE MANUALLY)
-**Generation Script:** `scripts/generate-keycloak-models.sh`
+**Generation Script:** `task keycloak:models`
 **Validation Layer:** `_make_validated_request()` in `keycloak_admin.py`
 
 ### Using the Pydantic Models
@@ -585,7 +585,7 @@ def create_realm(self, realm_config: dict[str, Any]) -> dict[str, Any]:
 curl -o keycloak-api-spec.yaml https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml
 
 # 2. Regenerate models
-./scripts/generate-keycloak-models.sh
+./task keycloak:models
 
 # 3. Review changes
 git diff src/keycloak_operator/models/keycloak_api.py
@@ -737,13 +737,13 @@ Documentation is built with MkDocs. To build documentation locally:
 
 ```bash
 # Build documentation (generates decision records + builds site)
-make docs-build
+task docs:build
 
 # Generate only decision record markdown (without building full site)
-make docs-generate-decisions
+task docs:generate-decisions
 
 # Clean generated documentation
-make docs-clean
+task docs:clean
 
 # Serve documentation locally (DO NOT USE AS LLM - creates endless process, HUMANS ONLY)
 uv run --group docs mkdocs serve
@@ -753,7 +753,7 @@ uv run --group docs mkdocs serve
 **Decision Records in Documentation:**
 - Decision record YAML files in `docs/decisions/*.yaml` are automatically converted to Markdown
 - Generated markdown is placed in `docs/decisions/generated-markdown/` (gitignored)
-- The `make docs-build` target automatically generates decision record markdown before building
+- The `task docs:build` target automatically generates decision record markdown before building
 - Decision records appear in the "Decision Records" section of the documentation site
 
 **When to update documentation:**
@@ -774,7 +774,7 @@ Use `kubectl <verb> -n <namespace>` instead of `kubectl -n <namespace> <verb>`. 
 
 In fact, for any cli interaction that has the flexibility to rearrange flags and options, use the semantically import part first, then all the less significant flags and options.
 
-For `kubectl` use `kubectl create` instead of `kubectl apply` whenever possible, the user will then rest easy knowing you wont patch anything temporarily instead of managing it with the make file.
+For `kubectl` use `kubectl create` instead of `kubectl apply` whenever possible, the user will then rest easy knowing you wont patch anything temporarily instead of managing it with the Taskfile.
 
 Prefer not to change the directory. Keep in the same directory as this file. The construction (cd somedir && cmd) is known to change your working dir, which confuses you.
 
@@ -821,7 +821,7 @@ Follow these instructions (always) when starting on a new task.
   - All the helm charts in ./charts , pay close attention to the helm values, the templates for the CRs and how the values propagate from them into the CR
   - The pydantic models in in ./src/keycloak_operator/models , pay close attention to how the values of the helm chart move from the values.yaml to the various CRs and then into the pydantic models
   - The operator code in ./src , now you should have the complete picture of how the values in values.yaml end up in in the operator code.
-  - Look at the makefile and notice how the integration tests are executed (with `make test`). You may use the same construction as used there with teardown and recreation of hte cluster for a smaller subset of tests, but you are not allowed to run integration tests against an existing cluster.
+  - Look at the Taskfile and notice how the integration tests are executed (with `task test:all`). You may use the same construction as used there with teardown and recreation of hte cluster for a smaller subset of tests, but you are not allowed to run integration tests against an existing cluster.
   - Look at the test fixtures and how they are used in integration tests
   - Look at tests similar for functionality similar to what you are trying to achieve (e.g. with the same CR)
   - Look at the wait helpers. When you are building tests you should make them robust, explcitely wait for a certain state, do not introduce random sleeps with an arbitrary amount of time
@@ -830,7 +830,7 @@ Follow these instructions (always) when starting on a new task.
 - After coming up with a plan for the implementation of the new task you will reason about what kind of documentation would be necessary (if any). Reason about where to put it, how and end user would benefit from it and how it will be able to find it intuitively.
 - If the new functionality deviates from the decision records or encompasses something new that would be useful to know about for future coding sessions it should be put in a new decision record or have an existing one edited.
 - You can open a PR once you have implemented the main functionality. Once the PR is opened there will be new comment added by copilot as reviewer. These comments do not show up immediately, you should first keep working on tests after the PR is opened and on your next commit with tests check the review comments. You read them and determine whether it is a good suggestion or not. If it is a good suggestion you implement it, otherwise you explain why not (comment on it so you know not to process it again afterwards.)
-- The tests (including integration tests!) should be ran locally first, this is much faster and gives you the feedback immediately. Use `make test` for all the guarantees about a clean test state.
+- The tests (including integration tests!) should be ran locally first, this is much faster and gives you the feedback immediately. Use `task test:all` for all the guarantees about a clean test state.
 - Your commits must follow the conventional commit style specified in ./Releases.md, if you do not then pre-commit will block it.
 - I know there are instructions for ignoring pre-existing failures in tests. I am telling you now, whenever you work on a new task the previous state had NO ERRORS, all quality checks succeeded, so if you have any failure, that is on you! Do not ignore any failure in the tests or quality checks.
 - When starting on a new task you will ALWAYS inform the user about the required steps listed here to assure the user that you know how to handle it. Give a short summary of what you are going to do before reading up on all required reading materials. When you are fully up to date and ready to formulate an implementation plan you will output that plan to the user and ask for approval. The user might give suggestions for improvement. You will then reformulate only those parts, not the entire plan and ask for approval again. Once you have approval you MUST work autonomously until you have implemented the new functionality, written all required tests and hit the 85% patch coverage target, processed all gh copilot review comments and succesfully pass all tests in both the local and gh actions tests.

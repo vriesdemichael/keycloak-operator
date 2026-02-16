@@ -77,8 +77,8 @@ All decision records are validated in CI:
 # Validate all decisions
 uv run scripts/adr_validator.py --validate
 
-# Or use Make target
-make validate-decisions
+# Or use Task target
+task quality:validate-decisions
 ```
 
 ## For AI Agents

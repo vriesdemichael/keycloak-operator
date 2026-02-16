@@ -4,7 +4,7 @@ All authoritative project guidance lives in [`AGENTS.md`](../AGENTS.md). Keep th
 
 ## How to work in this repo
 - Start every new task by reviewing `AGENTS.md`, paying particular attention to the sections on project status, requirements, and testing habits.
-- Follow the documented make targets and `uv` usage in `AGENTS.md` when running quality checks, tests, or cluster automation.
+- Follow the documented task commands and `uv` usage in `AGENTS.md` when running quality checks, tests, or cluster automation.
 - If you discover gaps or stale content, update `AGENTS.md` directly and reference the change here only if you add new sections.
 
 

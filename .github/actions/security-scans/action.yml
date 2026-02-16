@@ -18,6 +18,15 @@ inputs:
 runs:
   using: "composite"
   steps:
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+        cache-dependency-glob: "pyproject.toml"
+
     # CodeQL SAST
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v4
@@ -33,24 +42,6 @@ runs:
       with:
         category: "/language:python"
 
-    # Dependency scanning
-    - uses: actions/setup-python@v6
-      with:
-        python-version: ${{ inputs.python-version }}
-
-    - uses: astral-sh/setup-uv@v7
-      with:
-        enable-cache: true
-
-    - name: Run pip-audit
-      shell: bash
-      run: uv run --group security pip-audit --desc || true
-
-    - name: Run safety check
-      shell: bash
-      run: uv run --group security safety check --json || true
-
-    # Image scanning
     - name: Download image
       uses: actions/download-artifact@v6
       with:
@@ -59,7 +50,18 @@ runs:
 
     - name: Load image
       shell: bash
-      run: docker load --input /tmp/operator-test.tar
+      run: |
+        docker load --input /tmp/operator-test.tar
+        # Satisfy Taskfile caching if needed
+        mkdir -p .task
+        touch .task/image_build_operator
+        touch .task/image_build_coverage
+
+    - uses: ./.github/actions/setup-tools
+
+    - name: Run dependency and image security scans
+      shell: bash
+      run: task quality:security
 
     - name: Trivy scan (SARIF)
       uses: aquasecurity/trivy-action@master
@@ -75,14 +77,6 @@ runs:
       with:
         sarif_file: 'trivy-results.sarif'
         category: 'trivy-test-image'
-
-    - name: Trivy scan (table, fail on critical)
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'keycloak-operator:test'
-        format: 'table'
-        severity: 'CRITICAL,HIGH'
-        exit-code: '1'
 
     # SBOM generation
     - name: Generate SBOM
