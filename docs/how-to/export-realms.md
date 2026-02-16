@@ -88,7 +88,8 @@ For Keycloak deployed on Kubernetes (Quarkus distribution) with an external data
 4.  **Copy Exported Data**:
     Once the job is running (check `kubectl get pods`), copy the files to your local machine.
     ```bash
-    kubectl cp keycloak-namespace/keycloak-export-pod-name:/tmp/export ./keycloak-export
+    POD_NAME=$(kubectl get pods -n keycloak-namespace -l job-name=keycloak-export -o jsonpath='{.items[0].metadata.name}')
+    kubectl cp keycloak-namespace/$POD_NAME:/tmp/export ./keycloak-export
     ```
 
 5.  **Cleanup**:
@@ -174,91 +175,60 @@ Directly exporting from WildFly and importing into Quarkus often leads to compat
 
 This operator follows a **GitOps-first** approach. It manages *configuration* (Realms, Clients) but does not manage *stateful data* (Users, Sessions) via CRDs.
 
-**Recommended Method:** Use the provided Helm charts (`keycloak-realm` and `keycloak-client`) to deploy your configuration.
+### 1. Transform Configuration with the Migration Toolkit
 
-### 1. Transform Configuration (Helm Values)
-The export (via `--dir`) produces a directory of JSON files (e.g., `my-realm-realm.json`, `my-realm-users-0.json`). You will map fields from these files to Helm `values.yaml`.
+Use the [Migration Toolkit](./migration-toolkit.md) to automatically transform your export files into Helm chart values:
 
-**Realm Configuration (`keycloak-realm`):**
-Create a `values.yaml` for the `keycloak-realm` chart using data from `*-realm.json`.
-
-```yaml
-# values.yaml for keycloak-realm
-realmName: my-realm
-displayName: "My Imported Realm"
-operatorRef:
-  namespace: keycloak-system
-
-# Map 'roles' from export
-roles:
-  realmRoles:
-    - name: admin
-      description: "Admin role"
-
-# Map 'clients' (only operator-managed ones)
-# Note: It's often better to use separate keycloak-client releases
-# but realm-level client config can go here if needed.
-
-# Map 'identityProviders' from export
-identityProviders:
-  - alias: google
-    providerId: google
-    # ...
+```bash
+keycloak-migrate transform \
+  --input ./keycloak-export/my-realm-realm.json \
+  --output-dir ./migration-output \
+  --operator-namespace keycloak-system \
+  --secret-mode eso \
+  --eso-store my-vault-store
 ```
 
-**Client Configuration (`keycloak-client`):**
-For each client you wish to manage, create a `values.yaml` for the `keycloak-client` chart.
+This produces:
 
-```yaml
-# values.yaml for keycloak-client
-clientId: my-client
-realmRef:
-  name: my-realm
-  namespace: my-namespace
+- `realm-values.yaml` — Helm values for the `keycloak-realm` chart
+- `clients/<name>/values.yaml` — Helm values for each `keycloak-client` chart release
+- `secrets.yaml` — Secret manifests (plain, ExternalSecret, or SealedSecret)
+- `unsupported-features.json` — Features not yet supported with tracking issue links
+- `NEXT-STEPS.md` — Actionable migration checklist
 
-# Map from export
-standardFlowEnabled: true
-redirectUris:
-  - "https://myapp.com/*"
+See the [Migration Toolkit Guide](./migration-toolkit.md) for full command reference, secret mode options, and examples.
+
+### 2. Deploy with Helm
+
+```bash
+# Deploy realm
+helm install my-realm keycloak-realm \
+  -f migration-output/my-realm/realm-values.yaml \
+  -n my-namespace
+
+# Deploy each client
+helm install my-app keycloak-client \
+  -f migration-output/my-realm/clients/my-app/values.yaml \
+  -n my-namespace
 ```
-
-### 2. Handle Secrets
-Exports contain sensitive data like client secrets and LDAP bind passwords.
-1.  Extract these values from the exported JSON files.
-2.  Create Kubernetes Secrets (or use a secrets manager like External Secrets Operator).
-    ```bash
-    kubectl create secret generic my-client-secret --from-literal=clientSecret=...
-    ```
-3.  Reference these secrets in your Helm values:
-
-    **KeycloakClient**:
-    ```yaml
-    clientSecret:
-      name: my-client-secret
-      key: clientSecret
-    ```
-
-    **Identity Providers** (in `keycloak-realm` values):
-    ```yaml
-    identityProviders:
-      - alias: google
-        configSecrets:
-          clientSecret:
-            name: google-idp-secret
-            key: clientSecret
-    ```
 
 ### 3. Import Users (Data Migration)
+
 Since the `KeycloakRealm` CRD does not manage users, you must import them separately.
 
 **Option A: Database Migration (Recommended)**
 If migrating the entire installation, backup and restore the PostgreSQL database directly using CloudNativePG. This preserves all data, including users, sessions, and history.
+
 *   See [Database Setup Guide](./database-setup.md) for restore instructions.
 
 **Option B: Partial Import (Manual)**
 If starting fresh and only migrating specific users:
+
 1.  Deploy Keycloak using the operator.
 2.  Log in to the Keycloak Admin Console.
 3.  Navigate to **Realm Settings** > **Partial Import**.
-4.  Upload your `realm-export.json` and select **Users** (and **Roles/Groups** if not managed by CRD).
+4.  Upload the `users.json` file generated by the migration toolkit.
 5.  Select **Overwrite** or **Skip** strategy as needed.
+
+!!! note "User passwords are preserved"
+    Keycloak exports include password hashes. Users imported via Partial Import retain their existing passwords — no password reset is required.

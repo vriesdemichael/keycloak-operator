@@ -119,6 +119,7 @@ nav:
       - Multi-Tenant Setup: how-to/multi-tenant.md
       - Database Setup: how-to/database-setup.md
       - Realm Export: how-to/export-realms.md
+      - Migration Toolkit: how-to/migration-toolkit.md
       - SMTP Configuration: how-to/smtp-configuration.md
       - High Availability: how-to/ha-deployment.md
       - Backup & Restore: how-to/backup-restore.md

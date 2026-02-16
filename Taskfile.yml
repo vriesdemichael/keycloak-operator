@@ -563,6 +563,30 @@ tasks:
     cmd: docker system prune -f
 
   # ============================================================================
+  # Migration Toolkit (Go)
+  # ============================================================================
+  toolkit:build:
+    desc: Build migration toolkit binary
+    dir: tools/migration-toolkit
+    cmd: go build -o ../../.tmp/keycloak-migrate .
+    sources:
+      - tools/migration-toolkit/**/*.go
+      - tools/migration-toolkit/go.mod
+      - tools/migration-toolkit/go.sum
+    generates:
+      - .tmp/keycloak-migrate
+
+  toolkit:test:
+    desc: Run migration toolkit tests
+    dir: tools/migration-toolkit
+    cmd: go test ./... -v
+
+  toolkit:lint:
+    desc: Lint migration toolkit (go vet)
+    dir: tools/migration-toolkit
+    cmd: go vet ./...
+
+  # ============================================================================
   # Compatibility Aliases (Optional, for transition)
   # ============================================================================
   test: { deps: [test:all] }
