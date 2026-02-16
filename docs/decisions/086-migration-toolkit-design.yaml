@@ -8,16 +8,22 @@ decision: >
   independently compiled with zero runtime dependencies. It emits warnings for
   unsupported features rather than failing hard, writes unsupported data to a
   sidecar file, and generates a NEXT-STEPS.md checklist for the operator. Secret
-  values are never written to values.yaml; instead, the toolkit generates
-  ExternalSecret, SealedSecret, or placeholder Secret manifests depending on the
-  chosen --secret-mode.
+  values are never written to values.yaml files. Instead, the toolkit extracts
+  secrets and generates separate manifests depending on the chosen --secret-mode:
+  plain Kubernetes Secrets (with clear warnings about GitOps unsuitability),
+  ExternalSecret manifests (recommended for production), or SealedSecret manifests.
 agent_instructions: >
   When working on the migration toolkit, use the toolkit: Taskfile namespace
   (toolkit:build, toolkit:test, toolkit:lint). The toolkit is Go code under
   tools/migration-toolkit/ and is independent of the Python operator codebase.
   Output format is Helm values.yaml, NOT raw CRDs. Users consume the output via
   helm install/upgrade with the keycloak-realm and keycloak-client charts. Never
-  write plaintext secrets into values files. Default client secret settings are
+  write plaintext secrets into values files — they go into separate Secret manifests
+  controlled by --secret-mode. The plain mode generates real Kubernetes Secret
+  manifests with stringData (actual plaintext values) and is appropriate for
+  development or initial bootstrapping, but NOT for GitOps workflows. For
+  production, recommend --secret-mode=eso or --secret-mode=sealed-secrets.
+  Default client secret settings are
   manageSecret: false and secretRotation.enabled: false to avoid surprising
   workloads outside Kubernetes. Internal Keycloak clients (account, admin-cli,
   broker, realm-management, security-admin-console) are skipped by default.
@@ -50,6 +56,9 @@ rejected_alternatives:
       where supported features work immediately.
   - alternative: Embed secrets directly in values.yaml with a warning comment
     reason: >
-      Violates ADR-005. Even with warnings, plaintext secrets in values files
-      are likely to be committed to git repositories.
+      Violates ADR-005. Even with warnings, plaintext secrets in Helm values files
+      are likely to be committed to git repositories. Instead, secrets are extracted
+      to separate Secret manifests (--secret-mode=plain) or ExternalSecret/SealedSecret
+      manifests. The plain mode outputs real Kubernetes Secrets with stringData for
+      development use, but with clear warnings that these must not be committed to git.
 provenance: guided-ai

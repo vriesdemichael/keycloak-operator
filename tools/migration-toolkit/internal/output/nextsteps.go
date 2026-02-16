@@ -77,13 +77,13 @@ func writeSecretsSection(b *strings.Builder, result *transform.TransformResult) 
 	b.WriteString("2. Use `kubeseal` to encrypt each secret value in the generated manifests\n\n")
 	b.WriteString("**Option C: Plain Secrets (not recommended for production)**\n\n")
 	b.WriteString("The generated `secrets.yaml` contains plain Kubernetes Secret manifests.\n")
-	b.WriteString("Apply with `kubectl apply -f secrets.yaml` but be aware these are NOT encrypted at rest.\n\n")
+	b.WriteString("Apply with `kubectl apply -f secrets.yaml`, but be aware that by default these are only base64-encoded and may not be encrypted at rest in your cluster; treat them as sensitive and avoid committing them to Git.\n\n")
 }
 
 func writeUsersSection(b *strings.Builder, result *transform.TransformResult) {
 	b.WriteString("## Users\n\n")
 	b.WriteString(fmt.Sprintf("Found **%d users** in the realm export. ", len(result.Users)))
-	b.WriteString("The operator does not manage users (see [ADR-025](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/)). ")
+	b.WriteString("The operator does not manage users (see [ADR-025](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/025-realm-and-client-as-primary-crd-resource-types.yaml)). ")
 	b.WriteString("Users have been extracted to `users.json`.\n\n")
 	b.WriteString("### Import Options\n\n")
 	b.WriteString("**Option A: Partial Import (Admin Console)**\n\n")

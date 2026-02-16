@@ -331,7 +331,7 @@ func TestGetProviderConfig_Nil(t *testing.T) {
 	}
 }
 
-func TestSanitizeName(t *testing.T) {
+func TestSanitizeK8sName(t *testing.T) {
 	tests := []struct {
 		input string
 		want  string
@@ -342,12 +342,19 @@ func TestSanitizeName(t *testing.T) {
 		{"UPPER", "upper"},
 		{"special!@#chars", "specialchars"},
 		{"spaces and dashes-ok", "spaces-and-dashes-ok"},
+		{"", "unnamed"},
+		{"---leading-trailing---", "leading-trailing"},
+		{"My.Realm.Name", "my-realm-name"},
+		{"double__underscore", "double-underscore"},
+		{"REALM_With_MIXED_Case", "realm-with-mixed-case"},
+		{"!!!invalid!!!", "invalid"},
+		{"!!!", "unnamed"},
 	}
 
 	for _, tt := range tests {
-		got := sanitizeName(tt.input)
+		got := SanitizeK8sName(tt.input)
 		if got != tt.want {
-			t.Errorf("sanitizeName(%q) = %q, want %q", tt.input, got, tt.want)
+			t.Errorf("SanitizeK8sName(%q) = %q, want %q", tt.input, got, tt.want)
 		}
 	}
 }

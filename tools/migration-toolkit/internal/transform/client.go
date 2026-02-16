@@ -168,7 +168,7 @@ func TransformClient(clientRaw map[string]any, realmName string, opts TransformO
 
 		// Extract client secret
 		if secret := getString(clientRaw, "secret"); secret != "" {
-			secretName := fmt.Sprintf("%s-client-secret", clientId)
+			secretName := fmt.Sprintf("%s-client-secret", SanitizeK8sName(clientId))
 			secrets = append(secrets, SecretEntry{
 				Name:        secretName,
 				Key:         "client-secret",
