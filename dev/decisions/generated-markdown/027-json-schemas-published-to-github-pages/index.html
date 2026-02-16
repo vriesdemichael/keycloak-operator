@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4090,6 +4090,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4255,7 +4283,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>JSON schemas enable IDE validation and auto-completion for CRD YAML files. Developers get immediate feedback on invalid configurations before applying to cluster. Schemas are versioned alongside releases, allowing users to validate against specific operator versions. Publishing to GitHub Pages makes schemas publicly accessible without authentication. Integration with IDEs (VSCode, IntelliJ) improves developer experience.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Generate schemas with scripts/generate-crd-schemas.py when CRDs change. Publish to GitHub Pages at <a href="https://vriesdemichael.github.io/keycloak-operator/schemas/">https://vriesdemichael.github.io/keycloak-operator/schemas/</a>. Regenerate before releasing new operator versions to keep schemas in sync with CRD changes.</p>
+<p>Generate schemas with 'task crds:schemas' when CRDs change. Publish to GitHub Pages at <a href="https://vriesdemichael.github.io/keycloak-operator/schemas/">https://vriesdemichael.github.io/keycloak-operator/schemas/</a>. Regenerate before releasing new operator versions to keep schemas in sync with CRD changes.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="dont-publish-schemas-rely-on-kubectl-validation-only">Don't publish schemas - rely on kubectl validation only<a class="headerlink" href="#dont-publish-schemas-rely-on-kubectl-validation-only" title="Permanent link">&para;</a></h3>
 <p>kubectl validation happens too late (at apply time). IDE validation catches errors during editing.</p>

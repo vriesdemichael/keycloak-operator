@@ -31,7 +31,7 @@ agent_instructions: >
      - Document the source/reference in a comment if helpful
      - Consider if the snippet can be restructured for validation
 
-  Run `make validate-docs` or `uv run --group dev python scripts/lib/schema_validator.py`
+  Run `task quality:validate-docs` or `uv run --group dev python scripts/lib/schema_validator.py`
   to check validation status. The script will warn about new unrecognized snippets.
 rationale: >
   Documentation drift causes user confusion when examples use incorrect field names

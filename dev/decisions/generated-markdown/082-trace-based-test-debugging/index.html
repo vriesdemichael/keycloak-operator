@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -3987,10 +3987,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#debugging-workflow-local-make-test" class="md-nav__link">
+  <a href="#debugging-workflow-local-task-testall" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Debugging Workflow: Local (make test)
+        Debugging Workflow: Local (task test:all)
       
     </span>
   </a>
@@ -4049,6 +4049,34 @@
     
   
     ADR-084: Prometheus Metric Hygiene Policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
   
 
     
@@ -4156,10 +4184,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#debugging-workflow-local-make-test" class="md-nav__link">
+  <a href="#debugging-workflow-local-task-testall" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Debugging Workflow: Local (make test)
+        Debugging Workflow: Local (task test:all)
       
     </span>
   </a>
@@ -4197,14 +4225,14 @@
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
 <p>Deploy OpenTelemetry Collector in Kind clusters during integration tests to capture operator traces. Traces are written to JSONL files for post-mortem analysis of test failures, enabling correlation between test runs and operator behavior via timestamps.</p>
 <h2 id="infrastructure-overview">Infrastructure Overview<a class="headerlink" href="#infrastructure-overview" title="Permanent link">&para;</a></h2>
-<p>The tracing infrastructure is automatically deployed by <code>scripts/kind-setup.sh</code> (locally) and the CI workflow (GitHub Actions). Components:
-- <strong>OTEL Collector</strong>: Deployed to <code>observability</code> namespace via <code>scripts/deploy-otel-collector.sh</code> - <strong>Manifests</strong>: <code>k8s/testing/otel-collector/</code> (ConfigMap, Deployment, Service) - <strong>Operator config</strong>: Sends traces to <code>http://otel-collector.observability.svc.cluster.local:4317</code> - <strong>Output</strong>: Traces written to <code>/traces/traces.jsonl</code> inside the collector pod</p>
+<p>The tracing infrastructure is automatically deployed by <code>task cluster:create</code> (locally) and the CI workflow (GitHub Actions). Components:
+- <strong>OTEL Collector</strong>: Deployed to <code>observability</code> namespace via <code>task infra:otel</code> - <strong>Manifests</strong>: <code>k8s/testing/otel-collector/</code> (ConfigMap, Deployment, Service) - <strong>Operator config</strong>: Sends traces to <code>http://otel-collector.observability.svc.cluster.local:4317</code> - <strong>Output</strong>: Traces written to <code>/traces/traces.jsonl</code> inside the collector pod</p>
 <h2 id="trace-collection-flow">Trace Collection Flow<a class="headerlink" href="#trace-collection-flow" title="Permanent link">&para;</a></h2>
 <ol>
-<li>Operator emits spans via OTLP gRPC to the collector 2. Collector writes spans to JSONL file (one JSON object per line) 3. After tests: <code>scripts/retrieve-traces.sh</code> copies traces to host 4. Local: <code>.tmp/traces/traces.jsonl</code> 5. CI: <code>test-logs/traces/traces.jsonl</code> (uploaded as artifact)</li>
+<li>Operator emits spans via OTLP gRPC to the collector 2. Collector writes spans to JSONL file (one JSON object per line) 3. After tests: traces are automatically retrieved by the test harness (or manually via <code>task logs:collect</code>) 4. Local: <code>.tmp/traces/traces.jsonl</code> 5. CI: <code>test-logs/traces/traces.jsonl</code> (uploaded as artifact)</li>
 </ol>
-<h2 id="debugging-workflow-local-make-test">Debugging Workflow: Local (make test)<a class="headerlink" href="#debugging-workflow-local-make-test" title="Permanent link">&para;</a></h2>
-<p>```bash # Run tests (traces collected automatically) make test</p>
+<h2 id="debugging-workflow-local-task-testall">Debugging Workflow: Local (task test:all)<a class="headerlink" href="#debugging-workflow-local-task-testall" title="Permanent link">&para;</a></h2>
+<p>```bash # Run tests (traces collected automatically) task test:all</p>
 <h1 id="quick-summary-of-all-traces-python-scriptsanalyze-tracepy-tmptracestracesjsonl-summary">Quick summary of all traces python scripts/analyze-trace.py .tmp/traces/traces.jsonl --summary<a class="headerlink" href="#quick-summary-of-all-traces-python-scriptsanalyze-tracepy-tmptracestracesjsonl-summary" title="Permanent link">&para;</a></h1>
 <h1 id="show-only-error-spans-most-useful-for-debugging-python-scriptsanalyze-tracepy-tmptracestracesjsonl-errors-only">Show only error spans (most useful for debugging) python scripts/analyze-trace.py .tmp/traces/traces.jsonl --errors-only<a class="headerlink" href="#show-only-error-spans-most-useful-for-debugging-python-scriptsanalyze-tracepy-tmptracestracesjsonl-errors-only" title="Permanent link">&para;</a></h1>
 <h1 id="filter-by-test-name-pattern-python-scriptsanalyze-tracepy-tmptracestracesjsonl-filter-test_create_realm">Filter by test name pattern python scripts/analyze-trace.py .tmp/traces/traces.jsonl --filter "test_create_realm"<a class="headerlink" href="#filter-by-test-name-pattern-python-scriptsanalyze-tracepy-tmptracestracesjsonl-filter-test_create_realm" title="Permanent link">&para;</a></h1>

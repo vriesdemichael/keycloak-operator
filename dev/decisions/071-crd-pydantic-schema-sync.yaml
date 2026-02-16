@@ -8,7 +8,7 @@ decision: >
   This ensures the Kubernetes API (CRD) stays synchronized with the Python models.
 agent_instructions: >
   When modifying Pydantic models in src/keycloak_operator/models/, ensure the corresponding
-  CRD in charts/keycloak-operator/crds/ is updated to match. Run `make validate-crd-pydantic`
+  CRD in charts/keycloak-operator/crds/ is updated to match. Run `task quality:validate-crd-pydantic`
   to check for mismatches. Field names in Pydantic use snake_case while CRDs use camelCase -
   the validator handles this conversion automatically. Add new fields to both places or
   the CI will fail.

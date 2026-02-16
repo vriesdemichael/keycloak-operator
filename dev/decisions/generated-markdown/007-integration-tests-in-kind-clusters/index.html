@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4051,6 +4051,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4177,7 +4205,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Production parity: Tests run against the same environment as production (real K8s, real Keycloak). Catch integration issues: Mocks hide networking, timing, and state issues that only appear in real clusters. Helm chart validation: Tests verify the actual deployment artifacts users will use. CI/CD confidence: If it passes integration tests, it works in production. Trade-off: Slower test execution, but higher confidence in results.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Integration tests use 'make test-integration' which creates Kind clusters. Never mock the operator or Keycloak in integration tests - use real deployments. Tests must deploy via Helm charts to validate production-like scenarios. Read tests/integration/TESTING.md for patterns and requirements.</p>
+<p>Integration tests use 'task test:integration' which creates Kind clusters. Never mock the operator or Keycloak in integration tests - use real deployments. Tests must deploy via Helm charts to validate production-like scenarios. Read tests/integration/TESTING.md for patterns and requirements.</p>
 
 
 

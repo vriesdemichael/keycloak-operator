@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4051,6 +4051,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4177,7 +4205,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Production parity: Helm deployment matches what users deploy. Catch real issues: Kubernetes API edge cases, networking, RBAC, CRD versioning. Helm chart validation: Tests verify charts work correctly. CI confidence: Passing integration tests means production will work. Trade-off: Slower than unit tests, but catches issues mocks miss.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Integration tests use test_namespace fixture for isolation. Deploy operator via 'make test-integration' which uses Helm install. Tests run against real Kind cluster (scripts/kind-setup.sh). Use port-forward (keycloak_port_forward fixture) for accessing Keycloak from test host. Read tests/integration/TESTING.md for detailed patterns.</p>
+<p>Integration tests use test_namespace fixture for isolation. Deploy operator via 'task test:integration' which uses Helm install. Tests run against real Kind cluster (task cluster:create). Use port-forward (keycloak_port_forward fixture) for accessing Keycloak from test host. Read tests/integration/TESTING.md for detailed patterns.</p>
 
 
 

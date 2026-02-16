@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4051,6 +4051,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4177,7 +4205,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Kubernetes termination issues: When pods are deleted, atexit handlers often don't run or coverage data is lost before retrieval. Signal-based approach: SIGUSR1 allows explicit, controlled flushing while process continues running. Works with parallel tests: pytest-xdist's pytest_sessionfinish hook runs on controller node, ensuring single retrieval after all workers complete. Path differences: Host uses relative paths (src/keycloak_operator), container uses absolute paths (/app/src/keycloak_operator). Production safety: Signal handler only registers when COVERAGE_PROCESS_START env var is set, zero overhead in production. Combined coverage: Retrieval happens before cluster teardown, allowing combination of unit test and integration test coverage data. Current baseline: 54.5% combined coverage with integration tests contributing real operator execution paths.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When modifying integration test infrastructure, preserve the coverage collection mechanism. The operator listens for SIGUSR1 and calls coverage.save(). The pytest_sessionfinish hook in conftest.py triggers coverage retrieval by calling scripts/retrieve-coverage.sh, which sends SIGUSR1 to PID 1 in the operator pod, waits for flush, then retrieves files via kubectl cp. Never rely on atexit handlers for coverage in containerized tests - they're unreliable with Kubernetes pod termination. Coverage config differs between host (.coveragerc) and container (images/operator/coveragerc.container) due to different path structures.</p>
+<p>When modifying integration test infrastructure, preserve the coverage collection mechanism. The operator listens for SIGUSR1 and calls coverage.save(). The pytest_sessionfinish hook in conftest.py triggers coverage retrieval by calling an internal script which sends SIGUSR1 to PID 1 in the operator pod, waits for flush, then retrieves files via kubectl cp. Never rely on atexit handlers for coverage in containerized tests - they're unreliable with Kubernetes pod termination. Coverage config differs between host (.coveragerc) and container (images/operator/coveragerc.container) due to different path structures.</p>
 
 
 

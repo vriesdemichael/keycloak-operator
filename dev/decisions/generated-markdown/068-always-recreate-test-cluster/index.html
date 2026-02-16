@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4051,6 +4051,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4173,11 +4201,11 @@
 <p><strong>Category:</strong> development
 <strong>Provenance:</strong> human</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Integration tests must always run on a freshly created Kind cluster. The "cluster reuse" workflow is abandoned in favor of reproducibility and reliability. The <code>make test</code> command will alias <code>make test-pre-commit</code> which performs a full teardown and setup.</p>
+<p>Integration tests must always run on a freshly created Kind cluster. The "cluster reuse" workflow is abandoned in favor of reproducibility and reliability. The <code>task test:all</code> command performs a full teardown and setup to guarantee a clean state.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Cluster reuse and cleanup logic proved to be flaky and complex ("messy cleanup"). Recreating the cluster ensures a pristine environment for every test run, eliminating state leakage and "works on my machine" issues. While slower, it guarantees that test results are valid and reproducible. The build cache is enabled to mitigate some of the speed loss.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Do not attempt to optimize testing by reusing existing clusters. Always expect and use the full teardown/setup cycle. The <code>make test</code> command is the single source of truth for running the full test suite.</p>
+<p>Do not attempt to optimize testing by reusing existing clusters. Always expect and use the full teardown/setup cycle. The <code>task test:all</code> command is the single source of truth for running the full test suite.</p>
 
 
 

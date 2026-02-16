@@ -2221,7 +2221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4662,6 +4662,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5934,9 +5962,9 @@
 </span></code></pre></div>
 <p>Use these timestamps with <code>--time-range</code> to find traces for specific tests.</p>
 <h3 id="local-debugging-with-traces">Local Debugging with Traces<a class="headerlink" href="#local-debugging-with-traces" title="Permanent link">&para;</a></h3>
-<p>When running tests locally with <code>make test</code>, traces are collected to <code>.tmp/traces/</code>:</p>
+<p>When running tests locally with <code>task test:all</code>, traces are collected to <code>.tmp/traces/</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-28-1"><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="c1"># Run tests</span>
-</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>make<span class="w"> </span><span class="nb">test</span>
+</span><span id="__span-28-2"><a id="__codelineno-28-2" name="__codelineno-28-2" href="#__codelineno-28-2"></a>task<span class="w"> </span>test:all
 </span><span id="__span-28-3"><a id="__codelineno-28-3" name="__codelineno-28-3" href="#__codelineno-28-3"></a>
 </span><span id="__span-28-4"><a id="__codelineno-28-4" name="__codelineno-28-4" href="#__codelineno-28-4"></a><span class="c1"># Analyze traces from the test run</span>
 </span><span id="__span-28-5"><a id="__codelineno-28-5" name="__codelineno-28-5" href="#__codelineno-28-5"></a>python<span class="w"> </span>scripts/analyze-trace.py<span class="w"> </span>.tmp/traces/traces.jsonl<span class="w"> </span>--summary

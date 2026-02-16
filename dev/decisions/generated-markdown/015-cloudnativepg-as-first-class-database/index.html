@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4051,6 +4051,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4177,7 +4205,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>GitOps native: CNPG is declarative, matches operator's GitOps philosophy. High availability: CNPG provides HA PostgreSQL clusters out of the box. Backup/restore: Built-in backup capabilities for disaster recovery. Kubernetes native: Follows K8s patterns, integrates with operator ecosystem. Trade-off: Users can still use external databases if needed.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When creating Keycloak examples or tests, prefer CNPG Cluster resources over manual PostgreSQL. Document CNPG setup in how-to guides. Integration tests use CNPG for Keycloak database (via scripts/deploy-test-keycloak.sh). Support both CNPG and external databases for flexibility.</p>
+<p>When creating Keycloak examples or tests, prefer CNPG Cluster resources over manual PostgreSQL. Document CNPG setup in how-to guides. Integration tests use CNPG for Keycloak database (deployed by test harness). Support both CNPG and external databases for flexibility.</p>
 
 
 

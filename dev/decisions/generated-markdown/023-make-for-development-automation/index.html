@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4101,6 +4101,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4277,7 +4305,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Make provides a standardized, discoverable interface for all development tasks. Developers and AI agents can run 'make help' to see all available commands. Make targets abstract away complexity (uv, pytest flags, cluster setup) into simple, memorable commands. Documentation stays in sync because commands are defined once in Makefile. Cross-platform compatibility - Make works on Linux, macOS, Windows (WSL). CI/CD uses same Make targets as local development, ensuring consistency.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Always check the Makefile for existing targets before running commands directly. Use 'make help' to see available targets. When adding new development workflows, create corresponding Make targets with descriptive help text. Never document raw commands in guides - reference Make targets instead (e.g., 'make test-integration' not 'uv run pytest tests/integration'). Make targets provide consistent interface across different environments.</p>
+<p>This decision is SUPERSEDED by ADR-085. Use Taskfile instead of Make. Always check the Taskfile.yml for existing tasks before running commands directly. Use 'task --list' to see available tasks.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="use-shell-scripts-in-scripts-directory">Use shell scripts in scripts/ directory<a class="headerlink" href="#use-shell-scripts-in-scripts-directory" title="Permanent link">&para;</a></h3>
 <p>Less discoverable, no built-in help system, harder to compose tasks. Make provides dependency management and built-in help.</p>

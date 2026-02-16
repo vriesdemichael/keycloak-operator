@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4167,6 +4167,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4427,26 +4455,26 @@
 <li><strong>Create adapter</strong> (if needed): Add new adapter class in <code>compatibility/adapters.py</code> for version-specific conversions</li>
 <li><strong>Register adapter</strong>: Update <code>get_adapter()</code> factory function to return appropriate adapter</li>
 <li><strong>Add unit tests</strong>: Test adapter conversions in <code>tests/unit/test_compatibility.py</code></li>
-<li><strong>Validate manually</strong>: Run full integration test suite with <code>KEYCLOAK_VERSION=27.0.0 make test</code></li>
+<li><strong>Validate manually</strong>: Run full integration test suite with <code>KEYCLOAK_VERSION=27.0.0 task test:all</code></li>
 <li><strong>Document validation</strong>: Update <code>scripts/keycloak_versions.yaml</code> with validation date and commit</li>
 </ol>
 <h2 id="updating-the-canonical-model-version">Updating the Canonical Model Version<a class="headerlink" href="#updating-the-canonical-model-version" title="Permanent link">&para;</a></h2>
 <p>When updating the canonical model version (e.g., from 26.5.2 to 27.0.0):</p>
 <ol>
 <li><strong>Download new spec</strong>: <code>curl -o keycloak-api-spec.yaml https://www.keycloak.org/docs-api/27.0.0/rest-api/openapi.yaml</code></li>
-<li><strong>Regenerate models</strong>: <code>uv run scripts/generate_keycloak_models.py</code></li>
+<li><strong>Regenerate models</strong>: <code>task keycloak:models</code></li>
 <li><strong>Review changes</strong>: <code>git diff src/keycloak_operator/models/keycloak_api.py</code></li>
 <li><strong>Update constants</strong>: Set <code>CANONICAL_MODEL_VERSION = "27.0.0"</code> in <code>constants.py</code></li>
 <li><strong>Update keycloak_versions.yaml</strong>: Change <code>canonical_version.version</code> to new version</li>
 <li><strong>Fix breaking changes</strong>: Update adapters for any removed/changed fields</li>
-<li><strong>Run full test suite</strong>: <code>make test</code> to ensure all tests pass</li>
+<li><strong>Run full test suite</strong>: <code>task test:all</code> to ensure all tests pass</li>
 <li><strong>Document in ADR notes</strong>: Add breaking changes to the rationale section of this ADR</li>
 </ol>
 <h2 id="validating-a-keycloak-version">Validating a Keycloak Version<a class="headerlink" href="#validating-a-keycloak-version" title="Permanent link">&para;</a></h2>
 <p>To validate support for a specific Keycloak version:</p>
 <ol>
 <li>Set environment variable: <code>export KEYCLOAK_VERSION=24.0.0</code></li>
-<li>Run full test suite: <code>make test</code></li>
+<li>Run full test suite: <code>task test:all</code></li>
 <li>If tests pass, document in <code>scripts/keycloak_versions.yaml</code> under <code>validated_versions</code></li>
 <li>Include: version, date, commit hash, and pass/fail status</li>
 </ol>

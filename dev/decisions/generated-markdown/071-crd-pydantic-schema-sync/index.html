@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4051,6 +4051,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4177,7 +4205,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>The CRD defines the Kubernetes API contract while Pydantic models define the Python representation. If these drift apart, the operator may fail to parse valid CRs or may expose fields in Python that don't exist in the API. Automated validation catches this drift early. The validator uses Pydantic's model_json_schema() to extract the Python schema and compares it to the CRD's openAPIV3Schema.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When modifying Pydantic models in src/keycloak_operator/models/, ensure the corresponding CRD in charts/keycloak-operator/crds/ is updated to match. Run <code>make validate-crd-pydantic</code> to check for mismatches. Field names in Pydantic use snake_case while CRDs use camelCase - the validator handles this conversion automatically. Add new fields to both places or the CI will fail.</p>
+<p>When modifying Pydantic models in src/keycloak_operator/models/, ensure the corresponding CRD in charts/keycloak-operator/crds/ is updated to match. Run <code>task quality:validate-crd-pydantic</code> to check for mismatches. Field names in Pydantic use snake_case while CRDs use camelCase - the validator handles this conversion automatically. Add new fields to both places or the CI will fail.</p>
 
 
 

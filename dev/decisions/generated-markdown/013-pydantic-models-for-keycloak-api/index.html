@@ -1527,7 +1527,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/test-cleanup-strategy/" class="md-nav__link">
+      <a href="../../../development/test-cleanup-strategy.md" class="md-nav__link">
         
   
   
@@ -4090,6 +4090,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../085-taskfile-for-development-automation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-085: Taskfile for development automation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4255,7 +4283,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>Data validation: Pydantic validates all request/response data against Keycloak API schema, catching errors before sending invalid data. This prevents runtime failures from schema mismatches, missing required fields, or incorrect data types. Automatic schema updates: Regenerate models when Keycloak API changes to stay in sync. IDE support: Auto-complete and type hints for all Keycloak API fields improve developer productivity. Self-documenting: Models document the exact structure expected by Keycloak Admin API.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Import models from keycloak_operator.models.keycloak_api (e.g., RealmRepresentation, ClientRepresentation). Use these models for all Keycloak API interactions, never construct dicts manually. Use _make_validated_request() in KeycloakAdminClient for automatic validation. Never edit src/keycloak_operator/models/keycloak_api.py manually - regenerate with scripts/generate-keycloak-models.sh when OpenAPI spec updates.</p>
+<p>Import models from keycloak_operator.models.keycloak_api (e.g., RealmRepresentation, ClientRepresentation). Use these models for all Keycloak API interactions, never construct dicts manually. Use _make_validated_request() in KeycloakAdminClient for automatic validation. Never edit src/keycloak_operator/models/keycloak_api.py manually - regenerate with task keycloak:models when OpenAPI spec updates.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="manually-construct-request-dictionaries">Manually construct request dictionaries<a class="headerlink" href="#manually-construct-request-dictionaries" title="Permanent link">&para;</a></h3>
 <p>Error-prone, no validation, easy to miss required fields or use wrong types. Changes in Keycloak API would silently break requests.</p>
