@@ -521,6 +521,130 @@ class TestHelmRealmAdvancedFields:
             "hashIterations should be 210000"
         )
 
+    @pytest.mark.timeout(600)
+    async def test_helm_realm_feature_propagation(
+        self,
+        helm_realm,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+        keycloak_admin_client,
+    ):
+        """Test that new realm features (flows, actions, profiles) propagate from Helm."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"helm-feat-{uuid.uuid4().hex[:8]}"
+        release_name = f"helm-feat-{uuid.uuid4().hex[:8]}"
+
+        # Define custom authentication flow and required actions
+        auth_flows = [
+            {
+                "alias": "helm-custom-flow",
+                "description": "Flow deployed via Helm",
+                "providerId": "basic-flow",
+                "topLevel": True,
+                "authenticationExecutions": [
+                    {
+                        "authenticator": "auth-cookie",
+                        "requirement": "ALTERNATIVE",
+                        "priority": 10,
+                    }
+                ],
+            }
+        ]
+
+        required_actions = [
+            {
+                "alias": "UPDATE_PROFILE",
+                "name": "Update Profile (Helm)",
+                "enabled": True,
+                "defaultAction": False,
+                "priority": 40,
+            }
+        ]
+
+        # Deploy realm with new fields
+        await helm_realm(
+            release_name=release_name,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            authenticationFlows=auth_flows,
+            browserFlow="helm-custom-flow",
+            requiredActions=required_actions,
+            # Issue 530 fields
+            clientProfiles=[
+                {
+                    "name": "helm-profile",
+                    "description": "Profile from Helm",
+                    "executors": [
+                        {
+                            "executor": "pkce-enforcer",
+                            "configuration": {"auto-configure": "true"},
+                        }
+                    ],
+                }
+            ],
+            clientPolicies=[
+                {
+                    "name": "helm-policy",
+                    "description": "Policy from Helm",
+                    "enabled": True,
+                    "conditions": [
+                        {
+                            "condition": "client-access-type",
+                            "configuration": {"type": ["public"]},
+                        }
+                    ],
+                    "profiles": ["helm-profile"],
+                }
+            ],
+        )
+
+        realm_cr_name = f"{release_name}-keycloak-realm"
+
+        # Wait for realm ready
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=300,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify in Keycloak
+        # 1. Flow exists
+        flow = await keycloak_admin_client.get_authentication_flow_by_alias(
+            realm_name, "helm-custom-flow", test_namespace
+        )
+        assert flow is not None, "Custom flow should exist in Keycloak"
+
+        # 2. Flow binding applied
+        realm = await keycloak_admin_client.get_realm(realm_name, test_namespace)
+        assert realm.browser_flow == "helm-custom-flow", (
+            "Browser flow binding should be applied"
+        )
+
+        # 3. Required action configured
+        actions = await keycloak_admin_client.get_required_actions(
+            realm_name, test_namespace
+        )
+        update_profile = next((a for a in actions if a.alias == "UPDATE_PROFILE"), None)
+        assert update_profile is not None
+        assert update_profile.name == "Update Profile (Helm)"
+
+        # 4. Client Profiles & Policies
+        profiles = await keycloak_admin_client.get_client_profiles(
+            realm_name, test_namespace
+        )
+        assert profiles is not None
+        assert any(p.name == "helm-profile" for p in (profiles.profiles or [])), (
+            "Client profile should exist"
+        )
+
 
 @pytest.mark.asyncio
 class TestHelmClientAdvancedSettings:
@@ -833,3 +957,97 @@ class TestHelmClientAdvancedSettings:
         assert attrs.get("pkce.code.challenge.method") == "S256", (
             "Keycloak client PKCE method should be S256"
         )
+
+    @pytest.mark.timeout(600)
+    async def test_helm_client_field_propagation(
+        self,
+        helm_realm,
+        helm_client,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+        keycloak_admin_client,
+    ):
+        """Test that all Issue 529 client fields propagate from Helm to Keycloak."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"client-fields-{uuid.uuid4().hex[:8]}"
+        realm_release = f"realm-fields-{uuid.uuid4().hex[:8]}"
+
+        await helm_realm(
+            release_name=realm_release,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            clientAuthorizationGrants=[test_namespace],
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=f"{realm_release}-keycloak-realm",
+            timeout=300,
+            operator_namespace=operator_namespace,
+        )
+
+        client_id = f"feat-client-{uuid.uuid4().hex[:8]}"
+        client_release = f"client-feat-{uuid.uuid4().hex[:8]}"
+
+        # Deploy client with all core fields from Issue 529
+        await helm_client(
+            release_name=client_release,
+            client_id=client_id,
+            realm_name=f"{realm_release}-keycloak-realm",
+            realm_namespace=test_namespace,
+            description="Propagation test client",
+            publicClient=True,
+            bearerOnly=False,
+            protocol="openid-connect",
+            redirectUris=["https://app.example.com/*"],
+            webOrigins=["https://app.example.com"],
+            rootUrl="https://app.example.com/",
+            baseUrl="/app",
+            adminUrl="https://admin.example.com/",
+            authorizationServicesEnabled=True,
+            authorizationSettings={
+                "policyEnforcementMode": "ENFORCING",
+                "decisionStrategy": "AFFIRMATIVE",
+                "resources": [{"name": "Helm Resource", "uris": ["/api/helm/*"]}],
+            },
+        )
+
+        client_cr_name = f"{client_release}-keycloak-client"
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            name=client_cr_name,
+            timeout=300,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify in Keycloak
+        kc_client = await keycloak_admin_client.get_client_by_name(
+            client_id, realm_name, test_namespace
+        )
+        assert kc_client is not None
+        assert kc_client.description == "Propagation test client"
+        assert kc_client.public_client is True
+        assert "https://app.example.com/*" in kc_client.redirect_uris
+        assert kc_client.root_url == "https://app.example.com/"
+        assert kc_client.base_url == "/app"
+        assert kc_client.admin_url == "https://admin.example.com/"
+
+        # Verify Authz settings
+        authz = await keycloak_admin_client.get_client_authz_settings(
+            kc_client.id, realm_name, test_namespace
+        )
+        assert authz is not None
+        assert authz.policy_enforcement_mode.name == "ENFORCING"
+        assert any(r.name == "Helm Resource" for r in (authz.resources or []))

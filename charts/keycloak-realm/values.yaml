@@ -77,6 +77,43 @@ localization:
     - en
   enabled: true
 
+# Authentication Flows (optional)
+# Define custom authentication flows with executions and configurations
+authenticationFlows: []
+  # Example: Custom browser flow
+  # - alias: "custom-browser"
+  #   description: "Custom browser flow with OTP"
+  #   providerId: "basic-flow"
+  #   topLevel: true
+  #   builtIn: false
+  #   authenticationExecutions:
+  #     - authenticator: "auth-cookie"
+  #       requirement: "ALTERNATIVE"
+  #       priority: 10
+  #     - authenticator: "auth-otp-form"
+  #       requirement: "REQUIRED"
+  #       priority: 20
+
+# Authentication Flow Bindings (optional)
+# Assign flows to realm authentication types by alias
+browserFlow: ""
+registrationFlow: ""
+directGrantFlow: ""
+resetCredentialsFlow: ""
+clientAuthenticationFlow: ""
+dockerAuthenticationFlow: ""
+firstBrokerLoginFlow: ""
+
+# Required Actions (optional)
+# Configure required actions like email verification or password update
+requiredActions: []
+  # Example:
+  # - alias: "VERIFY_EMAIL"
+  #   name: "Verify Email"
+  #   enabled: true
+  #   defaultAction: true
+  #   priority: 50
+
 # Token settings
 tokenSettings:
   # Access token lifespan in seconds
