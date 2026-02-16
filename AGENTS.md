@@ -585,7 +585,7 @@ def create_realm(self, realm_config: dict[str, Any]) -> dict[str, Any]:
 curl -o keycloak-api-spec.yaml https://www.keycloak.org/docs-api/latest/rest-api/openapi.yaml
 
 # 2. Regenerate models
-./task keycloak:models
+task keycloak:models
 
 # 3. Review changes
 git diff src/keycloak_operator/models/keycloak_api.py
