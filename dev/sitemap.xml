@@ -385,6 +385,10 @@
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/086-migration-toolkit-design/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/testing/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
@@ -417,7 +421,15 @@
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/how-to/export-realms/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/how-to/ha-deployment/</loc>
+         <lastmod>2026-02-16</lastmod>
+    </url>
+    <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/how-to/migration-toolkit/</loc>
          <lastmod>2026-02-16</lastmod>
     </url>
     <url>

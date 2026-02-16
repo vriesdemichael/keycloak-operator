@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/078-restrict-privileged-roles-and-scripts/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/086-migration-toolkit-design/">
       
       
-        <link rel="prev" href="../077-no-ingress-traffic-separation-for-admin-and-public-interfaces/">
+        <link rel="prev" href="../085-taskfile-for-development-automation/">
       
       
-        <link rel="next" href="../079-no-managed-keycloak-upgrades/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-078: Restrict Privileged Roles and Script Mappers - Keycloak Operator</title>
+        <title>ADR-086: Go-based migration toolkit for Keycloak export transformation - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-078-restrict-privileged-roles-and-script-mappers" class="md-skip">
+        <a href="#adr-086-go-based-migration-toolkit-for-keycloak-export-transformation" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-078: Restrict Privileged Roles and Script Mappers
+              ADR-086: Go-based migration toolkit for Keycloak export transformation
             
           </span>
         </div>
@@ -3835,37 +3835,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-078: Restrict Privileged Roles and Script Mappers
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../078-restrict-privileged-roles-and-scripts/" class="md-nav__link">
         
   
   
@@ -3881,59 +3854,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4139,10 +4059,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../086-migration-toolkit-design/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-086: Go-based migration toolkit for Keycloak export transformation
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4158,6 +4105,120 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-based-toolkit-using-the-existing-operator-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python-based toolkit using the existing operator dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-raw-crd-manifests-instead-of-helm-valuesyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output raw CRD manifests instead of Helm values.yaml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fail-hard-on-unsupported-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fail hard on unsupported features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#embed-secrets-directly-in-valuesyaml-with-a-warning-comment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Embed secrets directly in values.yaml with a warning comment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4256,6 +4317,67 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#python-based-toolkit-using-the-existing-operator-dependencies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Python-based toolkit using the existing operator dependencies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-raw-crd-manifests-instead-of-helm-valuesyaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Output raw CRD manifests instead of Helm values.yaml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fail-hard-on-unsupported-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fail hard on unsupported features
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#embed-secrets-directly-in-valuesyaml-with-a-warning-comment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Embed secrets directly in values.yaml with a warning comment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4273,7 +4395,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/078-restrict-privileged-roles-and-scripts.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/086-migration-toolkit-design.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4281,16 +4403,24 @@
   
 
 
-<h1 id="adr-078-restrict-privileged-roles-and-script-mappers">ADR-078: Restrict Privileged Roles and Script Mappers<a class="headerlink" href="#adr-078-restrict-privileged-roles-and-script-mappers" title="Permanent link">&para;</a></h1>
+<h1 id="adr-086-go-based-migration-toolkit-for-keycloak-export-transformation">ADR-086: Go-based migration toolkit for Keycloak export transformation<a class="headerlink" href="#adr-086-go-based-migration-toolkit-for-keycloak-export-transformation" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> architecture
-<strong>Provenance:</strong> human</p>
+<strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Implement security controls to prevent privilege escalation via KeycloakClient resources. 1. Block assignment of high-privilege roles ('admin', 'realm-admin', 'manage-realm', 'manage-authorization') to service accounts. 2. Block assignment of 'impersonation' role by default, configurable via KEYCLOAK_ALLOW_IMPERSONATION. 3. Block script-based protocol mappers by default, configurable via KEYCLOAK_ALLOW_SCRIPT_MAPPERS.</p>
+<p>Provide a standalone Go binary (tools/migration-toolkit/) that transforms Keycloak realm export JSON into Helm chart values.yaml files compatible with the keycloak-realm and keycloak-client charts. The toolkit lives in the operator repository but is independently compiled with zero runtime dependencies. It emits warnings for unsupported features rather than failing hard, writes unsupported data to a sidecar file, and generates a NEXT-STEPS.md checklist for the operator. Secret values are never written to values.yaml files. Instead, the toolkit extracts secrets and generates separate manifests depending on the chosen --secret-mode: plain Kubernetes Secrets (with clear warnings about GitOps unsuitability), ExternalSecret manifests (recommended for production), or SealedSecret manifests.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>The operator uses a least-privilege model where authorization is handled via Kubernetes RBAC. Allowing service accounts to acquire full realm admin privileges ('admin', 'realm-admin') allows users to bypass this model and potentially escalate privileges within Keycloak. Script mappers allow arbitrary code execution on the Keycloak server, which is a severe security risk if not strictly controlled. The 'impersonation' role allows a service account to act as any user, including admins, which is equivalent to granting admin access.
-Consequences: - Prevents accidental or malicious privilege escalation. - Mitigates Remote Code Execution (RCE) risks from script mappers. - Enforces the intended security model (RBAC + Namespace Grants). - May break existing deployments that rely on these high-privilege roles or script mappers (mitigated by configuration flags).</p>
+<p>A standalone Go binary avoids adding Python packaging complexity to end users who may not have a Python environment. Go cross-compiles to all platforms and produces a single static binary. Outputting Helm values.yaml rather than raw CRDs ensures users benefit from chart-level validation, schema enforcement, and future chart upgrades without re-running the toolkit. The warn-not-fail strategy prevents blocking migration for features that can be manually configured post-migration. Secret extraction to separate manifests follows ADR-005 (no plaintext secrets) and ADR-056 (recommend ESO/Sealed Secrets).</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When implementing or modifying client reconciliation logic, ensure these security checks remain in place. Do not remove these checks without explicit authorization. When testing, verify that restricted roles and mappers are rejected.</p>
+<p>When working on the migration toolkit, use the toolkit: Taskfile namespace (toolkit:build, toolkit:test, toolkit:lint). The toolkit is Go code under tools/migration-toolkit/ and is independent of the Python operator codebase. Output format is Helm values.yaml, NOT raw CRDs. Users consume the output via helm install/upgrade with the keycloak-realm and keycloak-client charts. Never write plaintext secrets into values files — they go into separate Secret manifests controlled by --secret-mode. The plain mode generates real Kubernetes Secret manifests with stringData (actual plaintext values) and is appropriate for development or initial bootstrapping, but NOT for GitOps workflows. For production, recommend --secret-mode=eso or --secret-mode=sealed-secrets. Default client secret settings are manageSecret: false and secretRotation.enabled: false to avoid surprising workloads outside Kubernetes. Internal Keycloak clients (account, admin-cli, broker, realm-management, security-admin-console) are skipped by default. Deprecated client fields are silently dropped. Unsupported features produce stderr warnings with GitHub issue URLs, not hard failures.</p>
+<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="python-based-toolkit-using-the-existing-operator-dependencies">Python-based toolkit using the existing operator dependencies<a class="headerlink" href="#python-based-toolkit-using-the-existing-operator-dependencies" title="Permanent link">&para;</a></h3>
+<p>Would require users to install Python, uv, and all operator dependencies just to run a one-time migration tool. Go produces a single binary with zero runtime dependencies.</p>
+<h3 id="output-raw-crd-manifests-instead-of-helm-valuesyaml">Output raw CRD manifests instead of Helm values.yaml<a class="headerlink" href="#output-raw-crd-manifests-instead-of-helm-valuesyaml" title="Permanent link">&para;</a></h3>
+<p>Raw CRDs bypass chart-level validation, default values, and schema evolution. Users would miss out on future chart improvements and would need to manually maintain CRD compliance.</p>
+<h3 id="fail-hard-on-unsupported-features">Fail hard on unsupported features<a class="headerlink" href="#fail-hard-on-unsupported-features" title="Permanent link">&para;</a></h3>
+<p>Would block migration entirely for features that may not even be needed in the new deployment. Warning strategy allows incremental migration where supported features work immediately.</p>
+<h3 id="embed-secrets-directly-in-valuesyaml-with-a-warning-comment">Embed secrets directly in values.yaml with a warning comment<a class="headerlink" href="#embed-secrets-directly-in-valuesyaml-with-a-warning-comment" title="Permanent link">&para;</a></h3>
+<p>Violates ADR-005. Even with warnings, plaintext secrets in Helm values files are likely to be committed to git repositories. Instead, secrets are extracted to separate Secret manifests (--secret-mode=plain) or ExternalSecret/SealedSecret manifests. The plain mode outputs real Kubernetes Secrets with stringData for development use, but with clear warnings that these must not be committed to git.</p>
 
 
 
@@ -4326,7 +4456,7 @@ Consequences: - Prevents accidental or malicious privilege escalation. - Mitigat
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../077-no-ingress-traffic-separation-for-admin-and-public-interfaces/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-077: No Ingress Traffic Separation for Admin and Public Interfaces">
+          <a href="../085-taskfile-for-development-automation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-085: Taskfile for development automation">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4336,20 +4466,20 @@ Consequences: - Prevents accidental or malicious privilege escalation. - Mitigat
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-077: No Ingress Traffic Separation for Admin and Public Interfaces
+                ADR-085: Taskfile for development automation
               </div>
             </div>
           </a>
         
         
           
-          <a href="../079-no-managed-keycloak-upgrades/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-079: No managed Keycloak upgrades">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-079: No managed Keycloak upgrades
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">
