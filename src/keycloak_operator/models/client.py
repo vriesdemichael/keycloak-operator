@@ -946,6 +946,15 @@ class KeycloakClientSpec(BaseModel):
         alias="postLogoutRedirectUris",
         description="Valid post-logout redirect URIs",
     )
+    root_url: str | None = Field(
+        None, alias="rootUrl", description="Root URL for the client"
+    )
+    admin_url: str | None = Field(
+        None, alias="adminUrl", description="Admin URL for the client"
+    )
+    base_url: str | None = Field(
+        None, alias="baseUrl", description="Base URL for the client"
+    )
 
     # Client settings
     settings: KeycloakClientSettings = Field(
@@ -1180,6 +1189,9 @@ class KeycloakClientSpec(BaseModel):
             "enabled": True,  # Client is enabled when CR exists
             "redirectUris": self.redirect_uris,
             "webOrigins": self.web_origins,
+            "rootUrl": self.root_url,
+            "adminUrl": self.admin_url,
+            "baseUrl": self.base_url,
             "attributes": self.attributes.copy(),
         }
 

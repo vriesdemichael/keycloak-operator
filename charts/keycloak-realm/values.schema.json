@@ -68,6 +68,82 @@
         "enabled": {"type": "boolean"}
       }
     },
+    "authenticationFlows": {
+      "type": "array",
+      "description": "Custom authentication flows",
+      "items": {
+        "type": "object",
+        "required": ["alias"],
+        "properties": {
+          "alias": {"type": "string"},
+          "description": {"type": "string"},
+          "providerId": {"type": "string", "default": "basic-flow"},
+          "topLevel": {"type": "boolean", "default": true},
+          "builtIn": {"type": "boolean", "default": false},
+          "copyFrom": {"type": "string"},
+          "authenticationExecutions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "authenticator": {"type": "string"},
+                "flowAlias": {"type": "string"},
+                "authenticatorFlow": {"type": "boolean", "default": false},
+                "requirement": {
+                  "type": "string",
+                  "enum": ["REQUIRED", "ALTERNATIVE", "DISABLED", "CONDITIONAL"],
+                  "default": "DISABLED"
+                },
+                "priority": {"type": "integer", "default": 0},
+                "authenticatorConfig": {"type": "string"},
+                "userSetupAllowed": {"type": "boolean"}
+              }
+            }
+          },
+          "authenticatorConfig": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["alias"],
+              "properties": {
+                "alias": {"type": "string"},
+                "config": {
+                  "type": "object",
+                  "additionalProperties": {"type": "string"}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "browserFlow": {"type": "string"},
+    "registrationFlow": {"type": "string"},
+    "directGrantFlow": {"type": "string"},
+    "resetCredentialsFlow": {"type": "string"},
+    "clientAuthenticationFlow": {"type": "string"},
+    "dockerAuthenticationFlow": {"type": "string"},
+    "firstBrokerLoginFlow": {"type": "string"},
+    "requiredActions": {
+      "type": "array",
+      "description": "Required action configurations",
+      "items": {
+        "type": "object",
+        "required": ["alias"],
+        "properties": {
+          "alias": {"type": "string"},
+          "name": {"type": "string"},
+          "providerId": {"type": "string"},
+          "enabled": {"type": "boolean", "default": true},
+          "defaultAction": {"type": "boolean", "default": false},
+          "priority": {"type": "integer", "default": 0},
+          "config": {
+            "type": "object",
+            "additionalProperties": {"type": "string"}
+          }
+        }
+      }
+    },
     "tokenSettings": {
       "type": "object",
       "properties": {

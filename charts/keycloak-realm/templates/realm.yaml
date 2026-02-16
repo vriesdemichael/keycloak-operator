@@ -14,15 +14,15 @@ spec:
   realmName: {{ include "keycloak-realm.realmName" . }}
 
   {{- with .Values.displayName }}
-  displayName: {{ . }}
+  displayName: {{ . | quote }}
   {{- end }}
 
   {{- with .Values.description }}
-  description: {{ . }}
+  description: {{ . | quote }}
   {{- end }}
 
   {{- with .Values.loginPageTitle }}
-  loginPageTitle: {{ . }}
+  loginPageTitle: {{ . | quote }}
   {{- end }}
 
   # Operator reference
@@ -151,4 +151,52 @@ spec:
   {{- if or .Values.eventsConfig.eventsEnabled .Values.eventsConfig.adminEventsEnabled }}
   eventsConfig:
     {{- toYaml .Values.eventsConfig | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.authenticationFlows }}
+  authenticationFlows:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.browserFlow }}
+  browserFlow: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.registrationFlow }}
+  registrationFlow: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.directGrantFlow }}
+  directGrantFlow: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.resetCredentialsFlow }}
+  resetCredentialsFlow: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.clientAuthenticationFlow }}
+  clientAuthenticationFlow: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.dockerAuthenticationFlow }}
+  dockerAuthenticationFlow: {{ . | quote }}
+  {{- end }}
+  {{- with .Values.firstBrokerLoginFlow }}
+  firstBrokerLoginFlow: {{ . | quote }}
+  {{- end }}
+
+  {{- with .Values.requiredActions }}
+  requiredActions:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.clientProfiles }}
+  clientProfiles:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.clientPolicies }}
+  clientPolicies:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  organizationsEnabled: {{ .Values.organizationsEnabled | default false }}
+  {{- with .Values.organizations }}
+  organizations:
+    {{- toYaml . | nindent 4 }}
   {{- end }}

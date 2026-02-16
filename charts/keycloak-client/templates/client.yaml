@@ -17,26 +17,44 @@ spec:
     namespace: {{ .Values.realmRef.namespace | default .Release.Namespace }}
   clientId: {{ .Values.clientId }}
 
+  {{- with .Values.description }}
+  description: {{ . | quote }}
+  {{- end }}
+
+  publicClient: {{ .Values.publicClient | default false }}
+  bearerOnly: {{ .Values.bearerOnly | default false }}
+  protocol: {{ .Values.protocol | default "openid-connect" | quote }}
+
+  {{- with .Values.redirectUris }}
+  redirectUris:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.webOrigins }}
+  webOrigins:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- with .Values.postLogoutRedirectUris }}
   postLogoutRedirectUris:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
   {{- with .Values.baseUrl }}
-  baseUrl: {{ . }}
+  baseUrl: {{ . | quote }}
   {{- end }}
 
   {{- with .Values.rootUrl }}
-  rootUrl: {{ . }}
+  rootUrl: {{ . | quote }}
   {{- end }}
 
   {{- with .Values.adminUrl }}
-  adminUrl: {{ . }}
+  adminUrl: {{ . | quote }}
   {{- end }}
 
   # Client settings - map all settings to CRD structure
   settings:
-    clientAuthenticatorType: {{ .Values.clientAuthenticatorType }}
+    clientAuthenticatorType: {{ .Values.clientAuthenticatorType | quote }}
     standardFlowEnabled: {{ .Values.standardFlowEnabled }}
     implicitFlowEnabled: {{ .Values.implicitFlowEnabled }}
     directAccessGrantsEnabled: {{ .Values.directAccessGrantsEnabled }}
@@ -50,7 +68,7 @@ spec:
     includeInTokenScope: {{ .Values.includeInTokenScope }}
 
     {{- with .Values.settings.pkceCodeChallengeMethod }}
-    pkceCodeChallengeMethod: {{ . }}
+    pkceCodeChallengeMethod: {{ . | quote }}
     {{- end }}
 
     {{- if .Values.settings.accessTokenLifespan }}
@@ -92,16 +110,21 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.authorizationSettings }}
+  authorizationSettings:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- if or .Values.authenticationFlow.browserFlow .Values.authenticationFlow.directGrantFlow .Values.authenticationFlow.clientAuthenticationFlow }}
   authenticationFlow:
     {{- with .Values.authenticationFlow.browserFlow }}
-    browserFlow: {{ . }}
+    browserFlow: {{ . | quote }}
     {{- end }}
     {{- with .Values.authenticationFlow.directGrantFlow }}
-    directGrantFlow: {{ . }}
+    directGrantFlow: {{ . | quote }}
     {{- end }}
     {{- with .Values.authenticationFlow.clientAuthenticationFlow }}
-    clientAuthenticationFlow: {{ . }}
+    clientAuthenticationFlow: {{ . | quote }}
     {{- end }}
   {{- end }}
 
@@ -109,7 +132,7 @@ spec:
   # Secret management (for confidential clients)
   manageSecret: {{ .Values.manageSecret }}
   {{- if .Values.secretName }}
-  secretName: {{ .Values.secretName }}
+  secretName: {{ .Values.secretName | quote }}
   {{- end }}
   {{- with .Values.secretMetadata }}
   secretMetadata:
@@ -117,8 +140,8 @@ spec:
   {{- end }}
   {{- if and .Values.clientSecret .Values.clientSecret.name }}
   clientSecret:
-    name: {{ .Values.clientSecret.name }}
-    key: {{ .Values.clientSecret.key | default "client-secret" }}
+    name: {{ .Values.clientSecret.name | quote }}
+    key: {{ .Values.clientSecret.key | default "client-secret" | quote }}
   {{- end }}
   regenerateSecret: {{ .Values.regenerateSecret }}
   {{- if not (and .Values.clientSecret .Values.clientSecret.name) }}
