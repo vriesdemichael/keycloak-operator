@@ -139,6 +139,16 @@ runs:
         # 3. Loads images (skips build due to .task/ artifacts)
         # 4. Runs tests
         task test:integration-coverage
+        task_status=$?
+        if [ "$task_status" -ne 0 ]; then
+          echo "ERROR: task test:integration-coverage failed with exit code $task_status" >&2
+          exit "$task_status"
+        fi
+
+        if [ ! -f coverage.xml ]; then
+          echo "ERROR: coverage.xml not found after running integration tests; coverage generation likely failed." >&2
+          exit 1
+        fi
         mv coverage.xml coverage-integration.xml
 
     - name: Upload integration coverage to Codecov

@@ -258,7 +258,7 @@ To set up a development environment:
 git clone https://github.com/vriesdemichael/keycloak-operator.git
 cd keycloak-operator
 
-# Install dependencies
+# Check required tools and install pre-commit hooks
 task dev:setup
 
 # Run quality checks
