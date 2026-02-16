@@ -20,20 +20,22 @@ Before starting development, ensure you have these tools installed:
 
 ## Environment Setup
 
-Install dependencies with [uv](https://github.com/astral-sh/uv):
+Check for required tools and install pre-commit hooks:
 
 ```bash
 # Clone the repository
 git clone https://github.com/vriesdemichael/keycloak-operator.git
 cd keycloak-operator
 
-# Install all dependencies and pre-commit hooks
+# Verify tools and install hooks
 task dev:setup
 ```
 
 This will:
 - Set up pre-commit hooks for code quality
 - Verify your local environment has all required tools (docker, kind, helm, yq, etc.)
+
+Note: Python dependencies are managed by `uv` and will be automatically installed when running commands like `uv run` or `task test:unit`.
 
 ### Pre-commit Hooks
 
@@ -570,11 +572,11 @@ To add a new explicit page:
 
 | Symptom | Cause | Resolution |
 |---------|-------|------------|
-| `ModuleNotFoundError` | Dependencies not installed | Run `task dev:setup` |
+| `ModuleNotFoundError` | Dependencies not installed | Run `uv sync` or use `uv run` |
 | `No module named 'keycloak_operator'` | Not using uv run | Always use `uv run <command>` |
 | Type errors block tests | Missing type annotations | Run `uv run ty check` and fix issues |
 | Pre-commit hook fails | Code quality issues | Run `task quality:check` to auto-fix |
-| Integration tests fail | Cluster not ready | Run `task cluster:reset && task test:all` |
+| Integration tests fail | Cluster not ready | Run `task cluster:destroy && task test:all` |
 | Port conflicts in tests | Previous test run still active | Run `pkill -f port-forward` |
 | Missing API docs | Module not referenced | Add `::: dotted.path` in markdown |
 | 404 for docs page | Wrong nav path | Check `mkdocs.yml` navigation |

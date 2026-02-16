@@ -442,7 +442,15 @@ tasks:
 
         if [ "{{default "false" .COVERAGE}}" = "true" ]; then
           echo "Combining coverage data..."
-          bash scripts/combine-coverage.sh || true
+          if ! bash scripts/combine-coverage.sh; then
+            echo "❌ Failed to combine coverage data via scripts/combine-coverage.sh"
+            exit 1
+          fi
+
+          if [ ! -f coverage.xml ]; then
+            echo "❌ Coverage combination completed but coverage.xml was not generated."
+            exit 1
+          fi
         fi
 
         exit $EXIT_CODE
@@ -457,7 +465,7 @@ tasks:
 
   test:integration-coverage:
     desc: Run integration tests with coverage (guaranteed fresh cluster)
-    deps: [cluster:create, infra:all, image:load-coverage, image:load-all]
+    deps: [cluster:create, infra:all, image:load-coverage, image:load-keycloak, image:load-keycloak-tracing]
     cmds:
       - task: test:run-integration
         vars:

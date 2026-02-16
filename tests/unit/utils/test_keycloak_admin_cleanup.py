@@ -35,11 +35,12 @@ class TestKeycloakAdminCleanup:
         """Should handle case where metrics cannot be imported."""
         mock_admin_client._session_tracked = True
 
-        # Simulate import error or other exception during metrics access
+        # Simulate exception during metrics access
         with patch(
-            "keycloak_operator.observability.metrics.ADMIN_SESSIONS_ACTIVE",
-            side_effect=ImportError,
-        ):
+            "keycloak_operator.observability.metrics.ADMIN_SESSIONS_ACTIVE"
+        ) as mock_metric:
+            mock_metric.dec.side_effect = ImportError("Metrics import failed")
+
             # This should not raise an exception due to try-except block in cleanup()
             mock_admin_client.cleanup()
 
