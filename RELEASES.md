@@ -76,6 +76,12 @@ The repository contains four independently versioned components:
 - **Release Tags**: `chart-client-v0.5.0`
 - **Triggered by**: Conventional commits with `(chart-client)` scope
 
+### 5. Migration Toolkit (Go Binary)
+- **Path**: `tools/migration-toolkit/`
+- **Artifact**: Go binary (standalone, no runtime dependencies)
+- **Release Tags**: `migration-toolkit-v0.1.0`
+- **Triggered by**: Conventional commits with `(migration-toolkit)` scope
+
 ## Conventional Commits & Scoping
 
 ### Valid Scopes
@@ -85,6 +91,7 @@ The pre-commit hook **enforces** the following scopes:
 - `chart-operator` - Keycloak Operator Helm chart
 - `chart-realm` - Keycloak Realm Helm chart
 - `chart-client` - Keycloak Client Helm chart
+- `migration-toolkit` - Migration toolkit (Go binary in `tools/migration-toolkit/`)
 
 **Scope validation rules:**
 - Scopes can be combined using `+` (e.g., `feat(chart-client+chart-realm): ...`)
@@ -123,6 +130,12 @@ feat(chart-client): add protocol mapper configuration
 fix(chart-client): handle missing redirect URIs
 ```
 
+**Migration Toolkit:**
+```bash
+feat(migration-toolkit): add support for user federation transforms
+fix(migration-toolkit): handle SMTP boolean string conversion
+```
+
 ### Multi-Component Changes
 When changes affect multiple components, combine scopes with `+` in alphabetical order:
 
@@ -135,6 +148,9 @@ feat(chart-operator+operator): add new configuration option
 
 # Update all three charts
 feat(chart-client+chart-operator+chart-realm): update to Keycloak 27
+
+# Update migration toolkit alongside charts it generates values for
+feat(chart-realm+migration-toolkit): add OTP policy support
 
 # WRONG - not alphabetical
 feat(operator+chart-client): ...  # ❌ Should be chart-client+operator
@@ -252,12 +268,14 @@ git push origin main
 git commit -m "feat: add new CRD field"                           # → operator
 git commit -m "feat(chart-operator): expose new field in values"  # → operator chart
 git commit -m "feat(chart-realm): support new realm settings"     # → realm chart
+git commit -m "feat(migration-toolkit): add new realm transform"  # → migration toolkit
 git push origin main
 
-# → Release-please creates THREE separate PRs:
+# → Release-please creates FOUR separate PRs:
 #    1. "chore: release operator 0.3.0"
 #    2. "chore: release chart-operator 0.3.0"
 #    3. "chore: release chart-realm 0.3.0"
+#    4. "chore: release migration-toolkit 0.2.0"
 # → Merge relevant PRs
 # → Separate releases created with independent versions
 ```

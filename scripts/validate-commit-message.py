@@ -10,6 +10,7 @@ Valid scopes:
 - chart-operator
 - chart-realm
 - chart-client
+- migration-toolkit
 
 Scopes can be combined with '+' (e.g., 'operator+chart-operator').
 Components must be in alphabetical order and not duplicated.
@@ -21,6 +22,7 @@ Examples:
   ✅ feat(operator): add new feature
   ✅ fix(chart-realm): fix bug
   ✅ feat(chart-client+chart-realm): update both charts
+  ✅ feat(migration-toolkit): add new transform feature
   ✅ chore: update dependencies (no scope needed for chore)
   ✅ docs: update README (no scope needed for docs)
   ❌ feat: add feature (scope required for feat!)
@@ -41,6 +43,7 @@ VALID_SCOPES = {
     "chart-operator",
     "chart-realm",
     "chart-client",
+    "migration-toolkit",
 }
 
 # Scopes that are aliases of each other (cannot be combined)

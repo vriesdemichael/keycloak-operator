@@ -15,6 +15,7 @@
         "scripts",
         "site",
         "tests",
+        "tools",
         "htmlcov",
         ".github",
         ".claude",
@@ -66,6 +67,20 @@
       "release-type": "helm",
       "component": "chart-client",
       "package-name": "keycloak-client-chart",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "changelog-sections": [
+        {"type": "feat", "section": "Features", "hidden": false},
+        {"type": "fix", "section": "Bug Fixes", "hidden": false},
+        {"type": "docs", "section": "Documentation", "hidden": false},
+        {"type": "chore", "section": "Miscellaneous", "hidden": true}
+      ],
+      "include-component-in-tag": true
+    },
+    "tools/migration-toolkit": {
+      "release-type": "simple",
+      "component": "migration-toolkit",
+      "package-name": "migration-toolkit",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "changelog-sections": [
