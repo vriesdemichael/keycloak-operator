@@ -19,6 +19,12 @@ runs:
 
     - uses: ./.github/actions/setup-tools
 
+    - name: Configure Git
+      shell: bash
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
     - name: Deploy dev docs with mike
       shell: bash
       run: task docs:publish-dev
