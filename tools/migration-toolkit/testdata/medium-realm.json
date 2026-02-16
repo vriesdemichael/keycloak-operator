@@ -1,0 +1,230 @@
+{
+  "realm": "medium-test",
+  "enabled": true,
+  "displayName": "Medium Test Realm",
+  "displayNameHtml": "<h1>Medium Test</h1>",
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "resetPasswordAllowed": true,
+  "verifyEmail": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "failureFactor": 30,
+  "loginTheme": "keycloak",
+  "accountTheme": "keycloak.v3",
+  "emailTheme": "keycloak",
+  "defaultLocale": "en",
+  "supportedLocales": ["en", "de", "fr"],
+  "internationalizationEnabled": true,
+  "accessTokenLifespan": 600,
+  "ssoSessionIdleTimeout": 3600,
+  "ssoSessionMaxLifespan": 72000,
+  "offlineSessionMaxLifespanEnabled": true,
+  "offlineSessionMaxLifespan": 5184000,
+  "passwordPolicy": "hashIterations(27500) and length(12) and upperCase(1) and lowerCase(1) and digits(1) and notUsername",
+  "smtpServer": {
+    "host": "smtp.example.com",
+    "port": "587",
+    "from": "noreply@example.com",
+    "fromDisplayName": "Keycloak",
+    "ssl": "false",
+    "starttls": "true",
+    "auth": "true",
+    "user": "smtp-user",
+    "password": "super-secret-smtp-password"
+  },
+  "attributes": {
+    "frontendUrl": "https://auth.example.com"
+  },
+  "defaultDefaultClientScopes": ["profile", "email", "roles", "web-origins"],
+  "defaultOptionalClientScopes": ["address", "phone", "offline_access"],
+  "roles": {
+    "realm": [
+      {
+        "name": "offline_access",
+        "description": "Built-in role"
+      },
+      {
+        "name": "uma_authorization",
+        "description": "Built-in role"
+      },
+      {
+        "name": "default-roles-medium-test",
+        "description": "Composite default role"
+      },
+      {
+        "name": "app-admin",
+        "description": "Application administrator"
+      },
+      {
+        "name": "app-user",
+        "description": "Regular application user"
+      },
+      {
+        "name": "app-manager",
+        "description": "Application manager with composite roles",
+        "composite": true,
+        "composites": {
+          "realm": ["app-user"]
+        }
+      }
+    ]
+  },
+  "groups": [
+    {
+      "name": "engineering",
+      "attributes": {
+        "department": ["Engineering"]
+      },
+      "realmRoles": ["app-user"],
+      "subGroups": [
+        {
+          "name": "backend",
+          "realmRoles": ["app-admin"]
+        },
+        {
+          "name": "frontend",
+          "realmRoles": ["app-user"]
+        }
+      ]
+    },
+    {
+      "name": "management",
+      "realmRoles": ["app-manager"]
+    }
+  ],
+  "defaultGroups": ["/engineering"],
+  "clientScopes": [
+    {
+      "name": "api-access",
+      "description": "API access scope",
+      "protocol": "openid-connect",
+      "attributes": {
+        "display.on.consent.screen": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "api",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "github",
+      "providerId": "github",
+      "displayName": "GitHub",
+      "enabled": true,
+      "trustEmail": true,
+      "config": {
+        "clientId": "github-client-id",
+        "clientSecret": "github-client-secret-value",
+        "defaultScope": "user:email"
+      }
+    }
+  ],
+  "eventsEnabled": true,
+  "eventsListeners": ["jboss-logging", "metrics-listener"],
+  "enabledEventTypes": ["LOGIN", "LOGOUT", "LOGIN_ERROR"],
+  "adminEventsEnabled": true,
+  "adminEventsDetailsEnabled": true,
+  "clients": [
+    {
+      "clientId": "account",
+      "name": "${client_account}",
+      "enabled": true,
+      "publicClient": true
+    },
+    {
+      "clientId": "admin-cli",
+      "name": "${client_admin-cli}",
+      "enabled": true,
+      "publicClient": true
+    },
+    {
+      "clientId": "webapp",
+      "name": "Web Application",
+      "description": "Main web application",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "https://app.example.com/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "https://app.example.com",
+        "http://localhost:3000"
+      ],
+      "baseUrl": "https://app.example.com",
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "https://app.example.com/logout"
+      },
+      "defaultClientScopes": ["profile", "email", "api-access"],
+      "protocolMappers": [
+        {
+          "name": "group-membership",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "api-service",
+      "name": "API Service",
+      "enabled": true,
+      "publicClient": false,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "api-service-client-secret-value",
+      "clientAuthenticatorType": "client-secret",
+      "surrogateAuthRequired": false,
+      "nodeReRegistrationTimeout": -1
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "email": "admin@example.com",
+      "firstName": "Admin",
+      "lastName": "User",
+      "credentials": [
+        {
+          "type": "password",
+          "hashedSaltedValue": "hashed-value-here",
+          "hashIterations": 27500,
+          "algorithm": "pbkdf2-sha256"
+        }
+      ],
+      "realmRoles": ["app-admin"]
+    },
+    {
+      "username": "testuser",
+      "enabled": true,
+      "email": "test@example.com",
+      "firstName": "Test",
+      "lastName": "User"
+    }
+  ]
+}
