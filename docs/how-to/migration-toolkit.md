@@ -13,7 +13,7 @@ It is a standalone Go binary with zero runtime dependencies.
 git clone https://github.com/vriesdemichael/keycloak-operator.git
 cd keycloak-operator
 
-# Build the binary (requires Go 1.24+)
+# Build the binary (requires Go; see tools/migration-toolkit/go.mod for the minimum version)
 task toolkit:build
 
 # The binary is at .tmp/keycloak-migrate
@@ -120,7 +120,7 @@ The toolkit never writes plaintext secrets into `values.yaml` files. Instead, se
 
 ### `plain` (default)
 
-Generates standard Kubernetes `Secret` manifests with the actual secret values base64-encoded. The generated `secrets.yaml` should be applied before deploying the Helm charts but **must not be committed to git**.
+Generates standard Kubernetes `Secret` manifests using `stringData` (plaintext values — Kubernetes handles base64 encoding internally). The generated `secrets.yaml` should be applied before deploying the Helm charts but **must not be committed to git**.
 
 ```bash
 keycloak-migrate transform --input export.json --secret-mode plain

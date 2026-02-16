@@ -330,11 +330,34 @@ func TestTransformAllClients_IncludesInternal(t *testing.T) {
 	opts := defaultOpts()
 	opts.SkipInternalClients = false
 
-	result, _, _ := TransformAllClients(exp, opts)
+	result, secrets, _ := TransformAllClients(exp, opts)
 
-	// Minimal has "account" + "my-app"
+	// Minimal has "account" + "my-app" + "backend-service"
+	if len(result) != 3 {
+		t.Errorf("expected 3 clients (including internal), got %d: %v", len(result), keysOf(result))
+	}
 	if _, ok := result["account"]; !ok {
 		t.Error("expected account when SkipInternalClients=false")
+	}
+	if _, ok := result["my-app"]; !ok {
+		t.Error("expected my-app")
+	}
+	if _, ok := result["backend-service"]; !ok {
+		t.Error("expected backend-service")
+	}
+
+	// backend-service is confidential with a secret — verify extraction
+	backendSecretFound := false
+	for _, s := range secrets {
+		if s.Name == "backend-service-client-secret" {
+			backendSecretFound = true
+			if s.Value != "my-backend-client-secret-value" {
+				t.Errorf("backend-service secret value = %q, want my-backend-client-secret-value", s.Value)
+			}
+		}
+	}
+	if !backendSecretFound {
+		t.Error("backend-service client secret not extracted")
 	}
 }
 

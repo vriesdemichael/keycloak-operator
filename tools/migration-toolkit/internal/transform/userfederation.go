@@ -87,7 +87,7 @@ func transformSingleProvider(provider map[string]any, realmName string, opts Tra
 
 	// Bind credential — extract as secret
 	if v := getConfigString(config, "bindCredential"); v != "" {
-		secretName := fmt.Sprintf("%s-ldap-%s-bind", realmName, sanitizeName(providerName))
+		secretName := fmt.Sprintf("%s-ldap-%s-bind", SanitizeK8sName(realmName), SanitizeK8sName(providerName))
 		secrets = append(secrets, SecretEntry{
 			Name:        secretName,
 			Key:         "password",
@@ -157,7 +157,7 @@ func transformSingleProvider(provider map[string]any, realmName string, opts Tra
 
 	// Keytab — extract as secret
 	if v := getConfigString(config, "keyTab"); v != "" {
-		secretName := fmt.Sprintf("%s-ldap-%s-keytab", realmName, sanitizeName(providerName))
+		secretName := fmt.Sprintf("%s-ldap-%s-keytab", SanitizeK8sName(realmName), SanitizeK8sName(providerName))
 		secrets = append(secrets, SecretEntry{
 			Name:        secretName,
 			Key:         "keytab",
@@ -279,21 +279,6 @@ func getConfigString(config map[string]string, key string) string {
 		return ""
 	}
 	return config[key]
-}
-
-func sanitizeName(name string) string {
-	result := make([]byte, 0, len(name))
-	for i := 0; i < len(name); i++ {
-		c := name[i]
-		if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' {
-			result = append(result, c)
-		} else if c >= 'A' && c <= 'Z' {
-			result = append(result, c+32) // lowercase
-		} else if c == ' ' || c == '_' {
-			result = append(result, '-')
-		}
-	}
-	return string(result)
 }
 
 func splitTrimmed(s string, sep string) []string {

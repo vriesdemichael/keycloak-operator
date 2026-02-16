@@ -295,7 +295,7 @@ func transformSMTP(exp *export.RealmExport, opts TransformOptions) (map[string]a
 	if v, ok := smtpRaw["password"]; ok {
 		if pw, ok := v.(string); ok && pw != "" {
 			realmName := exp.GetString("realm")
-			secretName := fmt.Sprintf("%s-smtp-password", realmName)
+			secretName := fmt.Sprintf("%s-smtp-password", SanitizeK8sName(realmName))
 			secrets = append(secrets, SecretEntry{
 				Name:        secretName,
 				Key:         "password",
@@ -350,7 +350,7 @@ func transformIdentityProviders(exp *export.RealmExport, opts TransformOptions) 
 					if secret, ok := v.(string); ok && secret != "" {
 						alias := getString(idpRaw, "alias")
 						realmName := exp.GetString("realm")
-						secretName := fmt.Sprintf("%s-idp-%s-secret", realmName, alias)
+						secretName := fmt.Sprintf("%s-idp-%s-secret", SanitizeK8sName(realmName), SanitizeK8sName(alias))
 						secrets = append(secrets, SecretEntry{
 							Name:        secretName,
 							Key:         "client-secret",

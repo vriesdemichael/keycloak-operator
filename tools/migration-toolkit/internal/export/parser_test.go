@@ -236,8 +236,8 @@ func TestParseFile_MinimalFixture(t *testing.T) {
 		t.Error("enabled should be true")
 	}
 	clients := exp.Clients()
-	if len(clients) != 2 {
-		t.Errorf("expected 2 clients, got %d", len(clients))
+	if len(clients) != 3 {
+		t.Errorf("expected 3 clients, got %d", len(clients))
 	}
 }
 
