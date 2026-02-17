@@ -326,6 +326,7 @@ tasks:
       DOCKER_LABELS:
         sh: echo "{{.LABELS}}" | sed 's/^/--label "/; s/$/"/' | tr '\n' ' '
     cmds:
+      - mkdir -p .task
       - |
         docker buildx build \
           --platform {{.PLATFORMS}} \
@@ -398,6 +399,7 @@ tasks:
       CHART_VERSION:
         sh: yq eval '.version' charts/{{.CHART_NAME}}/Chart.yaml
     cmds:
+      - mkdir -p .task
       - mkdir -p .tmp/charts
       - helm package charts/{{.CHART_NAME}} -d .tmp/charts
       - |
