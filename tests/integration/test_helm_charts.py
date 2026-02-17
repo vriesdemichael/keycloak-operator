@@ -641,9 +641,9 @@ class TestHelmRealmAdvancedFields:
             realm_name, test_namespace
         )
         assert profiles is not None
-        assert any(p.name == "helm-profile" for p in (profiles.profiles or [])), (
-            "Client profile should exist"
-        )
+        assert any(
+            p.get("name") == "helm-profile" for p in profiles.get("profiles", [])
+        ), "Client profile should exist"
 
 
 @pytest.mark.asyncio
@@ -1045,9 +1045,9 @@ class TestHelmClientAdvancedSettings:
         assert kc_client.admin_url == "https://admin.example.com/"
 
         # Verify Authz settings
-        authz = await keycloak_admin_client.get_client_authz_settings(
-            kc_client.id, realm_name, test_namespace
+        authz = await keycloak_admin_client.get_resource_server_settings(
+            realm_name, kc_client.id, test_namespace
         )
         assert authz is not None
-        assert authz.policy_enforcement_mode.name == "ENFORCING"
-        assert any(r.name == "Helm Resource" for r in (authz.resources or []))
+        assert authz.get("policyEnforcementMode") == "ENFORCING"
+        assert any(r.get("name") == "Helm Resource" for r in authz.get("resources", []))

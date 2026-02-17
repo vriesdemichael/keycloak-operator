@@ -466,6 +466,7 @@ clientPolicies: []
 # Organizations provide multi-tenancy support, allowing users to be grouped
 # by organization with their own domains and identity providers.
 # NOTE: Requires Keycloak version 26.0.0 or higher.
+organizationsEnabled: false
 organizations: []
   # Example: Basic organization
   # - name: acme-corp
