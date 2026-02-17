@@ -805,6 +805,60 @@
         }
       }
     },
+    "otpPolicy": {
+      "type": "object",
+      "description": "OTP (One-Time Password) policy configuration",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["totp", "hotp"],
+          "default": "totp",
+          "description": "OTP type: totp (time-based) or hotp (counter-based)"
+        },
+        "algorithm": {
+          "type": "string",
+          "enum": ["HmacSHA1", "HmacSHA256", "HmacSHA512"],
+          "default": "HmacSHA256",
+          "description": "Hashing algorithm"
+        },
+        "initialCounter": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Initial counter for HOTP"
+        },
+        "digits": {
+          "type": "integer",
+          "enum": [6, 8],
+          "default": 6,
+          "description": "Number of digits (6 or 8)"
+        },
+        "lookAheadWindow": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "Look-ahead window for HOTP"
+        },
+        "period": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 30,
+          "description": "Time period in seconds for TOTP"
+        },
+        "codeReusable": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether OTP codes can be reused"
+        },
+        "supportedApplications": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Supported authenticator applications"
+        }
+      }
+    },
     "extraManifests": {
       "type": "array",
       "description": "Extra Kubernetes manifests to deploy (e.g., ExternalSecrets, SealedSecrets, ConfigMaps)",

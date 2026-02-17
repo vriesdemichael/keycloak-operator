@@ -187,6 +187,20 @@ passwordPolicy: {}
   # Custom regex pattern
   # regexPattern: ""
 
+# OTP Policy (optional)
+# Configure OTP (One-Time Password) settings for the realm
+otpPolicy: {}
+  # type: "totp"
+  # algorithm: "HmacSHA256"
+  # initialCounter: 1
+  # digits: 6
+  # lookAheadWindow: 1
+  # period: 30
+  # codeReusable: false
+  # supportedApplications:
+  #   - FreeOTP
+  #   - Google Authenticator
+
 # Identity Providers (optional)
 # Configure external identity providers (OIDC, SAML, social logins)
 # See CRD documentation for full schema
