@@ -195,7 +195,9 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  organizationsEnabled: {{ .Values.organizationsEnabled | default false }}
+  {{- if hasKey .Values "organizationsEnabled" }}
+  organizationsEnabled: {{ .Values.organizationsEnabled }}
+  {{- end }}
   {{- with .Values.organizations }}
   organizations:
     {{- toYaml . | nindent 4 }}
