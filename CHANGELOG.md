@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.17](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.16...operator-image-v0.7.17) (2026-02-17)
+
+
+### Features
+
+* **chart-client+chart-realm:** add feature parity for realm and client charts ([7b04f00](https://github.com/vriesdemichael/keycloak-operator/commit/7b04f000d05c2100b45f068cfb36657a6266012e))
+
+
+### Bug Fixes
+
+* **chart-client+operator:** fix client creation with authorization services ([b93b3e5](https://github.com/vriesdemichael/keycloak-operator/commit/b93b3e507a2cba2baa46b90de262d589cca890e9))
+
 ## [0.7.16](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.15...operator-image-v0.7.16) (2026-02-16)
 
 
