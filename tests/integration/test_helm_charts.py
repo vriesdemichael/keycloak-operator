@@ -1052,7 +1052,12 @@ class TestHelmClientAdvancedSettings:
         )
         assert authz is not None
         assert authz.get("policyEnforcementMode") == "ENFORCING"
-        assert any(r.get("name") == "Helm Resource" for r in authz.get("resources", []))
+
+        # Verify resources
+        resources = await keycloak_admin_client.get_authorization_resources(
+            realm_name, kc_client.id, test_namespace
+        )
+        assert any(r.get("name") == "Helm Resource" for r in resources)
 
     @pytest.mark.timeout(600)
     async def test_helm_client_public_propagation(

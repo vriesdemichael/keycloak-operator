@@ -504,6 +504,17 @@ class KeycloakClientReconciler(BaseReconciler):
 
         client_config = spec.to_keycloak_config()
 
+        # NOTE: If we are creating a new client, we must strip authorizationServicesEnabled
+        # from the initial POST if it is True. Keycloak often fails with 500
+        # "Client does not have a service account" if we try to enable Authz Services
+        # in the same request that creates the client and enables Service Accounts.
+        # We will enable it in the subsequent configure_oauth_settings (PUT) call.
+        if not existing_client and client_config.get("authorizationServicesEnabled"):
+            self.logger.debug(
+                f"Stripping authorizationServicesEnabled from initial POST for {spec.client_id}"
+            )
+            client_config["authorizationServicesEnabled"] = False
+
         # Add ownership attributes for drift detection
         if "attributes" not in client_config:
             client_config["attributes"] = {}
