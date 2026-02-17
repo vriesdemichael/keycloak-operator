@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.18](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.17...operator-image-v0.7.18) (2026-02-17)
+
+
+### Bug Fixes
+
+* **operator:** ensure .task directory exists for publication tasks and fix git config for docs ([8e99cbe](https://github.com/vriesdemichael/keycloak-operator/commit/8e99cbeb18ee48df1b600496a90369d230bd2c34))
+
 ## [0.7.17](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.16...operator-image-v0.7.17) (2026-02-17)
 
 
