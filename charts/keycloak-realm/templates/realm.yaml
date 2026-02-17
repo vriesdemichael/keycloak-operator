@@ -148,6 +148,11 @@ spec:
   {{- end }}
   {{- end }}
 
+  {{- with .Values.otpPolicy }}
+  otpPolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- if or .Values.eventsConfig.eventsEnabled .Values.eventsConfig.adminEventsEnabled }}
   eventsConfig:
     {{- toYaml .Values.eventsConfig | nindent 4 }}

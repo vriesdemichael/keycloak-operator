@@ -1186,6 +1186,41 @@ class KeycloakPasswordPolicy(BaseModel):
         return " and ".join(policies)
 
 
+class KeycloakOTPPolicy(BaseModel):
+    """
+    OTP (One-Time Password) policy configuration.
+
+    Maps to flat otpPolicy* fields in Keycloak RealmRepresentation.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    type: Literal["totp", "hotp"] = Field(
+        "totp", description="OTP type: totp (time-based) or hotp (counter-based)"
+    )
+    algorithm: Literal["HmacSHA1", "HmacSHA256", "HmacSHA512"] = Field(
+        "HmacSHA256", description="Hashing algorithm"
+    )
+    initial_counter: int = Field(
+        1, alias="initialCounter", ge=1, description="Initial counter for HOTP"
+    )
+    digits: Literal[6, 8] = Field(6, description="Number of digits (6 or 8)")
+    look_ahead_window: int = Field(
+        1, alias="lookAheadWindow", ge=1, description="Look-ahead window for HOTP"
+    )
+    period: int = Field(
+        30, alias="period", ge=1, description="Time period in seconds for TOTP"
+    )
+    code_reusable: bool = Field(
+        False, alias="codeReusable", description="Whether OTP codes can be reused"
+    )
+    supported_applications: list[str] = Field(
+        default_factory=lambda: ["totpAppFreeOTPName", "totpAppGoogleName"],
+        alias="supportedApplications",
+        description="Supported authenticator applications",
+    )
+
+
 class KeycloakSMTPPasswordSecret(BaseModel):
     """
     Reference to Kubernetes secret containing SMTP password.
@@ -1703,6 +1738,13 @@ class KeycloakRealmSpec(BaseModel):
         description="Password policy configuration",
     )
 
+    # OTP policy
+    otp_policy: KeycloakOTPPolicy | None = Field(
+        None,
+        alias="otpPolicy",
+        description="OTP (One-Time Password) policy configuration",
+    )
+
     # Events and logging
     events_config: KeycloakEventsConfig = Field(
         default_factory=KeycloakEventsConfig,
@@ -1885,6 +1927,22 @@ class KeycloakRealmSpec(BaseModel):
             policy_string = self.password_policy.to_policy_string()
             if policy_string:
                 config["passwordPolicy"] = policy_string
+
+        # Add OTP policy (flattened)
+        if self.otp_policy:
+            otp = self.otp_policy
+            config.update(
+                {
+                    "otpPolicyType": otp.type,
+                    "otpPolicyAlgorithm": otp.algorithm,
+                    "otpPolicyInitialCounter": otp.initial_counter,
+                    "otpPolicyDigits": otp.digits,
+                    "otpPolicyLookAheadWindow": otp.look_ahead_window,
+                    "otpPolicyPeriod": otp.period,
+                    "otpPolicyCodeReusable": otp.code_reusable,
+                    "otpSupportedApplications": otp.supported_applications,
+                }
+            )
 
         # Add events configuration
         events = self.events_config

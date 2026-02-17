@@ -803,6 +803,49 @@ spec:
                   regexPattern:
                     type: string
                     description: Custom regex pattern for password validation
+              otpPolicy:
+                type: object
+                description: OTP (One-Time Password) policy configuration
+                properties:
+                  type:
+                    type: string
+                    description: "OTP type: totp (time-based) or hotp (counter-based)"
+                    enum: ["totp", "hotp"]
+                    default: "totp"
+                  algorithm:
+                    type: string
+                    description: Hashing algorithm
+                    enum: ["HmacSHA1", "HmacSHA256", "HmacSHA512"]
+                    default: "HmacSHA256"
+                  initialCounter:
+                    type: integer
+                    description: Initial counter for HOTP
+                    minimum: 1
+                    default: 1
+                  digits:
+                    type: integer
+                    description: Number of digits (6 or 8)
+                    enum: [6, 8]
+                    default: 6
+                  lookAheadWindow:
+                    type: integer
+                    description: Look-ahead window for HOTP
+                    minimum: 1
+                    default: 1
+                  period:
+                    type: integer
+                    description: Time period in seconds for TOTP
+                    minimum: 1
+                    default: 30
+                  codeReusable:
+                    type: boolean
+                    description: Whether OTP codes can be reused
+                    default: false
+                  supportedApplications:
+                    type: array
+                    description: Supported authenticator applications
+                    items:
+                      type: string
               eventsConfig:
                 type: object
                 description: Event logging configuration
