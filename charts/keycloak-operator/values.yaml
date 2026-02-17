@@ -13,44 +13,36 @@ operator:
   # Recommended: 2+ for production environments
   # Leader election ensures only one replica is active at a time
   replicaCount: 2
-
   # Operator instance ID for resource ownership tracking
   # If empty, auto-generates: <release-name>-<namespace>
   # Used to track which operator instance created resources in Keycloak
   # Format: alphanumeric with hyphens, max 63 chars
   # Example: "prod-operator" or leave empty for auto-generation
   instanceId: ""
-
   # List of namespaces to watch (comma-separated string)
   # If empty, the operator watches all namespaces (Cluster-wide)
   # Recommended: empty for Cluster-wide operation
   watchNamespaces: ""
-
   # Run the operator in dry-run mode
   # If true, the operator will not make any changes to Keycloak
   dryRun: false
-
   image:
     # Container registry and repository path
     repository: ghcr.io/vriesdemichael/keycloak-operator
-
     # Image pull policy
     # - IfNotPresent: Pull if not cached locally (recommended for versioned tags)
     # - Always: Always pull (use for 'latest' or frequently updated tags)
     # - Never: Never pull, use local image only (for testing)
     pullPolicy: IfNotPresent
-
     # Overrides the image tag whose default is the chart appVersion.
     # This is automatically updated by the update-chart-versions workflow on new releases
     # Example: "v0.3.2" or "latest"
-    tag: "v0.7.13"
-
+    tag: "v0.7.18"
   # Image pull secrets for private registries
   # Example:
   # imagePullSecrets:
   #   - name: ghcr-registry-secret
   imagePullSecrets: []
-
   # Resource limits and requests
   # Adjust based on cluster size and number of managed Keycloak instances
   # Recommendations:
@@ -64,13 +56,11 @@ operator:
     requests:
       cpu: 100m
       memory: 128Mi
-
   # Node selector for operator pods
   # Schedule operator pods on specific nodes
   # Default: Linux nodes only
   nodeSelector:
     kubernetes.io/os: linux
-
   # Tolerations for operator pods
   # Allow scheduling on control plane/master nodes
   # Useful for clusters where control plane is tainted
@@ -81,7 +71,6 @@ operator:
     - effect: NoSchedule
       key: node-role.kubernetes.io/master
       operator: Exists
-
   # Pod anti-affinity for HA
   # Spreads operator replicas across different nodes
   # Preferred (not required) to allow single-node clusters for testing
@@ -96,7 +85,6 @@ operator:
                 app.kubernetes.io/name: keycloak-operator
                 app.kubernetes.io/component: operator
             topologyKey: kubernetes.io/hostname
-
   # Pod-level security context
   # Runs operator pods as non-root with restricted permissions
   securityContext:
@@ -106,7 +94,6 @@ operator:
     fsGroup: 2000
     seccompProfile:
       type: RuntimeDefault
-
   # Container-level security context
   # Drops all Linux capabilities and enforces read-only root filesystem
   containerSecurityContext:
@@ -119,7 +106,6 @@ operator:
     capabilities:
       drop:
         - ALL
-
   # Liveness probe configuration
   # Restarts operator pod if health check fails
   # /healthz endpoint returns 200 when operator is healthy
@@ -127,11 +113,10 @@ operator:
     httpGet:
       path: /healthz
       port: http
-    initialDelaySeconds: 30  # Wait 30s before first check
-    periodSeconds: 30        # Check every 30s
-    timeoutSeconds: 5        # Fail if check takes > 5s
-    failureThreshold: 3      # Restart after 3 failures
-
+    initialDelaySeconds: 30 # Wait 30s before first check
+    periodSeconds: 30 # Check every 30s
+    timeoutSeconds: 5 # Fail if check takes > 5s
+    failureThreshold: 3 # Restart after 3 failures
   # Readiness probe configuration
   # Removes operator pod from service endpoints if not ready
   # Prevents routing traffic to unhealthy replicas
@@ -139,11 +124,10 @@ operator:
     httpGet:
       path: /healthz
       port: http
-    initialDelaySeconds: 5   # Wait 5s before first check
-    periodSeconds: 10        # Check every 10s
-    timeoutSeconds: 3        # Fail if check takes > 3s
-    failureThreshold: 3      # Mark unready after 3 failures
-
+    initialDelaySeconds: 5 # Wait 5s before first check
+    periodSeconds: 10 # Check every 10s
+    timeoutSeconds: 3 # Fail if check takes > 3s
+    failureThreshold: 3 # Mark unready after 3 failures
   # Security settings
   security:
     # Allow usage of script-based protocol mappers
@@ -151,12 +135,10 @@ operator:
     # Enabling this allows potential RCE if malicious scripts are deployed.
     # Enable only in trusted environments or if required for migration.
     allowScriptMappers: false
-
     # Allow service accounts to impersonate users
     # WARNING: This allows a service account to impersonate ANY user, including admins.
     # Effectively grants full administrative access to the Keycloak instance.
     allowImpersonation: false
-
   # API Rate Limiting
   # Protects Keycloak from overload and ensures fair sharing between namespaces
   rateLimiting:
@@ -170,14 +152,12 @@ operator:
       tps: 5.0
       # Maximum burst per namespace
       burst: 10
-
   # Metrics server configuration
   metrics:
     # Port to expose Prometheus metrics on
     port: 8081
     # Host/Address to bind the metrics server to
     host: "0.0.0.0"
-
   # Logging configuration
   logging:
     # Main log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -192,51 +172,44 @@ operator:
     webhookLogLevel: WARNING
     # Log level for handler entry messages (noisy)
     handlerEntryLogLevel: INFO
-
   # OpenTelemetry distributed tracing configuration
   # Enables end-to-end tracing from operator through Keycloak
   tracing:
     # Enable OpenTelemetry tracing
     # When enabled, traces are exported to the configured OTLP collector
     enabled: false
-
     # OTLP collector endpoint (gRPC protocol)
     # Examples:
     # - "http://otel-collector.monitoring:4317" (in-cluster)
     # - "http://tempo.monitoring:4317" (Grafana Tempo)
     # - "http://jaeger-collector.monitoring:4317" (Jaeger)
     endpoint: "http://localhost:4317"
-
     # Service name for traces
     # This identifies the operator in distributed traces
     serviceName: "keycloak-operator"
-
     # Trace sampling rate (0.0-1.0)
     # 1.0 = 100% of traces, 0.1 = 10% of traces
     # Lower values reduce overhead in high-throughput environments
     sampleRate: 1.0
-
     # Use insecure connection to OTLP collector (no TLS)
     # WARNING: Defaults to false for security. Set to true only in development
     # or when TLS termination is handled by a service mesh.
     insecure: false
-
     # Propagate tracing configuration to managed Keycloak instances
     # When enabled, Keycloak instances will also export traces to the same collector
     # This enables end-to-end distributed tracing across operator and Keycloak
     # Requires Keycloak 26.x+ (which has built-in OpenTelemetry support)
     propagateToKeycloak: true
-
   # Environment variables for operator customization
   env: []
-    # - name: LOG_LEVEL
-    #   value: "INFO"
-    # - name: JSON_LOGS
-    #   value: "true"
-    # - name: LOG_HEALTH_PROBES
-    #   value: "false"
-    # - name: WEBHOOK_LOG_LEVEL
-    #   value: "WARNING"
+  # - name: LOG_LEVEL
+  #   value: "INFO"
+  # - name: JSON_LOGS
+  #   value: "true"
+  # - name: LOG_HEALTH_PROBES
+  #   value: "false"
+  # - name: WEBHOOK_LOG_LEVEL
+  #   value: "WARNING"
 
   # Reconciliation settings
   # Control how often the operator checks resource health and detects issues
@@ -246,13 +219,11 @@ operator:
     # Lower values = faster detection but more API load
     # Recommended: 300s (5 min) for production, 10s for testing
     timerIntervals:
-      keycloak: 300   # Keycloak instance health check interval
-      realm: 300      # KeycloakRealm health check interval
-      client: 300     # KeycloakClient health check interval
-
+      keycloak: 300 # Keycloak instance health check interval
+      realm: 300 # KeycloakRealm health check interval
+      client: 300 # KeycloakClient health check interval
     # Random jitter added to reconciliation scheduling to prevent thundering herd (seconds)
     jitterMaxSeconds: 5.0
-
 # ============================================================================
 # Namespace Configuration
 # ============================================================================
@@ -261,21 +232,18 @@ namespace:
   # Name of the namespace to create
   # The operator and managed Keycloak instances will run in this namespace
   name: keycloak-system
-
   # Create the namespace (disable if it already exists)
   # Set to false when deploying to pre-existing namespace
   create: true
-
   # Pod Security Standards labels (PSS)
   # Enforces security policies at namespace level
   # - restricted: Most restrictive, requires non-root, drops capabilities, read-only root fs
   # - baseline: Minimally restrictive, prevents known privilege escalations
   # - privileged: Unrestricted (not recommended for production)
   podSecurityStandards:
-    enforce: restricted  # Policy enforced by admission controller
-    audit: restricted    # Violations logged (warning events)
-    warn: restricted     # Violations shown as warnings in kubectl
-
+    enforce: restricted # Policy enforced by admission controller
+    audit: restricted # Violations logged (warning events)
+    warn: restricted # Violations shown as warnings in kubectl
 # ============================================================================
 # Service Account Configuration
 # ============================================================================
@@ -284,20 +252,17 @@ serviceAccount:
   # Specifies whether a service account should be created
   # Set to false to use an existing service account
   create: true
-
   # The name of the service account to use
   # If not set, defaults to: keycloak-operator-<namespace>
   # This prevents conflicts when multiple operators are deployed
   # If create=false, this must be set to existing ServiceAccount name
   name: ""
-
   # Annotations to add to the service account
   # Useful for cloud provider integrations (e.g., AWS IRSA, GCP Workload Identity)
   # Example for AWS IRSA:
   # annotations:
   #   eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/keycloak-operator
   annotations: {}
-
 # ============================================================================
 # RBAC Configuration
 # ============================================================================
@@ -307,12 +272,10 @@ rbac:
   # Required for operator to watch and manage resources cluster-wide
   # Set to false only if manually managing RBAC
   create: true
-
   # Create namespace-scoped Role and RoleBinding for leader election
   # Leader election ensures only one operator replica is active
   # Uses a ConfigMap/Lease in the operator namespace for coordination
   createLeaderElectionRole: true
-
 # ============================================================================
 # CRDs Installation
 # ============================================================================
@@ -322,13 +285,11 @@ crds:
   # Installs: Keycloak, KeycloakRealm, KeycloakClient CRDs
   # Set to false if CRDs are managed separately (e.g., via GitOps)
   install: true
-
   # Keep CRDs on chart uninstall (recommended to prevent data loss)
   # If true: CRDs and custom resources persist after 'helm uninstall'
   # If false: CRDs are deleted, which DELETES ALL Keycloak/Realm/Client resources
   # WARNING: Setting to false will destroy all managed Keycloak data
   keep: true
-
 # ============================================================================
 # Monitoring Configuration
 # ============================================================================
@@ -338,29 +299,24 @@ monitoring:
   # Requires Prometheus Operator CRD (ServiceMonitor)
   # Exposes /metrics endpoint for Prometheus scraping
   enabled: false
-
   # Namespace for monitoring resources (if different from operator namespace)
   # Leave empty to use operator namespace
   # Example: "monitoring" or "prometheus"
   namespace: ""
-
   # Additional labels for ServiceMonitor
   # Required for Prometheus discovery (match serviceMonitorSelector)
   # Example for kube-prometheus-stack:
   # labels:
   #   release: kube-prometheus-stack
   labels: {}
-
   # Scrape interval
   # How often Prometheus scrapes metrics
   # Balance between data granularity and storage/performance
   interval: 30s
-
   # Scrape timeout
   # Maximum time for scrape request before timeout
   # Must be less than interval
   scrapeTimeout: 10s
-
   # Drift detection configuration
   # Monitors and optionally remediates differences between Keycloak and CRs
   driftDetection:
@@ -368,44 +324,37 @@ monitoring:
     # Detects: orphaned resources, config mismatches, missing resources
     # Reports via metrics and logs
     enabled: true
-
     # Interval in seconds between drift checks
     # Balance between drift detection speed and API load
     # Recommended: 300s (5 minutes) for production
     intervalSeconds: 300
-
     # Auto-remediate detected drift (delete orphans, fix config mismatches)
     # WARNING: When enabled, orphaned resources will be automatically deleted
     # Orphaned = resources in Keycloak without corresponding CR
     # Recommended: false for production, true for dev/test
     autoRemediate: false
-
     # Minimum age in hours before deleting orphaned resources
     # Safety mechanism: don't delete resources created less than this time ago
     # Prevents race conditions and accidental deletion of recently created resources
     # Only applies when autoRemediate=true
     minimumAgeHours: 24
-
     # Scope of drift detection
     # Enable/disable drift checks per resource type
     # Disable unused types to reduce API load
     scope:
-      realms: true              # Check realm configurations
-      clients: true             # Check client configurations
-      identityProviders: true   # Check identity provider configurations
-      roles: true               # Check realm and client role configurations
-
+      realms: true # Check realm configurations
+      clients: true # Check client configurations
+      identityProviders: true # Check identity provider configurations
+      roles: true # Check realm and client role configurations
   # Prometheus alert rules
   # Requires Prometheus Operator CRD (PrometheusRule)
   prometheusRules:
     # Enable PrometheusRule resource
     # Creates pre-configured alerts for common operator issues
     enabled: false
-
     # Namespace for PrometheusRule (if different from operator namespace)
     # Leave empty to use operator namespace
     namespace: ""
-
     # Additional labels for PrometheusRule (required for Prometheus discovery)
     # Must match ruleSelector in Prometheus CR
     # Example:
@@ -413,49 +362,42 @@ monitoring:
     #   prometheus: kube-prometheus
     #   role: alert-rules
     labels: {}
-
     # Evaluation interval for rules
     # How often Prometheus evaluates alert conditions
     interval: 30s
-
     # Threshold for slow reconciliation alert (seconds)
     # Alert fires if reconciliation takes longer than this
     # Adjust based on cluster size and complexity
     slowReconciliationThreshold: 30
-
     # Additional custom rules to include
     # Add your own alert rules here
     # Format: standard Prometheus alert rule syntax
     additionalRules: []
-      # - alert: CustomAlert
-      #   expr: custom_metric > 100
-      #   for: 5m
-      #   labels:
-      #     severity: warning
-      #   annotations:
-      #     summary: "Custom alert triggered"
-      #     description: "Metric exceeded threshold"
-
+    # - alert: CustomAlert
+    #   expr: custom_metric > 100
+    #   for: 5m
+    #   labels:
+    #     severity: warning
+    #   annotations:
+    #     summary: "Custom alert triggered"
+    #     description: "Metric exceeded threshold"
   # Grafana dashboard
   # ConfigMap containing pre-built Grafana dashboard JSON
   grafanaDashboard:
     # Enable Grafana dashboard ConfigMap
     # Creates ConfigMap with operator monitoring dashboard
     enabled: false
-
     # Namespace for dashboard ConfigMap (typically the Grafana namespace)
     # Leave empty to use operator namespace
     # Example: "grafana" or "monitoring"
     namespace: ""
-
     # Labels for dashboard discovery by Grafana sidecar
     # Required for auto-import by grafana sidecar container
     # Format depends on your Grafana setup:
     # - grafana-operator: grafana_dashboard: "1"
     # - kube-prometheus-stack: grafana_dashboard: "1"
     labels: {}
-      # grafana_dashboard: "1"
-
+    # grafana_dashboard: "1"
 # ============================================================================
 # Keycloak Instance Configuration (Optional)
 # ============================================================================
@@ -466,61 +408,50 @@ keycloak:
   # If false, only the operator is deployed (you create Keycloak CRs manually)
   # If true, creates a Keycloak instance automatically
   enabled: true
-
   # Name of the Keycloak instance
   # This becomes the Keycloak CR name
   # Must be DNS-compatible: lowercase alphanumeric with hyphens
   name: keycloak
-
   # Number of Keycloak replicas
   # Recommendations:
   # - Development: 1
   # - Staging: 2
   # - Production: 3+ (with anti-affinity and PodDisruptionBudget)
   replicas: 1
-
   # Keycloak version (image tag)
   # Use specific versions for production, not 'latest'
   # See: https://quay.io/repository/keycloak/keycloak?tab=tags
   version: "26.4.1"
-
   # Keycloak image repository
   # Options:
   # - quay.io/keycloak/keycloak (official)
   # - ghcr.io/vriesdemichael/keycloak-operator/keycloak-optimized (optimized)
   image: quay.io/keycloak/keycloak
-
   # Database configuration
   database:
     # Database type: postgresql, mysql, mariadb, oracle, mssql
     # PostgreSQL is recommended for production
     type: postgresql
-
     # Database host (FQDN or IP)
     # Leave empty if using CNPG (CloudNativePG)
     # Example: "postgres.database.svc.cluster.local"
     host: ""
-
     # Database port
     # PostgreSQL default: 5432
     # MySQL/MariaDB default: 3306
     port: 5432
-
     # Database name
     # Created automatically if it doesn't exist (PostgreSQL/MySQL)
     database: keycloak
-
     # Database username
     # Must have permissions to create/modify tables
     username: keycloak
-
     # Secret containing database password
     # Secret must exist in the same namespace
     # Secret format: { "password": "<value>" }
     passwordSecret:
       name: keycloak-db-password
       key: password
-
     # Use CloudNativePG cluster (alternative to external database)
     # Requires CloudNativePG operator to be installed
     # If enabled, ignores host/port settings above
@@ -529,11 +460,9 @@ keycloak:
       # Name of the CloudNativePG Cluster CR
       # The operator will use this cluster's primary service
       clusterName: keycloak-postgres
-
       # Number of PostgreSQL instances in the cluster
       # Recommended: 1 for dev, 3 for production (HA)
       instances: 1
-
       # Storage configuration for PostgreSQL data
       storage:
         # Size of the persistent volume for each instance
@@ -542,19 +471,16 @@ keycloak:
         # Leave empty to use the cluster's default StorageClass
         # Common values: "standard", "gp2", "gp3", "premium-rwo", "openebs-hostpath"
         storageClass: ""
-
       # PostgreSQL configuration parameters
       postgresql:
         maxConnections: "200"
         sharedBuffers: "256MB"
-
   # Admin user configuration
   admin:
     # Admin username for initial Keycloak admin
     # Used to create the first admin user
     # Can be changed after first login via Keycloak UI
     username: admin
-
     # Secret containing admin password
     # Secret must exist before Keycloak starts
     # Secret format: { "password": "<value>" }
@@ -562,18 +488,15 @@ keycloak:
     passwordSecret:
       name: keycloak-admin-password
       key: password
-
   # Ingress configuration
   # Exposes Keycloak externally via Ingress controller
   ingress:
     # Enable Ingress resource creation
     enabled: false
-
     # Ingress class name
     # Examples: "nginx", "traefik", "alb" (AWS), "gce" (GCP)
     # Leave empty for default IngressClass
     className: ""
-
     # Ingress annotations
     # Ingress controller specific settings
     # Example for nginx:
@@ -582,25 +505,20 @@ keycloak:
     #   nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     #   nginx.ingress.kubernetes.io/ssl-redirect: "true"
     annotations: {}
-
     # Ingress hostname
     # The hostname for the Keycloak ingress
     # Example: "keycloak.example.com"
     host: keycloak.example.com
-
     # Ingress path
     # The path for the Keycloak ingress
     path: /
-
     # Enable TLS for ingress
     # When enabled, the ingress will use HTTPS
     tlsEnabled: true
-
     # TLS secret name
     # Secret containing TLS certificate and key
     # Example: "keycloak-tls"
     tlsSecretName: ""
-
   # Resource limits for Keycloak pods
   # Adjust based on load and number of users
   # Recommendations:
@@ -614,7 +532,6 @@ keycloak:
     requests:
       cpu: 500m
       memory: 1Gi
-
   # JVM options for Keycloak pods
   # Passed as JAVA_OPTS_APPEND alongside JGroups clustering options
   # Examples:
@@ -622,56 +539,54 @@ keycloak:
   # - GC tuning: ["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200"]
   # - JIT tuning: ["-XX:CompileThresholdScaling=0.3"]
   jvmOptions: []
-
   # Use --optimized startup mode. Set to true (default) when using a pre-built
   # Keycloak image (like the optimized images published by this project). Set to
   # false when using the stock quay.io/keycloak/keycloak image that has not been
   # pre-built with 'kc.sh build'. The --optimized flag skips build-time config
   # discovery at startup, reducing startup time from ~70s to ~20-30s.
   optimized: true
-
 # ============================================================================
 # Extra Kubernetes Manifests
 # ============================================================================
 # Deploy additional Kubernetes resources alongside the operator
 # Useful for secrets, ConfigMaps, ExternalSecrets, SealedSecrets, etc.
 extraManifests: []
-  # Example: Plain Secret
-  # - apiVersion: v1
-  #   kind: Secret
-  #   metadata:
-  #     name: keycloak-db-password
-  #     namespace: keycloak-system
-  #   type: Opaque
-  #   stringData:
-  #     password: "change-me-in-production"
+# Example: Plain Secret
+# - apiVersion: v1
+#   kind: Secret
+#   metadata:
+#     name: keycloak-db-password
+#     namespace: keycloak-system
+#   type: Opaque
+#   stringData:
+#     password: "change-me-in-production"
 
-  # Example: ExternalSecret (requires External Secrets Operator)
-  # - apiVersion: external-secrets.io/v1beta1
-  #   kind: ExternalSecret
-  #   metadata:
-  #     name: keycloak-db-password
-  #   spec:
-  #     secretStoreRef:
-  #       name: vault-backend
-  #       kind: SecretStore
-  #     target:
-  #       name: keycloak-db-password
-  #       creationPolicy: Owner
-  #     data:
-  #       - secretKey: password
-  #         remoteRef:
-  #           key: /keycloak/database
-  #           property: password
+# Example: ExternalSecret (requires External Secrets Operator)
+# - apiVersion: external-secrets.io/v1beta1
+#   kind: ExternalSecret
+#   metadata:
+#     name: keycloak-db-password
+#   spec:
+#     secretStoreRef:
+#       name: vault-backend
+#       kind: SecretStore
+#     target:
+#       name: keycloak-db-password
+#       creationPolicy: Owner
+#     data:
+#       - secretKey: password
+#         remoteRef:
+#           key: /keycloak/database
+#           property: password
 
-  # Example: SealedSecret (requires Sealed Secrets controller)
-  # - apiVersion: bitnami.com/v1alpha1
-  #   kind: SealedSecret
-  #   metadata:
-  #     name: keycloak-admin-password
-  #   spec:
-  #     encryptedData:
-  #       password: AgBx... # Encrypted value
+# Example: SealedSecret (requires Sealed Secrets controller)
+# - apiVersion: bitnami.com/v1alpha1
+#   kind: SealedSecret
+#   metadata:
+#     name: keycloak-admin-password
+#   spec:
+#     encryptedData:
+#       password: AgBx... # Encrypted value
 
 # ============================================================================
 # Common Labels and Annotations
@@ -685,7 +600,6 @@ extraManifests: []
 #   team: platform
 #   cost-center: "12345"
 commonLabels: {}
-
 # Common annotations
 # Useful for metadata and tooling integration
 # Example:
@@ -693,7 +607,6 @@ commonLabels: {}
 #   company.com/owner: "platform-team"
 #   company.com/project: "identity-management"
 commonAnnotations: {}
-
 # ============================================================================
 # Admission Webhook Configuration
 # ============================================================================
@@ -711,18 +624,15 @@ webhooks:
   # 2. Set failurePolicy: Ignore for initial install, then change to Fail
   # 3. Use --wait flag with helm install to wait for pods to be ready
   enabled: true
-
   # Webhook server port
   # Must match the port exposed in webhook service
   # Do not change unless you have a specific reason
   port: 8443
-
   # Webhook timeout (seconds)
   # How long Kubernetes API server waits for webhook response
   # Must be between 1 and 30 seconds
   # Recommended: 10s for balance between responsiveness and reliability
   timeoutSeconds: 10
-
   # Failure policy: Fail (reject on webhook error) or Ignore (allow on webhook error)
   # Fail = fail-closed (more secure, blocks on webhook issues)
   #   - Rejects requests if webhook is unavailable
@@ -731,7 +641,6 @@ webhooks:
   #   - Allows requests if webhook is unavailable
   #   - Use for development or when webhook availability is a concern
   failurePolicy: Fail
-
   # Resource quotas enforced by webhooks
   # Prevents resource exhaustion and limits blast radius
   quotas:
@@ -740,16 +649,13 @@ webhooks:
     # Prevents accidental or malicious realm sprawl
     # Adjust based on your multi-tenancy model
     realmsPerNamespace: 10
-
     # Maximum clients per namespace
     # Limits total number of KeycloakClient resources per namespace
     # Prevents OAuth client sprawl and improves security
     # Adjust based on typical application needs
     clientsPerNamespace: 50
-
     # Note: Keycloak instances are limited to 1 per namespace (ADR-062)
     # This is enforced to prevent resource conflicts and simplify RBAC
-
 # ============================================================================
 # Pod Disruption Budget Configuration
 # ============================================================================
@@ -758,16 +664,13 @@ podDisruptionBudget:
   # Enable PodDisruptionBudget for the operator
   # Recommended: true for production environments
   enabled: true
-
   # Minimum number of pods that must remain available during disruptions
   # Use this OR maxUnavailable, not both
   # Recommended: 1 for HA deployments with 2+ replicas
   minAvailable: 1
-
   # Maximum number of pods that can be unavailable during disruptions
   # Alternative to minAvailable - uncomment to use instead
   # maxUnavailable: 1
-
 # ============================================================================
 # Priority Class Configuration
 # ============================================================================
@@ -776,12 +679,10 @@ priorityClass:
   # Create a PriorityClass for the operator
   # Set to false if using an existing PriorityClass
   create: true
-
   # Name of the PriorityClass
   # If empty and create=true, uses the release fullname
   # If create=false, this should be the name of an existing PriorityClass
   name: ""
-
   # Priority value (higher = less likely to be evicted)
   # Reference values:
   #   - system-cluster-critical: 2000000000
