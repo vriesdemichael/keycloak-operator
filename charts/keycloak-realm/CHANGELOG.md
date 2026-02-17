@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.1...chart-realm-v0.4.2) (2026-02-17)
+
+
+### Features
+
+* **chart-client+chart-realm:** add feature parity for realm and client charts ([7b04f00](https://github.com/vriesdemichael/keycloak-operator/commit/7b04f000d05c2100b45f068cfb36657a6266012e))
+
+
+### Bug Fixes
+
+* **chart-realm:** address review comments and fix integration tests ([296b8c5](https://github.com/vriesdemichael/keycloak-operator/commit/296b8c5884c4872051b49622b4dfa721a49767cf))
+
 ## [0.4.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.0...chart-realm-v0.4.1) (2026-02-03)
 
 
