@@ -997,13 +997,14 @@ class TestHelmClientAdvancedSettings:
         client_release = f"client-feat-{uuid.uuid4().hex[:8]}"
 
         # Deploy client with all core fields from Issue 529
+        # Note: authorizationServicesEnabled requires a confidential client (publicClient=False)
         await helm_client(
             release_name=client_release,
             client_id=client_id,
             realm_name=f"{realm_release}-keycloak-realm",
             realm_namespace=test_namespace,
             description="Propagation test client",
-            publicClient=True,
+            publicClient=False,
             bearerOnly=False,
             protocol="openid-connect",
             redirectUris=["https://app.example.com/*"],
@@ -1011,6 +1012,7 @@ class TestHelmClientAdvancedSettings:
             rootUrl="https://app.example.com/",
             baseUrl="/app",
             adminUrl="https://admin.example.com/",
+            serviceAccountsEnabled=True,
             authorizationServicesEnabled=True,
             authorizationSettings={
                 "policyEnforcementMode": "ENFORCING",
@@ -1038,7 +1040,7 @@ class TestHelmClientAdvancedSettings:
         )
         assert kc_client is not None
         assert kc_client.description == "Propagation test client"
-        assert kc_client.public_client is True
+        assert kc_client.public_client is False
         assert "https://app.example.com/*" in kc_client.redirect_uris
         assert kc_client.root_url == "https://app.example.com/"
         assert kc_client.base_url == "/app"
@@ -1051,3 +1053,69 @@ class TestHelmClientAdvancedSettings:
         assert authz is not None
         assert authz.get("policyEnforcementMode") == "ENFORCING"
         assert any(r.get("name") == "Helm Resource" for r in authz.get("resources", []))
+
+    @pytest.mark.timeout(600)
+    async def test_helm_client_public_propagation(
+        self,
+        helm_realm,
+        helm_client,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+        keycloak_admin_client,
+    ):
+        """Test that publicClient flag specifically propagates correctly."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"public-client-{uuid.uuid4().hex[:8]}"
+        realm_release = f"realm-pub-{uuid.uuid4().hex[:8]}"
+
+        await helm_realm(
+            release_name=realm_release,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            clientAuthorizationGrants=[test_namespace],
+        )
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=f"{realm_release}-keycloak-realm",
+            timeout=300,
+            operator_namespace=operator_namespace,
+        )
+
+        client_id = f"pub-client-{uuid.uuid4().hex[:8]}"
+        client_release = f"client-pub-{uuid.uuid4().hex[:8]}"
+
+        await helm_client(
+            release_name=client_release,
+            client_id=client_id,
+            realm_name=f"{realm_release}-keycloak-realm",
+            realm_namespace=test_namespace,
+            publicClient=True,
+        )
+
+        client_cr_name = f"{client_release}-keycloak-client"
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakclients",
+            name=client_cr_name,
+            timeout=300,
+            operator_namespace=operator_namespace,
+        )
+
+        # Verify in Keycloak
+        kc_client = await keycloak_admin_client.get_client_by_name(
+            client_id, realm_name, test_namespace
+        )
+        assert kc_client is not None
+        assert kc_client.public_client is True
