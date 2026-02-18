@@ -198,6 +198,7 @@ tasks:
 
   test:coverage-check:
     desc: Check patch coverage against main (fail if < 85%)
+    deps: [test:unit]
     cmds:
       - echo "Fetching main branch for coverage comparison..."
       - git fetch origin main:refs/remotes/origin/main

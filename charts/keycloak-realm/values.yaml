@@ -197,9 +197,12 @@ otpPolicy: {}
   # lookAheadWindow: 1
   # period: 30
   # codeReusable: false
-  # supportedApplications:
-  #   - FreeOTP
-  #   - Google Authenticator
+  #   # Use Keycloak internal application IDs, not human-readable names.
+  #   # Examples:
+  #   # - totpAppFreeOTPName
+  #   # - totpAppGoogleName
+  #   - totpAppFreeOTPName
+  #   - totpAppGoogleName
 
 # Identity Providers (optional)
 # Configure external identity providers (OIDC, SAML, social logins)
