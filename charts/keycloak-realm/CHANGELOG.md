@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.2...chart-realm-v0.4.3) (2026-02-18)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add OTP policy support ([f1fbe54](https://github.com/vriesdemichael/keycloak-operator/commit/f1fbe54d95d9cd9392db668e3b0c88425217df54))
+
+
+### Bug Fixes
+
+* **chart-realm:** address review comments ([04266e8](https://github.com/vriesdemichael/keycloak-operator/commit/04266e890afce49b766ad4eeb29502990688bd69))
+
 ## [0.4.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.1...chart-realm-v0.4.2) (2026-02-17)
 
 
