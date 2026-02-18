@@ -457,6 +457,12 @@ tasks:
         fi
 
         if [ "{{default "false" .COVERAGE}}" = "true" ]; then
+          echo "Retrieving coverage data..."
+          if ! bash scripts/retrieve-coverage.sh; then
+            echo "❌ Failed to retrieve coverage data via scripts/retrieve-coverage.sh"
+            exit 1
+          fi
+
           echo "Combining coverage data..."
           if ! bash scripts/combine-coverage.sh; then
             echo "❌ Failed to combine coverage data via scripts/combine-coverage.sh"
