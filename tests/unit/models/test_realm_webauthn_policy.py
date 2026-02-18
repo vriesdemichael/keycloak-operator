@@ -1,4 +1,8 @@
-from keycloak_operator.models.realm import KeycloakRealmSpec, KeycloakWebAuthnPolicy
+from keycloak_operator.models.realm import (
+    KeycloakRealmSpec,
+    KeycloakWebAuthnPasswordlessPolicy,
+    KeycloakWebAuthnPolicy,
+)
 
 
 def test_webauthn_policy_flattening():
@@ -17,7 +21,7 @@ def test_webauthn_policy_flattening():
         extraOrigins=["https://example.com"],
     )
 
-    passwordless_policy = KeycloakWebAuthnPolicy(
+    passwordless_policy = KeycloakWebAuthnPasswordlessPolicy(
         rpEntityName="test-passwordless-rp",
         signatureAlgorithms=["ES256"],
         rpId="passwordless.example.com",
