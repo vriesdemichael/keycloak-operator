@@ -2019,40 +2019,40 @@ class KeycloakRealmSpec(BaseModel):
         # Add WebAuthn policy (flattened)
         if self.web_authn_policy:
             wa = self.web_authn_policy
-            config.update(
-                {
-                    "webAuthnPolicyRpEntityName": wa.rp_entity_name,
-                    "webAuthnPolicySignatureAlgorithms": wa.signature_algorithms,
-                    "webAuthnPolicyRpId": wa.rp_id,
-                    "webAuthnPolicyAttestationConveyancePreference": wa.attestation_conveyance_preference,
-                    "webAuthnPolicyAuthenticatorAttachment": wa.authenticator_attachment,
-                    "webAuthnPolicyRequireResidentKey": wa.require_resident_key,
-                    "webAuthnPolicyUserVerificationRequirement": wa.user_verification_requirement,
-                    "webAuthnPolicyCreateTimeout": wa.create_timeout,
-                    "webAuthnPolicyAvoidSameAuthenticatorRegister": wa.avoid_same_authenticator_register,
-                    "webAuthnPolicyAcceptableAaguids": wa.acceptable_aaguids,
-                    "webAuthnPolicyExtraOrigins": wa.extra_origins,
-                }
-            )
+            wa_config = {
+                "webAuthnPolicyRpEntityName": wa.rp_entity_name,
+                "webAuthnPolicySignatureAlgorithms": wa.signature_algorithms,
+                "webAuthnPolicyRpId": wa.rp_id,
+                "webAuthnPolicyAttestationConveyancePreference": wa.attestation_conveyance_preference,
+                "webAuthnPolicyAuthenticatorAttachment": wa.authenticator_attachment,
+                "webAuthnPolicyRequireResidentKey": wa.require_resident_key,
+                "webAuthnPolicyUserVerificationRequirement": wa.user_verification_requirement,
+                "webAuthnPolicyCreateTimeout": wa.create_timeout,
+                "webAuthnPolicyAvoidSameAuthenticatorRegister": wa.avoid_same_authenticator_register,
+                "webAuthnPolicyAcceptableAaguids": wa.acceptable_aaguids,
+                "webAuthnPolicyExtraOrigins": wa.extra_origins,
+            }
+            config.update({k: v for k, v in wa_config.items() if v is not None})
 
         # Add Passwordless WebAuthn policy (flattened)
         if self.web_authn_passwordless_policy:
             wa = self.web_authn_passwordless_policy
+            wa_passwordless_config = {
+                "webAuthnPolicyPasswordlessRpEntityName": wa.rp_entity_name,
+                "webAuthnPolicyPasswordlessSignatureAlgorithms": wa.signature_algorithms,
+                "webAuthnPolicyPasswordlessRpId": wa.rp_id,
+                "webAuthnPolicyPasswordlessAttestationConveyancePreference": wa.attestation_conveyance_preference,
+                "webAuthnPolicyPasswordlessAuthenticatorAttachment": wa.authenticator_attachment,
+                "webAuthnPolicyPasswordlessRequireResidentKey": wa.require_resident_key,
+                "webAuthnPolicyPasswordlessUserVerificationRequirement": wa.user_verification_requirement,
+                "webAuthnPolicyPasswordlessCreateTimeout": wa.create_timeout,
+                "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": wa.avoid_same_authenticator_register,
+                "webAuthnPolicyPasswordlessAcceptableAaguids": wa.acceptable_aaguids,
+                "webAuthnPolicyPasswordlessExtraOrigins": wa.extra_origins,
+                "webAuthnPolicyPasswordlessPasskeysEnabled": wa.passkeys_enabled,
+            }
             config.update(
-                {
-                    "webAuthnPolicyPasswordlessRpEntityName": wa.rp_entity_name,
-                    "webAuthnPolicyPasswordlessSignatureAlgorithms": wa.signature_algorithms,
-                    "webAuthnPolicyPasswordlessRpId": wa.rp_id,
-                    "webAuthnPolicyPasswordlessAttestationConveyancePreference": wa.attestation_conveyance_preference,
-                    "webAuthnPolicyPasswordlessAuthenticatorAttachment": wa.authenticator_attachment,
-                    "webAuthnPolicyPasswordlessRequireResidentKey": wa.require_resident_key,
-                    "webAuthnPolicyPasswordlessUserVerificationRequirement": wa.user_verification_requirement,
-                    "webAuthnPolicyPasswordlessCreateTimeout": wa.create_timeout,
-                    "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": wa.avoid_same_authenticator_register,
-                    "webAuthnPolicyPasswordlessAcceptableAaguids": wa.acceptable_aaguids,
-                    "webAuthnPolicyPasswordlessExtraOrigins": wa.extra_origins,
-                    "webAuthnPolicyPasswordlessPasskeysEnabled": wa.passkeys_enabled,
-                }
+                {k: v for k, v in wa_passwordless_config.items() if v is not None}
             )
 
         # Add events configuration

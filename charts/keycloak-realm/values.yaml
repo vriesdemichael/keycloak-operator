@@ -197,10 +197,7 @@ otpPolicy: {}
   # lookAheadWindow: 1
   # period: 30
   # codeReusable: false
-  #   # Use Keycloak internal application IDs, not human-readable names.
-  #   # Examples:
-  #   # - totpAppFreeOTPName
-  #   # - totpAppGoogleName
+  # supportedApplications:
   #   - totpAppFreeOTPName
   #   - totpAppGoogleName
 
