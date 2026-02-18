@@ -202,6 +202,11 @@ tasks:
     cmds:
       - echo "Fetching main branch for coverage comparison..."
       - git fetch origin main:refs/remotes/origin/main
+      - |
+        BEHIND=$(git rev-list --count HEAD..origin/main)
+        if [ "$BEHIND" -gt 0 ]; then
+          echo "⚠️  Your branch is $BEHIND commits behind main. Coverage might be inaccurate if you modify lines changed in main."
+        fi
       - echo "Checking patch coverage..."
       - uv tool run diff-cover coverage.xml --compare-branch origin/main --fail-under=85
 
