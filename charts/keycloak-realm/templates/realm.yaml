@@ -153,6 +153,16 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.webAuthnPolicy }}
+  webAuthnPolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.webAuthnPasswordlessPolicy }}
+  webAuthnPasswordlessPolicy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- if or .Values.eventsConfig.eventsEnabled .Values.eventsConfig.adminEventsEnabled }}
   eventsConfig:
     {{- toYaml .Values.eventsConfig | nindent 4 }}

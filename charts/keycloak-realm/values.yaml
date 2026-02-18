@@ -204,6 +204,41 @@ otpPolicy: {}
   #   - totpAppFreeOTPName
   #   - totpAppGoogleName
 
+# WebAuthn Policy (optional)
+# Configure WebAuthn (FIDO2) settings for the realm
+webAuthnPolicy: {}
+  # rpEntityName: "Keycloak"
+  # signatureAlgorithms:
+  #   - "ES256"
+  #   - "RS256"
+  # rpId: ""
+  # attestationConveyancePreference: "not specified"
+  # authenticatorAttachment: "not specified"
+  # requireResidentKey: "not specified"
+  # userVerificationRequirement: "not specified"
+  # createTimeout: 0
+  # avoidSameAuthenticatorRegister: false
+  # acceptableAaguids: []
+  # extraOrigins: []
+
+# Passwordless WebAuthn Policy (optional)
+# Configure Passwordless WebAuthn settings
+webAuthnPasswordlessPolicy: {}
+  # rpEntityName: "Keycloak Passwordless"
+  # signatureAlgorithms:
+  #   - "ES256"
+  #   - "RS256"
+  # rpId: ""
+  # attestationConveyancePreference: "not specified"
+  # authenticatorAttachment: "not specified"
+  # requireResidentKey: "not specified"
+  # userVerificationRequirement: "not specified"
+  # createTimeout: 0
+  # avoidSameAuthenticatorRegister: false
+  # acceptableAaguids: []
+  # extraOrigins: []
+  # passkeysEnabled: false
+
 # Identity Providers (optional)
 # Configure external identity providers (OIDC, SAML, social logins)
 # See CRD documentation for full schema

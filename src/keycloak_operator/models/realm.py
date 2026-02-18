@@ -1221,6 +1221,66 @@ class KeycloakOTPPolicy(BaseModel):
     )
 
 
+class KeycloakWebAuthnPolicy(BaseModel):
+    """
+    WebAuthn policy configuration.
+
+    Used for both regular WebAuthn and Passwordless WebAuthn policies.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    rp_entity_name: str | None = Field(
+        None, alias="rpEntityName", description="RP Entity Name"
+    )
+    signature_algorithms: list[str] | None = Field(
+        None, alias="signatureAlgorithms", description="Signature Algorithms"
+    )
+    rp_id: str | None = Field(None, alias="rpId", description="RP ID")
+    attestation_conveyance_preference: str | None = Field(
+        None,
+        alias="attestationConveyancePreference",
+        description="Attestation Conveyance Preference",
+    )
+    authenticator_attachment: str | None = Field(
+        None, alias="authenticatorAttachment", description="Authenticator Attachment"
+    )
+    require_resident_key: str | None = Field(
+        None, alias="requireResidentKey", description="Require Resident Key"
+    )
+    user_verification_requirement: str | None = Field(
+        None,
+        alias="userVerificationRequirement",
+        description="User Verification Requirement",
+    )
+    create_timeout: int | None = Field(
+        None, alias="createTimeout", description="Create Timeout"
+    )
+    avoid_same_authenticator_register: bool = Field(
+        False,
+        alias="avoidSameAuthenticatorRegister",
+        description="Avoid Same Authenticator Register",
+    )
+    acceptable_aaguids: list[str] | None = Field(
+        None, alias="acceptableAaguids", description="Acceptable AAGUIDs"
+    )
+    extra_origins: list[str] | None = Field(
+        None, alias="extraOrigins", description="Extra Origins"
+    )
+
+
+class KeycloakWebAuthnPasswordlessPolicy(KeycloakWebAuthnPolicy):
+    """
+    WebAuthn Passwordless policy configuration.
+
+    Inherits all fields from KeycloakWebAuthnPolicy.
+    """
+
+    passkeys_enabled: bool | None = Field(
+        None, alias="passkeysEnabled", description="Enable Passkeys (Passwordless only)"
+    )
+
+
 class KeycloakSMTPPasswordSecret(BaseModel):
     """
     Reference to Kubernetes secret containing SMTP password.
@@ -1745,6 +1805,18 @@ class KeycloakRealmSpec(BaseModel):
         description="OTP (One-Time Password) policy configuration",
     )
 
+    # WebAuthn policy
+    web_authn_policy: KeycloakWebAuthnPolicy | None = Field(
+        None,
+        alias="webAuthnPolicy",
+        description="WebAuthn policy configuration",
+    )
+    web_authn_passwordless_policy: KeycloakWebAuthnPasswordlessPolicy | None = Field(
+        None,
+        alias="webAuthnPasswordlessPolicy",
+        description="Passwordless WebAuthn policy configuration",
+    )
+
     # Events and logging
     events_config: KeycloakEventsConfig = Field(
         default_factory=KeycloakEventsConfig,
@@ -1941,6 +2013,45 @@ class KeycloakRealmSpec(BaseModel):
                     "otpPolicyPeriod": otp.period,
                     "otpPolicyCodeReusable": otp.code_reusable,
                     "otpSupportedApplications": otp.supported_applications,
+                }
+            )
+
+        # Add WebAuthn policy (flattened)
+        if self.web_authn_policy:
+            wa = self.web_authn_policy
+            config.update(
+                {
+                    "webAuthnPolicyRpEntityName": wa.rp_entity_name,
+                    "webAuthnPolicySignatureAlgorithms": wa.signature_algorithms,
+                    "webAuthnPolicyRpId": wa.rp_id,
+                    "webAuthnPolicyAttestationConveyancePreference": wa.attestation_conveyance_preference,
+                    "webAuthnPolicyAuthenticatorAttachment": wa.authenticator_attachment,
+                    "webAuthnPolicyRequireResidentKey": wa.require_resident_key,
+                    "webAuthnPolicyUserVerificationRequirement": wa.user_verification_requirement,
+                    "webAuthnPolicyCreateTimeout": wa.create_timeout,
+                    "webAuthnPolicyAvoidSameAuthenticatorRegister": wa.avoid_same_authenticator_register,
+                    "webAuthnPolicyAcceptableAaguids": wa.acceptable_aaguids,
+                    "webAuthnPolicyExtraOrigins": wa.extra_origins,
+                }
+            )
+
+        # Add Passwordless WebAuthn policy (flattened)
+        if self.web_authn_passwordless_policy:
+            wa = self.web_authn_passwordless_policy
+            config.update(
+                {
+                    "webAuthnPolicyPasswordlessRpEntityName": wa.rp_entity_name,
+                    "webAuthnPolicyPasswordlessSignatureAlgorithms": wa.signature_algorithms,
+                    "webAuthnPolicyPasswordlessRpId": wa.rp_id,
+                    "webAuthnPolicyPasswordlessAttestationConveyancePreference": wa.attestation_conveyance_preference,
+                    "webAuthnPolicyPasswordlessAuthenticatorAttachment": wa.authenticator_attachment,
+                    "webAuthnPolicyPasswordlessRequireResidentKey": wa.require_resident_key,
+                    "webAuthnPolicyPasswordlessUserVerificationRequirement": wa.user_verification_requirement,
+                    "webAuthnPolicyPasswordlessCreateTimeout": wa.create_timeout,
+                    "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": wa.avoid_same_authenticator_register,
+                    "webAuthnPolicyPasswordlessAcceptableAaguids": wa.acceptable_aaguids,
+                    "webAuthnPolicyPasswordlessExtraOrigins": wa.extra_origins,
+                    "webAuthnPolicyPasswordlessPasskeysEnabled": wa.passkeys_enabled,
                 }
             )
 

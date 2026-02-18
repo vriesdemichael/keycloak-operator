@@ -846,6 +846,95 @@ spec:
                     description: Supported authenticator applications
                     items:
                       type: string
+              webAuthnPolicy:
+                type: object
+                description: WebAuthn (FIDO2) policy configuration
+                properties:
+                  rpEntityName:
+                    type: string
+                    description: RP Entity Name
+                  signatureAlgorithms:
+                    type: array
+                    description: Signature Algorithms
+                    items:
+                      type: string
+                  rpId:
+                    type: string
+                    description: RP ID
+                  attestationConveyancePreference:
+                    type: string
+                    description: Attestation Conveyance Preference
+                  authenticatorAttachment:
+                    type: string
+                    description: Authenticator Attachment
+                  requireResidentKey:
+                    type: string
+                    description: Require Resident Key
+                  userVerificationRequirement:
+                    type: string
+                    description: User Verification Requirement
+                  createTimeout:
+                    type: integer
+                    description: Create Timeout
+                  avoidSameAuthenticatorRegister:
+                    type: boolean
+                    description: Avoid Same Authenticator Register
+                  acceptableAaguids:
+                    type: array
+                    description: Acceptable AAGUIDs
+                    items:
+                      type: string
+                  extraOrigins:
+                    type: array
+                    description: Extra Origins
+                    items:
+                      type: string
+              webAuthnPasswordlessPolicy:
+                type: object
+                description: Passwordless WebAuthn policy configuration
+                properties:
+                  rpEntityName:
+                    type: string
+                    description: RP Entity Name
+                  signatureAlgorithms:
+                    type: array
+                    description: Signature Algorithms
+                    items:
+                      type: string
+                  rpId:
+                    type: string
+                    description: RP ID
+                  attestationConveyancePreference:
+                    type: string
+                    description: Attestation Conveyance Preference
+                  authenticatorAttachment:
+                    type: string
+                    description: Authenticator Attachment
+                  requireResidentKey:
+                    type: string
+                    description: Require Resident Key
+                  userVerificationRequirement:
+                    type: string
+                    description: User Verification Requirement
+                  createTimeout:
+                    type: integer
+                    description: Create Timeout
+                  avoidSameAuthenticatorRegister:
+                    type: boolean
+                    description: Avoid Same Authenticator Register
+                  acceptableAaguids:
+                    type: array
+                    description: Acceptable AAGUIDs
+                    items:
+                      type: string
+                  extraOrigins:
+                    type: array
+                    description: Extra Origins
+                    items:
+                      type: string
+                  passkeysEnabled:
+                    type: boolean
+                    description: Enable Passkeys (Passwordless only)
               eventsConfig:
                 type: object
                 description: Event logging configuration
