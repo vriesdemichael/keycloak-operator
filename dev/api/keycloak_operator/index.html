@@ -2025,6 +2025,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakOTPPolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakOTPPolicy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.realm.KeycloakPasswordPolicy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10462,6 +10473,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.realm.KeycloakOTPPolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        KeycloakOTPPolicy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.realm.KeycloakPasswordPolicy" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -17599,6 +17621,54 @@ into Keycloak user attributes, roles, or session attributes.</p>
         <p>Reference to Kubernetes secret containing identity provider secrets.</p>
 <p>The secret must be in the same namespace as the KeycloakRealm.
 Cross-namespace secret references are not supported for security reasons.</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.realm.KeycloakOTPPolicy" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">KeycloakOTPPolicy</span>
+
+
+<a href="#keycloak_operator.models.realm.KeycloakOTPPolicy" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>OTP (One-Time Password) policy configuration.</p>
+<p>Maps to flat otpPolicy* fields in Keycloak RealmRepresentation.</p>
 
 
 
