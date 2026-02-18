@@ -859,6 +859,59 @@
         }
       }
     },
+    "webAuthnPolicy": {
+      "type": "object",
+      "description": "WebAuthn (FIDO2) policy configuration",
+      "properties": {
+        "rpEntityName": {"type": "string"},
+        "signatureAlgorithms": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "rpId": {"type": "string"},
+        "attestationConveyancePreference": {"type": "string"},
+        "authenticatorAttachment": {"type": "string"},
+        "requireResidentKey": {"type": "string"},
+        "userVerificationRequirement": {"type": "string"},
+        "createTimeout": {"type": "integer"},
+        "avoidSameAuthenticatorRegister": {"type": "boolean"},
+        "acceptableAaguids": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "extraOrigins": {
+          "type": "array",
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "webAuthnPasswordlessPolicy": {
+      "type": "object",
+      "description": "Passwordless WebAuthn policy configuration",
+      "properties": {
+        "rpEntityName": {"type": "string"},
+        "signatureAlgorithms": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "rpId": {"type": "string"},
+        "attestationConveyancePreference": {"type": "string"},
+        "authenticatorAttachment": {"type": "string"},
+        "requireResidentKey": {"type": "string"},
+        "userVerificationRequirement": {"type": "string"},
+        "createTimeout": {"type": "integer"},
+        "avoidSameAuthenticatorRegister": {"type": "boolean"},
+        "acceptableAaguids": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "extraOrigins": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "passkeysEnabled": {"type": "boolean"}
+      }
+    },
     "extraManifests": {
       "type": "array",
       "description": "Extra Kubernetes manifests to deploy (e.g., ExternalSecrets, SealedSecrets, ConfigMaps)",
