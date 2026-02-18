@@ -1,0 +1,24 @@
+number: 43
+title: Wait helpers with debug logging in tests
+category: development
+decision: Use wait helper functions in tests that provide detailed debug logs on timeout/failure
+  instead of plain assertions. Logs show resource state, events, and reconciliation
+  status.
+agent_instructions: Use wait helpers from tests/integration/wait_helpers.py (wait_for_resource_ready,
+  wait_for_resource_condition) that provide debug logs on timeout. Never use plain
+  assertions without wait/retry logic. Helpers dump resource status, events, and operator
+  logs on failure. Add context-specific debug information to aid troubleshooting.
+rationale: Plain assertions like 'assert resource.status.phase == "Ready"' fail with
+  no context. When test fails in CI, developer has no information about why. Wait
+  helpers with debug logging capture resource state, Kubernetes events, operator logs
+  at time of failure. Makes CI failures debuggable without re-running locally. Logs
+  show timing issues, reconciliation problems, dependency issues. Significantly reduces
+  debug time.
+provenance: human
+rejected_alternatives:
+- alternative: Plain assertions without wait logic
+  reason: Flaky tests due to timing. No debug information on failure. Can't debug
+    CI failures.
+- alternative: Manual kubectl debugging after failure
+  reason: Resource state is gone after test cleanup. Can't reproduce CI environment
+    locally.
