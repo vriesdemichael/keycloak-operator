@@ -1,0 +1,18 @@
+number: 76
+title: No Network Policies in Helm Chart
+category: architecture
+decision: We will not include Kubernetes NetworkPolicy resources in the Keycloak Operator
+  Helm chart.
+agent_instructions: Do not accept requests to add NetworkPolicy templates to the Helm
+  chart. Direct users to manage network security at the platform level.
+rationale: 'Keycloak''s primary function relies on external user interaction (login prompts,
+  redirects) which requires secure external TLS access. Internal service-to-service
+  communication (e.g. for token exchange) creates potential configuration issues
+  ("config hell") due to mismatches between external issuer URLs and internal service
+  URLs. The complexity of managing these network restrictions outweighs the minimal
+  security gain, as the application is designed to be public-facing.'
+provenance: human
+rejected_alternatives:
+- alternative: Optional NetworkPolicies
+  reason: Adds template complexity and testing burden for features that are often
+    replaced by Service Mesh or CNI-specific CRDs.

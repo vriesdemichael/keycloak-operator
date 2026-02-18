@@ -1,0 +1,33 @@
+number: 12
+title: Async API with rate limiting and retries
+category: architecture
+decision: All Keycloak API interactions use async/await with httpx. Implement two-level
+  token bucket rate limiting (global 50 req/s, per-namespace 5 req/s) and exponential
+  backoff retry logic with random jitter for transient failures.
+agent_instructions: Use 'async def' for all reconcilers and handlers. Pass rate_limiter
+  through constructors (reconciler = SomeReconciler(rate_limiter=memo.rate_limiter)).
+  All Keycloak admin client methods are async - use 'await admin_client.method()'.
+  Use httpx for HTTP client (not aiohttp). Rate limiter protects against API overload
+  and thundering herd on operator restart. Retry logic uses exponential backoff with
+  random jitter to avoid stampeding herd when connections resume.
+rationale: 'Async/await: Handles many concurrent reconciliations efficiently without
+  blocking. httpx: Modern async HTTP client with better defaults than aiohttp, HTTP/2
+  support, and sync/async unified API. Rate limiting: Prevents API overload during
+  mass reconciliations or operator restarts; per-namespace limits ensure fair access
+  and prevent single tenant monopolizing API. Retries with exponential backoff and
+  jitter: Handles transient network failures, temporary Keycloak unavailability, and
+  rate limit responses gracefully. Random jitter prevents stampeding herd when many
+  reconcilers retry simultaneously after connection resumes. Metrics: Prometheus metrics
+  track rate limit waits, retries, and timeouts. Trade-off: Async code slightly more
+  complex, but necessary for production scale.'
+rejected_alternatives:
+- alternative: Use aiohttp for async HTTP
+  reason: httpx provides better modern defaults, HTTP/2 support, and cleaner API. aiohttp
+    has more boilerplate and less intuitive request/response handling.
+- alternative: Synchronous blocking API calls
+  reason: Would block reconciliation threads, limit concurrency, and create bottlenecks
+    during mass reconciliations or operator startup.
+- alternative: Fixed retry delays without jitter
+  reason: All reconcilers would retry simultaneously after connection resumes, causing
+    stampeding herd and potentially overwhelming the recovered service.
+provenance: guided-ai
