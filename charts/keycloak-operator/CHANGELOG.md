@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.22](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.21...chart-operator-v0.4.22) (2026-02-18)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add OTP policy support ([f1fbe54](https://github.com/vriesdemichael/keycloak-operator/commit/f1fbe54d95d9cd9392db668e3b0c88425217df54))
+
 ## [0.4.21](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.20...chart-operator-v0.4.21) (2026-02-18)
 
 
