@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.4.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.3...chart-realm-v0.4.4) (2026-02-19)
+
+
+### Features
+
+* **chart-realm+operator:** add WebAuthn policy support ([28278aa](https://github.com/vriesdemichael/keycloak-operator/commit/28278aa391e428f6401089e082ccdbf4284622c7))
+
+
+### Bug Fixes
+
+* **chart-realm+operator:** address review comments ([5928f07](https://github.com/vriesdemichael/keycloak-operator/commit/5928f07fb8afb226a6e8ab7d6110b8819ee244b9))
+
 ## [0.4.3](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.2...chart-realm-v0.4.3) (2026-02-18)
 
 
