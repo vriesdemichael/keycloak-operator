@@ -65,23 +65,24 @@ security:
 
 # Browser Security Headers (optional)
 # Configure security headers served on Keycloak login pages
+# Leave values empty to let Keycloak use its built-in defaults.
 browserSecurityHeaders:
-  # Content Security Policy (default: frame-src 'self'; frame-ancestors 'self'; object-src 'none';)
-  contentSecurityPolicy: "frame-src 'self'; frame-ancestors 'self'; object-src 'none';"
+  # Content Security Policy (Keycloak default: frame-src 'self'; frame-ancestors 'self'; object-src 'none';)
+  contentSecurityPolicy: ""
   # CSP Report Only (optional)
-  # contentSecurityPolicyReportOnly: ""
-  # X-Content-Type-Options (default: nosniff)
-  xContentTypeOptions: "nosniff"
-  # X-Frame-Options (default: SAMEORIGIN)
-  xFrameOptions: "SAMEORIGIN"
-  # X-Robots-Tag (default: none)
-  xRobotsTag: "none"
-  # X-XSS-Protection (default: 1; mode=block)
-  xXSSProtection: "1; mode=block"
-  # Strict-Transport-Security (default: max-age=31536000; includeSubDomains)
-  strictTransportSecurity: "max-age=31536000; includeSubDomains"
-  # Referrer-Policy (default: no-referrer)
-  referrerPolicy: "no-referrer"
+  contentSecurityPolicyReportOnly: ""
+  # X-Content-Type-Options (Keycloak default: nosniff)
+  xContentTypeOptions: ""
+  # X-Frame-Options (Keycloak default: SAMEORIGIN)
+  xFrameOptions: ""
+  # X-Robots-Tag (Keycloak default: none)
+  xRobotsTag: ""
+  # X-XSS-Protection (Keycloak default: 1; mode=block)
+  xXSSProtection: ""
+  # Strict-Transport-Security (Keycloak default: max-age=31536000; includeSubDomains)
+  strictTransportSecurity: ""
+  # Referrer-Policy (Keycloak default: no-referrer)
+  referrerPolicy: ""
 
 # Theme configuration
 themes:
