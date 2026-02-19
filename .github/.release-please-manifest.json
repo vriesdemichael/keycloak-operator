@@ -2,6 +2,6 @@
   ".": "0.7.20",
   "charts/keycloak-operator": "0.4.24",
   "charts/keycloak-client": "0.4.4",
-  "charts/keycloak-realm": "0.4.3",
+  "charts/keycloak-realm": "0.4.4",
   "tools/migration-toolkit": "0.1.1"
 }
