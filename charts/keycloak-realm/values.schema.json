@@ -330,6 +330,58 @@
         "required": ["name"]
       }
     },
+    "scopeMappings": {
+      "type": "array",
+      "description": "Scope mappings for the realm",
+      "items": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "type": "string",
+            "description": "Client ID"
+          },
+          "clientScope": {
+            "type": "string",
+            "description": "Client Scope name"
+          },
+          "roles": {
+            "type": "array",
+            "description": "List of role names",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "clientScopeMappings": {
+      "type": "object",
+      "description": "Client-specific scope mappings",
+      "additionalProperties": {
+        "type": "array",
+        "description": "List of scope mappings for this client",
+        "items": {
+          "type": "object",
+          "properties": {
+            "client": {
+              "type": "string",
+              "description": "Target client ID"
+            },
+            "clientScope": {
+              "type": "string",
+              "description": "Target client scope"
+            },
+            "roles": {
+              "type": "array",
+              "description": "List of role names",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
     "defaultClientScopes": {
       "type": "array",
       "description": "Client scope names to automatically assign as default to new clients",

@@ -4198,6 +4198,7 @@ class KeycloakAdminClient:
         client_uuid: str,
         role_config: RoleRepresentation | dict[str, Any],
         realm_name: str = "master",
+        namespace: str = "default",
     ) -> bool:
         """
         Create a role for a client.
@@ -4206,6 +4207,7 @@ class KeycloakAdminClient:
             client_uuid: UUID of the client in Keycloak
             role_config: Role configuration as RoleRepresentation or dict
             realm_name: Name of the realm
+            namespace: Namespace for rate limiting
 
         Returns:
             True if successful, False otherwise
@@ -4231,6 +4233,7 @@ class KeycloakAdminClient:
         response = await self._make_validated_request(
             "POST",
             f"realms/{realm_name}/clients/{client_uuid}/roles",
+            namespace,
             request_model=role_config,
         )
 
@@ -4250,6 +4253,7 @@ class KeycloakAdminClient:
         role_name: str,
         role_config: RoleRepresentation | dict[str, Any],
         realm_name: str = "master",
+        namespace: str = "default",
     ) -> bool:
         """
         Update a role for a client.
@@ -4259,6 +4263,7 @@ class KeycloakAdminClient:
             role_name: Name of the role to update
             role_config: Updated role configuration as RoleRepresentation or dict
             realm_name: Name of the realm
+            namespace: Namespace for rate limiting
 
         Returns:
             True if successful, False otherwise
@@ -4281,6 +4286,7 @@ class KeycloakAdminClient:
         response = await self._make_validated_request(
             "PUT",
             f"realms/{realm_name}/clients/{client_uuid}/roles/{role_name}",
+            namespace,
             request_model=role_config,
         )
 
@@ -4621,7 +4627,7 @@ class KeycloakAdminClient:
 
         response = await self._make_request(
             "DELETE",
-            f"realms/{realm_name}/roles/{role_name}/composites",
+            self.adapter.get_realm_role_composites_path(realm_name, role_name),
             namespace,
             json=roles_data,
         )
@@ -4636,6 +4642,295 @@ class KeycloakAdminClient:
             )
 
     # =========================================================================
+    # Scope Mappings API methods (Issue #535)
+    # =========================================================================
+
+    @api_get_list("realm role scope mappings")
+    async def get_scope_mappings_realm_roles(
+        self,
+        realm_name: str,
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+        namespace: str = "default",
+    ) -> list[RoleRepresentation]:
+        """
+        Get realm-level roles mapped to a client or client scope.
+
+        Args:
+            realm_name: Name of the realm
+            client_id: ID of the client (for direct mapping)
+            client_scope_id: ID of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of realm roles mapped
+        """
+        if not client_id and not client_scope_id:
+            logger.warning("Must provide either client_id or client_scope_id")
+            return []
+
+        path = self.adapter.get_scope_mappings_realm_roles_path(
+            realm_name, client_id, client_scope_id
+        )
+        logger.debug(f"Fetching realm role scope mappings from {path}")
+
+        response = await self._make_request("GET", path, namespace)
+
+        if response.status_code == 200:
+            roles_data = response.json()
+            return [RoleRepresentation.model_validate(role) for role in roles_data]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_update("realm role scope mappings", conflict_is_success=True)
+    async def add_scope_mappings_realm_roles(
+        self,
+        realm_name: str,
+        roles: list[RoleRepresentation] | list[dict[str, Any]],
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Add realm-level roles to a client or client scope mapping.
+
+        Args:
+            realm_name: Name of the realm
+            roles: List of realm roles to add
+            client_id: ID of the client (for direct mapping)
+            client_scope_id: ID of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not client_id and not client_scope_id:
+            logger.warning("Must provide either client_id or client_scope_id")
+            return False
+
+        path = self.adapter.get_scope_mappings_realm_roles_path(
+            realm_name, client_id, client_scope_id
+        )
+        logger.info(f"Adding {len(roles)} realm roles to scope mapping at {path}")
+
+        roles_data = []
+        for role in roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
+            else:
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+        response = await self._make_request("POST", path, namespace, json=roles_data)
+
+        if response.status_code == 204:
+            logger.info("Successfully added realm role scope mappings")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_delete("realm role scope mappings")
+    async def remove_scope_mappings_realm_roles(
+        self,
+        realm_name: str,
+        roles: list[RoleRepresentation] | list[dict[str, Any]],
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Remove realm-level roles from a client or client scope mapping.
+
+        Args:
+            realm_name: Name of the realm
+            roles: List of realm roles to remove
+            client_id: ID of the client (for direct mapping)
+            client_scope_id: ID of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not client_id and not client_scope_id:
+            logger.warning("Must provide either client_id or client_scope_id")
+            return False
+
+        path = self.adapter.get_scope_mappings_realm_roles_path(
+            realm_name, client_id, client_scope_id
+        )
+        logger.info(f"Removing {len(roles)} realm roles from scope mapping at {path}")
+
+        roles_data = []
+        for role in roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
+            else:
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+        response = await self._make_request("DELETE", path, namespace, json=roles_data)
+
+        if response.status_code == 204:
+            logger.info("Successfully removed realm role scope mappings")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_get_list("client role scope mappings")
+    async def get_scope_mappings_client_roles(
+        self,
+        realm_name: str,
+        role_container_id: str,
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+        namespace: str = "default",
+    ) -> list[RoleRepresentation]:
+        """
+        Get client-level roles (from role_container_id) mapped to a client or client scope.
+
+        Args:
+            realm_name: Name of the realm
+            role_container_id: ID of the client owning the roles
+            client_id: ID of the client (for direct mapping)
+            client_scope_id: ID of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            List of client roles mapped
+        """
+        if not client_id and not client_scope_id:
+            logger.warning("Must provide either client_id or client_scope_id")
+            return []
+
+        path = self.adapter.get_scope_mappings_client_roles_path(
+            realm_name, role_container_id, client_id, client_scope_id
+        )
+        logger.debug(f"Fetching client role scope mappings from {path}")
+
+        response = await self._make_request("GET", path, namespace)
+
+        if response.status_code == 200:
+            roles_data = response.json()
+            return [RoleRepresentation.model_validate(role) for role in roles_data]
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_update("client role scope mappings", conflict_is_success=True)
+    async def add_scope_mappings_client_roles(
+        self,
+        realm_name: str,
+        role_container_id: str,
+        roles: list[RoleRepresentation] | list[dict[str, Any]],
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Add client-level roles to a client or client scope mapping.
+
+        Args:
+            realm_name: Name of the realm
+            role_container_id: ID of the client owning the roles
+            roles: List of client roles to add
+            client_id: ID of the client (for direct mapping)
+            client_scope_id: ID of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not client_id and not client_scope_id:
+            logger.warning("Must provide either client_id or client_scope_id")
+            return False
+
+        path = self.adapter.get_scope_mappings_client_roles_path(
+            realm_name, role_container_id, client_id, client_scope_id
+        )
+        logger.info(f"Adding {len(roles)} client roles to scope mapping at {path}")
+
+        roles_data = []
+        for role in roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
+            else:
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+        response = await self._make_request("POST", path, namespace, json=roles_data)
+
+        if response.status_code == 204:
+            logger.info("Successfully added client role scope mappings")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    @api_delete("client role scope mappings")
+    async def remove_scope_mappings_client_roles(
+        self,
+        realm_name: str,
+        role_container_id: str,
+        roles: list[RoleRepresentation] | list[dict[str, Any]],
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+        namespace: str = "default",
+    ) -> bool:
+        """
+        Remove client-level roles from a client or client scope mapping.
+
+        Args:
+            realm_name: Name of the realm
+            role_container_id: ID of the client owning the roles
+            roles: List of client roles to remove
+            client_id: ID of the client (for direct mapping)
+            client_scope_id: ID of the client scope
+            namespace: Namespace for rate limiting
+
+        Returns:
+            True if successful, False otherwise
+        """
+        if not client_id and not client_scope_id:
+            logger.warning("Must provide either client_id or client_scope_id")
+            return False
+
+        path = self.adapter.get_scope_mappings_client_roles_path(
+            realm_name, role_container_id, client_id, client_scope_id
+        )
+        logger.info(f"Removing {len(roles)} client roles from scope mapping at {path}")
+
+        roles_data = []
+        for role in roles:
+            if isinstance(role, dict):
+                roles_data.append(role)
+            else:
+                roles_data.append(role.model_dump(by_alias=True, exclude_none=True))
+
+        response = await self._make_request("DELETE", path, namespace, json=roles_data)
+
+        if response.status_code == 204:
+            logger.info("Successfully removed client role scope mappings")
+            return True
+        else:
+            raise KeycloakAdminError(
+                f"Unexpected status code: {response.status_code}",
+                status_code=response.status_code,
+            )
+
+    # =========================================================================
+    # Client Scopes API methods
+    # =========================================================================
+
     # Client Scopes API methods
     # =========================================================================
 

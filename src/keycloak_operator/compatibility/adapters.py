@@ -359,6 +359,34 @@ class V26Adapter(KeycloakAdapter):
     def get_authentication_register_required_action_path(self, realm: str) -> str:
         return f"realms/{realm}/authentication/register-required-action"
 
+    # Scope Mappings
+    def get_scope_mappings_realm_roles_path(
+        self,
+        realm: str,
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+    ) -> str:
+        if client_id:
+            return f"realms/{realm}/clients/{client_id}/scope-mappings/realm"
+        if client_scope_id:
+            return (
+                f"realms/{realm}/client-scopes/{client_scope_id}/scope-mappings/realm"
+            )
+        return f"realms/{realm}/scope-mappings/realm"
+
+    def get_scope_mappings_client_roles_path(
+        self,
+        realm: str,
+        role_container_id: str,
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+    ) -> str:
+        if client_id:
+            return f"realms/{realm}/clients/{client_id}/scope-mappings/clients/{role_container_id}"
+        if client_scope_id:
+            return f"realms/{realm}/client-scopes/{client_scope_id}/scope-mappings/clients/{role_container_id}"
+        return f"realms/{realm}/scope-mappings/clients/{role_container_id}"
+
 
 # =============================================================================
 # V25 Adapter - Same paths as 26, minimal differences
