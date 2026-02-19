@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.24](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.23...chart-operator-v0.4.24) (2026-02-19)
+
+
+### Features
+
+* **chart-realm+operator:** add WebAuthn policy support ([28278aa](https://github.com/vriesdemichael/keycloak-operator/commit/28278aa391e428f6401089e082ccdbf4284622c7))
+
 ## [0.4.23](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.22...chart-operator-v0.4.23) (2026-02-18)
 
 
