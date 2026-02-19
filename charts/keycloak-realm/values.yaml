@@ -63,6 +63,26 @@ security:
   maxDeltaTime: 43200
   failureFactor: 30
 
+# Browser Security Headers (optional)
+# Configure security headers served on Keycloak login pages
+browserSecurityHeaders:
+  # Content Security Policy (default: frame-src 'self'; frame-ancestors 'self'; object-src 'none';)
+  contentSecurityPolicy: "frame-src 'self'; frame-ancestors 'self'; object-src 'none';"
+  # CSP Report Only (optional)
+  # contentSecurityPolicyReportOnly: ""
+  # X-Content-Type-Options (default: nosniff)
+  xContentTypeOptions: "nosniff"
+  # X-Frame-Options (default: SAMEORIGIN)
+  xFrameOptions: "SAMEORIGIN"
+  # X-Robots-Tag (default: none)
+  xRobotsTag: "none"
+  # X-XSS-Protection (default: 1; mode=block)
+  xXSSProtection: "1; mode=block"
+  # Strict-Transport-Security (default: max-age=31536000; includeSubDomains)
+  strictTransportSecurity: "max-age=31536000; includeSubDomains"
+  # Referrer-Policy (default: no-referrer)
+  referrerPolicy: "no-referrer"
+
 # Theme configuration
 themes:
   login: ""

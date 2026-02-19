@@ -169,6 +169,21 @@ kubectl describe keycloakrealm my-realm -n my-team
 | `security.maxDeltaTime` | Max time window for failures (seconds) | `43200` (12 hours) |
 | `security.failureFactor` | Number of failures before lockout | `30` |
 
+#### Browser Security Headers
+
+Configure HTTP security headers served on Keycloak login pages (CSP, X-Frame-Options, etc.).
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `browserSecurityHeaders.contentSecurityPolicy` | Content Security Policy | `frame-src 'self'; ...` |
+| `browserSecurityHeaders.contentSecurityPolicyReportOnly` | CSP Report Only mode | `""` |
+| `browserSecurityHeaders.xContentTypeOptions` | X-Content-Type-Options | `nosniff` |
+| `browserSecurityHeaders.xFrameOptions` | X-Frame-Options | `SAMEORIGIN` |
+| `browserSecurityHeaders.xRobotsTag` | X-Robots-Tag | `none` |
+| `browserSecurityHeaders.xXSSProtection` | X-XSS-Protection | `1; mode=block` |
+| `browserSecurityHeaders.strictTransportSecurity` | Strict-Transport-Security | `max-age=31536000; ...` |
+| `browserSecurityHeaders.referrerPolicy` | Referrer-Policy | `no-referrer` |
+
 #### Theme Configuration
 
 | Parameter | Description | Default |
