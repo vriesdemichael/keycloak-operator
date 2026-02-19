@@ -319,6 +319,23 @@ clientScopes: []
   #         claim.name: scope
   #         claim.value: api:write
 
+# Scope Mappings (optional)
+# Define scope mappings for the realm
+scopeMappings: []
+  # Example:
+  # - client: my-client
+  #   roles: ["role-1", "role-2"]
+  # - clientScope: my-client-scope
+  #   roles: ["role-3"]
+
+# Client Scope Mappings (optional)
+# Define client-specific scope mappings
+clientScopeMappings: {}
+  # Example:
+  # my-client:
+  #   - client: another-client
+  #     roles: ["role-a", "role-b"]
+
 # Default client scopes (optional)
 # Scope names that are automatically assigned as default to new clients
 defaultClientScopes: []

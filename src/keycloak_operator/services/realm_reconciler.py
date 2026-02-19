@@ -18,7 +18,7 @@ from keycloak_operator.settings import settings
 
 from ..compatibility import ValidationResult
 from ..errors import ValidationError
-from ..models.realm import KeycloakRealmSpec
+from ..models.realm import KeycloakRealmSpec, KeycloakScopeMapping
 from ..utils.keycloak_admin import KeycloakAdminError, get_keycloak_admin_client
 from ..utils.ownership import get_cr_reference, is_owned_by_cr
 from ..utils.rbac import get_secret_with_validation
@@ -182,6 +182,14 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Configure default groups
         if realm_spec.default_groups:
             await self.configure_default_groups(realm_spec, name, namespace)
+
+        # Configure default roles (Issue #536)
+        # Always call to allow clearing/resetting
+        await self.configure_default_roles(realm_spec, name, namespace)
+
+        # Configure scope mappings (Issue #535)
+        # Always call to allow clearing
+        await self.configure_scope_mappings(realm_spec, name, namespace)
 
         # Configure client profiles and policies (Issue #306)
         # Always call to allow clearing when fields are empty
@@ -2841,6 +2849,239 @@ class KeycloakRealmReconciler(BaseReconciler):
                 self.logger.warning(
                     f"Failed to remove default group '{group_path}': {e}"
                 )
+
+    async def configure_default_roles(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure default roles for the realm.
+
+        Handles:
+        1. Updating the `default-roles-<realm>` role attributes/description (if default_role set).
+        2. Assigning realm roles to `default-roles-<realm>` as composites (if default_roles set).
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Configuring default roles for realm {spec.realm_name}")
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+        default_role_name = f"default-roles-{realm_name}"
+
+        # 1. Update default role attributes/description
+        if spec.default_role:
+            try:
+                # Check if default role exists
+                existing_role = await admin_client.get_realm_role_by_name(
+                    realm_name, default_role_name, namespace
+                )
+
+                if existing_role:
+                    from keycloak_operator.models.keycloak_api import RoleRepresentation
+
+                    role_repr = RoleRepresentation(
+                        id=existing_role.id,
+                        name=default_role_name,
+                        description=spec.default_role.description,
+                        attributes=spec.default_role.attributes,
+                    )
+                    await admin_client.update_realm_role(
+                        realm_name, default_role_name, role_repr, namespace
+                    )
+                    self.logger.info(f"Updated default role '{default_role_name}'")
+                else:
+                    self.logger.warning(
+                        f"Default role '{default_role_name}' not found, cannot update attributes"
+                    )
+            except Exception as e:
+                self.logger.warning(f"Failed to update default role attributes: {e}")
+
+        # 2. Configure default roles (composites)
+        # Even if spec.default_roles is empty, we might want to ensure it's empty in Keycloak if we wanted strict sync
+        # But legacy behavior often implies "ensure these exist", not "only these exist".
+        # However, for GitOps, we should aim for strict sync if possible, but default roles might contain
+        # system-assigned roles (like offline_access, uma_authorization).
+        # We will only ADD roles specified in the list, consistent with the decision to support legacy field.
+        # Removing roles not in the list is risky as it might remove system roles.
+        if spec.default_roles:
+            try:
+                await self._configure_composite_roles(
+                    admin_client,
+                    realm_name,
+                    default_role_name,
+                    spec.default_roles,
+                    namespace,
+                )
+            except Exception as e:
+                self.logger.warning(f"Failed to configure default role composites: {e}")
+
+    async def configure_scope_mappings(
+        self, spec: KeycloakRealmSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Configure scope mappings for the realm.
+
+        Handles:
+        1. Realm Role Scope Mappings (spec.scope_mappings)
+        2. Client Role Scope Mappings (spec.client_scope_mappings)
+
+        Args:
+            spec: Keycloak realm specification
+            name: Resource name
+            namespace: Resource namespace
+        """
+        self.logger.info(f"Configuring scope mappings for realm {spec.realm_name}")
+
+        operator_ref = spec.operator_ref
+        target_namespace = operator_ref.namespace
+        keycloak_name = "keycloak"
+        admin_client = await self.keycloak_admin_factory(
+            keycloak_name, target_namespace, rate_limiter=self.rate_limiter
+        )
+
+        realm_name = spec.realm_name
+
+        # 1. Realm Role Scope Mappings
+        if spec.scope_mappings:
+            for mapping in spec.scope_mappings:
+                await self._configure_single_scope_mapping(
+                    admin_client, realm_name, mapping, namespace, role_container=None
+                )
+
+        # 2. Client Role Scope Mappings
+        if spec.client_scope_mappings:
+            for source_client_id, mappings in spec.client_scope_mappings.items():
+                # Resolve source client UUID (role container)
+                source_client_uuid = await admin_client.get_client_uuid(
+                    source_client_id, realm_name, namespace
+                )
+                if not source_client_uuid:
+                    self.logger.warning(
+                        f"Source client '{source_client_id}' not found for scope mappings"
+                    )
+                    continue
+
+                for mapping in mappings:
+                    await self._configure_single_scope_mapping(
+                        admin_client,
+                        realm_name,
+                        mapping,
+                        namespace,
+                        role_container=source_client_uuid,
+                    )
+
+    async def _configure_single_scope_mapping(
+        self,
+        admin_client: Any,
+        realm_name: str,
+        mapping: KeycloakScopeMapping,
+        namespace: str,
+        role_container: str | None = None,
+    ) -> None:
+        """
+        Configure a single scope mapping entry.
+
+        Args:
+            admin_client: Keycloak admin client
+            realm_name: Realm name
+            mapping: Scope mapping configuration
+            namespace: Namespace for rate limiting
+            role_container: UUID of the client containing the roles (None for realm roles)
+        """
+        try:
+            target_client_uuid = None
+            target_client_scope_id = None
+
+            # Resolve target (Client or Client Scope)
+            if mapping.client:
+                target_client_uuid = await admin_client.get_client_uuid(
+                    mapping.client, realm_name, namespace
+                )
+                if not target_client_uuid:
+                    self.logger.warning(
+                        f"Target client '{mapping.client}' not found for scope mapping"
+                    )
+                    return
+            elif mapping.client_scope:
+                # Resolve client scope ID by name
+                client_scope = await admin_client.get_client_scope_by_name(
+                    realm_name, mapping.client_scope, namespace
+                )
+                if client_scope:
+                    target_client_scope_id = client_scope.id
+                else:
+                    self.logger.warning(
+                        f"Target client scope '{mapping.client_scope}' not found for scope mapping"
+                    )
+                    return
+
+            # Resolve roles to map
+            roles_to_map = []
+            if role_container:
+                # Client roles
+                for role_name in mapping.roles:
+                    role = await admin_client.get_client_role(
+                        role_container, role_name, realm_name, namespace
+                    )
+                    if role:
+                        roles_to_map.append(role)
+                    else:
+                        self.logger.warning(
+                            f"Client role '{role_name}' not found in container '{role_container}'"
+                        )
+            else:
+                # Realm roles
+                for role_name in mapping.roles:
+                    role = await admin_client.get_realm_role_by_name(
+                        realm_name, role_name, namespace
+                    )
+                    if role:
+                        roles_to_map.append(role)
+                    else:
+                        self.logger.warning(
+                            f"Realm role '{role_name}' not found in realm '{realm_name}'"
+                        )
+
+            if not roles_to_map:
+                self.logger.debug("No valid roles found to map")
+                return
+
+            # Perform the mapping
+            if role_container:
+                # Add Client Role Scope Mappings
+                await admin_client.add_scope_mappings_client_roles(
+                    realm_name,
+                    role_container,
+                    roles_to_map,
+                    client_id=target_client_uuid,
+                    client_scope_id=target_client_scope_id,
+                    namespace=namespace,
+                )
+            else:
+                # Add Realm Role Scope Mappings
+                await admin_client.add_scope_mappings_realm_roles(
+                    realm_name,
+                    roles_to_map,
+                    client_id=target_client_uuid,
+                    client_scope_id=target_client_scope_id,
+                    namespace=namespace,
+                )
+
+            # Note: We are currently additive-only for scope mappings (like we are for default roles)
+            # to avoid removing mappings set up by other means or default mappings.
+            # A full sync would require fetching existing mappings and computing diffs.
+
+        except Exception as e:
+            self.logger.warning(f"Failed to configure scope mapping: {e}")
 
     async def configure_client_profiles_and_policies(
         self, spec: KeycloakRealmSpec, name: str, namespace: str

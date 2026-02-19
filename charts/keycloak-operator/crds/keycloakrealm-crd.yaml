@@ -777,6 +777,67 @@ spec:
                 description: Group names or paths to automatically assign to new users
                 items:
                   type: string
+              defaultRoles:
+                type: array
+                description: Default roles to assign to new users
+                items:
+                  type: string
+              defaultRole:
+                type: object
+                description: Configuration for the default role
+                properties:
+                  name:
+                    type: string
+                  description:
+                    type: string
+                  composite:
+                    type: boolean
+                    default: false
+                  clientRole:
+                    type: boolean
+                    default: false
+                  containerId:
+                    type: string
+                  attributes:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+                  compositeRoles:
+                    type: array
+                    items:
+                      type: string
+              scopeMappings:
+                type: array
+                description: Scope mappings for clients and client scopes
+                items:
+                  type: object
+                  properties:
+                    client:
+                      type: string
+                    clientScope:
+                      type: string
+                    roles:
+                      type: array
+                      items:
+                        type: string
+              clientScopeMappings:
+                type: object
+                description: Client scope mappings keyed by client ID
+                additionalProperties:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      client:
+                        type: string
+                      clientScope:
+                        type: string
+                      roles:
+                        type: array
+                        items:
+                          type: string
               attributes:
                 type: object
                 description: Additional realm attributes

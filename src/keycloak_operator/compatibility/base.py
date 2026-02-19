@@ -490,3 +490,39 @@ class KeycloakAdapter(ABC):
     def get_authentication_register_required_action_path(self, realm: str) -> str:
         """Get path to register a required action."""
         pass
+
+    # Scope Mappings (Issue #535)
+    @abstractmethod
+    def get_scope_mappings_realm_roles_path(
+        self,
+        realm: str,
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+    ) -> str:
+        """
+        Get path for realm role scope mappings.
+
+        If client_id is provided, returns path for client scope mappings (direct).
+        If client_scope_id is provided, returns path for client scope scope mappings.
+        If neither, returns base realm scope mappings path (usually not used directly).
+        """
+        pass
+
+    @abstractmethod
+    def get_scope_mappings_client_roles_path(
+        self,
+        realm: str,
+        role_container_id: str,
+        client_id: str | None = None,
+        client_scope_id: str | None = None,
+    ) -> str:
+        """
+        Get path for client role scope mappings.
+
+        Args:
+            realm: Realm name
+            role_container_id: ID of the client that owns the roles (source)
+            client_id: ID of the client to map to (direct mapping)
+            client_scope_id: ID of the client scope to map to
+        """
+        pass

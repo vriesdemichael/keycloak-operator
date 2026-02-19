@@ -1680,6 +1680,35 @@ class Organization(BaseModel):
         return v
 
 
+class KeycloakScopeMapping(BaseModel):
+    """
+    Scope mapping configuration.
+
+    Maps roles (realm or client) to a client scope or directly to a client.
+    Scope mappings control which roles are included in the token when a specific
+    scope is granted.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    client: str | None = Field(
+        None, description="Client ID to map roles to (direct mapping)"
+    )
+    client_scope: str | None = Field(
+        None, alias="clientScope", description="Client scope to map roles to"
+    )
+    roles: list[str] = Field(
+        default_factory=list, description="List of roles to include in the mapping"
+    )
+
+    def model_post_init(self, __context):
+        """Validate that either client or clientScope is specified, but not both."""
+        if self.client and self.client_scope:
+            raise ValueError("Cannot specify both 'client' and 'clientScope'")
+        if not self.client and not self.client_scope:
+            raise ValueError("Must specify either 'client' or 'clientScope'")
+
+
 class KeycloakRealmSpec(BaseModel):
     """
     Specification for a KeycloakRealm resource.
@@ -1838,6 +1867,33 @@ class KeycloakRealmSpec(BaseModel):
         default_factory=list,
         alias="defaultGroups",
         description="Group names (or paths) to automatically assign to new users",
+    )
+
+    # Default roles - roles automatically assigned to new users (Issue #536)
+    default_roles: list[str] = Field(
+        default_factory=list,
+        alias="defaultRoles",
+        description="List of role names to automatically assign to new users (Legacy). "
+        "These will be added as composites to the default-roles-<realm> role.",
+    )
+    default_role: KeycloakRealmRole | None = Field(
+        None,
+        alias="defaultRole",
+        description="Configuration for the default role (default-roles-<realm>). "
+        "Use this to set attributes or description on the default role.",
+    )
+
+    # Scope mappings (Issue #535)
+    scope_mappings: list[KeycloakScopeMapping] = Field(
+        default_factory=list,
+        alias="scopeMappings",
+        description="Realm-level scope mappings (Realm Roles -> Client/Scope)",
+    )
+    client_scope_mappings: dict[str, list[KeycloakScopeMapping]] = Field(
+        default_factory=dict,
+        alias="clientScopeMappings",
+        description="Client-level scope mappings (Client Roles -> Client/Scope). "
+        "Key is the source client ID (container of the roles).",
     )
 
     # SMTP configuration
