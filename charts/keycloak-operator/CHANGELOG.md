@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.26](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.25...chart-operator-v0.4.26) (2026-02-19)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add browser security headers support ([7b3fd10](https://github.com/vriesdemichael/keycloak-operator/commit/7b3fd106f4c4f15b1e7692c4ff86d59bc0b68a17))
+
 ## [0.4.25](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.24...chart-operator-v0.4.25) (2026-02-19)
 
 
