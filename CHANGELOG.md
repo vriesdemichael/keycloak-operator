@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.21](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.20...operator-image-v0.7.21) (2026-02-19)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add browser security headers support ([7b3fd10](https://github.com/vriesdemichael/keycloak-operator/commit/7b3fd106f4c4f15b1e7692c4ff86d59bc0b68a17))
+
+
+### Bug Fixes
+
+* **chart-realm+operator:** correct defaults for browser security headers ([0ade724](https://github.com/vriesdemichael/keycloak-operator/commit/0ade724b0cffbec124cc6b82a3ea73dcb2c431a8))
+
 ## [0.7.20](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.19...operator-image-v0.7.20) (2026-02-19)
 
 
