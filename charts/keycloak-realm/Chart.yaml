@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak-realm
 description: A Helm chart for deploying Keycloak realms with authorization
 type: application
-version: 0.4.4
+version: 0.4.5
 appVersion: "1.0.0"
 keywords:
   - keycloak
