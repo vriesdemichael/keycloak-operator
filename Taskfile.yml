@@ -457,10 +457,28 @@ tasks:
         fi
 
         if [ "{{default "false" .COVERAGE}}" = "true" ]; then
-          echo "Retrieving coverage data..."
+          echo "Retrieving coverage data from pod..."
           if ! bash scripts/retrieve-coverage.sh; then
             echo "❌ Failed to retrieve coverage data via scripts/retrieve-coverage.sh"
             exit 1
+          fi
+
+          # Ensure that at least one integration coverage file was retrieved
+          if ! find .tmp/coverage -maxdepth 1 -type f -name '.coverage*' | grep -q .; then
+            echo "❌ No integration coverage files (.tmp/coverage/.coverage*) were found after retrieval."
+            echo "   This usually means integration coverage was not produced or retrieval failed silently."
+            exit 1
+          fi
+
+          # Ensure unit coverage is in the root where combine-coverage.sh expects it
+          if [ ! -f ".coverage" ]; then
+            if [ -n "$CI" ]; then
+              echo "❌ Unit .coverage file missing in CI."
+              echo "   Failing fast to avoid generating coverage.xml with integration-only coverage."
+              exit 1
+            else
+              echo "⚠️ Unit .coverage file missing. combine-coverage.sh will use integration-only coverage."
+            fi
           fi
 
           echo "Combining coverage data..."

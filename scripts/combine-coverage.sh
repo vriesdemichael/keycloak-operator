@@ -39,9 +39,15 @@ fi
 
 # Build list of coverage files to combine
 COMBINE_ARGS=()
+
+# If unit test coverage exists, rename it to be treated as a partial file
+# preventing 'input file is also output file' collisions
 if [ -f ".coverage" ]; then
-    COMBINE_ARGS+=(".coverage")
+    log "Found unit test coverage (.coverage), renaming to .coverage.unit for combination"
+    mv .coverage .coverage.unit
+    COMBINE_ARGS+=(".coverage.unit")
 fi
+
 # Add integration coverage files (glob may expand to nothing)
 for f in "${COVERAGE_DIR}"/.coverage*; do
     [ -e "$f" ] && COMBINE_ARGS+=("$f")

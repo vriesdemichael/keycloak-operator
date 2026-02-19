@@ -35,6 +35,7 @@ runs:
       if: always()
       with:
         name: unit-coverage
+        include-hidden-files: true
         path: |
           .coverage
           coverage.xml
