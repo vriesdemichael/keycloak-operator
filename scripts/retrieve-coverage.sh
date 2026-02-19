@@ -18,8 +18,9 @@ COVERAGE_SRC_PATH="/tmp/coverage"
 log "Retrieving coverage data from operator pod..."
 
 # Create local coverage directory
+rm -rf "${COVERAGE_DIR}"
 mkdir -p "${COVERAGE_DIR}"
-log "Created coverage directory: ${COVERAGE_DIR}"
+log "Cleaned and created coverage directory: ${COVERAGE_DIR}"
 
 # Find operator pod
 log "Looking for operator pod with selector: ${LABEL_SELECTOR} in namespace: ${NAMESPACE}"
