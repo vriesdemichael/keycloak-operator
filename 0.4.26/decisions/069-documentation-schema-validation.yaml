@@ -1,0 +1,30 @@
+number: 69
+title: Documentation schema validation in CI
+category: development
+decision: >
+  All documentation examples (Helm --set flags, values.yaml snippets, and CR instances)
+  must be validated against their respective schemas in CI. The validation extracts
+  references from markdown files and example YAML files, then validates them against
+  values.schema.json for Helm charts and CRD openAPIV3Schema for custom resources.
+agent_instructions: >
+  When adding documentation examples that include Helm values or CR snippets,
+  ensure they use valid field names that exist in the corresponding schema.
+  Run `uv run python scripts/lib/schema_validator.py` to check for validation errors
+  before committing documentation changes. Fix any "Unknown key" or "Unknown property"
+  errors by correcting the field names or updating the schema if the field is missing.
+rationale: >
+  Documentation drift is a major source of user confusion. Users copy examples from
+  docs that use incorrect field names (e.g., 'hostname' instead of 'host'), leading
+  to runtime errors. By validating documentation against the actual schemas, we catch
+  these mismatches before they reach users. The validation is automated and runs in CI
+  to prevent regression.
+rejected_alternatives:
+  - alternative: Manual documentation review
+    reason: >
+      Human review is error-prone and doesn't scale. Field names change over time
+      and it's easy to miss a stale example buried in documentation.
+  - alternative: Rendering and applying examples to a test cluster
+    reason: >
+      Too slow for CI and requires a running cluster. Schema validation is faster
+      and catches the same class of errors (invalid field names).
+provenance: guided-ai
