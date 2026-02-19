@@ -979,6 +979,58 @@ class KeycloakRealmSecurity(BaseModel):
         return v
 
 
+class KeycloakBrowserSecurityHeaders(BaseModel):
+    """
+    Browser security headers configuration.
+
+    Maps to the `browserSecurityHeaders` dictionary in Keycloak API.
+    These headers are served on Keycloak login pages.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    content_security_policy: str = Field(
+        "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+        alias="contentSecurityPolicy",
+        description="Content Security Policy header",
+    )
+    content_security_policy_report_only: str | None = Field(
+        None,
+        alias="contentSecurityPolicyReportOnly",
+        description="Content Security Policy Report Only header",
+    )
+    x_content_type_options: str = Field(
+        "nosniff",
+        alias="xContentTypeOptions",
+        description="X-Content-Type-Options header",
+    )
+    x_frame_options: str = Field(
+        "SAMEORIGIN",
+        alias="xFrameOptions",
+        description="X-Frame-Options header",
+    )
+    x_robots_tag: str = Field(
+        "none",
+        alias="xRobotsTag",
+        description="X-Robots-Tag header",
+    )
+    x_xss_protection: str = Field(
+        "1; mode=block",
+        alias="xXSSProtection",
+        description="X-XSS-Protection header",
+    )
+    strict_transport_security: str = Field(
+        "max-age=31536000; includeSubDomains",
+        alias="strictTransportSecurity",
+        description="Strict-Transport-Security header",
+    )
+    referrer_policy: str = Field(
+        "no-referrer",
+        alias="referrerPolicy",
+        description="Referrer-Policy header",
+    )
+
+
 class KeycloakProtocolMapper(BaseModel):
     """Protocol mapper for client scopes."""
 
@@ -1680,6 +1732,13 @@ class KeycloakRealmSpec(BaseModel):
         default_factory=KeycloakRealmSecurity, description="Security configuration"
     )
 
+    # Browser security headers
+    browser_security_headers: KeycloakBrowserSecurityHeaders | None = Field(
+        None,
+        alias="browserSecurityHeaders",
+        description="Browser security headers configuration",
+    )
+
     # Authentication flows
     authentication_flows: list[KeycloakAuthenticationFlow] = Field(
         default_factory=list,
@@ -1968,6 +2027,24 @@ class KeycloakRealmSpec(BaseModel):
                 "duplicateEmailsAllowed": security.duplicate_emails_allowed,
             }
         )
+
+        # Add browser security headers
+        if self.browser_security_headers:
+            headers = self.browser_security_headers
+            headers_config = {
+                "contentSecurityPolicy": headers.content_security_policy,
+                "xContentTypeOptions": headers.x_content_type_options,
+                "xFrameOptions": headers.x_frame_options,
+                "xRobotsTag": headers.x_robots_tag,
+                "xXSSProtection": headers.x_xss_protection,
+                "strictTransportSecurity": headers.strict_transport_security,
+                "referrerPolicy": headers.referrer_policy,
+            }
+            if headers.content_security_policy_report_only:
+                headers_config["contentSecurityPolicyReportOnly"] = (
+                    headers.content_security_policy_report_only
+                )
+            config["browserSecurityHeaders"] = headers_config
 
         # Add SMTP configuration
         if self.smtp_server:

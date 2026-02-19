@@ -40,6 +40,11 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.browserSecurityHeaders }}
+  browserSecurityHeaders:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- if or .Values.themes.login .Values.themes.admin .Values.themes.account .Values.themes.email }}
   themes:
     {{- with .Values.themes.login }}

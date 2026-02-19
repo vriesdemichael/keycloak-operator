@@ -48,6 +48,19 @@
         "failureFactor": {"type": "integer"}
       }
     },
+    "browserSecurityHeaders": {
+      "type": "object",
+      "properties": {
+        "contentSecurityPolicy": {"type": "string"},
+        "contentSecurityPolicyReportOnly": {"type": "string"},
+        "xContentTypeOptions": {"type": "string"},
+        "xFrameOptions": {"type": "string"},
+        "xRobotsTag": {"type": "string"},
+        "xXSSProtection": {"type": "string"},
+        "strictTransportSecurity": {"type": "string"},
+        "referrerPolicy": {"type": "string"}
+      }
+    },
     "themes": {
       "type": "object",
       "properties": {

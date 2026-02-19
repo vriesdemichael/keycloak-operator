@@ -114,6 +114,34 @@ spec:
                   failureFactor:
                     type: integer
                     minimum: 1
+              browserSecurityHeaders:
+                type: object
+                description: Browser security headers configuration
+                properties:
+                  contentSecurityPolicy:
+                    type: string
+                    description: Content Security Policy header
+                  contentSecurityPolicyReportOnly:
+                    type: string
+                    description: Content Security Policy Report Only header
+                  xContentTypeOptions:
+                    type: string
+                    description: X-Content-Type-Options header
+                  xFrameOptions:
+                    type: string
+                    description: X-Frame-Options header
+                  xRobotsTag:
+                    type: string
+                    description: X-Robots-Tag header
+                  xXSSProtection:
+                    type: string
+                    description: X-XSS-Protection header
+                  strictTransportSecurity:
+                    type: string
+                    description: Strict-Transport-Security header
+                  referrerPolicy:
+                    type: string
+                    description: Referrer-Policy header
               tokenSettings:
                 type: object
                 description: Token and session configuration
