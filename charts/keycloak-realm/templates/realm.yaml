@@ -41,8 +41,33 @@ spec:
   {{- end }}
 
   {{- with .Values.browserSecurityHeaders }}
+  {{- if or .contentSecurityPolicy .contentSecurityPolicyReportOnly .xContentTypeOptions .xFrameOptions .xRobotsTag .xXSSProtection .strictTransportSecurity .referrerPolicy }}
   browserSecurityHeaders:
-    {{- toYaml . | nindent 4 }}
+    {{- with .contentSecurityPolicy }}
+    contentSecurityPolicy: {{ . | quote }}
+    {{- end }}
+    {{- with .contentSecurityPolicyReportOnly }}
+    contentSecurityPolicyReportOnly: {{ . | quote }}
+    {{- end }}
+    {{- with .xContentTypeOptions }}
+    xContentTypeOptions: {{ . | quote }}
+    {{- end }}
+    {{- with .xFrameOptions }}
+    xFrameOptions: {{ . | quote }}
+    {{- end }}
+    {{- with .xRobotsTag }}
+    xRobotsTag: {{ . | quote }}
+    {{- end }}
+    {{- with .xXSSProtection }}
+    xXSSProtection: {{ . | quote }}
+    {{- end }}
+    {{- with .strictTransportSecurity }}
+    strictTransportSecurity: {{ . | quote }}
+    {{- end }}
+    {{- with .referrerPolicy }}
+    referrerPolicy: {{ . | quote }}
+    {{- end }}
+  {{- end }}
   {{- end }}
 
   {{- if or .Values.themes.login .Values.themes.admin .Values.themes.account .Values.themes.email }}

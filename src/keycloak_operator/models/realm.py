@@ -989,8 +989,8 @@ class KeycloakBrowserSecurityHeaders(BaseModel):
 
     model_config = {"populate_by_name": True}
 
-    content_security_policy: str = Field(
-        "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+    content_security_policy: str | None = Field(
+        None,
         alias="contentSecurityPolicy",
         description="Content Security Policy header",
     )
@@ -999,33 +999,33 @@ class KeycloakBrowserSecurityHeaders(BaseModel):
         alias="contentSecurityPolicyReportOnly",
         description="Content Security Policy Report Only header",
     )
-    x_content_type_options: str = Field(
-        "nosniff",
+    x_content_type_options: str | None = Field(
+        None,
         alias="xContentTypeOptions",
         description="X-Content-Type-Options header",
     )
-    x_frame_options: str = Field(
-        "SAMEORIGIN",
+    x_frame_options: str | None = Field(
+        None,
         alias="xFrameOptions",
         description="X-Frame-Options header",
     )
-    x_robots_tag: str = Field(
-        "none",
+    x_robots_tag: str | None = Field(
+        None,
         alias="xRobotsTag",
         description="X-Robots-Tag header",
     )
-    x_xss_protection: str = Field(
-        "1; mode=block",
+    x_xss_protection: str | None = Field(
+        None,
         alias="xXSSProtection",
         description="X-XSS-Protection header",
     )
-    strict_transport_security: str = Field(
-        "max-age=31536000; includeSubDomains",
+    strict_transport_security: str | None = Field(
+        None,
         alias="strictTransportSecurity",
         description="Strict-Transport-Security header",
     )
-    referrer_policy: str = Field(
-        "no-referrer",
+    referrer_policy: str | None = Field(
+        None,
         alias="referrerPolicy",
         description="Referrer-Policy header",
     )
@@ -2031,20 +2031,31 @@ class KeycloakRealmSpec(BaseModel):
         # Add browser security headers
         if self.browser_security_headers:
             headers = self.browser_security_headers
-            headers_config = {
-                "contentSecurityPolicy": headers.content_security_policy,
-                "xContentTypeOptions": headers.x_content_type_options,
-                "xFrameOptions": headers.x_frame_options,
-                "xRobotsTag": headers.x_robots_tag,
-                "xXSSProtection": headers.x_xss_protection,
-                "strictTransportSecurity": headers.strict_transport_security,
-                "referrerPolicy": headers.referrer_policy,
-            }
+            headers_config = {}
+            if headers.content_security_policy:
+                headers_config["contentSecurityPolicy"] = (
+                    headers.content_security_policy
+                )
+            if headers.x_content_type_options:
+                headers_config["xContentTypeOptions"] = headers.x_content_type_options
+            if headers.x_frame_options:
+                headers_config["xFrameOptions"] = headers.x_frame_options
+            if headers.x_robots_tag:
+                headers_config["xRobotsTag"] = headers.x_robots_tag
+            if headers.x_xss_protection:
+                headers_config["xXSSProtection"] = headers.x_xss_protection
+            if headers.strict_transport_security:
+                headers_config["strictTransportSecurity"] = (
+                    headers.strict_transport_security
+                )
+            if headers.referrer_policy:
+                headers_config["referrerPolicy"] = headers.referrer_policy
             if headers.content_security_policy_report_only:
                 headers_config["contentSecurityPolicyReportOnly"] = (
                     headers.content_security_policy_report_only
                 )
-            config["browserSecurityHeaders"] = headers_config
+            if headers_config:
+                config["browserSecurityHeaders"] = headers_config
 
         # Add SMTP configuration
         if self.smtp_server:

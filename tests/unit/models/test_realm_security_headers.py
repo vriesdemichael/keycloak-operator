@@ -4,19 +4,16 @@ from keycloak_operator.models.realm import (
 )
 
 
-def test_browser_security_headers_defaults():
-    """Test default values for browser security headers."""
+def test_browser_security_headers_defaults_are_none():
+    """Test that default values for browser security headers are None (use Keycloak defaults)."""
     headers = KeycloakBrowserSecurityHeaders()
-    assert (
-        headers.content_security_policy
-        == "frame-src 'self'; frame-ancestors 'self'; object-src 'none';"
-    )
-    assert headers.x_content_type_options == "nosniff"
-    assert headers.x_frame_options == "SAMEORIGIN"
-    assert headers.x_robots_tag == "none"
-    assert headers.x_xss_protection == "1; mode=block"
-    assert headers.strict_transport_security == "max-age=31536000; includeSubDomains"
-    assert headers.referrer_policy == "no-referrer"
+    assert headers.content_security_policy is None
+    assert headers.x_content_type_options is None
+    assert headers.x_frame_options is None
+    assert headers.x_robots_tag is None
+    assert headers.x_xss_protection is None
+    assert headers.strict_transport_security is None
+    assert headers.referrer_policy is None
     assert headers.content_security_policy_report_only is None
 
 
@@ -38,8 +35,8 @@ def test_realm_spec_with_security_headers():
         == "default-src 'self';"
     )
     assert config["browserSecurityHeaders"]["xFrameOptions"] == "DENY"
-    # Defaults should be preserved if not overridden
-    assert config["browserSecurityHeaders"]["xContentTypeOptions"] == "nosniff"
+    # Unset fields should NOT be in config
+    assert "xContentTypeOptions" not in config["browserSecurityHeaders"]
 
 
 def test_realm_spec_without_security_headers():
@@ -49,4 +46,18 @@ def test_realm_spec_without_security_headers():
     )
 
     config = spec.to_keycloak_config(include_flow_bindings=False)
+    assert "browserSecurityHeaders" not in config
+
+
+def test_realm_spec_with_empty_security_headers_object():
+    """Test realm spec with empty security headers object."""
+    headers = KeycloakBrowserSecurityHeaders()
+    spec = KeycloakRealmSpec(
+        realmName="test-realm",
+        operatorRef={"namespace": "test-ns"},
+        browserSecurityHeaders=headers,
+    )
+
+    config = spec.to_keycloak_config(include_flow_bindings=False)
+    # Should not include empty browserSecurityHeaders dict
     assert "browserSecurityHeaders" not in config
