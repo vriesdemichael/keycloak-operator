@@ -223,23 +223,72 @@
   "authenticationFlows": [
     {
       "alias": "custom-browser-flow",
+      "description": "Custom browser flow with OTP",
       "providerId": "basic-flow",
-      "topLevel": true
+      "topLevel": true,
+      "builtIn": false,
+      "authenticationExecutions": [
+        {
+          "authenticator": "auth-cookie",
+          "requirement": "ALTERNATIVE",
+          "priority": 10
+        },
+        {
+          "authenticator": "auth-otp-form",
+          "requirement": "REQUIRED",
+          "priority": 20
+        }
+      ]
     }
   ],
   "requiredActions": [
     {
       "alias": "CONFIGURE_TOTP",
       "name": "Configure OTP",
-      "enabled": true
+      "providerId": "CONFIGURE_TOTP",
+      "enabled": true,
+      "defaultAction": false,
+      "priority": 10,
+      "config": {}
     }
   ],
   "browserFlow": "custom-browser-flow",
-  "otpPolicyType": "totp",
-  "otpPolicyAlgorithm": "HmacSHA1",
-  "otpPolicyDigits": 6,
-  "otpPolicyPeriod": 30,
-  "webAuthnPolicyRpEntityName": "keycloak",
+  "registrationFlow": "registration",
+  "directGrantFlow": "direct grant",
+  "resetCredentialsFlow": "reset credentials",
+  "clientAuthenticationFlow": "clients",
+  "dockerAuthenticationFlow": "docker auth",
+  "firstBrokerLoginFlow": "first broker login",
+  "otpPolicyType": "hotp",
+  "otpPolicyAlgorithm": "HmacSHA256",
+  "otpPolicyDigits": 8,
+  "otpPolicyPeriod": 60,
+  "otpPolicyInitialCounter": 5,
+  "otpPolicyLookAheadWindow": 3,
+  "otpPolicyCodeReusable": true,
+  "otpSupportedApplications": ["FreeOTP", "Google Authenticator"],
+  "webAuthnPolicyRpEntityName": "maximal-app",
+  "webAuthnPolicySignatureAlgorithms": ["ES256", "RS256"],
+  "webAuthnPolicyRpId": "example.com",
+  "webAuthnPolicyAttestationConveyancePreference": "direct",
+  "webAuthnPolicyAuthenticatorAttachment": "cross-platform",
+  "webAuthnPolicyRequireResidentKey": "Yes",
+  "webAuthnPolicyUserVerificationRequirement": "required",
+  "webAuthnPolicyCreateTimeout": 60,
+  "webAuthnPolicyAvoidSameAuthenticatorRegister": true,
+  "webAuthnPolicyAcceptableAaguids": ["aaguid-1", "aaguid-2"],
+  "webAuthnPolicyExtraOrigins": ["https://extra.example.com"],
+  "webAuthnPolicyPasswordlessRpEntityName": "maximal-app-passwordless",
+  "webAuthnPolicyPasswordlessSignatureAlgorithms": ["ES256"],
+  "webAuthnPolicyPasswordlessRpId": "example.com",
+  "webAuthnPolicyPasswordlessAttestationConveyancePreference": "none",
+  "webAuthnPolicyPasswordlessAuthenticatorAttachment": "platform",
+  "webAuthnPolicyPasswordlessRequireResidentKey": "Yes",
+  "webAuthnPolicyPasswordlessUserVerificationRequirement": "required",
+  "webAuthnPolicyPasswordlessCreateTimeout": 120,
+  "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister": false,
+  "webAuthnPolicyPasswordlessAcceptableAaguids": [],
+  "webAuthnPolicyPasswordlessExtraOrigins": [],
   "browserSecurityHeaders": {
     "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
     "xContentTypeOptions": "nosniff",
@@ -251,6 +300,14 @@
       "roles": ["viewer"]
     }
   ],
+  "clientScopeMappings": {
+    "api-service": [
+      {
+        "client": "api-service",
+        "roles": ["manage-users", "manage-clients"]
+      }
+    ]
+  },
   "defaultRole": {
     "name": "default-roles-maximal-test",
     "composites": {"realm": ["viewer"]}
