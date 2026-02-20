@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.28](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.27...chart-operator-v0.4.28) (2026-02-20)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add scopeMappings support ([39db2ac](https://github.com/vriesdemichael/keycloak-operator/commit/39db2ac5ae4cdf83505bfbbfddc3c498d2a0aa8b))
+
 ## [0.4.27](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.26...chart-operator-v0.4.27) (2026-02-19)
 
 
