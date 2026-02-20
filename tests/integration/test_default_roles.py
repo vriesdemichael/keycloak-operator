@@ -15,6 +15,7 @@ import pytest
 
 from .cleanup_utils import delete_custom_resource_with_retry
 from .wait_helpers import (
+    wait_for_reconciliation_complete,
     wait_for_resource_ready,
 )
 
@@ -119,7 +120,50 @@ class TestDefaultRoles:
             assert "offline_access" in composite_names
             assert "uma_authorization" in composite_names
 
-            logger.info("✓ Successfully verified default roles")
+            # 2. Test Updating Default Role
+            assert realm_spec.default_role is not None
+            realm_spec.default_role.description = "Updated description"
+            if realm_spec.default_role.attributes is None:
+                realm_spec.default_role.attributes = {}
+            realm_spec.default_role.attributes["new-attr"] = ["new-value"]
+            realm_spec.default_roles.append(
+                "offline_access"
+            )  # Should already be there, no change
+
+            realm_manifest["spec"] = realm_spec.model_dump(
+                by_alias=True, exclude_unset=True
+            )
+
+            updated_cr = await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                body=realm_manifest,
+            )
+            new_generation = updated_cr.get("metadata", {}).get("generation")
+
+            await wait_for_reconciliation_complete(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                min_generation=new_generation,
+                timeout=180,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify Updates
+            default_role = await keycloak_admin_client.get_realm_role_by_name(
+                realm_name, default_role_name, namespace
+            )
+            assert default_role.description == "Updated description"
+            assert default_role.attributes["new-attr"] == ["new-value"]
+
+            logger.info("✓ Successfully verified default roles updates")
 
         finally:
             await delete_custom_resource_with_retry(
