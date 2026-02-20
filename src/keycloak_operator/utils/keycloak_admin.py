@@ -4907,9 +4907,6 @@ class KeycloakAdminClient:
     # Client Scopes API methods
     # =========================================================================
 
-    # Client Scopes API methods
-    # =========================================================================
-
     @api_get_list("client scopes")
     async def get_client_scopes(
         self, realm_name: str, namespace: str = "default"
