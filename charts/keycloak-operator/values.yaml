@@ -152,6 +152,17 @@ operator:
       tps: 5.0
       # Maximum burst per namespace
       burst: 10
+  # Circuit Breaker Configuration
+  # Protects the operator and Keycloak from overload during high failure rates
+  circuitBreaker:
+    # Enable circuit breaker for Keycloak API calls
+    enabled: true
+    # Number of consecutive failures before opening the circuit
+    failureThreshold: 5
+    # Time in seconds to wait before attempting recovery (half-open state)
+    recoveryTimeout: 30
+    # Request timeout in seconds for Keycloak API calls
+    apiTimeout: 30
   # Metrics server configuration
   metrics:
     # Port to expose Prometheus metrics on

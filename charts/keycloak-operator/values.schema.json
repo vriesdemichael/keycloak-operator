@@ -323,6 +323,35 @@
             }
           }
         },
+        "circuitBreaker": {
+          "type": "object",
+          "description": "Circuit breaker configuration to protect Keycloak from overload",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable circuit breaker for Keycloak API calls",
+              "default": true
+            },
+            "failureThreshold": {
+              "type": "integer",
+              "description": "Number of consecutive failures before opening the circuit",
+              "default": 5,
+              "minimum": 1
+            },
+            "recoveryTimeout": {
+              "type": "integer",
+              "description": "Time in seconds to wait before attempting recovery (half-open state)",
+              "default": 30,
+              "minimum": 1
+            },
+            "apiTimeout": {
+              "type": "integer",
+              "description": "Request timeout in seconds for Keycloak API calls",
+              "default": 30,
+              "minimum": 1
+            }
+          }
+        },
         "metrics": {
           "type": "object",
           "description": "Metrics server configuration",

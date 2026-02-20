@@ -183,6 +183,28 @@ class Settings(BaseSettings):
         description="Per-namespace burst capacity for Keycloak API rate limiting",
     )
 
+    # Circuit Breaker Configuration
+    api_circuit_breaker_enabled: bool = Field(
+        default=True,
+        validation_alias="KEYCLOAK_API_CIRCUIT_BREAKER_ENABLED",
+        description="Enable circuit breaker for Keycloak API calls",
+    )
+    api_circuit_breaker_failure_threshold: int = Field(
+        default=5,
+        validation_alias="KEYCLOAK_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD",
+        description="Number of consecutive failures before opening the circuit",
+    )
+    api_circuit_breaker_recovery_timeout: int = Field(
+        default=30,
+        validation_alias="KEYCLOAK_API_CIRCUIT_BREAKER_RECOVERY_TIMEOUT",
+        description="Time in seconds to wait before attempting recovery (half-open state)",
+    )
+    api_timeout_seconds: int = Field(
+        default=30,
+        validation_alias="KEYCLOAK_API_TIMEOUT_SECONDS",
+        description="Request timeout in seconds for Keycloak API calls",
+    )
+
     # Reconciliation behavior
     reconcile_jitter_max_seconds: float = Field(
         default=5.0,
