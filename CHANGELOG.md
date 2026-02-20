@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.7.22](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.21...operator-image-v0.7.22) (2026-02-20)
+
+
+### Features
+
+* **chart-operator+chart-realm+operator:** add scopeMappings support ([39db2ac](https://github.com/vriesdemichael/keycloak-operator/commit/39db2ac5ae4cdf83505bfbbfddc3c498d2a0aa8b))
+
+
+### Bug Fixes
+
+* **chart-realm+operator:** resolve integration test failures for scope mappings and default roles ([533f44f](https://github.com/vriesdemichael/keycloak-operator/commit/533f44fc3148e0fe638c10feb79ac769fbd63112))
+* **operator:** address review comments for scope mappings and default roles ([9b64914](https://github.com/vriesdemichael/keycloak-operator/commit/9b6491472dbccc13ce664e8f096dbf05cde46381))
+
+
+### Code Refactoring
+
+* **operator:** consolidate scope mapping validation and improve admin client coverage ([aa578a1](https://github.com/vriesdemichael/keycloak-operator/commit/aa578a1c1d071c17751d500036c81182a8874778))
+* **operator:** consolidate scope mapping validation and improve admin client coverage ([2b64ad0](https://github.com/vriesdemichael/keycloak-operator/commit/2b64ad08479280c63b140450e0c57b9ab45fdde7))
+
 ## [0.7.21](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.20...operator-image-v0.7.21) (2026-02-19)
 
 
