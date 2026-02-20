@@ -181,6 +181,17 @@ RATE_LIMIT_BUDGET_AVAILABLE = Gauge(
 )
 
 # ---------------------------------------------------------------------------
+# Circuit Breaker metrics
+# ---------------------------------------------------------------------------
+
+CIRCUIT_BREAKER_STATE = Gauge(
+    "keycloak_operator_circuit_breaker_state",
+    "Circuit breaker state (0=closed/healthy, 1=open/broken, 2=half-open/recovering)",
+    ["keycloak_instance", "keycloak_namespace"],
+    registry=None,
+)
+
+# ---------------------------------------------------------------------------
 # Leader election metrics (namespace label removed – single-namespace deploy)
 # ---------------------------------------------------------------------------
 
@@ -351,6 +362,7 @@ def get_metrics_registry() -> CollectorRegistry:
             RATE_LIMIT_ACQUIRED_TOTAL,
             RATE_LIMIT_TIMEOUTS_TOTAL,
             RATE_LIMIT_BUDGET_AVAILABLE,
+            CIRCUIT_BREAKER_STATE,
             LEADER_ELECTION_STATUS,
             LEADER_ELECTION_CHANGES,
             LEADER_ELECTION_LEASE_RENEWALS,

@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, Any, ParamSpec, TypeVar
 from urllib.parse import urljoin
 
 import httpx
+from aiobreaker import CircuitBreakerError
 from pydantic import BaseModel
 
 from keycloak_operator.compatibility import KeycloakAdapter, get_adapter_for_version
@@ -44,6 +45,8 @@ from keycloak_operator.models.keycloak_api import (
     RoleRepresentation,
     UserRepresentation,
 )
+from keycloak_operator.settings import settings
+from keycloak_operator.utils.circuit_breaker import KeycloakCircuitBreaker
 
 if TYPE_CHECKING:
     from keycloak_operator.utils.rate_limiter import RateLimiter
@@ -323,10 +326,39 @@ class KeycloakAdminClient:
         self.admin_realm = realm
         self.client_id = client_id
         self.verify_ssl = verify_ssl
-        self.timeout = timeout
+        self.timeout = settings.api_timeout_seconds
         self.rate_limiter = rate_limiter
         self.keycloak_name = keycloak_name
         self.keycloak_namespace = keycloak_namespace
+
+        # Initialize Circuit Breaker if enabled and instance details are available
+        self.circuit_breaker: KeycloakCircuitBreaker | None = None
+        if (
+            settings.api_circuit_breaker_enabled
+            and keycloak_name
+            and keycloak_namespace
+        ):
+            self.circuit_breaker = KeycloakCircuitBreaker(
+                name=keycloak_name,
+                namespace=keycloak_namespace,
+                fail_max=settings.api_circuit_breaker_failure_threshold,
+                timeout_duration=settings.api_circuit_breaker_recovery_timeout,
+            )
+        else:
+            if not settings.api_circuit_breaker_enabled:
+                logger.debug(
+                    "Circuit breaker not initialized: feature disabled via settings "
+                    "for KeycloakAdminClient (name=%r, namespace=%r)",
+                    keycloak_name,
+                    keycloak_namespace,
+                )
+            else:
+                logger.debug(
+                    "Circuit breaker not initialized: missing keycloak_name or "
+                    "keycloak_namespace for KeycloakAdminClient (name=%r, namespace=%r)",
+                    keycloak_name,
+                    keycloak_namespace,
+                )
 
         # Initialize adapter based on provided version or default to latest
         # Ideally we auto-detect, but we need auth first.
@@ -638,14 +670,21 @@ class KeycloakAdminClient:
             # Prepare headers with auth token
             headers = {"Authorization": f"Bearer {self.access_token}"}
 
-            # Make the request (httpx buffers response automatically)
-            response = await client.request(
-                method=method,
-                url=url,
-                json=json if json else data if data else None,
-                params=params,
-                headers=headers,
-            )
+            # Define the request execution function
+            async def execute_request() -> httpx.Response:
+                return await client.request(
+                    method=method,
+                    url=url,
+                    json=json if json else data if data else None,
+                    params=params,
+                    headers=headers,
+                )
+
+            # Execute request, optionally wrapped in circuit breaker
+            if self.circuit_breaker:
+                response = await self.circuit_breaker.call(execute_request)
+            else:
+                response = await execute_request()
 
             # Handle 401 - token might be expired
             if response.status_code == 401:
@@ -654,18 +693,41 @@ class KeycloakAdminClient:
 
                 # Retry with new token
                 headers = {"Authorization": f"Bearer {self.access_token}"}
-                response = await client.request(
-                    method=method,
-                    url=url,
-                    json=json if json else data if data else None,
-                    params=params,
-                    headers=headers,
-                )
+
+                # Define the retry request execution function
+                async def execute_retry() -> httpx.Response:
+                    return await client.request(
+                        method=method,
+                        url=url,
+                        json=json if json else data if data else None,
+                        params=params,
+                        headers=headers,
+                    )
+
+                # NOTE: We intentionally do NOT wrap the retry in the circuit breaker.
+                # The initial 401 represents an authentication issue (e.g., expired token),
+                # not a Keycloak overload/availability problem. Executing the retry
+                # outside the breaker avoids double-counting a single logical operation
+                # and prevents a half-open circuit from being pushed back to open solely
+                # due to token refresh behavior.
+                response = await execute_retry()
+
                 response.raise_for_status()
                 return response
 
             response.raise_for_status()
             return response
+
+        except CircuitBreakerError as e:
+            logger.warning(
+                f"Circuit breaker open for {self.keycloak_name}: {e} "
+                f"(namespace={self.keycloak_namespace})"
+            )
+            # 503 Service Unavailable is appropriate for open circuit
+            raise KeycloakAdminError(
+                f"Circuit breaker open: {e}",
+                status_code=503,
+            ) from e
 
         except httpx.HTTPStatusError as e:
             # HTTP error with response

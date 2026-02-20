@@ -102,6 +102,14 @@ spec:
           value: {{ .Values.operator.rateLimiting.namespace.tps | quote }}
         - name: KEYCLOAK_API_NAMESPACE_BURST
           value: {{ .Values.operator.rateLimiting.namespace.burst | quote }}
+        - name: KEYCLOAK_API_CIRCUIT_BREAKER_ENABLED
+          value: {{ .Values.operator.circuitBreaker.enabled | quote }}
+        - name: KEYCLOAK_API_CIRCUIT_BREAKER_FAILURE_THRESHOLD
+          value: {{ .Values.operator.circuitBreaker.failureThreshold | quote }}
+        - name: KEYCLOAK_API_CIRCUIT_BREAKER_RECOVERY_TIMEOUT
+          value: {{ .Values.operator.circuitBreaker.recoveryTimeout | quote }}
+        - name: KEYCLOAK_API_TIMEOUT_SECONDS
+          value: {{ .Values.operator.circuitBreaker.apiTimeout | quote }}
         - name: RECONCILE_JITTER_MAX_SECONDS
           value: {{ .Values.operator.reconciliation.jitterMaxSeconds | quote }}
         - name: DRIFT_DETECTION_ENABLED
