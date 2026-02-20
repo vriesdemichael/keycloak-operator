@@ -176,6 +176,16 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.defaultRoles }}
+  defaultRoles:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- with .Values.defaultRole }}
+  defaultRole:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- with .Values.userFederation }}
   userFederation:
     {{- toYaml . | nindent 4 }}
