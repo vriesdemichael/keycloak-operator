@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.1...migration-toolkit-v0.1.2) (2026-02-20)
+
+
+### Features
+
+* **migration-toolkit:** transform previously-unsupported realm features into Helm values ([4d20aae](https://github.com/vriesdemichael/keycloak-operator/commit/4d20aaebb335b6413f839a4fdfde65c669be541b)), closes [#539](https://github.com/vriesdemichael/keycloak-operator/issues/539)
+
 ## [0.1.1](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.0...migration-toolkit-v0.1.1) (2026-02-16)
 
 
