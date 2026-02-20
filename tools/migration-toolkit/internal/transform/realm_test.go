@@ -68,8 +68,8 @@ func TestTransformRealm_Minimal(t *testing.T) {
 
 	// Should not have unsupported warnings (no complex features)
 	for _, w := range warnings {
-		if w.Category == "unsupported" && w.Field != "users" {
-			t.Logf("unexpected unsupported warning: %s - %s", w.Field, w.Message)
+		if w.Category == "unsupported" {
+			t.Errorf("unexpected unsupported warning: %s - %s", w.Field, w.Message)
 		}
 	}
 }
@@ -247,16 +247,9 @@ func TestTransformRealm_Medium(t *testing.T) {
 		t.Errorf("description = %v, want <h1>Medium Test</h1>", values["description"])
 	}
 
-	// User warning
-	userWarningFound := false
-	for _, w := range warnings {
-		if w.Field == "users" && w.Category == "info" {
-			userWarningFound = true
-		}
-	}
-	if !userWarningFound {
-		t.Error("expected info warning about users")
-	}
+	// Users are extracted separately (via ExtractUsers in cmd/transform.go),
+	// not warned about at the TransformRealm level.
+	_ = warnings
 }
 
 func TestTransformRealm_Maximal(t *testing.T) {
@@ -342,24 +335,118 @@ func TestTransformRealm_Maximal(t *testing.T) {
 		t.Errorf("expected 1 client policy, got %d", len(cpol))
 	}
 
-	// Unsupported feature warnings — maximal has auth flows, OTP, webauthn, headers, scope mappings, default role
-	unsupportedFields := map[string]bool{
-		"authenticationFlows":    false,
-		"requiredActions":        false,
-		"otpPolicy*":             false,
-		"webAuthnPolicy*":        false,
-		"browserSecurityHeaders": false,
-		"scopeMappings":          false,
-		"defaultRole":            false,
+	// Authentication flows (previously unsupported, now transformed)
+	flows, ok := values["authenticationFlows"].([]any)
+	if !ok {
+		t.Fatal("authenticationFlows missing")
 	}
-	for _, w := range warnings {
-		if w.Category == "unsupported" {
-			unsupportedFields[w.Field] = true
+	if len(flows) != 1 {
+		t.Errorf("expected 1 authentication flow, got %d", len(flows))
+	}
+
+	// Required actions
+	actions, ok := values["requiredActions"].([]any)
+	if !ok {
+		t.Fatal("requiredActions missing")
+	}
+	if len(actions) != 1 {
+		t.Errorf("expected 1 required action, got %d", len(actions))
+	}
+
+	// Flow bindings — only browserFlow is non-default ("custom-browser-flow")
+	if values["browserFlow"] != "custom-browser-flow" {
+		t.Errorf("browserFlow = %v, want custom-browser-flow", values["browserFlow"])
+	}
+	// Default-valued flow bindings should NOT be present
+	for _, defaultField := range []string{"registrationFlow", "directGrantFlow", "resetCredentialsFlow",
+		"clientAuthenticationFlow", "dockerAuthenticationFlow", "firstBrokerLoginFlow"} {
+		if _, ok := values[defaultField]; ok {
+			t.Errorf("default flow binding %q should not be in values", defaultField)
 		}
 	}
-	for field, found := range unsupportedFields {
-		if !found {
-			t.Errorf("expected unsupported warning for %q", field)
+
+	// OTP policy
+	otp, ok := values["otpPolicy"].(map[string]any)
+	if !ok {
+		t.Fatal("otpPolicy missing")
+	}
+	if otp["type"] != "hotp" {
+		t.Errorf("otpPolicy.type = %v, want hotp", otp["type"])
+	}
+	if otp["algorithm"] != "HmacSHA256" {
+		t.Errorf("otpPolicy.algorithm = %v, want HmacSHA256", otp["algorithm"])
+	}
+	if otp["digits"] != 8 {
+		t.Errorf("otpPolicy.digits = %v, want 8", otp["digits"])
+	}
+	if otp["period"] != 60 {
+		t.Errorf("otpPolicy.period = %v, want 60", otp["period"])
+	}
+	if otp["codeReusable"] != true {
+		t.Errorf("otpPolicy.codeReusable = %v, want true", otp["codeReusable"])
+	}
+
+	// WebAuthn policy
+	webauthn, ok := values["webAuthnPolicy"].(map[string]any)
+	if !ok {
+		t.Fatal("webAuthnPolicy missing")
+	}
+	if webauthn["rpEntityName"] != "maximal-app" {
+		t.Errorf("webAuthnPolicy.rpEntityName = %v, want maximal-app", webauthn["rpEntityName"])
+	}
+	if webauthn["rpId"] != "example.com" {
+		t.Errorf("webAuthnPolicy.rpId = %v, want example.com", webauthn["rpId"])
+	}
+
+	// WebAuthn passwordless policy
+	webauthnPwdless, ok := values["webAuthnPasswordlessPolicy"].(map[string]any)
+	if !ok {
+		t.Fatal("webAuthnPasswordlessPolicy missing")
+	}
+	if webauthnPwdless["rpEntityName"] != "maximal-app-passwordless" {
+		t.Errorf("webAuthnPasswordlessPolicy.rpEntityName = %v, want maximal-app-passwordless", webauthnPwdless["rpEntityName"])
+	}
+
+	// Browser security headers
+	headers, ok := values["browserSecurityHeaders"].(map[string]any)
+	if !ok {
+		t.Fatal("browserSecurityHeaders missing")
+	}
+	if headers["xContentTypeOptions"] != "nosniff" {
+		t.Errorf("browserSecurityHeaders.xContentTypeOptions = %v, want nosniff", headers["xContentTypeOptions"])
+	}
+
+	// Scope mappings
+	sm, ok := values["scopeMappings"].([]any)
+	if !ok {
+		t.Fatal("scopeMappings missing")
+	}
+	if len(sm) != 1 {
+		t.Errorf("expected 1 scope mapping, got %d", len(sm))
+	}
+
+	// Client scope mappings
+	csm, ok := values["clientScopeMappings"].(map[string]any)
+	if !ok {
+		t.Fatal("clientScopeMappings missing")
+	}
+	if _, ok := csm["api-service"]; !ok {
+		t.Error("clientScopeMappings missing api-service entry")
+	}
+
+	// Default roles
+	dr, ok := values["defaultRoles"].([]string)
+	if !ok {
+		t.Fatal("defaultRoles missing")
+	}
+	if len(dr) != 1 || dr[0] != "viewer" {
+		t.Errorf("defaultRoles = %v, want [viewer]", dr)
+	}
+
+	// No unsupported warnings for these features anymore
+	for _, w := range warnings {
+		if w.Category == "unsupported" {
+			t.Errorf("unexpected unsupported warning: field=%s message=%s", w.Field, w.Message)
 		}
 	}
 }
@@ -866,5 +953,546 @@ func TestHelperGetArray(t *testing.T) {
 	}
 	if getArray(m, "missing") != nil {
 		t.Error("getArray(missing) should return nil")
+	}
+}
+
+func TestTransformAuthenticationFlows(t *testing.T) {
+	t.Run("with flows", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm": "test",
+			"authenticationFlows": []any{
+				map[string]any{
+					"alias":       "custom-flow",
+					"description": "A custom flow",
+					"providerId":  "basic-flow",
+					"topLevel":    true,
+					"builtIn":     false,
+					"authenticationExecutions": []any{
+						map[string]any{
+							"authenticator": "auth-cookie",
+							"requirement":   "ALTERNATIVE",
+							"priority":      float64(10),
+						},
+					},
+				},
+				map[string]any{
+					"alias":    "another-flow",
+					"topLevel": false,
+					"builtIn":  true,
+				},
+			},
+		}}
+
+		result := transformAuthenticationFlows(exp)
+		if result == nil {
+			t.Fatal("expected non-nil result")
+		}
+		if len(result) != 2 {
+			t.Errorf("expected 2 flows, got %d", len(result))
+		}
+		flow := result[0].(map[string]any)
+		if flow["alias"] != "custom-flow" {
+			t.Errorf("alias = %v, want custom-flow", flow["alias"])
+		}
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{"realm": "test"}}
+		result := transformAuthenticationFlows(exp)
+		if result != nil {
+			t.Errorf("expected nil for empty, got %v", result)
+		}
+	})
+
+	t.Run("empty array", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm":               "test",
+			"authenticationFlows": []any{},
+		}}
+		result := transformAuthenticationFlows(exp)
+		if result != nil {
+			t.Errorf("expected nil for empty array, got %v", result)
+		}
+	})
+}
+
+func TestTransformRequiredActions(t *testing.T) {
+	t.Run("with actions", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm": "test",
+			"requiredActions": []any{
+				map[string]any{
+					"alias":         "CONFIGURE_TOTP",
+					"name":          "Configure OTP",
+					"providerId":    "CONFIGURE_TOTP",
+					"enabled":       true,
+					"defaultAction": false,
+					"priority":      float64(10),
+					"config":        map[string]any{},
+				},
+				map[string]any{
+					"alias":         "VERIFY_EMAIL",
+					"name":          "Verify Email",
+					"providerId":    "VERIFY_EMAIL",
+					"enabled":       true,
+					"defaultAction": true,
+					"priority":      float64(20),
+				},
+			},
+		}}
+
+		result := transformRequiredActions(exp)
+		if result == nil {
+			t.Fatal("expected non-nil result")
+		}
+		if len(result) != 2 {
+			t.Errorf("expected 2 actions, got %d", len(result))
+		}
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{"realm": "test"}}
+		result := transformRequiredActions(exp)
+		if result != nil {
+			t.Errorf("expected nil for empty, got %v", result)
+		}
+	})
+}
+
+func TestTransformFlowBindings(t *testing.T) {
+	t.Run("all defaults", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm":                    "test",
+			"browserFlow":              "browser",
+			"registrationFlow":         "registration",
+			"directGrantFlow":          "direct grant",
+			"resetCredentialsFlow":     "reset credentials",
+			"clientAuthenticationFlow": "clients",
+			"dockerAuthenticationFlow": "docker auth",
+			"firstBrokerLoginFlow":     "first broker login",
+		}}
+
+		values := make(map[string]any)
+		transformFlowBindings(exp, values)
+
+		// No values should be set for defaults
+		for _, field := range []string{"browserFlow", "registrationFlow", "directGrantFlow",
+			"resetCredentialsFlow", "clientAuthenticationFlow", "dockerAuthenticationFlow",
+			"firstBrokerLoginFlow"} {
+			if _, ok := values[field]; ok {
+				t.Errorf("default flow binding %q should not be in values", field)
+			}
+		}
+	})
+
+	t.Run("non-default values", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm":                    "test",
+			"browserFlow":              "custom-browser",
+			"registrationFlow":         "custom-registration",
+			"directGrantFlow":          "direct grant", // default
+			"resetCredentialsFlow":     "custom-reset",
+			"clientAuthenticationFlow": "clients",     // default
+			"dockerAuthenticationFlow": "docker auth", // default
+			"firstBrokerLoginFlow":     "custom-broker-login",
+		}}
+
+		values := make(map[string]any)
+		transformFlowBindings(exp, values)
+
+		if values["browserFlow"] != "custom-browser" {
+			t.Errorf("browserFlow = %v, want custom-browser", values["browserFlow"])
+		}
+		if values["registrationFlow"] != "custom-registration" {
+			t.Errorf("registrationFlow = %v, want custom-registration", values["registrationFlow"])
+		}
+		if _, ok := values["directGrantFlow"]; ok {
+			t.Error("directGrantFlow should not be set (default value)")
+		}
+		if values["resetCredentialsFlow"] != "custom-reset" {
+			t.Errorf("resetCredentialsFlow = %v, want custom-reset", values["resetCredentialsFlow"])
+		}
+		if _, ok := values["clientAuthenticationFlow"]; ok {
+			t.Error("clientAuthenticationFlow should not be set (default value)")
+		}
+		if values["firstBrokerLoginFlow"] != "custom-broker-login" {
+			t.Errorf("firstBrokerLoginFlow = %v, want custom-broker-login", values["firstBrokerLoginFlow"])
+		}
+	})
+
+	t.Run("missing fields", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{"realm": "test"}}
+		values := make(map[string]any)
+		transformFlowBindings(exp, values)
+
+		if len(values) != 0 {
+			t.Errorf("expected no flow bindings for empty export, got %v", values)
+		}
+	})
+}
+
+func TestTransformOTPPolicy(t *testing.T) {
+	t.Run("full OTP policy", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm":                    "test",
+			"otpPolicyType":            "hotp",
+			"otpPolicyAlgorithm":       "HmacSHA256",
+			"otpPolicyDigits":          float64(8),
+			"otpPolicyPeriod":          float64(60),
+			"otpPolicyInitialCounter":  float64(5),
+			"otpPolicyLookAheadWindow": float64(3),
+			"otpPolicyCodeReusable":    true,
+			"otpSupportedApplications": []any{"FreeOTP", "Google Authenticator"},
+		}}
+
+		result := transformOTPPolicy(exp)
+		if result["type"] != "hotp" {
+			t.Errorf("type = %v, want hotp", result["type"])
+		}
+		if result["algorithm"] != "HmacSHA256" {
+			t.Errorf("algorithm = %v, want HmacSHA256", result["algorithm"])
+		}
+		if result["digits"] != 8 {
+			t.Errorf("digits = %v, want 8", result["digits"])
+		}
+		if result["period"] != 60 {
+			t.Errorf("period = %v, want 60", result["period"])
+		}
+		if result["initialCounter"] != 5 {
+			t.Errorf("initialCounter = %v, want 5", result["initialCounter"])
+		}
+		if result["lookAheadWindow"] != 3 {
+			t.Errorf("lookAheadWindow = %v, want 3", result["lookAheadWindow"])
+		}
+		if result["codeReusable"] != true {
+			t.Errorf("codeReusable = %v, want true", result["codeReusable"])
+		}
+		apps := result["supportedApplications"].([]string)
+		if len(apps) != 2 {
+			t.Errorf("supportedApplications len = %d, want 2", len(apps))
+		}
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{"realm": "test"}}
+		result := transformOTPPolicy(exp)
+		if len(result) != 0 {
+			t.Errorf("expected empty map for empty export, got %v", result)
+		}
+	})
+
+	t.Run("partial fields", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm":              "test",
+			"otpPolicyType":      "totp",
+			"otpPolicyAlgorithm": "HmacSHA1",
+		}}
+
+		result := transformOTPPolicy(exp)
+		if len(result) != 2 {
+			t.Errorf("expected 2 fields, got %d", len(result))
+		}
+		if result["type"] != "totp" {
+			t.Errorf("type = %v, want totp", result["type"])
+		}
+		if result["algorithm"] != "HmacSHA1" {
+			t.Errorf("algorithm = %v, want HmacSHA1", result["algorithm"])
+		}
+	})
+}
+
+func TestTransformWebAuthnPolicy(t *testing.T) {
+	t.Run("regular policy", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm":                                         "test",
+			"webAuthnPolicyRpEntityName":                    "my-app",
+			"webAuthnPolicySignatureAlgorithms":             []any{"ES256", "RS256"},
+			"webAuthnPolicyRpId":                            "example.com",
+			"webAuthnPolicyAttestationConveyancePreference": "direct",
+			"webAuthnPolicyAuthenticatorAttachment":         "cross-platform",
+			"webAuthnPolicyRequireResidentKey":              "Yes",
+			"webAuthnPolicyUserVerificationRequirement":     "required",
+			"webAuthnPolicyCreateTimeout":                   float64(60),
+			"webAuthnPolicyAvoidSameAuthenticatorRegister":  true,
+			"webAuthnPolicyAcceptableAaguids":               []any{"aaguid-1"},
+			"webAuthnPolicyExtraOrigins":                    []any{"https://extra.example.com"},
+		}}
+
+		result := transformWebAuthnPolicy(exp, false)
+		if result["rpEntityName"] != "my-app" {
+			t.Errorf("rpEntityName = %v, want my-app", result["rpEntityName"])
+		}
+		if result["rpId"] != "example.com" {
+			t.Errorf("rpId = %v, want example.com", result["rpId"])
+		}
+		if result["attestationConveyancePreference"] != "direct" {
+			t.Errorf("attestationConveyancePreference = %v, want direct", result["attestationConveyancePreference"])
+		}
+		if result["authenticatorAttachment"] != "cross-platform" {
+			t.Errorf("authenticatorAttachment = %v, want cross-platform", result["authenticatorAttachment"])
+		}
+		if result["requireResidentKey"] != "Yes" {
+			t.Errorf("requireResidentKey = %v, want Yes", result["requireResidentKey"])
+		}
+		if result["userVerificationRequirement"] != "required" {
+			t.Errorf("userVerificationRequirement = %v, want required", result["userVerificationRequirement"])
+		}
+		if result["createTimeout"] != 60 {
+			t.Errorf("createTimeout = %v, want 60", result["createTimeout"])
+		}
+		if result["avoidSameAuthenticatorRegister"] != true {
+			t.Errorf("avoidSameAuthenticatorRegister = %v, want true", result["avoidSameAuthenticatorRegister"])
+		}
+		sigAlgs := result["signatureAlgorithms"].([]string)
+		if len(sigAlgs) != 2 {
+			t.Errorf("signatureAlgorithms len = %d, want 2", len(sigAlgs))
+		}
+		aaguids := result["acceptableAaguids"].([]string)
+		if len(aaguids) != 1 {
+			t.Errorf("acceptableAaguids len = %d, want 1", len(aaguids))
+		}
+		origins := result["extraOrigins"].([]string)
+		if len(origins) != 1 {
+			t.Errorf("extraOrigins len = %d, want 1", len(origins))
+		}
+	})
+
+	t.Run("passwordless policy", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm":                                  "test",
+			"webAuthnPolicyPasswordlessRpEntityName": "my-app-pwdless",
+			"webAuthnPolicyPasswordlessRpId":         "example.com",
+			"webAuthnPolicyPasswordlessAttestationConveyancePreference": "none",
+			"webAuthnPolicyPasswordlessAuthenticatorAttachment":         "platform",
+			"webAuthnPolicyPasswordlessRequireResidentKey":              "Yes",
+			"webAuthnPolicyPasswordlessUserVerificationRequirement":     "required",
+			"webAuthnPolicyPasswordlessCreateTimeout":                   float64(120),
+			"webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister":  false,
+			"webAuthnPolicyPasswordlessSignatureAlgorithms":             []any{"ES256"},
+		}}
+
+		result := transformWebAuthnPolicy(exp, true)
+		if result["rpEntityName"] != "my-app-pwdless" {
+			t.Errorf("rpEntityName = %v, want my-app-pwdless", result["rpEntityName"])
+		}
+		if result["authenticatorAttachment"] != "platform" {
+			t.Errorf("authenticatorAttachment = %v, want platform", result["authenticatorAttachment"])
+		}
+		if result["createTimeout"] != 120 {
+			t.Errorf("createTimeout = %v, want 120", result["createTimeout"])
+		}
+		if result["avoidSameAuthenticatorRegister"] != false {
+			t.Errorf("avoidSameAuthenticatorRegister = %v, want false", result["avoidSameAuthenticatorRegister"])
+		}
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{"realm": "test"}}
+		result := transformWebAuthnPolicy(exp, false)
+		if len(result) != 0 {
+			t.Errorf("expected empty map for empty export, got %v", result)
+		}
+		result = transformWebAuthnPolicy(exp, true)
+		if len(result) != 0 {
+			t.Errorf("expected empty map for empty export (passwordless), got %v", result)
+		}
+	})
+}
+
+func TestTransformBrowserSecurityHeaders(t *testing.T) {
+	t.Run("with headers", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm": "test",
+			"browserSecurityHeaders": map[string]any{
+				"contentSecurityPolicy": "frame-src 'self';",
+				"xContentTypeOptions":   "nosniff",
+				"xFrameOptions":         "SAMEORIGIN",
+				"xRobotsTag":            "none",
+			},
+		}}
+
+		result := transformBrowserSecurityHeaders(exp)
+		if result == nil {
+			t.Fatal("expected non-nil result")
+		}
+		if result["contentSecurityPolicy"] != "frame-src 'self';" {
+			t.Errorf("contentSecurityPolicy = %v", result["contentSecurityPolicy"])
+		}
+		if result["xContentTypeOptions"] != "nosniff" {
+			t.Errorf("xContentTypeOptions = %v", result["xContentTypeOptions"])
+		}
+		if result["xFrameOptions"] != "SAMEORIGIN" {
+			t.Errorf("xFrameOptions = %v", result["xFrameOptions"])
+		}
+		if result["xRobotsTag"] != "none" {
+			t.Errorf("xRobotsTag = %v", result["xRobotsTag"])
+		}
+	})
+
+	t.Run("empty", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{"realm": "test"}}
+		result := transformBrowserSecurityHeaders(exp)
+		if result != nil {
+			t.Errorf("expected nil for empty, got %v", result)
+		}
+	})
+
+	t.Run("empty map", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm":                  "test",
+			"browserSecurityHeaders": map[string]any{},
+		}}
+		result := transformBrowserSecurityHeaders(exp)
+		if result != nil {
+			t.Errorf("expected nil for empty map, got %v", result)
+		}
+	})
+}
+
+func TestTransformDefaultRoles(t *testing.T) {
+	t.Run("with composites", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm": "test",
+			"defaultRole": map[string]any{
+				"name": "default-roles-test",
+				"composites": map[string]any{
+					"realm": []any{"viewer", "basic-user"},
+				},
+			},
+		}}
+
+		result := transformDefaultRoles(exp)
+		if result == nil {
+			t.Fatal("expected non-nil result")
+		}
+		if len(result) != 2 {
+			t.Errorf("expected 2 default roles, got %d", len(result))
+		}
+		if result[0] != "viewer" {
+			t.Errorf("result[0] = %v, want viewer", result[0])
+		}
+		if result[1] != "basic-user" {
+			t.Errorf("result[1] = %v, want basic-user", result[1])
+		}
+	})
+
+	t.Run("no defaultRole", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{"realm": "test"}}
+		result := transformDefaultRoles(exp)
+		if result != nil {
+			t.Errorf("expected nil for missing defaultRole, got %v", result)
+		}
+	})
+
+	t.Run("no composites", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm": "test",
+			"defaultRole": map[string]any{
+				"name": "default-roles-test",
+			},
+		}}
+		result := transformDefaultRoles(exp)
+		if result != nil {
+			t.Errorf("expected nil for defaultRole without composites, got %v", result)
+		}
+	})
+
+	t.Run("empty realm composites", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm": "test",
+			"defaultRole": map[string]any{
+				"name": "default-roles-test",
+				"composites": map[string]any{
+					"realm": []any{},
+				},
+			},
+		}}
+		result := transformDefaultRoles(exp)
+		if result != nil {
+			t.Errorf("expected nil for empty realm composites, got %v", result)
+		}
+	})
+}
+
+func TestTransformScopeMappings(t *testing.T) {
+	t.Run("scope mappings passthrough", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm": "test",
+			"scopeMappings": []any{
+				map[string]any{
+					"clientScope": "api-read",
+					"roles":       []any{"viewer"},
+				},
+				map[string]any{
+					"clientScope": "api-write",
+					"roles":       []any{"editor", "admin"},
+				},
+			},
+		}}
+
+		// Scope mappings are handled inline in TransformRealm, test via TransformRealm
+		values, _, _ := TransformRealm(exp, defaultOpts())
+		sm, ok := values["scopeMappings"].([]any)
+		if !ok {
+			t.Fatal("scopeMappings missing")
+		}
+		if len(sm) != 2 {
+			t.Errorf("expected 2 scope mappings, got %d", len(sm))
+		}
+	})
+
+	t.Run("client scope mappings passthrough", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{
+			"realm": "test",
+			"clientScopeMappings": map[string]any{
+				"my-client": []any{
+					map[string]any{
+						"client": "my-client",
+						"roles":  []any{"manage-users"},
+					},
+				},
+			},
+		}}
+
+		values, _, _ := TransformRealm(exp, defaultOpts())
+		csm, ok := values["clientScopeMappings"].(map[string]any)
+		if !ok {
+			t.Fatal("clientScopeMappings missing")
+		}
+		if _, ok := csm["my-client"]; !ok {
+			t.Error("clientScopeMappings missing my-client entry")
+		}
+	})
+
+	t.Run("no scope mappings", func(t *testing.T) {
+		exp := &export.RealmExport{Raw: map[string]any{"realm": "test"}}
+		values, _, _ := TransformRealm(exp, defaultOpts())
+		if _, ok := values["scopeMappings"]; ok {
+			t.Error("scopeMappings should not be present when not in export")
+		}
+		if _, ok := values["clientScopeMappings"]; ok {
+			t.Error("clientScopeMappings should not be present when not in export")
+		}
+	})
+}
+
+func TestLowercaseFirst(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"RpEntityName", "rpEntityName"},
+		{"AttestationConveyancePreference", "attestationConveyancePreference"},
+		{"A", "a"},
+		{"", ""},
+		{"already", "already"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := lowercaseFirst(tt.input)
+			if got != tt.want {
+				t.Errorf("lowercaseFirst(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
 	}
 }

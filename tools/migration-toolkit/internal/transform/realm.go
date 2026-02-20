@@ -147,8 +147,49 @@ func TransformRealm(exp *export.RealmExport, opts TransformOptions) (map[string]
 		}
 	}
 
-	// Unsupported features with issue references
-	warnings = append(warnings, checkUnsupportedRealmFeatures(exp)...)
+	// Authentication flows
+	if flows := transformAuthenticationFlows(exp); flows != nil {
+		values["authenticationFlows"] = flows
+	}
+
+	// Required actions
+	if actions := transformRequiredActions(exp); actions != nil {
+		values["requiredActions"] = actions
+	}
+
+	// Flow bindings (only emit non-default bindings)
+	transformFlowBindings(exp, values)
+
+	// OTP policy
+	if otp := transformOTPPolicy(exp); len(otp) > 0 {
+		values["otpPolicy"] = otp
+	}
+
+	// WebAuthn policies
+	if webauthn := transformWebAuthnPolicy(exp, false); len(webauthn) > 0 {
+		values["webAuthnPolicy"] = webauthn
+	}
+	if webauthnPwdless := transformWebAuthnPolicy(exp, true); len(webauthnPwdless) > 0 {
+		values["webAuthnPasswordlessPolicy"] = webauthnPwdless
+	}
+
+	// Browser security headers
+	if headers := transformBrowserSecurityHeaders(exp); len(headers) > 0 {
+		values["browserSecurityHeaders"] = headers
+	}
+
+	// Scope mappings
+	if sm := exp.GetArray("scopeMappings"); sm != nil && len(sm) > 0 {
+		values["scopeMappings"] = sm
+	}
+	if csm := exp.GetMap("clientScopeMappings"); csm != nil && len(csm) > 0 {
+		values["clientScopeMappings"] = csm
+	}
+
+	// Default roles (extract from composite defaultRole)
+	if dr := transformDefaultRoles(exp); dr != nil {
+		values["defaultRoles"] = dr
+	}
 
 	return values, secrets, warnings
 }
@@ -663,4 +704,179 @@ func transformStringArray(arr []any) []string {
 		return nil
 	}
 	return result
+}
+
+// transformAuthenticationFlows passes through the authentication flows array.
+func transformAuthenticationFlows(exp *export.RealmExport) []any {
+	flows := exp.GetArray("authenticationFlows")
+	if flows == nil || len(flows) == 0 {
+		return nil
+	}
+	return flows
+}
+
+// transformRequiredActions passes through the required actions array.
+func transformRequiredActions(exp *export.RealmExport) []any {
+	actions := exp.GetArray("requiredActions")
+	if actions == nil || len(actions) == 0 {
+		return nil
+	}
+	return actions
+}
+
+// transformFlowBindings extracts non-default flow bindings into values.
+func transformFlowBindings(exp *export.RealmExport, values map[string]any) {
+	defaults := map[string]string{
+		"browserFlow":              "browser",
+		"registrationFlow":         "registration",
+		"directGrantFlow":          "direct grant",
+		"resetCredentialsFlow":     "reset credentials",
+		"clientAuthenticationFlow": "clients",
+		"dockerAuthenticationFlow": "docker auth",
+		"firstBrokerLoginFlow":     "first broker login",
+	}
+	for field, defaultVal := range defaults {
+		if v := exp.GetString(field); v != "" && v != defaultVal {
+			values[field] = v
+		}
+	}
+}
+
+// transformOTPPolicy converts flat otpPolicy* fields into a nested otpPolicy object.
+func transformOTPPolicy(exp *export.RealmExport) map[string]any {
+	result := make(map[string]any)
+
+	// String fields
+	if exp.HasKey("otpPolicyType") {
+		result["type"] = exp.GetString("otpPolicyType")
+	}
+	if exp.HasKey("otpPolicyAlgorithm") {
+		result["algorithm"] = exp.GetString("otpPolicyAlgorithm")
+	}
+
+	// Int fields
+	if exp.HasKey("otpPolicyDigits") {
+		result["digits"] = exp.GetInt("otpPolicyDigits", 6)
+	}
+	if exp.HasKey("otpPolicyPeriod") {
+		result["period"] = exp.GetInt("otpPolicyPeriod", 30)
+	}
+	if exp.HasKey("otpPolicyInitialCounter") {
+		result["initialCounter"] = exp.GetInt("otpPolicyInitialCounter", 0)
+	}
+	if exp.HasKey("otpPolicyLookAheadWindow") {
+		result["lookAheadWindow"] = exp.GetInt("otpPolicyLookAheadWindow", 1)
+	}
+
+	// Bool field
+	if exp.HasKey("otpPolicyCodeReusable") {
+		result["codeReusable"] = exp.GetBool("otpPolicyCodeReusable", false)
+	}
+
+	// Array field
+	if apps := exp.GetArray("otpSupportedApplications"); apps != nil && len(apps) > 0 {
+		if sa := transformStringArray(apps); sa != nil {
+			result["supportedApplications"] = sa
+		}
+	}
+
+	return result
+}
+
+// transformWebAuthnPolicy converts flat webAuthnPolicy* fields into a nested object.
+// When passwordless is true, it processes the webAuthnPolicyPasswordless* variant.
+func transformWebAuthnPolicy(exp *export.RealmExport, passwordless bool) map[string]any {
+	prefix := "webAuthnPolicy"
+	if passwordless {
+		prefix = "webAuthnPolicyPasswordless"
+	}
+
+	result := make(map[string]any)
+
+	// String fields
+	stringFields := []string{
+		"RpEntityName",
+		"RpId",
+		"AttestationConveyancePreference",
+		"AuthenticatorAttachment",
+		"RequireResidentKey",
+		"UserVerificationRequirement",
+	}
+	for _, f := range stringFields {
+		key := prefix + f
+		if exp.HasKey(key) {
+			// Convert Go field name to camelCase helm key
+			helmKey := lowercaseFirst(f)
+			result[helmKey] = exp.GetString(key)
+		}
+	}
+
+	// Int field
+	if exp.HasKey(prefix + "CreateTimeout") {
+		result["createTimeout"] = exp.GetInt(prefix+"CreateTimeout", 0)
+	}
+
+	// Bool field
+	if exp.HasKey(prefix + "AvoidSameAuthenticatorRegister") {
+		result["avoidSameAuthenticatorRegister"] = exp.GetBool(prefix+"AvoidSameAuthenticatorRegister", false)
+	}
+
+	// Array fields
+	arrayFields := map[string]string{
+		"SignatureAlgorithms": "signatureAlgorithms",
+		"AcceptableAaguids":   "acceptableAaguids",
+		"ExtraOrigins":        "extraOrigins",
+	}
+	for suffix, helmKey := range arrayFields {
+		if arr := exp.GetArray(prefix + suffix); arr != nil && len(arr) > 0 {
+			if sa := transformStringArray(arr); sa != nil {
+				result[helmKey] = sa
+			}
+		}
+	}
+
+	return result
+}
+
+// lowercaseFirst returns the string with its first character lowercased.
+func lowercaseFirst(s string) string {
+	if s == "" {
+		return s
+	}
+	c := s[0]
+	if c >= 'A' && c <= 'Z' {
+		return string(c+32) + s[1:]
+	}
+	return s
+}
+
+// transformBrowserSecurityHeaders passes through the browser security headers map.
+func transformBrowserSecurityHeaders(exp *export.RealmExport) map[string]any {
+	headers := exp.GetMap("browserSecurityHeaders")
+	if headers == nil || len(headers) == 0 {
+		return nil
+	}
+	return headers
+}
+
+// transformDefaultRoles extracts default role names from the composite defaultRole object.
+// Keycloak exports defaultRole as: {"name": "...", "composites": {"realm": ["role1", "role2"]}}
+// The Helm chart expects defaultRoles as: ["role1", "role2"]
+func transformDefaultRoles(exp *export.RealmExport) []string {
+	dr := exp.GetMap("defaultRole")
+	if dr == nil {
+		return nil
+	}
+
+	composites, ok := dr["composites"].(map[string]any)
+	if !ok {
+		return nil
+	}
+
+	realmRoles, ok := composites["realm"].([]any)
+	if !ok || len(realmRoles) == 0 {
+		return nil
+	}
+
+	return transformStringArray(realmRoles)
 }
