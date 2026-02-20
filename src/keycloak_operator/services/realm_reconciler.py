@@ -2906,21 +2906,51 @@ class KeycloakRealmReconciler(BaseReconciler):
                 self.logger.warning(f"Failed to update default role attributes: {e}")
 
         # 2. Configure default roles (composites)
-        # Even if spec.default_roles is empty, we might want to ensure it's empty in Keycloak if we wanted strict sync
-        # But legacy behavior often implies "ensure these exist", not "only these exist".
-        # However, for GitOps, we should aim for strict sync if possible, but default roles might contain
-        # system-assigned roles (like offline_access, uma_authorization).
-        # We will only ADD roles specified in the list, consistent with the decision to support legacy field.
-        # Removing roles not in the list is risky as it might remove system roles.
         if spec.default_roles:
             try:
-                await self._configure_composite_roles(
-                    admin_client,
-                    realm_name,
-                    default_role_name,
-                    spec.default_roles,
-                    namespace,
+                # Merge existing composites with desired ones to avoid removing system roles
+                current_composites = await admin_client.get_realm_role_composites(
+                    realm_name, default_role_name, namespace
                 )
+                current_composite_names = {r.name for r in current_composites if r.name}
+
+                # Combine desired roles with existing roles to ensure we don't remove system roles
+                # like 'offline_access', 'uma_authorization', etc. unless explicitly managed differently.
+                # Since we don't know exactly which roles are "system", we adopt an additive approach:
+                # We ensure all roles in spec.default_roles are present.
+                # BUT, wait - if we just use add_realm_role_composites, it IS additive.
+                # The issue is that _configure_composite_roles (which I used previously)
+                # implements a sync logic (add missing, remove extra).
+
+                # Instead of using _configure_composite_roles (sync), let's just add the missing ones.
+                # This respects the "Legacy" nature of this field - users expect to ADD these to defaults.
+
+                desired_roles = set(spec.default_roles)
+                missing_roles = desired_roles - current_composite_names
+
+                if missing_roles:
+                    roles_to_add = []
+                    for role_name in missing_roles:
+                        role = await admin_client.get_realm_role_by_name(
+                            realm_name, role_name, namespace
+                        )
+                        if role:
+                            roles_to_add.append(role)
+                        else:
+                            self.logger.warning(
+                                f"Default role '{role_name}' not found, skipping"
+                            )
+
+                    if roles_to_add:
+                        await admin_client.add_realm_role_composites(
+                            realm_name, default_role_name, roles_to_add, namespace
+                        )
+                        self.logger.info(
+                            f"Added {len(roles_to_add)} roles to default role composites"
+                        )
+                else:
+                    self.logger.debug("All default roles already assigned")
+
             except Exception as e:
                 self.logger.warning(f"Failed to configure default role composites: {e}")
 
@@ -3609,6 +3639,22 @@ class KeycloakRealmReconciler(BaseReconciler):
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update client scopes: {e}")
+
+            elif field_path[:2] == ("spec", "scopeMappings"):
+                self.logger.info("Updating scope mappings")
+                try:
+                    await self.configure_scope_mappings(new_realm_spec, name, namespace)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update scope mappings: {e}")
+
+            elif field_path[:2] == ("spec", "clientScopeMappings"):
+                self.logger.info("Updating client scope mappings")
+                try:
+                    await self.configure_scope_mappings(new_realm_spec, name, namespace)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update client scope mappings: {e}")
 
             elif field_path[:2] == ("spec", "defaultClientScopes"):
                 self.logger.info("Updating realm default client scopes")

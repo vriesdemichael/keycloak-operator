@@ -399,6 +399,22 @@ defaultGroups: []
   # - /engineering  # Group path
   # - users         # Group name (will be converted to /users)
 
+# Default roles (optional)
+# Roles that are automatically assigned to new users
+# Legacy method (list of role names)
+defaultRoles: []
+  # Example:
+  # - user
+  # - viewer
+
+# Default role configuration (optional)
+# Configuration for the composite default role (default-roles-<realm>)
+defaultRole: {}
+  # Example:
+  # description: "Default role for all users"
+  # attributes:
+  #   type: ["default"]
+
 # User Federation (optional)
 # Configure LDAP, Active Directory, or Kerberos user federation
 # For enterprise integration with existing user directories

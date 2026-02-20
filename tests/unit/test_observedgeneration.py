@@ -305,7 +305,19 @@ class TestRealmReconcilerGenerationTracking:
     @pytest.fixture
     def realm_reconciler(self):
         """Create a Realm reconciler for testing."""
-        return KeycloakRealmReconciler()
+        mock_factory = AsyncMock()
+        mock_client = MagicMock()
+        mock_factory.return_value = mock_client
+
+        # Mock the adapter for version compatibility check
+        mock_validation_result = MagicMock()
+        mock_validation_result.valid = True
+        mock_validation_result.warnings = []
+        mock_validation_result.errors = []
+
+        mock_client.adapter.validate_for_version.return_value = mock_validation_result
+
+        return KeycloakRealmReconciler(keycloak_admin_factory=mock_factory)
 
     @pytest.mark.asyncio
     async def test_realm_reconcile_sets_generation(self, realm_reconciler):
