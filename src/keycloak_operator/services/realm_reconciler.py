@@ -184,11 +184,13 @@ class KeycloakRealmReconciler(BaseReconciler):
             await self.configure_default_groups(realm_spec, name, namespace)
 
         # Configure default roles (Issue #536)
-        # Always call to allow clearing/resetting
+        # Always call for consistency/idempotence; this is additive-only and does not
+        # clear previously configured default-role attributes or composites when the
+        # corresponding fields are removed from the spec.
         await self.configure_default_roles(realm_spec, name, namespace)
 
         # Configure scope mappings (Issue #535)
-        # Always call to allow clearing
+        # Always call to reconcile any configured scope mappings
         await self.configure_scope_mappings(realm_spec, name, namespace)
 
         # Configure client profiles and policies (Issue #306)
@@ -2875,7 +2877,10 @@ class KeycloakRealmReconciler(BaseReconciler):
         )
 
         realm_name = spec.realm_name
-        default_role_name = f"default-roles-{realm_name}"
+        # Keycloak treats the built-in default realm role name as lower-case
+        # ("default-roles-<realm>"); always use a lower-cased realm name here
+        # so lookups/updates remain consistent with built-in behavior.
+        default_role_name = f"default-roles-{realm_name.lower()}"
 
         # 1. Update default role attributes/description
         if spec.default_role:
@@ -3756,6 +3761,22 @@ class KeycloakRealmReconciler(BaseReconciler):
                     configuration_changed = True
                 except Exception as e:
                     self.logger.warning(f"Failed to update default groups: {e}")
+
+            elif field_path[:2] == ("spec", "defaultRoles"):
+                self.logger.info("Updating default roles")
+                try:
+                    await self.configure_default_roles(new_realm_spec, name, namespace)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update default roles: {e}")
+
+            elif field_path[:2] == ("spec", "defaultRole"):
+                self.logger.info("Updating default role")
+                try:
+                    await self.configure_default_roles(new_realm_spec, name, namespace)
+                    configuration_changed = True
+                except Exception as e:
+                    self.logger.warning(f"Failed to update default role: {e}")
 
         if configuration_changed:
             self.logger.info(f"Successfully updated KeycloakRealm {name}")

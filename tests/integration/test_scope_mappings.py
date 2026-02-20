@@ -9,7 +9,6 @@ Tests verify the operator correctly manages scope mappings:
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import uuid
 
@@ -17,6 +16,7 @@ import pytest
 
 from .cleanup_utils import delete_custom_resource_with_retry
 from .wait_helpers import (
+    wait_for_reconciliation_complete,
     wait_for_resource_ready,
 )
 
@@ -168,7 +168,7 @@ class TestScopeMappings:
                 by_alias=True, exclude_unset=True
             )
 
-            await k8s_custom_objects.patch_namespaced_custom_object(
+            updated_cr = await k8s_custom_objects.patch_namespaced_custom_object(
                 group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
@@ -176,19 +176,17 @@ class TestScopeMappings:
                 name=realm_name,
                 body=realm_manifest,
             )
+            new_generation = updated_cr.get("metadata", {}).get("generation")
 
             # Wait for reconciliation
-            # We can't easily wait for a specific condition for this update unless we check generation/status
-            # But wait_for_resource_ready checks generation match.
-            # We need to wait a bit for the update to propagate.
-            await asyncio.sleep(5)  # Give it a moment to start processing
-            await wait_for_resource_ready(
+            await wait_for_reconciliation_complete(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
                 version="v1",
                 namespace=namespace,
                 plural="keycloakrealms",
                 name=realm_name,
+                min_generation=new_generation,
                 timeout=180,
                 operator_namespace=operator_namespace,
             )
