@@ -89,7 +89,11 @@ class TestScopeMappings:
                     # Map client role to client scope
                     KeycloakScopeMapping(
                         clientScope=scope_name, roles=[client_role_name]
-                    )
+                    ),
+                    # Map client role to client (direct)
+                    KeycloakScopeMapping(
+                        client=target_client_id, roles=[client_role_name]
+                    ),
                 ]
             },
         )
@@ -229,7 +233,85 @@ class TestScopeMappings:
             )
             assert any(r.name == client_role_name for r in scope_mappings)
 
-            logger.info("✓ Successfully verified scope mappings")
+            # Verify Client Role -> Client
+            scope_mappings = (
+                await keycloak_admin_client.get_scope_mappings_client_roles(
+                    realm_name,
+                    role_container_id=source_uuid,
+                    client_id=target_uuid,
+                    namespace=namespace,
+                )
+            )
+            assert any(r.name == client_role_name for r in scope_mappings)
+
+            # 5. Test Updating Scope Mappings (Additive)
+            realm_role_2_name = "realm-role-2"
+            realm_role_3_name = "realm-role-3"
+            # Add new realm roles to the realm
+            assert realm_spec.roles is not None
+            assert realm_spec.roles.realm_roles is not None
+            realm_spec.roles.realm_roles.append(
+                KeycloakRealmRole(name=realm_role_2_name)
+            )
+            realm_spec.roles.realm_roles.append(
+                KeycloakRealmRole(name=realm_role_3_name)
+            )
+
+            # Add a mapping with multiple roles
+            realm_spec.scope_mappings.append(
+                KeycloakScopeMapping(
+                    clientScope=scope_name, roles=[realm_role_2_name, realm_role_3_name]
+                )
+            )
+
+            # Add a new mapping for this new role
+
+            realm_spec.scope_mappings.append(
+                KeycloakScopeMapping(clientScope=scope_name, roles=[realm_role_2_name])
+            )
+
+            realm_manifest["spec"] = realm_spec.model_dump(
+                by_alias=True, exclude_unset=True
+            )
+
+            updated_cr = await k8s_custom_objects.patch_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                body=realm_manifest,
+            )
+            new_generation = updated_cr.get("metadata", {}).get("generation")
+
+            await wait_for_reconciliation_complete(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloakrealms",
+                name=realm_name,
+                min_generation=new_generation,
+                timeout=180,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify both roles are now mapped
+            scope_mappings = await keycloak_admin_client.get_scope_mappings_realm_roles(
+                realm_name,
+                client_scope_id=(
+                    await keycloak_admin_client.get_client_scope_by_name(
+                        realm_name, scope_name, namespace
+                    )
+                ).id,
+                namespace=namespace,
+            )
+            mapped_names = {r.name for r in scope_mappings}
+            assert realm_role_name in mapped_names
+            assert realm_role_2_name in mapped_names
+            assert realm_role_3_name in mapped_names
+
+            logger.info("✓ Successfully verified scope mappings updates")
 
         finally:
             await delete_custom_resource_with_retry(
