@@ -163,7 +163,10 @@ class TestScopeMappings:
             from keycloak_operator.models.keycloak_api import RoleRepresentation
 
             await keycloak_admin_client.create_client_role(
-                source_uuid, RoleRepresentation(name=client_role_name), realm_name
+                source_uuid,
+                RoleRepresentation(name=client_role_name),
+                realm_name,
+                namespace,
             )
 
             # 3. Update the Realm CR with scope mappings
@@ -262,12 +265,6 @@ class TestScopeMappings:
                 KeycloakScopeMapping(
                     clientScope=scope_name, roles=[realm_role_2_name, realm_role_3_name]
                 )
-            )
-
-            # Add a new mapping for this new role
-
-            realm_spec.scope_mappings.append(
-                KeycloakScopeMapping(clientScope=scope_name, roles=[realm_role_2_name])
             )
 
             realm_manifest["spec"] = realm_spec.model_dump(

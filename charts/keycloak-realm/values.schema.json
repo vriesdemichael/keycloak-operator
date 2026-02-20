@@ -492,6 +492,33 @@
         "type": "string"
       }
     },
+    "defaultRoles": {
+      "type": "array",
+      "description": "List of role names to automatically assign to new users (Legacy)",
+      "items": {
+        "type": "string"
+      }
+    },
+    "defaultRole": {
+      "type": "object",
+      "description": "Configuration for the composite default role (default-roles-<realm>)",
+      "properties": {
+        "description": {
+          "type": "string",
+          "description": "Role description"
+        },
+        "attributes": {
+          "type": "object",
+          "description": "Role attributes",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
     "eventsConfig": {
       "type": "object",
       "description": "Event logging configuration",

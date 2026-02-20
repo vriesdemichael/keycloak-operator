@@ -285,6 +285,33 @@ async def test_get_realm_role_composites_not_found(mock_admin_client):
 
 
 @pytest.mark.asyncio
+async def test_add_scope_mappings_realm_roles_conflict(mock_admin_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 409
+    mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+
+    # add_scope_mappings_realm_roles uses @api_update(conflict_is_success=True)
+    result = await mock_admin_client.add_scope_mappings_realm_roles(
+        "test-realm", [{"id": "1"}], client_id="client-uuid"
+    )
+    assert result is True
+
+
+@pytest.mark.asyncio
+async def test_remove_realm_role_composites_not_found_idempotent(mock_admin_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+    mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+    mock_admin_client.adapter.get_realm_role_composites_path.return_value = "path"
+
+    # remove_realm_role_composites uses @api_delete(not_found_is_success=True)
+    result = await mock_admin_client.remove_realm_role_composites(
+        "r", "p", [{"id": "1"}]
+    )
+    assert result is True
+
+
+@pytest.mark.asyncio
 async def test_admin_error_handling(mock_admin_client):
     mock_response = MagicMock()
     mock_response.status_code = 500
