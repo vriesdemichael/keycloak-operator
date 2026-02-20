@@ -351,7 +351,12 @@
               "type": "string"
             }
           }
-        }
+        },
+        "required": ["roles"],
+        "oneOf": [
+          {"required": ["client"]},
+          {"required": ["clientScope"]}
+        ]
       }
     },
     "clientScopeMappings": {
@@ -378,7 +383,12 @@
                 "type": "string"
               }
             }
-          }
+          },
+          "required": ["roles"],
+          "oneOf": [
+            {"required": ["client"]},
+            {"required": ["clientScope"]}
+          ]
         }
       }
     },

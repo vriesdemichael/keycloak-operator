@@ -4665,10 +4665,6 @@ class KeycloakAdminClient:
         Returns:
             List of realm roles mapped
         """
-        if not client_id and not client_scope_id:
-            logger.warning("Must provide either client_id or client_scope_id")
-            return []
-
         path = self.adapter.get_scope_mappings_realm_roles_path(
             realm_name, client_id, client_scope_id
         )
@@ -4707,10 +4703,6 @@ class KeycloakAdminClient:
         Returns:
             True if successful, False otherwise
         """
-        if not client_id and not client_scope_id:
-            logger.warning("Must provide either client_id or client_scope_id")
-            return False
-
         path = self.adapter.get_scope_mappings_realm_roles_path(
             realm_name, client_id, client_scope_id
         )
@@ -4756,10 +4748,6 @@ class KeycloakAdminClient:
         Returns:
             True if successful, False otherwise
         """
-        if not client_id and not client_scope_id:
-            logger.warning("Must provide either client_id or client_scope_id")
-            return False
-
         path = self.adapter.get_scope_mappings_realm_roles_path(
             realm_name, client_id, client_scope_id
         )
@@ -4805,10 +4793,6 @@ class KeycloakAdminClient:
         Returns:
             List of client roles mapped
         """
-        if not client_id and not client_scope_id:
-            logger.warning("Must provide either client_id or client_scope_id")
-            return []
-
         path = self.adapter.get_scope_mappings_client_roles_path(
             realm_name, role_container_id, client_id, client_scope_id
         )
@@ -4849,10 +4833,6 @@ class KeycloakAdminClient:
         Returns:
             True if successful, False otherwise
         """
-        if not client_id and not client_scope_id:
-            logger.warning("Must provide either client_id or client_scope_id")
-            return False
-
         path = self.adapter.get_scope_mappings_client_roles_path(
             realm_name, role_container_id, client_id, client_scope_id
         )
@@ -4900,10 +4880,6 @@ class KeycloakAdminClient:
         Returns:
             True if successful, False otherwise
         """
-        if not client_id and not client_scope_id:
-            logger.warning("Must provide either client_id or client_scope_id")
-            return False
-
         path = self.adapter.get_scope_mappings_client_roles_path(
             realm_name, role_container_id, client_id, client_scope_id
         )

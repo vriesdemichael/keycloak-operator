@@ -175,6 +175,57 @@ async def test_remove_scope_mappings_client_roles(mock_admin_client):
 
 
 @pytest.mark.asyncio
+async def test_add_realm_role_composites(mock_admin_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 204
+    mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+    mock_admin_client.adapter.get_realm_role_composites_path.return_value = (
+        "realms/test-realm/roles/parent/composites"
+    )
+
+    # Test with model
+    roles = [RoleRepresentation(name="child1", id="cid1")]
+    await mock_admin_client.add_realm_role_composites("test-realm", "parent", roles)
+
+    mock_admin_client._make_request.assert_called_with(
+        "POST",
+        "realms/test-realm/roles/parent/composites",
+        "default",
+        json=[{"id": "cid1", "name": "child1"}],
+    )
+
+    # Test with dict
+    await mock_admin_client.add_realm_role_composites(
+        "test-realm", "parent", [{"name": "child2", "id": "cid2"}]
+    )
+    mock_admin_client._make_request.assert_called_with(
+        "POST",
+        "realms/test-realm/roles/parent/composites",
+        "default",
+        json=[{"name": "child2", "id": "cid2"}],
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_realm_role_composites(mock_admin_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = [{"name": "child1", "id": "cid1"}]
+    mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+    mock_admin_client.adapter.get_realm_role_composites_path.return_value = (
+        "realms/test-realm/roles/parent/composites"
+    )
+
+    roles = await mock_admin_client.get_realm_role_composites("test-realm", "parent")
+    assert len(roles) == 1
+    assert roles[0].name == "child1"
+
+    mock_admin_client._make_request.assert_called_with(
+        "GET", "realms/test-realm/roles/parent/composites", "default"
+    )
+
+
+@pytest.mark.asyncio
 async def test_remove_realm_role_composites(mock_admin_client):
     mock_response = MagicMock()
     mock_response.status_code = 204
@@ -193,6 +244,44 @@ async def test_remove_realm_role_composites(mock_admin_client):
         "default",
         json=[{"id": "cid1", "name": "child1"}],
     )
+
+
+@pytest.mark.asyncio
+async def test_remove_realm_role_composites_error(mock_admin_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+    mock_admin_client.adapter.get_realm_role_composites_path.return_value = "path"
+
+    # api_delete returns False on error
+    result = await mock_admin_client.remove_realm_role_composites(
+        "r", "p", [{"id": "1"}]
+    )
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_add_realm_role_composites_error(mock_admin_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 500
+    mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+    mock_admin_client.adapter.get_realm_role_composites_path.return_value = "path"
+
+    # api_update returns False on error
+    result = await mock_admin_client.add_realm_role_composites("r", "p", [{"id": "1"}])
+    assert result is False
+
+
+@pytest.mark.asyncio
+async def test_get_realm_role_composites_not_found(mock_admin_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 404
+    mock_admin_client._make_request = AsyncMock(return_value=mock_response)
+    mock_admin_client.adapter.get_realm_role_composites_path.return_value = "path"
+
+    # api_get_list returns [] on 404/error
+    roles = await mock_admin_client.get_realm_role_composites("r", "p")
+    assert roles == []
 
 
 @pytest.mark.asyncio
