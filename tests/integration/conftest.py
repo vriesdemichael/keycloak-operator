@@ -1667,6 +1667,7 @@ async def shared_operator(
             },
             # Use short timer intervals for faster stuck finalizer detection in tests
             "reconciliation": {
+                "jitterMaxSeconds": 0.1,
                 "timerIntervals": {
                     "keycloak": 10,
                     "realm": 10,

@@ -207,7 +207,7 @@ class Settings(BaseSettings):
 
     # Reconciliation behavior
     reconcile_jitter_max_seconds: float = Field(
-        default=5.0,
+        default=10.0,
         validation_alias="RECONCILE_JITTER_MAX_SECONDS",
         description="Maximum jitter in seconds for reconciliation scheduling",
     )

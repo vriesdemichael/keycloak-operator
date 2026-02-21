@@ -252,6 +252,12 @@ _admin_client_cache: dict[tuple[str, str, bool], tuple["KeycloakAdminClient", in
 # Key: (keycloak_name, namespace, verify_ssl), Value: asyncio.Future
 _pending_creations: dict[tuple[str, str, bool], asyncio.Future] = {}
 
+# Global cache for Keycloak server versions to avoid repeated /admin/serverinfo calls
+# Key: server_url, Value: (version_string, timestamp)
+_server_version_cache: dict[str, tuple[str, float]] = {}
+_version_cache_ttl = 3600  # Cache version for 1 hour
+_version_lock = asyncio.Lock()
+
 
 class KeycloakAdminError(Exception):
     """Base exception for Keycloak Admin API errors."""
@@ -534,7 +540,21 @@ class KeycloakAdminClient:
             raise KeycloakAdminError(f"Authentication failed: {e}") from e
 
     async def _detect_server_version(self) -> None:
-        """Detect Keycloak version and update adapter."""
+        """Detect Keycloak version and update adapter.
+
+        Uses a global cache to avoid redundant /admin/serverinfo calls.
+        """
+        # 1. Check global cache first
+        async with _version_lock:
+            if self.server_url in _server_version_cache:
+                version, timestamp = _server_version_cache[self.server_url]
+                if time.time() - timestamp < _version_cache_ttl:
+                    logger.debug(f"Using cached Keycloak version: {version}")
+                    self.adapter = get_adapter_for_version(version)
+                    self._version_detected = True
+                    return
+
+        # 2. Not in cache or expired, fetch from API
         try:
             # Use raw client to avoid recursion via _make_request -> _ensure_auth -> authenticate
             client = await self._get_client()
@@ -548,6 +568,11 @@ class KeycloakAdminClient:
                     "version", CANONICAL_MODEL_VERSION
                 )
                 logger.info(f"Detected Keycloak version: {version}")
+
+                # Update global cache
+                async with _version_lock:
+                    _server_version_cache[self.server_url] = (version, time.time())
+
                 self.adapter = get_adapter_for_version(version)
                 self._version_detected = True
             else:
