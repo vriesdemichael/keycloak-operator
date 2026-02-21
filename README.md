@@ -86,6 +86,27 @@ The operator manages three custom resources:
 - **KeycloakRealm**: Identity domain with users, roles, and authentication settings
 - **KeycloakClient**: OAuth2/OIDC applications with automated credential management
 
+## 🌐 External Keycloak Mode
+
+The operator can manage resources (realms, clients) in an existing, external Keycloak instance instead of deploying its own.
+
+### Configuration
+
+In your `values.yaml`:
+
+```yaml
+keycloak:
+  enabled: false  # Disable managed Keycloak
+  external:
+    enabled: true
+    url: "https://keycloak.example.com"
+    adminSecret: "my-external-secret"  # Secret in operator namespace
+    adminUsername: "admin"             # Optional (default: admin)
+    adminPasswordKey: "password"       # Optional (default: password)
+```
+
+**Note:** In External Mode, `Keycloak` Custom Resources are ignored. The operator connects directly using the configured credentials.
+
 ## 📊 Example
 
 Create a complete OAuth2 setup:

@@ -61,17 +61,38 @@ def validate_keycloak_reference(
     keycloak_name: str, namespace: str
 ) -> dict[str, Any] | None:
     """
-        Validate that a Keycloak instance reference is valid and ready.
+    Validate that a Keycloak instance reference is valid and ready.
 
-        Args:
-            keycloak_name: Name of the Keycloak instance
-            namespace: Namespace where the instance should exist
+    Args:
+        keycloak_name: Name of the Keycloak instance
+        namespace: Namespace where the instance should exist
 
-        Returns:
-            Keycloak instance details if valid and ready, None otherwise
+    Returns:
+        Keycloak instance details if valid and ready, None otherwise
 
     This function validates Keycloak instance readiness and availability.
     """
+    # If running in External Mode, always validate successfully
+    if settings.external_keycloak_url:
+        logger.debug(
+            f"External Keycloak mode enabled ({settings.external_keycloak_url}), "
+            f"simulating valid reference for {keycloak_name}"
+        )
+        # Return a mock Keycloak CR structure that satisfies callers
+        return {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "Keycloak",
+            "metadata": {"name": keycloak_name, "namespace": namespace},
+            "status": {
+                "phase": "Ready",
+                "message": "External Keycloak Mode",
+                "endpoints": {
+                    "admin": settings.external_keycloak_url,
+                    "public": settings.external_keycloak_url,
+                },
+            },
+        }
+
     logger.debug(f"Validating Keycloak reference: {keycloak_name} in {namespace}")
 
     try:

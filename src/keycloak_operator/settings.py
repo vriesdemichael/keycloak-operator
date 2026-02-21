@@ -102,6 +102,28 @@ class Settings(BaseSettings):
         validation_alias="SERVICE_ACCOUNT_NAME",
     )
 
+    # External Keycloak Configuration
+    external_keycloak_url: str = Field(
+        default="",
+        validation_alias="KEYCLOAK_EXTERNAL_URL",
+        description="URL of external Keycloak instance. If set, the operator runs in External Mode.",
+    )
+    external_keycloak_admin_secret: str = Field(
+        default="",
+        validation_alias="KEYCLOAK_EXTERNAL_ADMIN_SECRET",
+        description="Name of the secret containing admin credentials for external Keycloak (in operator namespace).",
+    )
+    external_keycloak_admin_username: str = Field(
+        default="admin",
+        validation_alias="KEYCLOAK_EXTERNAL_ADMIN_USERNAME",
+        description="Username for external Keycloak admin access.",
+    )
+    external_keycloak_admin_password_key: str = Field(
+        default="password",
+        validation_alias="KEYCLOAK_EXTERNAL_ADMIN_PASSWORD_KEY",
+        description="Key in the admin secret containing the password.",
+    )
+
     # Logging configuration
     log_level: str = Field(
         default="INFO",

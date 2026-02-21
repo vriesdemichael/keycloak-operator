@@ -1,3 +1,6 @@
+{{- if and .Values.keycloak.enabled .Values.keycloak.external.enabled -}}
+{{- fail "Cannot enable both Managed Keycloak (keycloak.enabled=true) and External Keycloak (keycloak.external.enabled=true). Please disable one." -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -152,6 +155,16 @@ spec:
           value: {{ .Values.operator.security.allowScriptMappers | quote }}
         - name: KEYCLOAK_ALLOW_IMPERSONATION
           value: {{ .Values.operator.security.allowImpersonation | quote }}
+        {{- if .Values.keycloak.external.enabled }}
+        - name: KEYCLOAK_EXTERNAL_URL
+          value: {{ .Values.keycloak.external.url | quote }}
+        - name: KEYCLOAK_EXTERNAL_ADMIN_SECRET
+          value: {{ .Values.keycloak.external.adminSecret | quote }}
+        - name: KEYCLOAK_EXTERNAL_ADMIN_USERNAME
+          value: {{ .Values.keycloak.external.adminUsername | quote }}
+        - name: KEYCLOAK_EXTERNAL_ADMIN_PASSWORD_KEY
+          value: {{ .Values.keycloak.external.adminPasswordKey | quote }}
+        {{- end }}
         # OpenTelemetry tracing configuration
         - name: OTEL_TRACING_ENABLED
           value: {{ .Values.operator.tracing.enabled | quote }}
