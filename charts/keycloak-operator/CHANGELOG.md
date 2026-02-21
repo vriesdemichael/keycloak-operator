@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.30](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.29...chart-operator-v0.4.30) (2026-02-21)
+
+
+### Features
+
+* **operator:** add circuit breaker for Keycloak API calls ([48ebb4f](https://github.com/vriesdemichael/keycloak-operator/commit/48ebb4fc76661189060322182ec33f294dbd367b))
+
 ## [0.4.29](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.28...chart-operator-v0.4.29) (2026-02-20)
 
 
