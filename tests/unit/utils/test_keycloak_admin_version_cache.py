@@ -8,9 +8,7 @@ import pytest
 
 from keycloak_operator.utils.keycloak_admin import (
     KeycloakAdminClient,
-    _pending_version_fetches,
-    _server_version_cache,
-    _version_lock,
+    _version_cache,
 )
 
 
@@ -21,9 +19,7 @@ class TestKeycloakAdminVersionCache:
     @pytest.fixture(autouse=True)
     async def setup_cache(self):
         """Reset global cache before each test."""
-        async with _version_lock:
-            _server_version_cache.clear()
-            _pending_version_fetches.clear()
+        _version_cache.clear()
         yield
 
     async def test_detect_version_cache_miss(self, mock_admin_client):
@@ -46,10 +42,10 @@ class TestKeycloakAdminVersionCache:
             assert mock_admin_client.adapter.version == "25.0.0"
 
             # Verify cache was updated
-            async with _version_lock:
-                assert mock_admin_client.server_url in _server_version_cache
-                version, timestamp = _server_version_cache[mock_admin_client.server_url]
-                assert version == "25.0.0"
+            version = await _version_cache.get_valid_version(
+                mock_admin_client.server_url
+            )
+            assert version == "25.0.0"
 
     async def test_detect_version_cache_hit(self, mock_admin_client):
         """Should use cached version on cache hit."""
@@ -57,11 +53,7 @@ class TestKeycloakAdminVersionCache:
         mock_admin_client._version_detected = False
 
         # Pre-populate cache
-        async with _version_lock:
-            _server_version_cache[mock_admin_client.server_url] = (
-                "24.0.0",
-                time.monotonic(),
-            )
+        await _version_cache.update(mock_admin_client.server_url, "24.0.0")
 
         with patch.object(mock_admin_client, "_get_client") as mock_get_client:
             await mock_admin_client._detect_server_version()
@@ -78,8 +70,8 @@ class TestKeycloakAdminVersionCache:
         mock_admin_client._version_detected = False
 
         # Pre-populate with expired entry
-        async with _version_lock:
-            _server_version_cache[mock_admin_client.server_url] = (
+        async with _version_cache._lock:
+            _version_cache._cache[mock_admin_client.server_url] = (
                 "24.0.0",
                 time.monotonic() - 4000,
             )
@@ -99,9 +91,10 @@ class TestKeycloakAdminVersionCache:
             assert mock_admin_client.adapter.version == "26.0.0"
 
             # Verify cache was updated with new version
-            async with _version_lock:
-                version, _ = _server_version_cache[mock_admin_client.server_url]
-                assert version == "26.0.0"
+            version = await _version_cache.get_valid_version(
+                mock_admin_client.server_url
+            )
+            assert version == "26.0.0"
 
     async def test_detect_version_invalid_cache_entry(self, mock_admin_client):
         """Should handle invalid version in cache by re-fetching."""
@@ -109,11 +102,7 @@ class TestKeycloakAdminVersionCache:
         mock_admin_client._version_detected = False
 
         # Pre-populate with invalid/unsupported version string
-        async with _version_lock:
-            _server_version_cache[mock_admin_client.server_url] = (
-                "invalid-version",
-                time.monotonic(),
-            )
+        await _version_cache.update(mock_admin_client.server_url, "invalid-version")
 
         # Mock API response for fallback
         mock_response = MagicMock()
@@ -131,9 +120,10 @@ class TestKeycloakAdminVersionCache:
             assert mock_admin_client.adapter.version == "25.0.0"
 
             # Verify cache was corrected
-            async with _version_lock:
-                version, _ = _server_version_cache[mock_admin_client.server_url]
-                assert version == "25.0.0"
+            version = await _version_cache.get_valid_version(
+                mock_admin_client.server_url
+            )
+            assert version == "25.0.0"
 
     async def test_detect_version_coalescing(self, mock_admin_client):
         """Should coalesce concurrent fetches for the same URL."""
@@ -195,5 +185,7 @@ class TestKeycloakAdminVersionCache:
             await mock_admin_client._detect_server_version()
 
             # Verify cache remains empty for this URL
-            async with _version_lock:
-                assert mock_admin_client.server_url not in _server_version_cache
+            version = await _version_cache.get_valid_version(
+                mock_admin_client.server_url
+            )
+            assert version is None
