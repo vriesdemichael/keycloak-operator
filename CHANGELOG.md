@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.24](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.23...operator-image-v0.7.24) (2026-02-21)
+
+
+### Performance Improvements
+
+* add OTEL instrumentation and optimize test rate limits ([e2c2384](https://github.com/vriesdemichael/keycloak-operator/commit/e2c238413b142784b66f1b01aba6b74b6d58db39))
+* optimize reconciliation jitter and cache server info ([d7a89fd](https://github.com/vriesdemichael/keycloak-operator/commit/d7a89fd431c928c59c894a6ec4dd5a6bcfe75bb5))
+
+
+### Code Refactoring
+
+* address review comments on version caching and tracing ([6e32255](https://github.com/vriesdemichael/keycloak-operator/commit/6e322554bde4e5b77bd55b18708111a72909b23a))
+* use class-based version cache instead of module globals ([e7a2b13](https://github.com/vriesdemichael/keycloak-operator/commit/e7a2b136823598c9b7cd071e0b0aa85555ee4137))
+
 ## [0.7.23](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.22...operator-image-v0.7.23) (2026-02-21)
 
 
