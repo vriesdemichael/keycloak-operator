@@ -21,18 +21,12 @@ This chart creates a `KeycloakRealm` custom resource that is reconciled by the K
 - Kubernetes 1.27+
 - Helm 3.8+
 - **Keycloak Operator** installed ([keycloak-operator chart](../keycloak-operator/README.md))
-- **Operator Authorization Token** from the operator installation
 
 ## Installation
 
 ### Quick Start
 
 ```bash
-# Get operator token first
-OPERATOR_TOKEN=$(kubectl get secret keycloak-operator-auth-token \
-  -n keycloak-system \
-  -o jsonpath='{.data.token}' | base64 -d)
-
 # Install realm chart
 helm install my-realm keycloak-operator/keycloak-realm \
   --set realmName=my-app \
@@ -482,23 +476,7 @@ kubectl wait --for=jsonpath='{.status.phase}'=Ready \
   -n my-team --timeout=300s
 ```
 
-### 2. Retrieve Realm Authorization Token
-
-The realm automatically generates a token for creating clients:
-
-```bash
-# Get the realm authorization secret name
-REALM_SECRET=$(kubectl get keycloakrealm my-realm \
-  -n my-team \
-  -o jsonpath='{.status.authorizationSecretName}')
-
-# Retrieve the token
-kubectl get secret $REALM_SECRET \
-  -n my-team \
-  -o jsonpath='{.data.token}' | base64 -d
-```
-
-### 3. Create Clients
+### 2. Create Clients
 
 Now you can create OAuth2/OIDC clients in this realm:
 
@@ -553,10 +531,9 @@ kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator | gr
 ```
 
 **Common causes:**
-1. **Invalid operator token** - Verify token is correct
-2. **Operator not running** - Check operator pods
-3. **Network issues** - Verify operator can reach Keycloak
-4. **Keycloak instance not ready** - Check Keycloak resource
+1. **Operator not running** - Check operator pods
+2. **Network issues** - Verify operator can reach Keycloak
+3. **Keycloak instance not ready** - Check Keycloak resource
 
 ### RBAC Permission Denied
 
@@ -627,8 +604,7 @@ See the [Token Rotation Troubleshooting](https://github.com/vriesdemichael/keycl
 
 - **Main Documentation:** https://github.com/vriesdemichael/keycloak-operator
 - **Quick Start Guide:** [docs/quickstart/README.md](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/quickstart/README.md)
-- **Security Model:** [docs/security.md](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/security.md)
-- **Token Management:** [docs/operations/token-management.md](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/operations/token-management.md)
+- **Security Model:** [docs/concepts/security.md](https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/concepts/security.md)
 
 ## Related Charts
 
