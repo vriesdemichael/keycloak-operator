@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.23](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.22...operator-image-v0.7.23) (2026-02-21)
+
+
+### Features
+
+* **operator:** add circuit breaker for Keycloak API calls ([48ebb4f](https://github.com/vriesdemichael/keycloak-operator/commit/48ebb4fc76661189060322182ec33f294dbd367b))
+
 ## [0.7.22](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.21...operator-image-v0.7.22) (2026-02-20)
 
 
