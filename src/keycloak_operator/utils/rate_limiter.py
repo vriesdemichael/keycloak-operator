@@ -17,6 +17,7 @@ import time
 from dataclasses import dataclass, field
 
 from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -195,7 +196,7 @@ class RateLimiter:
                 )
                 # Record timeout metric
                 self._record_timeout(namespace, "namespace")
-                span.set_attribute("error", True)
+                span.set_status(Status(StatusCode.ERROR, "namespace_timeout"))
                 span.set_attribute("rate_limit.timeout_type", "namespace")
                 raise TimeoutError(
                     f"Namespace rate limit timeout for '{namespace}' "
@@ -227,7 +228,7 @@ class RateLimiter:
                 )
                 # Record timeout metric
                 self._record_timeout(namespace, "global")
-                span.set_attribute("error", True)
+                span.set_status(Status(StatusCode.ERROR, "global_timeout"))
                 span.set_attribute("rate_limit.timeout_type", "global")
                 raise TimeoutError(
                     f"Global rate limit timeout (limit: {self.global_bucket.rate} req/s)"
@@ -238,6 +239,7 @@ class RateLimiter:
             self._record_acquisition(namespace, "global")
 
             # Both tokens acquired successfully
+            span.set_status(Status(StatusCode.OK))
             logger.debug(f"Rate limit tokens acquired for namespace '{namespace}'")
 
             # Record remaining budget for observability

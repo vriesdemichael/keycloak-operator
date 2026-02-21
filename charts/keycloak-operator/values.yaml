@@ -234,7 +234,7 @@ operator:
       realm: 300 # KeycloakRealm health check interval
       client: 300 # KeycloakClient health check interval
     # Random jitter added to reconciliation scheduling to prevent thundering herd (seconds)
-    jitterMaxSeconds: 5.0
+    jitterMaxSeconds: 10.0
 # ============================================================================
 # Namespace Configuration
 # ============================================================================
