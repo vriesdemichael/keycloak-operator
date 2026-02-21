@@ -5194,31 +5194,22 @@ spec:
         subgraph TeamA["Namespace: team-a"]
             RealmA1[Realm: team-a-prod]
             RealmA2[Realm: team-a-dev]
-            TokenA1[Token: prod-admission]
-            TokenA2[Token: dev-admission]
         end
 
         subgraph TeamB["Namespace: team-b"]
             RealmB1[Realm: team-b-prod]
             RealmB2[Realm: team-b-dev]
-            TokenB1[Token: prod-admission]
-            TokenB2[Token: dev-admission]
         end
     end
 
     RealmA1 --&gt;|operatorRef: keycloak-system-prod| Op1
-    RealmA1 --&gt;|authRef: prod-admission| TokenA1
     Op1 --&gt;|Reconcile| KC1
 
     RealmA2 --&gt;|operatorRef: keycloak-system-dev| Op2
-    RealmA2 --&gt;|authRef: dev-admission| TokenA2
     Op2 --&gt;|Reconcile| KC2
 
     RealmB1 --&gt;|operatorRef: keycloak-system-prod| Op1
-    RealmB1 --&gt;|authRef: prod-admission| TokenB1
-
     RealmB2 --&gt;|operatorRef: keycloak-system-dev| Op2
-    RealmB2 --&gt;|authRef: dev-admission| TokenB2
 
     style Op1 fill:#e3f2fd
     style Op2 fill:#f3e5f5
@@ -5427,7 +5418,7 @@ spec:
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <p><strong>Core Architecture:</strong></p>
 <ul>
-<li><a href="../security/">Security Model</a> - Token system security architecture and authorization model</li>
+<li><a href="../security/">Security Model</a> - Authorization architecture and security model</li>
 <li><a href="../../guides/observability/">Observability</a> - Metrics, health checks, and monitoring</li>
 <li><a href="../../development/">Development Guide</a> - Code structure and development workflow</li>
 </ul>
