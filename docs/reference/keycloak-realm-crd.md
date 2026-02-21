@@ -50,7 +50,7 @@ spec:
 
 ### Operator Reference (Required)
 
-Reference to the Keycloak operator and authorization token.
+Reference to the Keycloak operator.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
@@ -885,6 +885,6 @@ spec:
 
 **Architecture & Security:**
 
-- [Architecture: Token System](../concepts/architecture.md#authorization-architecture) - How realm tokens work
-- [Security Model](../concepts/security.md) - Authorization and token security
+- [Architecture](../concepts/architecture.md) - Operator architecture
+- [Security Model](../concepts/security.md) - Authorization and security model
 - [Security Model](../concepts/security.md) - Authorization model

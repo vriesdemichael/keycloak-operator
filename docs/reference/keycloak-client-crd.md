@@ -48,7 +48,7 @@ spec:
 
 ### Realm Reference (Required)
 
-Reference to the parent KeycloakRealm and authorization token.
+Reference to the parent KeycloakRealm.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
