@@ -397,7 +397,7 @@
             "jitterMaxSeconds": {
               "type": "number",
               "description": "Random jitter added to reconciliation scheduling (seconds)",
-              "default": 5.0
+              "default": 10.0
             }
           }
         },

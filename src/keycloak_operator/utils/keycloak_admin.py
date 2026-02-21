@@ -24,6 +24,8 @@ from urllib.parse import urljoin
 
 import httpx
 from aiobreaker import CircuitBreakerError
+from opentelemetry import trace
+from opentelemetry.trace import Status, StatusCode
 from pydantic import BaseModel
 
 from keycloak_operator.compatibility import KeycloakAdapter, get_adapter_for_version
@@ -52,6 +54,7 @@ if TYPE_CHECKING:
     from keycloak_operator.utils.rate_limiter import RateLimiter
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 # Type variables for decorators
 P = ParamSpec("P")
@@ -257,6 +260,10 @@ _pending_creations: dict[tuple[str, str, bool], asyncio.Future] = {}
 _server_version_cache: dict[str, tuple[str, float]] = {}
 _version_cache_ttl = 3600  # Cache version for 1 hour
 _version_lock = asyncio.Lock()
+
+# Map of pending version fetches to avoid thundering herd for /admin/serverinfo
+# Key: server_url, Value: asyncio.Future
+_pending_version_fetches: dict[str, asyncio.Future] = {}
 
 
 class KeycloakAdminError(Exception):
@@ -544,17 +551,53 @@ class KeycloakAdminClient:
 
         Uses a global cache to avoid redundant /admin/serverinfo calls.
         """
-        # 1. Check global cache first
-        async with _version_lock:
-            if self.server_url in _server_version_cache:
-                version, timestamp = _server_version_cache[self.server_url]
-                if time.time() - timestamp < _version_cache_ttl:
-                    logger.debug(f"Using cached Keycloak version: {version}")
-                    self.adapter = get_adapter_for_version(version)
-                    self._version_detected = True
-                    return
+        with tracer.start_as_current_span("keycloak_detect_version") as span:
+            span.set_attribute("keycloak.server_url", self.server_url)
 
-        # 2. Not in cache or expired, fetch from API
+            # 1. Check global cache first
+            async with _version_lock:
+                if self.server_url in _server_version_cache:
+                    version, timestamp = _server_version_cache[self.server_url]
+                    if time.monotonic() - timestamp < _version_cache_ttl:
+                        try:
+                            logger.debug(f"Using cached Keycloak version: {version}")
+                            self.adapter = get_adapter_for_version(version)
+                            self._version_detected = True
+                            span.set_attribute("keycloak.version", version)
+                            span.set_attribute("keycloak.cache_hit", True)
+                            span.set_status(Status(StatusCode.OK))
+                            return
+                        except Exception as e:
+                            logger.warning(
+                                f"Cached version '{version}' invalid, re-detecting: {e}"
+                            )
+                            del _server_version_cache[self.server_url]
+
+            # 2. Check for pending fetch to coalesce concurrent requests
+            async with _version_lock:
+                if self.server_url in _pending_version_fetches:
+                    future = _pending_version_fetches[self.server_url]
+                else:
+                    future = asyncio.get_running_loop().create_future()
+                    _pending_version_fetches[self.server_url] = future
+                    # We are the owner of the fetch
+                    asyncio.create_task(self._do_fetch_server_version(future))
+
+            try:
+                # Wait for the future (either we created it or someone else did)
+                version = await future
+                self.adapter = get_adapter_for_version(version)
+                self._version_detected = True
+                span.set_attribute("keycloak.version", version)
+                span.set_attribute("keycloak.cache_hit", False)
+                span.set_status(Status(StatusCode.OK))
+            except Exception as e:
+                logger.warning(f"Failed to detect version: {e}")
+                span.set_status(Status(StatusCode.ERROR, str(e)))
+                span.record_exception(e)
+
+    async def _do_fetch_server_version(self, future: asyncio.Future) -> None:
+        """Perform actual network fetch for server version and fulfill future."""
         try:
             # Use raw client to avoid recursion via _make_request -> _ensure_auth -> authenticate
             client = await self._get_client()
@@ -567,21 +610,33 @@ class KeycloakAdminClient:
                 version = data.get("systemInfo", {}).get(
                     "version", CANONICAL_MODEL_VERSION
                 )
+
+                # Validate version by trying to get adapter before caching
+                get_adapter_for_version(version)
+
                 logger.info(f"Detected Keycloak version: {version}")
 
                 # Update global cache
                 async with _version_lock:
-                    _server_version_cache[self.server_url] = (version, time.time())
+                    _server_version_cache[self.server_url] = (version, time.monotonic())
 
-                self.adapter = get_adapter_for_version(version)
-                self._version_detected = True
+                if not future.done():
+                    future.set_result(version)
             else:
-                logger.warning(
-                    f"Failed to detect version: {response.status_code}",
-                    extra={"response_body": response.text},
-                )
+                error_msg = f"Failed to detect version: {response.status_code}"
+                logger.warning(error_msg, extra={"response_body": response.text})
+                if not future.done():
+                    future.set_exception(
+                        KeycloakAdminError(error_msg, status_code=response.status_code)
+                    )
         except Exception as e:
-            logger.warning(f"Failed to detect version: {e}")
+            logger.warning(f"Exception during version detection: {e}")
+            if not future.done():
+                future.set_exception(e)
+        finally:
+            async with _version_lock:
+                if self.server_url in _pending_version_fetches:
+                    del _pending_version_fetches[self.server_url]
 
     async def _ensure_authenticated(self) -> None:
         """

@@ -469,7 +469,7 @@ KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS=50      # Global requests/second
 KEYCLOAK_API_GLOBAL_BURST=100               # Global burst capacity
 KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS=5    # Per-namespace requests/second
 KEYCLOAK_API_NAMESPACE_BURST=10             # Per-namespace burst capacity
-RECONCILE_JITTER_MAX_SECONDS=5.0            # Random delay to prevent thundering herd
+RECONCILE_JITTER_MAX_SECONDS=10.0           # Random delay to prevent thundering herd (0.1 in tests)
 ```
 
 ## Logging Configuration
