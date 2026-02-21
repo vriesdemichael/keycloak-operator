@@ -282,31 +282,22 @@ graph TB
         subgraph TeamA["Namespace: team-a"]
             RealmA1[Realm: team-a-prod]
             RealmA2[Realm: team-a-dev]
-            TokenA1[Token: prod-admission]
-            TokenA2[Token: dev-admission]
         end
 
         subgraph TeamB["Namespace: team-b"]
             RealmB1[Realm: team-b-prod]
             RealmB2[Realm: team-b-dev]
-            TokenB1[Token: prod-admission]
-            TokenB2[Token: dev-admission]
         end
     end
 
     RealmA1 -->|operatorRef: keycloak-system-prod| Op1
-    RealmA1 -->|authRef: prod-admission| TokenA1
     Op1 -->|Reconcile| KC1
 
     RealmA2 -->|operatorRef: keycloak-system-dev| Op2
-    RealmA2 -->|authRef: dev-admission| TokenA2
     Op2 -->|Reconcile| KC2
 
     RealmB1 -->|operatorRef: keycloak-system-prod| Op1
-    RealmB1 -->|authRef: prod-admission| TokenB1
-
     RealmB2 -->|operatorRef: keycloak-system-dev| Op2
-    RealmB2 -->|authRef: dev-admission| TokenB2
 
     style Op1 fill:#e3f2fd
     style Op2 fill:#f3e5f5
@@ -511,7 +502,7 @@ See [Observability](../guides/observability.md) for complete metrics documentati
 
 **Core Architecture:**
 
-- [Security Model](security.md) - Token system security architecture and authorization model
+- [Security Model](security.md) - Authorization architecture and security model
 - [Observability](../guides/observability.md) - Metrics, health checks, and monitoring
 - [Development Guide](../development.md) - Code structure and development workflow
 

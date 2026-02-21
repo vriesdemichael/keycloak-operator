@@ -21,18 +21,12 @@ This chart creates a `KeycloakClient` custom resource that is reconciled by the 
 - Helm 3.8+
 - **Keycloak Operator** installed ([keycloak-operator chart](../keycloak-operator/README.md))
 - **Keycloak Realm** created ([keycloak-realm chart](../keycloak-realm/README.md))
-- **Realm Authorization Token** from the realm resource
 
 ## Installation
 
 ### Quick Start
 
 ```bash
-# Get realm authorization secret name
-REALM_SECRET=$(kubectl get keycloakrealm my-realm \
-  -n my-team \
-  -o jsonpath='{.status.authorizationSecretName}')
-
 # Install client chart
 helm install my-client keycloak-operator/keycloak-client \
   --set clientId=my-app \
@@ -675,10 +669,9 @@ kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator | gr
 ```
 
 **Common causes:**
-1. **Invalid realm token** - Verify `realmRef.authorizationSecretRef.name`
-2. **Realm not ready** - Check `kubectl get keycloakrealm -n my-team`
-3. **Invalid redirect URIs** - Check URI format
-4. **RBAC issues** - Verify RoleBinding exists
+1. **Realm not ready** - Check `kubectl get keycloakrealm -n my-team`
+2. **Invalid redirect URIs** - Check URI format
+3. **RBAC issues** - Verify RoleBinding exists
 
 ### No Client Secret Created
 

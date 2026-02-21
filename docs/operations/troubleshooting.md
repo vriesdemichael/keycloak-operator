@@ -24,7 +24,7 @@ kubectl get events --all-namespaces --sort-by='.lastTimestamp' | tail -20
 2. [Keycloak Instance Issues](#keycloak-instance-issues)
 3. [Realm Issues](#realm-issues)
 4. [Client Issues](#client-issues)
-5. [Token & Authorization Issues](#token-authorization-issues)
+5. [Authorization Issues](#authorization-issues)
 6. [Database Issues](#database-issues)
 7. [Networking & Ingress Issues](#networking-ingress-issues)
 8. [Performance Issues](#performance-issues)
@@ -394,7 +394,6 @@ curl -s http://localhost:9000/admin/realms/<realm-name> \
 ### Symptom: Realm Stuck in Pending/Provisioning
 
 **Possible Causes:**
-- Authorization token invalid
 - Keycloak instance not ready
 - API connectivity issues
 - Rate limiting
@@ -405,9 +404,6 @@ curl -s http://localhost:9000/admin/realms/<realm-name> \
 # Check realm status
 kubectl describe keycloakrealm <name> -n <namespace>
 
-# Check authorization secret exists
-kubectl get secret <auth-secret-name> -n <namespace>
-
 # Check Keycloak instance status
 kubectl get keycloak -n <keycloak-namespace>
 
@@ -417,17 +413,6 @@ kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
 ```
 
 **Solutions:**
-
-**Authorization Token Missing:**
-```bash
-# Verify secret exists
-kubectl get secret <auth-secret-name> -n <namespace>
-
-kubectl get secret <namespace>-operator-token -n <namespace>
-
-# Check secret has correct labels
-kubectl get secret <auth-secret-name> -n <namespace> -o yaml | grep -A3 labels
-```
 
 **Keycloak Instance Not Ready:**
 ```bash
@@ -447,70 +432,6 @@ kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
 
 # Check network policies
 kubectl get networkpolicy -n <keycloak-namespace>
-```
-
----
-
-### Symptom: Realm Authorization Failed
-
-**Possible Causes:**
-- Token mismatch
-- Token expired
-- Wrong secret referenced
-- Token not in metadata ConfigMap
-
-**Diagnosis:**
-
-```bash
-# Check realm status for authorization error
-kubectl describe keycloakrealm <name> -n <namespace> | grep -i authorization
-
-# Check which secret realm is using
-kubectl get keycloakrealm <name> -n <namespace> \
-  # Authorization no longer uses tokens
-
-# Verify secret exists
-kubectl get secret <secret-name> -n <namespace>
-
-# Check token in ConfigMap
-TOKEN=$(kubectl get secret <secret-name> -n <namespace> \
-  -o jsonpath='{.data.token}' | base64 -d)
-TOKEN_HASH=$(echo -n "$TOKEN" | sha256sum | cut -d' ' -f1)
-kubectl get configmap keycloak-operator-token-metadata \
-  -n keycloak-operator-system -o yaml | grep "$TOKEN_HASH"
-```
-
-**Solutions:**
-
-**Using Wrong Token:**
-```bash
-kubectl patch keycloakrealm <name> -n <namespace> --type=merge -p '
-spec:
-  operatorRef:
-      key: token
-'
-```
-
-**Token Expired (Grace Period Ended):**
-```bash
-# Check token expiry
-kubectl get secret <namespace>-operator-token -n <namespace> \
-  -o jsonpath='{.metadata.annotations.vriesdemichael\.github\.io/valid-until}'
-
-# Check if during grace period
-kubectl get secret <namespace>-operator-token -n <namespace> \
-  -o jsonpath='{.data}' | jq 'keys'
-# During grace: ["token", "token-previous"]
-# After grace: ["token"]
-
-# If after grace period, ensure using "token" key (not "token-previous")
-kubectl get keycloakrealm <name> -n <namespace> \
-  # Authorization no longer uses tokens
-# Should be "token"
-```
-
-**Bootstrap Not Completed:**
-```bash
 ```
 
 ---
@@ -571,7 +492,7 @@ kubectl get deployment -n keycloak-operator-system keycloak-operator \
 
 **Possible Causes:**
 - Realm not ready
-- Realm authorization token invalid
+- Namespace not authorized (Grant List)
 - Invalid client configuration
 - Client ID already exists
 
@@ -583,9 +504,6 @@ kubectl describe keycloakclient <name> -n <namespace>
 
 # Check realm is Ready
 kubectl get keycloakrealm <realm-name> -n <namespace>
-
-# Check realm authorization secret exists
-kubectl get secret <realm-name>-realm-auth -n <namespace>
 
 # Check operator logs
 kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
@@ -601,17 +519,19 @@ kubectl wait --for=condition=Ready keycloakrealm/<realm-name> \
   -n <namespace> --timeout=2m
 ```
 
-**Realm Token Missing:**
+**Namespace Not Authorized:**
 ```bash
-# Realm token should be auto-created when realm becomes Ready
-kubectl get secret <realm-name>-realm-auth -n <namespace>
+# Check realm's grant list
+kubectl get keycloakrealm <realm-name> -n <namespace> \
+  -o jsonpath='{.spec.clientAuthorizationGrants}'
 
-# If missing, check realm status
-kubectl describe keycloakrealm <realm-name> -n <namespace>
-
-# Force realm reconciliation to generate token
-kubectl annotate keycloakrealm <realm-name> -n <namespace> \
-  reconcile=$(date +%s) --overwrite
+# Add client namespace to grant list
+kubectl patch keycloakrealm <realm-name> -n <namespace> --type=merge -p '
+spec:
+  clientAuthorizationGrants:
+    - <existing-namespaces>
+    - <client-namespace>
+'
 ```
 
 **Invalid Configuration:**
@@ -1186,15 +1106,7 @@ helm upgrade keycloak-operator ./charts/keycloak-operator \
 
 ## Common Pitfalls
 
-### Pitfall 1: Using Operator Token in Production
-
-4. Tokens rotate automatically every 90 days
-
-See: [Multi-Tenant Guide](../how-to/multi-tenant.md)
-
----
-
-### Pitfall 2: Wrong Keycloak Version (< 25.0.0)
+### Pitfall 1: Wrong Keycloak Version (< 25.0.0)
 
 **Problem**: Using Keycloak version < 25.0.0 which doesn't support management port 9000.
 
@@ -1211,14 +1123,7 @@ spec:
 
 ---
 
-### Pitfall 3: Forgetting to Bootstrap Namespace
-
-3. Operational token generated automatically
-4. Create subsequent realms
-
----
-
-### Pitfall 4: Manual Changes in Keycloak Admin Console
+### Pitfall 2: Manual Changes in Keycloak Admin Console
 
 **Problem**: Making configuration changes directly in Keycloak admin console instead of updating CRDs.
 
