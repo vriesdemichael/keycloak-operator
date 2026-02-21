@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.6...chart-realm-v0.4.7) (2026-02-21)
+
+
+### Documentation
+
+* remove stale token-based auth model references ([b567b3d](https://github.com/vriesdemichael/keycloak-operator/commit/b567b3dff3f89493d3e348b6783cd7a188168c6f))
+
 ## [0.4.6](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.5...chart-realm-v0.4.6) (2026-02-20)
 
 
