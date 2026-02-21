@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.5](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.4.4...chart-client-v0.4.5) (2026-02-21)
+
+
+### Documentation
+
+* remove stale token-based auth model references ([b567b3d](https://github.com/vriesdemichael/keycloak-operator/commit/b567b3dff3f89493d3e348b6783cd7a188168c6f))
+
 ## [0.4.4](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.4.3...chart-client-v0.4.4) (2026-02-17)
 
 
