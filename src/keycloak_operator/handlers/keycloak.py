@@ -32,6 +32,7 @@ from keycloak_operator.constants import (
 )
 from keycloak_operator.observability.tracing import traced_handler
 from keycloak_operator.services import KeycloakInstanceReconciler
+from keycloak_operator.settings import settings
 from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 from keycloak_operator.utils.kubernetes import (
@@ -220,6 +221,22 @@ async def ensure_keycloak_instance(
             f"Keycloak instance {name} has deletionTimestamp, "
             f"skipping reconciliation (delete handler will manage cleanup)"
         )
+        return None
+
+    # Check if running in External Mode
+    if settings.external_keycloak_url:
+        logger.warning(
+            f"Operator is running in External Mode ({settings.external_keycloak_url}). "
+            f"Ignoring Keycloak CR {name} in {namespace}. "
+            "To manage a Keycloak instance, unset KEYCLOAK_EXTERNAL_URL."
+        )
+        status_wrapper = StatusWrapper(patch.status)
+        status_wrapper.phase = "Failed"
+        status_wrapper.message = (
+            "Operator is configured for External Keycloak. "
+            "This CR is ignored and should be deleted."
+        )
+        # We return None to stop processing, but we've set the status via patch
         return None
 
     logger.info(f"Ensuring Keycloak instance {name} in namespace {namespace}")

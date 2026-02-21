@@ -1,4 +1,4 @@
-{{- if .Values.keycloak.enabled }}
+{{- if and .Values.keycloak.enabled (not .Values.keycloak.external.enabled) }}
 {{/* yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json */}}
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak

@@ -7993,48 +7993,87 @@ async def get_keycloak_admin_client(
     logger.info(f"Creating admin client for Keycloak {keycloak_name} in {namespace}")
 
     try:
-        # Get Keycloak instance details
-        k8s = get_kubernetes_client()
-        custom_api = k8s_client.CustomObjectsApi(k8s)
+        # Check if we are running in External Mode
+        if settings.external_keycloak_url:
+            logger.info(
+                f"Using external Keycloak at {settings.external_keycloak_url} "
+                f"(ignoring CR {keycloak_name})"
+            )
+            server_url = settings.external_keycloak_url
+            username = settings.external_keycloak_admin_username
 
-        # Get Keycloak instance
-        keycloak_instance = custom_api.get_namespaced_custom_object(
-            group="vriesdemichael.github.io",
-            version="v1",
-            namespace=namespace,
-            plural="keycloaks",
-            name=keycloak_name,
-        )
+            # Retrieve password from secret in operator's namespace
+            try:
+                k8s = get_kubernetes_client()
+                core_api = k8s_client.CoreV1Api(k8s)
+                secret_name = settings.external_keycloak_admin_secret
+                secret_namespace = settings.pod_namespace
 
-        # Get server URL from instance status
-        server_url = (
-            keycloak_instance.get("status", {}).get("endpoints", {}).get("admin")
-        )
-        if not server_url:
-            raise KeycloakAdminError(
-                f"Keycloak instance {keycloak_name} does not have admin endpoint ready"
+                secret = core_api.read_namespaced_secret(
+                    name=secret_name, namespace=secret_namespace
+                )
+
+                import base64
+
+                password_key = settings.external_keycloak_admin_password_key
+                if password_key not in secret.data:
+                    raise KeycloakAdminError(
+                        f"Key '{password_key}' not found in secret '{secret_name}'"
+                    )
+
+                password = base64.b64decode(secret.data[password_key]).decode("utf-8")
+
+            except Exception as e:
+                logger.error(f"Failed to retrieve external admin credentials: {e}")
+                raise KeycloakAdminError(
+                    f"Could not retrieve admin credentials from secret "
+                    f"'{settings.external_keycloak_admin_secret}' in namespace "
+                    f"'{settings.pod_namespace}': {e}"
+                ) from e
+
+        else:
+            # Managed Mode: Get Keycloak instance details from CR
+            k8s = get_kubernetes_client()
+            custom_api = k8s_client.CustomObjectsApi(k8s)
+
+            # Get Keycloak instance
+            keycloak_instance = custom_api.get_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                name=keycloak_name,
             )
 
-        # Get admin credentials from secret
-        core_api = k8s_client.CoreV1Api(k8s)
-        admin_secret_name = f"{keycloak_name}-admin-credentials"
-
-        try:
-            secret = core_api.read_namespaced_secret(
-                name=admin_secret_name, namespace=namespace
+            # Get server URL from instance status
+            server_url = (
+                keycloak_instance.get("status", {}).get("endpoints", {}).get("admin")
             )
+            if not server_url:
+                raise KeycloakAdminError(
+                    f"Keycloak instance {keycloak_name} does not have admin endpoint ready"
+                )
 
-            # Decode credentials from secret
-            import base64
+            # Get admin credentials from secret
+            core_api = k8s_client.CoreV1Api(k8s)
+            admin_secret_name = f"{keycloak_name}-admin-credentials"
 
-            username = base64.b64decode(secret.data["username"]).decode("utf-8")
-            password = base64.b64decode(secret.data["password"]).decode("utf-8")
+            try:
+                secret = core_api.read_namespaced_secret(
+                    name=admin_secret_name, namespace=namespace
+                )
 
-        except Exception as e:
-            logger.error(f"Failed to retrieve admin credentials: {e}")
-            raise KeycloakAdminError(
-                f"Could not retrieve admin credentials for {keycloak_name}"
-            ) from e
+                # Decode credentials from secret
+                import base64
+
+                username = base64.b64decode(secret.data["username"]).decode("utf-8")
+                password = base64.b64decode(secret.data["password"]).decode("utf-8")
+
+            except Exception as e:
+                logger.error(f"Failed to retrieve admin credentials: {e}")
+                raise KeycloakAdminError(
+                    f"Could not retrieve admin credentials for {keycloak_name}"
+                ) from e
 
         # Create and authenticate admin client
         admin_client = KeycloakAdminClient(

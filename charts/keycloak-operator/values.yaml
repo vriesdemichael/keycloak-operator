@@ -556,6 +556,22 @@ keycloak:
   # pre-built with 'kc.sh build'. The --optimized flag skips build-time config
   # discovery at startup, reducing startup time from ~70s to ~20-30s.
   optimized: true
+  # External Keycloak Configuration
+  # Connect the operator to an existing, external Keycloak instance instead of managing one
+  # If enabled, keycloak.enabled (Managed Keycloak) should be false.
+  external:
+    # Enable External Keycloak Mode
+    enabled: false
+    # URL of the external Keycloak instance (e.g., https://keycloak.example.com)
+    url: ""
+    # Name of the Secret containing admin credentials
+    # This secret must exist in the operator's namespace
+    # Structure: { "username": "...", "password": "..." } (keys configurable below)
+    adminSecret: ""
+    # Username for admin access (defaults to "admin")
+    adminUsername: "admin"
+    # Key in the secret containing the password (defaults to "password")
+    adminPasswordKey: "password"
 # ============================================================================
 # Extra Kubernetes Manifests
 # ============================================================================
