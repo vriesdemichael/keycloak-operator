@@ -2,7 +2,7 @@ apiVersion: v2
 name: keycloak-operator
 description: A Helm chart for deploying the Keycloak Operator with GitOps compatibility
 type: application
-version: 0.4.30
+version: 0.4.31
 appVersion: "v0.7.23"
 keywords:
   - keycloak
