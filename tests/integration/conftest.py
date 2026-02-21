@@ -193,7 +193,10 @@ async def _warmup_keycloak_jvm(
             username=username,
             password=password,
         )
-        await admin_client.authenticate()
+        # Multiple authentications to warm up crypto/Argon2 paths
+        for _ in range(3):
+            await admin_client.authenticate()
+            await admin_client.get_realms(namespace)
 
         warmup_realms = []
         for i in range(3):
@@ -202,6 +205,9 @@ async def _warmup_keycloak_jvm(
                 {"realm": realm_name, "enabled": True}, namespace
             )
             warmup_realms.append(realm_name)
+
+            # List clients to warm up client lookup caches
+            await admin_client.get_realm_clients(realm_name, namespace)
 
             # Create 2 clients per realm to exercise client CRUD + protocol mappers
             for j in range(2):
@@ -1647,6 +1653,17 @@ async def shared_operator(
                 "repository": "keycloak-operator",
                 "tag": "test",
                 "pullPolicy": "Never",  # Use local image only
+            },
+            # Increase rate limits to high values for parallel performance
+            "rateLimiting": {
+                "global": {
+                    "tps": 1000.0,
+                    "burst": 2000,
+                },
+                "namespace": {
+                    "tps": 200.0,
+                    "burst": 400,
+                },
             },
             # Use short timer intervals for faster stuck finalizer detection in tests
             "reconciliation": {

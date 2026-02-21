@@ -16,7 +16,10 @@ import logging
 import time
 from dataclasses import dataclass, field
 
+from opentelemetry import trace
+
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 
 @dataclass
@@ -171,60 +174,74 @@ class RateLimiter:
         Raises:
             TimeoutError: If tokens cannot be acquired within timeout
         """
-        start_time = time.monotonic()
+        with tracer.start_as_current_span("rate_limit_acquire") as span:
+            span.set_attribute("rate_limit.namespace", namespace)
+            span.set_attribute("rate_limit.timeout", timeout)
 
-        # Acquire namespace token first (more restrictive)
-        namespace_bucket = await self._get_namespace_bucket(namespace)
-        namespace_start = time.monotonic()
-        namespace_acquired = await namespace_bucket.acquire(timeout=timeout)
-        namespace_wait = time.monotonic() - namespace_start
+            start_time = time.monotonic()
 
-        if not namespace_acquired:
+            # Acquire namespace token first (more restrictive)
+            namespace_bucket = await self._get_namespace_bucket(namespace)
+            namespace_start = time.monotonic()
+            namespace_acquired = await namespace_bucket.acquire(timeout=timeout)
+            namespace_wait = time.monotonic() - namespace_start
+
+            span.set_attribute("rate_limit.wait_time.namespace", namespace_wait)
+
+            if not namespace_acquired:
+                elapsed = time.monotonic() - start_time
+                logger.warning(
+                    f"Namespace rate limit timeout for '{namespace}' after {elapsed:.2f}s"
+                )
+                # Record timeout metric
+                self._record_timeout(namespace, "namespace")
+                span.set_attribute("error", True)
+                span.set_attribute("rate_limit.timeout_type", "namespace")
+                raise TimeoutError(
+                    f"Namespace rate limit timeout for '{namespace}' "
+                    f"(limit: {self.namespace_rate} req/s)"
+                )
+
+            # Record namespace wait time
+            self._record_wait_time(namespace, "namespace", namespace_wait)
+            self._record_acquisition(namespace, "namespace")
+
+            # Calculate remaining timeout
             elapsed = time.monotonic() - start_time
-            logger.warning(
-                f"Namespace rate limit timeout for '{namespace}' after {elapsed:.2f}s"
+            remaining_timeout = max(0.1, timeout - elapsed)
+
+            # Acquire global token
+            global_start = time.monotonic()
+            global_acquired = await self.global_bucket.acquire(
+                timeout=remaining_timeout
             )
-            # Record timeout metric
-            self._record_timeout(namespace, "namespace")
-            raise TimeoutError(
-                f"Namespace rate limit timeout for '{namespace}' "
-                f"(limit: {self.namespace_rate} req/s)"
-            )
+            global_wait = time.monotonic() - global_start
 
-        # Record namespace wait time
-        self._record_wait_time(namespace, "namespace", namespace_wait)
-        self._record_acquisition(namespace, "namespace")
+            span.set_attribute("rate_limit.wait_time.global", global_wait)
 
-        # Calculate remaining timeout
-        elapsed = time.monotonic() - start_time
-        remaining_timeout = max(0.1, timeout - elapsed)
+            if not global_acquired:
+                elapsed = time.monotonic() - start_time
+                logger.warning(
+                    f"Global rate limit timeout after {elapsed:.2f}s "
+                    f"(namespace: {namespace})"
+                )
+                # Record timeout metric
+                self._record_timeout(namespace, "global")
+                span.set_attribute("error", True)
+                span.set_attribute("rate_limit.timeout_type", "global")
+                raise TimeoutError(
+                    f"Global rate limit timeout (limit: {self.global_bucket.rate} req/s)"
+                )
 
-        # Acquire global token
-        global_start = time.monotonic()
-        global_acquired = await self.global_bucket.acquire(timeout=remaining_timeout)
-        global_wait = time.monotonic() - global_start
+            # Record global wait time
+            self._record_wait_time(namespace, "global", global_wait)
+            self._record_acquisition(namespace, "global")
 
-        if not global_acquired:
-            elapsed = time.monotonic() - start_time
-            logger.warning(
-                f"Global rate limit timeout after {elapsed:.2f}s "
-                f"(namespace: {namespace})"
-            )
-            # Record timeout metric
-            self._record_timeout(namespace, "global")
-            raise TimeoutError(
-                f"Global rate limit timeout (limit: {self.global_bucket.rate} req/s)"
-            )
+            # Both tokens acquired successfully
+            logger.debug(f"Rate limit tokens acquired for namespace '{namespace}'")
 
-        # Record global wait time
-        self._record_wait_time(namespace, "global", global_wait)
-        self._record_acquisition(namespace, "global")
-
-        # Both tokens acquired successfully
-        logger.debug(f"Rate limit tokens acquired for namespace '{namespace}'")
-
-        # Record remaining budget for observability
-        self._record_budget(namespace)
+            # Record remaining budget for observability
+            self._record_budget(namespace)
 
     def get_metrics(self) -> dict:
         """

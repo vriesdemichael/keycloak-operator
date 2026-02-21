@@ -13,10 +13,12 @@ from typing import Any, TypeVar
 
 import aiobreaker
 from aiobreaker.state import CircuitHalfOpenState, CircuitOpenState
+from opentelemetry import trace
 
 from keycloak_operator.observability.metrics import CIRCUIT_BREAKER_STATE
 
 logger = logging.getLogger(__name__)
+tracer = trace.get_tracer(__name__)
 
 T = TypeVar("T")
 
@@ -114,7 +116,20 @@ class KeycloakCircuitBreaker:
             aiobreaker.CircuitBreakerError: If the circuit is open
             Exception: Whatever the function raises
         """
-        return await self._breaker.call_async(func, *args, **kwargs)
+        with tracer.start_as_current_span("circuit_breaker_call") as span:
+            span.set_attribute("circuit_breaker.name", self.name)
+            span.set_attribute("circuit_breaker.state", self.current_state)
+
+            try:
+                return await self._breaker.call_async(func, *args, **kwargs)
+            except aiobreaker.CircuitBreakerError:
+                span.set_attribute("error", True)
+                span.set_attribute("circuit_breaker.error", "open")
+                raise
+            except Exception as e:
+                span.set_attribute("error", True)
+                span.record_exception(e)
+                raise
 
     @property
     def current_state(self) -> str:
