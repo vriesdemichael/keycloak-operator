@@ -1,6 +1,6 @@
 # Migration & Upgrade Guide
 
-This guide covers upgrading the Keycloak operator, migrating between token systems, and comparing this operator with the official Keycloak operator.
+This guide covers upgrading the Keycloak operator and comparing this operator with the official Keycloak operator.
 
 ## Table of Contents
 
@@ -278,7 +278,7 @@ kubectl get pods -n <namespace> -l app=keycloak
 | Feature | This Operator | Official Operator |
 |---------|---------------|-------------------|
 | Authorization method | Namespace Grant + RBAC | Keycloak admin credentials |
-| Token rotation | ✅ Automatic | ❌ Manual |
+| Client secret rotation | ✅ Automatic | ❌ Manual |
 | Multi-tenant isolation | ✅ Namespace Grant Lists | ⚠️ RBAC-based |
 | Audit trail | ✅ K8s API + ConfigMap | ⚠️ Keycloak logs |
 | Secret distribution | ✅ GitOps-friendly | ⚠️ Manual |
