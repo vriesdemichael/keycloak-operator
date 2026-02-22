@@ -1,6 +1,9 @@
 {{- if and .Values.keycloak.enabled .Values.keycloak.external.enabled -}}
 {{- fail "Cannot enable both Managed Keycloak (keycloak.enabled=true) and External Keycloak (keycloak.external.enabled=true). Please disable one." -}}
 {{- end -}}
+{{- if and .Values.keycloak.external.enabled (or (not .Values.keycloak.external.url) (not .Values.keycloak.external.adminSecret)) -}}
+{{- fail "When external mode is enabled, both keycloak.external.url and keycloak.external.adminSecret must be set." -}}
+{{- end -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:

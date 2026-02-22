@@ -566,7 +566,7 @@ keycloak:
     url: ""
     # Name of the Secret containing admin credentials
     # This secret must exist in the operator's namespace
-    # Structure: { "username": "...", "password": "..." } (keys configurable below)
+    # Structure: { "password": "..." } (key name configurable via adminPasswordKey below; username is set via adminUsername)
     adminSecret: ""
     # Username for admin access (defaults to "admin")
     adminUsername: "admin"

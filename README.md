@@ -105,6 +105,16 @@ keycloak:
     adminPasswordKey: "password"       # Optional (default: password)
 ```
 
+#### Creating the Admin Secret
+
+The admin secret must exist in the operator's namespace. It should contain the password for the external Keycloak instance.
+
+```bash
+kubectl create secret generic my-external-secret \
+  --from-literal=password='your-admin-password' \
+  --namespace keycloak-system
+```
+
 **Note:** In External Mode, `Keycloak` Custom Resources are ignored. The operator connects directly using the configured credentials.
 
 ## 📊 Example
