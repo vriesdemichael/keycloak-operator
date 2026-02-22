@@ -7945,7 +7945,13 @@ async def get_keycloak_admin_client(
     Returns:
         Configured KeycloakAdminClient instance (may be cached)
     """
-    cache_key = (keycloak_name, namespace, verify_ssl)
+    if settings.external_keycloak_url:
+        # In external mode, all CRs point to the same Keycloak instance.
+        # Use a fixed cache key so we reuse a single admin client per verify_ssl.
+        cache_key = ("__external__", "", verify_ssl)
+    else:
+        cache_key = (keycloak_name, namespace, verify_ssl)
+
     current_loop_id = id(asyncio.get_running_loop())
 
     # Check cache and pending creations with lock
@@ -7987,6 +7993,7 @@ async def get_keycloak_admin_client(
 
     # We are the creator
     from kubernetes import client as k8s_client
+    from kubernetes.client.rest import ApiException
 
     from keycloak_operator.utils.kubernetes import get_kubernetes_client
 
@@ -8016,6 +8023,11 @@ async def get_keycloak_admin_client(
                 import base64
 
                 password_key = settings.external_keycloak_admin_password_key
+                if not secret.data:
+                    raise KeycloakAdminError(
+                        f"Secret '{secret_name}' in namespace '{secret_namespace}' has no data"
+                    )
+
                 if password_key not in secret.data:
                     raise KeycloakAdminError(
                         f"Key '{password_key}' not found in secret '{secret_name}'"
@@ -8023,12 +8035,19 @@ async def get_keycloak_admin_client(
 
                 password = base64.b64decode(secret.data[password_key]).decode("utf-8")
 
-            except Exception as e:
+            except ApiException as e:
                 logger.error(f"Failed to retrieve external admin credentials: {e}")
+                # 404 is user error (missing secret), others might be transient
                 raise KeycloakAdminError(
                     f"Could not retrieve admin credentials from secret "
                     f"'{settings.external_keycloak_admin_secret}' in namespace "
                     f"'{settings.pod_namespace}': {e}"
+                ) from e
+            except Exception as e:
+                logger.error(f"Failed to process external admin credentials: {e}")
+                raise KeycloakAdminError(
+                    f"Could not process admin credentials from secret "
+                    f"'{settings.external_keycloak_admin_secret}': {e}"
                 ) from e
 
         else:

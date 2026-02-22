@@ -720,6 +720,35 @@
           "description": "Keycloak container image",
           "default": "quay.io/keycloak/keycloak"
         },
+        "external": {
+          "type": "object",
+          "description": "External Keycloak Configuration",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable External Keycloak Mode",
+              "default": false
+            },
+            "url": {
+              "type": "string",
+              "description": "URL of the external Keycloak instance (e.g., https://keycloak.example.com)"
+            },
+            "adminSecret": {
+              "type": "string",
+              "description": "Name of the Secret containing admin credentials"
+            },
+            "adminUsername": {
+              "type": "string",
+              "description": "Username for admin access",
+              "default": "admin"
+            },
+            "adminPasswordKey": {
+              "type": "string",
+              "description": "Key in the secret containing the password",
+              "default": "password"
+            }
+          }
+        },
         "database": {
           "type": "object",
           "description": "Database configuration",
