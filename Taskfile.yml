@@ -108,7 +108,7 @@ tasks:
   quality:security:
     desc: Run security scans (pip-audit, safety, trivy)
     cmds:
-      - uv run --group security pip-audit --desc --ignore-vuln CVE-2025-14009
+      - uv export --no-dev --format requirements-txt | grep -v '^\-e' | uv run --group security pip-audit -r /dev/stdin --desc
       - uv run --group security safety check --json
       - |
         if [ -z "$CI" ] && command -v trivy >/dev/null 2>&1; then
