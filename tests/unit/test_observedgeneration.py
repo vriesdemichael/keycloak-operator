@@ -335,6 +335,10 @@ class TestRealmReconcilerGenerationTracking:
 
         # Mock the realm reconciliation methods
         with (
+            patch(
+                "keycloak_operator.settings.settings.operator_namespace",
+                "test-namespace",
+            ),
             patch.object(
                 realm_reconciler,
                 "validate_cross_namespace_access",
@@ -406,6 +410,10 @@ class TestClientReconcilerGenerationTracking:
 
         # Mock the client reconciliation methods
         with (
+            patch(
+                "keycloak_operator.settings.settings.operator_namespace",
+                "test-namespace",
+            ),
             patch.object(
                 client_reconciler,
                 "validate_cross_namespace_access",
