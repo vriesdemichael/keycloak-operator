@@ -87,6 +87,15 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Parse and validate the specification
         realm_spec = self._validate_spec(spec)
 
+        # IGNORE resources not targeted at this operator instance (ADR-062)
+        target_namespace = realm_spec.operator_ref.namespace
+        if target_namespace != settings.operator_namespace:
+            self.logger.debug(
+                f"Ignoring KeycloakRealm {name}: targeted at namespace '{target_namespace}', "
+                f"but this operator is in '{settings.operator_namespace}'"
+            )
+            return {}
+
         # Enforce Admin Events if Drift Detection is enabled
         # This is required for "smart drift detection" to work
         if settings.drift_detection_enabled:

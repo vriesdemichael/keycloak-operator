@@ -5,6 +5,8 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from keycloak_operator.handlers.keycloak import ensure_keycloak_instance
+from keycloak_operator.services.client_reconciler import KeycloakClientReconciler
+from keycloak_operator.services.realm_reconciler import KeycloakRealmReconciler
 from keycloak_operator.settings import Settings
 from keycloak_operator.utils.keycloak_admin import (
     KeycloakAdminError,
@@ -192,3 +194,42 @@ async def test_ensure_keycloak_instance_external(mock_log, mock_settings):
     assert result is None
     assert patch_obj.status["phase"] == "Failed"
     assert "External Keycloak" in patch_obj.status["message"]
+
+
+# Test Reconciler Ignore Logic (ADR-062)
+@pytest.mark.asyncio
+@patch("keycloak_operator.services.realm_reconciler.settings")
+async def test_realm_reconciler_ignores_wrong_namespace(mock_settings):
+    mock_settings.operator_namespace = "correct-ns"
+    mock_settings.external_keycloak_url = ""
+
+    reconciler = KeycloakRealmReconciler()
+    spec = {
+        "realmName": "test",
+        "operatorRef": {"namespace": "wrong-ns"},
+    }
+
+    result = await reconciler.do_reconcile(
+        spec=spec, name="test", namespace="ns", status=MagicMock()
+    )
+
+    assert result == {}
+
+
+@pytest.mark.asyncio
+@patch("keycloak_operator.services.client_reconciler.settings")
+async def test_client_reconciler_ignores_wrong_namespace(mock_settings):
+    mock_settings.operator_namespace = "correct-ns"
+    mock_settings.external_keycloak_url = ""
+
+    reconciler = KeycloakClientReconciler()
+    spec = {
+        "clientId": "test",
+        "realmRef": {"name": "realm", "namespace": "wrong-ns"},
+    }
+
+    result = await reconciler.do_reconcile(
+        spec=spec, name="test", namespace="ns", status=MagicMock()
+    )
+
+    assert result == {}

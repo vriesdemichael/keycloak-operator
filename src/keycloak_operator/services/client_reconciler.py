@@ -183,6 +183,17 @@ class KeycloakClientReconciler(BaseReconciler):
         # Parse and validate the specification
         client_spec = self._validate_spec(spec)
 
+        # IGNORE resources not targeted at this operator instance (ADR-062)
+        # For Clients, they target a Realm, which exists in a specific namespace.
+        # That namespace effectively defines the "Keycloak Instance Namespace".
+        target_namespace = client_spec.realm_ref.namespace
+        if target_namespace != settings.operator_namespace:
+            self.logger.debug(
+                f"Ignoring KeycloakClient {name}: targeted at realm in '{target_namespace}', "
+                f"but this operator is in '{settings.operator_namespace}'"
+            )
+            return {}
+
         # Validate cross-namespace permissions
         await self.validate_cross_namespace_access(client_spec, namespace)
 
