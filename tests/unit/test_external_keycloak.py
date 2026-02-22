@@ -6,7 +6,10 @@ import pytest
 
 from keycloak_operator.handlers.keycloak import ensure_keycloak_instance
 from keycloak_operator.settings import Settings
-from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
+from keycloak_operator.utils.keycloak_admin import (
+    KeycloakAdminError,
+    get_keycloak_admin_client,
+)
 from keycloak_operator.utils.kubernetes import validate_keycloak_reference
 
 
@@ -93,6 +96,74 @@ async def test_get_keycloak_admin_client_external(
             keycloak_name="my-kc",
             keycloak_namespace="default",
         )
+
+
+@pytest.mark.asyncio
+@patch("keycloak_operator.utils.keycloak_admin.settings")
+@patch("keycloak_operator.utils.kubernetes.get_kubernetes_client")
+@patch("keycloak_operator.utils.keycloak_admin._cache_lock", new_callable=MagicMock)
+@patch("keycloak_operator.utils.keycloak_admin._pending_creations", {})
+async def test_get_keycloak_admin_client_external_missing_key(
+    mock_cache_lock, mock_get_k8s, mock_settings
+):
+    # Setup mock lock
+    mock_lock_instance = MagicMock()
+    mock_lock_instance.__aenter__.return_value = None
+    mock_lock_instance.__aexit__.return_value = None
+    mock_cache_lock.return_value = mock_lock_instance
+
+    mock_settings.external_keycloak_url = "https://external.keycloak"
+    mock_settings.external_keycloak_admin_secret = "ext-secret"
+    mock_settings.pod_namespace = "operator-ns"
+    mock_settings.external_keycloak_admin_username = "admin"
+    mock_settings.external_keycloak_admin_password_key = "password"
+
+    mock_core = MagicMock()
+    mock_k8s_client = MagicMock()
+    mock_get_k8s.return_value = mock_k8s_client
+
+    # Mock CoreV1Api usage with missing key
+    with patch("kubernetes.client.CoreV1Api", return_value=mock_core):
+        mock_secret = MagicMock()
+        mock_secret.data = {"wrong-key": "value"}
+        mock_core.read_namespaced_secret.return_value = mock_secret
+
+        with pytest.raises(KeycloakAdminError) as excinfo:
+            await get_keycloak_admin_client("my-kc", "default")
+
+        assert "Key 'password' not found" in str(excinfo.value)
+
+
+@pytest.mark.asyncio
+@patch("keycloak_operator.utils.keycloak_admin.settings")
+@patch("keycloak_operator.utils.kubernetes.get_kubernetes_client")
+@patch("keycloak_operator.utils.keycloak_admin._cache_lock", new_callable=MagicMock)
+@patch("keycloak_operator.utils.keycloak_admin._pending_creations", {})
+async def test_get_keycloak_admin_client_external_secret_not_found(
+    mock_cache_lock, mock_get_k8s, mock_settings
+):
+    # Setup mock lock
+    mock_lock_instance = MagicMock()
+    mock_lock_instance.__aenter__.return_value = None
+    mock_lock_instance.__aexit__.return_value = None
+    mock_cache_lock.return_value = mock_lock_instance
+
+    mock_settings.external_keycloak_url = "https://external.keycloak"
+    mock_settings.external_keycloak_admin_secret = "ext-secret"
+    mock_settings.pod_namespace = "operator-ns"
+
+    mock_core = MagicMock()
+    mock_k8s_client = MagicMock()
+    mock_get_k8s.return_value = mock_k8s_client
+
+    # Mock exception when reading secret
+    with patch("kubernetes.client.CoreV1Api", return_value=mock_core):
+        mock_core.read_namespaced_secret.side_effect = Exception("Secret not found")
+
+        with pytest.raises(KeycloakAdminError) as excinfo:
+            await get_keycloak_admin_client("my-kc", "default")
+
+        assert "Could not retrieve admin credentials" in str(excinfo.value)
 
 
 # Test ensure_keycloak_instance
