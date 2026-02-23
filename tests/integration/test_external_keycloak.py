@@ -65,7 +65,9 @@ async def test_external_keycloak_mode(
     import subprocess
 
     chart_path = "charts/keycloak-operator"
-    release_name = "external-operator"
+    # Use random release name to prevent collisions between parallel test runs
+    # or leftover resources from failed runs (ClusterRoles, etc are global)
+    release_name = f"ext-op-{os.urandom(4).hex()}"
 
     helm_cmd = [
         "helm",
@@ -105,6 +107,8 @@ async def test_external_keycloak_mode(
         "webhooks.enabled=false",  # Disable webhooks to prevent collision with shared operator
         "--set",
         "priorityClass.create=false",  # Disable priority class to prevent collision
+        "--set",
+        "crds.install=false",  # CRDs are already installed by main operator
     ]
 
     logger.info(f"Deploying external operator to {external_op_ns}...")
