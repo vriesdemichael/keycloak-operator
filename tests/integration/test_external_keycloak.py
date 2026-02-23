@@ -60,6 +60,23 @@ async def test_external_keycloak_mode(
     )
     await k8s_core_v1.create_namespaced_secret(external_op_ns, external_secret)
 
+    # Defensive cleanup: Remove any stale global webhooks from previous failed ext-op runs
+    # This is critical because zombie webhooks break the whole cluster.
+    import subprocess
+
+    try:
+        logger.info("Checking for stale external operator webhooks...")
+        # List all validating webhook configurations
+        wh_cmd = ["kubectl", "get", "validatingwebhookconfigurations", "-o", "name"]
+        result = subprocess.run(wh_cmd, capture_output=True, text=True)
+        if result.returncode == 0:
+            for wh in result.stdout.strip().split("\n"):
+                if "ext-op-" in wh or "external-operator" in wh:
+                    logger.warning(f"Removing stale webhook: {wh}")
+                    subprocess.run(["kubectl", "delete", wh])
+    except Exception as e:
+        logger.warning(f"Failed to clean up stale webhooks: {e}")
+
     # 2. Deploy Second Operator (External Mode) using Helm
     # We use subprocess to run helm install
     import subprocess
@@ -112,31 +129,19 @@ async def test_external_keycloak_mode(
     ]
 
     logger.info(f"Deploying external operator to {external_op_ns}...")
+    # Run helm install
+    process = await asyncio.create_subprocess_exec(
+        *helm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+    )
+    stdout, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        logger.error(f"Helm install failed: {stderr.decode()}")
+        pytest.fail(f"Helm install failed: {stderr.decode()}")
+
+    logger.info("External operator deployed successfully.")
+
     try:
-        # Run helm install
-        process = await asyncio.create_subprocess_exec(
-            *helm_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-        stdout, stderr = await process.communicate()
-
-        if process.returncode != 0:
-            logger.error(f"Helm install failed: {stderr.decode()}")
-            pytest.fail(f"Helm install failed: {stderr.decode()}")
-
-        logger.info("External operator deployed successfully.")
-
-        # Register cleanup
-        def cleanup_helm():
-            subprocess.run(
-                ["helm", "uninstall", release_name, "--namespace", external_op_ns],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-            )
-
-        cleanup_tracker.register_callback(
-            cleanup_helm, f"helm-uninstall-{release_name}"
-        )
-
         # 3. Create KeycloakRealm
         realm_name = f"ext-test-{os.urandom(4).hex()}"
         realm_spec = KeycloakRealmSpec(
@@ -189,15 +194,7 @@ async def test_external_keycloak_mode(
             pytest.fail(f"Timeout waiting for Realm {realm_name} to become Ready")
 
         # 5. Verify Realm exists in Shared Keycloak
-        # Connect to shared keycloak using port-forward (via keycloak_ready fixture logic or new client)
-        # Since we are outside the cluster (running tests locally), we need port-forward to talk to shared keycloak.
-        # shared_operator fixture usually provides access.
-
-        # We can use the admin client from shared_operator if available, or create new one.
-        # But wait, shared_operator returns SharedOperatorInfo which has keycloak_name/namespace.
-        # We need to port-forward to it.
-
-        # Use fixture to get port-forward
+        # Connect to shared keycloak using port-forward
         local_port = await keycloak_port_forward(shared_kc_name, shared_ns)
 
         # Let's manually create a client for verification
@@ -264,5 +261,9 @@ async def test_external_keycloak_mode(
             pytest.fail("Timeout waiting for Keycloak CR to fail in External Mode")
 
     finally:
-        # Cleanup handled by cleanup_tracker and fixtures
-        pass
+        logger.info(f"Cleaning up Helm release: {release_name}")
+        subprocess.run(
+            ["helm", "uninstall", release_name, "--namespace", external_op_ns],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
