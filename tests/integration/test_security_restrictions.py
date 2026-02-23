@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 import uuid
 
 import pytest
 
 from .cleanup_utils import delete_custom_resource_with_retry
-from .wait_helpers import wait_for_resource_failed, wait_for_resource_ready
+from .wait_helpers import wait_for_resource_ready
+
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.integration
@@ -87,28 +90,24 @@ class TestSecurityRestrictions:
                 operator_namespace=operator_namespace,
             )
 
-            await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                body=client_manifest,
-            )
+            # Expect the webhook to reject the creation
+            from kubernetes.client.rest import ApiException
 
-            # Expect Failed state due to ValidationError
-            await wait_for_resource_failed(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                timeout=90,
-                operator_namespace=operator_namespace,
-            )
+            with pytest.raises(ApiException) as excinfo:
+                await k8s_custom_objects.create_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakclients",
+                    body=client_manifest,
+                )
+
+            assert excinfo.value.status == 500  # Admission webhook denial
+            assert "restricted realm role 'admin'" in str(excinfo.value.body)
+            logger.info("Verified restricted role was blocked by webhook.")
 
         finally:
-            # Clean up client first (depends on realm)
+            # Clean up client (may exist if webhook failed to block)
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -198,25 +197,23 @@ class TestSecurityRestrictions:
                 timeout=90,
                 operator_namespace=operator_namespace,
             )
-            await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                body=client_manifest,
-            )
-            await wait_for_resource_failed(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                timeout=90,
-                operator_namespace=operator_namespace,
-            )
+
+            # Expect the webhook to reject the creation
+            from kubernetes.client.rest import ApiException
+
+            with pytest.raises(ApiException) as excinfo:
+                await k8s_custom_objects.create_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakclients",
+                    body=client_manifest,
+                )
+
+            assert excinfo.value.status == 500
+            assert "restricted client role 'realm-admin'" in str(excinfo.value.body)
+
         finally:
-            # Clean up client first (depends on realm)
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -226,7 +223,6 @@ class TestSecurityRestrictions:
                 name=client_name,
                 timeout=60,
             )
-            # Then clean up realm
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -306,25 +302,23 @@ class TestSecurityRestrictions:
                 timeout=90,
                 operator_namespace=operator_namespace,
             )
-            await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                body=client_manifest,
-            )
-            await wait_for_resource_failed(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                timeout=90,
-                operator_namespace=operator_namespace,
-            )
+
+            # Expect the webhook to reject the creation
+            from kubernetes.client.rest import ApiException
+
+            with pytest.raises(ApiException) as excinfo:
+                await k8s_custom_objects.create_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakclients",
+                    body=client_manifest,
+                )
+
+            assert excinfo.value.status == 500
+            assert "restricted client role 'manage-realm'" in str(excinfo.value.body)
+
         finally:
-            # Clean up client first (depends on realm)
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -334,7 +328,6 @@ class TestSecurityRestrictions:
                 name=client_name,
                 timeout=60,
             )
-            # Then clean up realm
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -414,25 +407,23 @@ class TestSecurityRestrictions:
                 timeout=90,
                 operator_namespace=operator_namespace,
             )
-            await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                body=client_manifest,
-            )
-            await wait_for_resource_failed(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                timeout=90,
-                operator_namespace=operator_namespace,
-            )
+
+            # Expect the webhook to reject the creation
+            from kubernetes.client.rest import ApiException
+
+            with pytest.raises(ApiException) as excinfo:
+                await k8s_custom_objects.create_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakclients",
+                    body=client_manifest,
+                )
+
+            assert excinfo.value.status == 500
+            assert "restricted client role 'impersonation'" in str(excinfo.value.body)
+
         finally:
-            # Clean up client first (depends on realm)
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -442,7 +433,6 @@ class TestSecurityRestrictions:
                 name=client_name,
                 timeout=60,
             )
-            # Then clean up realm
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -525,25 +515,23 @@ class TestSecurityRestrictions:
                 timeout=90,
                 operator_namespace=operator_namespace,
             )
-            await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                body=client_manifest,
-            )
-            await wait_for_resource_failed(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                timeout=90,
-                operator_namespace=operator_namespace,
-            )
+
+            # Expect the webhook to reject the creation
+            from kubernetes.client.rest import ApiException
+
+            with pytest.raises(ApiException) as excinfo:
+                await k8s_custom_objects.create_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakclients",
+                    body=client_manifest,
+                )
+
+            assert excinfo.value.status == 500
+            assert "Script mapper 'saml-script-mapper'" in str(excinfo.value.body)
+
         finally:
-            # Clean up client first (depends on realm)
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -553,7 +541,6 @@ class TestSecurityRestrictions:
                 name=client_name,
                 timeout=60,
             )
-            # Then clean up realm
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -635,25 +622,23 @@ class TestSecurityRestrictions:
                 timeout=90,
                 operator_namespace=operator_namespace,
             )
-            await k8s_custom_objects.create_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                body=client_manifest,
-            )
-            await wait_for_resource_failed(
-                k8s_custom_objects=k8s_custom_objects,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloakclients",
-                name=client_name,
-                timeout=90,
-                operator_namespace=operator_namespace,
-            )
+
+            # Expect the webhook to reject the creation
+            from kubernetes.client.rest import ApiException
+
+            with pytest.raises(ApiException) as excinfo:
+                await k8s_custom_objects.create_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloakclients",
+                    body=client_manifest,
+                )
+
+            assert excinfo.value.status == 500
+            assert "Script mapper 'script-mapper'" in str(excinfo.value.body)
+
         finally:
-            # Clean up client first (depends on realm)
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",
@@ -663,7 +648,6 @@ class TestSecurityRestrictions:
                 name=client_name,
                 timeout=60,
             )
-            # Then clean up realm
             await delete_custom_resource_with_retry(
                 k8s_custom_objects=k8s_custom_objects,
                 group="vriesdemichael.github.io",

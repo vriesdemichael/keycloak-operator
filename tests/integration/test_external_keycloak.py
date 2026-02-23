@@ -113,12 +113,28 @@ async def test_external_keycloak_mode(
         "--set",
         "operator.image.repository=keycloak-operator",
         "--set",
-        "webhooks.failurePolicy=Ignore",  # Critical: don't block cluster if test pod dies
+        "webhooks.enabled=true",  # We want to test webhooks in multi-tenant mode too!
+        "--set",
+        "webhooks.failurePolicy=Ignore",
+        "--set",
+        f"webhooks.namespaceSelector.matchLabels.tenant={external_op_ns}",  # ISOLATION
         "--set",
         "priorityClass.create=false",
         "--set",
         "crds.install=false",
     ]
+
+    # Label the namespace for the webhook selector
+    logger.info(f"Labeling namespace {external_op_ns} for multi-tenancy...")
+    label_cmd = [
+        "kubectl",
+        "label",
+        "namespace",
+        external_op_ns,
+        f"tenant={external_op_ns}",
+        "--overwrite",
+    ]
+    subprocess.run(label_cmd, check=True)
 
     logger.info(f"Deploying external operator to {external_op_ns}...")
     # Run helm install

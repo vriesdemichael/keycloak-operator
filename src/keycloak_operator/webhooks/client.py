@@ -121,11 +121,15 @@ async def validate_client(
             # Check if realm is targeted at another operator
             target_op_ns = realm.get("spec", {}).get("operatorRef", {}).get("namespace")
             if target_op_ns and target_op_ns != operator_settings.operator_namespace:
-                logger.info(
-                    f"Skipping validation for client {name}: parent realm {realm_name} "
+                logger.warning(
+                    f"DEBUG: Skipping validation for client {name}: parent realm {realm_name} "
                     f"targeted at operator in {target_op_ns} (we are {operator_settings.operator_namespace})"
                 )
                 return {}
+            else:
+                logger.warning(
+                    f"DEBUG: Proceeding with validation for client {name}: target_op_ns={target_op_ns}, our_ns={operator_settings.operator_namespace}"
+                )
     except Exception as e:
         # If realm doesn't exist yet or lookup fails, we continue to full validation.
         # This allows creating a client alongside a realm in a single manifest.
@@ -162,6 +166,57 @@ async def validate_client(
     realm_ref = client_spec.realm_ref
     if not realm_ref.name or not realm_ref.namespace:
         raise kopf.AdmissionError("realmRef.name and realmRef.namespace are required")
+
+    # Security validation: Restricted Roles
+    roles_config = client_spec.service_account_roles
+    if client_spec.settings.service_accounts_enabled:
+        # Realm roles
+        restricted_realm_roles = {"admin"}
+        for role in roles_config.realm_roles:
+            if role in restricted_realm_roles:
+                raise kopf.AdmissionError(
+                    f"Assigning restricted realm role '{role}' to service account is not allowed for security reasons."
+                )
+
+        # Client roles
+        from keycloak_operator.services.client_reconciler import RESTRICTED_CLIENT_ROLES
+        from keycloak_operator.settings import settings as operator_settings
+
+        if roles_config.client_roles:
+            for target_client, roles in roles_config.client_roles.items():
+                if target_client in RESTRICTED_CLIENT_ROLES:
+                    restricted_roles = RESTRICTED_CLIENT_ROLES[target_client]
+                    for role in roles:
+                        # Allow impersonation only if explicitly configured
+                        if (
+                            role == "impersonation"
+                            and operator_settings.allow_impersonation
+                        ):
+                            continue
+
+                        if role in restricted_roles or role == "impersonation":
+                            raise kopf.AdmissionError(
+                                f"Assigning restricted client role '{role}' from '{target_client}' "
+                                "to service account is not allowed for security reasons."
+                            )
+
+    # Security validation: Script Mappers
+    from keycloak_operator.services.client_reconciler import (
+        DANGEROUS_SCRIPT_MAPPER_TYPES,
+    )
+
+    if not operator_settings.allow_script_mappers and client_spec.protocol_mappers:
+        for mapper_spec in client_spec.protocol_mappers:
+            m_type = (
+                mapper_spec.protocol_mapper.lower()
+                if mapper_spec.protocol_mapper
+                else ""
+            )
+            if m_type in DANGEROUS_SCRIPT_MAPPER_TYPES:
+                raise kopf.AdmissionError(
+                    f"Script mapper '{mapper_spec.name}' (type: {mapper_spec.protocol_mapper}) is not allowed. "
+                    "Script mappers are disabled by default for security."
+                )
 
     logger.info(f"KeycloakClient {name} validation passed")
 
