@@ -211,6 +211,22 @@ async def ensure_keycloak_instance(
     # Log handler entry immediately for debugging
     log_handler_entry("create/resume", "keycloak", name, namespace)
 
+    # Check if running in External Mode
+    if settings.external_keycloak_url:
+        logger.warning(
+            f"Operator is running in External Mode ({settings.external_keycloak_url}). "
+            f"Ignoring Keycloak CR {name} in {namespace}. "
+            "To manage a Keycloak instance, unset KEYCLOAK_EXTERNAL_URL."
+        )
+        status_wrapper = StatusWrapper(patch.status)
+        status_wrapper.phase = "Failed"
+        status_wrapper.message = (
+            "Operator is configured for External Keycloak. "
+            "This CR is ignored and should be deleted."
+        )
+        # We return None to stop processing, but we've set the status via patch
+        return None
+
     # Check if resource is being deleted - if so, skip reconciliation
     # The @kopf.on.delete handler (delete_keycloak_instance) handles cleanup
     meta = kwargs.get("meta", {})
@@ -478,6 +494,10 @@ async def monitor_keycloak_health(
         ⚠️  Generate events for significant status changes - Future enhancement
         ⚠️  Implement alerting for persistent failures - Future enhancement
     """
+    # Skip health check if running in External Mode
+    if settings.external_keycloak_url:
+        return
+
     # Random jitter on startup to prevent thundering herd
     initial_jitter = random.uniform(0, TIMER_INTERVAL_KEYCLOAK)
     await stopped.wait(initial_jitter)
