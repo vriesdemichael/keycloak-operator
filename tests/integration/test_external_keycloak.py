@@ -102,12 +102,9 @@ async def test_external_keycloak_mode(
         "--set",
         "operator.image.repository=keycloak-operator",
         "--set",
-        "operator.image.tag=test",
+        "webhooks.enabled=false",  # Disable webhooks to prevent collision with shared operator
         "--set",
-        "operator.image.pullPolicy=Never",
-        "--wait",  # Wait for pod ready
-        "--timeout",
-        "120s",
+        "priorityClass.create=false",  # Disable priority class to prevent collision
     ]
 
     logger.info(f"Deploying external operator to {external_op_ns}...")
