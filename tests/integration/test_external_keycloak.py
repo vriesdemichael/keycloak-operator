@@ -36,7 +36,7 @@ async def test_external_keycloak_mode(
     # 1. Setup: Define external operator namespace and credentials
     external_op_ns = test_namespace  # Use the test namespace for the second operator
     shared_ns = shared_operator.namespace
-    shared_kc_name = shared_operator.keycloak_name
+    shared_kc_name = shared_operator.name
 
     # Shared Keycloak Internal URL
     external_url = (
