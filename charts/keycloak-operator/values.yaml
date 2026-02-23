@@ -668,6 +668,15 @@ webhooks:
   #   - Allows requests if webhook is unavailable
   #   - Use for development or when webhook availability is a concern
   failurePolicy: Fail
+  # Namespace selector for webhooks
+  # Limits which namespaces the webhooks apply to
+  # Useful for multi-tenant clusters running multiple operator instances
+  # Default: {} (applies to all namespaces)
+  # Example for multi-tenancy:
+  # namespaceSelector:
+  #   matchLabels:
+  #     tenant: team-a
+  namespaceSelector: {}
   # Resource quotas enforced by webhooks
   # Prevents resource exhaustion and limits blast radius
   quotas:
