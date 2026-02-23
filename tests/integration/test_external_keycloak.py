@@ -71,7 +71,7 @@ async def test_external_keycloak_mode(
         result = subprocess.run(wh_cmd, capture_output=True, text=True)
         if result.returncode == 0:
             for wh in result.stdout.strip().split("\n"):
-                if "ext-op-" in wh or "external-operator" in wh:
+                if "ext-op-" in wh:
                     logger.warning(f"Removing stale webhook: {wh}")
                     subprocess.run(["kubectl", "delete", wh])
     except Exception as e:
@@ -82,8 +82,7 @@ async def test_external_keycloak_mode(
     import subprocess
 
     chart_path = "charts/keycloak-operator"
-    # Use random release name to prevent collisions between parallel test runs
-    # or leftover resources from failed runs (ClusterRoles, etc are global)
+    # Use random release name to prevent collisions
     release_name = f"ext-op-{os.urandom(4).hex()}"
 
     helm_cmd = [
@@ -102,13 +101,6 @@ async def test_external_keycloak_mode(
         "--set",
         f"keycloak.external.adminSecret={external_secret_name}",
         "--set",
-        "keycloak.external.adminUsername=username",  # Key in secret is username, but value check? No config maps to env var
-        # Wait, env var KEYCLOAK_EXTERNAL_ADMIN_USERNAME is the username string, not secret key.
-        # But we default to "admin". Let's set it explicitly if needed.
-        # Actually the helm chart maps:
-        # KEYCLOAK_EXTERNAL_ADMIN_USERNAME value: {{ .Values.keycloak.external.adminUsername }}
-        # The Secret contains the password.
-        "--set",
         f"keycloak.external.adminUsername={admin_username}",
         "--set",
         "keycloak.external.adminPasswordKey=password",
@@ -121,11 +113,11 @@ async def test_external_keycloak_mode(
         "--set",
         "operator.image.repository=keycloak-operator",
         "--set",
-        "webhooks.enabled=false",  # Disable webhooks to prevent collision with shared operator
+        "webhooks.failurePolicy=Ignore",  # Critical: don't block cluster if test pod dies
         "--set",
-        "priorityClass.create=false",  # Disable priority class to prevent collision
+        "priorityClass.create=false",
         "--set",
-        "crds.install=false",  # CRDs are already installed by main operator
+        "crds.install=false",
     ]
 
     logger.info(f"Deploying external operator to {external_op_ns}...")

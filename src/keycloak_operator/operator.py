@@ -118,7 +118,11 @@ async def startup_handler(
     # Configure peering for leader election with random priority
     # Each pod gets a unique priority to enable leader election
     # Use instance ID as peering name to allow multiple operators in one cluster
-    settings.peering.name = operator_settings.operator_instance_id
+    # This ensures that operators in different namespaces or with different release names
+    # don't fight over the same lease.
+    settings.peering.name = (
+        operator_settings.operator_instance_id or "keycloak-operator"
+    )
     settings.peering.priority = random.randint(0, 32767)
     logging.info(
         f"Peering name set to '{settings.peering.name}' with priority {settings.peering.priority}"
