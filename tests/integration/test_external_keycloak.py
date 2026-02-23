@@ -96,6 +96,8 @@ async def test_external_keycloak_mode(
         "--set",
         f"operator.watchNamespaces={external_op_ns}",  # Watch only own ns
         "--set",
+        "namespace.create=false",
+        "--set",
         "operator.replicaCount=1",
         "--set",
         "operator.image.repository=keycloak-operator",
