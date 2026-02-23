@@ -453,7 +453,6 @@ async def check_prerequisites(k8s_client, k8s_core_v1):
                 control_plane_name,
                 "crictl",
                 "images",
-                "keycloak-operator",
             ],
             capture_output=True,
             text=True,
