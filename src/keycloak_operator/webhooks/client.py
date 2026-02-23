@@ -95,6 +95,42 @@ async def validate_client(
         f"(operation: {operation}, dryrun: {dryrun})"
     )
 
+    # Multi-tenancy check: Only validate if the parent Realm is managed by us.
+    # This prevents Operator A from blocking Operator B's clients via quotas.
+    from keycloak_operator.settings import settings as operator_settings
+
+    try:
+        realm_ref = spec.get("realmRef", {})
+        realm_name = realm_ref.get("name")
+        realm_ns = realm_ref.get("namespace")
+
+        if realm_name and realm_ns:
+            # Look up the realm to check its operatorRef
+            from kubernetes import client as k8s_client
+
+            api = k8s_client.CustomObjectsApi()
+            realm = await asyncio.to_thread(
+                api.get_namespaced_custom_object,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=realm_ns,
+                plural="keycloakrealms",
+                name=realm_name,
+            )
+
+            # Check if realm is targeted at another operator
+            target_op_ns = realm.get("spec", {}).get("operatorRef", {}).get("namespace")
+            if target_op_ns and target_op_ns != operator_settings.operator_namespace:
+                logger.info(
+                    f"Skipping validation for client {name}: parent realm {realm_name} "
+                    f"targeted at operator in {target_op_ns} (we are {operator_settings.operator_namespace})"
+                )
+                return {}
+    except Exception as e:
+        # If realm doesn't exist yet or lookup fails, we continue to full validation.
+        # This allows creating a client alongside a realm in a single manifest.
+        logger.debug(f"Could not determine realm ownership for client {name}: {e}")
+
     # Validate with Pydantic model first
     try:
         client_spec = KeycloakClientSpec.model_validate(spec)
