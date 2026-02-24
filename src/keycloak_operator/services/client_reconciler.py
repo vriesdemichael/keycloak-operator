@@ -9,6 +9,7 @@ import base64
 import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -603,6 +604,12 @@ class KeycloakClientReconciler(BaseReconciler):
             value = int(duration_str[:-1])
         except ValueError as e:
             raise ValidationError(f"Invalid duration format '{duration_str}'") from e
+
+        if value <= 0:
+            raise ValidationError(
+                f"Duration value must be a positive integer in '{duration_str}'"
+            )
+
         if unit == "s":
             return timedelta(seconds=value)
         elif unit == "m":
@@ -629,10 +636,39 @@ class KeycloakClientReconciler(BaseReconciler):
                 rotated_at = rotated_at.replace(tzinfo=UTC)
         except ValueError:
             return False
+
         rotation_period = self._parse_duration(spec.secret_rotation.rotation_period)
         expiration_time = rotated_at + rotation_period
         now = datetime.now(UTC)
-        return now >= expiration_time
+
+        if now < expiration_time:
+            return False
+
+        if spec.secret_rotation.rotation_time:
+            try:
+                target_tz = ZoneInfo(spec.secret_rotation.timezone)
+                expiration_in_tz = expiration_time.astimezone(target_tz)
+                target_hour, target_minute = map(
+                    int, spec.secret_rotation.rotation_time.split(":")
+                )
+
+                target_rotation_dt = expiration_in_tz.replace(
+                    hour=target_hour, minute=target_minute, second=0, microsecond=0
+                )
+
+                if target_rotation_dt < expiration_in_tz:
+                    target_rotation_dt += timedelta(days=1)
+
+                now_in_tz = now.astimezone(target_tz)
+                if now_in_tz < target_rotation_dt:
+                    return False
+            except Exception as e:
+                self.logger.warning(
+                    f"Error calculating rotation schedule: {e}. Falling back to immediate rotation."
+                )
+                return True
+
+        return True
 
     async def manage_client_credentials(
         self,
@@ -678,12 +714,16 @@ class KeycloakClientReconciler(BaseReconciler):
             should_rotate = self._should_rotate_secret(spec, existing_secret)
             if (
                 not should_rotate
+                and not spec.regenerate_secret
                 and existing_secret.data
                 and "client-secret" in existing_secret.data
             ):
                 client_secret = base64.b64decode(
                     existing_secret.data["client-secret"]
                 ).decode("utf-8")
+
+        if spec.regenerate_secret:
+            should_rotate = True
 
         if spec.client_secret:
             manual_secret = core_api.read_namespaced_secret(
@@ -730,6 +770,15 @@ class KeycloakClientReconciler(BaseReconciler):
         )
         if existing_secret is None or rotation_succeeded:
             annotations["keycloak-operator/rotated-at"] = datetime.now(UTC).isoformat()
+        elif (
+            existing_secret
+            and existing_secret.metadata
+            and existing_secret.metadata.annotations
+            and "keycloak-operator/rotated-at" in existing_secret.metadata.annotations
+        ):
+            annotations["keycloak-operator/rotated-at"] = (
+                existing_secret.metadata.annotations["keycloak-operator/rotated-at"]
+            )
 
         create_client_secret(
             secret_name=secret_name,
@@ -756,6 +805,19 @@ class KeycloakClientReconciler(BaseReconciler):
         keycloak_name: str | None = None,
     ) -> None:
         """Configure protocol mappers."""
+        # Security validation (Moved here but should also be in webhook)
+        if not settings.allow_script_mappers and spec.protocol_mappers:
+            for mapper_spec in spec.protocol_mappers:
+                m_type = (
+                    mapper_spec.protocol_mapper.lower()
+                    if mapper_spec.protocol_mapper
+                    else ""
+                )
+                if m_type in DANGEROUS_SCRIPT_MAPPER_TYPES:
+                    raise ValidationError(
+                        f"Script mapper '{mapper_spec.name}' (type: {mapper_spec.protocol_mapper}) is not allowed."
+                    )
+
         if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
             actual_realm_name, keycloak_namespace, keycloak_name, _ = (
                 self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
@@ -880,11 +942,6 @@ class KeycloakClientReconciler(BaseReconciler):
         if not roles_config.realm_roles and not roles_config.client_roles:
             return
 
-        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
-
         # Security validation (Moved here but should also be in webhook)
         restricted_realm_roles = {"admin"}
         for role in roles_config.realm_roles:
@@ -902,6 +959,11 @@ class KeycloakClientReconciler(BaseReconciler):
                             raise ValidationError(
                                 f"Restricted client role '{role}' not allowed"
                             )
+
+        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
+            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
+                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
+            )
 
         admin_client = await self.keycloak_admin_factory(
             keycloak_name, keycloak_namespace
@@ -1410,3 +1472,47 @@ class KeycloakClientReconciler(BaseReconciler):
                 )
         except Exception as e:
             self.logger.warning(f"Cleanup failed for client {name}: {e}")
+
+        # Clean up Kubernetes resources manually
+        try:
+            core_api = client.CoreV1Api(self.k8s_client)
+
+            # Delete credentials secret
+            try:
+                core_api.delete_namespaced_secret(f"{name}-credentials", namespace)
+            except ApiException as e:
+                if e.status != 404:
+                    self.logger.warning(
+                        f"Failed to delete credentials secret for client {name}: {e}"
+                    )
+
+            # Delete other resources managed by this client (e.g., config maps, other secrets)
+            # Find resources with label vriesdemichael.github.io/keycloak-client=name
+            label_selector = f"vriesdemichael.github.io/keycloak-client={name}"
+
+            try:
+                config_maps = core_api.list_namespaced_config_map(
+                    namespace, label_selector=label_selector
+                )
+                for cm in config_maps.items:
+                    core_api.delete_namespaced_config_map(cm.metadata.name, namespace)
+            except ApiException as e:
+                self.logger.warning(
+                    f"Failed to list/delete labeled config maps for client {name}: {e}"
+                )
+
+            try:
+                secrets = core_api.list_namespaced_secret(
+                    namespace, label_selector=label_selector
+                )
+                for s in secrets.items:
+                    # Skip the credentials secret as we already deleted it
+                    if s.metadata.name != f"{name}-credentials":
+                        core_api.delete_namespaced_secret(s.metadata.name, namespace)
+            except ApiException as e:
+                self.logger.warning(
+                    f"Failed to list/delete labeled secrets for client {name}: {e}"
+                )
+
+        except Exception as e:
+            self.logger.warning(f"Kubernetes cleanup failed for client {name}: {e}")

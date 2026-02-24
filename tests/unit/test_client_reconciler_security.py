@@ -37,7 +37,7 @@ async def test_admin_realm_role_blocked(reconciler):
     }
     spec = KeycloakClientSpec.model_validate(spec_dict)
 
-    with pytest.raises(ValidationError, match="restricted realm role 'admin'"):
+    with pytest.raises(ValidationError, match="(?i)restricted realm role 'admin'"):
         await reconciler.manage_service_account_roles(
             spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
         )
@@ -54,7 +54,9 @@ async def test_realm_admin_client_role_blocked(reconciler):
     }
     spec = KeycloakClientSpec.model_validate(spec_dict)
 
-    with pytest.raises(ValidationError, match="restricted client role 'realm-admin'"):
+    with pytest.raises(
+        ValidationError, match="(?i)restricted client role 'realm-admin'"
+    ):
         await reconciler.manage_service_account_roles(
             spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
         )
@@ -111,7 +113,9 @@ async def test_impersonation_blocked_by_default(reconciler, mock_settings):
     }
     spec = KeycloakClientSpec.model_validate(spec_dict)
 
-    with pytest.raises(ValidationError, match="restricted client role 'impersonation'"):
+    with pytest.raises(
+        ValidationError, match="(?i)restricted client role 'impersonation'"
+    ):
         await reconciler.manage_service_account_roles(
             spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
         )
@@ -261,7 +265,9 @@ async def test_other_high_privilege_roles_blocked(reconciler):
     }
     spec = KeycloakClientSpec.model_validate(spec_dict)
 
-    with pytest.raises(ValidationError, match="restricted client role 'manage-users'"):
+    with pytest.raises(
+        ValidationError, match="(?i)restricted client role 'manage-users'"
+    ):
         await reconciler.manage_service_account_roles(
             spec=spec, client_uuid="uuid", name="test-client", namespace="test-ns"
         )
