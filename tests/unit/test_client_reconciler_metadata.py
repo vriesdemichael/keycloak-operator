@@ -24,10 +24,9 @@ async def test_manage_client_credentials_passes_metadata():
     )
 
     # Mock _get_realm_info to return values
-    reconciler._get_realm_info = MagicMock(return_value=("realm-name", "ns", "kc", {}))  # type: ignore
+    from keycloak_operator.settings import settings
 
-    # Mock validate_keycloak_reference and get_kubernetes_client
-    # These are imported inline within the method, so patch at their source module
+    settings.operator_instance_id = "test-instance"
     with (
         patch(
             "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
@@ -37,7 +36,21 @@ async def test_manage_client_credentials_passes_metadata():
         ) as mock_create_secret,
         patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
         patch("kubernetes.client.CoreV1Api") as mock_core_api_cls,
+        patch.object(
+            KeycloakClientReconciler, "_get_realm_info"
+        ) as mock_get_realm_info,
     ):
+        mock_get_realm_info.return_value = (
+            "realm-name",
+            "ns",
+            "kc",
+            {
+                "spec": {
+                    "operatorRef": {"namespace": settings.operator_namespace},
+                    "clientAuthorizationGrants": ["ns"],
+                }
+            },
+        )
         mock_validate.return_value = {"status": {"endpoints": {"public": "http://kc"}}}
 
         # Mock CoreV1Api to return 404 (secret doesn't exist)
@@ -85,9 +98,9 @@ async def test_do_update_passes_metadata_without_regeneration():
         k8s_client=mock_k8s_client, keycloak_admin_factory=mock_admin_factory
     )
 
-    reconciler._get_realm_info = MagicMock(return_value=("realm-name", "ns", "kc", {}))  # type: ignore
-    reconciler.update_status_ready = MagicMock()  # type: ignore
+    from keycloak_operator.settings import settings
 
+    settings.operator_instance_id = "test-instance"
     with (
         patch(
             "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
@@ -95,10 +108,38 @@ async def test_do_update_passes_metadata_without_regeneration():
         patch(
             "keycloak_operator.utils.kubernetes.create_client_secret"
         ) as mock_create_secret,
+        patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
+        patch("kubernetes.client.CoreV1Api") as mock_core_api_cls,
+        patch.object(
+            KeycloakClientReconciler, "_get_realm_info"
+        ) as mock_get_realm_info,
     ):
+        mock_get_realm_info.return_value = (
+            "realm-name",
+            "ns",
+            "kc",
+            {
+                "spec": {
+                    "operatorRef": {"namespace": settings.operator_namespace},
+                    "clientAuthorizationGrants": ["ns"],
+                }
+            },
+        )
         mock_validate.return_value = {"status": {"endpoints": {"public": "http://kc"}}}
         # Mock getting existing secret
         mock_admin_client.get_client_secret.return_value = "existing-secret"
+        mock_core_api = MagicMock()
+        mock_core_api_cls.return_value = mock_core_api
+        mock_existing_secret = MagicMock()
+        mock_existing_secret.metadata.annotations = {
+            "keycloak-operator/rotated-at": "2024-01-01T00:00:00Z"
+        }
+        import base64
+
+        mock_existing_secret.data = {
+            "client-secret": base64.b64encode(b"existing-secret").decode()
+        }
+        mock_core_api.read_namespaced_secret.return_value = mock_existing_secret
 
         # Setup inputs
         old_spec = {
@@ -135,7 +176,9 @@ async def test_do_update_passes_metadata_without_regeneration():
         # Ensure secret was NOT regenerated (should use existing value)
         assert call_kwargs["client_secret"] == "existing-secret"
         assert call_kwargs["labels"] == {"l3": "v3"}
-        assert call_kwargs["annotations"] == {"a3": "v3"}
+        assert "a3" in call_kwargs["annotations"]
+        assert call_kwargs["annotations"]["a3"] == "v3"
+        assert "keycloak-operator/rotated-at" in call_kwargs["annotations"]
 
 
 @pytest.mark.asyncio
@@ -152,9 +195,9 @@ async def test_do_update_passes_metadata_on_regeneration():
         k8s_client=mock_k8s_client, keycloak_admin_factory=mock_admin_factory
     )
 
-    reconciler._get_realm_info = MagicMock(return_value=("realm-name", "ns", "kc", {}))  # type: ignore
-    reconciler.update_status_ready = MagicMock()  # type: ignore
+    from keycloak_operator.settings import settings
 
+    settings.operator_instance_id = "test-instance"
     with (
         patch(
             "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
@@ -162,7 +205,23 @@ async def test_do_update_passes_metadata_on_regeneration():
         patch(
             "keycloak_operator.utils.kubernetes.create_client_secret"
         ) as mock_create_secret,
+        patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
+        patch("kubernetes.client.CoreV1Api"),
+        patch.object(
+            KeycloakClientReconciler, "_get_realm_info"
+        ) as mock_get_realm_info,
     ):
+        mock_get_realm_info.return_value = (
+            "realm-name",
+            "ns",
+            "kc",
+            {
+                "spec": {
+                    "operatorRef": {"namespace": settings.operator_namespace},
+                    "clientAuthorizationGrants": ["ns"],
+                }
+            },
+        )
         mock_validate.return_value = {"status": {"endpoints": {"public": "http://kc"}}}
         mock_admin_client.regenerate_client_secret.return_value = "new-secret"
 
@@ -197,4 +256,6 @@ async def test_do_update_passes_metadata_on_regeneration():
         call_kwargs = mock_create_secret.call_args[1]
 
         assert call_kwargs["labels"] == {"l2": "v2"}
-        assert call_kwargs["annotations"] == {"a2": "v2"}
+        assert "a2" in call_kwargs["annotations"]
+        assert call_kwargs["annotations"]["a2"] == "v2"
+        assert "keycloak-operator/rotated-at" in call_kwargs["annotations"]

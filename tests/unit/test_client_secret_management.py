@@ -14,6 +14,7 @@ async def test_fix_secret_regeneration_and_owner_ref():
     # Mocks
     admin_client = AsyncMock()
     admin_client.regenerate_client_secret = AsyncMock(return_value="new-secret")
+    admin_client.get_client_secret = AsyncMock(return_value="existing-secret")
     admin_client.get_client_uuid = AsyncMock(return_value="client-uuid")
 
     reconciler.keycloak_admin_factory = AsyncMock(return_value=admin_client)
@@ -26,6 +27,8 @@ async def test_fix_secret_regeneration_and_owner_ref():
         patch(
             "keycloak_operator.utils.kubernetes.create_client_secret"
         ) as mock_create_secret,
+        patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
+        patch("kubernetes.client.CoreV1Api"),
         patch.object(
             KeycloakClientReconciler, "_get_realm_info"
         ) as mock_get_realm_info,
@@ -33,7 +36,20 @@ async def test_fix_secret_regeneration_and_owner_ref():
         mock_validate_kc.return_value = {
             "status": {"endpoints": {"public": "http://keycloak"}}
         }
-        mock_get_realm_info.return_value = ("realm", "ns", "kc", "realm-cr")
+        from keycloak_operator.settings import settings
+
+        settings.operator_instance_id = "test-instance"
+        mock_get_realm_info.return_value = (
+            "realm",
+            "ns",
+            "kc",
+            {
+                "spec": {
+                    "operatorRef": {"namespace": settings.operator_namespace},
+                    "clientAuthorizationGrants": ["ns"],
+                }
+            },
+        )
 
         # Test data
         old_spec = {

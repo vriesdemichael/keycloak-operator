@@ -350,6 +350,17 @@ async def test_client_reconciler_ignores_wrong_namespace(mock_settings):
     mock_settings.external_keycloak_url = ""
 
     reconciler = KeycloakClientReconciler()
+
+    # Mock _get_realm_info to return a realm controlled by a different operator
+    reconciler._get_realm_info = MagicMock(  # ty: ignore[invalid-assignment]
+        return_value=(
+            "realm",
+            "wrong-ns",
+            "keycloak",
+            {"spec": {"operatorRef": {"namespace": "wrong-ns"}}},
+        )
+    )
+
     spec = {
         "clientId": "test",
         "realmRef": {"name": "realm", "namespace": "wrong-ns"},
