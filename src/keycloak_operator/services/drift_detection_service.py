@@ -340,6 +340,14 @@ class DriftDetector:
             kc_namespace = str(operator_ref.get("namespace", namespace))
             kc_name = "keycloak"
 
+            # Skip CRs targeted at a different operator instance (ADR-062)
+            if kc_namespace != settings.operator_namespace:
+                logger.debug(
+                    f"Skipping realm {realm_name}: targeted at namespace '{kc_namespace}', "
+                    f"but this operator is in '{settings.operator_namespace}'"
+                )
+                continue
+
             try:
                 admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
 
@@ -482,6 +490,14 @@ class DriftDetector:
                 operator_ref = cast(dict[str, Any], realm_spec.get("operatorRef", {}))
                 kc_namespace = str(operator_ref.get("namespace", namespace))
                 kc_name = "keycloak"
+
+                # Skip CRs targeted at a different operator instance (ADR-062)
+                if kc_namespace != settings.operator_namespace:
+                    logger.debug(
+                        f"Skipping client {client_id}: targeted at namespace '{kc_namespace}', "
+                        f"but this operator is in '{settings.operator_namespace}'"
+                    )
+                    continue
 
                 admin_client = await self.keycloak_admin_factory(kc_name, kc_namespace)
 

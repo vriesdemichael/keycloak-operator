@@ -897,6 +897,35 @@ class KeycloakClientReconciler(BaseReconciler):
                         actual_realm_name, client_uuid, sid, namespace
                     )
 
+        if spec.optional_client_scopes:
+            current = await admin_client.get_client_optional_scopes(
+                actual_realm_name, client_uuid, namespace
+            )
+            current_names = {s.name for s in current if s.name}
+            desired = set(spec.optional_client_scopes)
+            self.logger.warning(
+                f"DEBUG_SCOPES: desired optional scopes: {desired}, current: {current_names}, available: {list(scope_name_to_id.keys())}"
+            )
+            for sname in desired - current_names:
+                if sname in scope_name_to_id:
+                    self.logger.warning(f"DEBUG_SCOPES: Adding optional scope {sname}")
+                    await admin_client.add_client_optional_scope(
+                        actual_realm_name,
+                        client_uuid,
+                        scope_name_to_id[sname],
+                        namespace,
+                    )
+                else:
+                    self.logger.warning(
+                        f"DEBUG_SCOPES: Could not add {sname} because it is not in scope_name_to_id"
+                    )
+            for sname in current_names - desired:
+                sid = next((s.id for s in current if s.name == sname), None)
+                if sid:
+                    await admin_client.remove_client_optional_scope(
+                        actual_realm_name, client_uuid, sid, namespace
+                    )
+
     async def manage_client_roles(
         self,
         spec: KeycloakClientSpec,

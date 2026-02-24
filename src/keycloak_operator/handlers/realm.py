@@ -27,10 +27,18 @@ from keycloak_operator.constants import (
 from keycloak_operator.models.realm import KeycloakRealmSpec
 from keycloak_operator.observability.tracing import traced_handler
 from keycloak_operator.services import KeycloakRealmReconciler
+from keycloak_operator.settings import settings
 from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 
 logger = logging.getLogger(__name__)
+
+
+def is_matching_namespace(spec: dict[str, Any], namespace: str, **_: Any) -> bool:
+    """Check if the resource is targeted at this operator instance (ADR-062)."""
+    operator_ref = spec.get("operatorRef", {})
+    target_namespace = operator_ref.get("namespace", namespace)
+    return target_namespace == settings.operator_namespace
 
 
 class StatusProtocol(Protocol):
@@ -156,10 +164,18 @@ async def _perform_realm_cleanup(
 
 
 @kopf.on.create(
-    "keycloakrealms", group="vriesdemichael.github.io", version="v1", backoff=1.5
+    "keycloakrealms",
+    group="vriesdemichael.github.io",
+    version="v1",
+    backoff=1.5,
+    when=is_matching_namespace,
 )
 @kopf.on.resume(
-    "keycloakrealms", group="vriesdemichael.github.io", version="v1", backoff=1.5
+    "keycloakrealms",
+    group="vriesdemichael.github.io",
+    version="v1",
+    backoff=1.5,
+    when=is_matching_namespace,
 )
 @traced_handler("reconcile_realm")
 async def ensure_keycloak_realm(
@@ -230,7 +246,11 @@ async def ensure_keycloak_realm(
 
 
 @kopf.on.update(
-    "keycloakrealms", backoff=1.5, group="vriesdemichael.github.io", version="v1"
+    "keycloakrealms",
+    backoff=1.5,
+    group="vriesdemichael.github.io",
+    version="v1",
+    when=is_matching_namespace,
 )
 @traced_handler("update_realm")
 async def update_keycloak_realm(
@@ -291,7 +311,11 @@ async def update_keycloak_realm(
 
 
 @kopf.on.delete(
-    "keycloakrealms", backoff=1.5, group="vriesdemichael.github.io", version="v1"
+    "keycloakrealms",
+    backoff=1.5,
+    group="vriesdemichael.github.io",
+    version="v1",
+    when=is_matching_namespace,
 )
 @traced_handler("delete_realm")
 async def delete_keycloak_realm(
