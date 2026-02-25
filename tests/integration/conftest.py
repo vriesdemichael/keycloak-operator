@@ -1699,7 +1699,7 @@ async def shared_operator(
             # the DriftDetector code paths in the operator pod
             "driftDetection": {
                 "enabled": True,
-                "intervalSeconds": 30,  # Short interval for testing
+                "intervalSeconds": 300,  # Longer interval to prevent interference with tests
                 "autoRemediate": True,  # Enable auto-remediation for testing
                 # Use 1 hour minimum age so orphans created via CRs (with fresh
                 # timestamps) are NOT auto-remediated. Operator-side tests that

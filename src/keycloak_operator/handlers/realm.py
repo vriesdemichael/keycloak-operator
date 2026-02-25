@@ -36,9 +36,23 @@ logger = logging.getLogger(__name__)
 
 def is_matching_namespace(spec: dict[str, Any], namespace: str, **_: Any) -> bool:
     """Check if the resource is targeted at this operator instance (ADR-062)."""
+    import os
+
     operator_ref = spec.get("operatorRef", {})
+    # If operatorRef.namespace is provided, use it.
+    # Otherwise, assume it's for the operator in the same namespace as the resource.
     target_namespace = operator_ref.get("namespace", namespace)
-    return target_namespace == settings.operator_namespace
+
+    # Use environment variable directly to avoid any Pydantic loading issues during filter
+    our_namespace = os.environ.get("OPERATOR_NAMESPACE", settings.operator_namespace)
+
+    is_match = target_namespace == our_namespace
+    if not is_match:
+        logger.debug(
+            f"DEBUG_IS_MATCHING: No match for resource in {namespace}. "
+            f"Target: {target_namespace}, Ours: {our_namespace}"
+        )
+    return is_match
 
 
 class StatusProtocol(Protocol):

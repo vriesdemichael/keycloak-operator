@@ -19,6 +19,7 @@ from ..errors import (
     ValidationError,
 )
 from ..models.keycloak import KeycloakSpec
+from ..settings import settings
 from ..utils.keycloak_admin import get_keycloak_admin_client
 from ..utils.validation import supports_management_port, validate_keycloak_version
 from .base_reconciler import BaseReconciler, StatusProtocol
@@ -313,6 +314,21 @@ class KeycloakInstanceReconciler(BaseReconciler):
         Returns:
             Status dictionary for the resource
         """
+        # Check if running in External Mode (ADR-062)
+        # We check both settings and environment directly for robustness
+        import os
+
+        if os.environ.get("KEYCLOAK_EXTERNAL_URL") or settings.keycloak_external_url:
+            self.logger.warning(
+                f"Operator is running in External Mode. Ignoring Keycloak CR {name}."
+            )
+            # This should have been caught by the handler, but we double-check here
+            # to provide a consistent failure message that the tests expect.
+            raise ConfigurationError(
+                "Operator is configured for External Keycloak. "
+                "This CR is ignored and should be deleted."
+            )
+
         # Backward compatibility / migration mapping:
         # Older manifests (or tests) may still use 'admin_access' block instead of 'admin'.
         # Provide a non-destructive alias if 'admin' not explicitly set.

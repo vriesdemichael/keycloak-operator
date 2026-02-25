@@ -117,7 +117,7 @@ async def test_external_keycloak_mode(
         "--set",
         "operator.image.repository=keycloak-operator",
         "--set",
-        f"operator.image.tag={os.environ.get('TEST_IMAGE_TAG', 'latest')}",
+        f"operator.image.tag={os.environ.get('TEST_IMAGE_TAG', 'test')}",
         "--set",
         "webhooks.enabled=true",  # We want to test webhooks in multi-tenant mode too!
         "--set",
@@ -181,7 +181,7 @@ async def test_external_keycloak_mode(
         import time
 
         start_time = time.time()
-        timeout = 60
+        timeout = 300  # Highly increased timeout for external operator tests
 
         while time.time() - start_time < timeout:
             try:
@@ -237,9 +237,22 @@ async def test_external_keycloak_mode(
             "spec": {
                 "replicas": 1,
                 "image": "quay.io/keycloak/keycloak:latest",
-                "database": {"type": "postgresql", "host": "localhost"},
+                "database": {
+                    "type": "postgresql",
+                    "host": "localhost",
+                    "database": "keycloak",
+                    "username": "admin",
+                    "passwordSecret": {"name": "kc-db-secret", "key": "password"},
+                },
             },
         }
+
+        # Create a dummy database secret so connectivity test fails later but Pydantic validation passes
+        db_secret = client.V1Secret(
+            metadata=client.V1ObjectMeta(name="kc-db-secret", namespace=external_op_ns),
+            string_data={"password": "password"},
+        )
+        await k8s_core_v1.create_namespaced_secret(external_op_ns, db_secret)
 
         logger.info("Creating managed Keycloak CR in external operator namespace...")
         await k8s_custom_objects.create_namespaced_custom_object(

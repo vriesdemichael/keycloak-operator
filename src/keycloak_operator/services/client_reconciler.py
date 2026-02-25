@@ -57,6 +57,7 @@ class KeycloakClientReconciler(BaseReconciler):
         k8s_client: client.ApiClient | None = None,
         keycloak_admin_factory: Any = None,
         rate_limiter: Any = None,
+        operator_namespace: str | None = None,
     ):
         """
         Initialize Keycloak client reconciler.
@@ -65,8 +66,9 @@ class KeycloakClientReconciler(BaseReconciler):
             k8s_client: Kubernetes API client
             keycloak_admin_factory: Factory function for creating Keycloak admin clients
             rate_limiter: Rate limiter for Keycloak API calls
+            operator_namespace: Optional operator namespace override (ADR-062)
         """
-        super().__init__(k8s_client)
+        super().__init__(k8s_client, operator_namespace=operator_namespace)
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
@@ -203,10 +205,10 @@ class KeycloakClientReconciler(BaseReconciler):
         target_op_ns = (
             realm_resource.get("spec", {}).get("operatorRef", {}).get("namespace")
         )
-        if target_op_ns != settings.operator_namespace:
+        if target_op_ns != self.operator_namespace:
             self.logger.debug(
                 f"Ignoring KeycloakClient {name}: parent realm '{realm_ref.name}' "
-                f"is managed by operator in '{target_op_ns}', but we are '{settings.operator_namespace}'"
+                f"is managed by operator in '{target_op_ns}', but we are '{self.operator_namespace}'"
             )
             return {}
 

@@ -66,6 +66,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
+        populate_by_name=True,
     )
 
     # Operator identification
@@ -103,24 +104,24 @@ class Settings(BaseSettings):
     )
 
     # External Keycloak Configuration
-    external_keycloak_url: str = Field(
+    keycloak_external_url: str = Field(
         default="",
-        alias="KEYCLOAK_EXTERNAL_URL",
+        validation_alias="KEYCLOAK_EXTERNAL_URL",
         description="URL of external Keycloak instance. If set, the operator runs in External Mode.",
     )
-    external_keycloak_admin_secret: str = Field(
+    keycloak_external_admin_secret: str = Field(
         default="",
-        alias="KEYCLOAK_EXTERNAL_ADMIN_SECRET",
+        validation_alias="KEYCLOAK_EXTERNAL_ADMIN_SECRET",
         description="Name of the secret containing admin credentials for external Keycloak (in operator namespace).",
     )
-    external_keycloak_admin_username: str = Field(
+    keycloak_external_admin_username: str = Field(
         default="admin",
-        alias="KEYCLOAK_EXTERNAL_ADMIN_USERNAME",
+        validation_alias="KEYCLOAK_EXTERNAL_ADMIN_USERNAME",
         description="Username for external Keycloak admin access.",
     )
-    external_keycloak_admin_password_key: str = Field(
+    keycloak_external_admin_password_key: str = Field(
         default="password",
-        alias="KEYCLOAK_EXTERNAL_ADMIN_PASSWORD_KEY",
+        validation_alias="KEYCLOAK_EXTERNAL_ADMIN_PASSWORD_KEY",
         description="Key in the admin secret containing the password.",
     )
 

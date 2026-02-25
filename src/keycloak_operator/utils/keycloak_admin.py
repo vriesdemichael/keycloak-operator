@@ -7945,7 +7945,7 @@ async def get_keycloak_admin_client(
     Returns:
         Configured KeycloakAdminClient instance (may be cached)
     """
-    if settings.external_keycloak_url:
+    if settings.keycloak_external_url:
         # In external mode, all CRs point to the same Keycloak instance.
         # Use a fixed cache key so we reuse a single admin client per verify_ssl.
         cache_key = ("__external__", "", verify_ssl)
@@ -8001,19 +8001,19 @@ async def get_keycloak_admin_client(
 
     try:
         # Check if we are running in External Mode
-        if settings.external_keycloak_url:
+        if settings.keycloak_external_url:
             logger.info(
-                f"Using external Keycloak at {settings.external_keycloak_url} "
+                f"Using external Keycloak at {settings.keycloak_external_url} "
                 f"(ignoring CR {keycloak_name})"
             )
-            server_url = settings.external_keycloak_url
-            username = settings.external_keycloak_admin_username
+            server_url = settings.keycloak_external_url
+            username = settings.keycloak_external_admin_username
 
             # Retrieve password from secret in operator's namespace
             try:
                 k8s = get_kubernetes_client()
                 core_api = k8s_client.CoreV1Api(k8s)
-                secret_name = settings.external_keycloak_admin_secret
+                secret_name = settings.keycloak_external_admin_secret
                 secret_namespace = settings.pod_namespace
 
                 secret = core_api.read_namespaced_secret(
@@ -8022,7 +8022,7 @@ async def get_keycloak_admin_client(
 
                 import base64
 
-                password_key = settings.external_keycloak_admin_password_key
+                password_key = settings.keycloak_external_admin_password_key
                 if not secret.data:
                     raise KeycloakAdminError(
                         f"Secret '{secret_name}' in namespace '{secret_namespace}' has no data"
@@ -8040,14 +8040,14 @@ async def get_keycloak_admin_client(
                 # 404 is user error (missing secret), others might be transient
                 raise KeycloakAdminError(
                     f"Could not retrieve admin credentials from secret "
-                    f"'{settings.external_keycloak_admin_secret}' in namespace "
+                    f"'{settings.keycloak_external_admin_secret}' in namespace "
                     f"'{settings.pod_namespace}': {e}"
                 ) from e
             except Exception as e:
                 logger.error(f"Failed to process external admin credentials: {e}")
                 raise KeycloakAdminError(
                     f"Could not process admin credentials from secret "
-                    f"'{settings.external_keycloak_admin_secret}': {e}"
+                    f"'{settings.keycloak_external_admin_secret}': {e}"
                 ) from e
 
         else:

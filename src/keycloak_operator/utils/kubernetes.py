@@ -73,9 +73,9 @@ def validate_keycloak_reference(
     This function validates Keycloak instance readiness and availability.
     """
     # If running in External Mode, always validate successfully
-    if settings.external_keycloak_url:
+    if settings.keycloak_external_url:
         logger.debug(
-            f"External Keycloak mode enabled ({settings.external_keycloak_url}), "
+            f"External Keycloak mode enabled ({settings.keycloak_external_url}), "
             f"simulating valid reference for {keycloak_name}"
         )
         # Return a mock Keycloak CR structure that satisfies callers
@@ -87,8 +87,8 @@ def validate_keycloak_reference(
                 "phase": "Ready",
                 "message": "External Keycloak Mode",
                 "endpoints": {
-                    "admin": settings.external_keycloak_url,
-                    "public": settings.external_keycloak_url,
+                    "admin": settings.keycloak_external_url,
+                    "public": settings.keycloak_external_url,
                 },
             },
         }
