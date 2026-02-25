@@ -171,11 +171,24 @@ async def _perform_keycloak_cleanup(
     )
 
 
+def is_matching_namespace(namespace: str, **_: Any) -> bool:
+    """Check if the resource is in the same namespace as this operator (ADR-062)."""
+    return namespace == settings.operator_namespace
+
+
 @kopf.on.create(
-    "keycloaks", group="vriesdemichael.github.io", version="v1", backoff=1.5
+    "keycloaks",
+    group="vriesdemichael.github.io",
+    version="v1",
+    backoff=1.5,
+    when=is_matching_namespace,
 )
 @kopf.on.resume(
-    "keycloaks", group="vriesdemichael.github.io", version="v1", backoff=1.5
+    "keycloaks",
+    group="vriesdemichael.github.io",
+    version="v1",
+    backoff=1.5,
+    when=is_matching_namespace,
 )
 @traced_handler("reconcile_keycloak")
 async def ensure_keycloak_instance(
@@ -212,9 +225,9 @@ async def ensure_keycloak_instance(
     log_handler_entry("create/resume", "keycloak", name, namespace)
 
     # Check if running in External Mode
-    if settings.external_keycloak_url:
+    if settings.keycloak_external_url:
         logger.warning(
-            f"Operator is running in External Mode ({settings.external_keycloak_url}). "
+            f"Operator is running in External Mode ({settings.keycloak_external_url}). "
             f"Ignoring Keycloak CR {name} in {namespace}. "
             "To manage a Keycloak instance, unset KEYCLOAK_EXTERNAL_URL."
         )
@@ -237,22 +250,6 @@ async def ensure_keycloak_instance(
             f"Keycloak instance {name} has deletionTimestamp, "
             f"skipping reconciliation (delete handler will manage cleanup)"
         )
-        return None
-
-    # Check if running in External Mode
-    if settings.external_keycloak_url:
-        logger.warning(
-            f"Operator is running in External Mode ({settings.external_keycloak_url}). "
-            f"Ignoring Keycloak CR {name} in {namespace}. "
-            "To manage a Keycloak instance, unset KEYCLOAK_EXTERNAL_URL."
-        )
-        status_wrapper = StatusWrapper(patch.status)
-        status_wrapper.phase = "Failed"
-        status_wrapper.message = (
-            "Operator is configured for External Keycloak. "
-            "This CR is ignored and should be deleted."
-        )
-        # We return None to stop processing, but we've set the status via patch
         return None
 
     logger.info(f"Ensuring Keycloak instance {name} in namespace {namespace}")
@@ -281,7 +278,11 @@ async def ensure_keycloak_instance(
 
 
 @kopf.on.update(
-    "keycloaks", group="vriesdemichael.github.io", version="v1", backoff=1.5
+    "keycloaks",
+    group="vriesdemichael.github.io",
+    version="v1",
+    backoff=1.5,
+    when=is_matching_namespace,
 )
 @traced_handler("update_keycloak")
 async def update_keycloak_instance(
@@ -340,7 +341,11 @@ async def update_keycloak_instance(
 
 
 @kopf.on.delete(
-    "keycloaks", group="vriesdemichael.github.io", version="v1", backoff=1.5
+    "keycloaks",
+    group="vriesdemichael.github.io",
+    version="v1",
+    backoff=1.5,
+    when=is_matching_namespace,
 )
 @traced_handler("delete_keycloak")
 async def delete_keycloak_instance(
@@ -495,7 +500,7 @@ async def monitor_keycloak_health(
         ⚠️  Implement alerting for persistent failures - Future enhancement
     """
     # Skip health check if running in External Mode
-    if settings.external_keycloak_url:
+    if settings.keycloak_external_url:
         return
 
     # Random jitter on startup to prevent thundering herd

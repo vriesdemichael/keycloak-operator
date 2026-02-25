@@ -337,14 +337,14 @@ class DriftDetector:
                 continue
 
             operator_ref = cast(dict[str, Any], spec.get("operatorRef", {}))
-            kc_namespace = str(operator_ref.get("namespace", namespace))
+            kc_namespace = str(operator_ref.get("namespace", self.operator_namespace))
             kc_name = "keycloak"
 
             # Skip CRs targeted at a different operator instance (ADR-062)
-            if kc_namespace != settings.operator_namespace:
+            if kc_namespace != self.operator_namespace:
                 logger.debug(
                     f"Skipping realm {realm_name}: targeted at namespace '{kc_namespace}', "
-                    f"but this operator is in '{settings.operator_namespace}'"
+                    f"but this operator is in '{self.operator_namespace}'"
                 )
                 continue
 
@@ -488,14 +488,16 @@ class DriftDetector:
                 realm_spec = cast(dict[str, Any], realm_cr.get("spec", {}))
                 realm_name = str(realm_spec.get("realmName", realm_cr_name))
                 operator_ref = cast(dict[str, Any], realm_spec.get("operatorRef", {}))
-                kc_namespace = str(operator_ref.get("namespace", namespace))
+                kc_namespace = str(
+                    operator_ref.get("namespace", self.operator_namespace)
+                )
                 kc_name = "keycloak"
 
                 # Skip CRs targeted at a different operator instance (ADR-062)
-                if kc_namespace != settings.operator_namespace:
+                if kc_namespace != self.operator_namespace:
                     logger.debug(
                         f"Skipping client {client_id}: targeted at namespace '{kc_namespace}', "
-                        f"but this operator is in '{settings.operator_namespace}'"
+                        f"but this operator is in '{self.operator_namespace}'"
                     )
                     continue
 
@@ -1296,12 +1298,14 @@ class DriftDetector:
                     k8s_client=self.k8s_client,
                     keycloak_admin_factory=self.keycloak_admin_factory,
                     rate_limiter=None,
+                    operator_namespace=self.operator_namespace,
                 )
             else:
                 reconciler = PermissiveClientReconciler(
                     k8s_client=self.k8s_client,
                     keycloak_admin_factory=self.keycloak_admin_factory,
                     rate_limiter=None,
+                    operator_namespace=self.operator_namespace,
                 )
 
             # 4. Create a dummy status object to capture status updates without failing

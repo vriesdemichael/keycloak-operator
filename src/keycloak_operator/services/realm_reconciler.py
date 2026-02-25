@@ -48,6 +48,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         k8s_client: client.ApiClient | None = None,
         keycloak_admin_factory: Any = None,
         rate_limiter: Any = None,
+        operator_namespace: str | None = None,
     ):
         """
         Initialize Keycloak realm reconciler.
@@ -56,8 +57,9 @@ class KeycloakRealmReconciler(BaseReconciler):
             k8s_client: Kubernetes API client
             keycloak_admin_factory: Factory function for creating Keycloak admin clients
             rate_limiter: Rate limiter for Keycloak API calls
+            operator_namespace: Optional operator namespace override (ADR-062)
         """
-        super().__init__(k8s_client)
+        super().__init__(k8s_client, operator_namespace=operator_namespace)
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
@@ -89,10 +91,10 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # IGNORE resources not targeted at this operator instance (ADR-062)
         target_namespace = realm_spec.operator_ref.namespace
-        if target_namespace != settings.operator_namespace:
+        if target_namespace != self.operator_namespace:
             self.logger.debug(
                 f"Ignoring KeycloakRealm {name}: targeted at namespace '{target_namespace}', "
-                f"but this operator is in '{settings.operator_namespace}'"
+                f"but this operator is in '{self.operator_namespace}'"
             )
             return {}
 
@@ -465,7 +467,7 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         try:
             # Skip capacity check in external mode since there is no Keycloak CR
-            if settings.external_keycloak_url:
+            if settings.keycloak_external_url:
                 self.logger.debug("Skipping capacity check in external Keycloak mode")
                 return
 

@@ -43,14 +43,22 @@ class BaseReconciler(ABC):
     - Reconciliation lifecycle hooks
     """
 
-    def __init__(self, k8s_client: client.ApiClient | None = None):
+    def __init__(
+        self,
+        k8s_client: client.ApiClient | None = None,
+        operator_namespace: str | None = None,
+    ):
         """
         Initialize base reconciler.
 
         Args:
             k8s_client: Kubernetes API client, will be created if not provided
+            operator_namespace: Optional operator namespace override (ADR-062)
         """
+        from ..settings import settings
+
         self.k8s_client = k8s_client
+        self.operator_namespace = operator_namespace or settings.operator_namespace
         self.logger = OperatorLogger(self.__class__.__name__)
 
     @property
