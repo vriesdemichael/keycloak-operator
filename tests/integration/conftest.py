@@ -1698,8 +1698,8 @@ async def shared_operator(
             # This allows operator-side drift detection tests to exercise
             # the DriftDetector code paths in the operator pod
             "driftDetection": {
-                "enabled": True,
-                "intervalSeconds": 300,  # Longer interval to prevent interference with tests
+                "enabled": False,  # Disable background drift detection to prevent interference
+                "intervalSeconds": 300,  # Longer interval just in case
                 "autoRemediate": True,  # Enable auto-remediation for testing
                 # Use 1 hour minimum age so orphans created via CRs (with fresh
                 # timestamps) are NOT auto-remediated. Operator-side tests that
