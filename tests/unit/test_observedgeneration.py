@@ -317,7 +317,9 @@ class TestRealmReconcilerGenerationTracking:
 
         mock_client.adapter.validate_for_version.return_value = mock_validation_result
 
-        return KeycloakRealmReconciler(keycloak_admin_factory=mock_factory)
+        return KeycloakRealmReconciler(
+            keycloak_admin_factory=mock_factory, operator_namespace="test-namespace"
+        )
 
     @pytest.mark.asyncio
     async def test_realm_reconcile_sets_generation(self, realm_reconciler):
@@ -385,7 +387,7 @@ class TestClientReconcilerGenerationTracking:
     @pytest.fixture
     def client_reconciler(self):
         """Create a Client reconciler for testing."""
-        reconciler = KeycloakClientReconciler()
+        reconciler = KeycloakClientReconciler(operator_namespace="test-namespace")
         # Mock _get_realm_info to return expected values without calling K8s API
         # Returns: (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
         reconciler._get_realm_info = MagicMock(  # ty: ignore[invalid-assignment]
