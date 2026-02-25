@@ -464,6 +464,11 @@ class KeycloakRealmReconciler(BaseReconciler):
         from ..errors import PermanentError, TemporaryError
 
         try:
+            # Skip capacity check in external mode since there is no Keycloak CR
+            if settings.external_keycloak_url:
+                self.logger.debug("Skipping capacity check in external Keycloak mode")
+                return
+
             # Fetch the Keycloak instance
             custom_objects_api = client.CustomObjectsApi(self.k8s_client)
             keycloak = custom_objects_api.get_namespaced_custom_object(
