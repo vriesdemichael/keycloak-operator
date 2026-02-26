@@ -34,6 +34,7 @@ class TestKeycloakReconciler:
         k8s_custom_objects,
         k8s_core_v1,
         k8s_apps_v1,
+        test_keycloak_namespace,
         operator_namespace,
         shared_operator,
         sample_keycloak_spec_factory,
@@ -41,7 +42,7 @@ class TestKeycloakReconciler:
         """Test complete Keycloak instance lifecycle: create, ready, delete."""
         suffix = uuid.uuid4().hex[:8]
         keycloak_name = f"test-lifecycle-{suffix}"
-        namespace = operator_namespace
+        namespace = test_keycloak_namespace
 
         # Get spec with secret copied to target namespace
         spec = await sample_keycloak_spec_factory(namespace)

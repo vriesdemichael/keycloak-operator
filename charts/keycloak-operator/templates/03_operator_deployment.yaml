@@ -163,6 +163,8 @@ spec:
           {{- else }}
           value: ""
           {{- end }}
+        - name: KEYCLOAK_MANAGED
+          value: {{ .Values.keycloak.managed | quote }}
         - name: KEYCLOAK_ADMIN_SECRET
           {{- if .Values.keycloak.adminSecret }}
           value: {{ .Values.keycloak.adminSecret | quote }}

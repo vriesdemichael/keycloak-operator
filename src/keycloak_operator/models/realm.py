@@ -111,12 +111,18 @@ class KeycloakRealmTokenSettings(BaseModel):
     )
 
     @field_validator(
-        "access_token_lifespan", "sso_session_idle_timeout", "sso_session_max_lifespan"
+        "access_token_lifespan",
+        "sso_session_idle_timeout",
+        "sso_session_max_lifespan",
+        "client_session_idle_timeout",
+        "client_session_max_lifespan",
+        "client_offline_session_idle_timeout",
+        "client_offline_session_max_lifespan",
     )
     @classmethod
     def validate_positive_timeout(cls, v):
-        if v <= 0:
-            raise ValueError("Timeout values must be positive")
+        if v < 0:
+            raise ValueError("Timeout values must be non-negative")
         return v
 
 
