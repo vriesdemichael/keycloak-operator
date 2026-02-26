@@ -1313,6 +1313,7 @@ class TestDoReconcileBuildMismatchFlow:
         reconciler.validate_production_settings = AsyncMock(  # type: ignore[method-assign]
             return_value={"host": "db", "port": 5432}
         )
+        reconciler.validate_cross_namespace_access = AsyncMock()  # type: ignore[method-assign]
         reconciler.ensure_admin_access = AsyncMock()  # type: ignore[method-assign]
         reconciler.ensure_deployment = AsyncMock()  # type: ignore[method-assign]
         reconciler.ensure_service = AsyncMock()  # type: ignore[method-assign]

@@ -166,6 +166,11 @@ class TestKeycloakReconcilerGenerationTracking:
                 new_callable=AsyncMock,
             ),
             patch.object(
+                keycloak_reconciler,
+                "validate_cross_namespace_access",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
                 keycloak_reconciler, "ensure_admin_access", new_callable=AsyncMock
             ),
             patch.object(
