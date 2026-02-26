@@ -19,6 +19,7 @@ from ..errors import (
     ValidationError,
 )
 from ..models.keycloak import KeycloakSpec
+from ..settings import settings
 from ..utils.keycloak_admin import get_keycloak_admin_client
 from ..utils.validation import supports_management_port, validate_keycloak_version
 from .base_reconciler import BaseReconciler, StatusProtocol
@@ -302,20 +303,20 @@ class KeycloakInstanceReconciler(BaseReconciler):
         status: StatusProtocol,
         **kwargs: Any,
     ) -> dict[str, Any]:
-        """
-        Reconcile Keycloak instance to desired state.
+        """Reconcile Keycloak instance."""
+        # 1. Check if running in External Mode (ADR-062)
+        if not settings.keycloak_managed:
+            self.logger.warning(
+                f"Operator is running in External Mode (managed=false). Ignoring Keycloak CR {name}."
+            )
 
-        Args:
-            spec: Keycloak resource specification
-            name: Resource name
-            namespace: Resource namespace
-            status: Resource status object
-            **kwargs: Additional handler arguments
+            raise ConfigurationError(
+                "Operator is configured for External Keycloak (External Mode). "
+                "Managing Keycloak CRs is not allowed in this mode."
+            )
 
-        Returns:
-            Status dictionary for the resource
-        """
-        # 1. Backward compatibility / migration mapping:
+        # 2. Backward compatibility / migration mapping:
+
         # Older manifests (or tests) may still use 'admin_access' block instead of 'admin'.
         # Provide a non-destructive alias if 'admin' not explicitly set.
         if "admin_access" in spec and "admin" not in spec:

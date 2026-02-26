@@ -94,13 +94,22 @@ async def test_smart_drift_detection_remediates_tampered_idp(
     # The detector should see the event and trigger realm reconciliation
     results = await detector.scan_for_drift()
 
+    # Filter results for our specific realm to avoid interference from parallel tests
+    my_results = [
+        r
+        for r in results
+        if r.resource_name == realm_name or r.parent_realm == realm_name
+    ]
+
     # Verify drift was detected
     # Note: With smart scan, we report "Realm Drift", not specific resource drift
-    assert len(results) > 0, "Should detect drift via events"
-    assert results[0].resource_type == "realm", "Should report realm drift"
+    assert len(my_results) > 0, "Should detect drift via events"
+    assert my_results[0].resource_type == "realm", (
+        f"Should report realm drift, got {my_results[0].resource_type}"
+    )
 
     # Run remediation
-    await detector.remediate_drift(results)
+    await detector.remediate_drift(my_results)
 
     # 4. Verify Remediation (IDP should be gone)
     # Poll for IDP deletion
@@ -210,6 +219,15 @@ async def test_smart_drift_detection_client_update(
 
     # 3. Scan
     results = await detector.scan_for_drift()
+
+    # Filter results for our specific client/realm
+    results = [
+        r
+        for r in results
+        if r.resource_name == "smart-client-test"
+        or r.parent_realm == realm_name
+        or r.resource_name == realm_name
+    ]
 
     # Check that we found drift
     assert len(results) > 0, "Should detect drift via events"

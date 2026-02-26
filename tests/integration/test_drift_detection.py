@@ -276,6 +276,12 @@ async def test_realm_config_drift_detection_and_remediation(
 
     # 2. Modify Realm in Keycloak directly (cause drift)
     kc_realm.display_name = "Drifted Display Name"
+    # Change owner so the real operator ignores it, preventing race conditions
+    fake_instance_id = "fake-instance-for-config-test"
+    attributes = kc_realm.attributes or {}
+    attributes[ATTR_OPERATOR_INSTANCE] = fake_instance_id
+    kc_realm.attributes = attributes
+
     await keycloak_admin_client.update_realm(realm_name, kc_realm, test_namespace)
 
     # Verify drift
@@ -295,6 +301,7 @@ async def test_realm_config_drift_detection_and_remediation(
     )
 
     detector = drift_detector(config)
+    detector.operator_instance_id = fake_instance_id
     drift_results = await detector.scan_for_drift()
 
     # Check if drift was detected
@@ -407,6 +414,15 @@ async def test_client_config_drift_detection_and_remediation(
     # Change description (value drift) and redirectUris (list drift)
     kc_client.description = "Drifted Description"
     kc_client.redirect_uris = ["https://example.com/drifted/*"]
+
+    # Change owner so the real operator ignores it, preventing race conditions
+    fake_instance_id = "fake-instance-for-client-test"
+    from keycloak_operator.utils.ownership import ATTR_OPERATOR_INSTANCE
+
+    attributes = kc_client.attributes or {}
+    attributes[ATTR_OPERATOR_INSTANCE] = fake_instance_id
+    kc_client.attributes = attributes
+
     await keycloak_admin_client.update_client(
         kc_client.id, kc_client, realm_name, test_namespace
     )
@@ -430,6 +446,7 @@ async def test_client_config_drift_detection_and_remediation(
     )
 
     detector = drift_detector(config)
+    detector.operator_instance_id = fake_instance_id
     drift_results = await detector.scan_for_drift()
 
     # Check if drift was detected
@@ -524,6 +541,7 @@ async def test_client_orphan_remediation(
 
     # 2. Setup Client
     client_id = "orphan-client-test"
+    fake_instance_id = "fake-instance-for-orphan-test"
 
     # Manually create client in Keycloak with ownership attributes
     from keycloak_operator.utils.ownership import (
@@ -539,7 +557,7 @@ async def test_client_orphan_remediation(
         "enabled": True,
         "attributes": {
             ATTR_MANAGED_BY: "keycloak-operator",
-            ATTR_OPERATOR_INSTANCE: operator_instance_id,
+            ATTR_OPERATOR_INSTANCE: fake_instance_id,
             ATTR_CR_NAMESPACE: test_namespace,
             ATTR_CR_NAME: "non-existent-cr",  # This CR does not exist
             # Add creation timestamp to bypass minimum age check
@@ -572,7 +590,10 @@ async def test_client_orphan_remediation(
         scope_roles=False,
     )
 
+    # We must pass the fake_instance_id so the test detector considers it owned
     detector = drift_detector(config)
+    detector.operator_instance_id = fake_instance_id
+
     drift_results = await detector.scan_for_drift()
 
     orphans = [
@@ -1036,6 +1057,15 @@ async def test_nested_config_drift_detection(
     # 3. Modify nested configuration directly in Keycloak
     kc_realm.events_enabled = False  # Change nested eventsConfig
     kc_realm.admin_events_enabled = False
+
+    # Change owner so the real operator ignores it, preventing race conditions
+    fake_instance_id = "fake-instance-for-nested-config-test"
+    from keycloak_operator.utils.ownership import ATTR_OPERATOR_INSTANCE
+
+    attributes = kc_realm.attributes or {}
+    attributes[ATTR_OPERATOR_INSTANCE] = fake_instance_id
+    kc_realm.attributes = attributes
+
     await keycloak_admin_client.update_realm(realm_name, kc_realm, test_namespace)
 
     # Verify the change took effect
@@ -1057,6 +1087,7 @@ async def test_nested_config_drift_detection(
     )
 
     detector = drift_detector(config)
+    detector.operator_instance_id = fake_instance_id
     drift_results = await detector.scan_for_drift()
 
     # 5. Verify drift is detected
@@ -1339,12 +1370,13 @@ async def test_orphan_client_remediation_fallback_realm_search(
 
     # 2. Create a client manually with ownership attributes but non-existent CR
     orphan_client_id = f"orphan-fallback-{uuid.uuid4().hex[:8]}"
+    fake_instance_id = "fake-instance-for-fallback-test"
     orphan_client_data = {
         "clientId": orphan_client_id,
         "enabled": True,
         "attributes": {
             ATTR_MANAGED_BY: "keycloak-operator",
-            ATTR_OPERATOR_INSTANCE: operator_instance_id,
+            ATTR_OPERATOR_INSTANCE: fake_instance_id,
             ATTR_CR_NAMESPACE: test_namespace,
             ATTR_CR_NAME: "non-existent-client-cr",
             ATTR_CREATED_AT: "2020-01-01T00:00:00Z",  # Old enough to remediate
@@ -1385,6 +1417,7 @@ async def test_orphan_client_remediation_fallback_realm_search(
     )
 
     detector = drift_detector(config)
+    detector.operator_instance_id = fake_instance_id
     await detector.remediate_drift([drift_result])
 
     # 5. Verify client was deleted via fallback search - poll until deleted
@@ -1439,13 +1472,14 @@ async def test_realm_missing_cr_reference_treated_as_orphan(
 
     # 1. Create a realm manually with ownership but NO CR reference attributes
     orphan_realm_name = f"missing-ref-{uuid.uuid4().hex[:8]}"
+    fake_instance_id = "fake-instance-for-missing-ref-test"
     orphan_realm_data = {
         "realm": orphan_realm_name,
         "enabled": True,
         "displayName": "Missing CR Reference Realm",
         "attributes": {
             ATTR_MANAGED_BY: "keycloak-operator",
-            ATTR_OPERATOR_INSTANCE: operator_instance_id,
+            ATTR_OPERATOR_INSTANCE: fake_instance_id,
             ATTR_CREATED_AT: "2020-01-01T00:00:00Z",
             # Intentionally missing ATTR_CR_NAMESPACE and ATTR_CR_NAME
         },
@@ -1465,6 +1499,7 @@ async def test_realm_missing_cr_reference_treated_as_orphan(
     )
 
     detector = drift_detector(config)
+    detector.operator_instance_id = fake_instance_id
     drift_results = await detector.scan_for_drift()
 
     # 3. Verify realm is detected as orphaned (not unmanaged)
@@ -1528,12 +1563,13 @@ async def test_client_missing_cr_reference_treated_as_orphan(
 
     # 2. Create a client manually with ownership but NO CR reference attributes
     orphan_client_id = f"missing-ref-client-{uuid.uuid4().hex[:8]}"
+    fake_instance_id = "fake-instance-for-missing-ref-client-test"
     orphan_client_data = {
         "clientId": orphan_client_id,
         "enabled": True,
         "attributes": {
             ATTR_MANAGED_BY: "keycloak-operator",
-            ATTR_OPERATOR_INSTANCE: operator_instance_id,
+            ATTR_OPERATOR_INSTANCE: fake_instance_id,
             ATTR_CREATED_AT: "2020-01-01T00:00:00Z",
             # Intentionally missing ATTR_CR_NAMESPACE and ATTR_CR_NAME
         },
@@ -1555,6 +1591,7 @@ async def test_client_missing_cr_reference_treated_as_orphan(
     )
 
     detector = drift_detector(config)
+    detector.operator_instance_id = fake_instance_id
     drift_results = await detector.scan_for_drift()
 
     # 4. Verify client is detected as orphaned (not unmanaged)

@@ -498,16 +498,23 @@ tasks:
 
   test:integration:
     desc: Run integration tests (guaranteed fresh cluster)
-    deps: [cluster:create, infra:all, image:load-operator, image:load-all]
     cmds:
+      - task: cluster:create
+      - task: infra:all
+      - task: image:load-operator
+      - task: image:load-all
       - task: test:run-integration
         vars:
           CLI_ARGS: "{{.CLI_ARGS}}"
 
   test:integration-coverage:
     desc: Run integration tests with coverage (guaranteed fresh cluster)
-    deps: [cluster:create, infra:all, image:load-coverage, image:load-keycloak, image:load-keycloak-tracing]
     cmds:
+      - task: cluster:create
+      - task: infra:all
+      - task: image:load-coverage
+      - task: image:load-keycloak
+      - task: image:load-keycloak-tracing
       - task: test:run-integration
         vars:
           COVERAGE: "true"
@@ -528,15 +535,9 @@ tasks:
       - task: quality:check
       - task: quality:validate-docs
 
-      # Clean start for integration tests
-      - task: cluster:create
-
       - task: test:unit
 
-      # Setup infrastructure
-      - task: infra:all
-
-      # Run integration tests (with error handling)
+      # Run integration tests via task that handles cluster creation and infra
       - |
         set -o pipefail
         task test:integration-coverage 2>&1 | tee -a .tmp/test-pre-commit.log || {

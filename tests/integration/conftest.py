@@ -673,11 +673,11 @@ def event_loop():
 @pytest.fixture(scope="session", autouse=True)
 def configure_env():
     """Configure environment variables for testing."""
-    os.environ["OPERATOR_INSTANCE_ID"] = "keycloak-operator-test-system"
+    os.environ["OPERATOR_INSTANCE_ID"] = "keycloak-operator-keycloak-test-system"
     # Ensure settings are reloaded
     from keycloak_operator.settings import settings
 
-    settings.operator_instance_id = "keycloak-operator-test-system"
+    settings.operator_instance_id = "keycloak-operator-keycloak-test-system"
 
 
 @pytest.fixture(autouse=True)
@@ -3047,7 +3047,12 @@ async def drift_detector(
 
     # Create custom admin client factory that uses port-forwarding
     async def admin_factory(kc_name: str, namespace: str, rate_limiter=None):
-        username, password = get_admin_credentials(kc_name, namespace)
+        # Always use the shared operator's Keycloak name to fetch credentials,
+        # since the operator now passes "global" as the kc_name
+        actual_kc_name = shared_operator.name
+        username, password = get_admin_credentials(
+            actual_kc_name, shared_operator.namespace
+        )
         client = KeycloakAdminClient(
             server_url=f"http://localhost:{local_port}",
             username=username,

@@ -291,44 +291,34 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         # Populate OIDC endpoint discovery
         try:
-            from ..models.keycloak import Keycloak
             from ..utils.oidc_endpoints import (
                 construct_oidc_endpoints,
-                get_keycloak_base_url,
             )
 
-            # Fetch the Keycloak CR to get its base URL
-            custom_api = client.CustomObjectsApi(self.k8s_client)
-            keycloak_dict = custom_api.get_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=target_namespace,
-                plural="keycloaks",
-                name="keycloak",  # Default Keycloak instance name
-            )
+            # Get base URL from settings (agnostic model)
+            base_url = settings.keycloak_url
 
-            # Parse into Pydantic model
-            keycloak = Keycloak.model_validate(keycloak_dict)
+            if base_url:
+                # Construct OIDC endpoints
+                oidc_endpoints = construct_oidc_endpoints(
+                    base_url, realm_spec.realm_name
+                )
 
-            # Get base URL from Keycloak instance
-            base_url = get_keycloak_base_url(keycloak)
+                # Populate status.endpoints
+                status.endpoints = oidc_endpoints
 
-            # Construct OIDC endpoints
-            oidc_endpoints = construct_oidc_endpoints(base_url, realm_spec.realm_name)
-
-            # Populate status.endpoints
-            status.endpoints = oidc_endpoints
-
-            self.logger.debug(
-                f"Populated OIDC endpoints for realm {realm_spec.realm_name}: "
-                f"issuer={oidc_endpoints['issuer']}"
-            )
+                self.logger.debug(
+                    f"Populated OIDC endpoints for realm {realm_spec.realm_name}: "
+                    f"issuer={oidc_endpoints['issuer']}"
+                )
+            else:
+                self.logger.warning(
+                    f"KEYCLOAK_URL not set, skipping OIDC endpoint population for realm {realm_spec.realm_name}"
+                )
         except Exception as e:
             self.logger.warning(
                 f"Failed to populate OIDC endpoints for realm {realm_spec.realm_name}: {e}"
             )
-            # Don't fail reconciliation if endpoint population fails
-            # Endpoints will be populated on next reconciliation
 
         # Update status to indicate successful reconciliation
         # This sets observedGeneration, phase, message, and timestamps

@@ -148,38 +148,38 @@ spec:
                 properties:
                   accessTokenLifespan:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                     description: Access token lifespan in seconds
                   accessTokenLifespanForImplicitFlow:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                   ssoSessionIdleTimeout:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                   ssoSessionMaxLifespan:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                   offlineSessionIdleTimeout:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                   offlineSessionMaxLifespanEnabled:
                     type: boolean
                     default: false
                   offlineSessionMaxLifespan:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                   clientSessionIdleTimeout:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                   clientSessionMaxLifespan:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                   clientOfflineSessionIdleTimeout:
                     type: integer
-                    minimum: 1
+                    minimum: 0
                   clientOfflineSessionMaxLifespan:
                     type: integer
-                    minimum: 1
+                    minimum: 0
               themes:
                 type: object
                 description: Theme configuration

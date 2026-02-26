@@ -124,6 +124,11 @@ class Settings(BaseSettings):
         validation_alias="KEYCLOAK_ADMIN_PASSWORD_KEY",
         description="Key in the admin secret containing the password.",
     )
+    keycloak_managed: bool = Field(
+        default=True,
+        validation_alias="KEYCLOAK_MANAGED",
+        description="Whether the operator is allowed to manage Keycloak CRs.",
+    )
 
     # Logging configuration
     log_level: str = Field(

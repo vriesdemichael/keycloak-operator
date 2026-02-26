@@ -224,6 +224,11 @@ class TestKeycloakReconcilerGenerationTracking:
                 new_callable=AsyncMock,
             ),
             patch.object(
+                keycloak_reconciler,
+                "validate_cross_namespace_access",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
                 keycloak_reconciler, "ensure_admin_access", new_callable=AsyncMock
             ),
             patch.object(
@@ -275,6 +280,11 @@ class TestKeycloakReconcilerGenerationTracking:
             patch.object(
                 keycloak_reconciler,
                 "validate_production_settings",
+                new_callable=AsyncMock,
+            ),
+            patch.object(
+                keycloak_reconciler,
+                "validate_cross_namespace_access",
                 new_callable=AsyncMock,
             ),
             patch.object(
