@@ -126,7 +126,7 @@ class TestClientScopes:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
         }
 
         try:
@@ -241,7 +241,7 @@ class TestClientScopes:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
         }
 
         try:
@@ -707,7 +707,7 @@ class TestRealmDefaultOptionalScopes:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
         }
 
         try:
@@ -801,7 +801,7 @@ class TestRealmDefaultOptionalScopes:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
         }
 
         try:
@@ -910,7 +910,7 @@ class TestClientScopeAssignments:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
         }
 
         try:
@@ -947,7 +947,7 @@ class TestClientScopeAssignments:
                 "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakClient",
                 "metadata": {"name": client_name, "namespace": namespace},
-                "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
+                "spec": client_spec.model_dump(by_alias=True, exclude_none=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(
@@ -1067,7 +1067,7 @@ class TestClientScopeAssignments:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
         }
 
         try:
@@ -1108,7 +1108,7 @@ class TestClientScopeAssignments:
                 "apiVersion": "vriesdemichael.github.io/v1",
                 "kind": "KeycloakClient",
                 "metadata": {"name": client_name, "namespace": namespace},
-                "spec": client_spec.model_dump(by_alias=True, exclude_unset=True),
+                "spec": client_spec.model_dump(by_alias=True, exclude_none=True),
             }
 
             await k8s_custom_objects.create_namespaced_custom_object(

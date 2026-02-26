@@ -10,8 +10,30 @@ Categories:
 - Operational types: Runtime data with truly dynamic structure
 """
 
+import os
 from typing import Any
 
+from pydantic import BaseModel, Field
+
+
+def get_default_operator_namespace() -> str:
+    """Get default operator namespace from environment or fallback."""
+    return os.environ.get("OPERATOR_NAMESPACE", "keycloak-system")
+
+
+class OperatorRef(BaseModel):
+    """Reference to the operator instance managing this resource (ADR-062)."""
+
+    model_config = {"populate_by_name": True}
+
+    namespace: str = Field(
+        default_factory=get_default_operator_namespace,
+        description="Namespace where the operator is running",
+    )
+
+
+# =============================================================================
+# Keycloak API Types
 # =============================================================================
 # Keycloak API Types
 # =============================================================================

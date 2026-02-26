@@ -27,8 +27,8 @@ from keycloak_operator.constants import (
 from keycloak_operator.models.realm import KeycloakRealmSpec
 from keycloak_operator.observability.tracing import traced_handler
 from keycloak_operator.services import KeycloakRealmReconciler
-from keycloak_operator.settings import settings
 from keycloak_operator.utils.handler_logging import log_handler_entry
+from keycloak_operator.utils.isolation import is_managed_by_this_operator
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 
 logger = logging.getLogger(__name__)
@@ -36,23 +36,7 @@ logger = logging.getLogger(__name__)
 
 def is_matching_namespace(spec: dict[str, Any], namespace: str, **_: Any) -> bool:
     """Check if the resource is targeted at this operator instance (ADR-062)."""
-    import os
-
-    operator_ref = spec.get("operatorRef", {})
-    # If operatorRef.namespace is provided, use it.
-    # Otherwise, assume it's for the operator in the same namespace as the resource.
-    target_namespace = operator_ref.get("namespace", namespace)
-
-    # Use environment variable directly to avoid any Pydantic loading issues during filter
-    our_namespace = os.environ.get("OPERATOR_NAMESPACE", settings.operator_namespace)
-
-    is_match = target_namespace == our_namespace
-    if not is_match:
-        logger.debug(
-            f"DEBUG_IS_MATCHING: No match for resource in {namespace}. "
-            f"Target: {target_namespace}, Ours: {our_namespace}"
-        )
-    return is_match
+    return is_managed_by_this_operator(spec, namespace)
 
 
 class StatusProtocol(Protocol):

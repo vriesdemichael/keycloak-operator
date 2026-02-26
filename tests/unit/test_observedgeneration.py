@@ -388,20 +388,15 @@ class TestClientReconcilerGenerationTracking:
     def client_reconciler(self):
         """Create a Client reconciler for testing."""
         reconciler = KeycloakClientReconciler(operator_namespace="test-namespace")
-        # Mock _get_realm_info to return expected values without calling K8s API
-        # Returns: (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
-        reconciler._get_realm_info = MagicMock(  # ty: ignore[invalid-assignment]
-            return_value=(
-                "test-realm",
-                "test-namespace",
-                "keycloak",
-                {
-                    "spec": {
-                        "operatorRef": {"namespace": "test-namespace"},
-                        "clientAuthorizationGrants": ["test-namespace"],
-                    }
-                },
-            )
+        # Mock _get_realm_resource to return expected values without calling K8s API
+        reconciler._get_realm_resource = MagicMock(  # type: ignore[method-assign]
+            return_value={
+                "spec": {
+                    "realmName": "test-realm",
+                    "operatorRef": {"namespace": "test-namespace"},
+                    "clientAuthorizationGrants": ["test-namespace"],
+                }
+            }
         )
         return reconciler
 

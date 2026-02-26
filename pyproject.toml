@@ -99,6 +99,7 @@ markers = [
     "integration: marks tests as integration tests (deselect with '-m \"not integration\"')",
     "requires_cluster: marks tests that require a Kubernetes cluster",
     "unit: marks tests as unit tests",
+    "isolated: marks tests that must run in isolation (not in parallel with other tests)",
 ]
 # Timeout for integration tests (15 minutes for slow Kind operations)
 timeout = 900

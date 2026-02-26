@@ -63,6 +63,7 @@ async def test_build_mismatch(
     shared_cnpg_info,
     k8s_core_v1,
     k8s_custom_objects,
+    operator_namespace,
     scenario,
 ):
     """Test that build mismatches are detected and reported in CR status."""
@@ -112,6 +113,7 @@ async def test_build_mismatch(
     spec = {
         "image": scenario["image"],
         "replicas": 1,
+        "operatorRef": {"namespace": operator_namespace},
         "ingress": {"enabled": False},
         "optimized": scenario["optimized"],
         "database": {

@@ -13,15 +13,8 @@ from pydantic import BaseModel, Field, field_validator
 from keycloak_operator.models.types import (
     KeycloakConfigMap,
     KubernetesMetadata,
+    OperatorRef,
 )
-
-
-class OperatorRef(BaseModel):
-    """Reference to the operator managing this realm."""
-
-    model_config = {"populate_by_name": True}
-
-    namespace: str = Field(..., description="Namespace where the operator is running")
 
 
 class KeycloakRealmTheme(BaseModel):

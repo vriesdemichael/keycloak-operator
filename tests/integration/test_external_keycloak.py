@@ -2,6 +2,8 @@ import asyncio
 import base64
 import logging
 import os
+import subprocess
+import time
 
 import pytest
 from kubernetes import client
@@ -13,6 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.requires_cluster
 async def test_external_keycloak_mode(
     shared_operator,
     k8s_client,
@@ -61,9 +65,6 @@ async def test_external_keycloak_mode(
     await k8s_core_v1.create_namespaced_secret(external_op_ns, external_secret)
 
     # Defensive cleanup: Remove any stale global webhooks from previous failed ext-op runs
-    # This is critical because zombie webhooks break the whole cluster.
-    import subprocess
-
     try:
         logger.info("Checking for stale external operator webhooks...")
         # List all validating webhook configurations
@@ -78,9 +79,6 @@ async def test_external_keycloak_mode(
         logger.warning(f"Failed to clean up stale webhooks: {e}")
 
     # 2. Deploy Second Operator (External Mode) using Helm
-    # We use subprocess to run helm install
-    import subprocess
-
     chart_path = "charts/keycloak-operator"
     # Use random release name to prevent collisions
     release_name = f"ext-op-{os.urandom(4).hex()}"
@@ -93,17 +91,15 @@ async def test_external_keycloak_mode(
         "--namespace",
         external_op_ns,
         "--set",
-        "keycloak.enabled=false",
+        "keycloak.managed=false",
         "--set",
-        "keycloak.external.enabled=true",
+        f"keycloak.url={external_url}",
         "--set",
-        f"keycloak.external.url={external_url}",
+        f"keycloak.adminSecret={external_secret_name}",
         "--set",
-        f"keycloak.external.adminSecret={external_secret_name}",
+        f"keycloak.adminUsername={admin_username}",
         "--set",
-        f"keycloak.external.adminUsername={admin_username}",
-        "--set",
-        "keycloak.external.adminPasswordKey=password",
+        "keycloak.adminPasswordKey=password",
         "--set",
         f"operator.watchNamespaces={external_op_ns}",  # Watch only own ns
         "--set",
@@ -160,9 +156,9 @@ async def test_external_keycloak_mode(
         realm_name = f"ext-test-{os.urandom(4).hex()}"
         realm_spec = KeycloakRealmSpec(
             realm_name=realm_name,
-            display_name="External Test Realm",
-            enabled=True,
             operator_ref=OperatorRef(namespace=external_op_ns),
+            display_name="External Mode Test Realm",
+            client_authorization_grants=[external_op_ns],
         )
 
         realm_manifest = build_realm_manifest(realm_spec, realm_name, external_op_ns)
@@ -177,9 +173,6 @@ async def test_external_keycloak_mode(
         )
 
         # 4. Wait for Realm to be Ready
-        # We poll the CR status
-        import time
-
         start_time = time.time()
         timeout = 300  # Highly increased timeout for external operator tests
 
@@ -211,7 +204,6 @@ async def test_external_keycloak_mode(
         # Connect to shared keycloak using port-forward
         local_port = await keycloak_port_forward(shared_kc_name, shared_ns)
 
-        # Let's manually create a client for verification
         from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 
         verifier_client = KeycloakAdminClient(
@@ -224,7 +216,7 @@ async def test_external_keycloak_mode(
         fetched_realm = await verifier_client.get_realm(realm_name, shared_ns)
         assert fetched_realm is not None
         assert fetched_realm.realm == realm_name
-        assert fetched_realm.display_name == "External Test Realm"
+        assert fetched_realm.display_name == "External Mode Test Realm"
 
         logger.info("Verified realm exists in shared Keycloak instance!")
 
@@ -237,6 +229,7 @@ async def test_external_keycloak_mode(
             "spec": {
                 "replicas": 1,
                 "image": "quay.io/keycloak/keycloak:latest",
+                "operatorRef": {"namespace": external_op_ns},
                 "database": {
                     "type": "postgresql",
                     "host": "localhost",
@@ -276,10 +269,12 @@ async def test_external_keycloak_mode(
                 )
                 phase = kc_cr.get("status", {}).get("phase")
                 if phase == "Failed":
+                    # Check message instead of phase if we return None in handler
                     message = kc_cr.get("status", {}).get("message", "")
-                    assert "Operator is configured for External Keycloak" in message
-                    logger.info("Verified Keycloak CR is ignored in External Mode.")
-                    break
+                    # The message is set by our handler even if it returns None (via patch)
+                    if "Operator is configured for External Keycloak" in message:
+                        logger.info("Verified Keycloak CR is ignored in External Mode.")
+                        break
             except Exception as e:
                 logger.warning(f"Error checking keycloak status: {e}")
 

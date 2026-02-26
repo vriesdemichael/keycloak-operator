@@ -19,6 +19,7 @@ from pydantic import ValidationError
 
 from keycloak_operator.constants import WEBHOOK_MAX_REALMS_PER_NAMESPACE
 from keycloak_operator.models.realm import KeycloakRealmSpec
+from keycloak_operator.utils.isolation import is_managed_by_this_operator
 from keycloak_operator.utils.validation import (
     ValidationError as PlaceholderValidationError,
 )
@@ -95,23 +96,13 @@ async def validate_realm(
         f"(operation: {operation}, dryrun: {dryrun})"
     )
 
-    # Multi-tenancy check: Only validate if this resource is for US.
-    # We check operatorRef.namespace. If it doesn't match our namespace,
-    # we return success immediately to avoid interfering with other operators.
-    from keycloak_operator.settings import settings as operator_settings
+    # Multi-tenancy check (ADR-062): Only validate if this resource is for US.
 
-    try:
-        # We need a partial parse to get operatorRef
-        operator_ns = spec.get("operatorRef", {}).get("namespace")
-        if operator_ns and operator_ns != operator_settings.operator_namespace:
-            logger.info(
-                f"Skipping validation for realm {name}: targeted at operator in namespace {operator_ns} "
-                f"(we are {operator_settings.operator_namespace})"
-            )
-            return {}
-    except Exception as e:
-        logger.warning(f"Error checking operatorRef for realm {name}: {e}")
-        # Continue to full validation if we can't determine ownership
+    if not is_managed_by_this_operator(spec, namespace):
+        logger.info(
+            f"Skipping validation for KeycloakRealm {name} in {namespace}: not owned by this operator instance"
+        )
+        return {}
 
     # Validate with Pydantic model first
     try:

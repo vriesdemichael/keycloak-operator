@@ -211,10 +211,9 @@ class TestClientFinalizers:
         # Create a mock Kubernetes API client to avoid loading kubeconfig
         mock_k8s_client = MagicMock()
         reconciler = KeycloakClientReconciler(k8s_client=mock_k8s_client)
-        # Mock _get_realm_info to return expected values without calling K8s API
-        # Returns: (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
-        reconciler._get_realm_info = MagicMock(  # ty: ignore[invalid-assignment]
-            return_value=("test-realm", "test-namespace", "keycloak", {})
+        # Mock _get_realm_resource to return expected values without calling K8s API
+        reconciler._get_realm_resource = MagicMock(  # type: ignore[method-assign]
+            return_value={"spec": {"realmName": "test-realm"}}
         )
         return reconciler
 

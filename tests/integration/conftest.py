@@ -1295,7 +1295,7 @@ def sample_client_spec() -> KeycloakClientSpec:
 
 @pytest.fixture
 async def sample_keycloak_spec_factory(
-    shared_cnpg_info, k8s_core_v1
+    shared_cnpg_info, k8s_core_v1, operator_namespace
 ) -> AsyncGenerator[Any]:
     """Factory to create sample Keycloak specs with proper secret copying.
 
@@ -1346,6 +1346,7 @@ async def sample_keycloak_spec_factory(
         return {
             "replicas": 1,
             "image": get_keycloak_test_image(),
+            "operatorRef": {"namespace": operator_namespace},
             "database": {
                 "type": shared_cnpg_info["type"],
                 "host": shared_cnpg_info["host"],
@@ -1383,7 +1384,7 @@ def build_realm_manifest(
         "apiVersion": "vriesdemichael.github.io/v1",
         "kind": "KeycloakRealm",
         "metadata": {"name": name, "namespace": namespace},
-        "spec": spec.model_dump(by_alias=True, exclude_unset=True),
+        "spec": spec.model_dump(by_alias=True, exclude_none=True),
     }
 
 
@@ -1399,7 +1400,7 @@ def build_client_manifest(
         "apiVersion": "vriesdemichael.github.io/v1",
         "kind": "KeycloakClient",
         "metadata": {"name": name, "namespace": namespace},
-        "spec": spec.model_dump(by_alias=True, exclude_unset=True),
+        "spec": spec.model_dump(by_alias=True, exclude_none=True),
     }
 
 
@@ -1698,8 +1699,8 @@ async def shared_operator(
             # This allows operator-side drift detection tests to exercise
             # the DriftDetector code paths in the operator pod
             "driftDetection": {
-                "enabled": False,  # Disable background drift detection to prevent interference
-                "intervalSeconds": 300,  # Longer interval just in case
+                "enabled": True,
+                "intervalSeconds": 30,  # Short interval for testing
                 "autoRemediate": True,  # Enable auto-remediation for testing
                 # Use 1 hour minimum age so orphans created via CRs (with fresh
                 # timestamps) are NOT auto-remediated. Operator-side tests that

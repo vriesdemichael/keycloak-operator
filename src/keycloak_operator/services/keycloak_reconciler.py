@@ -19,7 +19,6 @@ from ..errors import (
     ValidationError,
 )
 from ..models.keycloak import KeycloakSpec
-from ..settings import settings
 from ..utils.keycloak_admin import get_keycloak_admin_client
 from ..utils.validation import supports_management_port, validate_keycloak_version
 from .base_reconciler import BaseReconciler, StatusProtocol
@@ -42,6 +41,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         k8s_client: client.ApiClient | None = None,
         keycloak_admin_factory: Any = None,
         rate_limiter: Any = None,
+        operator_namespace: str | None = None,
     ):
         """
         Initialize Keycloak instance reconciler.
@@ -50,8 +50,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
             k8s_client: Kubernetes API client
             keycloak_admin_factory: Factory function for creating Keycloak admin clients
             rate_limiter: Rate limiter for Keycloak API calls
+            operator_namespace: Optional operator namespace override (ADR-062)
         """
-        super().__init__(k8s_client)
+        super().__init__(k8s_client, operator_namespace=operator_namespace)
         self.keycloak_admin_factory = (
             keycloak_admin_factory or get_keycloak_admin_client
         )
@@ -314,22 +315,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         Returns:
             Status dictionary for the resource
         """
-        # Check if running in External Mode (ADR-062)
-        # We check both settings and environment directly for robustness
-        import os
-
-        if os.environ.get("KEYCLOAK_EXTERNAL_URL") or settings.keycloak_external_url:
-            self.logger.warning(
-                f"Operator is running in External Mode. Ignoring Keycloak CR {name}."
-            )
-            # This should have been caught by the handler, but we double-check here
-            # to provide a consistent failure message that the tests expect.
-            raise ConfigurationError(
-                "Operator is configured for External Keycloak. "
-                "This CR is ignored and should be deleted."
-            )
-
-        # Backward compatibility / migration mapping:
+        # 1. Backward compatibility / migration mapping:
         # Older manifests (or tests) may still use 'admin_access' block instead of 'admin'.
         # Provide a non-destructive alias if 'admin' not explicitly set.
         if "admin_access" in spec and "admin" not in spec:
@@ -349,6 +335,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         # Parse and validate the specification
         keycloak_spec = self._validate_spec(spec)
+
+        # Validate cross-namespace permissions if targeting another namespace
+        await self.validate_cross_namespace_access(keycloak_spec, name, namespace)
 
         # Validate Keycloak version supports management port (required for health checks)
         image = keycloak_spec.image or DEFAULT_KEYCLOAK_IMAGE
@@ -416,6 +405,52 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         # Return empty dict - status updates are done via StatusWrapper
         return {}
+
+    async def validate_cross_namespace_access(
+        self, spec: KeycloakSpec, name: str, namespace: str
+    ) -> None:
+        """
+        Validate RBAC permissions for cross-namespace operations.
+
+        Args:
+            spec: Keycloak specification
+            name: Resource name
+            namespace: Current namespace
+
+        Raises:
+            RBACError: If insufficient permissions for cross-namespace access
+        """
+        # Define required operations for full Keycloak management
+        required_operations = [
+            {"resource": "deployments", "verb": "get"},
+            {"resource": "deployments", "verb": "create"},
+            {"resource": "deployments", "verb": "patch"},
+            {"resource": "services", "verb": "get"},
+            {"resource": "services", "verb": "create"},
+            {"resource": "secrets", "verb": "get"},
+            {"resource": "secrets", "verb": "create"},
+            {"resource": "configmaps", "verb": "get"},
+            {"resource": "configmaps", "verb": "create"},
+            {"resource": "persistentvolumeclaims", "verb": "get"},
+            {"resource": "persistentvolumeclaims", "verb": "create"},
+        ]
+
+        # Use source_namespace=self.operator_namespace because that's where the SA lives
+        # target_namespace=namespace because that's where the Keycloak CR is
+        await self.validate_rbac_permissions(
+            source_namespace=self.operator_namespace,
+            target_namespace=namespace,
+            operations=required_operations,
+            resource_name=name,
+        )
+
+        # Validate namespace isolation policies (ADR-073)
+        await self.validate_namespace_isolation(
+            source_namespace=self.operator_namespace,
+            target_namespace=namespace,
+            resource_type="keycloak",
+            resource_name=name,
+        )
 
     def _validate_spec(self, spec: dict[str, Any]) -> KeycloakSpec:
         """

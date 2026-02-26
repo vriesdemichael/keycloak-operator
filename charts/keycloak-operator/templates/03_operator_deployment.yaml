@@ -1,8 +1,5 @@
-{{- if and .Values.keycloak.enabled .Values.keycloak.external.enabled -}}
-{{- fail "Cannot enable both Managed Keycloak (keycloak.enabled=true) and External Keycloak (keycloak.external.enabled=true). Please disable one." -}}
-{{- end -}}
-{{- if and .Values.keycloak.external.enabled (or (not .Values.keycloak.external.url) (not .Values.keycloak.external.adminSecret)) -}}
-{{- fail "When external mode is enabled, both keycloak.external.url and keycloak.external.adminSecret must be set." -}}
+{{- if and (not .Values.keycloak.managed) (or (not .Values.keycloak.url) (not .Values.keycloak.adminSecret)) -}}
+{{- fail "When managed mode is disabled (keycloak.managed=false), both keycloak.url and keycloak.adminSecret must be set." -}}
 {{- end -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -158,16 +155,26 @@ spec:
           value: {{ .Values.operator.security.allowScriptMappers | quote }}
         - name: KEYCLOAK_ALLOW_IMPERSONATION
           value: {{ .Values.operator.security.allowImpersonation | quote }}
-        {{- if .Values.keycloak.external.enabled }}
-        - name: KEYCLOAK_EXTERNAL_URL
-          value: {{ .Values.keycloak.external.url | quote }}
-        - name: KEYCLOAK_EXTERNAL_ADMIN_SECRET
-          value: {{ .Values.keycloak.external.adminSecret | quote }}
-        - name: KEYCLOAK_EXTERNAL_ADMIN_USERNAME
-          value: {{ .Values.keycloak.external.adminUsername | quote }}
-        - name: KEYCLOAK_EXTERNAL_ADMIN_PASSWORD_KEY
-          value: {{ .Values.keycloak.external.adminPasswordKey | quote }}
-        {{- end }}
+        - name: KEYCLOAK_URL
+          {{- if .Values.keycloak.url }}
+          value: {{ .Values.keycloak.url | quote }}
+          {{- else if .Values.keycloak.managed }}
+          value: "http://{{ .Values.keycloak.name }}-keycloak.{{ include "keycloak-operator.namespace" . }}.svc.cluster.local:8080"
+          {{- else }}
+          value: ""
+          {{- end }}
+        - name: KEYCLOAK_ADMIN_SECRET
+          {{- if .Values.keycloak.adminSecret }}
+          value: {{ .Values.keycloak.adminSecret | quote }}
+          {{- else if .Values.keycloak.managed }}
+          value: "{{ .Values.keycloak.name }}-admin-credentials"
+          {{- else }}
+          value: "keycloak-admin-credentials"
+          {{- end }}
+        - name: KEYCLOAK_ADMIN_USERNAME
+          value: {{ .Values.keycloak.adminUsername | quote }}
+        - name: KEYCLOAK_ADMIN_PASSWORD_KEY
+          value: {{ .Values.keycloak.adminPasswordKey | quote }}
         # OpenTelemetry tracing configuration
         - name: OTEL_TRACING_ENABLED
           value: {{ .Values.operator.tracing.enabled | quote }}

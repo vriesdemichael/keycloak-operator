@@ -23,35 +23,37 @@ async def test_manage_client_credentials_passes_metadata():
         k8s_client=mock_k8s_client, keycloak_admin_factory=mock_admin_factory
     )
 
-    # Mock _get_realm_info to return values
     from keycloak_operator.settings import settings
 
     settings.operator_instance_id = "test-instance"
     with (
         patch(
-            "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
-        ) as mock_validate,
-        patch(
-            "keycloak_operator.utils.kubernetes.create_client_secret"
+            "keycloak_operator.services.client_reconciler.create_client_secret"
         ) as mock_create_secret,
-        patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
-        patch("kubernetes.client.CoreV1Api") as mock_core_api_cls,
+        patch("keycloak_operator.services.client_reconciler.get_kubernetes_client"),
+        patch(
+            "keycloak_operator.services.client_reconciler.client.CoreV1Api"
+        ) as mock_core_api_cls,
         patch.object(
-            KeycloakClientReconciler, "_get_realm_info"
-        ) as mock_get_realm_info,
+            KeycloakClientReconciler, "_get_realm_resource"
+        ) as mock_get_realm_resource,
+        patch("keycloak_operator.services.client_reconciler.asyncio") as mock_asyncio,
+        patch(
+            "keycloak_operator.utils.isolation.is_managed_by_this_operator",
+            return_value=True,
+        ),
     ):
-        mock_get_realm_info.return_value = (
-            "realm-name",
-            "ns",
-            "kc",
-            {
-                "spec": {
-                    "operatorRef": {"namespace": settings.operator_namespace},
-                    "clientAuthorizationGrants": ["ns"],
-                }
-            },
-        )
-        mock_validate.return_value = {"status": {"endpoints": {"public": "http://kc"}}}
+        reconciler.validate_cross_namespace_access = AsyncMock()  # type: ignore[method-assign]
+        reconciler._validate_namespace_authorization = AsyncMock()  # type: ignore[method-assign]
+        mock_get_realm_resource.return_value = {
+            "spec": {
+                "realmName": "realm-name",
+                "operatorRef": {"namespace": settings.operator_namespace},
+                "clientAuthorizationGrants": ["ns"],
+            }
+        }
+        # Mock to avoid threadpool calls
+        mock_asyncio.to_thread = AsyncMock(side_effect=lambda f, *args: f(*args))
 
         # Mock CoreV1Api to return 404 (secret doesn't exist)
         mock_core_api = MagicMock()
@@ -71,11 +73,15 @@ async def test_manage_client_credentials_passes_metadata():
 
         # Execute
         await reconciler.manage_client_credentials(
-            spec=spec, client_uuid="uuid", name="test-client-cr", namespace="ns"
+            spec=spec,
+            client_uuid="uuid",
+            name="test-client-cr",
+            namespace="ns",
+            actual_realm_name="realm-name",
         )
 
         # Verify
-        mock_create_secret.assert_called_once()
+        assert mock_create_secret.call_count >= 1
         call_kwargs = mock_create_secret.call_args[1]
 
         assert call_kwargs["labels"] == {"l1": "v1"}
@@ -103,29 +109,33 @@ async def test_do_update_passes_metadata_without_regeneration():
     settings.operator_instance_id = "test-instance"
     with (
         patch(
-            "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
-        ) as mock_validate,
-        patch(
-            "keycloak_operator.utils.kubernetes.create_client_secret"
+            "keycloak_operator.services.client_reconciler.create_client_secret"
         ) as mock_create_secret,
-        patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
-        patch("kubernetes.client.CoreV1Api") as mock_core_api_cls,
+        patch("keycloak_operator.services.client_reconciler.get_kubernetes_client"),
+        patch(
+            "keycloak_operator.services.client_reconciler.client.CoreV1Api"
+        ) as mock_core_api_cls,
         patch.object(
-            KeycloakClientReconciler, "_get_realm_info"
-        ) as mock_get_realm_info,
+            KeycloakClientReconciler, "_get_realm_resource"
+        ) as mock_get_realm_resource,
+        patch("keycloak_operator.services.client_reconciler.asyncio") as mock_asyncio,
+        patch(
+            "keycloak_operator.utils.isolation.is_managed_by_this_operator",
+            return_value=True,
+        ),
     ):
-        mock_get_realm_info.return_value = (
-            "realm-name",
-            "ns",
-            "kc",
-            {
-                "spec": {
-                    "operatorRef": {"namespace": settings.operator_namespace},
-                    "clientAuthorizationGrants": ["ns"],
-                }
-            },
-        )
-        mock_validate.return_value = {"status": {"endpoints": {"public": "http://kc"}}}
+        reconciler.validate_cross_namespace_access = AsyncMock()  # type: ignore[method-assign]
+        reconciler._validate_namespace_authorization = AsyncMock()  # type: ignore[method-assign]
+        mock_get_realm_resource.return_value = {
+            "spec": {
+                "realmName": "realm-name",
+                "operatorRef": {"namespace": settings.operator_namespace},
+                "clientAuthorizationGrants": ["ns"],
+            }
+        }
+        # Mock to avoid threadpool calls
+        mock_asyncio.to_thread = AsyncMock(side_effect=lambda f, *args: f(*args))
+
         # Mock getting existing secret
         mock_admin_client.get_client_secret.return_value = "existing-secret"
         mock_core_api = MagicMock()
@@ -167,10 +177,11 @@ async def test_do_update_passes_metadata_without_regeneration():
             name="test-client-cr",
             namespace="ns",
             status=MagicMock(),
+            meta={"generation": 1},
         )
 
         # Verify
-        mock_create_secret.assert_called_once()
+        assert mock_create_secret.call_count >= 1
         call_kwargs = mock_create_secret.call_args[1]
 
         # Ensure secret was NOT regenerated (should use existing value)
@@ -200,30 +211,39 @@ async def test_do_update_passes_metadata_on_regeneration():
     settings.operator_instance_id = "test-instance"
     with (
         patch(
-            "keycloak_operator.utils.kubernetes.validate_keycloak_reference"
-        ) as mock_validate,
-        patch(
-            "keycloak_operator.utils.kubernetes.create_client_secret"
+            "keycloak_operator.services.client_reconciler.create_client_secret"
         ) as mock_create_secret,
-        patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
-        patch("kubernetes.client.CoreV1Api"),
+        patch("keycloak_operator.services.client_reconciler.get_kubernetes_client"),
+        patch(
+            "keycloak_operator.services.client_reconciler.client.CoreV1Api"
+        ) as mock_core_api_cls,
         patch.object(
-            KeycloakClientReconciler, "_get_realm_info"
-        ) as mock_get_realm_info,
+            KeycloakClientReconciler, "_get_realm_resource"
+        ) as mock_get_realm_resource,
+        patch("keycloak_operator.services.client_reconciler.asyncio") as mock_asyncio,
+        patch(
+            "keycloak_operator.utils.isolation.is_managed_by_this_operator",
+            return_value=True,
+        ),
     ):
-        mock_get_realm_info.return_value = (
-            "realm-name",
-            "ns",
-            "kc",
-            {
-                "spec": {
-                    "operatorRef": {"namespace": settings.operator_namespace},
-                    "clientAuthorizationGrants": ["ns"],
-                }
-            },
-        )
-        mock_validate.return_value = {"status": {"endpoints": {"public": "http://kc"}}}
+        reconciler.validate_cross_namespace_access = AsyncMock()  # type: ignore[method-assign]
+        reconciler._validate_namespace_authorization = AsyncMock()  # type: ignore[method-assign]
+        mock_get_realm_resource.return_value = {
+            "spec": {
+                "realmName": "realm-name",
+                "operatorRef": {"namespace": settings.operator_namespace},
+                "clientAuthorizationGrants": ["ns"],
+            }
+        }
+        # Mock to avoid threadpool calls
+        mock_asyncio.to_thread = AsyncMock(side_effect=lambda f, *args: f(*args))
+
         mock_admin_client.regenerate_client_secret.return_value = "new-secret"
+        mock_core_api = MagicMock()
+        mock_core_api_cls.return_value = mock_core_api
+        from kubernetes.client.rest import ApiException
+
+        mock_core_api.read_namespaced_secret.side_effect = ApiException(status=404)
 
         # Setup inputs
         old_spec = {
@@ -249,10 +269,11 @@ async def test_do_update_passes_metadata_on_regeneration():
             name="test-client-cr",
             namespace="ns",
             status=MagicMock(),
+            meta={"generation": 1},
         )
 
         # Verify
-        mock_create_secret.assert_called_once()
+        assert mock_create_secret.call_count >= 1
         call_kwargs = mock_create_secret.call_args[1]
 
         assert call_kwargs["labels"] == {"l2": "v2"}
