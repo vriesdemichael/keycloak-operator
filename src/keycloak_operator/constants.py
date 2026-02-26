@@ -59,8 +59,8 @@ CONDITION_FALSE = "False"
 CONDITION_UNKNOWN = "Unknown"
 
 # Default configuration values
-DEFAULT_KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.4.1"
-DEFAULT_KEYCLOAK_OPTIMIZED_VERSION = "26.4.1"  # Version for optimized test image
+DEFAULT_KEYCLOAK_IMAGE = "quay.io/keycloak/keycloak:26.5.2"
+DEFAULT_KEYCLOAK_OPTIMIZED_VERSION = "26.5.2"  # Version for optimized test image
 MINIMUM_KEYCLOAK_VERSION = "24.0.0"  # Minimum supported Keycloak version
 MANAGEMENT_PORT_MIN_VERSION = (
     "25.0.0"  # Version when management port (9000) was introduced

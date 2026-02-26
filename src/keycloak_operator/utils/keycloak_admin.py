@@ -7930,27 +7930,19 @@ async def get_keycloak_admin_client(
     verify_ssl: bool = False,
 ) -> KeycloakAdminClient:
     """
-    Get or create a cached KeycloakAdminClient for a specific instance.
-
-    The client is cached per (keycloak_name, namespace, verify_ssl) tuple and reused
-    across reconciliation cycles. Token refresh/expiry is handled
-    automatically by _ensure_authenticated() before every API call.
+    Get or create a cached KeycloakAdminClient for the globally configured Keycloak instance.
 
     Args:
-        keycloak_name: Name of the Keycloak instance
-        namespace: Namespace where the Keycloak instance exists
+        keycloak_name: Name of the Keycloak instance (ignored in agnostic mode)
+        namespace: Namespace where the Keycloak instance exists (ignored in agnostic mode)
         rate_limiter: Optional rate limiter for API throttling
-        verify_ssl: Whether to verify SSL certificates (default: False for development)
+        verify_ssl: Whether to verify SSL certificates (default: False)
 
     Returns:
         Configured KeycloakAdminClient instance (may be cached)
     """
-    if settings.keycloak_external_url:
-        # In external mode, all CRs point to the same Keycloak instance.
-        # Use a fixed cache key so we reuse a single admin client per verify_ssl.
-        cache_key = ("__external__", "", verify_ssl)
-    else:
-        cache_key = (keycloak_name, namespace, verify_ssl)
+    # In agnostic mode, we always use the single globally configured instance
+    cache_key = ("__global__", "", verify_ssl)
 
     current_loop_id = id(asyncio.get_running_loop())
 
@@ -7960,35 +7952,23 @@ async def get_keycloak_admin_client(
         if cache_key in _admin_client_cache:
             cached_client, loop_id = _admin_client_cache[cache_key]
             if loop_id == current_loop_id:
-                # Update rate_limiter if provided (may change between calls)
                 if rate_limiter is not None:
                     cached_client.rate_limiter = rate_limiter
-                logger.debug(
-                    f"Reusing cached admin client for {keycloak_name} in {namespace}"
-                )
                 return cached_client
             else:
-                # Client from a different event loop (e.g. test teardown/setup)
                 cached_client.cleanup()
                 del _admin_client_cache[cache_key]
-                logger.debug(
-                    f"Discarding stale admin client for {keycloak_name} "
-                    f"(event loop mismatch)"
-                )
 
-        # 2. Check pending creations to avoid thundering herd
+        # 2. Check pending creations
         if cache_key in _pending_creations:
             future = _pending_creations[cache_key]
             creator = False
         else:
-            # We are the creator
             future = asyncio.Future()
             _pending_creations[cache_key] = future
             creator = True
 
-    # If we are waiting for another coroutine to create the client
     if not creator:
-        logger.debug(f"Waiting for pending admin client creation for {keycloak_name}")
         return await future
 
     # We are the creator
@@ -7997,102 +7977,52 @@ async def get_keycloak_admin_client(
 
     from keycloak_operator.utils.kubernetes import get_kubernetes_client
 
-    logger.info(f"Creating admin client for Keycloak {keycloak_name} in {namespace}")
-
     try:
-        # Check if we are running in External Mode
-        if settings.keycloak_external_url:
-            logger.info(
-                f"Using external Keycloak at {settings.keycloak_external_url} "
-                f"(ignoring CR {keycloak_name})"
+        if not settings.keycloak_url:
+            raise KeycloakAdminError(
+                "KEYCLOAK_URL is not configured. The operator cannot connect to Keycloak."
             )
-            server_url = settings.keycloak_external_url
-            username = settings.keycloak_external_admin_username
 
-            # Retrieve password from secret in operator's namespace
-            try:
-                k8s = get_kubernetes_client()
-                core_api = k8s_client.CoreV1Api(k8s)
-                secret_name = settings.keycloak_external_admin_secret
-                secret_namespace = settings.pod_namespace
+        server_url = settings.keycloak_url
+        username = settings.keycloak_admin_username
 
-                secret = core_api.read_namespaced_secret(
-                    name=secret_name, namespace=secret_namespace
-                )
-
-                import base64
-
-                password_key = settings.keycloak_external_admin_password_key
-                if not secret.data:
-                    raise KeycloakAdminError(
-                        f"Secret '{secret_name}' in namespace '{secret_namespace}' has no data"
-                    )
-
-                if password_key not in secret.data:
-                    raise KeycloakAdminError(
-                        f"Key '{password_key}' not found in secret '{secret_name}'"
-                    )
-
-                password = base64.b64decode(secret.data[password_key]).decode("utf-8")
-
-            except ApiException as e:
-                logger.error(f"Failed to retrieve external admin credentials: {e}")
-                # 404 is user error (missing secret), others might be transient
-                raise KeycloakAdminError(
-                    f"Could not retrieve admin credentials from secret "
-                    f"'{settings.keycloak_external_admin_secret}' in namespace "
-                    f"'{settings.pod_namespace}': {e}"
-                ) from e
-            except Exception as e:
-                logger.error(f"Failed to process external admin credentials: {e}")
-                raise KeycloakAdminError(
-                    f"Could not process admin credentials from secret "
-                    f"'{settings.keycloak_external_admin_secret}': {e}"
-                ) from e
-
-        else:
-            # Managed Mode: Get Keycloak instance details from CR
+        # Retrieve password from secret in operator's namespace
+        try:
             k8s = get_kubernetes_client()
-            custom_api = k8s_client.CustomObjectsApi(k8s)
-
-            # Get Keycloak instance
-            keycloak_instance = custom_api.get_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=namespace,
-                plural="keycloaks",
-                name=keycloak_name,
-            )
-
-            # Get server URL from instance status
-            server_url = (
-                keycloak_instance.get("status", {}).get("endpoints", {}).get("admin")
-            )
-            if not server_url:
-                raise KeycloakAdminError(
-                    f"Keycloak instance {keycloak_name} does not have admin endpoint ready"
-                )
-
-            # Get admin credentials from secret
             core_api = k8s_client.CoreV1Api(k8s)
-            admin_secret_name = f"{keycloak_name}-admin-credentials"
+            secret_name = settings.keycloak_admin_secret
+            secret_namespace = settings.pod_namespace
 
-            try:
-                secret = core_api.read_namespaced_secret(
-                    name=admin_secret_name, namespace=namespace
+            secret = core_api.read_namespaced_secret(
+                name=secret_name, namespace=secret_namespace
+            )
+
+            import base64
+
+            password_key = settings.keycloak_admin_password_key
+            if not secret.data:
+                raise KeycloakAdminError(
+                    f"Secret '{secret_name}' in namespace '{secret_namespace}' has no data"
                 )
 
-                # Decode credentials from secret
-                import base64
-
-                username = base64.b64decode(secret.data["username"]).decode("utf-8")
-                password = base64.b64decode(secret.data["password"]).decode("utf-8")
-
-            except Exception as e:
-                logger.error(f"Failed to retrieve admin credentials: {e}")
+            if password_key not in secret.data:
                 raise KeycloakAdminError(
-                    f"Could not retrieve admin credentials for {keycloak_name}"
-                ) from e
+                    f"Key '{password_key}' not found in secret '{secret_name}'"
+                )
+
+            password = base64.b64decode(secret.data[password_key]).decode("utf-8")
+
+        except ApiException as e:
+            raise KeycloakAdminError(
+                f"Could not retrieve admin credentials from secret "
+                f"'{settings.keycloak_admin_secret}' in namespace "
+                f"'{settings.pod_namespace}': {e}"
+            ) from e
+        except Exception as e:
+            raise KeycloakAdminError(
+                f"Could not process admin credentials from secret "
+                f"'{settings.keycloak_admin_secret}': {e}"
+            ) from e
 
         # Create and authenticate admin client
         admin_client = KeycloakAdminClient(
@@ -8101,31 +8031,26 @@ async def get_keycloak_admin_client(
             password=password,
             verify_ssl=verify_ssl,
             rate_limiter=rate_limiter,
-            keycloak_name=keycloak_name,
-            keycloak_namespace=namespace,
+            keycloak_name="global",
+            keycloak_namespace=settings.pod_namespace,
         )
 
-        # Authenticate once; subsequent calls use _ensure_authenticated()
-        # which refreshes via refresh_token (no Argon2) or re-authenticates
         await admin_client.authenticate()
 
-        # Success - cache the result and resolve pending futures
+        # Success - cache the result
         future.set_result(admin_client)
         async with _cache_lock:
             _admin_client_cache[cache_key] = (admin_client, current_loop_id)
-            # Remove our future from pending
             if cache_key in _pending_creations:
                 del _pending_creations[cache_key]
 
-        logger.info(f"Created and cached admin client for {keycloak_name}")
+        logger.info(f"Created and cached admin client for Keycloak at {server_url}")
         return admin_client
 
     except Exception as e:
         logger.error(f"Failed to create admin client: {e}")
-        # Signal failure to waiters
         future.set_exception(e)
         async with _cache_lock:
-            # Clean up pending map
             if cache_key in _pending_creations:
                 del _pending_creations[cache_key]
         raise KeycloakAdminError(f"Admin client creation failed: {e}") from e

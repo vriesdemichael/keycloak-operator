@@ -267,7 +267,7 @@ class TestWebhooksE2E:
                 k8s_core.delete_namespace(name=namespace)
 
     async def test_keycloak_one_per_namespace(
-        self, k8s_custom_objects, shared_operator
+        self, k8s_custom_objects, shared_operator, operator_namespace
     ):
         """Test that only one Keycloak instance is allowed per namespace (ADR-062)."""
         namespace = f"test-webhook-keycloak-{uuid.uuid4().hex[:8]}"
@@ -290,6 +290,7 @@ class TestWebhooksE2E:
                     "kind": "Keycloak",
                     "metadata": {"name": "keycloak-1"},
                     "spec": {
+                        "operatorRef": {"namespace": operator_namespace},
                         "version": "26.4.1",
                         "replicas": 1,
                         "database": {
@@ -317,6 +318,7 @@ class TestWebhooksE2E:
                         "kind": "Keycloak",
                         "metadata": {"name": "keycloak-2"},
                         "spec": {
+                            "operatorRef": {"namespace": operator_namespace},
                             "version": "26.4.1",
                             "replicas": 1,
                             "database": {

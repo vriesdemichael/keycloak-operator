@@ -69,16 +69,15 @@ def validate_keycloak_reference(
 
     Returns:
         Keycloak instance details if valid and ready, None otherwise
-
-    This function validates Keycloak instance readiness and availability.
     """
-    # If running in External Mode, always validate successfully
-    if settings.keycloak_external_url:
+    # If the configured URL is NOT the internal one we would manage,
+    # we simulate a valid reference to bypass local checks.
+    internal_url = f"http://{keycloak_name}.{namespace}.svc.cluster.local:8080"
+    if settings.keycloak_url and settings.keycloak_url != internal_url:
         logger.debug(
-            f"External Keycloak mode enabled ({settings.keycloak_external_url}), "
+            f"External Keycloak URL configured ({settings.keycloak_url}), "
             f"simulating valid reference for {keycloak_name}"
         )
-        # Return a mock Keycloak CR structure that satisfies callers
         return {
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
@@ -87,8 +86,8 @@ def validate_keycloak_reference(
                 "phase": "Ready",
                 "message": "External Keycloak Mode",
                 "endpoints": {
-                    "admin": settings.keycloak_external_url,
-                    "public": settings.keycloak_external_url,
+                    "admin": settings.keycloak_url,
+                    "public": settings.keycloak_url,
                 },
             },
         }

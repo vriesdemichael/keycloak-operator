@@ -17,6 +17,7 @@ from kubernetes import client
 from pydantic import ValidationError
 
 from keycloak_operator.models.keycloak import KeycloakSpec
+from keycloak_operator.utils.isolation import is_managed_by_this_operator
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +87,14 @@ async def validate_keycloak(
         f"Validating Keycloak {name} in namespace {namespace} "
         f"(operation: {operation}, dryrun: {dryrun})"
     )
+
+    # Multi-tenancy check (ADR-062): Only validate if this resource is for US.
+
+    if not is_managed_by_this_operator(spec, namespace):
+        logger.info(
+            f"Skipping validation for Keycloak {name} in namespace {namespace}: not owned by this operator"
+        )
+        return {}
 
     # Validate with Pydantic model first
     try:

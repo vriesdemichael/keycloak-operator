@@ -279,6 +279,15 @@ spec:
                     minimum: 0
                     maximum: 1
                     default: 1.0
+              operatorRef:
+                type: object
+                description: Reference to the operator instance managing this resource (ADR-062)
+                properties:
+                  namespace:
+                    type: string
+                    description: Namespace where the operator is running
+                required:
+                - namespace
             required:
             - database
           status:

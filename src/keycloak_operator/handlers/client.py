@@ -44,15 +44,28 @@ from keycloak_operator.observability.metrics import (
 )
 from keycloak_operator.observability.tracing import traced_handler
 from keycloak_operator.services import KeycloakClientReconciler
+from keycloak_operator.settings import settings
 from keycloak_operator.utils.handler_logging import log_handler_entry
+from keycloak_operator.utils.isolation import (
+    is_client_managed_by_this_operator,
+)
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
 from keycloak_operator.utils.kubernetes import (
     create_client_secret,
     get_kubernetes_client,
-    validate_keycloak_reference,
 )
 
 logger = logging.getLogger(__name__)
+
+
+def is_matching_namespace(spec: dict[str, Any], namespace: str, **_: Any) -> bool:
+    """
+    Check if the resource is targeted at this operator instance (ADR-062).
+
+    For clients, we always return True here to allow the async handler to
+    perform the strict parent-realm-based ownership check.
+    """
+    return True
 
 
 class StatusWrapper:
@@ -175,12 +188,14 @@ async def _perform_client_cleanup(
     group="vriesdemichael.github.io",
     version="v1",
     backoff=1.5,
+    when=is_matching_namespace,
 )
 @kopf.on.resume(
     "keycloakclients",
     group="vriesdemichael.github.io",
     version="v1",
     backoff=1.5,
+    when=is_matching_namespace,
 )
 @kopf.on.resume(
     "keycloakclients", backoff=1.5, group="vriesdemichael.github.io", version="v1"
@@ -218,6 +233,12 @@ async def ensure_keycloak_client(
     """
     # Log handler entry immediately for debugging
     log_handler_entry("create/resume", "keycloakclient", name, namespace)
+
+    # Check ownership (ADR-062)
+    if not await is_client_managed_by_this_operator(
+        spec, namespace, get_kubernetes_client()
+    ):
+        return None
 
     # Check if resource is being deleted - if so, skip reconciliation
     # The @kopf.on.delete handler (delete_keycloak_client) handles cleanup
@@ -257,6 +278,7 @@ async def ensure_keycloak_client(
     backoff=1.5,
     group="vriesdemichael.github.io",
     version="v1",
+    when=is_matching_namespace,
 )
 @traced_handler("update_client")
 async def update_keycloak_client(
@@ -292,6 +314,12 @@ async def update_keycloak_client(
     # Log handler entry immediately for debugging
     log_handler_entry("update", "keycloakclient", name, namespace)
 
+    # Check ownership (ADR-062)
+    if not await is_client_managed_by_this_operator(
+        new.get("spec", {}), namespace, get_kubernetes_client()
+    ):
+        return None
+
     logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
 
     # Use patch.status for updates instead of wrapping the read-only status dict
@@ -320,6 +348,7 @@ async def update_keycloak_client(
     backoff=1.5,
     group="vriesdemichael.github.io",
     version="v1",
+    when=is_matching_namespace,
 )
 @traced_handler("delete_client")
 async def delete_keycloak_client(
@@ -356,6 +385,12 @@ async def delete_keycloak_client(
         namespace,
         extra={"retry_count": retry_count},
     )
+
+    # Check ownership (ADR-062)
+    if not await is_client_managed_by_this_operator(
+        spec, namespace, get_kubernetes_client()
+    ):
+        return None
 
     logger.info(
         f"Starting deletion of KeycloakClient {name} in namespace {namespace} "
@@ -452,6 +487,12 @@ async def monitor_client_health(
         memo: Kopf memo for accessing shared state like rate_limiter
 
     """
+    # Check ownership (ADR-062)
+    if not await is_client_managed_by_this_operator(
+        spec, namespace, get_kubernetes_client()
+    ):
+        return
+
     # Random jitter on startup to prevent thundering herd
     initial_jitter = random.uniform(0, TIMER_INTERVAL_CLIENT)
     await stopped.wait(initial_jitter)
@@ -981,6 +1022,12 @@ async def secret_rotation_daemon(
 
     The daemon only runs for confidential clients with secretRotation.enabled=true.
     """
+    # Check ownership (ADR-062)
+    if not await is_client_managed_by_this_operator(
+        spec, namespace, get_kubernetes_client()
+    ):
+        return
+
     client_spec = KeycloakClientSpec.model_validate(spec)
     secret_name = f"{name}-credentials"
     k8s_client = get_kubernetes_client()
@@ -1059,10 +1106,11 @@ async def secret_rotation_daemon(
             realm_ref = client_spec.realm_ref
             target_namespace = realm_ref.namespace or namespace
 
-            # Get realm resource to find Keycloak instance
+            # Get realm resource to find actual realm name
             custom_api = client.CustomObjectsApi(k8s_client)
             try:
-                realm_resource = custom_api.get_namespaced_custom_object(
+                realm_resource = await asyncio.to_thread(
+                    custom_api.get_namespaced_custom_object,
                     group="vriesdemichael.github.io",
                     version="v1",
                     namespace=target_namespace,
@@ -1080,17 +1128,8 @@ async def secret_rotation_daemon(
                     continue
                 raise
 
-            realm_spec = realm_resource.get("spec", {})
-            actual_realm_name = realm_spec.get("realmName", realm_ref.name)
-            keycloak_ref = realm_spec.get("keycloakRef", {})
-            keycloak_name = keycloak_ref.get("name")
-            keycloak_namespace = keycloak_ref.get("namespace", target_namespace)
-
-            if not keycloak_name:
-                logger.error(f"Realm {realm_ref.name} has no keycloakRef")
-                if await stopped.wait(timeout=60):
-                    break
-                continue
+            realm_spec_data = realm_resource.get("spec", {})
+            actual_realm_name = realm_spec_data.get("realmName", realm_ref.name)
 
             # Perform rotation with retries
             rotation_success = False
@@ -1099,7 +1138,7 @@ async def secret_rotation_daemon(
             while retry_count < ROTATION_MAX_RETRIES and not stopped:
                 try:
                     admin_client = await get_keycloak_admin_client(
-                        keycloak_name, keycloak_namespace
+                        "global", settings.operator_namespace
                     )
                     # Regenerate secret in Keycloak
                     new_secret = await admin_client.regenerate_client_secret(
@@ -1111,15 +1150,6 @@ async def secret_rotation_daemon(
                     if not new_secret:
                         raise RuntimeError(
                             f"Failed to regenerate secret for client {client_spec.client_id}"
-                        )
-
-                    # Get Keycloak instance for endpoint URL
-                    keycloak_instance = validate_keycloak_reference(
-                        keycloak_name, keycloak_namespace
-                    )
-                    if not keycloak_instance:
-                        raise RuntimeError(
-                            f"Keycloak instance {keycloak_name} not found or not ready"
                         )
 
                     # Prepare secret metadata
@@ -1154,7 +1184,7 @@ async def secret_rotation_daemon(
                         namespace=namespace,
                         client_id=client_spec.client_id,
                         client_secret=new_secret,
-                        keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
+                        keycloak_url=settings.keycloak_url,
                         realm=actual_realm_name,
                         update_existing=True,
                         labels=labels,

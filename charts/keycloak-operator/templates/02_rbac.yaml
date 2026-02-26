@@ -217,8 +217,20 @@ rules:
 
 # Read and delete configmaps for realm cleanup
 - apiGroups: [""]
-  resources: ["configmaps"]
-  verbs: ["get", "list", "delete"]
+  resources: ["configmaps", "services", "persistentvolumeclaims"]
+  verbs: ["get", "list", "create", "update", "patch", "delete"]
+
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
 
 # Create events for status reporting
 - apiGroups: [""]

@@ -5,6 +5,7 @@ This module handles the lifecycle of Keycloak clients including
 client creation, credential management, and OAuth2 configuration.
 """
 
+import asyncio
 import base64
 import time
 from datetime import UTC, datetime, timedelta
@@ -18,6 +19,10 @@ from ..errors import ReconciliationError, ValidationError
 from ..models.client import KeycloakClientSpec
 from ..settings import settings
 from ..utils.keycloak_admin import get_keycloak_admin_client
+from ..utils.kubernetes import (
+    create_client_secret,
+    get_kubernetes_client,
+)
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 # Constants for security restrictions
@@ -74,91 +79,30 @@ class KeycloakClientReconciler(BaseReconciler):
         )
         self.rate_limiter = rate_limiter
 
-    def _get_realm_info(
+    def _get_realm_resource(
         self, realm_resource_name: str, realm_namespace: str
-    ) -> tuple[str, str, str, dict[str, Any]]:
+    ) -> dict[str, Any]:
         """
-        Get realm information including actual realm name and Keycloak instance.
+        Get the parent KeycloakRealm resource.
 
         Args:
             realm_resource_name: Name of the realm Kubernetes resource
             realm_namespace: Namespace of the realm resource
 
         Returns:
-            Tuple of (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
+            Realm resource body
 
         Raises:
             ApiException: If realm resource cannot be retrieved
-            PermanentError: If realm spec is invalid
         """
-        try:
-            custom_api = client.CustomObjectsApi()
-            realm_resource = custom_api.get_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=realm_namespace,
-                plural="keycloakrealms",
-                name=realm_resource_name,
-            )
-
-            # Get actual Keycloak realm name from spec
-            actual_realm_name = realm_resource.get("spec", {}).get("realmName")
-            if not actual_realm_name:
-                from ..errors import PermanentError
-
-                raise PermanentError(
-                    f"Realm resource {realm_resource_name} does not have a realmName in spec"
-                )
-
-            # Get Keycloak instance from status
-            realm_status = realm_resource.get("status", {})
-            keycloak_instance = realm_status.get("keycloakInstance", "")
-
-            # Parse "namespace/name" format
-            if "/" in keycloak_instance and keycloak_instance.count("/") == 1:
-                keycloak_namespace, keycloak_name = keycloak_instance.split("/", 1)
-            else:
-                # Fallback to defaults if format is unexpected
-                self.logger.warning(
-                    f"Realm {realm_resource_name} has unexpected keycloakInstance format: '{keycloak_instance}'. "
-                    f"Using default: {realm_namespace}/keycloak"
-                )
-                keycloak_namespace, keycloak_name = realm_namespace, "keycloak"
-
-            return actual_realm_name, keycloak_namespace, keycloak_name, realm_resource
-
-        except ApiException as e:
-            if e.status == 404:
-                self.logger.error(
-                    f"Realm {realm_resource_name} not found in namespace {realm_namespace}"
-                )
-            else:
-                self.logger.error(f"Failed to get realm {realm_resource_name}: {e}")
-            raise
-
-    def _get_keycloak_instance_from_realm(
-        self, realm_resource_name: str, realm_namespace: str
-    ) -> tuple[str, str]:
-        """
-        Get Keycloak instance name and namespace from a realm's status.
-
-        DEPRECATED: Use _get_realm_info instead for new code.
-
-        Args:
-            realm_resource_name: Name of the realm resource
-            realm_namespace: Namespace of the realm resource
-
-        Returns:
-            Tuple of (keycloak_namespace, keycloak_name)
-        """
-        try:
-            _, kc_ns, kc_name, _ = self._get_realm_info(
-                realm_resource_name, realm_namespace
-            )
-            return kc_ns, kc_name
-        except Exception:
-            # Fallback to defaults
-            return realm_namespace, "keycloak"
+        custom_api = client.CustomObjectsApi(self.k8s_client)
+        return custom_api.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=realm_namespace,
+            plural="keycloakrealms",
+            name=realm_resource_name,
+        )
 
     async def do_reconcile(
         self,
@@ -181,36 +125,48 @@ class KeycloakClientReconciler(BaseReconciler):
         Returns:
             Status dictionary for the resource
         """
+
         # Parse and validate the specification
         client_spec = self._validate_spec(spec)
 
-        # 1. Resolve realm info EARLY to check ownership and get Keycloak details
+        # 1. Fetch parent realm resource for authorization checks
         realm_ref = client_spec.realm_ref
         try:
-            actual_realm_name, keycloak_namespace, keycloak_name, realm_resource = (
-                self._get_realm_info(realm_ref.name, realm_ref.namespace)
+            realm_resource = await asyncio.to_thread(
+                self._get_realm_resource, realm_ref.name, realm_ref.namespace
             )
         except Exception as e:
             # If realm lookup fails, we can't determine ownership yet.
             # We return early but don't return an empty dict, so Kopf retries.
             from ..errors import TemporaryError
 
-            self.logger.debug(f"Could not determine ownership for client {name}: {e}")
+            self.logger.debug(f"Could not fetch parent realm for client {name}: {e}")
             raise TemporaryError(
-                f"Waiting for parent realm {realm_ref.name} to determine ownership",
+                f"Waiting for parent realm {realm_ref.name} to be created",
                 delay=10,
             ) from e
 
-        # 2. IGNORE resources not managed by this operator instance (ADR-062)
-        target_op_ns = (
-            realm_resource.get("spec", {}).get("operatorRef", {}).get("namespace")
-        )
-        if target_op_ns != self.operator_namespace:
+        # Check ownership (ADR-062)
+        # Clients are owned by the operator that owns their parent realm
+        from ..utils.isolation import is_managed_by_this_operator
+
+        if not is_managed_by_this_operator(
+            realm_resource.get("spec", {}), realm_ref.namespace
+        ):
             self.logger.debug(
-                f"Ignoring KeycloakClient {name}: parent realm '{realm_ref.name}' "
-                f"is managed by operator in '{target_op_ns}', but we are '{self.operator_namespace}'"
+                f"Client {name} in {namespace} belongs to realm {realm_ref.name} "
+                f"managed by another operator, ignoring"
             )
             return {}
+
+        # 2. Get actual Keycloak realm name from spec
+        actual_realm_name = realm_resource.get("spec", {}).get("realmName")
+        if not actual_realm_name:
+            from ..errors import PermanentError
+
+            raise PermanentError(
+                f"Realm resource {realm_ref.name} does not have a realmName in spec"
+            )
 
         # 3. Validate cross-namespace permissions
         await self.validate_cross_namespace_access(client_spec, namespace)
@@ -230,9 +186,6 @@ class KeycloakClientReconciler(BaseReconciler):
             name,
             namespace,
             actual_realm_name=actual_realm_name,
-            keycloak_namespace=keycloak_namespace,
-            keycloak_name=keycloak_name,
-            realm_resource=realm_resource,
         )
 
         # 6. Configure OAuth2/OIDC settings
@@ -242,8 +195,6 @@ class KeycloakClientReconciler(BaseReconciler):
             name,
             namespace,
             actual_realm_name=actual_realm_name,
-            keycloak_namespace=keycloak_namespace,
-            keycloak_name=keycloak_name,
         )
 
         # Get owner UID from resource body
@@ -257,8 +208,6 @@ class KeycloakClientReconciler(BaseReconciler):
                 name,
                 namespace,
                 actual_realm_name=actual_realm_name,
-                keycloak_namespace=keycloak_namespace,
-                keycloak_name=keycloak_name,
                 owner_uid=owner_uid,
             )
 
@@ -270,8 +219,6 @@ class KeycloakClientReconciler(BaseReconciler):
                 name,
                 namespace,
                 actual_realm_name=actual_realm_name,
-                keycloak_namespace=keycloak_namespace,
-                keycloak_name=keycloak_name,
             )
 
         # 9. Configure client-level scope assignments
@@ -282,8 +229,6 @@ class KeycloakClientReconciler(BaseReconciler):
                 name,
                 namespace,
                 actual_realm_name=actual_realm_name,
-                keycloak_namespace=keycloak_namespace,
-                keycloak_name=keycloak_name,
             )
 
         # 10. Manage client roles
@@ -294,8 +239,6 @@ class KeycloakClientReconciler(BaseReconciler):
                 name,
                 namespace,
                 actual_realm_name=actual_realm_name,
-                keycloak_namespace=keycloak_namespace,
-                keycloak_name=keycloak_name,
             )
 
         # 11. Manage service account roles
@@ -306,8 +249,6 @@ class KeycloakClientReconciler(BaseReconciler):
                 name,
                 namespace,
                 actual_realm_name=actual_realm_name,
-                keycloak_namespace=keycloak_namespace,
-                keycloak_name=keycloak_name,
             )
 
         # 12. Configure authorization services (resources and scopes)
@@ -318,32 +259,19 @@ class KeycloakClientReconciler(BaseReconciler):
                 name,
                 namespace,
                 actual_realm_name=actual_realm_name,
-                keycloak_namespace=keycloak_namespace,
-                keycloak_name=keycloak_name,
             )
 
         # 13. Return status information
         secret_name = f"{name}-credentials"
 
-        from ..utils.kubernetes import validate_keycloak_reference
-
-        keycloak_instance = validate_keycloak_reference(
-            keycloak_name, keycloak_namespace
-        )
-
         endpoints = {}
-        if (
-            keycloak_instance
-            and "status" in keycloak_instance
-            and "endpoints" in keycloak_instance["status"]
-        ):
-            base_url = keycloak_instance["status"]["endpoints"].get("public", "")
-            if base_url:
-                endpoints = {
-                    "auth": f"{base_url}/realms/{actual_realm_name}",
-                    "token": f"{base_url}/realms/{actual_realm_name}/protocol/openid-connect/token",
-                    "userinfo": f"{base_url}/realms/{actual_realm_name}/protocol/openid-connect/userinfo",
-                }
+        base_url = settings.keycloak_url
+        if base_url:
+            endpoints = {
+                "auth": f"{base_url}/realms/{actual_realm_name}",
+                "token": f"{base_url}/realms/{actual_realm_name}/protocol/openid-connect/token",
+                "userinfo": f"{base_url}/realms/{actual_realm_name}/protocol/openid-connect/userinfo",
+            }
 
         # Extract generation for status tracking
         generation = kwargs.get("meta", {}).get("generation", 0)
@@ -352,7 +280,9 @@ class KeycloakClientReconciler(BaseReconciler):
         if settings.drift_detection_enabled:
             try:
                 admin_client_for_ts = await self.keycloak_admin_factory(
-                    keycloak_name, keycloak_namespace, rate_limiter=self.rate_limiter
+                    "global",
+                    settings.operator_namespace,
+                    rate_limiter=self.rate_limiter,
                 )
                 latest_event_time = (
                     await admin_client_for_ts.get_latest_admin_event_time(
@@ -379,7 +309,6 @@ class KeycloakClientReconciler(BaseReconciler):
         status.client_id = client_spec.client_id
         status.client_uuid = client_uuid
         status.realm = actual_realm_name
-        status.keycloak_instance = f"{keycloak_namespace}/{keycloak_name}"
         status.credentials_secret = secret_name
         status.public_client = client_spec.public_client
         status.endpoints = endpoints
@@ -451,34 +380,11 @@ class KeycloakClientReconciler(BaseReconciler):
         spec: KeycloakClientSpec,
         name: str,
         namespace: str,
-        actual_realm_name: str | None = None,
-        keycloak_namespace: str | None = None,
-        keycloak_name: str | None = None,
-        realm_resource: dict[str, Any] | None = None,
+        actual_realm_name: str,
     ) -> str:
         """Ensure client exists."""
-        from ..utils.kubernetes import validate_keycloak_reference
-
-        if not all(
-            [actual_realm_name, keycloak_namespace, keycloak_name, realm_resource]
-        ):
-            actual_realm_name, keycloak_namespace, keycloak_name, realm_resource = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
-
-        keycloak_instance_obj = validate_keycloak_reference(
-            keycloak_name, keycloak_namespace
-        )
-        if not keycloak_instance_obj:
-            from ..errors import TemporaryError
-
-            raise TemporaryError(
-                f"Keycloak instance {keycloak_name} not found or not ready "
-                f"in namespace {keycloak_namespace}"
-            )
-
         admin_client = await self.keycloak_admin_factory(
-            keycloak_name, keycloak_namespace
+            "global", self.operator_namespace
         )
         existing_client = await admin_client.get_client_by_name(
             spec.client_id, actual_realm_name, namespace
@@ -523,18 +429,11 @@ class KeycloakClientReconciler(BaseReconciler):
         client_uuid: str,
         name: str,
         namespace: str,
-        actual_realm_name: str | None = None,
-        keycloak_namespace: str | None = None,
-        keycloak_name: str | None = None,
+        actual_realm_name: str,
     ) -> None:
         """Configure OAuth settings."""
-        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
-
         admin_client = await self.keycloak_admin_factory(
-            keycloak_name, keycloak_namespace
+            "global", self.operator_namespace
         )
         settings_spec = spec.settings
         attributes = {}
@@ -678,32 +577,22 @@ class KeycloakClientReconciler(BaseReconciler):
         client_uuid: str,
         name: str,
         namespace: str,
-        actual_realm_name: str | None = None,
-        keycloak_namespace: str | None = None,
-        keycloak_name: str | None = None,
+        actual_realm_name: str,
         owner_uid: str | None = None,
     ) -> None:
         """Manage client credentials."""
-        from ..utils.kubernetes import (
-            create_client_secret,
-            get_kubernetes_client,
-            validate_keycloak_reference,
-        )
-
-        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
 
         admin_client = await self.keycloak_admin_factory(
-            keycloak_name, keycloak_namespace
+            "global", self.operator_namespace
         )
         secret_name = f"{name}-credentials"
         k8s_client = get_kubernetes_client()
         core_api = client.CoreV1Api(k8s_client)
         existing_secret = None
         try:
-            existing_secret = core_api.read_namespaced_secret(secret_name, namespace)
+            existing_secret = await asyncio.to_thread(
+                core_api.read_namespaced_secret, secret_name, namespace
+            )
         except ApiException as e:
             if e.status != 404:
                 raise
@@ -728,8 +617,8 @@ class KeycloakClientReconciler(BaseReconciler):
             should_rotate = True
 
         if spec.client_secret:
-            manual_secret = core_api.read_namespaced_secret(
-                spec.client_secret.name, namespace
+            manual_secret = await asyncio.to_thread(
+                core_api.read_namespaced_secret, spec.client_secret.name, namespace
             )
             client_secret = base64.b64decode(
                 manual_secret.data[spec.client_secret.key]
@@ -756,14 +645,6 @@ class KeycloakClientReconciler(BaseReconciler):
                     spec.client_id, actual_realm_name, namespace
                 )
 
-        keycloak_instance = validate_keycloak_reference(
-            keycloak_name, keycloak_namespace
-        )
-        if not keycloak_instance:
-            from ..errors import TemporaryError
-
-            raise TemporaryError(f"Keycloak instance {keycloak_name} not found")
-
         labels = spec.secret_metadata.labels if spec.secret_metadata else None
         annotations = (
             dict(spec.secret_metadata.annotations)
@@ -787,7 +668,7 @@ class KeycloakClientReconciler(BaseReconciler):
             namespace=namespace,
             client_id=spec.client_id,
             client_secret=client_secret,
-            keycloak_url=keycloak_instance["status"]["endpoints"]["public"],
+            keycloak_url=settings.keycloak_url,
             realm=actual_realm_name,
             update_existing=True,
             labels=labels,
@@ -802,9 +683,7 @@ class KeycloakClientReconciler(BaseReconciler):
         client_uuid: str,
         name: str,
         namespace: str,
-        actual_realm_name: str | None = None,
-        keycloak_namespace: str | None = None,
-        keycloak_name: str | None = None,
+        actual_realm_name: str,
     ) -> None:
         """Configure protocol mappers."""
         # Security validation (Moved here but should also be in webhook)
@@ -820,13 +699,8 @@ class KeycloakClientReconciler(BaseReconciler):
                         f"Script mapper '{mapper_spec.name}' (type: {mapper_spec.protocol_mapper}) is not allowed."
                     )
 
-        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
-
         admin_client = await self.keycloak_admin_factory(
-            keycloak_name, keycloak_namespace
+            "global", self.operator_namespace
         )
         existing_mappers = await admin_client.get_client_protocol_mappers(
             client_uuid, actual_realm_name
@@ -862,18 +736,11 @@ class KeycloakClientReconciler(BaseReconciler):
         client_uuid: str,
         name: str,
         namespace: str,
-        actual_realm_name: str | None = None,
-        keycloak_namespace: str | None = None,
-        keycloak_name: str | None = None,
+        actual_realm_name: str,
     ) -> None:
         """Configure client scopes."""
-        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
-
         admin_client = await self.keycloak_admin_factory(
-            keycloak_name, keycloak_namespace, rate_limiter=self.rate_limiter
+            "global", self.operator_namespace, rate_limiter=self.rate_limiter
         )
         all_scopes = await admin_client.get_client_scopes(actual_realm_name, namespace)
         scope_name_to_id = {s.name: s.id for s in all_scopes if s.name and s.id}
@@ -934,18 +801,11 @@ class KeycloakClientReconciler(BaseReconciler):
         client_uuid: str,
         name: str,
         namespace: str,
-        actual_realm_name: str | None = None,
-        keycloak_namespace: str | None = None,
-        keycloak_name: str | None = None,
+        actual_realm_name: str,
     ) -> None:
         """Manage client roles."""
-        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
-
         admin_client = await self.keycloak_admin_factory(
-            keycloak_name, keycloak_namespace
+            "global", self.operator_namespace
         )
         existing = await admin_client.get_client_roles(client_uuid, actual_realm_name)
         existing_names = {r.name for r in existing}
@@ -961,9 +821,7 @@ class KeycloakClientReconciler(BaseReconciler):
         client_uuid: str,
         name: str,
         namespace: str,
-        actual_realm_name: str | None = None,
-        keycloak_namespace: str | None = None,
-        keycloak_name: str | None = None,
+        actual_realm_name: str,
     ) -> None:
         """Manage service account roles."""
         if not spec.settings.service_accounts_enabled:
@@ -991,13 +849,8 @@ class KeycloakClientReconciler(BaseReconciler):
                                 f"Restricted client role '{role}' not allowed"
                             )
 
-        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
-
         admin_client = await self.keycloak_admin_factory(
-            keycloak_name, keycloak_namespace
+            "global", self.operator_namespace
         )
         sa_user = await admin_client.get_service_account_user(
             client_uuid, actual_realm_name, namespace
@@ -1035,18 +888,11 @@ class KeycloakClientReconciler(BaseReconciler):
         client_uuid: str,
         name: str,
         namespace: str,
-        actual_realm_name: str | None = None,
-        keycloak_namespace: str | None = None,
-        keycloak_name: str | None = None,
+        actual_realm_name: str,
     ) -> None:
         """Configure authorization settings."""
-        if not all([actual_realm_name, keycloak_namespace, keycloak_name]):
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(spec.realm_ref.name, spec.realm_ref.namespace)
-            )
-
         admin_client = await self.keycloak_admin_factory(
-            keycloak_name, keycloak_namespace, rate_limiter=self.rate_limiter
+            "global", self.operator_namespace, rate_limiter=self.rate_limiter
         )
         authz = spec.authorization_settings
         if authz:
@@ -1460,13 +1306,17 @@ class KeycloakClientReconciler(BaseReconciler):
         """Check if client resource actually exists in Keycloak."""
         try:
             client_spec = KeycloakClientSpec.model_validate(spec)
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(
-                    client_spec.realm_ref.name, client_spec.realm_ref.namespace
-                )
+            realm_resource = await asyncio.to_thread(
+                self._get_realm_resource,
+                client_spec.realm_ref.name,
+                client_spec.realm_ref.namespace,
             )
+            actual_realm_name = realm_resource.get("spec", {}).get("realmName")
+            if not actual_realm_name:
+                return False
+
             admin_client = await self.keycloak_admin_factory(
-                keycloak_name, keycloak_namespace
+                "global", self.operator_namespace
             )
             existing_client = await admin_client.get_client_by_name(
                 client_spec.client_id, actual_realm_name, namespace
@@ -1486,13 +1336,20 @@ class KeycloakClientReconciler(BaseReconciler):
         """Clean up Keycloak client resources."""
         try:
             client_spec = self._validate_spec(spec)
-            actual_realm_name, keycloak_namespace, keycloak_name, _ = (
-                self._get_realm_info(
-                    client_spec.realm_ref.name, client_spec.realm_ref.namespace
-                )
+            realm_resource = await asyncio.to_thread(
+                self._get_realm_resource,
+                client_spec.realm_ref.name,
+                client_spec.realm_ref.namespace,
             )
+            actual_realm_name = realm_resource.get("spec", {}).get("realmName")
+            if not actual_realm_name:
+                self.logger.warning(
+                    f"Could not find actual realm name for cleanup of client {name}"
+                )
+                return
+
             admin_client = await self.keycloak_admin_factory(
-                keycloak_name, keycloak_namespace
+                "global", self.operator_namespace
             )
             existing_client = await admin_client.get_client_by_name(
                 client_spec.client_id, actual_realm_name, namespace

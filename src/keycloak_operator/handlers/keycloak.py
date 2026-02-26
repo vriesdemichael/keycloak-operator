@@ -32,8 +32,8 @@ from keycloak_operator.constants import (
 )
 from keycloak_operator.observability.tracing import traced_handler
 from keycloak_operator.services import KeycloakInstanceReconciler
-from keycloak_operator.settings import settings
 from keycloak_operator.utils.handler_logging import log_handler_entry
+from keycloak_operator.utils.isolation import is_managed_by_this_operator
 from keycloak_operator.utils.keycloak_admin import KeycloakAdminClient
 from keycloak_operator.utils.kubernetes import (
     check_http_health,
@@ -171,9 +171,9 @@ async def _perform_keycloak_cleanup(
     )
 
 
-def is_matching_namespace(namespace: str, **_: Any) -> bool:
-    """Check if the resource is in the same namespace as this operator (ADR-062)."""
-    return namespace == settings.operator_namespace
+def is_matching_namespace(spec: dict[str, Any], namespace: str, **_: Any) -> bool:
+    """Check if the resource is targeted at this operator instance (ADR-062)."""
+    return is_managed_by_this_operator(spec, namespace)
 
 
 @kopf.on.create(
@@ -224,20 +224,8 @@ async def ensure_keycloak_instance(
     # Log handler entry immediately for debugging
     log_handler_entry("create/resume", "keycloak", name, namespace)
 
-    # Check if running in External Mode
-    if settings.keycloak_external_url:
-        logger.warning(
-            f"Operator is running in External Mode ({settings.keycloak_external_url}). "
-            f"Ignoring Keycloak CR {name} in {namespace}. "
-            "To manage a Keycloak instance, unset KEYCLOAK_EXTERNAL_URL."
-        )
-        status_wrapper = StatusWrapper(patch.status)
-        status_wrapper.phase = "Failed"
-        status_wrapper.message = (
-            "Operator is configured for External Keycloak. "
-            "This CR is ignored and should be deleted."
-        )
-        # We return None to stop processing, but we've set the status via patch
+    # Check ownership (ADR-062)
+    if not is_managed_by_this_operator(spec, namespace):
         return None
 
     # Check if resource is being deleted - if so, skip reconciliation
@@ -264,7 +252,9 @@ async def ensure_keycloak_instance(
 
     await asyncio.sleep(jitter)
 
-    reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
+    reconciler = KeycloakInstanceReconciler(
+        rate_limiter=memo.rate_limiter, operator_namespace=namespace
+    )
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.reconcile(
         spec=spec,
@@ -317,6 +307,10 @@ async def update_keycloak_instance(
     # Log handler entry immediately for debugging
     log_handler_entry("update", "keycloak", name, namespace)
 
+    # Check ownership (ADR-062)
+    if not is_managed_by_this_operator(new.get("spec", {}), namespace):
+        return None
+
     logger.info(f"Updating Keycloak instance {name} in namespace {namespace}")
 
     # Use patch.status for updates instead of wrapping the read-only status dict
@@ -326,7 +320,9 @@ async def update_keycloak_instance(
 
     await asyncio.sleep(jitter)
 
-    reconciler = KeycloakInstanceReconciler(rate_limiter=memo.rate_limiter)
+    reconciler = KeycloakInstanceReconciler(
+        rate_limiter=memo.rate_limiter, operator_namespace=namespace
+    )
     status_wrapper = StatusWrapper(patch.status)
     await reconciler.update(
         old_spec=old.get("spec", {}),
@@ -381,6 +377,10 @@ async def delete_keycloak_instance(
         namespace,
         extra={"retry_count": retry_count},
     )
+
+    # Check ownership (ADR-062)
+    if not is_managed_by_this_operator(spec, namespace):
+        return None
 
     logger.info(
         f"Starting deletion of Keycloak instance {name} in namespace {namespace} "
@@ -468,41 +468,11 @@ async def monitor_keycloak_health(
     **kwargs: Any,
 ) -> None:
     """
-        Periodic health check daemon for Keycloak instances.
-
-        This daemon checks the health of Keycloak instances and updates
-        their status accordingly.
-
-        Uses a daemon instead of a timer to work around Kopf 1.40.x not
-        supporting callable ``initial_delay`` (lambda). The daemon sleeps
-        a random jitter on startup to spread reconciliation load, then
-        loops at TIMER_INTERVAL_KEYCLOAK between iterations.
-
-        The interval is configurable via TIMER_INTERVAL_KEYCLOAK environment variable.
-        Default: 600 seconds (10 minutes).
-
-        Args:
-            stopped: Kopf daemon stopped flag for graceful shutdown
-            spec: Keycloak resource specification
-            name: Name of the Keycloak resource
-            namespace: Namespace where the resource exists
-            status: Current status of the resource
-            meta: Resource metadata
-            memo: Kopf memo for accessing shared state like rate_limiter
-
-    Implementation includes:
-        ✅ Check if Keycloak deployment is running and ready
-        ✅ Verify that Keycloak is responding to health checks
-        ✅ Check resource utilization (CPU, memory, storage)
-        ✅ Validate that Keycloak Admin API is accessible and master realm exists
-        ✅ Update status with current health information
-        ⚠️  Generate events for significant status changes - Future enhancement
-        ⚠️  Implement alerting for persistent failures - Future enhancement
+            Periodic health check daemon for Keycloak instances.
+    ...
+            ⚠️  Generate events for significant status changes - Future enhancement
+            ⚠️  Implement alerting for persistent failures - Future enhancement
     """
-    # Skip health check if running in External Mode
-    if settings.keycloak_external_url:
-        return
-
     # Random jitter on startup to prevent thundering herd
     initial_jitter = random.uniform(0, TIMER_INTERVAL_KEYCLOAK)
     await stopped.wait(initial_jitter)

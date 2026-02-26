@@ -19,6 +19,7 @@ from pydantic import ValidationError
 
 from keycloak_operator.constants import WEBHOOK_MAX_CLIENTS_PER_NAMESPACE
 from keycloak_operator.models.client import KeycloakClientSpec
+from keycloak_operator.utils.isolation import is_client_managed_by_this_operator
 from keycloak_operator.utils.validation import (
     ValidationError as PlaceholderValidationError,
 )
@@ -95,45 +96,15 @@ async def validate_client(
         f"(operation: {operation}, dryrun: {dryrun})"
     )
 
-    # Multi-tenancy check: Only validate if the parent Realm is managed by us.
+    # Multi-tenancy check (ADR-062): Only validate if the parent Realm is managed by us.
     # This prevents Operator A from blocking Operator B's clients via quotas.
-    from keycloak_operator.settings import settings as operator_settings
-
-    try:
-        realm_ref = spec.get("realmRef", {})
-        realm_name = realm_ref.get("name")
-        realm_ns = realm_ref.get("namespace")
-
-        if realm_name and realm_ns:
-            # Look up the realm to check its operatorRef
-            from kubernetes import client as k8s_client
-
-            api = k8s_client.CustomObjectsApi()
-            realm = await asyncio.to_thread(
-                api.get_namespaced_custom_object,
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=realm_ns,
-                plural="keycloakrealms",
-                name=realm_name,
-            )
-
-            # Check if realm is targeted at another operator
-            target_op_ns = realm.get("spec", {}).get("operatorRef", {}).get("namespace")
-            if target_op_ns and target_op_ns != operator_settings.operator_namespace:
-                logger.warning(
-                    f"DEBUG: Skipping validation for client {name}: parent realm {realm_name} "
-                    f"targeted at operator in {target_op_ns} (we are {operator_settings.operator_namespace})"
-                )
-                return {}
-            else:
-                logger.warning(
-                    f"DEBUG: Proceeding with validation for client {name}: target_op_ns={target_op_ns}, our_ns={operator_settings.operator_namespace}"
-                )
-    except Exception as e:
-        # If realm doesn't exist yet or lookup fails, we continue to full validation.
-        # This allows creating a client alongside a realm in a single manifest.
-        logger.debug(f"Could not determine realm ownership for client {name}: {e}")
+    if not await is_client_managed_by_this_operator(
+        spec, namespace, client.ApiClient()
+    ):
+        logger.info(
+            f"Skipping validation for KeycloakClient {name} in {namespace}: parent realm not owned by this operator"
+        )
+        return {}
 
     # Validate with Pydantic model first
     try:
@@ -169,6 +140,12 @@ async def validate_client(
 
     # Security validation: Restricted Roles
     roles_config = client_spec.service_account_roles
+    from keycloak_operator.services.client_reconciler import (
+        DANGEROUS_SCRIPT_MAPPER_TYPES,
+        RESTRICTED_CLIENT_ROLES,
+    )
+    from keycloak_operator.settings import settings as operator_settings
+
     if client_spec.settings.service_accounts_enabled:
         # Realm roles
         restricted_realm_roles = {"admin"}
@@ -179,9 +156,6 @@ async def validate_client(
                 )
 
         # Client roles
-        from keycloak_operator.services.client_reconciler import RESTRICTED_CLIENT_ROLES
-        from keycloak_operator.settings import settings as operator_settings
-
         if roles_config.client_roles:
             for target_client, roles in roles_config.client_roles.items():
                 if target_client in RESTRICTED_CLIENT_ROLES:
@@ -201,10 +175,6 @@ async def validate_client(
                             )
 
     # Security validation: Script Mappers
-    from keycloak_operator.services.client_reconciler import (
-        DANGEROUS_SCRIPT_MAPPER_TYPES,
-    )
-
     if not operator_settings.allow_script_mappers and client_spec.protocol_mappers:
         for mapper_spec in client_spec.protocol_mappers:
             m_type = (

@@ -34,7 +34,6 @@ class TestKeycloakReconciler:
         k8s_custom_objects,
         k8s_core_v1,
         k8s_apps_v1,
-        test_keycloak_namespace,
         operator_namespace,
         shared_operator,
         sample_keycloak_spec_factory,
@@ -42,7 +41,7 @@ class TestKeycloakReconciler:
         """Test complete Keycloak instance lifecycle: create, ready, delete."""
         suffix = uuid.uuid4().hex[:8]
         keycloak_name = f"test-lifecycle-{suffix}"
-        namespace = test_keycloak_namespace
+        namespace = operator_namespace
 
         # Get spec with secret copied to target namespace
         spec = await sample_keycloak_spec_factory(namespace)
@@ -51,7 +50,7 @@ class TestKeycloakReconciler:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
             "metadata": {"name": keycloak_name, "namespace": namespace},
-            "spec": spec,
+            "spec": {**spec, "operatorRef": {"namespace": operator_namespace}},
         }
 
         try:
@@ -177,7 +176,7 @@ class TestKeycloakReconciler:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
             "metadata": {"name": keycloak_name, "namespace": namespace},
-            "spec": custom_spec,
+            "spec": {**custom_spec, "operatorRef": {"namespace": operator_namespace}},
         }
 
         try:
@@ -240,7 +239,7 @@ class TestKeycloakReconciler:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
             "metadata": {"name": keycloak_name, "namespace": namespace},
-            "spec": spec,
+            "spec": {**spec, "operatorRef": {"namespace": operator_namespace}},
         }
 
         try:
@@ -326,7 +325,7 @@ class TestKeycloakReconciler:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
             "metadata": {"name": keycloak_name, "namespace": namespace},
-            "spec": spec,
+            "spec": {**spec, "operatorRef": {"namespace": operator_namespace}},
         }
 
         try:
@@ -415,7 +414,7 @@ class TestKeycloakReconciler:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "Keycloak",
             "metadata": {"name": keycloak_name, "namespace": namespace},
-            "spec": cluster_spec,
+            "spec": {**cluster_spec, "operatorRef": {"namespace": operator_namespace}},
         }
 
         try:

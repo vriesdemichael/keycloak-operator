@@ -415,127 +415,69 @@ monitoring:
 # Deploy a Keycloak instance managed by the operator
 # Set enabled: true to create a Keycloak CR alongside the operator
 keycloak:
-  # Enable Keycloak instance deployment
-  # If false, only the operator is deployed (you create Keycloak CRs manually)
-  # If true, creates a Keycloak instance automatically
-  enabled: true
-  # Name of the Keycloak instance
-  # This becomes the Keycloak CR name
-  # Must be DNS-compatible: lowercase alphanumeric with hyphens
-  name: keycloak
-  # Number of Keycloak replicas
-  # Recommendations:
-  # - Development: 1
-  # - Staging: 2
-  # - Production: 3+ (with anti-affinity and PodDisruptionBudget)
-  replicas: 1
-  # Keycloak version (image tag)
-  # Use specific versions for production, not 'latest'
-  # See: https://quay.io/repository/keycloak/keycloak?tab=tags
-  version: "26.4.1"
-  # Keycloak image repository
-  # Options:
-  # - quay.io/keycloak/keycloak (official)
-  # - ghcr.io/vriesdemichael/keycloak-operator/keycloak-optimized (optimized)
+  # Whether to deploy and manage a Keycloak instance in the operator namespace.
+  # If true, the chart templates a Keycloak CR and auto-calculates connection URLs.
+  # If false, you must provide 'url' and 'adminSecret' for an existing Keycloak.
+  managed: true
+
+  # Name of the Keycloak instance (used for CR name and service naming)
+  name: "keycloak"
+
+  # URL of the Keycloak instance.
+  # If managed is true, this is auto-calculated to the internal cluster service.
+  # Example: "https://keycloak.example.com"
+  url: ""
+
+  # Admin username for initial access
+  adminUsername: "admin"
+
+  # Name of the Secret containing the admin password.
+  # If managed is true, this defaults to "<name>-admin-credentials".
+  # If managed is false, this secret must exist in the operator's namespace.
+  adminSecret: ""
+
+  # Key in the adminSecret containing the password.
+  adminPasswordKey: "password"
+
+  # Keycloak version to deploy (used when managed: true)
+  version: "26.1.2"
+  # Container image for Keycloak (used when managed: true)
   image: quay.io/keycloak/keycloak
-  # Database configuration
+  # Replicas for HA (used when managed: true)
+  replicas: 1
+  # Database configuration (used when managed: true)
   database:
-    # Database type: postgresql, mysql, mariadb, oracle, mssql
-    # PostgreSQL is recommended for production
+    # Database type: postgresql (default), mariadb, mysql, oracle, mssql
     type: postgresql
-    # Database host (FQDN or IP)
-    # Leave empty if using CNPG (CloudNativePG)
-    # Example: "postgres.database.svc.cluster.local"
-    host: ""
-    # Database port
-    # PostgreSQL default: 5432
-    # MySQL/MariaDB default: 3306
+    # External database connection (if not using CNPG)
+    host: localhost
     port: 5432
-    # Database name
-    # Created automatically if it doesn't exist (PostgreSQL/MySQL)
     database: keycloak
-    # Database username
-    # Must have permissions to create/modify tables
     username: keycloak
-    # Secret containing database password
-    # Secret must exist in the same namespace
-    # Secret format: { "password": "<value>" }
     passwordSecret:
       name: keycloak-db-password
       key: password
-    # Use CloudNativePG cluster (alternative to external database)
-    # Requires CloudNativePG operator to be installed
-    # If enabled, ignores host/port settings above
+    # CloudNativePG configuration
     cnpg:
       enabled: false
-      # Name of the CloudNativePG Cluster CR
-      # The operator will use this cluster's primary service
       clusterName: keycloak-postgres
-      # Number of PostgreSQL instances in the cluster
-      # Recommended: 1 for dev, 3 for production (HA)
       instances: 1
-      # Storage configuration for PostgreSQL data
       storage:
-        # Size of the persistent volume for each instance
         size: 1Gi
-        # StorageClass to use for persistent volumes
-        # Leave empty to use the cluster's default StorageClass
-        # Common values: "standard", "gp2", "gp3", "premium-rwo", "openebs-hostpath"
         storageClass: ""
-      # PostgreSQL configuration parameters
       postgresql:
         maxConnections: "200"
         sharedBuffers: "256MB"
-  # Admin user configuration
-  admin:
-    # Admin username for initial Keycloak admin
-    # Used to create the first admin user
-    # Can be changed after first login via Keycloak UI
-    username: admin
-    # Secret containing admin password
-    # Secret must exist before Keycloak starts
-    # Secret format: { "password": "<value>" }
-    # Minimum recommended length: 16 characters
-    passwordSecret:
-      name: keycloak-admin-password
-      key: password
-  # Ingress configuration
-  # Exposes Keycloak externally via Ingress controller
+  # Ingress configuration (used when managed: true)
   ingress:
-    # Enable Ingress resource creation
     enabled: false
-    # Ingress class name
-    # Examples: "nginx", "traefik", "alb" (AWS), "gce" (GCP)
-    # Leave empty for default IngressClass
     className: ""
-    # Ingress annotations
-    # Ingress controller specific settings
-    # Example for nginx:
-    # annotations:
-    #   cert-manager.io/cluster-issuer: letsencrypt-prod
-    #   nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    #   nginx.ingress.kubernetes.io/ssl-redirect: "true"
     annotations: {}
-    # Ingress hostname
-    # The hostname for the Keycloak ingress
-    # Example: "keycloak.example.com"
     host: keycloak.example.com
-    # Ingress path
-    # The path for the Keycloak ingress
     path: /
-    # Enable TLS for ingress
-    # When enabled, the ingress will use HTTPS
     tlsEnabled: true
-    # TLS secret name
-    # Secret containing TLS certificate and key
-    # Example: "keycloak-tls"
     tlsSecretName: ""
-  # Resource limits for Keycloak pods
-  # Adjust based on load and number of users
-  # Recommendations:
-  # - Small (< 1000 users): cpu=500m, memory=1Gi
-  # - Medium (1000-10000 users): cpu=1000m, memory=2Gi
-  # - Large (> 10000 users): cpu=2000m+, memory=4Gi+
+  # Resources for Keycloak pods (used when managed: true)
   resources:
     limits:
       cpu: 2000m
@@ -543,35 +485,10 @@ keycloak:
     requests:
       cpu: 500m
       memory: 1Gi
-  # JVM options for Keycloak pods
-  # Passed as JAVA_OPTS_APPEND alongside JGroups clustering options
-  # Examples:
-  # - Heap sizing: ["-Xms512m", "-Xmx2048m"]
-  # - GC tuning: ["-XX:+UseG1GC", "-XX:MaxGCPauseMillis=200"]
-  # - JIT tuning: ["-XX:CompileThresholdScaling=0.3"]
+  # JVM options (used when managed: true)
   jvmOptions: []
-  # Use --optimized startup mode. Set to true (default) when using a pre-built
-  # Keycloak image (like the optimized images published by this project). Set to
-  # false when using the stock quay.io/keycloak/keycloak image that has not been
-  # pre-built with 'kc.sh build'. The --optimized flag skips build-time config
-  # discovery at startup, reducing startup time from ~70s to ~20-30s.
+  # Optimized mode (used when managed: true)
   optimized: true
-  # External Keycloak Configuration
-  # Connect the operator to an existing, external Keycloak instance instead of managing one
-  # If enabled, keycloak.enabled (Managed Keycloak) should be false.
-  external:
-    # Enable External Keycloak Mode
-    enabled: false
-    # URL of the external Keycloak instance (e.g., https://keycloak.example.com)
-    url: ""
-    # Name of the Secret containing admin credentials
-    # This secret must exist in the operator's namespace
-    # Structure: { "password": "..." } (key name configurable via adminPasswordKey below; username is set via adminUsername)
-    adminSecret: ""
-    # Username for admin access (defaults to "admin")
-    adminUsername: "admin"
-    # Key in the secret containing the password (defaults to "password")
-    adminPasswordKey: "password"
 # ============================================================================
 # Extra Kubernetes Manifests
 # ============================================================================

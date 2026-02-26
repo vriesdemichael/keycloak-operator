@@ -13,6 +13,7 @@ from keycloak_operator.models.types import (
     KubernetesProbeConfig,
     KubernetesSecurityContext,
     OperationalStats,
+    OperatorRef,
 )
 
 
@@ -451,6 +452,13 @@ class KeycloakSpec(BaseModel):
     tracing: KeycloakTracingConfig | None = Field(
         None,
         description="OpenTelemetry distributed tracing configuration",
+    )
+
+    # Operator identification
+    operator_ref: OperatorRef = Field(
+        default_factory=OperatorRef,
+        alias="operatorRef",
+        description="Reference to the operator instance managing this resource (ADR-062)",
     )
 
     @field_validator("image")

@@ -13,6 +13,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 from kubernetes import client
+from kubernetes.client.rest import ApiException
 
 from keycloak_operator.settings import settings
 
@@ -86,17 +87,17 @@ class KeycloakRealmReconciler(BaseReconciler):
         Returns:
             Status dictionary for the resource
         """
-        # Parse and validate the specification
-        realm_spec = self._validate_spec(spec)
+        # Check ownership (ADR-062)
+        from ..utils.isolation import is_managed_by_this_operator
 
-        # IGNORE resources not targeted at this operator instance (ADR-062)
-        target_namespace = realm_spec.operator_ref.namespace
-        if target_namespace != self.operator_namespace:
+        if not is_managed_by_this_operator(spec, namespace):
             self.logger.debug(
-                f"Ignoring KeycloakRealm {name}: targeted at namespace '{target_namespace}', "
-                f"but this operator is in '{self.operator_namespace}'"
+                f"Realm {name} in {namespace} is managed by another operator, ignoring"
             )
             return {}
+
+        # Parse and validate the specification
+        realm_spec = self._validate_spec(spec)
 
         # Enforce Admin Events if Drift Detection is enabled
         # This is required for "smart drift detection" to work
@@ -466,20 +467,24 @@ class KeycloakRealmReconciler(BaseReconciler):
         from ..errors import PermanentError, TemporaryError
 
         try:
-            # Skip capacity check in external mode since there is no Keycloak CR
-            if settings.keycloak_external_url:
-                self.logger.debug("Skipping capacity check in external Keycloak mode")
-                return
-
-            # Fetch the Keycloak instance
+            # Fetch the Keycloak instance if it exists
             custom_objects_api = client.CustomObjectsApi(self.k8s_client)
-            keycloak = custom_objects_api.get_namespaced_custom_object(
-                group="vriesdemichael.github.io",
-                version="v1",
-                namespace=keycloak_namespace,
-                plural="keycloaks",
-                name=keycloak_name,
-            )
+            try:
+                keycloak = await asyncio.to_thread(
+                    custom_objects_api.get_namespaced_custom_object,
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=keycloak_namespace,
+                    plural="keycloaks",
+                    name=keycloak_name,
+                )
+            except ApiException as e:
+                if e.status == 404:
+                    self.logger.debug(
+                        f"Keycloak CR '{keycloak_name}' not found in '{keycloak_namespace}', skipping capacity check"
+                    )
+                    return
+                raise
 
             spec = keycloak.get("spec", {})
             realm_capacity = spec.get("realmCapacity", {})
@@ -507,18 +512,19 @@ class KeycloakRealmReconciler(BaseReconciler):
             max_realms = realm_capacity.get("maxRealms")
             if max_realms is not None:
                 # Count existing realms
-                realm_list = await custom_objects_api.list_cluster_custom_object(
+                realm_list = await asyncio.to_thread(
+                    custom_objects_api.list_cluster_custom_object,
                     group="vriesdemichael.github.io",
                     version="v1",
                     plural="keycloakrealms",
                 )
 
-                # Count realms that reference this Keycloak instance
+                # Count realms that reference this operator instance
                 realm_count = sum(
                     1
                     for item in realm_list.get("items", [])
                     if item.get("spec", {}).get("operatorRef", {}).get("namespace")
-                    == keycloak_namespace
+                    == self.operator_namespace
                 )
 
                 if realm_count >= max_realms:
@@ -539,7 +545,7 @@ class KeycloakRealmReconciler(BaseReconciler):
             # Re-raise capacity errors as permanent
             raise
         except Exception as e:
-            # Other errors (like Keycloak not found) are temporary
+            # Other errors are temporary
             raise TemporaryError(
                 f"Failed to check realm capacity: {e}. Will retry.",
                 delay=30,
@@ -617,30 +623,18 @@ class KeycloakRealmReconciler(BaseReconciler):
             **kwargs: Additional handler arguments (uid, meta, etc.)
         """
         self.logger.info(f"Ensuring realm {spec.realm_name} exists")
-        from ..utils.kubernetes import validate_keycloak_reference
 
         # Resolve Keycloak operator reference
         operator_ref = spec.operator_ref
         target_namespace = operator_ref.namespace
-        # For now, use the operator namespace as keycloak name (will be updated in Phase 4)
         keycloak_name = "keycloak"  # Default Keycloak instance name
 
-        # NEW: Check capacity before creating new realms
+        # Check capacity if managing a local instance
         await self._check_realm_capacity(target_namespace, keycloak_name, name)
 
-        self.logger.info(f"Authorization validated for realm {spec.realm_name}")
-
-        # Validate that the Keycloak instance exists and is ready
-        keycloak_instance = validate_keycloak_reference(keycloak_name, target_namespace)
-        if not keycloak_instance:
-            from ..errors import TemporaryError
-
-            raise TemporaryError(
-                f"Keycloak instance {keycloak_name} not found or not ready "
-                f"in namespace {target_namespace}"
-            )
-
         # Get Keycloak admin client
+        # In agnostic mode, target_namespace/keycloak_name are currently ignored by factory
+        # but kept for future-proofing or caching keys.
         admin_client = await self.keycloak_admin_factory(
             keycloak_name, target_namespace, rate_limiter=self.rate_limiter
         )

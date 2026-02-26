@@ -1,6 +1,6 @@
 import asyncio
 import base64
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -18,18 +18,18 @@ from keycloak_operator.utils.kubernetes import validate_keycloak_reference
 # Test Settings
 def test_external_keycloak_settings():
     settings = Settings(
-        KEYCLOAK_EXTERNAL_URL="https://external.keycloak",
-        KEYCLOAK_EXTERNAL_ADMIN_SECRET="ext-secret",
+        KEYCLOAK_URL="https://external.keycloak",
+        KEYCLOAK_ADMIN_SECRET="ext-secret",
     )
-    assert settings.keycloak_external_url == "https://external.keycloak"
-    assert settings.keycloak_external_admin_secret == "ext-secret"
-    assert settings.keycloak_external_admin_username == "admin"
+    assert settings.keycloak_url == "https://external.keycloak"
+    assert settings.keycloak_admin_secret == "ext-secret"
+    assert settings.keycloak_admin_username == "admin"
 
 
 # Test validate_keycloak_reference
 @patch("keycloak_operator.utils.kubernetes.settings")
 def test_validate_keycloak_reference_external(mock_settings):
-    mock_settings.keycloak_external_url = "https://external.keycloak"
+    mock_settings.keycloak_url = "https://external.keycloak"
 
     result = validate_keycloak_reference("my-keycloak", "default")
 
@@ -56,11 +56,11 @@ async def test_get_keycloak_admin_client_external(
     mock_lock_instance.__aexit__.return_value = None
     mock_cache_lock.return_value = mock_lock_instance
 
-    mock_settings.keycloak_external_url = "https://external.keycloak"
-    mock_settings.keycloak_external_admin_secret = "ext-secret"
+    mock_settings.keycloak_url = "https://external.keycloak"
+    mock_settings.keycloak_admin_secret = "ext-secret"
     mock_settings.pod_namespace = "operator-ns"
-    mock_settings.keycloak_external_admin_username = "admin"
-    mock_settings.keycloak_external_admin_password_key = "password"
+    mock_settings.keycloak_admin_username = "admin"
+    mock_settings.keycloak_admin_password_key = "password"
 
     mock_core = MagicMock()
     mock_k8s_client = MagicMock()
@@ -95,8 +95,8 @@ async def test_get_keycloak_admin_client_external(
             password="secret-pass",
             verify_ssl=False,
             rate_limiter=None,
-            keycloak_name="my-kc",
-            keycloak_namespace="default",
+            keycloak_name="global",
+            keycloak_namespace="operator-ns",
         )
 
 
@@ -114,11 +114,11 @@ async def test_get_keycloak_admin_client_external_missing_key(
     mock_lock_instance.__aexit__.return_value = None
     mock_cache_lock.return_value = mock_lock_instance
 
-    mock_settings.keycloak_external_url = "https://external.keycloak"
-    mock_settings.keycloak_external_admin_secret = "ext-secret"
+    mock_settings.keycloak_url = "https://external.keycloak"
+    mock_settings.keycloak_admin_secret = "ext-secret"
     mock_settings.pod_namespace = "operator-ns"
-    mock_settings.keycloak_external_admin_username = "admin"
-    mock_settings.keycloak_external_admin_password_key = "password"
+    mock_settings.keycloak_admin_username = "admin"
+    mock_settings.keycloak_admin_password_key = "password"
 
     mock_core = MagicMock()
     mock_k8s_client = MagicMock()
@@ -150,8 +150,8 @@ async def test_get_keycloak_admin_client_external_secret_not_found(
     mock_lock_instance.__aexit__.return_value = None
     mock_cache_lock.return_value = mock_lock_instance
 
-    mock_settings.keycloak_external_url = "https://external.keycloak"
-    mock_settings.keycloak_external_admin_secret = "ext-secret"
+    mock_settings.keycloak_url = "https://external.keycloak"
+    mock_settings.keycloak_admin_secret = "ext-secret"
     mock_settings.pod_namespace = "operator-ns"
 
     mock_core = MagicMock()
@@ -190,10 +190,10 @@ async def test_get_keycloak_admin_client_external_secret_data_none(
     mock_lock_instance.__aexit__.return_value = None
     mock_cache_lock.return_value = mock_lock_instance
 
-    mock_settings.keycloak_external_url = "https://external.keycloak"
-    mock_settings.keycloak_external_admin_secret = "ext-secret"
+    mock_settings.keycloak_url = "https://external.keycloak"
+    mock_settings.keycloak_admin_secret = "ext-secret"
     mock_settings.pod_namespace = "operator-ns"
-    mock_settings.keycloak_external_admin_password_key = "password"
+    mock_settings.keycloak_admin_password_key = "password"
 
     mock_core = MagicMock()
     mock_k8s_client = MagicMock()
@@ -227,10 +227,10 @@ async def test_get_keycloak_admin_client_external_invalid_base64(
     mock_lock_instance.__aexit__.return_value = None
     mock_cache_lock.return_value = mock_lock_instance
 
-    mock_settings.keycloak_external_url = "https://external.keycloak"
-    mock_settings.keycloak_external_admin_secret = "ext-secret"
+    mock_settings.keycloak_url = "https://external.keycloak"
+    mock_settings.keycloak_admin_secret = "ext-secret"
     mock_settings.pod_namespace = "operator-ns"
-    mock_settings.keycloak_external_admin_password_key = "password"
+    mock_settings.keycloak_admin_password_key = "password"
 
     mock_core = MagicMock()
     mock_k8s_client = MagicMock()
@@ -264,10 +264,11 @@ async def test_get_keycloak_admin_client_external_auth_failure(
     mock_lock_instance.__aexit__.return_value = None
     mock_cache_lock.return_value = mock_lock_instance
 
-    mock_settings.keycloak_external_url = "https://external.keycloak"
-    mock_settings.keycloak_external_admin_secret = "ext-secret"
+    mock_settings.keycloak_url = "https://external.keycloak"
+    mock_settings.keycloak_admin_secret = "ext-secret"
     mock_settings.pod_namespace = "operator-ns"
-    mock_settings.keycloak_external_admin_password_key = "password"
+    mock_settings.keycloak_admin_username = "admin"
+    mock_settings.keycloak_admin_password_key = "password"
 
     mock_core = MagicMock()
     mock_k8s_client = MagicMock()
@@ -295,32 +296,51 @@ async def test_get_keycloak_admin_client_external_auth_failure(
         assert "Admin client creation failed" in str(excinfo.value)
 
 
-# Test ensure_keycloak_instance
 @pytest.mark.asyncio
-@patch("keycloak_operator.handlers.keycloak.settings")
+@patch("keycloak_operator.settings.settings")
 @patch("keycloak_operator.handlers.keycloak.log_handler_entry")
 async def test_ensure_keycloak_instance_external(mock_log, mock_settings):
-    mock_settings.keycloak_external_url = "https://external.keycloak"
+    mock_settings.keycloak_url = "https://external.keycloak"
 
     patch_obj = MagicMock()
     patch_obj.status = {}
 
+    # Mock spec with valid database config to pass Pydantic validation
+    spec = {
+        "database": {
+            "type": "postgresql",
+            "host": "localhost",
+            "database": "keycloak",
+            "username": "keycloak",
+            "password": "password",
+        }
+    }
+
     # Mock kwargs to avoid key error
     kwargs = {"meta": {}}
 
-    result = await ensure_keycloak_instance(
-        spec={},
-        name="my-kc",
-        namespace="default",
-        status={},
-        patch=patch_obj,
-        memo=MagicMock(),
-        **kwargs,
-    )
-
-    assert result is None
-    assert patch_obj.status["phase"] == "Failed"
-    assert "External Keycloak" in patch_obj.status["message"]
+    # In agnostic mode, it should proceed if it is owned.
+    # We mock it NOT owned for this test to verify it returns early.
+    with (
+        patch(
+            "keycloak_operator.handlers.keycloak.is_managed_by_this_operator",
+            return_value=False,
+        ),
+        patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"),
+        patch(
+            "keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._validate_database_connectivity"
+        ),
+    ):
+        result = await ensure_keycloak_instance(
+            spec=spec,
+            name="my-kc",
+            namespace="default",
+            status={},
+            patch=patch_obj,
+            memo=MagicMock(),
+            **kwargs,
+        )
+        assert result is None
 
 
 # Test Reconciler Ignore Logic (ADR-062)
@@ -328,46 +348,59 @@ async def test_ensure_keycloak_instance_external(mock_log, mock_settings):
 @patch("keycloak_operator.services.realm_reconciler.settings")
 async def test_realm_reconciler_ignores_wrong_namespace(mock_settings):
     mock_settings.operator_namespace = "correct-ns"
-    mock_settings.keycloak_external_url = ""
+    mock_settings.keycloak_url = "http://keycloak"
+    mock_settings.keycloak_admin_secret = "secret"
+    mock_settings.pod_namespace = "ns"
 
-    reconciler = KeycloakRealmReconciler()
-    spec = {
-        "realmName": "test",
-        "operatorRef": {"namespace": "wrong-ns"},
-    }
+    with patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"):
+        reconciler = KeycloakRealmReconciler()
+        reconciler.validate_cross_namespace_access = AsyncMock()  # type: ignore[method-assign]
+        reconciler._check_realm_capacity = AsyncMock()  # type: ignore[method-assign]
+        spec = {
+            "realmName": "test",
+            "operatorRef": {"namespace": "wrong-ns"},
+        }
 
-    result = await reconciler.do_reconcile(
-        spec=spec, name="test", namespace="ns", status=MagicMock()
-    )
+        result = await reconciler.do_reconcile(
+            spec=spec, name="test", namespace="ns", status=MagicMock()
+        )
 
-    assert result == {}
+        assert result == {}
 
 
 @pytest.mark.asyncio
 @patch("keycloak_operator.services.client_reconciler.settings")
-async def test_client_reconciler_ignores_wrong_namespace(mock_settings):
+@patch("keycloak_operator.services.client_reconciler.asyncio")
+async def test_client_reconciler_ignores_wrong_namespace(mock_asyncio, mock_settings):
     mock_settings.operator_namespace = "correct-ns"
-    mock_settings.keycloak_external_url = ""
+    mock_settings.keycloak_url = "http://keycloak"
+    mock_settings.keycloak_admin_secret = "secret"
+    mock_settings.pod_namespace = "ns"
 
-    reconciler = KeycloakClientReconciler()
+    with patch("keycloak_operator.utils.kubernetes.get_kubernetes_client"):
+        reconciler = KeycloakClientReconciler()
+        reconciler.validate_cross_namespace_access = AsyncMock()  # type: ignore[method-assign]
 
-    # Mock _get_realm_info to return a realm controlled by a different operator
-    reconciler._get_realm_info = MagicMock(  # ty: ignore[invalid-assignment]
-        return_value=(
-            "realm",
-            "wrong-ns",
-            "keycloak",
-            {"spec": {"operatorRef": {"namespace": "wrong-ns"}}},
+        # Mock _get_realm_resource to return a realm controlled by a different operator
+        reconciler._get_realm_resource = MagicMock(  # type: ignore[method-assign]
+            return_value={
+                "spec": {
+                    "realmName": "realm",
+                    "operatorRef": {"namespace": "wrong-ns"},
+                    "clientAuthorizationGrants": ["ns"],
+                }
+            }
         )
-    )
+        # Mock to avoid threadpool calls
+        mock_asyncio.to_thread = AsyncMock(side_effect=lambda f, *args: f(*args))
 
-    spec = {
-        "clientId": "test",
-        "realmRef": {"name": "realm", "namespace": "wrong-ns"},
-    }
+        spec = {
+            "clientId": "test",
+            "realmRef": {"name": "realm", "namespace": "wrong-ns"},
+        }
 
-    result = await reconciler.do_reconcile(
-        spec=spec, name="test", namespace="ns", status=MagicMock()
-    )
+        result = await reconciler.do_reconcile(
+            spec=spec, name="test", namespace="ns", status=MagicMock()
+        )
 
-    assert result == {}
+        assert result == {}

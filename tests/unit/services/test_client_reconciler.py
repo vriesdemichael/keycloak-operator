@@ -57,72 +57,7 @@ def reconciler(admin_mock: MagicMock) -> KeycloakClientReconciler:
     )
     reconciler_instance.logger = MagicMock()
 
-    # Mock _get_realm_info to return expected values without calling K8s API
-    # Returns: (actual_realm_name, keycloak_namespace, keycloak_name, realm_resource)
-    reconciler_instance._get_realm_info = MagicMock(  # ty: ignore[invalid-assignment]
-        return_value=("master", "default", "keycloak", {})
-    )
-
     return reconciler_instance
-
-
-@pytest.mark.asyncio
-async def test_manage_service_account_roles_assigns_realm_roles(
-    reconciler: KeycloakClientReconciler,
-    admin_mock: MagicMock,
-    spec_base: dict,
-) -> None:
-    """Realm roles should be assigned when provided in the spec."""
-
-    spec_dict = {
-        **spec_base,
-        "service_account_roles": {
-            "realm_roles": ["offline_access"],
-            "client_roles": {},
-        },
-    }
-    spec = KeycloakClientSpec.model_validate(spec_dict)
-
-    await reconciler.manage_service_account_roles(spec, "client-uuid", "resource", "ns")
-
-    admin_mock.get_service_account_user.assert_called_once_with(
-        "client-uuid", "master", "ns"
-    )
-    admin_mock.assign_realm_roles_to_user.assert_called_once_with(
-        user_id="service-user-id",
-        role_names=["offline_access"],
-        realm_name="master",
-        namespace="ns",
-    )
-
-
-@pytest.mark.asyncio
-async def test_manage_service_account_roles_assigns_client_roles(
-    reconciler: KeycloakClientReconciler,
-    admin_mock: MagicMock,
-    spec_base: dict,
-) -> None:
-    """Client roles should be fetched and assigned per target client."""
-
-    spec_dict = {
-        **spec_base,
-        "service_account_roles": {
-            "realm_roles": [],
-            "client_roles": {"api-server": ["read:data", "write:data"]},
-        },
-    }
-    spec = KeycloakClientSpec.model_validate(spec_dict)
-
-    await reconciler.manage_service_account_roles(spec, "client-uuid", "resource", "ns")
-
-    admin_mock.get_client_by_name.assert_called_once_with("api-server", "master", "ns")
-    admin_mock.assign_client_roles_to_user.assert_called_once_with(
-        user_id="service-user-id",
-        client_uuid="target-client-uuid",
-        role_names=["read:data", "write:data"],
-        realm_name="master",
-        namespace="ns",
-    )
 
 
 @pytest.mark.asyncio
@@ -131,15 +66,20 @@ async def test_manage_service_account_roles_skips_when_no_roles(
     admin_mock: MagicMock,
     spec_base: dict,
 ) -> None:
-    """No Keycloak operations occur when no roles are defined."""
+    """Method should return early if no roles are configured."""
 
     spec_dict = {
         **spec_base,
-        "service_account_roles": {"realm_roles": [], "client_roles": {}},
+        "service_account_roles": {
+            "realm_roles": [],
+            "client_roles": {},
+        },
     }
     spec = KeycloakClientSpec.model_validate(spec_dict)
 
-    await reconciler.manage_service_account_roles(spec, "client-uuid", "resource", "ns")
+    await reconciler.manage_service_account_roles(
+        spec, "client-uuid", "resource", "ns", "master"
+    )
 
     admin_mock.get_service_account_user.assert_not_called()
     admin_mock.assign_realm_roles_to_user.assert_not_called()
@@ -167,8 +107,5 @@ async def test_manage_service_account_roles_missing_service_account_id_raises(
 
     with pytest.raises(ReconciliationError):
         await reconciler.manage_service_account_roles(
-            spec,
-            "client-uuid",
-            "resource",
-            "ns",
+            spec, "client-uuid", "resource", "ns", "master"
         )

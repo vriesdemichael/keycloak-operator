@@ -102,27 +102,17 @@ class TestScopeMappings:
             "apiVersion": "vriesdemichael.github.io/v1",
             "kind": "KeycloakRealm",
             "metadata": {"name": realm_name, "namespace": namespace},
-            "spec": realm_spec.model_dump(by_alias=True, exclude_unset=True),
+            "spec": realm_spec.model_dump(by_alias=True, exclude_none=True),
         }
 
         try:
-            # 1. Create the realm first (without clients, as they need to be created via separate API or CR)
-            # But here we are using KeycloakRealm CR which only defines realm config.
-            # Clients must exist for scope mappings to work.
-            # The operator creates the realm, then we'll create clients via API, then update CR?
-            # Or we can use the `clients` field in KeycloakRealmSpec if it supported full client definition,
-            # but it only supports basic client representation for bootstrap if we added it?
-            # KeycloakRealmSpec doesn't have a `clients` list for creation.
-            # So we must create the realm first, then create clients using KeycloakClient CRs or API,
-            # then update the realm CR with scope mappings.
-
-            # Let's start with a basic realm
+            # 1. Create the realm first
             initial_spec = realm_spec.model_copy()
             initial_spec.scope_mappings = []
             initial_spec.client_scope_mappings = {}
 
             realm_manifest["spec"] = initial_spec.model_dump(
-                by_alias=True, exclude_unset=True
+                by_alias=True, exclude_none=True
             )
 
             await k8s_custom_objects.create_namespaced_custom_object(
@@ -144,7 +134,7 @@ class TestScopeMappings:
                 operator_namespace=operator_namespace,
             )
 
-            # 2. Create the clients via API (faster than CR for this test)
+            # 2. Create the clients via API
             target_client = ClientRepresentation(
                 clientId=target_client_id, enabled=True
             )
@@ -170,9 +160,8 @@ class TestScopeMappings:
             )
 
             # 3. Update the Realm CR with scope mappings
-            # Now we use the full spec
             realm_manifest["spec"] = realm_spec.model_dump(
-                by_alias=True, exclude_unset=True
+                by_alias=True, exclude_none=True
             )
 
             updated_cr = await k8s_custom_objects.patch_namespaced_custom_object(
@@ -199,8 +188,6 @@ class TestScopeMappings:
             )
 
             # 4. Verify Scope Mappings
-
-            # Verify Realm Role -> Client Scope
             scope_mappings = await keycloak_admin_client.get_scope_mappings_realm_roles(
                 realm_name,
                 client_scope_id=(
@@ -212,7 +199,6 @@ class TestScopeMappings:
             )
             assert any(r.name == realm_role_name for r in scope_mappings)
 
-            # Verify Realm Role -> Client
             target_uuid = await keycloak_admin_client.get_client_uuid(
                 target_client_id, realm_name, namespace
             )
@@ -221,7 +207,6 @@ class TestScopeMappings:
             )
             assert any(r.name == realm_role_name for r in scope_mappings)
 
-            # Verify Client Role -> Client Scope
             scope_mappings = (
                 await keycloak_admin_client.get_scope_mappings_client_roles(
                     realm_name,
@@ -236,7 +221,6 @@ class TestScopeMappings:
             )
             assert any(r.name == client_role_name for r in scope_mappings)
 
-            # Verify Client Role -> Client
             scope_mappings = (
                 await keycloak_admin_client.get_scope_mappings_client_roles(
                     realm_name,
@@ -250,7 +234,6 @@ class TestScopeMappings:
             # 5. Test Updating Scope Mappings (Additive)
             realm_role_2_name = "realm-role-2"
             realm_role_3_name = "realm-role-3"
-            # Add new realm roles to the realm
             assert realm_spec.roles is not None
             assert realm_spec.roles.realm_roles is not None
             realm_spec.roles.realm_roles.append(
@@ -260,7 +243,6 @@ class TestScopeMappings:
                 KeycloakRealmRole(name=realm_role_3_name)
             )
 
-            # Add a mapping with multiple roles
             realm_spec.scope_mappings.append(
                 KeycloakScopeMapping(
                     clientScope=scope_name, roles=[realm_role_2_name, realm_role_3_name]
@@ -268,7 +250,7 @@ class TestScopeMappings:
             )
 
             realm_manifest["spec"] = realm_spec.model_dump(
-                by_alias=True, exclude_unset=True
+                by_alias=True, exclude_none=True
             )
 
             updated_cr = await k8s_custom_objects.patch_namespaced_custom_object(

@@ -1,4 +1,4 @@
-{{- if and .Values.keycloak.enabled (not .Values.keycloak.external.enabled) }}
+{{- if .Values.keycloak.managed }}
 {{/* yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json */}}
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
@@ -17,6 +17,9 @@ spec:
   replicas: {{ .Values.keycloak.replicas }}
   image: {{ .Values.keycloak.image }}:{{ .Values.keycloak.version }}
   optimized: {{ .Values.keycloak.optimized }}
+
+  operatorRef:
+    namespace: {{ include "keycloak-operator.namespace" . }}
 
   {{- if .Values.keycloak.database.cnpg.enabled }}
   database:
