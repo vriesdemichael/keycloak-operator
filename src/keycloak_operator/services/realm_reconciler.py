@@ -3516,267 +3516,230 @@ class KeycloakRealmReconciler(BaseReconciler):
 
         realm_name = new_realm_spec.realm_name
 
-        # Apply configuration updates based on the diff
-        configuration_changed = False
+        # Collect updates to apply in dependency order
+        updates_needed = set()
         for _operation, field_path, _old_value, _new_value in diff:
-            if field_path[:2] == ("spec", "themes"):
-                self.logger.info("Updating realm themes")
-                try:
-                    if new_realm_spec.themes:
-                        theme_config = {}
-                        if (
-                            hasattr(new_realm_spec.themes, "login_theme")
-                            and new_realm_spec.themes.login_theme
-                        ):
-                            theme_config["login_theme"] = (
-                                new_realm_spec.themes.login_theme
-                            )
-                        if (
-                            hasattr(new_realm_spec.themes, "account_theme")
-                            and new_realm_spec.themes.account_theme
-                        ):
-                            theme_config["account_theme"] = (
-                                new_realm_spec.themes.account_theme
-                            )
-                        if (
-                            hasattr(new_realm_spec.themes, "admin_theme")
-                            and new_realm_spec.themes.admin_theme
-                        ):
-                            theme_config["admin_theme"] = (
-                                new_realm_spec.themes.admin_theme
-                            )
-                        if (
-                            hasattr(new_realm_spec.themes, "email_theme")
-                            and new_realm_spec.themes.email_theme
-                        ):
-                            theme_config["email_theme"] = (
-                                new_realm_spec.themes.email_theme
-                            )
+            self.logger.info(f"DIFF ENTRY: {_operation}, {field_path}")
+            if len(field_path) >= 2 and field_path[0] == "spec":
+                updates_needed.add(field_path[1])
 
-                        if theme_config:
-                            await admin_client.update_realm_themes(
-                                realm_name, theme_config, namespace
-                            )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update themes: {e}")
+        self.logger.info(f"UPDATES NEEDED: {updates_needed}")
 
-            elif field_path[:2] == ("spec", "localization"):
-                self.logger.info("Updating realm localization")
-                try:
-                    if new_realm_spec.localization:
-                        self.logger.info(
-                            f"Updated localization settings: {new_realm_spec.localization}"
-                        )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update localization: {e}")
+        configuration_changed = False
 
-            elif field_path[:2] == ("spec", "authenticationFlows"):
-                self.logger.info("Updating authentication flows")
-                try:
-                    # Use the full configure_authentication method which handles:
-                    # - copyFrom logic for copying built-in flows
-                    # - creating new flows with executions
-                    # - updating existing flow executions
-                    await self.configure_authentication(new_realm_spec, name, namespace)
-
-                    # Also apply flow bindings if any are specified
-                    if self._has_flow_bindings(new_realm_spec):
-                        await self.apply_flow_bindings(new_realm_spec, name, namespace)
-
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update authentication flows: {e}")
-
-            elif field_path[:2] == ("spec", "identityProviders"):
-                self.logger.info("Updating identity providers")
-                try:
-                    for idp_config in new_realm_spec.identity_providers or []:
-                        idp_dict = cast(
-                            dict[str, Any],
-                            idp_config.model_dump()
-                            if hasattr(idp_config, "model_dump")
-                            else idp_config,
-                        )
-
-                        # Inject secrets from configSecrets into config
-                        if idp_config.config_secrets:
-                            if "config" not in idp_dict:
-                                idp_dict["config"] = {}
-
-                            for (
-                                config_key,
-                                secret_ref,
-                            ) in idp_config.config_secrets.items():
-                                secret_value = await self._fetch_secret_value(
-                                    namespace=namespace,
-                                    secret_name=secret_ref.name,
-                                    secret_key=secret_ref.key,
-                                )
-                                idp_dict["config"][config_key] = secret_value
-
-                        # Remove configSecrets from payload
-                        idp_dict.pop("configSecrets", None)
-                        idp_dict.pop("config_secrets", None)
-
-                        await admin_client.configure_identity_provider(
-                            realm_name, idp_dict, namespace
-                        )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update identity providers: {e}")
-
-            elif field_path[:2] == ("spec", "userFederation"):
-                self.logger.info("Updating user federation")
-                try:
-                    await self.configure_user_federation(
-                        new_realm_spec, name, namespace
+        # 1. Basic Realm Settings
+        basic_fields = {
+            "displayName",
+            "description",
+            "loginPageTitle",
+            "tokenSettings",
+            "smtpServer",
+            "browserFlow",
+            "directGrantFlow",
+            "registrationFlow",
+            "resetCredentialsFlow",
+            "clientAuthenticationFlow",
+            "dockerAuthenticationFlow",
+            "firstBrokerLoginFlow",
+            "eventsConfig",
+            "passwordPolicy",
+            "settings",
+        }
+        if updates_needed.intersection(basic_fields):
+            self.logger.info("Updating realm basic settings")
+            try:
+                if "smtpServer" in updates_needed:
+                    # SMTP needs special handling for password injection
+                    await self.ensure_realm_exists(
+                        new_realm_spec, name, namespace, **kwargs
                     )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update user federation: {e}")
-
-            elif field_path[:2] == ("spec", "clientScopes"):
-                self.logger.info("Updating client scopes")
-                try:
-                    await self.configure_client_scopes(new_realm_spec, name, namespace)
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update client scopes: {e}")
-
-            elif field_path[:2] == ("spec", "scopeMappings"):
-                self.logger.info("Updating scope mappings")
-                try:
-                    await self.configure_scope_mappings(new_realm_spec, name, namespace)
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update scope mappings: {e}")
-
-            elif field_path[:2] == ("spec", "clientScopeMappings"):
-                self.logger.info("Updating client scope mappings")
-                try:
-                    await self.configure_scope_mappings(new_realm_spec, name, namespace)
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update client scope mappings: {e}")
-
-            elif field_path[:2] == ("spec", "defaultClientScopes"):
-                self.logger.info("Updating realm default client scopes")
-                try:
-                    await self.configure_realm_default_client_scopes(
-                        new_realm_spec, name, namespace
-                    )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update default client scopes: {e}")
-
-            elif field_path[:2] == ("spec", "optionalClientScopes"):
-                self.logger.info("Updating realm optional client scopes")
-                try:
-                    await self.configure_realm_default_client_scopes(
-                        new_realm_spec, name, namespace
-                    )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update optional client scopes: {e}")
-
-            elif field_path[:2] == ("spec", "requiredActions"):
-                self.logger.info("Updating required actions")
-                try:
-                    await self.configure_required_actions(
-                        new_realm_spec, name, namespace
-                    )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update required actions: {e}")
-
-            elif field_path[:2] == ("spec", "settings"):
-                self.logger.info("Updating realm settings")
-                try:
+                else:
                     await admin_client.update_realm(
                         realm_name, new_realm_spec.to_keycloak_config(), namespace
                     )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update realm settings: {e}")
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update realm basic settings: {e}")
 
-            # Handle basic realm field updates (using camelCase as they appear in CRD)
-            elif field_path[:2] in [
-                ("spec", "displayName"),
-                ("spec", "description"),
-                ("spec", "loginPageTitle"),
-                ("spec", "tokenSettings"),
-                ("spec", "smtpServer"),
-                ("spec", "browserFlow"),
-                ("spec", "directGrantFlow"),
-                ("spec", "registrationFlow"),
-                ("spec", "resetCredentialsFlow"),
-                ("spec", "clientAuthenticationFlow"),
-                ("spec", "dockerAuthenticationFlow"),
-                ("spec", "firstBrokerLoginFlow"),
-                ("spec", "eventsConfig"),
-                ("spec", "passwordPolicy"),
-            ]:
-                field_name = field_path[1] if len(field_path) > 1 else "unknown"
-                self.logger.info(f"Updating realm field: {field_name}")
-                try:
-                    if field_name == "smtpServer":
-                        # SMTP needs special handling for password injection
-                        await self.ensure_realm_exists(
-                            new_realm_spec, name, namespace, **kwargs
+        # 2. Themes
+        if "themes" in updates_needed:
+            self.logger.info("Updating realm themes")
+            try:
+                if new_realm_spec.themes:
+                    theme_config = {}
+                    if (
+                        hasattr(new_realm_spec.themes, "login_theme")
+                        and new_realm_spec.themes.login_theme
+                    ):
+                        theme_config["login_theme"] = new_realm_spec.themes.login_theme
+                    if (
+                        hasattr(new_realm_spec.themes, "account_theme")
+                        and new_realm_spec.themes.account_theme
+                    ):
+                        theme_config["account_theme"] = (
+                            new_realm_spec.themes.account_theme
                         )
-                    else:
-                        # Regular field update
-                        await admin_client.update_realm(
-                            realm_name, new_realm_spec.to_keycloak_config(), namespace
+                    if (
+                        hasattr(new_realm_spec.themes, "admin_theme")
+                        and new_realm_spec.themes.admin_theme
+                    ):
+                        theme_config["admin_theme"] = new_realm_spec.themes.admin_theme
+                    if (
+                        hasattr(new_realm_spec.themes, "email_theme")
+                        and new_realm_spec.themes.email_theme
+                    ):
+                        theme_config["email_theme"] = new_realm_spec.themes.email_theme
+
+                    if theme_config:
+                        await admin_client.update_realm_themes(
+                            realm_name, theme_config, namespace
                         )
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update realm {field_name}: {e}")
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update themes: {e}")
 
-            # Handle roles updates
-            elif field_path[:2] == ("spec", "roles"):
-                self.logger.info("Updating realm roles")
-                try:
-                    await self.configure_realm_roles(new_realm_spec, name, namespace)
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update realm roles: {e}")
+        # 3. Localization
+        if "localization" in updates_needed:
+            self.logger.info("Updating realm localization")
+            try:
+                if new_realm_spec.localization:
+                    self.logger.info(
+                        f"Updated localization settings: {new_realm_spec.localization}"
+                    )
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update localization: {e}")
 
-            # Handle groups updates
-            elif field_path[:2] == ("spec", "groups"):
-                self.logger.info("Updating groups")
-                try:
-                    await self.configure_groups(new_realm_spec, name, namespace)
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update groups: {e}")
+        # 4. Authentication Flows
+        if "authenticationFlows" in updates_needed:
+            self.logger.info("Updating authentication flows")
+            try:
+                await self.configure_authentication(new_realm_spec, name, namespace)
+                if self._has_flow_bindings(new_realm_spec):
+                    await self.apply_flow_bindings(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update authentication flows: {e}")
 
-            # Handle default groups updates
-            elif field_path[:2] == ("spec", "defaultGroups"):
-                self.logger.info("Updating default groups")
-                try:
-                    await self.configure_default_groups(new_realm_spec, name, namespace)
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update default groups: {e}")
+        # 5. Required Actions
+        if "requiredActions" in updates_needed:
+            self.logger.info("Updating required actions")
+            try:
+                await self.configure_required_actions(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update required actions: {e}")
 
-            elif field_path[:2] == ("spec", "defaultRoles"):
-                self.logger.info("Updating default roles")
-                try:
-                    await self.configure_default_roles(new_realm_spec, name, namespace)
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update default roles: {e}")
+        # 6. Identity Providers
+        if "identityProviders" in updates_needed:
+            self.logger.info("Updating identity providers")
+            try:
+                for idp_config in new_realm_spec.identity_providers or []:
+                    idp_dict = cast(
+                        dict[str, Any],
+                        idp_config.model_dump()
+                        if hasattr(idp_config, "model_dump")
+                        else idp_config,
+                    )
+                    if idp_config.config_secrets:
+                        if "config" not in idp_dict:
+                            idp_dict["config"] = {}
+                        for config_key, secret_ref in idp_config.config_secrets.items():
+                            secret_value = await self._fetch_secret_value(
+                                namespace=namespace,
+                                secret_name=secret_ref.name,
+                                secret_key=secret_ref.key,
+                            )
+                            idp_dict["config"][config_key] = secret_value
 
-            elif field_path[:2] == ("spec", "defaultRole"):
-                self.logger.info("Updating default role")
-                try:
-                    await self.configure_default_roles(new_realm_spec, name, namespace)
-                    configuration_changed = True
-                except Exception as e:
-                    self.logger.warning(f"Failed to update default role: {e}")
+                    idp_dict.pop("configSecrets", None)
+                    idp_dict.pop("config_secrets", None)
+
+                    await admin_client.configure_identity_provider(
+                        realm_name, idp_dict, namespace
+                    )
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update identity providers: {e}")
+
+        # 7. User Federation
+        if "userFederation" in updates_needed:
+            self.logger.info("Updating user federation")
+            try:
+                await self.configure_user_federation(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update user federation: {e}")
+
+        # 8. Client Scopes
+        if "clientScopes" in updates_needed:
+            self.logger.info("Updating client scopes")
+            try:
+                await self.configure_client_scopes(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update client scopes: {e}")
+
+        # 9. Default/Optional Client Scopes
+        if (
+            "defaultClientScopes" in updates_needed
+            or "optionalClientScopes" in updates_needed
+        ):
+            self.logger.info("Updating realm default/optional client scopes")
+            try:
+                await self.configure_realm_default_client_scopes(
+                    new_realm_spec, name, namespace
+                )
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(
+                    f"Failed to update default/optional client scopes: {e}"
+                )
+
+        # 10. Roles (MUST be before Scope Mappings and Groups)
+        if "roles" in updates_needed:
+            self.logger.info("Updating realm roles")
+            try:
+                await self.configure_realm_roles(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update realm roles: {e}")
+
+        # 11. Groups
+        if "groups" in updates_needed:
+            self.logger.info("Updating groups")
+            try:
+                await self.configure_groups(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update groups: {e}")
+
+        # 12. Default Groups
+        if "defaultGroups" in updates_needed:
+            self.logger.info("Updating default groups")
+            try:
+                await self.configure_default_groups(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update default groups: {e}")
+
+        # 13. Default Roles
+        if "defaultRoles" in updates_needed or "defaultRole" in updates_needed:
+            self.logger.info("Updating default roles")
+            try:
+                await self.configure_default_roles(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update default roles: {e}")
+
+        # 14. Scope Mappings (Requires roles and scopes to exist)
+        if "scopeMappings" in updates_needed or "clientScopeMappings" in updates_needed:
+            self.logger.info("Updating scope mappings")
+            try:
+                await self.configure_scope_mappings(new_realm_spec, name, namespace)
+                configuration_changed = True
+            except Exception as e:
+                self.logger.warning(f"Failed to update scope mappings: {e}")
 
         if configuration_changed:
             self.logger.info(f"Successfully updated KeycloakRealm {name}")
