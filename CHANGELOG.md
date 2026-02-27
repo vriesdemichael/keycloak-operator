@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.7.25](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.24...operator-image-v0.7.25) (2026-02-27)
+
+
+### Features
+
+* **chart-operator+operator:** add support for external keycloak instances ([5050e12](https://github.com/vriesdemichael/keycloak-operator/commit/5050e121041df8cb2f29b0debaac1f85c8b39e71))
+* **chart-operator+operator:** enforce ADR-062 and add external mode integration tests ([9c81c3d](https://github.com/vriesdemichael/keycloak-operator/commit/9c81c3dd36d54b66854ec105286cd2e04b51532e))
+* **chart-operator+operator:** implement instance-agnostic model and delegated RBAC isolation ([59b9022](https://github.com/vriesdemichael/keycloak-operator/commit/59b9022aeab1d7965109fe2f9e4c47d482e844af))
+* **operator:** harden multi-tenancy by making peering unique and webhooks ownership-aware ([0f3ed87](https://github.com/vriesdemichael/keycloak-operator/commit/0f3ed87b1fff4644c4254279ebe14e53e2828bc0))
+* **operator:** use dynamic peering name based on instance ID for leader election ([8ce0a8f](https://github.com/vriesdemichael/keycloak-operator/commit/8ce0a8fec5545868960bdc2c04381ab0558349e0))
+
+
+### Bug Fixes
+
+* **operator:** address pr comments for external keycloak support ([fd66d59](https://github.com/vriesdemichael/keycloak-operator/commit/fd66d5971c5d34acfe9ff64ac2df971b52298323))
+* **operator:** fix external mode capacity check and webhook isolation ([7ee8443](https://github.com/vriesdemichael/keycloak-operator/commit/7ee84435a9a0edb1ee3ebb1941ad9800c57ad92b))
+* **operator:** ignore CVE-2025-14009 in nltk (no fix available) ([a0e6026](https://github.com/vriesdemichael/keycloak-operator/commit/a0e6026612270011f53203b5eecf0eb3d7427434))
+* **operator:** improve security scan to check only production dependencies ([30e9f8e](https://github.com/vriesdemichael/keycloak-operator/commit/30e9f8e2f60e0ccfa9de3e9371e5ebb481c28ff4))
+* **operator:** resolve broken unit tests and update client cleanup logic ([efe314b](https://github.com/vriesdemichael/keycloak-operator/commit/efe314b40b3a89186c1ca0b59c5aed980f00e2d6))
+* **operator:** resolve drift detection and external mode race conditions ([0831be1](https://github.com/vriesdemichael/keycloak-operator/commit/0831be1bfad0f5276e56c16d01b847f27685e493))
+* **operator:** resolve integration test failures and cross-namespace sync issues ([008dcee](https://github.com/vriesdemichael/keycloak-operator/commit/008dcee118c03bac92bf4827641117f590c9246b))
+* **operator:** resolve integration test failures and harden multi-tenancy ([9e47566](https://github.com/vriesdemichael/keycloak-operator/commit/9e47566b96b776c87e6227e801cc87c64f2f482e))
+* **operator:** skip health checks in external keycloak mode ([3235487](https://github.com/vriesdemichael/keycloak-operator/commit/32354879157062dc4b47fbda9d486c0a8b086fc4))
+
 ## [0.7.24](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.23...operator-image-v0.7.24) (2026-02-21)
 
 
