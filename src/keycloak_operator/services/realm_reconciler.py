@@ -3479,7 +3479,6 @@ class KeycloakRealmReconciler(BaseReconciler):
         Returns:
             Updated status dictionary or None if no changes needed
         """
-        from typing import cast
 
         from ..errors import PermanentError
 
@@ -3519,11 +3518,11 @@ class KeycloakRealmReconciler(BaseReconciler):
         # Collect updates to apply in dependency order
         updates_needed = set()
         for _operation, field_path, _old_value, _new_value in diff:
-            self.logger.info(f"DIFF ENTRY: {_operation}, {field_path}")
+            self.logger.debug(f"DIFF ENTRY: {_operation}, {field_path}")
             if len(field_path) >= 2 and field_path[0] == "spec":
                 updates_needed.add(field_path[1])
 
-        self.logger.info(f"UPDATES NEEDED: {updates_needed}")
+        self.logger.debug(f"UPDATES NEEDED: {updates_needed}")
 
         configuration_changed = False
 
@@ -3555,7 +3554,9 @@ class KeycloakRealmReconciler(BaseReconciler):
                     )
                 else:
                     await admin_client.update_realm(
-                        realm_name, new_realm_spec.to_keycloak_config(), namespace
+                        realm_name,
+                        new_realm_spec.to_keycloak_config(include_flow_bindings=False),
+                        namespace,
                     )
                 configuration_changed = True
             except Exception as e:
@@ -3567,28 +3568,14 @@ class KeycloakRealmReconciler(BaseReconciler):
             try:
                 if new_realm_spec.themes:
                     theme_config = {}
-                    if (
-                        hasattr(new_realm_spec.themes, "login_theme")
-                        and new_realm_spec.themes.login_theme
-                    ):
-                        theme_config["login_theme"] = new_realm_spec.themes.login_theme
-                    if (
-                        hasattr(new_realm_spec.themes, "account_theme")
-                        and new_realm_spec.themes.account_theme
-                    ):
-                        theme_config["account_theme"] = (
-                            new_realm_spec.themes.account_theme
-                        )
-                    if (
-                        hasattr(new_realm_spec.themes, "admin_theme")
-                        and new_realm_spec.themes.admin_theme
-                    ):
-                        theme_config["admin_theme"] = new_realm_spec.themes.admin_theme
-                    if (
-                        hasattr(new_realm_spec.themes, "email_theme")
-                        and new_realm_spec.themes.email_theme
-                    ):
-                        theme_config["email_theme"] = new_realm_spec.themes.email_theme
+                    if new_realm_spec.themes.login:
+                        theme_config["login"] = new_realm_spec.themes.login
+                    if new_realm_spec.themes.account:
+                        theme_config["account"] = new_realm_spec.themes.account
+                    if new_realm_spec.themes.admin:
+                        theme_config["admin"] = new_realm_spec.themes.admin
+                    if new_realm_spec.themes.email:
+                        theme_config["email"] = new_realm_spec.themes.email
 
                     if theme_config:
                         await admin_client.update_realm_themes(
@@ -3605,6 +3592,11 @@ class KeycloakRealmReconciler(BaseReconciler):
                 if new_realm_spec.localization:
                     self.logger.info(
                         f"Updated localization settings: {new_realm_spec.localization}"
+                    )
+                    await admin_client.update_realm(
+                        realm_name,
+                        new_realm_spec.to_keycloak_config(include_flow_bindings=False),
+                        namespace,
                     )
                 configuration_changed = True
             except Exception as e:
@@ -3634,30 +3626,7 @@ class KeycloakRealmReconciler(BaseReconciler):
         if "identityProviders" in updates_needed:
             self.logger.info("Updating identity providers")
             try:
-                for idp_config in new_realm_spec.identity_providers or []:
-                    idp_dict = cast(
-                        dict[str, Any],
-                        idp_config.model_dump()
-                        if hasattr(idp_config, "model_dump")
-                        else idp_config,
-                    )
-                    if idp_config.config_secrets:
-                        if "config" not in idp_dict:
-                            idp_dict["config"] = {}
-                        for config_key, secret_ref in idp_config.config_secrets.items():
-                            secret_value = await self._fetch_secret_value(
-                                namespace=namespace,
-                                secret_name=secret_ref.name,
-                                secret_key=secret_ref.key,
-                            )
-                            idp_dict["config"][config_key] = secret_value
-
-                    idp_dict.pop("configSecrets", None)
-                    idp_dict.pop("config_secrets", None)
-
-                    await admin_client.configure_identity_provider(
-                        realm_name, idp_dict, namespace
-                    )
+                await self.configure_identity_providers(new_realm_spec, name, namespace)
                 configuration_changed = True
             except Exception as e:
                 self.logger.warning(f"Failed to update identity providers: {e}")
