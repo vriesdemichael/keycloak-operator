@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.32](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.31...chart-operator-v0.4.32) (2026-02-27)
+
+
+### Features
+
+* **chart-operator+operator:** add support for external keycloak instances ([5050e12](https://github.com/vriesdemichael/keycloak-operator/commit/5050e121041df8cb2f29b0debaac1f85c8b39e71))
+* **chart-operator+operator:** implement instance-agnostic model and delegated RBAC isolation ([59b9022](https://github.com/vriesdemichael/keycloak-operator/commit/59b9022aeab1d7965109fe2f9e4c47d482e844af))
+* **chart-operator:** allow configuring namespaceSelector for admission webhooks to support multi-tenancy ([0becf3d](https://github.com/vriesdemichael/keycloak-operator/commit/0becf3d2dd9b29d6b1772d20e10664442f4f71bd))
+
+
+### Bug Fixes
+
+* **operator:** address pr comments for external keycloak support ([fd66d59](https://github.com/vriesdemichael/keycloak-operator/commit/fd66d5971c5d34acfe9ff64ac2df971b52298323))
+
 ## [0.4.31](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.30...chart-operator-v0.4.31) (2026-02-21)
 
 
