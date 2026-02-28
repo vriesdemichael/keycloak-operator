@@ -37,7 +37,7 @@ operator:
     # Overrides the image tag whose default is the chart appVersion.
     # This is automatically updated by the update-chart-versions workflow on new releases
     # Example: "v0.3.2" or "latest"
-    tag: "v0.7.23"
+    tag: "v0.7.25"
   # Image pull secrets for private registries
   # Example:
   # imagePullSecrets:
@@ -419,26 +419,20 @@ keycloak:
   # If true, the chart templates a Keycloak CR and auto-calculates connection URLs.
   # If false, you must provide 'url' and 'adminSecret' for an existing Keycloak.
   managed: true
-
   # Name of the Keycloak instance (used for CR name and service naming)
   name: "keycloak"
-
   # URL of the Keycloak instance.
   # If managed is true, this is auto-calculated to the internal cluster service.
   # Example: "https://keycloak.example.com"
   url: ""
-
   # Admin username for initial access
   adminUsername: "admin"
-
   # Name of the Secret containing the admin password.
   # If managed is true, this defaults to "<name>-admin-credentials".
   # If managed is false, this secret must exist in the operator's namespace.
   adminSecret: ""
-
   # Key in the adminSecret containing the password.
   adminPasswordKey: "password"
-
   # Keycloak version to deploy (used when managed: true)
   version: "26.1.2"
   # Container image for Keycloak (used when managed: true)
