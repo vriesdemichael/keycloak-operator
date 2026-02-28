@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.26](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.25...operator-image-v0.7.26) (2026-02-28)
+
+
+### Bug Fixes
+
+* **operator:** address code review feedback on realm reconciler updates ([d8212f8](https://github.com/vriesdemichael/keycloak-operator/commit/d8212f8923a4a0ae9d69f63f5cb63b961baedae4))
+* **operator:** ensure realm roles are created before scope mappings during updates ([d58379c](https://github.com/vriesdemichael/keycloak-operator/commit/d58379cff9eb7369ae3c359be6429debc54a4097))
+
 ## [0.7.25](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.24...operator-image-v0.7.25) (2026-02-27)
 
 
