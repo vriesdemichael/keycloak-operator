@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.28](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.27...operator-image-v0.7.28) (2026-03-01)
+
+
+### Features
+
+* **chart-operator+operator:** support user-provided admin secrets via proxy architecture ([8ddb9e1](https://github.com/vriesdemichael/keycloak-operator/commit/8ddb9e11490c1c225ce3e8e173e575cc9f5b4a0d))
+
 ## [0.7.27](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.26...operator-image-v0.7.27) (2026-03-01)
 
 
