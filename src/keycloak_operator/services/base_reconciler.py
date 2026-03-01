@@ -583,6 +583,41 @@ class BaseReconciler(ABC):
         self._remove_condition(status, "Reconciling")
         self._remove_condition(status, "Progressing")
 
+    def update_status_paused(
+        self, status: StatusProtocol, message: str, generation: int = 0
+    ) -> None:
+        """Update status to indicate reconciliation is paused by operator configuration.
+
+        The Paused phase signals that the operator is intentionally skipping
+        reconciliation — typically during a maintenance window or upgrade.
+        The resource remains in its last-known state; no changes are applied.
+        """
+        status.phase = "Paused"
+        status.message = message
+        timestamp = datetime.now(UTC).isoformat()
+        status.lastUpdated = timestamp
+        # Track ObservedGeneration for GitOps compatibility
+        status.observedGeneration = generation
+        self._add_condition(
+            status,
+            "ReconciliationPaused",
+            "True",
+            "OperatorPauseConfigured",
+            message,
+            generation,
+        )
+        self._add_condition(
+            status,
+            "Ready",
+            "False",
+            "ReconciliationPaused",
+            f"Reconciliation paused: {message}",
+            generation,
+        )
+        self._remove_condition(status, "Reconciling")
+        self._remove_condition(status, "Progressing")
+        self._remove_condition(status, "Degraded")
+
     def _add_condition(
         self,
         status: StatusProtocol,

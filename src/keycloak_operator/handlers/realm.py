@@ -30,6 +30,7 @@ from keycloak_operator.services import KeycloakRealmReconciler
 from keycloak_operator.utils.handler_logging import log_handler_entry
 from keycloak_operator.utils.isolation import is_managed_by_this_operator
 from keycloak_operator.utils.keycloak_admin import get_keycloak_admin_client
+from keycloak_operator.utils.pause import get_pause_message, is_realms_paused
 
 logger = logging.getLogger(__name__)
 
@@ -223,6 +224,16 @@ async def ensure_keycloak_realm(
 
     logger.info(f"Ensuring KeycloakRealm {name} in namespace {namespace}")
 
+    # Check if reconciliation is paused for Realm CRs
+    if is_realms_paused():
+        pause_message = get_pause_message()
+        logger.info(f"Reconciliation paused for KeycloakRealm {name}: {pause_message}")
+        reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
+        status_wrapper = StatusWrapper(patch.status)
+        generation = kwargs.get("meta", {}).get("generation", 0)
+        reconciler.update_status_paused(status_wrapper, pause_message, generation)
+        return None
+
     # Note: Finalizer is managed by Kopf via settings.persistence.finalizer
     # configured in operator.py startup handler
 
@@ -285,6 +296,16 @@ async def update_keycloak_realm(
     log_handler_entry("update", "keycloakrealm", name, namespace)
 
     logger.info(f"Updating KeycloakRealm {name} in namespace {namespace}")
+
+    # Check if reconciliation is paused for Realm CRs
+    if is_realms_paused():
+        pause_message = get_pause_message()
+        logger.info(f"Reconciliation paused for KeycloakRealm {name}: {pause_message}")
+        reconciler = KeycloakRealmReconciler(rate_limiter=memo.rate_limiter)
+        status_wrapper = StatusWrapper(patch.status)
+        generation = kwargs.get("meta", {}).get("generation", 0)
+        reconciler.update_status_paused(status_wrapper, pause_message, generation)
+        return None
 
     # Create reconciler and delegate to service layer
     # Use patch.status instead of the read-only status dict for updates
@@ -463,6 +484,7 @@ async def monitor_realm_health(
         # Unknown/Pending = not yet reconciled
         # Provisioning/Updating/Reconciling = active reconciliation in progress
         # Failed = terminal state, no point health-checking
+        # Paused = reconciliation intentionally paused by operator configuration
         if current_phase not in (
             "Failed",
             "Pending",
@@ -470,6 +492,7 @@ async def monitor_realm_health(
             "Provisioning",
             "Updating",
             "Reconciling",
+            "Paused",
         ):
             await _run_realm_health_check(
                 spec, name, namespace, status, patch, meta, memo

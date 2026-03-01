@@ -235,6 +235,22 @@ operator:
       client: 300 # KeycloakClient health check interval
     # Random jitter added to reconciliation scheduling to prevent thundering herd (seconds)
     jitterMaxSeconds: 10.0
+    # Reconciliation pause controls
+    # When enabled, the operator skips reconciliation for the specified
+    # resource type(s) and sets status to Paused. Delete handlers always proceed.
+    # Useful during Keycloak upgrades or maintenance windows.
+    # Requires operator restart to take effect (rolling restart with leader election).
+    pause:
+      # Pause reconciliation for Keycloak instance CRs
+      keycloak: false
+      # Pause reconciliation for KeycloakRealm CRs
+      realms: false
+      # Pause reconciliation for KeycloakClient CRs
+      clients: false
+      # Custom status message when reconciliation is paused
+      # Override to communicate maintenance context, e.g.:
+      # "Maintenance window: Keycloak 25.0 upgrade in progress"
+      message: "Reconciliation paused by operator configuration"
 # ============================================================================
 # Namespace Configuration
 # ============================================================================

@@ -31,6 +31,7 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
+    ANNOTATION_RECONCILE_FORCE,
     RECONCILE_JITTER_MAX,
     TIMER_INTERVAL_CLIENT,
 )
@@ -54,6 +55,7 @@ from keycloak_operator.utils.kubernetes import (
     create_client_secret,
     get_kubernetes_client,
 )
+from keycloak_operator.utils.pause import get_pause_message, is_clients_paused
 
 logger = logging.getLogger(__name__)
 
@@ -254,6 +256,16 @@ async def ensure_keycloak_client(
 
     logger.info(f"Ensuring KeycloakClient {name} in namespace {namespace}")
 
+    # Check if reconciliation is paused for Client CRs
+    if is_clients_paused():
+        pause_message = get_pause_message()
+        logger.info(f"Reconciliation paused for KeycloakClient {name}: {pause_message}")
+        reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
+        status_wrapper = StatusWrapper(patch.status)
+        generation = kwargs.get("meta", {}).get("generation", 0)
+        reconciler.update_status_paused(status_wrapper, pause_message, generation)
+        return None
+
     # Note: Finalizer is managed by Kopf via settings.persistence.finalizer
     # configured in operator.py startup handler
 
@@ -321,6 +333,16 @@ async def update_keycloak_client(
         return None
 
     logger.info(f"Updating KeycloakClient {name} in namespace {namespace}")
+
+    # Check if reconciliation is paused for Client CRs
+    if is_clients_paused():
+        pause_message = get_pause_message()
+        logger.info(f"Reconciliation paused for KeycloakClient {name}: {pause_message}")
+        reconciler = KeycloakClientReconciler(rate_limiter=memo.rate_limiter)
+        status_wrapper = StatusWrapper(patch.status)
+        generation = kwargs.get("meta", {}).get("generation", 0)
+        reconciler.update_status_paused(status_wrapper, pause_message, generation)
+        return None
 
     # Use patch.status for updates instead of wrapping the read-only status dict
     # Add jitter to prevent thundering herd
@@ -509,6 +531,7 @@ async def monitor_client_health(
         # Unknown/Pending = not yet reconciled
         # Provisioning/Updating/Reconciling = active reconciliation in progress
         # Failed = terminal state, no point health-checking
+        # Paused = reconciliation intentionally paused by operator configuration
         if current_phase not in (
             "Failed",
             "Pending",
@@ -516,6 +539,7 @@ async def monitor_client_health(
             "Provisioning",
             "Updating",
             "Reconciling",
+            "Paused",
         ):
             await _run_client_health_check(
                 spec, name, namespace, status, patch, meta, memo
@@ -722,7 +746,7 @@ async def _run_client_health_check(
                         patch_body = {
                             "metadata": {
                                 "annotations": {
-                                    "keycloak-operator/force-reconcile": f"secret-missing-{datetime.now(UTC).timestamp()}"
+                                    ANNOTATION_RECONCILE_FORCE: f"secret-missing-{datetime.now(UTC).timestamp()}"
                                 }
                             }
                         }
@@ -817,7 +841,7 @@ async def monitor_client_secrets(
         patch_body = {
             "metadata": {
                 "annotations": {
-                    "keycloak-operator/force-reconcile": f"secret-deleted-{datetime.now(UTC).timestamp()}"
+                    ANNOTATION_RECONCILE_FORCE: f"secret-deleted-{datetime.now(UTC).timestamp()}"
                 }
             }
         }
@@ -1036,6 +1060,15 @@ async def secret_rotation_daemon(
     logger.info(f"Secret rotation daemon started for client {name}")
 
     while not stopped:
+        # Skip secret rotation when client reconciliation is paused
+        if is_clients_paused():
+            logger.debug(
+                f"Secret rotation paused for client {name}: reconciliation paused"
+            )
+            if await stopped.wait(timeout=60):
+                break
+            continue
+
         try:
             # Read the secret to get the rotated-at annotation
             try:

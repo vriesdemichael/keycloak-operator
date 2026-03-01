@@ -30,6 +30,7 @@ ALLOW_OPERATOR_READ_LABEL = "vriesdemichael.github.io/keycloak-allow-operator-re
 PRESERVE_DATA_ANNOTATION = "vriesdemichael.github.io/keycloak-preserve-data"
 ISOLATION_ANNOTATION = "vriesdemichael.github.io/keycloak-isolation"
 ALLOWED_NAMESPACES_ANNOTATION = "vriesdemichael.github.io/keycloak-allowed-namespaces"
+ANNOTATION_RECONCILE_FORCE = "keycloak-operator/reconcile-force"
 
 # Component type constants
 COMPONENT_KEYCLOAK = "keycloak"
@@ -46,12 +47,14 @@ PHASE_FAILED = "Failed"
 PHASE_UPDATING = "Updating"
 PHASE_RECONCILING = "Reconciling"
 PHASE_DEGRADED = "Degraded"
+PHASE_PAUSED = "Paused"
 
 # Condition type constants (following Kubernetes conventions)
 CONDITION_READY = "Ready"
 CONDITION_AVAILABLE = "Available"
 CONDITION_PROGRESSING = "Progressing"
 CONDITION_RECONCILING = "Reconciling"
+CONDITION_RECONCILIATION_PAUSED = "ReconciliationPaused"
 
 # Condition status constants
 CONDITION_TRUE = "True"

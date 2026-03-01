@@ -240,6 +240,35 @@ class Settings(BaseSettings):
         description="Maximum jitter in seconds for reconciliation scheduling",
     )
 
+    # Reconciliation pause controls
+    # When enabled, the operator will skip reconciliation for the specified
+    # resource type(s) and set status to Paused. Delete handlers always proceed.
+    reconcile_pause_keycloak: bool = Field(
+        default=False,
+        validation_alias="RECONCILE_PAUSE_KEYCLOAK",
+        description="Pause reconciliation for Keycloak CRs. "
+        "Useful during Keycloak upgrades or maintenance windows.",
+    )
+    reconcile_pause_realms: bool = Field(
+        default=False,
+        validation_alias="RECONCILE_PAUSE_REALMS",
+        description="Pause reconciliation for KeycloakRealm CRs. "
+        "Useful during Keycloak upgrades or maintenance windows.",
+    )
+    reconcile_pause_clients: bool = Field(
+        default=False,
+        validation_alias="RECONCILE_PAUSE_CLIENTS",
+        description="Pause reconciliation for KeycloakClient CRs. "
+        "Useful during Keycloak upgrades or maintenance windows.",
+    )
+    reconcile_pause_message: str = Field(
+        default="Reconciliation paused by operator configuration",
+        validation_alias="RECONCILE_PAUSE_MESSAGE",
+        description="Status message to set on resources when reconciliation is paused. "
+        "Override to communicate maintenance context, e.g. "
+        "'Maintenance window: Keycloak 25.0 upgrade in progress'.",
+    )
+
     # Drift detection
     drift_detection_enabled: bool = Field(
         default=True,
