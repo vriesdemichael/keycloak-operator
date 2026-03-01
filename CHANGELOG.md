@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.7.27](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.26...operator-image-v0.7.27) (2026-03-01)
+
+
+### Bug Fixes
+
+* **operator-image:** bump nltk from 3.9.2 to 3.9.3 ([2d7037d](https://github.com/vriesdemichael/keycloak-operator/commit/2d7037d7efddebc067c7cc2c359d5c7ff4064c07))
+* **operator-image:** bump pydantic-settings in the patch-updates group ([a3fc1f4](https://github.com/vriesdemichael/keycloak-operator/commit/a3fc1f4b808f0d05f6965e24aef651833a7fd83a))
+
 ## [0.7.26](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.25...operator-image-v0.7.26) (2026-02-28)
 
 
