@@ -1156,6 +1156,7 @@ def create_admin_secret(
     namespace: str,
     username: str = "admin",
     password: str | None = None,
+    annotations: dict[str, str] | None = None,
 ) -> client.V1Secret:
     """
     Create a secret containing Keycloak admin credentials.
@@ -1165,6 +1166,7 @@ def create_admin_secret(
         namespace: Target namespace
         username: Admin username
         password: Admin password (generated if not provided)
+        annotations: Optional annotations to add to the secret
 
     Returns:
         Created Secret object
@@ -1188,17 +1190,21 @@ def create_admin_secret(
         "password": base64.b64encode(password.encode()).decode(),
     }
 
+    secret_metadata = client.V1ObjectMeta(
+        name=secret_name,
+        namespace=namespace,
+        labels={
+            "vriesdemichael.github.io/keycloak-instance": name,
+            "vriesdemichael.github.io/keycloak-component": "admin-credentials",
+        },
+    )
+    if annotations:
+        secret_metadata.annotations = annotations
+
     secret = client.V1Secret(
         api_version="v1",
         kind="Secret",
-        metadata=client.V1ObjectMeta(
-            name=secret_name,
-            namespace=namespace,
-            labels={
-                "vriesdemichael.github.io/keycloak-instance": name,
-                "vriesdemichael.github.io/keycloak-component": "admin-credentials",
-            },
-        ),
+        metadata=secret_metadata,
         type="Opaque",
         data=secret_data,
     )

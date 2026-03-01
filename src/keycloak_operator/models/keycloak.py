@@ -6,7 +6,7 @@ and status. These models ensure proper validation and provide IDE support
 for the operator development.
 """
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
 from keycloak_operator.models.types import (
     KubernetesMetadata,
@@ -327,6 +327,20 @@ class KeycloakTracingConfig(BaseModel):
     )
 
 
+class KeycloakAdminConfig(BaseModel):
+    """
+    Configuration for Keycloak administrator credentials.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    existing_secret: str | None = Field(
+        None,
+        alias="existingSecret",
+        description="Name of an existing Kubernetes secret containing admin credentials (must contain 'username' and 'password' keys).",
+    )
+
+
 class KeycloakSpec(BaseModel):
     """
     Specification for a Keycloak instance.
@@ -370,6 +384,18 @@ class KeycloakSpec(BaseModel):
     # Database
     database: KeycloakDatabaseConfig = Field(
         default_factory=KeycloakDatabaseConfig, description="Database configuration"
+    )
+
+    # Admin configuration
+    admin: KeycloakAdminConfig = Field(
+        default_factory=KeycloakAdminConfig,
+        validation_alias=AliasChoices("admin", "admin_access"),
+        description="Admin credentials configuration",
+    )
+    admin_access: KeycloakAdminConfig | None = Field(
+        None,
+        alias="admin_access",
+        description="Legacy admin credentials configuration (backward-compatible alias for .spec.admin).",
     )
 
     # Environment and configuration

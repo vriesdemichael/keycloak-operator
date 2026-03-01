@@ -317,12 +317,6 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
         # 2. Backward compatibility / migration mapping:
 
-        # Older manifests (or tests) may still use 'admin_access' block instead of 'admin'.
-        # Provide a non-destructive alias if 'admin' not explicitly set.
-        if "admin_access" in spec and "admin" not in spec:
-            # Shallow copy to avoid mutating original reference captured by kopf
-            spec = {**spec, "admin": spec["admin_access"]}
-
         # Backward compatibility: legacy service.port -> service.http_port
         try:
             svc = spec.get("service") if isinstance(spec, dict) else None
@@ -1027,34 +1021,124 @@ class KeycloakInstanceReconciler(BaseReconciler):
             namespace: Resource namespace
         """
         self.logger.info(f"Ensuring admin access for {name}")
+        import base64
+
         from kubernetes import client
         from kubernetes.client.rest import ApiException
 
+        from ..errors.operator_errors import ConfigurationError
         from ..utils.kubernetes import create_admin_secret
 
         admin_secret_name = f"{name}-admin-credentials"
         core_api = client.CoreV1Api(self.kubernetes_client)
 
+        existing_secret_name = spec.admin.existing_secret
+        manual_username = "admin"
+        manual_password = None
+        annotations = {}
+
+        if existing_secret_name:
+            # Validate existing secret
+            try:
+                manual_secret = core_api.read_namespaced_secret(
+                    name=existing_secret_name, namespace=namespace
+                )
+                if (
+                    not manual_secret.data
+                    or "username" not in manual_secret.data
+                    or "password" not in manual_secret.data
+                ):
+                    raise ConfigurationError(
+                        f"Existing secret {existing_secret_name} must contain 'username' and 'password' keys."
+                    )
+                manual_username = base64.b64decode(
+                    manual_secret.data["username"]
+                ).decode("utf-8")
+                manual_password = base64.b64decode(
+                    manual_secret.data["password"]
+                ).decode("utf-8")
+
+                if not manual_username or not manual_password:
+                    raise ConfigurationError(
+                        f"Existing secret {existing_secret_name} must have non-empty 'username' and 'password' values."
+                    )
+
+                annotations["vriesdemichael.github.io/credential-source"] = (
+                    f"external:{existing_secret_name}"
+                )
+                annotations["vriesdemichael.github.io/rotation-enabled"] = "false"
+            except ApiException as e:
+                if e.status == 404:
+                    raise ConfigurationError(
+                        f"Admin secret '{existing_secret_name}' not found in namespace '{namespace}'."
+                    ) from e
+                raise
+        else:
+            annotations["vriesdemichael.github.io/credential-source"] = "generated"
+            annotations["vriesdemichael.github.io/rotation-enabled"] = "true"
+
+        # Check if the proxy secret exists and needs updating
         try:
-            core_api.read_namespaced_secret(name=admin_secret_name, namespace=namespace)
-            self.logger.info(
-                f"Admin secret {admin_secret_name} already exists - reusing credentials"
+            current_proxy = core_api.read_namespaced_secret(
+                name=admin_secret_name, namespace=namespace
             )
+            needs_update = False
+
+            # If we are using an existing secret, ensure the proxy matches it exactly
+            if existing_secret_name:
+                current_user = (
+                    base64.b64decode(current_proxy.data.get("username", b"")).decode(
+                        "utf-8"
+                    )
+                    if current_proxy.data
+                    else ""
+                )
+                current_pass = (
+                    base64.b64decode(current_proxy.data.get("password", b"")).decode(
+                        "utf-8"
+                    )
+                    if current_proxy.data
+                    else ""
+                )
+                if current_user != manual_username or current_pass != manual_password:
+                    needs_update = True
+
+            # Ensure annotations are set correctly
+            current_annotations = current_proxy.metadata.annotations or {}
+            for k, v in annotations.items():
+                if current_annotations.get(k) != v:
+                    needs_update = True
+                    break
+
+            if needs_update:
+                self.logger.info(f"Updating admin proxy secret {admin_secret_name}")
+                if existing_secret_name and manual_password is not None:
+                    if current_proxy.data is None:
+                        current_proxy.data = {}
+                    current_proxy.data["username"] = base64.b64encode(
+                        manual_username.encode()
+                    ).decode("utf-8")
+                    current_proxy.data["password"] = base64.b64encode(
+                        manual_password.encode()
+                    ).decode("utf-8")
+                if current_proxy.metadata.annotations is None:
+                    current_proxy.metadata.annotations = {}
+                current_proxy.metadata.annotations.update(annotations)
+                core_api.replace_namespaced_secret(
+                    name=admin_secret_name, namespace=namespace, body=current_proxy
+                )
+            else:
+                self.logger.info(f"Admin secret {admin_secret_name} already up to date")
+
         except ApiException as e:
             if e.status == 404:
-                # Admin username is always 'admin' (auto-generated credentials)
-                username = "admin"
-
-                self.logger.info(
-                    f"Generating new admin secret {admin_secret_name} for user {username}"
-                )
-                admin_secret = create_admin_secret(
+                self.logger.info(f"Creating new admin secret {admin_secret_name}")
+                create_admin_secret(
                     name=name,
                     namespace=namespace,
-                    username=username,
-                )
-                self.logger.info(
-                    f"Created admin secret with auto-generated password: {admin_secret.metadata.name}"
+                    username=manual_username,
+                    password=manual_password,
+                    annotations=annotations,
                 )
             else:
                 raise

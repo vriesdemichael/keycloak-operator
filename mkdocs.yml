@@ -122,8 +122,10 @@ nav:
       - Migration Toolkit: how-to/migration-toolkit.md
       - SMTP Configuration: how-to/smtp-configuration.md
       - High Availability: how-to/ha-deployment.md
-      - Backup & Restore: how-to/backup-restore.md
-  - Operations:
+  - Operations & Day 2:
+      - Day Two Operations: operations/day-two.md
+      - Secret Management: operations/secret-management.md
+      - Backup & Restore: operations/backup-restore.md
       - Troubleshooting: operations/troubleshooting.md
       - Migration & Upgrade: operations/migration.md
   - Reference:
