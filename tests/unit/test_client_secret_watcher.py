@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from keycloak_operator.constants import ANNOTATION_RECONCILE_FORCE
 from keycloak_operator.handlers.client import monitor_client_secrets
 
 
@@ -64,8 +65,7 @@ async def test_monitor_client_secrets_deleted():
         assert call_params["plural"] == "keycloakclients"
         assert call_params["name"] == "my-client"
         assert (
-            "keycloak-operator/force-reconcile"
-            in call_params["body"]["metadata"]["annotations"]
+            ANNOTATION_RECONCILE_FORCE in call_params["body"]["metadata"]["annotations"]
         )
 
 
