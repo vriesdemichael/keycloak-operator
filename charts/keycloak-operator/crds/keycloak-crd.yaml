@@ -318,6 +318,7 @@ spec:
                 - Failed
                 - Updating
                 - Degraded
+                - Paused
               message:
                 type: string
                 description: Human-readable status message

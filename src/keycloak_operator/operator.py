@@ -276,11 +276,16 @@ async def drift_detection_timer(**kwargs) -> None:
         DriftDetectionConfig,
         DriftDetector,
     )
+    from keycloak_operator.utils.pause import is_clients_paused, is_realms_paused
 
     # Check if drift detection is enabled
     config = DriftDetectionConfig.from_env()
     if not config.enabled:
         return  # Silently skip if disabled
+
+    # Skip drift detection if all relevant resource types are paused
+    if is_realms_paused() and is_clients_paused():
+        return  # Silently skip — no reconciliation means no point detecting drift
 
     logger = logging.getLogger(__name__)
     logger.info("Starting periodic drift detection scan")

@@ -398,6 +398,32 @@
               "type": "number",
               "description": "Random jitter added to reconciliation scheduling (seconds)",
               "default": 10.0
+            },
+            "pause": {
+              "type": "object",
+              "description": "Reconciliation pause controls. When enabled, the operator skips reconciliation for the specified resource type(s) and sets status to Paused. Delete handlers always proceed. Requires operator restart.",
+              "properties": {
+                "keycloak": {
+                  "type": "boolean",
+                  "description": "Pause reconciliation for Keycloak instance CRs",
+                  "default": false
+                },
+                "realms": {
+                  "type": "boolean",
+                  "description": "Pause reconciliation for KeycloakRealm CRs",
+                  "default": false
+                },
+                "clients": {
+                  "type": "boolean",
+                  "description": "Pause reconciliation for KeycloakClient CRs",
+                  "default": false
+                },
+                "message": {
+                  "type": "string",
+                  "description": "Custom status message when reconciliation is paused. Override to communicate maintenance context.",
+                  "default": "Reconciliation paused by operator configuration"
+                }
+              }
             }
           }
         },

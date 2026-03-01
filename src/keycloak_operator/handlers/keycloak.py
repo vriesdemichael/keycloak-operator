@@ -41,6 +41,7 @@ from keycloak_operator.utils.kubernetes import (
     get_kubernetes_client,
     get_pod_resource_usage,
 )
+from keycloak_operator.utils.pause import get_pause_message, is_keycloak_paused
 from keycloak_operator.utils.validation import get_health_port
 
 logger = logging.getLogger(__name__)
@@ -242,6 +243,20 @@ async def ensure_keycloak_instance(
 
     logger.info(f"Ensuring Keycloak instance {name} in namespace {namespace}")
 
+    # Check if reconciliation is paused for Keycloak CRs
+    if is_keycloak_paused():
+        pause_message = get_pause_message()
+        logger.info(f"Reconciliation paused for Keycloak {name}: {pause_message}")
+        reconciler = KeycloakInstanceReconciler(
+            rate_limiter=memo.rate_limiter, operator_namespace=namespace
+        )
+        status_wrapper = StatusWrapper(patch.status)
+        generation = kwargs.get("meta", {}).get("generation", 0)
+        reconciler.update_status_paused(
+            cast(StatusProtocol, status_wrapper), pause_message, generation
+        )
+        return None
+
     # Note: Finalizer is managed by Kopf via settings.persistence.finalizer
     # configured in operator.py startup handler
 
@@ -312,6 +327,20 @@ async def update_keycloak_instance(
         return None
 
     logger.info(f"Updating Keycloak instance {name} in namespace {namespace}")
+
+    # Check if reconciliation is paused for Keycloak CRs
+    if is_keycloak_paused():
+        pause_message = get_pause_message()
+        logger.info(f"Reconciliation paused for Keycloak {name}: {pause_message}")
+        reconciler = KeycloakInstanceReconciler(
+            rate_limiter=memo.rate_limiter, operator_namespace=namespace
+        )
+        status_wrapper = StatusWrapper(patch.status)
+        generation = kwargs.get("meta", {}).get("generation", 0)
+        reconciler.update_status_paused(
+            cast(StatusProtocol, status_wrapper), pause_message, generation
+        )
+        return None
 
     # Use patch.status for updates instead of wrapping the read-only status dict
     # Add jitter to prevent thundering herd
@@ -489,6 +518,7 @@ async def monitor_keycloak_health(
         # Unknown/Pending = not yet reconciled
         # Provisioning/Updating/Reconciling = active reconciliation in progress
         # Failed = terminal state, no point health-checking
+        # Paused = reconciliation intentionally paused by operator configuration
         if current_phase not in (
             "Failed",
             "Pending",
@@ -496,6 +526,7 @@ async def monitor_keycloak_health(
             "Provisioning",
             "Updating",
             "Reconciling",
+            "Paused",
         ):
             await _run_keycloak_health_check(
                 spec, name, namespace, status, patch, meta, memo

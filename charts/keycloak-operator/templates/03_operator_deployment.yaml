@@ -115,6 +115,14 @@ spec:
           value: {{ .Values.operator.circuitBreaker.apiTimeout | quote }}
         - name: RECONCILE_JITTER_MAX_SECONDS
           value: {{ .Values.operator.reconciliation.jitterMaxSeconds | quote }}
+        - name: RECONCILE_PAUSE_KEYCLOAK
+          value: {{ .Values.operator.reconciliation.pause.keycloak | quote }}
+        - name: RECONCILE_PAUSE_REALMS
+          value: {{ .Values.operator.reconciliation.pause.realms | quote }}
+        - name: RECONCILE_PAUSE_CLIENTS
+          value: {{ .Values.operator.reconciliation.pause.clients | quote }}
+        - name: RECONCILE_PAUSE_MESSAGE
+          value: {{ .Values.operator.reconciliation.pause.message | quote }}
         - name: DRIFT_DETECTION_ENABLED
           value: {{ .Values.monitoring.driftDetection.enabled | quote }}
         - name: DRIFT_DETECTION_INTERVAL_SECONDS
