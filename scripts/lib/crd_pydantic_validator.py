@@ -186,6 +186,11 @@ class CrdPydanticValidator:
         )
         crd_paths = get_all_property_paths(crd_schema, normalize_to_camel=False)
 
+        # Ignore legacy admin_access paths which are intentionally snake_case in CRD
+        # but get camelCased by the validator
+        pydantic_paths = {p for p in pydantic_paths if not p.startswith("adminAccess")}
+        crd_paths = {p for p in crd_paths if not p.startswith("admin_access")}
+
         # Find mismatches
         in_pydantic_only = pydantic_paths - crd_paths
         in_crd_only = crd_paths - pydantic_paths

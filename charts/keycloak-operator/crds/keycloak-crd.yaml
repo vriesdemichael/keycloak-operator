@@ -37,6 +37,20 @@ spec:
                 description: Number of Keycloak replicas
                 minimum: 1
                 default: 1
+              admin:
+                type: object
+                description: Admin credentials configuration
+                properties:
+                  existingSecret:
+                    type: string
+                    description: Name of an existing Kubernetes secret containing admin credentials (must contain 'username' and 'password' keys).
+              admin_access:
+                type: object
+                description: Legacy admin credentials configuration (backward-compatible alias for .spec.admin).
+                properties:
+                  existingSecret:
+                    type: string
+                    description: Name of an existing Kubernetes secret containing admin credentials (must contain 'username' and 'password' keys).
               database:
                 type: object
                 description: 'Database configuration. For CloudNativePG clusters, use standard PostgreSQL connection details
