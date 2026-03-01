@@ -299,11 +299,11 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../troubleshooting/" class="md-tabs__link">
+        <a href="../day-two/" class="md-tabs__link">
           
   
   
-  Operations
+  Operations & Day 2
 
         </a>
       </li>
@@ -1085,34 +1085,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../how-to/backup-restore/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Backup & Restore
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1155,7 +1127,7 @@
   <span class="md-ellipsis">
     
   
-    Operations
+    Operations & Day 2
   
 
     
@@ -1171,11 +1143,95 @@
             <span class="md-nav__icon md-icon"></span>
             
   
-    Operations
+    Operations & Day 2
   
 
           </label>
           <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../day-two/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Day Two Operations
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../secret-management/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Secret Management
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../backup-restore/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Backup & Restore
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
             
               
                 
@@ -5588,7 +5644,7 @@
 </span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1"># Verify resources restored</span>
 </span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak,keycloakrealm,keycloakclient<span class="w"> </span>--all-namespaces
 </span></code></pre></div>
-<p><strong>Restore Database</strong> (see <a href="../../how-to/backup-restore/">Backup &amp; Restore Guide</a>):</p>
+<p><strong>Restore Database</strong> (see <a href="../how-to/backup-restore.md">Backup &amp; Restore Guide</a>):</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Restore from specific backup</span>
 </span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>kubectl<span class="w"> </span>cnpg<span class="w"> </span>restore<span class="w"> </span>keycloak-db<span class="w"> </span><span class="se">\</span>
 </span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--backup<span class="w"> </span>&lt;backup-name&gt;<span class="w"> </span><span class="se">\</span>
@@ -5666,7 +5722,7 @@
 <h2 id="related-documentation">Related Documentation<a class="headerlink" href="#related-documentation" title="Permanent link">&para;</a></h2>
 <ul>
 <li><a href="../../how-to/end-to-end-setup/">End-to-End Setup Guide</a></li>
-<li><a href="../../how-to/backup-restore/">Backup &amp; Restore Guide</a></li>
+<li><a href="../how-to/backup-restore.md">Backup &amp; Restore Guide</a></li>
 <li><a href="../../how-to/export-realms/">Realm Export Guide</a></li>
 <li><a href="../troubleshooting/">Troubleshooting Guide</a></li>
 <li><a href="../../concepts/security/">Security Model</a></li>

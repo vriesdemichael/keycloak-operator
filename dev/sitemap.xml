@@ -409,10 +409,6 @@
          <lastmod>2026-03-01</lastmod>
     </url>
     <url>
-         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/how-to/backup-restore/</loc>
-         <lastmod>2026-03-01</lastmod>
-    </url>
-    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/how-to/database-setup/</loc>
          <lastmod>2026-03-01</lastmod>
     </url>
@@ -441,11 +437,19 @@
          <lastmod>2026-03-01</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/operations/backup-restore/</loc>
+         <lastmod>2026-03-01</lastmod>
+    </url>
+    <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/operations/day-two/</loc>
+         <lastmod>2026-03-01</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/operations/migration/</loc>
          <lastmod>2026-03-01</lastmod>
     </url>
     <url>
-         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/operations/secret-rotation/</loc>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/operations/secret-management/</loc>
          <lastmod>2026-03-01</lastmod>
     </url>
     <url>
