@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.9.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.8.0...operator-image-v0.9.0) (2026-03-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **operator:** KeycloakDatabaseConfig.host and .database fields are now optional (previously required). Existing CRs with flat host/database fields continue to work via legacy tier detection.
+
+### Features
+
+* **operator:** add blue-green Phase 1 — tiered DB config, maintenance mode, cache isolation ([4414c41](https://github.com/vriesdemichael/keycloak-operator/commit/4414c417ddaf96e67ef4af047888c07e97b270fe))
+
+
+### Bug Fixes
+
+* **operator:** address PR [#631](https://github.com/vriesdemichael/keycloak-operator/issues/631) review comments — input validation and robustness ([94bfde5](https://github.com/vriesdemichael/keycloak-operator/commit/94bfde5121368364098658aa291bc3a4de9bf0db))
+
 ## [0.8.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.28...operator-image-v0.8.0) (2026-03-02)
 
 
