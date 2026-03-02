@@ -24,10 +24,8 @@ spec:
   {{- if .Values.keycloak.database.cnpg.enabled }}
   database:
     type: {{ .Values.keycloak.database.type }}
-    host: {{ .Values.keycloak.database.cnpg.clusterName }}-rw
-    port: 5432
-    database: app
-    credentialsSecret: {{ .Values.keycloak.database.cnpg.clusterName }}-app
+    cnpg:
+      clusterName: {{ .Values.keycloak.database.cnpg.clusterName }}
   {{- else }}
   database:
     type: {{ .Values.keycloak.database.type }}
@@ -38,6 +36,30 @@ spec:
     passwordSecret:
       name: {{ .Values.keycloak.database.passwordSecret.name }}
       key: {{ .Values.keycloak.database.passwordSecret.key }}
+  {{- end }}
+
+  {{- if .Values.keycloak.maintenanceMode }}
+  {{- if .Values.keycloak.maintenanceMode.enabled }}
+  maintenanceMode:
+    enabled: true
+    mode: {{ .Values.keycloak.maintenanceMode.mode | default "full-block" }}
+    {{- with .Values.keycloak.maintenanceMode.excludePaths }}
+    excludePaths:
+      {{- toYaml . | nindent 6 }}
+    {{- end }}
+  {{- end }}
+  {{- end }}
+
+  {{- if .Values.keycloak.cacheIsolation }}
+  {{- if or .Values.keycloak.cacheIsolation.clusterName .Values.keycloak.cacheIsolation.autoSuffix }}
+  cacheIsolation:
+    {{- with .Values.keycloak.cacheIsolation.clusterName }}
+    clusterName: {{ . }}
+    {{- end }}
+    {{- if .Values.keycloak.cacheIsolation.autoSuffix }}
+    autoSuffix: true
+    {{- end }}
+  {{- end }}
   {{- end }}
 
   {{- if .Values.keycloak.ingress.enabled }}

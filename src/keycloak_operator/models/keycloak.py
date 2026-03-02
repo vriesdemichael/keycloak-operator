@@ -130,12 +130,168 @@ class KeycloakResourceRequirements(BaseModel):
     )
 
 
+class CnpgDatabaseConfig(BaseModel):
+    """
+    Tier 1: CloudNativePG-managed database configuration (ADR-088).
+
+    When using CNPG, the operator resolves connection details from the
+    CNPG Cluster CR automatically. Users only need to specify the cluster
+    name. This tier supports automated backup via the CNPG Backup API.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    cluster_name: str = Field(
+        ...,
+        alias="clusterName",
+        description="Name of the CNPG Cluster resource",
+    )
+    namespace: str | None = Field(
+        None,
+        description="Namespace of the CNPG Cluster (defaults to Keycloak namespace)",
+    )
+
+
+class ManagedDatabaseConfig(BaseModel):
+    """
+    Tier 2: Generic managed PostgreSQL database configuration (ADR-088).
+
+    For databases where the operator has connection access but does not
+    manage the database lifecycle. Supports backup via VolumeSnapshot
+    (Phase 2).
+    """
+
+    model_config = {"populate_by_name": True}
+
+    host: str = Field(..., description="Database host")
+    port: int | None = Field(
+        None, description="Database port (defaults to 5432 for postgresql)"
+    )
+    database: str = Field(..., description="Database name")
+    username: str | None = Field(None, description="Database username")
+    password_secret: SecretReference | None = Field(
+        None,
+        alias="passwordSecret",
+        description="Secret reference for database password",
+    )
+    credentials_secret: str | None = Field(
+        None,
+        alias="credentialsSecret",
+        description="Kubernetes secret name with database credentials",
+    )
+    connection_params: dict[str, str] = Field(
+        default_factory=dict,
+        alias="connectionParams",
+        description="Additional database connection parameters",
+    )
+    connection_pool: ConnectionPoolConfig = Field(
+        default_factory=ConnectionPoolConfig,
+        alias="connectionPool",
+        description="Database connection pool configuration",
+    )
+    ssl_mode: str = Field(
+        "require", alias="sslMode", description="SSL mode for database connections"
+    )
+
+    @field_validator("port")
+    @classmethod
+    def validate_port(cls, v: int | None) -> int | None:
+        if v is not None and (v < 1 or v > 65535):
+            raise ValueError("Port must be between 1 and 65535")
+        return v
+
+    @field_validator("ssl_mode")
+    @classmethod
+    def validate_ssl_mode(cls, v: str) -> str:
+        valid_modes = [
+            "disable",
+            "allow",
+            "prefer",
+            "require",
+            "verify-ca",
+            "verify-full",
+        ]
+        if v not in valid_modes:
+            raise ValueError(f"SSL mode must be one of {valid_modes}")
+        return v
+
+
+class ExternalDatabaseConfig(BaseModel):
+    """
+    Tier 3: Externally managed database configuration (ADR-088).
+
+    For databases fully managed outside the operator's control. The operator
+    can connect but cannot perform backups. During upgrades, a manual gate
+    (annotation-based confirmation) is required.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    host: str = Field(..., description="Database host")
+    port: int | None = Field(
+        None, description="Database port (defaults to 5432 for postgresql)"
+    )
+    database: str = Field(..., description="Database name")
+    username: str | None = Field(None, description="Database username")
+    password_secret: SecretReference | None = Field(
+        None,
+        alias="passwordSecret",
+        description="Secret reference for database password",
+    )
+    credentials_secret: str | None = Field(
+        None,
+        alias="credentialsSecret",
+        description="Kubernetes secret name with database credentials",
+    )
+    connection_params: dict[str, str] = Field(
+        default_factory=dict,
+        alias="connectionParams",
+        description="Additional database connection parameters",
+    )
+    connection_pool: ConnectionPoolConfig = Field(
+        default_factory=ConnectionPoolConfig,
+        alias="connectionPool",
+        description="Database connection pool configuration",
+    )
+    ssl_mode: str = Field(
+        "require", alias="sslMode", description="SSL mode for database connections"
+    )
+
+    @field_validator("port")
+    @classmethod
+    def validate_port(cls, v: int | None) -> int | None:
+        if v is not None and (v < 1 or v > 65535):
+            raise ValueError("Port must be between 1 and 65535")
+        return v
+
+    @field_validator("ssl_mode")
+    @classmethod
+    def validate_ssl_mode(cls, v: str) -> str:
+        valid_modes = [
+            "disable",
+            "allow",
+            "prefer",
+            "require",
+            "verify-ca",
+            "verify-full",
+        ]
+        if v not in valid_modes:
+            raise ValueError(f"SSL mode must be one of {valid_modes}")
+        return v
+
+
 class KeycloakDatabaseConfig(BaseModel):
     """
     Database configuration for Keycloak instance.
 
-    Production-ready configuration that enforces external database usage.
-    For CloudNativePG clusters, use standard PostgreSQL connection details.
+    Supports three tiers (ADR-088):
+    - cnpg: CloudNativePG-managed (Tier 1) — operator resolves connection from CNPG Cluster
+    - managed: Generic PostgreSQL (Tier 2) — operator has direct connection access
+    - external: Externally managed (Tier 3) — operator connects but cannot back up
+
+    Legacy flat fields are preserved for backward compatibility. When none of
+    the tiered fields are set, the flat fields are used and the tier is "legacy"
+    (treated as external for upgrade purposes).
     """
 
     model_config = {"populate_by_name": True}
@@ -144,12 +300,26 @@ class KeycloakDatabaseConfig(BaseModel):
         ..., description="Database type (no default - must be explicitly specified)"
     )
 
-    # Database connection details (all required)
-    host: str = Field(..., description="Database host")
+    # Tiered configuration (ADR-088) — exactly one should be set, or none for legacy
+    cnpg: CnpgDatabaseConfig | None = Field(
+        None,
+        description="Tier 1: CloudNativePG-managed database (ADR-088)",
+    )
+    managed: ManagedDatabaseConfig | None = Field(
+        None,
+        description="Tier 2: Generic managed PostgreSQL database (ADR-088)",
+    )
+    external: ExternalDatabaseConfig | None = Field(
+        None,
+        description="Tier 3: Externally managed database (ADR-088)",
+    )
+
+    # Legacy flat fields (backward compatibility — used when no tier is specified)
+    host: str | None = Field(None, description="Database host")
     port: int | None = Field(
         None, description="Database port (auto-detected if not specified)"
     )
-    database: str = Field(..., description="Database name")
+    database: str | None = Field(None, description="Database name")
     username: str | None = Field(None, description="Database username")
 
     # Secret management options
@@ -184,9 +354,114 @@ class KeycloakDatabaseConfig(BaseModel):
         description="Database migration strategy (auto, manual, skip)",
     )
 
+    @property
+    def tier(self) -> str:
+        """Return the database tier: 'cnpg', 'managed', 'external', or 'legacy'."""
+        if self.cnpg is not None:
+            return "cnpg"
+        if self.managed is not None:
+            return "managed"
+        if self.external is not None:
+            return "external"
+        return "legacy"
+
+    @property
+    def effective_host(self) -> str | None:
+        """Return the effective database host based on tier."""
+        if self.cnpg is not None:
+            # CNPG: host is resolved at runtime from the Cluster CR
+            return f"{self.cnpg.cluster_name}-rw"
+        if self.managed is not None:
+            return self.managed.host
+        if self.external is not None:
+            return self.external.host
+        return self.host
+
+    @property
+    def effective_port(self) -> int | None:
+        """Return the effective database port based on tier."""
+        if self.cnpg is not None:
+            return 5432
+        if self.managed is not None:
+            return self.managed.port
+        if self.external is not None:
+            return self.external.port
+        return self.port
+
+    @property
+    def effective_database(self) -> str | None:
+        """Return the effective database name based on tier."""
+        if self.cnpg is not None:
+            return "app"  # CNPG default database name
+        if self.managed is not None:
+            return self.managed.database
+        if self.external is not None:
+            return self.external.database
+        return self.database
+
+    @property
+    def effective_username(self) -> str | None:
+        """Return the effective database username based on tier."""
+        if self.cnpg is not None:
+            return None  # CNPG credentials come from auto-generated secret
+        if self.managed is not None:
+            return self.managed.username
+        if self.external is not None:
+            return self.external.username
+        return self.username
+
+    @property
+    def effective_password_secret(self) -> "SecretReference | None":
+        """Return the effective password secret based on tier."""
+        if self.cnpg is not None:
+            return None  # CNPG credentials come from credentials_secret
+        if self.managed is not None:
+            return self.managed.password_secret
+        if self.external is not None:
+            return self.external.password_secret
+        return self.password_secret
+
+    @property
+    def effective_credentials_secret(self) -> str | None:
+        """Return the effective credentials secret based on tier."""
+        if self.cnpg is not None:
+            return f"{self.cnpg.cluster_name}-app"
+        if self.managed is not None:
+            return self.managed.credentials_secret
+        if self.external is not None:
+            return self.external.credentials_secret
+        return self.credentials_secret
+
+    @property
+    def effective_ssl_mode(self) -> str:
+        """Return the effective SSL mode based on tier."""
+        if self.managed is not None:
+            return self.managed.ssl_mode
+        if self.external is not None:
+            return self.external.ssl_mode
+        return self.ssl_mode
+
+    @property
+    def effective_connection_params(self) -> dict[str, str]:
+        """Return the effective connection params based on tier."""
+        if self.managed is not None:
+            return self.managed.connection_params
+        if self.external is not None:
+            return self.external.connection_params
+        return self.connection_params
+
+    @property
+    def effective_connection_pool(self) -> "ConnectionPoolConfig":
+        """Return the effective connection pool config based on tier."""
+        if self.managed is not None:
+            return self.managed.connection_pool
+        if self.external is not None:
+            return self.external.connection_pool
+        return self.connection_pool
+
     @field_validator("type")
     @classmethod
-    def validate_database_type(cls, v):
+    def validate_database_type(cls, v: str) -> str:
         # Removed H2 from valid types - enforce external database usage
         valid_types = ["postgresql", "mysql", "mariadb", "oracle", "mssql"]
         if v not in valid_types:
@@ -198,14 +473,14 @@ class KeycloakDatabaseConfig(BaseModel):
 
     @field_validator("port")
     @classmethod
-    def validate_port(cls, v):
+    def validate_port(cls, v: int | None) -> int | None:
         if v is not None and (v < 1 or v > 65535):
             raise ValueError("Port must be between 1 and 65535")
         return v
 
     @field_validator("ssl_mode")
     @classmethod
-    def validate_ssl_mode(cls, v):
+    def validate_ssl_mode(cls, v: str) -> str:
         valid_modes = [
             "disable",
             "allow",
@@ -220,7 +495,7 @@ class KeycloakDatabaseConfig(BaseModel):
 
     @field_validator("migration_strategy")
     @classmethod
-    def validate_migration_strategy(cls, v):
+    def validate_migration_strategy(cls, v: str) -> str:
         valid_strategies = ["auto", "manual", "skip"]
         if v not in valid_strategies:
             raise ValueError(f"Migration strategy must be one of {valid_strategies}")
@@ -230,7 +505,44 @@ class KeycloakDatabaseConfig(BaseModel):
     def validate_database_configuration(self) -> "KeycloakDatabaseConfig":
         """Validate complete database configuration with production-ready requirements."""
 
-        # Set default ports based on database type
+        # Validate mutual exclusivity of tiered configs
+        tier_count = sum(
+            1 for t in [self.cnpg, self.managed, self.external] if t is not None
+        )
+        if tier_count > 1:
+            raise ValueError(
+                "Only one database tier may be specified: cnpg, managed, or external. "
+                "These are mutually exclusive (ADR-088)."
+            )
+
+        # CNPG tier requires postgresql type
+        if self.cnpg is not None and self.type != "postgresql":
+            raise ValueError(
+                f"CNPG database tier requires type 'postgresql'. Got '{self.type}'."
+            )
+
+        # If a tiered config is set, flat connection fields should not also be set
+        # (they will be resolved from the tier config)
+        if tier_count == 1 and self.host is not None:
+            raise ValueError(
+                "When using tiered database configuration (cnpg/managed/external), "
+                "do not set top-level 'host' field. Connection details come from the tier config."
+            )
+
+        # For legacy mode (no tier set), validate flat fields as before
+        if tier_count == 0:
+            if not self.host:
+                raise ValueError(
+                    "Database host is required. Either specify 'host' directly "
+                    "or use a tiered config (cnpg, managed, or external)."
+                )
+            if not self.database:
+                raise ValueError(
+                    "Database name is required. Either specify 'database' directly "
+                    "or use a tiered config (cnpg, managed, or external)."
+                )
+
+        # Set default ports based on database type (legacy mode only)
         default_ports = {
             "postgresql": 5432,
             "mysql": 3306,
@@ -239,19 +551,46 @@ class KeycloakDatabaseConfig(BaseModel):
             "mssql": 1433,
         }
 
-        if not self.port and self.type in default_ports:
+        if tier_count == 0 and not self.port and self.type in default_ports:
             object.__setattr__(self, "port", default_ports[self.type])
 
-        # Validate credential configuration
-        credential_sources = [
-            self.username,
-            self.credentials_secret,
-        ]
+        # Set default port on managed/external tier configs
+        if self.managed is not None and not self.managed.port:
+            object.__setattr__(self.managed, "port", default_ports.get(self.type))
+        if self.external is not None and not self.external.port:
+            object.__setattr__(self.external, "port", default_ports.get(self.type))
 
-        if not any(credential_sources):
+        # Validate credential configuration for legacy and managed/external tiers
+        if tier_count == 0:
+            credential_sources = [
+                self.username,
+                self.credentials_secret,
+            ]
+            if not any(credential_sources):
+                raise ValueError(
+                    "Database credentials must be specified via username/password or credentials_secret."
+                )
+
+        if (
+            self.managed is not None
+            and not self.managed.username
+            and not self.managed.credentials_secret
+        ):
             raise ValueError(
-                "Database credentials must be specified via username/password or credentials_secret."
+                "Managed database tier requires credentials: set username or credentialsSecret."
             )
+
+        if (
+            self.external is not None
+            and not self.external.username
+            and not self.external.credentials_secret
+        ):
+            raise ValueError(
+                "External database tier requires credentials: set username or credentialsSecret."
+            )
+
+        # CNPG credentials come from the CNPG Cluster CR (auto-generated secret)
+        # so no credential validation is needed for that tier.
 
         # Warn about security best practices
         if self.ssl_mode in ["disable", "allow"]:
@@ -292,6 +631,77 @@ class RealmCapacity(BaseModel):
         None,
         alias="capacityMessage",
         description="Message to show when capacity is reached",
+    )
+
+
+class MaintenanceMode(BaseModel):
+    """
+    Maintenance mode configuration for blue-green upgrades (ADR-088).
+
+    When enabled, the operator annotates the Keycloak ingress to block
+    or limit traffic before the old deployment is scaled down. This
+    ensures graceful connection draining during major version upgrades.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    enabled: bool = Field(
+        False,
+        description="Enable maintenance mode",
+    )
+    mode: str = Field(
+        "full-block",
+        description=(
+            "Maintenance mode type: 'read-only' allows GET/HEAD/OPTIONS, "
+            "'full-block' returns 503 for all requests."
+        ),
+    )
+    exclude_paths: list[str] = Field(
+        default_factory=lambda: [
+            "/health",
+            "/health/live",
+            "/health/ready",
+            "/health/started",
+        ],
+        alias="excludePaths",
+        description="Paths excluded from maintenance mode (always accessible)",
+    )
+
+    @field_validator("mode")
+    @classmethod
+    def validate_mode(cls, v: str) -> str:
+        valid_modes = ["read-only", "full-block"]
+        if v not in valid_modes:
+            raise ValueError(f"Maintenance mode must be one of {valid_modes}")
+        return v
+
+
+class CacheIsolation(BaseModel):
+    """
+    JGroups cache isolation configuration for blue-green upgrades (ADR-088).
+
+    Ensures old and new Keycloak versions form separate JGroups clusters
+    by using distinct cluster names and discovery service selectors. This
+    prevents cross-version cache poisoning during blue-green upgrades.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    cluster_name: str | None = Field(
+        None,
+        alias="clusterName",
+        description=(
+            "Explicit JGroups cluster name. When set, the discovery service "
+            "selector is scoped to pods with this cluster label."
+        ),
+    )
+    auto_suffix: bool = Field(
+        False,
+        alias="autoSuffix",
+        description=(
+            "Automatically append Keycloak version to the cluster name "
+            "to isolate caches between versions. Overridden by explicit clusterName."
+        ),
     )
 
 
@@ -472,6 +882,18 @@ class KeycloakSpec(BaseModel):
         None,
         alias="realmCapacity",
         description="Capacity management for realms",
+    )
+
+    # Blue-green upgrade support (ADR-088)
+    maintenance_mode: MaintenanceMode | None = Field(
+        None,
+        alias="maintenanceMode",
+        description="Maintenance mode for ingress traffic control during blue-green upgrades (ADR-088)",
+    )
+    cache_isolation: CacheIsolation | None = Field(
+        None,
+        alias="cacheIsolation",
+        description="JGroups cache isolation for blue-green upgrades (ADR-088)",
     )
 
     # OpenTelemetry tracing

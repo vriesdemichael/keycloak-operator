@@ -32,6 +32,13 @@ ISOLATION_ANNOTATION = "vriesdemichael.github.io/keycloak-isolation"
 ALLOWED_NAMESPACES_ANNOTATION = "vriesdemichael.github.io/keycloak-allowed-namespaces"
 ANNOTATION_RECONCILE_FORCE = "keycloak-operator/reconcile-force"
 
+# Maintenance mode annotations (ADR-088)
+MAINTENANCE_MODE_ANNOTATION = "vriesdemichael.github.io/maintenance-mode"
+MAINTENANCE_MODE_SNIPPET_ANNOTATION = "nginx.ingress.kubernetes.io/server-snippet"
+
+# Cache isolation labels (ADR-088)
+CACHE_CLUSTER_LABEL = "vriesdemichael.github.io/cache-cluster"
+
 # Component type constants
 COMPONENT_KEYCLOAK = "keycloak"
 COMPONENT_DATABASE = "database"

@@ -18,7 +18,12 @@ from typing import Any
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.constants import DEFAULT_KEYCLOAK_IMAGE
+from keycloak_operator.constants import (
+    CACHE_CLUSTER_LABEL,
+    DEFAULT_KEYCLOAK_IMAGE,
+    MAINTENANCE_MODE_ANNOTATION,
+    MAINTENANCE_MODE_SNIPPET_ANNOTATION,
+)
 from keycloak_operator.models.keycloak import KeycloakSpec
 from keycloak_operator.settings import settings
 from keycloak_operator.utils.validation import (
@@ -239,6 +244,14 @@ def create_keycloak_deployment(
 
     # Build JAVA_OPTS_APPEND: JGroups DNS query + any user-specified JVM options
     java_opts_parts = [f"-Djgroups.dns.query={discovery_service_dns}"]
+
+    # Cache isolation: set explicit JGroups cluster name (ADR-088)
+    # This ensures old and new Keycloak versions form separate clusters
+    # during blue-green upgrades, preventing cross-version cache poisoning.
+    cache_cluster_name = _resolve_cache_cluster_name(name, spec)
+    if cache_cluster_name:
+        java_opts_parts.append(f"-Djgroups.cluster.name={cache_cluster_name}")
+
     if spec.jvm_options:
         java_opts_parts.extend(spec.jvm_options)
 
@@ -246,7 +259,7 @@ def create_keycloak_deployment(
         [
             # Switch from UDP multicast to TCP with DNS discovery
             client.V1EnvVar(name="KC_CACHE_STACK", value="kubernetes"),
-            # JGroups peer discovery + custom JVM options from CRD spec
+            # JGroups peer discovery + cache isolation + custom JVM options from CRD spec
             client.V1EnvVar(
                 name="JAVA_OPTS_APPEND",
                 value=" ".join(java_opts_parts),
@@ -297,30 +310,34 @@ def create_keycloak_deployment(
         kc_db_type = db_type_mapping.get(spec.database.type, spec.database.type)
         env_vars.append(client.V1EnvVar(name="KC_DB", value=kc_db_type))
 
-        # Database connection details
-        if spec.database.host:
+        # Database connection details (using effective_* for tiered config support)
+        effective_host = spec.database.effective_host
+        if effective_host:
             env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_HOST", value=spec.database.host)
+                client.V1EnvVar(name="KC_DB_URL_HOST", value=effective_host)
             )
 
-        if spec.database.port:
+        effective_port = spec.database.effective_port
+        if effective_port:
             env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_PORT", value=str(spec.database.port))
+                client.V1EnvVar(name="KC_DB_URL_PORT", value=str(effective_port))
             )
 
-        if spec.database.database:
+        effective_database = spec.database.effective_database
+        if effective_database:
             env_vars.append(
-                client.V1EnvVar(name="KC_DB_URL_DATABASE", value=spec.database.database)
+                client.V1EnvVar(name="KC_DB_URL_DATABASE", value=effective_database)
             )
 
-            if spec.database.username:
+            effective_username = spec.database.effective_username
+            if effective_username:
                 env_vars.append(
-                    client.V1EnvVar(name="KC_DB_USERNAME", value=spec.database.username)
+                    client.V1EnvVar(name="KC_DB_USERNAME", value=effective_username)
                 )
 
             # Database password from secret if specified (tolerate absence of attribute)
             # Derive password source precedence: explicit password_secret (legacy) -> credentials_secret -> none
-            password_secret = getattr(spec.database, "password_secret", None)
+            password_secret = spec.database.effective_password_secret
             if password_secret:
                 try:
                     secret_name = password_secret.name
@@ -341,9 +358,7 @@ def create_keycloak_deployment(
                     )
             else:
                 # credentials_secret is just a secret name storing username/password (username already handled separately if provided)
-                credentials_secret_name = getattr(
-                    spec.database, "credentials_secret", None
-                )
+                credentials_secret_name = spec.database.effective_credentials_secret
                 if credentials_secret_name:
                     env_vars.append(
                         client.V1EnvVar(
@@ -356,7 +371,7 @@ def create_keycloak_deployment(
                         )
                     )
                     # Also set username from credentials secret if not explicitly provided
-                    if not spec.database.username:
+                    if not spec.database.effective_username:
                         env_vars.append(
                             client.V1EnvVar(
                                 name="KC_DB_USERNAME",
@@ -371,7 +386,7 @@ def create_keycloak_deployment(
         # Configure database connection pool sizing
         # Pre-warming connections at startup avoids lazy initialization latency
         # during the first reconciliation wave
-        pool = spec.database.connection_pool
+        pool = spec.database.effective_connection_pool
         env_vars.extend(
             [
                 client.V1EnvVar(
@@ -458,14 +473,17 @@ def create_keycloak_deployment(
     )
 
     # Pod template
+    pod_labels = {
+        "app": "keycloak",
+        "vriesdemichael.github.io/keycloak-instance": name,
+        "vriesdemichael.github.io/keycloak-component": "server",
+    }
+    # Add cache cluster label for cache isolation (ADR-088)
+    if cache_cluster_name:
+        pod_labels[CACHE_CLUSTER_LABEL] = cache_cluster_name
+
     pod_template = client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(
-            labels={
-                "app": "keycloak",
-                "vriesdemichael.github.io/keycloak-instance": name,
-                "vriesdemichael.github.io/keycloak-component": "server",
-            }
-        ),
+        metadata=client.V1ObjectMeta(labels=pod_labels),
         spec=client.V1PodSpec(
             containers=[container],
             security_context=client.V1PodSecurityContext(
@@ -608,10 +626,45 @@ def create_keycloak_service(
         raise
 
 
+def _resolve_cache_cluster_name(name: str, spec: KeycloakSpec | None) -> str | None:
+    """
+    Resolve the effective JGroups cache cluster name from the spec (ADR-088).
+
+    Resolution order:
+    1. Explicit ``cache_isolation.cluster_name`` takes priority.
+    2. ``cache_isolation.auto_suffix=True`` appends the image tag (version)
+       to the Keycloak instance name.
+    3. Otherwise returns None (no cache isolation).
+
+    Args:
+        name: Keycloak instance name (used as base for auto-suffix)
+        spec: Keycloak specification (may be None)
+
+    Returns:
+        Cluster name string, or None when cache isolation is not configured.
+    """
+    if spec is None or spec.cache_isolation is None:
+        return None
+
+    ci = spec.cache_isolation
+
+    if ci.cluster_name:
+        return ci.cluster_name
+
+    if ci.auto_suffix:
+        # Derive version suffix from image tag
+        image = spec.image or DEFAULT_KEYCLOAK_IMAGE
+        tag = image.rsplit(":", 1)[-1] if ":" in image else "latest"
+        return f"{name}-{tag}"
+
+    return None
+
+
 def create_keycloak_discovery_service(
     name: str,
     namespace: str,
     k8s_client: client.ApiClient,
+    spec: KeycloakSpec | None = None,
 ) -> client.V1Service:
     """
     Create headless Kubernetes Service for JGroups peer discovery.
@@ -619,10 +672,16 @@ def create_keycloak_discovery_service(
     This headless service (clusterIP: None) enables Keycloak clustering by
     creating DNS A-records for each pod IP, allowing JGroups DNS_PING discovery.
 
+    When cache isolation is configured (ADR-088), the service selector includes
+    the cache cluster label so that only pods with the same cluster name
+    can discover each other. This prevents cross-version cache poisoning
+    during blue-green upgrades.
+
     Args:
         name: Name of the Keycloak resource
         namespace: Target namespace
         k8s_client: Kubernetes API client
+        spec: Optional Keycloak specification (for cache isolation config)
 
     Returns:
         Created headless Service object
@@ -638,6 +697,26 @@ def create_keycloak_discovery_service(
 
     service_name = f"{name}-discovery"
 
+    # Build selector labels
+    selector = {
+        "app": "keycloak",
+        "vriesdemichael.github.io/keycloak-instance": name,
+    }
+
+    # Add cache cluster label to selector when cache isolation is configured (ADR-088)
+    cache_cluster_name = _resolve_cache_cluster_name(name, spec)
+    if cache_cluster_name:
+        selector[CACHE_CLUSTER_LABEL] = cache_cluster_name
+
+    # Build service labels
+    labels = {
+        "app": "keycloak",
+        "vriesdemichael.github.io/keycloak-instance": name,
+        "vriesdemichael.github.io/keycloak-component": "discovery",
+    }
+    if cache_cluster_name:
+        labels[CACHE_CLUSTER_LABEL] = cache_cluster_name
+
     # Headless service specification for DNS-based peer discovery
     service_spec = client.V1ServiceSpec(
         # clusterIP: None makes this a headless service
@@ -646,10 +725,7 @@ def create_keycloak_discovery_service(
         # Must set publishNotReadyAddresses to true so that pods can discover
         # each other during startup (before they are ready)
         publish_not_ready_addresses=True,
-        selector={
-            "app": "keycloak",
-            "vriesdemichael.github.io/keycloak-instance": name,
-        },
+        selector=selector,
         ports=[
             client.V1ServicePort(
                 name="jgroups",
@@ -667,11 +743,7 @@ def create_keycloak_discovery_service(
         metadata=client.V1ObjectMeta(
             name=service_name,
             namespace=namespace,
-            labels={
-                "app": "keycloak",
-                "vriesdemichael.github.io/keycloak-instance": name,
-                "vriesdemichael.github.io/keycloak-component": "discovery",
-            },
+            labels=labels,
         ),
         spec=service_spec,
     )
@@ -968,6 +1040,56 @@ def create_persistent_volume_claim(
         raise
 
 
+def build_maintenance_mode_annotations(spec: KeycloakSpec) -> dict[str, str]:
+    """
+    Build nginx ingress annotations for maintenance mode (ADR-088).
+
+    When maintenance mode is enabled, the ingress is annotated to return
+    503 Service Unavailable (full-block) or to reject mutating HTTP methods
+    (read-only), while always allowing health-check paths through.
+
+    Args:
+        spec: Keycloak specification containing maintenance_mode config
+
+    Returns:
+        Dictionary of nginx ingress annotations to merge into the ingress.
+        Empty dict when maintenance mode is disabled or not configured.
+    """
+    if not spec.maintenance_mode or not spec.maintenance_mode.enabled:
+        return {}
+
+    mm = spec.maintenance_mode
+    annotations: dict[str, str] = {
+        MAINTENANCE_MODE_ANNOTATION: mm.mode,
+    }
+
+    # Build an nginx server-snippet that implements the maintenance behaviour.
+    # Excluded paths (health endpoints) are let through unconditionally.
+    exclude_block = ""
+    if mm.exclude_paths:
+        # Build a regex alternation: (^/health$|^/health/live$|...)
+        escaped_paths = [p.replace("/", r"\/") for p in mm.exclude_paths]
+        pattern = "|".join(f"^{p}$" for p in escaped_paths)
+        exclude_block = f"""
+    # Allow excluded paths (health checks) through maintenance mode
+    if ($request_uri ~* "({pattern})") {{
+        break;
+    }}"""
+
+    if mm.mode == "full-block":
+        snippet = f"""{exclude_block}
+    return 503;"""
+    else:
+        # read-only: block mutating methods, allow GET/HEAD/OPTIONS
+        snippet = f"""{exclude_block}
+    if ($request_method !~ ^(GET|HEAD|OPTIONS)$) {{
+        return 503;
+    }}"""
+
+    annotations[MAINTENANCE_MODE_SNIPPET_ANNOTATION] = snippet.strip()
+    return annotations
+
+
 def create_keycloak_ingress(
     name: str,
     namespace: str,
@@ -1025,6 +1147,13 @@ def create_keycloak_ingress(
         )
         tls.append(tls_config)
 
+    # Build annotations: start with user-specified annotations
+    annotations = dict(getattr(spec.ingress, "annotations", {}) or {})
+
+    # Apply maintenance mode annotations if enabled (ADR-088)
+    maintenance_annotations = build_maintenance_mode_annotations(spec)
+    annotations.update(maintenance_annotations)
+
     # Create ingress object
     ingress = client.V1Ingress(
         api_version="networking.k8s.io/v1",
@@ -1036,7 +1165,7 @@ def create_keycloak_ingress(
                 "vriesdemichael.github.io/keycloak-instance": name,
                 "vriesdemichael.github.io/keycloak-component": "ingress",
             },
-            annotations=getattr(spec.ingress, "annotations", {}),
+            annotations=annotations,
         ),
         spec=client.V1IngressSpec(
             ingress_class_name=getattr(spec.ingress, "class_name", None),
