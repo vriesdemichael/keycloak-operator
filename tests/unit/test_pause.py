@@ -222,7 +222,7 @@ class TestUpdateStatusPaused:
         assert "Maintenance" in ready_condition["message"]
 
     def test_paused_removes_transient_conditions(self, reconciler, status):
-        """Removes Reconciling, Progressing, and Degraded conditions."""
+        """Removes Reconciling, Progressing, Degraded, and Available conditions."""
         # Pre-populate with conditions that should be removed
         status.conditions = [
             {
@@ -249,6 +249,14 @@ class TestUpdateStatusPaused:
                 "lastTransitionTime": "2025-01-01T00:00:00",
                 "observedGeneration": 1,
             },
+            {
+                "type": "Available",
+                "status": "True",
+                "reason": "Test",
+                "message": "test",
+                "lastTransitionTime": "2025-01-01T00:00:00",
+                "observedGeneration": 1,
+            },
         ]
 
         reconciler.update_status_paused(status, "Paused", 2)
@@ -257,6 +265,7 @@ class TestUpdateStatusPaused:
         assert "Reconciling" not in condition_types
         assert "Progressing" not in condition_types
         assert "Degraded" not in condition_types
+        assert "Available" not in condition_types
         assert "ReconciliationPaused" in condition_types
         assert "Ready" in condition_types
 

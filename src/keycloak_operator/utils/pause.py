@@ -10,11 +10,7 @@ only gates create/resume, update, health-check, drift-detection and
 secret-rotation paths.
 """
 
-import logging
-
 from keycloak_operator.settings import settings
-
-logger = logging.getLogger(__name__)
 
 
 def is_keycloak_paused() -> bool:

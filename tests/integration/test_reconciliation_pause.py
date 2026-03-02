@@ -401,6 +401,118 @@ class TestReconciliationPauseRealms:
 @pytest.mark.asyncio
 @pytest.mark.integration
 @pytest.mark.requires_cluster
+class TestReconciliationPauseKeycloak:
+    """Test that Keycloak CR reconciliation is paused when configured."""
+
+    @pytest.mark.timeout(600)
+    async def test_keycloak_gets_paused_status(
+        self,
+        shared_operator,
+        k8s_core_v1,
+        k8s_custom_objects,
+        test_namespace,
+    ):
+        """When pause.keycloak is true, new Keycloak CRs should get Paused phase."""
+        release_name = None
+        kc_name = f"pause-kc-{uuid.uuid4().hex[:8]}"
+
+        try:
+            release_name = await _deploy_paused_operator(
+                test_namespace=test_namespace,
+                shared_operator=shared_operator,
+                k8s_core_v1=k8s_core_v1,
+                pause_keycloak=True,
+                pause_message="Test: keycloak paused",
+            )
+
+            # Create a minimal Keycloak CR — the pause check fires before
+            # any actual reconciliation so the database doesn't need to exist.
+            keycloak_manifest = {
+                "apiVersion": "vriesdemichael.github.io/v1",
+                "kind": "Keycloak",
+                "metadata": {"name": kc_name, "namespace": test_namespace},
+                "spec": {
+                    "image": "quay.io/keycloak/keycloak:26.0",
+                    "replicas": 1,
+                    "operatorRef": {"namespace": test_namespace},
+                    "database": {
+                        "type": "postgresql",
+                        "host": "dummy-db-host",
+                        "database": "keycloak",
+                        "username": "keycloak",
+                        "passwordSecret": {
+                            "name": "dummy-db-secret",
+                            "key": "password",
+                        },
+                    },
+                },
+            }
+
+            logger.info(f"Creating Keycloak CR {kc_name} in {test_namespace}...")
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloaks",
+                body=keycloak_manifest,
+            )
+
+            # Wait for Paused phase
+            resource = await wait_for_resource_condition(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=test_namespace,
+                plural="keycloaks",
+                name=kc_name,
+                condition_func=lambda r: (
+                    (r.get("status") or {}).get("phase") == "Paused"
+                ),
+                expected_phases=("Paused",),
+                timeout=120,
+                operator_namespace=test_namespace,
+            )
+
+            status = resource.get("status", {})
+            assert status["phase"] == "Paused"
+            assert "Test: keycloak paused" in status.get("message", "")
+
+            # Verify ReconciliationPaused condition
+            conditions = status.get("conditions", [])
+            paused_cond = next(
+                (c for c in conditions if c["type"] == "ReconciliationPaused"),
+                None,
+            )
+            assert paused_cond is not None
+            assert paused_cond["status"] == "True"
+            assert paused_cond["reason"] == "OperatorPauseConfigured"
+
+            # Verify Ready=False
+            ready_cond = next(
+                (c for c in conditions if c["type"] == "Ready"),
+                None,
+            )
+            assert ready_cond is not None
+            assert ready_cond["status"] == "False"
+
+            logger.info("Keycloak CR correctly received Paused status!")
+
+        finally:
+            with contextlib.suppress(ApiException):
+                await k8s_custom_objects.delete_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=test_namespace,
+                    plural="keycloaks",
+                    name=kc_name,
+                )
+            if release_name:
+                await _cleanup_helm_release(release_name, test_namespace)
+
+
+@pytest.mark.asyncio
+@pytest.mark.integration
+@pytest.mark.requires_cluster
 class TestReconciliationPauseClients:
     """Test that client reconciliation is paused when configured."""
 
