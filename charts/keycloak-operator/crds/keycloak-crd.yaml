@@ -147,6 +147,12 @@ spec:
                         - verify-full
                         default: require
                         description: SSL mode for database connections
+                      pvcName:
+                        type: string
+                        description: Name of the PersistentVolumeClaim used by the database. Required for automated VolumeSnapshot backups before upgrades.
+                      volumeSnapshotClassName:
+                        type: string
+                        description: VolumeSnapshotClass to use for pre-upgrade snapshots. If not specified, the cluster default VolumeSnapshotClass is used.
                     required:
                     - host
                     - database
@@ -491,6 +497,28 @@ spec:
                       Automatically append Keycloak version to the cluster name
                       to isolate caches between versions. Overridden by explicit clusterName.
                     default: false
+              upgradePolicy:
+                type: object
+                description: >-
+                  Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 2).
+                  Controls pre-upgrade backup behavior and upgrade strategy.
+                properties:
+                  requireBackupConfirmation:
+                    type: boolean
+                    description: >-
+                      Require manual backup confirmation before proceeding with upgrades
+                      on external/legacy database tiers. When true, the operator halts
+                      at WaitingForBackupConfirmation until the annotation
+                      operator.keycloak.io/backup-confirmed is set to 'true'.
+                    default: false
+                  backupTimeout:
+                    type: integer
+                    description: >-
+                      Maximum time in seconds to wait for a pre-upgrade backup to complete.
+                      Applies to CNPG and VolumeSnapshot backups.
+                    default: 600
+                    minimum: 60
+                    maximum: 3600
               operatorRef:
                 type: object
                 description: Reference to the operator instance managing this resource (ADR-062)
@@ -517,6 +545,8 @@ spec:
                 - Updating
                 - Degraded
                 - Paused
+                - BackingUp
+                - WaitingForBackupConfirmation
               message:
                 type: string
                 description: Human-readable status message
@@ -598,6 +628,19 @@ spec:
               capacityStatus:
                 type: string
                 description: Human-readable capacity status message
+              currentVersion:
+                type: string
+                description: Currently running Keycloak version (extracted from deployment image)
+              previousVersion:
+                type: string
+                description: Previous Keycloak version before the last upgrade
+              lastBackupName:
+                type: string
+                description: Name of the last pre-upgrade backup resource (CNPG Backup or VolumeSnapshot)
+              lastBackupTime:
+                type: string
+                format: date-time
+                description: Timestamp of the last pre-upgrade backup
     additionalPrinterColumns:
     - name: Phase
       type: string

@@ -194,6 +194,17 @@ class ManagedDatabaseConfig(BaseModel):
     ssl_mode: str = Field(
         "require", alias="sslMode", description="SSL mode for database connections"
     )
+    pvc_name: str | None = Field(
+        None,
+        alias="pvcName",
+        description="PersistentVolumeClaim name for VolumeSnapshot backup during upgrades (ADR-088 Phase 2)",
+    )
+    volume_snapshot_class_name: str | None = Field(
+        None,
+        alias="volumeSnapshotClassName",
+        description="VolumeSnapshotClass name for backup snapshots (ADR-088 Phase 2). "
+        "Required when pvcName is set.",
+    )
 
     @field_validator("port")
     @classmethod
@@ -371,8 +382,13 @@ class KeycloakDatabaseConfig(BaseModel):
     def effective_host(self) -> str | None:
         """Return the effective database host based on tier."""
         if self.cnpg is not None:
-            # CNPG: host is resolved at runtime from the Cluster CR
-            return f"{self.cnpg.cluster_name}-rw"
+            # CNPG: host is resolved from the Cluster CR naming convention.
+            # When a cross-namespace reference is used, generate a FQDN so
+            # pods in the Keycloak namespace can reach the CNPG service.
+            base = f"{self.cnpg.cluster_name}-rw"
+            if self.cnpg.namespace:
+                return f"{base}.{self.cnpg.namespace}.svc.cluster.local"
+            return base
         if self.managed is not None:
             return self.managed.host
         if self.external is not None:
@@ -748,6 +764,49 @@ class CacheIsolation(BaseModel):
         return v
 
 
+class UpgradePolicy(BaseModel):
+    """
+    Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 2).
+
+    Controls pre-upgrade backup behavior and (in Phase 3) blue-green
+    deployment strategy. The backup behavior depends on the database tier:
+
+    - **cnpg**: Automated backup via CNPG Backup API.
+    - **managed**: Automated backup via VolumeSnapshot (requires pvcName).
+    - **external/legacy**: Warn-and-proceed by default; opt-in manual gate
+      via ``require_backup_confirmation``.
+
+    When ``require_backup_confirmation`` is true for external/legacy tiers,
+    the operator halts at ``WaitingForBackupConfirmation`` phase until the
+    annotation ``operator.keycloak.io/backup-confirmed: "true"`` is applied
+    to the Keycloak CR.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    require_backup_confirmation: bool = Field(
+        False,
+        alias="requireBackupConfirmation",
+        description=(
+            "Require manual backup confirmation before proceeding with upgrades "
+            "on external/legacy database tiers. When true, the operator halts "
+            "at WaitingForBackupConfirmation until the annotation "
+            "operator.keycloak.io/backup-confirmed is set to 'true'. "
+            "Default: false (warn-and-proceed)."
+        ),
+    )
+    backup_timeout: int = Field(
+        600,
+        alias="backupTimeout",
+        description=(
+            "Maximum time in seconds to wait for a pre-upgrade backup to complete. "
+            "Applies to CNPG and VolumeSnapshot backups. Default: 600 (10 minutes)."
+        ),
+        ge=60,
+        le=3600,
+    )
+
+
 class KeycloakTracingConfig(BaseModel):
     """
     OpenTelemetry distributed tracing configuration for Keycloak.
@@ -937,6 +996,11 @@ class KeycloakSpec(BaseModel):
         None,
         alias="cacheIsolation",
         description="JGroups cache isolation for blue-green upgrades (ADR-088)",
+    )
+    upgrade_policy: UpgradePolicy | None = Field(
+        None,
+        alias="upgradePolicy",
+        description="Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2)",
     )
 
     # OpenTelemetry tracing

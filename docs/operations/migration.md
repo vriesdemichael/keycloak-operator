@@ -135,25 +135,40 @@ kubectl apply -f crds-backup-<date>.yaml
 - **Recommended**: Keycloak 26.0.0+
 - **Maximum**: Latest Keycloak release
 
+### Automated Pre-Upgrade Backups
+
+!!! note "Automatic for CNPG and Managed tiers"
+    When upgrading Keycloak to a new **major or minor** version, the operator automatically creates a backup before applying the change. Patch-level upgrades (e.g., `26.0.1` → `26.0.2`) skip this step.
+
+The backup behavior depends on your database tier:
+
+- **CNPG**: Creates a CNPG `Backup` CR and waits for completion before proceeding.
+- **Managed**: Creates a `VolumeSnapshot` of the database PVC.
+- **External/Legacy**: Cannot back up automatically. The operator emits a warning and proceeds by default. Set `upgradePolicy.requireBackupConfirmation: true` to block until you manually confirm via annotation.
+
+See [Backup & Restore: Automated Pre-Upgrade Backups](./backup-restore.md#automated-pre-upgrade-backups) for full configuration details.
+
 ### Pre-Upgrade Checklist
 
 - [ ] **Check Keycloak release notes** - Review breaking changes
-- [ ] **Backup database** - CloudNativePG backup or manual export
+- [ ] **Verify backup configuration** - Ensure `upgradePolicy` settings match your requirements
 - [ ] **Test in non-production** - Verify compatibility
-- [ ] **Schedule maintenance window** - Plan for brief downtime
+- [ ] **Schedule maintenance window** - Plan for brief downtime (rolling update) or zero-downtime (blue-green, Phase 3)
 
 ### Upgrade Strategy
 
-**Blue-Green Deployment (Recommended)**:
+**Blue-Green Deployment (Future — Phase 3)**:
 1. Deploy new Keycloak version alongside old version
-2. Switch traffic to new version
-3. Keep old version for quick rollback
-4. Remove old version after verification
+2. Migrate database schema via Liquibase job
+3. Switch traffic to new version
+4. Keep old version for quick rollback
+5. Remove old version after verification
 
-**Rolling Update (Simpler)**:
+**Rolling Update (Current)**:
 1. Update Keycloak resource with new image tag
-2. Operator performs rolling update
-3. Brief downtime during pod restarts
+2. Operator triggers pre-upgrade backup (automatic for CNPG/Managed)
+3. Operator performs rolling update
+4. Brief downtime during pod restarts
 
 ### Rolling Update Procedure
 

@@ -1,6 +1,90 @@
 # Backup & Restore Guide
 
-Backup and restore procedures for Keycloak and PostgreSQL database using CloudNativePG.
+Backup and restore procedures for Keycloak and PostgreSQL database using CloudNativePG, including automated pre-upgrade backups.
+
+## Automated Pre-Upgrade Backups
+
+The operator automatically orchestrates backups before Keycloak **major or minor** version upgrades. The backup strategy depends on your database tier:
+
+| Database Tier | Backup Action | Blocks Upgrade? |
+|---------------|---------------|-----------------|
+| **CNPG** (Tier 1) | Creates a CNPG `Backup` CR, waits for completion | Yes, until backup succeeds |
+| **Managed** (Tier 2) | Creates a `VolumeSnapshot` of the database PVC | Yes, until snapshot is ready |
+| **External** (Tier 3) | Emits warning event, sets `BackupNotVerified` condition | Only if `requireBackupConfirmation: true` |
+| **Legacy** (Tier 4) | Emits warning event, sets `BackupNotVerified` condition | Only if `requireBackupConfirmation: true` |
+
+**Patch-level** version changes (e.g., `26.0.1` to `26.0.2`) skip the backup step entirely.
+
+### Configuration
+
+Configure the upgrade policy in your Helm values:
+
+```yaml
+keycloak:
+  upgradePolicy:
+    # Block external/legacy upgrades until manual confirmation
+    requireBackupConfirmation: false  # default: false (warn-and-proceed)
+    # Max seconds to wait for CNPG/VolumeSnapshot backup completion
+    backupTimeout: 600  # default: 600 (10 minutes), range: 60-3600
+```
+
+Or directly in the Keycloak CR:
+
+```yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: Keycloak
+metadata:
+  name: keycloak
+spec:
+  upgradePolicy:
+    requireBackupConfirmation: false
+    backupTimeout: 600
+```
+
+### Status Phases During Backup
+
+During an upgrade, the Keycloak CR transitions through additional phases:
+
+- **`BackingUp`**: A CNPG Backup or VolumeSnapshot is in progress.
+- **`WaitingForBackupConfirmation`**: The operator cannot back up automatically (external/legacy tier) and `requireBackupConfirmation` is enabled. The upgrade is paused.
+
+After backup completes (or is skipped), the CR returns to normal reconciliation phases (`Provisioning`, `Ready`, etc.).
+
+### Manual Backup Confirmation (External/Legacy Tiers)
+
+When `requireBackupConfirmation: true` and you use an external or legacy database, the operator pauses the upgrade at `WaitingForBackupConfirmation`. To proceed:
+
+1. Take a backup of your database using your own tooling.
+2. Annotate the Keycloak CR to confirm:
+
+```bash
+kubectl annotate keycloak <name> -n <namespace> \
+  operator.keycloak.io/backup-confirmed=true
+```
+
+The operator will detect the annotation on the next reconciliation cycle and proceed with the upgrade.
+
+### Monitoring Backup Progress
+
+```bash
+# Check Keycloak CR status phase
+kubectl get keycloak <name> -n <namespace> -o jsonpath='{.status.phase}'
+
+# Check for BackupNotVerified condition (external/legacy tiers)
+kubectl get keycloak <name> -n <namespace> -o jsonpath='{.status.conditions}'
+
+# Check status fields for backup tracking
+kubectl get keycloak <name> -n <namespace> -o jsonpath='{.status.lastBackupName}'
+kubectl get keycloak <name> -n <namespace> -o jsonpath='{.status.lastBackupTime}'
+
+# For CNPG tier: check the Backup CR
+kubectl get backup -n <cnpg-namespace> -l operator.keycloak.io/managed-by=keycloak-operator
+
+# For Managed tier: check VolumeSnapshot
+kubectl get volumesnapshot -n <namespace> -l operator.keycloak.io/managed-by=keycloak-operator
+```
+
+---
 
 ## What Gets Backed Up
 

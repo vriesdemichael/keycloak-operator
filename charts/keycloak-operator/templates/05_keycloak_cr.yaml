@@ -26,6 +26,48 @@ spec:
     type: {{ .Values.keycloak.database.type }}
     cnpg:
       clusterName: {{ .Values.keycloak.database.cnpg.clusterName }}
+  {{- else if and .Values.keycloak.database.managed .Values.keycloak.database.managed.enabled }}
+  database:
+    type: {{ .Values.keycloak.database.type }}
+    managed:
+      host: {{ .Values.keycloak.database.managed.host }}
+      port: {{ .Values.keycloak.database.managed.port | default 5432 }}
+      database: {{ .Values.keycloak.database.managed.database }}
+      {{- with .Values.keycloak.database.managed.username }}
+      username: {{ . }}
+      {{- end }}
+      {{- with .Values.keycloak.database.managed.passwordSecret }}
+      passwordSecret:
+        name: {{ .name }}
+        key: {{ .key | default "password" }}
+      {{- end }}
+      {{- with .Values.keycloak.database.managed.credentialsSecret }}
+      credentialsSecret: {{ . }}
+      {{- end }}
+      {{- with .Values.keycloak.database.managed.pvcName }}
+      pvcName: {{ . }}
+      {{- end }}
+      {{- with .Values.keycloak.database.managed.volumeSnapshotClassName }}
+      volumeSnapshotClassName: {{ . }}
+      {{- end }}
+  {{- else if and .Values.keycloak.database.external .Values.keycloak.database.external.enabled }}
+  database:
+    type: {{ .Values.keycloak.database.type }}
+    external:
+      host: {{ .Values.keycloak.database.external.host }}
+      port: {{ .Values.keycloak.database.external.port | default 5432 }}
+      database: {{ .Values.keycloak.database.external.database }}
+      {{- with .Values.keycloak.database.external.username }}
+      username: {{ . }}
+      {{- end }}
+      {{- with .Values.keycloak.database.external.passwordSecret }}
+      passwordSecret:
+        name: {{ .name }}
+        key: {{ .key | default "password" }}
+      {{- end }}
+      {{- with .Values.keycloak.database.external.credentialsSecret }}
+      credentialsSecret: {{ . }}
+      {{- end }}
   {{- else }}
   database:
     type: {{ .Values.keycloak.database.type }}
@@ -88,6 +130,18 @@ spec:
   {{- with .Values.keycloak.jvmOptions }}
   jvmOptions:
     {{- toYaml . | nindent 4 }}
+  {{- end }}
+
+  {{- if .Values.keycloak.upgradePolicy }}
+  {{- if or .Values.keycloak.upgradePolicy.requireBackupConfirmation (ne (int .Values.keycloak.upgradePolicy.backupTimeout) 600) }}
+  upgradePolicy:
+    {{- if .Values.keycloak.upgradePolicy.requireBackupConfirmation }}
+    requireBackupConfirmation: true
+    {{- end }}
+    {{- if ne (int .Values.keycloak.upgradePolicy.backupTimeout) 600 }}
+    backupTimeout: {{ .Values.keycloak.upgradePolicy.backupTimeout }}
+    {{- end }}
+  {{- end }}
   {{- end }}
 
   {{- if and .Values.operator.tracing.enabled .Values.operator.tracing.propagateToKeycloak }}

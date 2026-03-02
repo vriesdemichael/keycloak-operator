@@ -877,6 +877,106 @@
                   }
                 }
               }
+            },
+            "managed": {
+              "type": "object",
+              "description": "Tier 2: Generic managed PostgreSQL database (ADR-088). Use when operator has direct database connection access but does not manage the DB lifecycle.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable managed database tier",
+                  "default": false
+                },
+                "host": {
+                  "type": "string",
+                  "description": "Database host"
+                },
+                "port": {
+                  "type": "integer",
+                  "description": "Database port",
+                  "default": 5432
+                },
+                "database": {
+                  "type": "string",
+                  "description": "Database name",
+                  "default": "keycloak"
+                },
+                "username": {
+                  "type": "string",
+                  "description": "Database username"
+                },
+                "passwordSecret": {
+                  "type": "object",
+                  "description": "Secret containing database password",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string",
+                      "default": "password"
+                    }
+                  }
+                },
+                "credentialsSecret": {
+                  "type": "string",
+                  "description": "Kubernetes secret name with database credentials"
+                },
+                "pvcName": {
+                  "type": "string",
+                  "description": "PersistentVolumeClaim name for VolumeSnapshot backup during upgrades (ADR-088 Phase 2)"
+                },
+                "volumeSnapshotClassName": {
+                  "type": "string",
+                  "description": "VolumeSnapshotClass name for backup snapshots. If empty, the cluster default VolumeSnapshotClass is used."
+                }
+              }
+            },
+            "external": {
+              "type": "object",
+              "description": "Tier 3: Externally managed database (ADR-088). Use when the database is managed entirely outside of Kubernetes.",
+              "properties": {
+                "enabled": {
+                  "type": "boolean",
+                  "description": "Enable external database tier",
+                  "default": false
+                },
+                "host": {
+                  "type": "string",
+                  "description": "Database host"
+                },
+                "port": {
+                  "type": "integer",
+                  "description": "Database port",
+                  "default": 5432
+                },
+                "database": {
+                  "type": "string",
+                  "description": "Database name",
+                  "default": "keycloak"
+                },
+                "username": {
+                  "type": "string",
+                  "description": "Database username"
+                },
+                "passwordSecret": {
+                  "type": "object",
+                  "description": "Secret containing database password",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "key": {
+                      "type": "string",
+                      "default": "password"
+                    }
+                  }
+                },
+                "credentialsSecret": {
+                  "type": "string",
+                  "description": "Kubernetes secret name with database credentials"
+                }
+              }
             }
           }
         },
@@ -941,6 +1041,24 @@
               "type": "boolean",
               "description": "Auto-append Keycloak version to cluster name for isolation",
               "default": false
+            }
+          }
+        },
+        "upgradePolicy": {
+          "type": "object",
+          "description": "Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2). Controls automated backup behavior before Keycloak version upgrades.",
+          "properties": {
+            "requireBackupConfirmation": {
+              "type": "boolean",
+              "description": "Require manual backup confirmation before proceeding with upgrades on external/legacy database tiers. When true, the operator halts at WaitingForBackupConfirmation until the annotation operator.keycloak.io/backup-confirmed is set to true.",
+              "default": false
+            },
+            "backupTimeout": {
+              "type": "integer",
+              "description": "Maximum time in seconds to wait for a pre-upgrade backup to complete. Applies to CNPG and VolumeSnapshot backups.",
+              "default": 600,
+              "minimum": 60,
+              "maximum": 3600
             }
           }
         },

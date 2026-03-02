@@ -150,6 +150,11 @@ rules:
   resources: ["clusters", "poolers", "backups"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 
+# VolumeSnapshot management for pre-upgrade backups (ADR-088 Phase 2)
+- apiGroups: ["snapshot.storage.k8s.io"]
+  resources: ["volumesnapshots"]
+  verbs: ["get", "list", "watch", "create", "delete"]
+
 # Webhook configuration
 - apiGroups: ["admissionregistration.k8s.io"]
   resources: ["validatingwebhookconfigurations", "mutatingwebhookconfigurations"]
@@ -236,6 +241,11 @@ rules:
 - apiGroups: [""]
   resources: ["events"]
   verbs: ["create", "patch"]
+
+# VolumeSnapshot management for pre-upgrade backups (ADR-088 Phase 2)
+- apiGroups: ["snapshot.storage.k8s.io"]
+  resources: ["volumesnapshots"]
+  verbs: ["get", "list", "watch", "create", "delete"]
 
 ---
 # ClusterRoleBinding for minimal cluster-wide permissions

@@ -478,6 +478,36 @@ keycloak:
       postgresql:
         maxConnections: "200"
         sharedBuffers: "256MB"
+    # Tier 2: Generic managed PostgreSQL database (ADR-088)
+    # Use when operator has direct database connection access but doesn't manage the DB lifecycle
+    managed:
+      enabled: false
+      host: ""
+      port: 5432
+      database: keycloak
+      username: ""
+      passwordSecret:
+        name: ""
+        key: password
+      credentialsSecret: ""
+      # PVC name for automated VolumeSnapshot backups before upgrades
+      # Required for pre-upgrade backup support on the managed tier
+      pvcName: ""
+      # VolumeSnapshotClass to use for pre-upgrade snapshots
+      # If empty, the cluster default VolumeSnapshotClass is used
+      volumeSnapshotClassName: ""
+    # Tier 3: Externally managed database (ADR-088)
+    # Use when the database is managed entirely outside of Kubernetes
+    external:
+      enabled: false
+      host: ""
+      port: 5432
+      database: keycloak
+      username: ""
+      passwordSecret:
+        name: ""
+        key: password
+      credentialsSecret: ""
   # Maintenance mode configuration for blue-green upgrades (ADR-088)
   # When enabled, the ingress is annotated to block or limit traffic
   # Useful during major version upgrades to drain connections gracefully
@@ -500,6 +530,19 @@ keycloak:
     clusterName: ""
     # Auto-append Keycloak version to cluster name for isolation
     autoSuffix: false
+  # Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2)
+  # Controls automated backup behavior before Keycloak version upgrades
+  upgradePolicy:
+    # Require manual backup confirmation before proceeding with upgrades
+    # on external/legacy database tiers. When true, the operator halts at
+    # WaitingForBackupConfirmation until the annotation
+    # operator.keycloak.io/backup-confirmed is set to "true"
+    # Default: false (warn-and-proceed for external/legacy tiers)
+    requireBackupConfirmation: false
+    # Maximum time in seconds to wait for a pre-upgrade backup to complete
+    # Applies to CNPG and VolumeSnapshot backups
+    # Range: 60-3600 seconds (1 minute to 1 hour)
+    backupTimeout: 600
   # Ingress configuration (used when managed: true)
   ingress:
     enabled: false

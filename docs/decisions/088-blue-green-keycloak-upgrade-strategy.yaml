@@ -5,27 +5,42 @@ decision: >
   Support blue-green deployment strategy for Keycloak major version upgrades
   with zero downtime. This supersedes decision 079 (No managed Keycloak
   upgrades) which rejected automated upgrades and blue-green deployment.
-  The implementation is split into three phases: (1) Foundation — tiered
-  database configuration, ingress maintenance mode, and JGroups cache
-  isolation; (2) Database backup automation — CNPG backup API, VolumeSnapshot,
-  and manual gate for external databases; (3) Blue-green orchestration —
-  the upgrade CRD and state machine that coordinates the full process.
+  This also supersedes decision 056 (No opinionated backup or secret
+  management) for the backup portion — pre-upgrade backup orchestration is
+  now an operator responsibility, while secret management remains
+  tool-agnostic (ESO, Sealed Secrets, etc. via SecretKeySelector references
+  and extraManifests). The implementation is split into three phases:
+  (1) Foundation — tiered database configuration, ingress maintenance mode,
+  and JGroups cache isolation; (2) Pre-upgrade backup automation — CNPG
+  Backup API for Tier 1, VolumeSnapshot for Tier 2 managed databases, and
+  a warn-and-proceed default with opt-in manual gate for Tier 3
+  external/legacy databases; (3) Blue-green orchestration — the
+  upgradePolicy CRD section and state machine that coordinates the full
+  upgrade process including database migration, green deployment, and
+  traffic cutover.
 agent_instructions: >
-  ADR 079 is superseded by this decision. When users ask about Keycloak
-  upgrades, explain that blue-green upgrades are supported (or will be, if
-  Phase 3 is not yet implemented). The database configuration now uses a
-  tiered model: CNPG (Tier 1) with cluster_name reference, Managed Postgres
-  (Tier 2) with direct connection details, and External (Tier 3) with
-  operator-opaque credentials. The KeycloakDatabaseConfig model supports both
-  the new tiered fields (cnpg, managed, external) and the legacy flat fields
-  for backward compatibility. Ingress maintenance mode can be toggled via
-  spec.maintenanceMode to block or limit traffic during upgrades. JGroups
-  cache isolation via spec.cacheIsolation ensures blue and green deployments
-  do not share Infinispan caches. When implementing new features that interact
-  with database configuration, always check the tier property to determine
-  which backup strategy applies. When creating deployments, respect the
-  cacheIsolation settings for JGroups cluster name and discovery service
-  label selectors.
+  ADR 079 and the backup portion of ADR 056 are superseded by this decision.
+  Secret management remains tool-agnostic — recommend ESO or Sealed Secrets,
+  reference via SecretKeySelector fields, integrate via extraManifests.
+  The database configuration uses a tiered model: CNPG (Tier 1) with
+  cluster_name reference, Managed Postgres (Tier 2) with direct connection
+  details plus pvc_name and volume_snapshot_class_name for backup,
+  and External (Tier 3) with operator-opaque credentials. The
+  KeycloakDatabaseConfig model supports both the new tiered fields (cnpg,
+  managed, external) and the legacy flat fields for backward compatibility.
+  When a major version bump is detected, the operator triggers a
+  tier-appropriate pre-upgrade backup: CNPG Backup CR for Tier 1,
+  VolumeSnapshot for Tier 2, warn-and-proceed (with opt-in manual gate via
+  spec.upgradePolicy.requireBackupConfirmation) for Tier 3 and legacy.
+  The spec.upgradePolicy section controls upgrade behavior including
+  backupTimeout and requireBackupConfirmation. Ingress maintenance mode
+  can be toggled via spec.maintenanceMode to block or limit traffic during
+  upgrades. JGroups cache isolation via spec.cacheIsolation ensures blue
+  and green deployments do not share Infinispan caches. When implementing
+  new features that interact with database configuration, always check the
+  tier property to determine which backup strategy applies. When creating
+  deployments, respect the cacheIsolation settings for JGroups cluster name
+  and discovery service label selectors.
 rationale: >
   ADR 079 rejected blue-green deployment because it "requires duplicate
   database, complex migration coordination, wastes resources." This was
@@ -38,6 +53,14 @@ rationale: >
   environments where maintenance windows are impractical. The tiered
   database model acknowledges that not all deployments have the same
   backup capabilities and provides appropriate strategies for each tier.
+  ADR 056 rejected built-in backup because it would mean maintaining
+  storage connectors (S3, GCS, Azure). Pre-upgrade backup orchestration
+  avoids this — the operator triggers existing backup mechanisms (CNPG
+  Backup API, Kubernetes VolumeSnapshot API) rather than implementing
+  backup storage. For external databases the operator cannot automate,
+  it warns and proceeds by default, with an opt-in manual gate for teams
+  that require explicit backup confirmation before upgrades. This is
+  narrowly scoped to the upgrade workflow, not a general backup feature.
   Phase 1 delivers independently useful features (maintenance mode, cache
   isolation, better DB config) even if Phase 3 is never completed.
 rejected_alternatives:
@@ -56,6 +79,18 @@ rejected_alternatives:
       Database migration is Keycloak's responsibility (Liquibase). The
       operator should orchestrate the environment (backup, deploy, verify)
       but not reimplement migration logic.
+  - alternative: Block upgrades by default for external databases
+    reason: >
+      Blocking until manual annotation is safe but hostile for users who
+      accept the risk. Default behavior should warn loudly and proceed.
+      Teams requiring hard gates can opt in via
+      spec.upgradePolicy.requireBackupConfirmation.
+  - alternative: General-purpose backup feature
+    reason: >
+      Would replicate ADR 056's rejected approach — maintaining storage
+      connectors, duplicating Velero/CNPG. Pre-upgrade backup is narrowly
+      scoped to the upgrade workflow, using existing Kubernetes APIs.
 supersedes:
   - 79
+  - 56
 provenance: guided-ai

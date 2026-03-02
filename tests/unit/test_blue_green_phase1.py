@@ -321,6 +321,13 @@ class TestEffectiveProperties:
         )
         assert cfg.effective_host == "pg-cluster-rw"
 
+    def test_effective_host_cnpg_cross_namespace(self):
+        cfg = KeycloakDatabaseConfig(
+            type="postgresql",
+            cnpg=CnpgDatabaseConfig(cluster_name="pg-cluster", namespace="other-ns"),
+        )
+        assert cfg.effective_host == "pg-cluster-rw.other-ns.svc.cluster.local"
+
     def test_effective_host_managed(self):
         cfg = KeycloakDatabaseConfig(
             type="postgresql",
