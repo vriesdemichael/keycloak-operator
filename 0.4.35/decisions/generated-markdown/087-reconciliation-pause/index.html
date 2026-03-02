@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/0.4.35/decisions/generated-markdown/030-helm-charts-published-to-github-pages-oci-registry/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/0.4.35/decisions/generated-markdown/087-reconciliation-pause/">
       
       
-        <link rel="prev" href="../029-versioned-documentation-with-mike/">
+        <link rel="prev" href="../086-migration-toolkit-design/">
       
       
-        <link rel="next" href="../031-automated-releases-with-release-please/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-030: Helm charts published to GitHub Pages OCI registry - Keycloak Operator</title>
+        <title>ADR-087: Operator-level reconciliation pause for safe maintenance windows - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-030-helm-charts-published-to-github-pages-oci-registry" class="md-skip">
+        <a href="#adr-087-operator-level-reconciliation-pause-for-safe-maintenance-windows" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-030: Helm charts published to GitHub Pages OCI registry
+              ADR-087: Operator-level reconciliation pause for safe maintenance windows
             
           </span>
         </div>
@@ -2547,37 +2547,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-030: Helm charts published to GitHub Pages OCI registry
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../030-helm-charts-published-to-github-pages-oci-registry/" class="md-nav__link">
         
   
   
@@ -2593,98 +2566,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#use-external-chart-registry-chartmuseum-harbor" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Use external chart registry (ChartMuseum, Harbor)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#bundle-charts-in-git-repository-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Bundle charts in git repository only
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4262,10 +4143,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../087-reconciliation-pause/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-087: Operator-level reconciliation pause for safe maintenance windows
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4281,6 +4189,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cr-level-annotations-for-per-resource-pause" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CR-level annotations for per-resource pause
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#single-global-pause-toggle-for-all-cr-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Single global pause toggle for all CR types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-configmap-based-pause-without-restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dynamic ConfigMap-based pause without restart
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4392,10 +4403,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#use-external-chart-registry-chartmuseum-harbor" class="md-nav__link">
+  <a href="#cr-level-annotations-for-per-resource-pause" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Use external chart registry (ChartMuseum, Harbor)
+        CR-level annotations for per-resource pause
       
     </span>
   </a>
@@ -4403,10 +4414,21 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#bundle-charts-in-git-repository-only" class="md-nav__link">
+  <a href="#single-global-pause-toggle-for-all-cr-types" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Bundle charts in git repository only
+        Single global pause toggle for all CR types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dynamic-configmap-based-pause-without-restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dynamic ConfigMap-based pause without restart
       
     </span>
   </a>
@@ -4435,7 +4457,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/030-helm-charts-published-to-github-pages-oci-registry.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/087-reconciliation-pause.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4443,20 +4465,22 @@
   
 
 
-<h1 id="adr-030-helm-charts-published-to-github-pages-oci-registry">ADR-030: Helm charts published to GitHub Pages OCI registry<a class="headerlink" href="#adr-030-helm-charts-published-to-github-pages-oci-registry" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> development
-<strong>Provenance:</strong> human</p>
+<h1 id="adr-087-operator-level-reconciliation-pause-for-safe-maintenance-windows">ADR-087: Operator-level reconciliation pause for safe maintenance windows<a class="headerlink" href="#adr-087-operator-level-reconciliation-pause-for-safe-maintenance-windows" title="Permanent link">&para;</a></h1>
+<p><strong>Category:</strong> architecture
+<strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Publish all three Helm charts (operator, realm, client) to GitHub Pages which serves as an OCI registry. Charts are available at <a href="https://vriesdemichael.github.io/keycloak-operator/charts/">https://vriesdemichael.github.io/keycloak-operator/charts/</a>. JSON schemas for Helm chart values are published alongside charts for IDE validation and auto-completion.</p>
+<p>Implement reconciliation pause as operator-level environment variables (RECONCILE_PAUSE_KEYCLOAK, RECONCILE_PAUSE_REALMS, RECONCILE_PAUSE_CLIENTS) that halt create/resume/update reconciliation per CR type. Delete handlers always proceed regardless of pause state. Paused resources transition to a "Paused" phase with a ReconciliationPaused condition. A configurable RECONCILE_PAUSE_MESSAGE environment variable allows operators to communicate the reason. Configuration is exposed through Helm values at operator.reconciliation.pause. Drift detection is skipped when both realms and clients are paused. Secret rotation daemons sleep while clients are paused. Health daemons skip resources in Paused phase.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>GitHub Pages provides free, reliable hosting for Helm charts. OCI registry format allows versioned chart distribution. Users can pin to specific chart versions for stability. Helm repo index allows 'helm search repo' to discover versions. Integrated with release process - charts published automatically on release. No external registry costs or management. Charts accessible globally via CDN with SSL. Publishing JSON schemas alongside charts enables IDE validation and auto-completion for values.yaml files, improving developer experience and catching configuration errors early.</p>
+<p>During Keycloak upgrades or maintenance windows, reconciliation can interfere with manual changes or cause errors against an unavailable API. CR-level annotations were rejected because (a) external Keycloak instances have no Keycloak CR to annotate, (b) pausing individual resources is pointless since not updating a CR already prevents changes, and (c) the pause is an operational concern about operator behavior, not resource state. Operator-level env vars follow the existing configuration pattern (like RECONCILE_JITTER), work naturally with Helm values, and require a pod restart which is acceptable given active-standby HA with leader election. Three independent toggles per CR type provide granularity without complexity.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Package Helm charts and publish to GitHub Pages charts directory. Maintain index.yaml with all chart versions. Charts are served via GitHub Pages and can be added to Helm with 'helm repo add'. Keep charts directory in gh-pages branch synchronized with releases. Never delete old chart versions - users may be pinned to specific versions. When values.yaml changes in any chart, regenerate the corresponding JSON schema for that chart's values to keep schemas in sync with supported configuration options.</p>
+<p>When implementing new CR types or handlers, always check the pause state before reconciliation using the helpers in utils/pause.py. The pattern is: check pause after ownership verification but before jitter sleep, call update_status_paused() on the reconciler, and return early. Delete handlers must NEVER check pause state — deletions always proceed. Add "Paused" to the CRD phase enum for any new CR type. Health daemons must include "Paused" in their skip-phases tuple. When adding new daemon handlers (like secret rotation), include a pause check in the daemon's main loop that sleeps and continues. The annotation namespace is "reconcile-*" (not "force-reconcile"). Use the constant ANNOTATION_RECONCILE_FORCE from constants.py.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="use-external-chart-registry-chartmuseum-harbor">Use external chart registry (ChartMuseum, Harbor)<a class="headerlink" href="#use-external-chart-registry-chartmuseum-harbor" title="Permanent link">&para;</a></h3>
-<p>Additional infrastructure to maintain. Costs money. GitHub Pages is free and reliable.</p>
-<h3 id="bundle-charts-in-git-repository-only">Bundle charts in git repository only<a class="headerlink" href="#bundle-charts-in-git-repository-only" title="Permanent link">&para;</a></h3>
-<p>Users would need to clone repo to get charts. No version discovery. Not standard Helm workflow.</p>
+<h3 id="cr-level-annotations-for-per-resource-pause">CR-level annotations for per-resource pause<a class="headerlink" href="#cr-level-annotations-for-per-resource-pause" title="Permanent link">&para;</a></h3>
+<p>Does not work for external Keycloak (no Keycloak CR to annotate). Pausing individual realms or clients is pointless — if you do not want changes, simply do not update the CR. The pause is an operational concern about the operator, not about individual resources.</p>
+<h3 id="single-global-pause-toggle-for-all-cr-types">Single global pause toggle for all CR types<a class="headerlink" href="#single-global-pause-toggle-for-all-cr-types" title="Permanent link">&para;</a></h3>
+<p>Insufficient granularity. Operators may want to pause realm/client reconciliation during a Keycloak upgrade while keeping the Keycloak instance health monitoring active, or vice versa.</p>
+<h3 id="dynamic-configmap-based-pause-without-restart">Dynamic ConfigMap-based pause without restart<a class="headerlink" href="#dynamic-configmap-based-pause-without-restart" title="Permanent link">&para;</a></h3>
+<p>Adds complexity (ConfigMap watch, dynamic reload) with minimal benefit. Rolling restart with leader election is safe and follows existing patterns for operator configuration changes.</p>
 
 
 
@@ -4492,7 +4516,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../029-versioned-documentation-with-mike/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-029: Versioned documentation with mike">
+          <a href="../086-migration-toolkit-design/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-086: Go-based migration toolkit for Keycloak export transformation">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4502,20 +4526,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-029: Versioned documentation with mike
+                ADR-086: Go-based migration toolkit for Keycloak export transformation
               </div>
             </div>
           </a>
         
         
           
-          <a href="../031-automated-releases-with-release-please/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-031: Automated releases with release-please">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-031: Automated releases with release-please
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">
