@@ -6,6 +6,8 @@ and status. These models ensure proper validation and provide IDE support
 for the operator development.
 """
 
+import re
+
 from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
 from keycloak_operator.models.types import (
@@ -675,6 +677,24 @@ class MaintenanceMode(BaseModel):
             raise ValueError(f"Maintenance mode must be one of {valid_modes}")
         return v
 
+    @field_validator("exclude_paths")
+    @classmethod
+    def validate_exclude_paths(cls, v: list[str]) -> list[str]:
+        """Validate that exclude paths are safe URL paths.
+
+        Each path must start with ``/`` and contain only URL-safe characters
+        (alphanumeric, ``/``, ``-``, ``_``, ``.``, ``~``).  This prevents
+        injection of regex metacharacters into the nginx server-snippet.
+        """
+        path_pattern = re.compile(r"^/[a-zA-Z0-9/_\-.~]*$")
+        for path in v:
+            if not path_pattern.match(path):
+                raise ValueError(
+                    f"Invalid exclude path '{path}'. Paths must start with '/' "
+                    "and contain only alphanumeric characters, '/', '-', '_', '.', '~'."
+                )
+        return v
+
 
 class CacheIsolation(BaseModel):
     """
@@ -703,6 +723,29 @@ class CacheIsolation(BaseModel):
             "to isolate caches between versions. Overridden by explicit clusterName."
         ),
     )
+
+    @field_validator("cluster_name")
+    @classmethod
+    def validate_cluster_name_as_k8s_label(cls, v: str | None) -> str | None:
+        """Validate that cluster_name is a valid Kubernetes label value.
+
+        Kubernetes label values must be at most 63 characters, consist of
+        alphanumeric characters, ``-``, ``_``, or ``.``, and must start and
+        end with an alphanumeric character.
+        """
+        if v is None:
+            return v
+        if len(v) > 63:
+            raise ValueError(
+                f"cluster_name must be at most 63 characters, got {len(v)}"
+            )
+        if not re.fullmatch(r"[a-zA-Z0-9]([a-zA-Z0-9._-]*[a-zA-Z0-9])?", v):
+            raise ValueError(
+                f"cluster_name '{v}' is not a valid Kubernetes label value. "
+                "Must consist of alphanumeric characters, '-', '_', or '.', "
+                "and must start and end with an alphanumeric character."
+            )
+        return v
 
 
 class KeycloakTracingConfig(BaseModel):

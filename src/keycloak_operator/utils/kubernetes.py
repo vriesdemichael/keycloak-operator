@@ -13,6 +13,7 @@ Key functionality:
 """
 
 import logging
+import re
 from typing import Any
 
 from kubernetes import client, config
@@ -626,6 +627,50 @@ def create_keycloak_service(
         raise
 
 
+def _normalize_k8s_label_value(value: str, max_length: int = 63) -> str:
+    """Normalize a string to be a valid Kubernetes label value.
+
+    Rules: at most *max_length* characters, only ``[a-zA-Z0-9._-]``,
+    must start and end with an alphanumeric character.
+
+    Non-conforming characters are replaced with ``-`` and the result
+    is trimmed from both ends to ensure alphanumeric boundaries.
+    """
+    # Replace any characters that are not alphanumeric, '.', '_', or '-'
+    value = re.sub(r"[^a-zA-Z0-9._-]", "-", value)
+    # Truncate to max_length
+    value = value[:max_length]
+    # Strip non-alphanumeric from start and end
+    value = value.strip("._-")
+    return value
+
+
+def _extract_image_tag(image: str) -> str:
+    """Extract the tag portion from a container image reference.
+
+    Handles common formats robustly:
+    - ``registry:5000/repo/image:tag`` → ``tag``
+    - ``repo/image@sha256:abc123`` → ``sha256-abc123``
+    - ``repo/image:tag@sha256:abc123`` → ``tag``
+    - ``repo/image`` → ``latest``
+    """
+    # Strip digest suffix first (tag takes priority when both present)
+    digest_part = ""
+    if "@" in image:
+        image, digest_part = image.rsplit("@", 1)
+
+    # Work only with the final path segment to avoid registry port confusion
+    last_segment = image.rsplit("/", 1)[-1]
+
+    if ":" in last_segment:
+        return last_segment.rsplit(":", 1)[-1]
+
+    # No tag in image; fall back to digest if present, otherwise "latest"
+    if digest_part:
+        return digest_part.replace(":", "-")
+    return "latest"
+
+
 def _resolve_cache_cluster_name(name: str, spec: KeycloakSpec | None) -> str | None:
     """
     Resolve the effective JGroups cache cluster name from the spec (ADR-088).
@@ -635,6 +680,9 @@ def _resolve_cache_cluster_name(name: str, spec: KeycloakSpec | None) -> str | N
     2. ``cache_isolation.auto_suffix=True`` appends the image tag (version)
        to the Keycloak instance name.
     3. Otherwise returns None (no cache isolation).
+
+    The returned value is guaranteed to be a valid Kubernetes label value
+    (<=63 chars, alphanumeric boundaries).
 
     Args:
         name: Keycloak instance name (used as base for auto-suffix)
@@ -654,8 +702,9 @@ def _resolve_cache_cluster_name(name: str, spec: KeycloakSpec | None) -> str | N
     if ci.auto_suffix:
         # Derive version suffix from image tag
         image = spec.image or DEFAULT_KEYCLOAK_IMAGE
-        tag = image.rsplit(":", 1)[-1] if ":" in image else "latest"
-        return f"{name}-{tag}"
+        tag = _extract_image_tag(image)
+        raw = f"{name}-{tag}"
+        return _normalize_k8s_label_value(raw)
 
     return None
 
@@ -1067,8 +1116,9 @@ def build_maintenance_mode_annotations(spec: KeycloakSpec) -> dict[str, str]:
     # Excluded paths (health endpoints) are let through unconditionally.
     exclude_block = ""
     if mm.exclude_paths:
-        # Build a regex alternation: (^/health$|^/health/live$|...)
-        escaped_paths = [p.replace("/", r"\/") for p in mm.exclude_paths]
+        # Build a regex alternation: (^\/health$|^\/health\/live$|...)
+        # Use re.escape to safely handle any special characters in paths.
+        escaped_paths = [re.escape(p) for p in mm.exclude_paths]
         pattern = "|".join(f"^{p}$" for p in escaped_paths)
         exclude_block = f"""
     # Allow excluded paths (health checks) through maintenance mode

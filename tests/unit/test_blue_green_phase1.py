@@ -664,9 +664,9 @@ class TestBuildMaintenanceModeAnnotations:
         snippet = build_maintenance_mode_annotations(spec)[
             MAINTENANCE_MODE_SNIPPET_ANNOTATION
         ]
-        # Paths are escaped for nginx regex (/ → \/)
-        assert "health" in snippet
-        assert "health\\/live" in snippet
+        # Paths are properly escaped for nginx regex via re.escape
+        assert "/health" in snippet
+        assert "/health/live" in snippet
         assert "break" in snippet
 
     def test_empty_exclude_paths(self):
@@ -978,3 +978,261 @@ class TestCacheIsolationDiscoveryService:
         service = self._create_discovery_and_get_body(spec)
         assert service.spec.cluster_ip == "None"
         assert service.spec.publish_not_ready_addresses is True
+
+
+# ===========================================================================
+# Review Comment Fixes — Additional Validation Tests
+# ===========================================================================
+
+
+class TestCacheIsolationLabelValidation:
+    """Tests for K8s label value validation on CacheIsolation.cluster_name."""
+
+    def test_valid_simple_name(self):
+        ci = CacheIsolation(cluster_name="blue-v26")
+        assert ci.cluster_name == "blue-v26"
+
+    def test_valid_with_dots_and_underscores(self):
+        ci = CacheIsolation(cluster_name="my_cluster.v26")
+        assert ci.cluster_name == "my_cluster.v26"
+
+    def test_valid_single_char(self):
+        ci = CacheIsolation(cluster_name="a")
+        assert ci.cluster_name == "a"
+
+    def test_valid_max_length(self):
+        name = "a" * 63
+        ci = CacheIsolation(cluster_name=name)
+        assert ci.cluster_name == name
+
+    def test_too_long_rejected(self):
+        with pytest.raises(ValidationError, match="at most 63 characters"):
+            CacheIsolation(cluster_name="a" * 64)
+
+    def test_starts_with_dot_rejected(self):
+        with pytest.raises(ValidationError, match="not a valid Kubernetes label value"):
+            CacheIsolation(cluster_name=".invalid")
+
+    def test_ends_with_hyphen_rejected(self):
+        with pytest.raises(ValidationError, match="not a valid Kubernetes label value"):
+            CacheIsolation(cluster_name="invalid-")
+
+    def test_contains_spaces_rejected(self):
+        with pytest.raises(ValidationError, match="not a valid Kubernetes label value"):
+            CacheIsolation(cluster_name="has space")
+
+    def test_contains_slash_rejected(self):
+        with pytest.raises(ValidationError, match="not a valid Kubernetes label value"):
+            CacheIsolation(cluster_name="has/slash")
+
+    def test_contains_colon_rejected(self):
+        with pytest.raises(ValidationError, match="not a valid Kubernetes label value"):
+            CacheIsolation(cluster_name="has:colon")
+
+    def test_empty_string_rejected(self):
+        with pytest.raises(ValidationError, match="not a valid Kubernetes label value"):
+            CacheIsolation(cluster_name="")
+
+    def test_none_is_allowed(self):
+        ci = CacheIsolation(cluster_name=None)
+        assert ci.cluster_name is None
+
+
+class TestMaintenanceModePathValidation:
+    """Tests for exclude_paths validation on MaintenanceMode."""
+
+    def test_valid_health_paths(self):
+        mm = MaintenanceMode(exclude_paths=["/health", "/health/live"])
+        assert mm.exclude_paths == ["/health", "/health/live"]
+
+    def test_valid_path_with_tilde(self):
+        mm = MaintenanceMode(exclude_paths=["/path/~user"])
+        assert mm.exclude_paths == ["/path/~user"]
+
+    def test_valid_path_with_dots(self):
+        mm = MaintenanceMode(exclude_paths=["/api/v1.0/status"])
+        assert mm.exclude_paths == ["/api/v1.0/status"]
+
+    def test_path_without_leading_slash_rejected(self):
+        with pytest.raises(ValidationError, match="Invalid exclude path"):
+            MaintenanceMode(exclude_paths=["health"])
+
+    def test_path_with_regex_metachar_rejected(self):
+        with pytest.raises(ValidationError, match="Invalid exclude path"):
+            MaintenanceMode(exclude_paths=["/health.*"])
+
+    def test_path_with_parentheses_rejected(self):
+        with pytest.raises(ValidationError, match="Invalid exclude path"):
+            MaintenanceMode(exclude_paths=["/path(evil)"])
+
+    def test_path_with_space_rejected(self):
+        with pytest.raises(ValidationError, match="Invalid exclude path"):
+            MaintenanceMode(exclude_paths=["/path with space"])
+
+    def test_path_with_question_mark_rejected(self):
+        with pytest.raises(ValidationError, match="Invalid exclude path"):
+            MaintenanceMode(exclude_paths=["/path?query=1"])
+
+    def test_empty_list_is_valid(self):
+        mm = MaintenanceMode(exclude_paths=[])
+        assert mm.exclude_paths == []
+
+
+class TestExtractImageTag:
+    """Tests for _extract_image_tag() robustness."""
+
+    def test_standard_image_with_tag(self):
+        from keycloak_operator.utils.kubernetes import _extract_image_tag
+
+        assert _extract_image_tag("quay.io/keycloak/keycloak:26.0.0") == "26.0.0"
+
+    def test_image_without_tag(self):
+        from keycloak_operator.utils.kubernetes import _extract_image_tag
+
+        assert _extract_image_tag("quay.io/keycloak/keycloak") == "latest"
+
+    def test_digest_only(self):
+        from keycloak_operator.utils.kubernetes import _extract_image_tag
+
+        result = _extract_image_tag("quay.io/keycloak/keycloak@sha256:abc123def456")
+        assert result == "sha256-abc123def456"
+
+    def test_tag_plus_digest(self):
+        """When both tag and digest are present, tag wins."""
+        from keycloak_operator.utils.kubernetes import _extract_image_tag
+
+        result = _extract_image_tag("quay.io/keycloak/keycloak:26.0.0@sha256:abc123")
+        assert result == "26.0.0"
+
+    def test_registry_with_port(self):
+        from keycloak_operator.utils.kubernetes import _extract_image_tag
+
+        result = _extract_image_tag("registry:5000/keycloak/keycloak:26.0.0")
+        assert result == "26.0.0"
+
+    def test_registry_with_port_no_tag(self):
+        from keycloak_operator.utils.kubernetes import _extract_image_tag
+
+        result = _extract_image_tag("registry:5000/keycloak/keycloak")
+        assert result == "latest"
+
+    def test_registry_with_port_and_digest(self):
+        from keycloak_operator.utils.kubernetes import _extract_image_tag
+
+        result = _extract_image_tag("registry:5000/keycloak/keycloak@sha256:abc123")
+        assert result == "sha256-abc123"
+
+    def test_simple_image_with_tag(self):
+        from keycloak_operator.utils.kubernetes import _extract_image_tag
+
+        assert _extract_image_tag("keycloak:latest") == "latest"
+
+
+class TestNormalizeK8sLabelValue:
+    """Tests for _normalize_k8s_label_value()."""
+
+    def test_already_valid(self):
+        from keycloak_operator.utils.kubernetes import _normalize_k8s_label_value
+
+        assert _normalize_k8s_label_value("my-app-26.0.0") == "my-app-26.0.0"
+
+    def test_truncation(self):
+        from keycloak_operator.utils.kubernetes import _normalize_k8s_label_value
+
+        long_value = "a" * 100
+        result = _normalize_k8s_label_value(long_value)
+        assert len(result) <= 63
+
+    def test_replaces_invalid_chars(self):
+        from keycloak_operator.utils.kubernetes import _normalize_k8s_label_value
+
+        result = _normalize_k8s_label_value("my app:v1")
+        assert " " not in result
+        assert ":" not in result
+        assert result == "my-app-v1"
+
+    def test_strips_leading_trailing_special(self):
+        from keycloak_operator.utils.kubernetes import _normalize_k8s_label_value
+
+        result = _normalize_k8s_label_value("--my-app--")
+        assert result == "my-app"
+
+    def test_empty_after_strip(self):
+        from keycloak_operator.utils.kubernetes import _normalize_k8s_label_value
+
+        result = _normalize_k8s_label_value("---")
+        assert result == ""
+
+    def test_custom_max_length(self):
+        from keycloak_operator.utils.kubernetes import _normalize_k8s_label_value
+
+        result = _normalize_k8s_label_value("abcdef", max_length=3)
+        assert result == "abc"
+
+
+class TestAutoSuffixRobustImageParsing:
+    """Tests for _resolve_cache_cluster_name with various image formats."""
+
+    def test_registry_with_port(self):
+        """Registry port should not confuse tag extraction."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="registry:5000/keycloak/keycloak:26.0.0",
+            cache_isolation=CacheIsolation(auto_suffix=True),
+        )
+        assert _resolve_cache_cluster_name("kc", spec) == "kc-26.0.0"
+
+    def test_digest_reference(self):
+        """Digest-only image should produce a valid label value."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak@sha256:abc123def",
+            cache_isolation=CacheIsolation(auto_suffix=True),
+        )
+        result = _resolve_cache_cluster_name("kc", spec)
+        assert result is not None
+        assert len(result) <= 63
+        # Should not contain the colon from sha256:
+        assert ":" not in result
+
+    def test_very_long_name_truncated(self):
+        """Extremely long auto-suffix results are truncated to <=63 chars."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.0",
+            cache_isolation=CacheIsolation(auto_suffix=True),
+        )
+        # Use a very long Keycloak instance name
+        result = _resolve_cache_cluster_name("a" * 60, spec)
+        assert result is not None
+        assert len(result) <= 63
+
+
+class TestMaintenanceModeAnnotationRemoval:
+    """Tests for ensure_ingress removing stale maintenance annotations."""
+
+    def test_build_maintenance_returns_empty_when_disabled(self):
+        """When maintenance mode is disabled, empty dict is returned."""
+        spec = _spec_with_db(
+            maintenance_mode=MaintenanceMode(enabled=False),
+        )
+        annotations = build_maintenance_mode_annotations(spec)
+        assert annotations == {}
+
+    def test_snippet_uses_re_escape(self):
+        """Paths with dots are properly escaped via re.escape."""
+        spec = _spec_with_db(
+            maintenance_mode=MaintenanceMode(
+                enabled=True,
+                mode="full-block",
+                exclude_paths=["/api/v1.0/health"],
+            ),
+        )
+        snippet = build_maintenance_mode_annotations(spec)[
+            MAINTENANCE_MODE_SNIPPET_ANNOTATION
+        ]
+        # re.escape escapes the dot: v1\.0
+        assert r"v1\.0" in snippet

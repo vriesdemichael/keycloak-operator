@@ -10,7 +10,11 @@ from typing import Any
 from kubernetes import client
 from kubernetes.client.rest import ApiException
 
-from ..constants import DEFAULT_KEYCLOAK_IMAGE
+from ..constants import (
+    DEFAULT_KEYCLOAK_IMAGE,
+    MAINTENANCE_MODE_ANNOTATION,
+    MAINTENANCE_MODE_SNIPPET_ANNOTATION,
+)
 from ..errors import (
     ConfigurationError,
     DatabaseValidationError,
@@ -1004,9 +1008,21 @@ class KeycloakInstanceReconciler(BaseReconciler):
 
             # Patch maintenance mode annotations if they've changed (ADR-088)
             desired_annotations = dict(getattr(spec.ingress, "annotations", {}) or {})
-            desired_annotations.update(build_maintenance_mode_annotations(spec))
+            maintenance_annotations = build_maintenance_mode_annotations(spec)
+            desired_annotations.update(maintenance_annotations)
 
+            # When maintenance mode is disabled, explicitly remove stale
+            # maintenance annotations from the ingress.  A strategic merge
+            # patch ignores absent keys so we must set them to None.
             current_annotations = existing_ingress.metadata.annotations or {}
+            maintenance_keys = {
+                MAINTENANCE_MODE_ANNOTATION,
+                MAINTENANCE_MODE_SNIPPET_ANNOTATION,
+            }
+            for key in maintenance_keys:
+                if key not in maintenance_annotations and key in current_annotations:
+                    desired_annotations[key] = None
+
             if {
                 k: current_annotations.get(k) for k in desired_annotations
             } != desired_annotations:
