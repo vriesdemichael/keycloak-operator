@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.5.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.35...chart-operator-v0.5.0) (2026-03-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-operator+operator:** The annotation keycloak-operator/force-reconcile has been renamed to keycloak-operator/reconcile-force. Update any scripts or tooling that reference the old annotation name.
+
+### Features
+
+* **chart-operator+operator:** add reconciliation pause and rename force-reconcile annotation ([cf5185b](https://github.com/vriesdemichael/keycloak-operator/commit/cf5185b2ac1ffe63e49f5d503a3f3849ddda16ec))
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.7.28 ([a8570ae](https://github.com/vriesdemichael/keycloak-operator/commit/a8570ae5b540d68013bec9f75fc1488b9a09e1ef))
+* **chart-operator:** update for operator v0.8.0 ([92d064f](https://github.com/vriesdemichael/keycloak-operator/commit/92d064f2f52a0597cff7d3a07e61a7d0449c3533))
+
 ## [0.4.35](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.4.34...chart-operator-v0.4.35) (2026-03-01)
 
 
