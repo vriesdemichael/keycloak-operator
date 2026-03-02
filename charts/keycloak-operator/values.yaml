@@ -478,6 +478,28 @@ keycloak:
       postgresql:
         maxConnections: "200"
         sharedBuffers: "256MB"
+  # Maintenance mode configuration for blue-green upgrades (ADR-088)
+  # When enabled, the ingress is annotated to block or limit traffic
+  # Useful during major version upgrades to drain connections gracefully
+  maintenanceMode:
+    # Enable maintenance mode (blocks traffic via ingress annotations)
+    enabled: false
+    # Mode: "read-only" allows GET/HEAD/OPTIONS, "full-block" returns 503 for all requests
+    mode: "full-block"
+    # Paths excluded from maintenance mode (always accessible)
+    excludePaths:
+      - /health
+      - /health/live
+      - /health/ready
+      - /health/started
+  # JGroups cache isolation for blue-green upgrades (ADR-088)
+  # Ensures old and new Keycloak versions form separate clusters
+  # to prevent cross-version cache poisoning during upgrades
+  cacheIsolation:
+    # Explicit JGroups cluster name (overrides autoSuffix)
+    clusterName: ""
+    # Auto-append Keycloak version to cluster name for isolation
+    autoSuffix: false
   # Ingress configuration (used when managed: true)
   ingress:
     enabled: false

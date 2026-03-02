@@ -35,7 +35,7 @@ class DatabaseConnectionManager:
         self, db_config: KeycloakDatabaseConfig
     ) -> dict[str, Any]:
         """Convert connection pool config to dictionary."""
-        pool = getattr(db_config, "connection_pool", None)
+        pool = db_config.effective_connection_pool
         if pool is None:
             return {}
         if isinstance(pool, dict):
@@ -76,33 +76,36 @@ class DatabaseConnectionManager:
         """
         connection_info = {
             "type": db_config.type,
-            "host": db_config.host,
-            "port": db_config.port,
-            "database": db_config.database,
-            "ssl_mode": getattr(db_config, "ssl_mode", "require"),
-            "connection_params": getattr(db_config, "connection_params", {}),
+            "host": db_config.effective_host,
+            "port": db_config.effective_port,
+            "database": db_config.effective_database,
+            "ssl_mode": db_config.effective_ssl_mode,
+            "connection_params": db_config.effective_connection_params,
             "connection_pool": self._get_connection_pool_dict(db_config),
         }
 
         # Resolve credentials
-        credentials_secret = getattr(db_config, "credentials_secret", None)
-        password_secret = getattr(db_config, "password_secret", None)
+        credentials_secret = db_config.effective_credentials_secret
+        password_secret = db_config.effective_password_secret
 
         if credentials_secret:
             # All credentials in one secret (username + password)
             credentials = await self._get_k8s_secret_credentials(
                 credentials_secret, namespace
             )
-        elif db_config.username and password_secret:
+        elif db_config.effective_username and password_secret:
             # Username provided directly, password in separate secret
             password = await self._get_password_from_secret(
                 password_secret.name, password_secret.key, namespace
             )
-            credentials = {"username": db_config.username, "password": password}
-        elif db_config.username:
+            credentials = {
+                "username": db_config.effective_username,
+                "password": password,
+            }
+        elif db_config.effective_username:
             # Username only, no password configured - allow for backward compatibility
             # but connection testing will likely fail
-            credentials = {"username": db_config.username}
+            credentials = {"username": db_config.effective_username}
         else:
             raise ExternalServiceError(
                 service="Database",

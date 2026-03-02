@@ -349,7 +349,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         # Ensure core Kubernetes resources exist
         await self.ensure_deployment(keycloak_spec, name, namespace, db_connection_info)
         await self.ensure_service(keycloak_spec, name, namespace)
-        await self.ensure_discovery_service(name, namespace)
+        await self.ensure_discovery_service(name, namespace, keycloak_spec)
 
         # Setup ingress if configured
         if keycloak_spec.ingress.enabled:
@@ -602,7 +602,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
             )
 
         # Validate SSL configuration for production
-        ssl_mode = getattr(spec.database, "ssl_mode", "require")
+        ssl_mode = spec.database.effective_ssl_mode
         if ssl_mode in ["disable", "allow"]:
             self.logger.warning(
                 f"Database SSL mode '{ssl_mode}' is not recommended for production. "
@@ -914,16 +914,22 @@ class KeycloakInstanceReconciler(BaseReconciler):
             else:
                 raise
 
-    async def ensure_discovery_service(self, name: str, namespace: str) -> None:
+    async def ensure_discovery_service(
+        self, name: str, namespace: str, spec: KeycloakSpec | None = None
+    ) -> None:
         """
         Ensure headless discovery service exists for JGroups clustering.
 
         This headless service enables Keycloak replicas to discover each other
         via DNS_PING for proper session replication and cache synchronization.
 
+        When cache isolation is configured (ADR-088), the spec is passed through
+        to add cache cluster labels on the discovery service selector.
+
         Args:
             name: Resource name
             namespace: Resource namespace
+            spec: Optional Keycloak spec for cache isolation config
         """
         self.logger.info(f"Ensuring discovery service for {name}")
         from kubernetes import client
@@ -948,6 +954,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                         name=name,
                         namespace=namespace,
                         k8s_client=self.kubernetes_client,
+                        spec=spec,
                     )
                     self.logger.info(
                         f"Created Keycloak discovery service: {service.metadata.name}"
@@ -969,6 +976,9 @@ class KeycloakInstanceReconciler(BaseReconciler):
         """
         Ensure ingress is configured for external access.
 
+        When the ingress already exists, patches annotations to keep
+        maintenance mode annotations in sync with the spec (ADR-088).
+
         Args:
             spec: Keycloak specification
             name: Resource name
@@ -978,16 +988,40 @@ class KeycloakInstanceReconciler(BaseReconciler):
         from kubernetes import client
         from kubernetes.client.rest import ApiException
 
-        from ..utils.kubernetes import create_keycloak_ingress
+        from ..utils.kubernetes import (
+            build_maintenance_mode_annotations,
+            create_keycloak_ingress,
+        )
 
         ingress_name = f"{name}-keycloak"
         networking_api = client.NetworkingV1Api(self.kubernetes_client)
 
         try:
-            networking_api.read_namespaced_ingress(
+            existing_ingress = networking_api.read_namespaced_ingress(
                 name=ingress_name, namespace=namespace
             )
             self.logger.info(f"Ingress {ingress_name} already exists")
+
+            # Patch maintenance mode annotations if they've changed (ADR-088)
+            desired_annotations = dict(getattr(spec.ingress, "annotations", {}) or {})
+            desired_annotations.update(build_maintenance_mode_annotations(spec))
+
+            current_annotations = existing_ingress.metadata.annotations or {}
+            if {
+                k: current_annotations.get(k) for k in desired_annotations
+            } != desired_annotations:
+                patch_body = {
+                    "metadata": {
+                        "annotations": desired_annotations,
+                    }
+                }
+                networking_api.patch_namespaced_ingress(
+                    name=ingress_name, namespace=namespace, body=patch_body
+                )
+                self.logger.info(
+                    f"Patched ingress {ingress_name} annotations (maintenance mode sync)"
+                )
+
         except ApiException as e:
             if e.status == 404:
                 try:

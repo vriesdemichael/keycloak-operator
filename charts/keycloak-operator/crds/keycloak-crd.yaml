@@ -53,8 +53,13 @@ spec:
                     description: Name of an existing Kubernetes secret containing admin credentials (must contain 'username' and 'password' keys).
               database:
                 type: object
-                description: 'Database configuration. For CloudNativePG clusters, use standard PostgreSQL connection details
-                  (host: cluster-name-rw, type: postgresql)'
+                description: >-
+                  Database configuration with tiered support (ADR-088).
+                  Tier 1 (cnpg): CloudNativePG-managed — operator resolves connection from CNPG Cluster.
+                  Tier 2 (managed): Generic PostgreSQL — operator has direct connection access.
+                  Tier 3 (external): Externally managed — operator connects but cannot back up.
+                  Legacy: flat fields (host, database, etc.) for backward compatibility.
+                  Exactly one tier or legacy flat fields must be specified.
                 properties:
                   type:
                     type: string
@@ -66,9 +71,155 @@ spec:
                     - mssql
                     default: postgresql
                     description: Database type
+                  cnpg:
+                    type: object
+                    description: 'Tier 1: CloudNativePG-managed database (ADR-088). Connection details are resolved automatically from the CNPG Cluster CR.'
+                    properties:
+                      clusterName:
+                        type: string
+                        description: Name of the CNPG Cluster resource
+                      namespace:
+                        type: string
+                        description: Namespace of the CNPG Cluster (defaults to Keycloak namespace)
+                    required:
+                    - clusterName
+                  managed:
+                    type: object
+                    description: 'Tier 2: Generic managed PostgreSQL database (ADR-088). Operator has direct connection access.'
+                    properties:
+                      host:
+                        type: string
+                        description: Database host
+                      port:
+                        type: integer
+                        description: Database port (defaults to 5432 for postgresql)
+                        minimum: 1
+                        maximum: 65535
+                      database:
+                        type: string
+                        description: Database name
+                      username:
+                        type: string
+                        description: Database username
+                      passwordSecret:
+                        type: object
+                        description: Secret reference for database password
+                        properties:
+                          name:
+                            type: string
+                          key:
+                            type: string
+                            default: password
+                        required:
+                        - name
+                      credentialsSecret:
+                        type: string
+                        description: Kubernetes secret name with database credentials
+                      connectionParams:
+                        type: object
+                        description: Additional database connection parameters
+                        additionalProperties:
+                          type: string
+                      connectionPool:
+                        type: object
+                        description: Database connection pool configuration
+                        properties:
+                          maxConnections:
+                            type: integer
+                            default: 20
+                            description: Maximum number of connections
+                          minConnections:
+                            type: integer
+                            default: 5
+                            description: Minimum number of connections
+                          connectionTimeout:
+                            type: string
+                            default: 30s
+                            description: Connection timeout
+                      sslMode:
+                        type: string
+                        enum:
+                        - disable
+                        - allow
+                        - prefer
+                        - require
+                        - verify-ca
+                        - verify-full
+                        default: require
+                        description: SSL mode for database connections
+                    required:
+                    - host
+                    - database
+                  external:
+                    type: object
+                    description: 'Tier 3: Externally managed database (ADR-088). Operator connects but cannot perform backups. Requires manual gate during upgrades.'
+                    properties:
+                      host:
+                        type: string
+                        description: Database host
+                      port:
+                        type: integer
+                        description: Database port (defaults to 5432 for postgresql)
+                        minimum: 1
+                        maximum: 65535
+                      database:
+                        type: string
+                        description: Database name
+                      username:
+                        type: string
+                        description: Database username
+                      passwordSecret:
+                        type: object
+                        description: Secret reference for database password
+                        properties:
+                          name:
+                            type: string
+                          key:
+                            type: string
+                            default: password
+                        required:
+                        - name
+                      credentialsSecret:
+                        type: string
+                        description: Kubernetes secret name with database credentials
+                      connectionParams:
+                        type: object
+                        description: Additional database connection parameters
+                        additionalProperties:
+                          type: string
+                      connectionPool:
+                        type: object
+                        description: Database connection pool configuration
+                        properties:
+                          maxConnections:
+                            type: integer
+                            default: 20
+                            description: Maximum number of connections
+                          minConnections:
+                            type: integer
+                            default: 5
+                            description: Minimum number of connections
+                          connectionTimeout:
+                            type: string
+                            default: 30s
+                            description: Connection timeout
+                      sslMode:
+                        type: string
+                        enum:
+                        - disable
+                        - allow
+                        - prefer
+                        - require
+                        - verify-ca
+                        - verify-full
+                        default: require
+                        description: SSL mode for database connections
+                    required:
+                    - host
+                    - database
                   host:
                     type: string
-                    description: Database host
+                    description: Database host (legacy flat field — use tiered config instead)
                   port:
                     type: integer
                     description: Database port (auto-detected if not specified)
@@ -76,7 +227,7 @@ spec:
                     maximum: 65535
                   database:
                     type: string
-                    description: Database name
+                    description: Database name (legacy flat field — use tiered config instead)
                   username:
                     type: string
                     description: Database username
@@ -136,8 +287,6 @@ spec:
                     description: Database migration strategy
                 required:
                 - type
-                - host
-                - database
               tls:
                 type: object
                 description: TLS/SSL configuration
@@ -293,6 +442,55 @@ spec:
                     minimum: 0
                     maximum: 1
                     default: 1.0
+              maintenanceMode:
+                type: object
+                description: >-
+                  Maintenance mode configuration for blue-green upgrades (ADR-088).
+                  When enabled, the ingress is annotated to block or limit traffic
+                  before the old deployment is scaled down.
+                properties:
+                  enabled:
+                    type: boolean
+                    description: Enable maintenance mode
+                    default: false
+                  mode:
+                    type: string
+                    description: >-
+                      Maintenance mode type: read-only allows GET/HEAD/OPTIONS,
+                      full-block returns 503 for all requests.
+                    enum:
+                    - read-only
+                    - full-block
+                    default: full-block
+                  excludePaths:
+                    type: array
+                    description: Paths excluded from maintenance mode (always accessible, e.g. health endpoints)
+                    items:
+                      type: string
+                    default:
+                    - /health
+                    - /health/live
+                    - /health/ready
+                    - /health/started
+              cacheIsolation:
+                type: object
+                description: >-
+                  JGroups cache isolation configuration for blue-green upgrades (ADR-088).
+                  Ensures old and new Keycloak versions form separate clusters
+                  by using distinct JGroups cluster names and discovery service selectors.
+                properties:
+                  clusterName:
+                    type: string
+                    description: >-
+                      Explicit JGroups cluster name. When set, the discovery service
+                      selector is scoped to pods with this cluster label, preventing
+                      cross-version cache poisoning during blue-green upgrades.
+                  autoSuffix:
+                    type: boolean
+                    description: >-
+                      Automatically append Keycloak version to the cluster name
+                      to isolate caches between versions. Overridden by explicit clusterName.
+                    default: false
               operatorRef:
                 type: object
                 description: Reference to the operator instance managing this resource (ADR-062)

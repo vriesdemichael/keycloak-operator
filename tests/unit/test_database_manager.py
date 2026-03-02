@@ -30,16 +30,14 @@ class TestGetConnectionPoolDict:
         """None connection pool returns empty dict."""
         mgr = _make_manager()
         config = MagicMock()
-        config.connection_pool = None
-        # Use getattr in case of attribute absence
-        delattr(config, "connection_pool")
+        config.effective_connection_pool = None
         assert mgr._get_connection_pool_dict(config) == {}
 
     def test_dict_pool_returned_as_is(self):
         """Dict connection pool is returned as-is."""
         mgr = _make_manager()
         config = MagicMock()
-        config.connection_pool = {"min_size": 5, "max_size": 20}
+        config.effective_connection_pool = {"min_size": 5, "max_size": 20}
         result = mgr._get_connection_pool_dict(config)
         assert result == {"min_size": 5, "max_size": 20}
 
@@ -49,7 +47,7 @@ class TestGetConnectionPoolDict:
         config = MagicMock()
         pool_mock = MagicMock()
         pool_mock.model_dump.return_value = {"minSize": 5}
-        config.connection_pool = pool_mock
+        config.effective_connection_pool = pool_mock
         result = mgr._get_connection_pool_dict(config)
         pool_mock.model_dump.assert_called_once_with(by_alias=True)
         assert result == {"minSize": 5}

@@ -904,6 +904,46 @@
             }
           }
         },
+        "maintenanceMode": {
+          "type": "object",
+          "description": "Maintenance mode configuration for blue-green upgrades (ADR-088). When enabled, ingress annotations block or limit traffic.",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable maintenance mode",
+              "default": false
+            },
+            "mode": {
+              "type": "string",
+              "description": "Maintenance mode type: read-only allows GET/HEAD/OPTIONS, full-block returns 503 for all requests",
+              "enum": ["read-only", "full-block"],
+              "default": "full-block"
+            },
+            "excludePaths": {
+              "type": "array",
+              "description": "Paths excluded from maintenance mode (always accessible)",
+              "items": {
+                "type": "string"
+              },
+              "default": ["/health", "/health/live", "/health/ready", "/health/started"]
+            }
+          }
+        },
+        "cacheIsolation": {
+          "type": "object",
+          "description": "JGroups cache isolation for blue-green upgrades (ADR-088). Ensures old and new Keycloak versions form separate clusters.",
+          "properties": {
+            "clusterName": {
+              "type": "string",
+              "description": "Explicit JGroups cluster name for cache isolation"
+            },
+            "autoSuffix": {
+              "type": "boolean",
+              "description": "Auto-append Keycloak version to cluster name for isolation",
+              "default": false
+            }
+          }
+        },
         "ingress": {
           "type": "object",
           "description": "Ingress configuration",
