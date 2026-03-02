@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.8.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.28...operator-image-v0.8.0) (2026-03-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-operator+operator:** The annotation keycloak-operator/force-reconcile has been renamed to keycloak-operator/reconcile-force. Update any scripts or tooling that reference the old annotation name.
+
+### Features
+
+* **chart-operator+operator:** add reconciliation pause and rename force-reconcile annotation ([cf5185b](https://github.com/vriesdemichael/keycloak-operator/commit/cf5185b2ac1ffe63e49f5d503a3f3849ddda16ec))
+
+
+### Bug Fixes
+
+* **operator:** address PR review feedback for reconciliation pause ([b0005f4](https://github.com/vriesdemichael/keycloak-operator/commit/b0005f4aec6c496d1b546753607ea91292085076))
+
 ## [0.7.28](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.7.27...operator-image-v0.7.28) (2026-03-01)
 
 
