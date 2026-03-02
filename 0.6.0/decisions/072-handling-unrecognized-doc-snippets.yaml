@@ -1,0 +1,52 @@
+number: 72
+title: Handling unrecognized documentation snippets
+category: development
+decision: >
+  When adding new code snippets to documentation, ensure they can be validated
+  programmatically. The validation script categorizes snippets and validates them
+  against appropriate schemas. Unrecognized snippets are flagged as warnings.
+  For snippets that cannot be validated automatically, manually verify correctness
+  before committing.
+agent_instructions: >
+  When adding documentation examples:
+
+  1. **Validatable snippets** - Add sufficient context for auto-detection:
+     - K8s resources: Include `apiVersion` and `kind`
+     - Helm values: Include recognizable top-level keys (operator, keycloak, etc.)
+     - CR examples: Include `apiVersion: vriesdemichael.github.io/v1` and `kind`
+
+  2. **Partial snippets** - Add detection hints when possible:
+     - For env arrays: Keep the `env:` key as wrapper
+     - For spec sections: Include the `spec:` wrapper
+     - For config fragments: Include parent key context
+
+  3. **External/third-party snippets** - These are intentionally skipped:
+     - CNPG partial configs (bootstrap, backup, certificates)
+     - FluxCD, Prometheus, cert-manager resources
+     - ingress-nginx Helm values
+     - Spring/application config examples
+
+  4. **Manual validation required** - For snippets that can't be auto-validated:
+     - Verify against official documentation before committing
+     - Document the source/reference in a comment if helpful
+     - Consider if the snippet can be restructured for validation
+
+  Run `task quality:validate-docs` or `uv run --group dev python scripts/lib/schema_validator.py`
+  to check validation status. The script will warn about new unrecognized snippets.
+rationale: >
+  Documentation drift causes user confusion when examples use incorrect field names
+  or outdated structures. Programmatic validation catches most issues, but some
+  snippets (external tools, partial configs) cannot be validated automatically.
+  For these, we accept the limitation and require manual verification. The key is
+  distinguishing between "intentionally skipped" (external/known) and "unrecognized"
+  (potentially a validation gap).
+rejected_alternatives:
+  - alternative: Validate everything or reject unvalidatable snippets
+    reason: >
+      Some documentation necessarily shows external tool configs (CNPG, FluxCD)
+      that we don't control schemas for. Removing these would make docs incomplete.
+  - alternative: Skip validation for all partial snippets
+    reason: >
+      Many partial snippets (env arrays, K8s affinity/resources) can be validated
+      with proper schema extraction. Blanket skipping would miss validation opportunities.
+provenance: guided-ai
