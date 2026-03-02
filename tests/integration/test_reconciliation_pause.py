@@ -19,6 +19,7 @@ import os
 import subprocess
 import time
 import uuid
+from pathlib import Path
 
 import pytest
 from kubernetes import client
@@ -33,6 +34,125 @@ from tests.integration.wait_helpers import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+async def _retrieve_secondary_operator_coverage(
+    release_name: str,
+    namespace: str,
+    k8s_core_v1,
+) -> None:
+    """Retrieve coverage data from a secondary operator pod before cleanup.
+
+    The test image is built with coverage instrumentation (--parallel-mode),
+    so each pod writes .coverage.<hostname>.<pid> files to /tmp/coverage/.
+    We send SIGUSR1 to flush, then kubectl cp the files to .tmp/coverage/
+    where combine-coverage.sh will pick them up.
+
+    This MUST be called before _cleanup_helm_release() destroys the pod.
+    """
+    try:
+        # Find the secondary operator pod by Helm release label
+        pods = await k8s_core_v1.list_namespaced_pod(
+            namespace,
+            label_selector=f"app.kubernetes.io/instance={release_name}",
+        )
+        if not pods.items:
+            logger.warning(
+                f"No pod found for release {release_name} — skipping coverage retrieval"
+            )
+            return
+
+        pod_name = pods.items[0].metadata.name
+        pod_phase = pods.items[0].status.phase
+        if pod_phase != "Running":
+            logger.warning(f"Pod {pod_name} is {pod_phase}, cannot retrieve coverage")
+            return
+
+        logger.info(f"Retrieving coverage from secondary operator pod {pod_name}")
+
+        # Send SIGUSR1 to flush coverage data (PID 1 = main operator process)
+        signal_result = subprocess.run(
+            [
+                "kubectl",
+                "exec",
+                "-n",
+                namespace,
+                pod_name,
+                "--",
+                "sh",
+                "-c",
+                "kill -USR1 1",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if signal_result.returncode != 0:
+            logger.warning(f"SIGUSR1 failed: {signal_result.stderr}")
+
+        # Wait for coverage to flush to disk
+        await asyncio.sleep(3)
+
+        # List coverage files in the pod
+        list_result = subprocess.run(
+            [
+                "kubectl",
+                "exec",
+                "-n",
+                namespace,
+                pod_name,
+                "--",
+                "sh",
+                "-c",
+                "ls -1 /tmp/coverage/.coverage* 2>/dev/null || echo NO_FILES",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if "NO_FILES" in list_result.stdout or not list_result.stdout.strip():
+            logger.warning(f"No coverage files found in pod {pod_name}")
+            return
+
+        coverage_files = [
+            f for f in list_result.stdout.strip().split("\n") if f.strip()
+        ]
+        logger.info(f"Found {len(coverage_files)} coverage file(s) in {pod_name}")
+
+        # Ensure local coverage directory exists
+        coverage_dir = Path(__file__).parent.parent.parent / ".tmp" / "coverage"
+        coverage_dir.mkdir(parents=True, exist_ok=True)
+
+        for remote_path in coverage_files:
+            filename = Path(remote_path).name
+            # Add release-name suffix to avoid collisions with primary operator files
+            # Keep the .coverage prefix so combine-coverage.sh glob picks them up
+            local_filename = f"{filename}.{release_name}"
+            local_path = coverage_dir / local_filename
+
+            try:
+                subprocess.run(
+                    [
+                        "kubectl",
+                        "cp",
+                        "-n",
+                        namespace,
+                        f"{pod_name}:{remote_path}",
+                        str(local_path),
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                    timeout=10,
+                )
+                file_size = local_path.stat().st_size
+                logger.info(f"  Retrieved {local_filename} ({file_size} bytes)")
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                logger.warning(f"  Failed to copy {remote_path}: {e}")
+
+    except Exception as e:
+        logger.warning(f"Coverage retrieval failed for {release_name}: {e}")
+        # Never fail the test due to coverage retrieval issues
 
 
 async def _deploy_paused_operator(
@@ -303,6 +423,9 @@ class TestReconciliationPauseRealms:
                     name=realm_name,
                 )
             if release_name:
+                await _retrieve_secondary_operator_coverage(
+                    release_name, test_namespace, k8s_core_v1
+                )
                 await _cleanup_helm_release(release_name, test_namespace)
 
     @pytest.mark.timeout(600)
@@ -395,6 +518,9 @@ class TestReconciliationPauseRealms:
                     name=realm_name,
                 )
             if release_name:
+                await _retrieve_secondary_operator_coverage(
+                    release_name, test_namespace, k8s_core_v1
+                )
                 await _cleanup_helm_release(release_name, test_namespace)
 
 
@@ -507,6 +633,9 @@ class TestReconciliationPauseKeycloak:
                     name=kc_name,
                 )
             if release_name:
+                await _retrieve_secondary_operator_coverage(
+                    release_name, test_namespace, k8s_core_v1
+                )
                 await _cleanup_helm_release(release_name, test_namespace)
 
 
@@ -651,6 +780,9 @@ class TestReconciliationPauseClients:
                     name=realm_name,
                 )
             if release_name:
+                await _retrieve_secondary_operator_coverage(
+                    release_name, test_namespace, k8s_core_v1
+                )
                 await _cleanup_helm_release(release_name, test_namespace)
 
 
@@ -739,6 +871,9 @@ class TestReconciliationPauseCustomMessage:
                     name=realm_name,
                 )
             if release_name:
+                await _retrieve_secondary_operator_coverage(
+                    release_name, test_namespace, k8s_core_v1
+                )
                 await _cleanup_helm_release(release_name, test_namespace)
 
 
@@ -844,4 +979,7 @@ class TestReconciliationNotPaused:
                     name=realm_name,
                 )
             if release_name:
+                await _retrieve_secondary_operator_coverage(
+                    release_name, test_namespace, k8s_core_v1
+                )
                 await _cleanup_helm_release(release_name, test_namespace)
