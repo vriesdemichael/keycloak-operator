@@ -1,0 +1,61 @@
+number: 88
+title: Blue-green Keycloak upgrade strategy
+category: architecture
+decision: >
+  Support blue-green deployment strategy for Keycloak major version upgrades
+  with zero downtime. This supersedes decision 079 (No managed Keycloak
+  upgrades) which rejected automated upgrades and blue-green deployment.
+  The implementation is split into three phases: (1) Foundation — tiered
+  database configuration, ingress maintenance mode, and JGroups cache
+  isolation; (2) Database backup automation — CNPG backup API, VolumeSnapshot,
+  and manual gate for external databases; (3) Blue-green orchestration —
+  the upgrade CRD and state machine that coordinates the full process.
+agent_instructions: >
+  ADR 079 is superseded by this decision. When users ask about Keycloak
+  upgrades, explain that blue-green upgrades are supported (or will be, if
+  Phase 3 is not yet implemented). The database configuration now uses a
+  tiered model: CNPG (Tier 1) with cluster_name reference, Managed Postgres
+  (Tier 2) with direct connection details, and External (Tier 3) with
+  operator-opaque credentials. The KeycloakDatabaseConfig model supports both
+  the new tiered fields (cnpg, managed, external) and the legacy flat fields
+  for backward compatibility. Ingress maintenance mode can be toggled via
+  spec.maintenanceMode to block or limit traffic during upgrades. JGroups
+  cache isolation via spec.cacheIsolation ensures blue and green deployments
+  do not share Infinispan caches. When implementing new features that interact
+  with database configuration, always check the tier property to determine
+  which backup strategy applies. When creating deployments, respect the
+  cacheIsolation settings for JGroups cluster name and discovery service
+  label selectors.
+rationale: >
+  ADR 079 rejected blue-green deployment because it "requires duplicate
+  database, complex migration coordination, wastes resources." This was
+  correct at the time but the situation has changed. The blue-green strategy
+  does NOT require a duplicate live database — it uses backup-restore to
+  create the green database, so only one database is active at any time.
+  CNPG integration (ADR 015) now provides native backup/restore APIs,
+  making backup orchestration feasible without reimplementing it. Zero-
+  downtime upgrades are a hard requirement for production GitOps
+  environments where maintenance windows are impractical. The tiered
+  database model acknowledges that not all deployments have the same
+  backup capabilities and provides appropriate strategies for each tier.
+  Phase 1 delivers independently useful features (maintenance mode, cache
+  isolation, better DB config) even if Phase 3 is never completed.
+rejected_alternatives:
+  - alternative: Rolling update for Keycloak upgrades
+    reason: >
+      Keycloak does not support mixed-version clusters. Old and new pods
+      would share Infinispan caches with incompatible serialization formats,
+      causing data corruption and session loss.
+  - alternative: Single-database in-place upgrade
+    reason: >
+      No rollback path if migration fails. Database schema changes in major
+      Keycloak versions are destructive and cannot be reversed without a
+      backup. This was the core objection in ADR 079 and remains valid.
+  - alternative: Operator manages database migrations directly
+    reason: >
+      Database migration is Keycloak's responsibility (Liquibase). The
+      operator should orchestrate the environment (backup, deploy, verify)
+      but not reimplement migration logic.
+supersedes:
+  - 79
+provenance: guided-ai
