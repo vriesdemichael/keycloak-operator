@@ -66,7 +66,15 @@ class TestKeycloakHealthDaemon:
     @pytest.mark.asyncio
     @pytest.mark.parametrize(
         "phase",
-        ["Failed", "Pending", "Unknown", "Provisioning", "Updating", "Reconciling"],
+        [
+            "Failed",
+            "Pending",
+            "Unknown",
+            "Provisioning",
+            "Updating",
+            "Reconciling",
+            "Paused",
+        ],
     )
     async def test_skipped_phases(self, phase, mock_stopped, base_kwargs):
         """Daemon skips _run_keycloak_health_check for non-stable phases."""
@@ -134,8 +142,20 @@ class TestRealmHealthDaemon:
         }
 
     @pytest.mark.asyncio
-    async def test_skipped_phases(self, mock_stopped, base_kwargs):
-        base_kwargs["status"] = {"phase": "Updating"}
+    @pytest.mark.parametrize(
+        "phase",
+        [
+            "Failed",
+            "Pending",
+            "Unknown",
+            "Provisioning",
+            "Updating",
+            "Reconciling",
+            "Paused",
+        ],
+    )
+    async def test_skipped_phases(self, mock_stopped, base_kwargs, phase):
+        base_kwargs["status"] = {"phase": phase}
 
         with (
             patch(
@@ -174,8 +194,20 @@ class TestClientHealthDaemon:
         }
 
     @pytest.mark.asyncio
-    async def test_skipped_phases(self, mock_stopped, base_kwargs):
-        base_kwargs["status"] = {"phase": "Provisioning"}
+    @pytest.mark.parametrize(
+        "phase",
+        [
+            "Failed",
+            "Pending",
+            "Unknown",
+            "Provisioning",
+            "Updating",
+            "Reconciling",
+            "Paused",
+        ],
+    )
+    async def test_skipped_phases(self, mock_stopped, base_kwargs, phase):
+        base_kwargs["status"] = {"phase": phase}
 
         with (
             patch(
