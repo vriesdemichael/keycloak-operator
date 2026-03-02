@@ -617,6 +617,7 @@ class BaseReconciler(ABC):
         self._remove_condition(status, "Reconciling")
         self._remove_condition(status, "Progressing")
         self._remove_condition(status, "Degraded")
+        self._remove_condition(status, "Available")
 
     def _add_condition(
         self,
