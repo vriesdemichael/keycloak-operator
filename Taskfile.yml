@@ -390,9 +390,17 @@ tasks:
     deps: [cluster:create]
     cmd: bash scripts/install-openldap.sh
 
+  infra:csi-snapshots:
+    desc: Install CSI snapshot support (VolumeSnapshot CRDs, controller, hostpath driver)
+    deps: [cluster:create]
+    status:
+      - kubectl get csidriver hostpath.csi.k8s.io
+      - kubectl get volumesnapshotclass csi-hostpath-snapclass
+    cmd: bash scripts/install-csi-snapshots.sh
+
   infra:all:
     desc: Install all infrastructure
-    deps: [infra:cnpg, infra:cert-manager, infra:otel, infra:ldap]
+    deps: [infra:cnpg, infra:cert-manager, infra:otel, infra:ldap, infra:csi-snapshots]
 
   # ============================================================================
   # Helm Charts

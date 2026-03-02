@@ -39,6 +39,9 @@ MAINTENANCE_MODE_SNIPPET_ANNOTATION = "nginx.ingress.kubernetes.io/server-snippe
 # Cache isolation labels (ADR-088)
 CACHE_CLUSTER_LABEL = "vriesdemichael.github.io/cache-cluster"
 
+# Pre-upgrade backup annotations and labels (ADR-088 Phase 2)
+BACKUP_CONFIRMED_ANNOTATION = "operator.keycloak.io/backup-confirmed"
+
 # Component type constants
 COMPONENT_KEYCLOAK = "keycloak"
 COMPONENT_DATABASE = "database"
@@ -55,6 +58,8 @@ PHASE_UPDATING = "Updating"
 PHASE_RECONCILING = "Reconciling"
 PHASE_DEGRADED = "Degraded"
 PHASE_PAUSED = "Paused"
+PHASE_BACKING_UP = "BackingUp"
+PHASE_WAITING_FOR_BACKUP_CONFIRMATION = "WaitingForBackupConfirmation"
 
 # Condition type constants (following Kubernetes conventions)
 CONDITION_READY = "Ready"
@@ -62,6 +67,7 @@ CONDITION_AVAILABLE = "Available"
 CONDITION_PROGRESSING = "Progressing"
 CONDITION_RECONCILING = "Reconciling"
 CONDITION_RECONCILIATION_PAUSED = "ReconciliationPaused"
+CONDITION_BACKUP_NOT_VERIFIED = "BackupNotVerified"
 
 # Condition status constants
 CONDITION_TRUE = "True"
@@ -96,6 +102,7 @@ PVC_SUFFIX = "-data"
 DEFAULT_RECONCILIATION_TIMEOUT = 300  # 5 minutes
 DEFAULT_HEALTH_CHECK_TIMEOUT = 30
 DEFAULT_DELETION_TIMEOUT = 600  # 10 minutes
+DEFAULT_BACKUP_TIMEOUT = 600  # 10 minutes for pre-upgrade backups
 
 # Timer intervals for health checks and stuck finalizer detection
 # Configurable via environment variables for testing

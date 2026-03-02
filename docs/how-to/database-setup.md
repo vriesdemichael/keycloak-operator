@@ -559,8 +559,22 @@ kubectl exec -it -n keycloak-db keycloak-db-1 -- \
 
 ## Connecting Keycloak to Database
 
+### Database Tiers
+
+The operator supports four database configuration tiers, each with different levels of automation:
+
+| Tier | Config Key | Backup on Upgrade | Description |
+|------|-----------|-------------------|-------------|
+| **CNPG** | `database.cnpg` | Automatic (CNPG Backup CR) | CloudNativePG-managed cluster — full lifecycle management |
+| **Managed** | `database.managed` | Automatic (VolumeSnapshot) | K8s-hosted DB with PVC — requires CSI snapshot support |
+| **External** | `database.external` | Manual confirmation | External database (RDS, Cloud SQL, etc.) — operator cannot back up |
+| **Legacy** | `database.type` + flat fields | Manual confirmation | Backward-compatible flat config — same behavior as External |
+
+For upgrade backup behavior, see [Backup & Restore: Automated Pre-Upgrade Backups](../operations/backup-restore.md#automated-pre-upgrade-backups).
+
 ### Keycloak CRD Configuration
 
+**CNPG Tier (Recommended)**:
 ```yaml
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
@@ -571,10 +585,52 @@ spec:
   replicas: 3
 
   database:
-    type: cnpg
-    cluster: keycloak-db             # ← CNPG cluster name
-    namespace: keycloak-db            # ← Database namespace
-    credentialsSecret: keycloak-db-credentials  # ← Credentials secret
+    cnpg:
+      clusterName: keycloak-db         # ← CNPG cluster name
+      namespace: keycloak-db           # ← Database namespace
+      credentialsSecret: keycloak-db-credentials
+
+  # Rest of Keycloak configuration...
+```
+
+**External Tier** (RDS, Cloud SQL, etc.):
+```yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak-system
+spec:
+  replicas: 3
+
+  database:
+    external:
+      host: my-rds-instance.abc123.us-east-1.rds.amazonaws.com
+      port: 5432
+      database: keycloak
+      credentialsSecret: keycloak-db-credentials
+
+  # Recommended: require manual backup confirmation before upgrades
+  upgradePolicy:
+    requireBackupConfirmation: true
+```
+
+**Legacy Tier** (backward-compatible flat config):
+```yaml
+apiVersion: vriesdemichael.github.io/v1
+kind: Keycloak
+metadata:
+  name: keycloak
+  namespace: keycloak-system
+spec:
+  replicas: 3
+
+  database:
+    type: postgresql
+    host: keycloak-db-rw.keycloak-db.svc.cluster.local
+    port: 5432
+    database: keycloak
+    credentialsSecret: keycloak-db-credentials
 
   # Rest of Keycloak configuration...
 ```

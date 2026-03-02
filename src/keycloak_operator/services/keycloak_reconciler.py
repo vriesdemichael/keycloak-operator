@@ -26,6 +26,12 @@ from ..models.keycloak import KeycloakSpec
 from ..settings import settings
 from ..utils.keycloak_admin import get_keycloak_admin_client
 from ..utils.validation import supports_management_port, validate_keycloak_version
+from ..utils.version import (
+    VersionChange,
+    detect_version_change,
+    get_deployment_image_from_k8s,
+)
+from .backup_service import PreUpgradeBackupService
 from .base_reconciler import BaseReconciler, StatusProtocol
 
 
@@ -62,6 +68,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
             keycloak_admin_factory or get_keycloak_admin_client
         )
         self.rate_limiter = rate_limiter
+        self.backup_service = PreUpgradeBackupService(k8s_client)
 
     async def do_update(
         self,
@@ -134,6 +141,15 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 await self._update_ingress(
                     new_keycloak_spec, name, namespace, networking_api
                 )
+
+        # Pre-upgrade backup check (ADR-088 Phase 2)
+        # MUST run BEFORE _update_deployment() so the running image is still
+        # the old one. The check inside do_reconcile is kept as safety net
+        # for create/resume paths.
+        if "image" in deployment_changes:
+            await self._maybe_perform_pre_upgrade_backup(
+                new_keycloak_spec, name, namespace, kwargs
+            )
 
         # Apply deployment updates if needed
         if deployment_needs_update:
@@ -345,6 +361,14 @@ class KeycloakInstanceReconciler(BaseReconciler):
         # Perform production environment validation and get resolved database connection info
         db_connection_info = await self.validate_production_settings(
             keycloak_spec, name, namespace
+        )
+
+        # Pre-upgrade backup hook (ADR-088 Phase 2)
+        # Detect version changes by comparing the running deployment image
+        # against the desired spec image. If a major/minor upgrade is detected,
+        # perform a tier-appropriate backup before proceeding.
+        await self._maybe_perform_pre_upgrade_backup(
+            keycloak_spec, name, namespace, kwargs
         )
 
         # Ensure admin access first (required by deployment)
@@ -817,6 +841,122 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 self.logger.warning(
                     f"Security recommendations for production: {'; '.join(security_warnings)}"
                 )
+
+    async def _maybe_perform_pre_upgrade_backup(
+        self,
+        spec: KeycloakSpec,
+        name: str,
+        namespace: str,
+        kwargs: dict[str, Any],
+    ) -> None:
+        """
+        Check for Keycloak version upgrades and perform pre-upgrade backup if needed.
+
+        This method reads the current deployment, compares the running image
+        against the desired spec image, and — for major/minor upgrades — triggers
+        a tier-appropriate backup before proceeding with the deployment update.
+
+        Args:
+            spec: Validated Keycloak specification.
+            name: Resource name.
+            namespace: Resource namespace.
+            kwargs: Handler kwargs (contains ``meta`` with annotations).
+
+        Raises:
+            TemporaryError: If backup is pending confirmation or failed.
+        """
+        from kubernetes.client.rest import ApiException
+
+        deployment_name = f"{name}-keycloak"
+        apps_api = client.AppsV1Api(self.kubernetes_client)
+
+        # Try to read the existing deployment — if it doesn't exist yet,
+        # this is a fresh install, not an upgrade.
+        try:
+            existing_deployment = apps_api.read_namespaced_deployment(
+                name=deployment_name, namespace=namespace
+            )
+        except ApiException as e:
+            if e.status == 404:
+                self.logger.debug(
+                    f"No existing deployment for {name} — skipping upgrade check"
+                )
+                return
+            raise
+
+        # Extract the running image from the current deployment
+        running_image = get_deployment_image_from_k8s(existing_deployment)
+        if not running_image:
+            self.logger.warning(
+                f"Could not extract running image from deployment {deployment_name} — skipping upgrade check"
+            )
+            return
+
+        # Determine the desired image from the spec
+        desired_image = spec.image or DEFAULT_KEYCLOAK_IMAGE
+
+        # No change — nothing to do
+        if running_image == desired_image:
+            return
+
+        # Detect and classify the version change
+        version_change: VersionChange = detect_version_change(
+            running_image, desired_image
+        )
+
+        if not version_change.requires_backup:
+            if version_change.is_downgrade:
+                self.logger.warning(
+                    f"Keycloak downgrade detected for {name}: {running_image} -> {desired_image}. "
+                    f"Downgrades are unsupported by Keycloak. Proceeding without backup."
+                )
+            elif version_change.bump_type.value == "patch":
+                self.logger.info(
+                    f"Patch version change for {name}: {running_image} -> {desired_image}. No backup required."
+                )
+            return
+
+        # Major or minor upgrade detected — perform pre-upgrade backup
+        self.logger.info(
+            f"Pre-upgrade backup required for {name}: {running_image} -> {desired_image} "
+            f"({version_change.bump_type.value} upgrade)"
+        )
+
+        # Determine database tier and gather context
+        db_tier = spec.database.tier
+        annotations = kwargs.get("meta", {}).get("annotations", {}) or {}
+
+        result = await self.backup_service.perform_backup(
+            keycloak_name=name,
+            namespace=namespace,
+            db_tier=db_tier,
+            db_config=spec.database,
+            upgrade_policy=spec.upgrade_policy,
+            annotations=annotations,
+        )
+
+        # Log warnings from the backup result
+        for warning in result.warnings:
+            self.logger.warning(f"Pre-upgrade backup warning for {name}: {warning}")
+
+        if result.requires_confirmation:
+            # Block until manual confirmation annotation is applied
+            self.logger.warning(f"Upgrade blocked for {name}: {result.message}")
+            raise TemporaryError(
+                f"Waiting for manual backup confirmation: {result.message}",
+                delay=30,
+            )
+
+        if not result.success:
+            # Backup failed — do not proceed with the upgrade
+            self.logger.error(f"Pre-upgrade backup failed for {name}: {result.message}")
+            raise TemporaryError(
+                f"Pre-upgrade backup failed: {result.message}",
+                delay=60,
+            )
+
+        # Backup succeeded — continue with the upgrade
+        self.logger.info(f"Pre-upgrade backup completed for {name}: {result.message}")
 
     async def ensure_deployment(
         self,
