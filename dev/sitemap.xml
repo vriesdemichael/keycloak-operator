@@ -393,6 +393,10 @@
          <lastmod>2026-03-02</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/088-blue-green-keycloak-upgrade-strategy/</loc>
+         <lastmod>2026-03-02</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/testing/</loc>
          <lastmod>2026-03-02</lastmod>
     </url>
