@@ -373,15 +373,25 @@ class TestVolumeSnapshotBackup:
     @pytest.mark.asyncio
     async def test_snapshot_success(self):
         service = PreUpgradeBackupService(k8s_client=MagicMock())
-        mock_api = MagicMock()
-        mock_api.create_namespaced_custom_object = MagicMock(return_value={})
-        mock_api.get_namespaced_custom_object = MagicMock(
+        mock_custom_api = MagicMock()
+        mock_custom_api.create_namespaced_custom_object = MagicMock(return_value={})
+        mock_custom_api.get_namespaced_custom_object = MagicMock(
             return_value={"status": {"readyToUse": True}}
         )
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            return_value=MagicMock()
+        )
 
-        with patch(
-            "keycloak_operator.services.backup_service.client.CustomObjectsApi",
-            return_value=mock_api,
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+                return_value=mock_custom_api,
+            ),
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
         ):
             result = await service._backup_volume_snapshot(
                 "test-kc", "default", _make_db_config("managed"), 600
@@ -396,23 +406,35 @@ class TestVolumeSnapshotBackup:
     async def test_snapshot_with_custom_class(self):
         """VolumeSnapshotClassName is included when set."""
         service = PreUpgradeBackupService(k8s_client=MagicMock())
-        mock_api = MagicMock()
-        mock_api.create_namespaced_custom_object = MagicMock(return_value={})
-        mock_api.get_namespaced_custom_object = MagicMock(
+        mock_custom_api = MagicMock()
+        mock_custom_api.create_namespaced_custom_object = MagicMock(return_value={})
+        mock_custom_api.get_namespaced_custom_object = MagicMock(
             return_value={"status": {"readyToUse": True}}
+        )
+        # get_cluster_custom_object succeeds => VolumeSnapshotClass exists
+        mock_custom_api.get_cluster_custom_object = MagicMock(return_value={})
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            return_value=MagicMock()
         )
 
         db_config = _make_db_config("managed", snapshot_class="my-snapshot-class")
 
-        with patch(
-            "keycloak_operator.services.backup_service.client.CustomObjectsApi",
-            return_value=mock_api,
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+                return_value=mock_custom_api,
+            ),
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
         ):
             result = await service._backup_volume_snapshot(
                 "test-kc", "default", db_config, 600
             )
 
-        create_call = mock_api.create_namespaced_custom_object.call_args
+        create_call = mock_custom_api.create_namespaced_custom_object.call_args
         body = create_call[1]["body"]
         assert body["spec"]["volumeSnapshotClassName"] == "my-snapshot-class"
         assert result.success is True
@@ -434,14 +456,24 @@ class TestVolumeSnapshotBackup:
     @pytest.mark.asyncio
     async def test_snapshot_create_fails(self):
         service = PreUpgradeBackupService(k8s_client=MagicMock())
-        mock_api = MagicMock()
-        mock_api.create_namespaced_custom_object = MagicMock(
+        mock_custom_api = MagicMock()
+        mock_custom_api.create_namespaced_custom_object = MagicMock(
             side_effect=ApiException(status=403, reason="Forbidden")
         )
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            return_value=MagicMock()
+        )
 
-        with patch(
-            "keycloak_operator.services.backup_service.client.CustomObjectsApi",
-            return_value=mock_api,
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+                return_value=mock_custom_api,
+            ),
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
         ):
             result = await service._backup_volume_snapshot(
                 "test-kc", "default", _make_db_config("managed"), 600
@@ -453,9 +485,9 @@ class TestVolumeSnapshotBackup:
     @pytest.mark.asyncio
     async def test_snapshot_error_status(self):
         service = PreUpgradeBackupService(k8s_client=MagicMock())
-        mock_api = MagicMock()
-        mock_api.create_namespaced_custom_object = MagicMock(return_value={})
-        mock_api.get_namespaced_custom_object = MagicMock(
+        mock_custom_api = MagicMock()
+        mock_custom_api.create_namespaced_custom_object = MagicMock(return_value={})
+        mock_custom_api.get_namespaced_custom_object = MagicMock(
             return_value={
                 "status": {
                     "readyToUse": False,
@@ -463,10 +495,20 @@ class TestVolumeSnapshotBackup:
                 }
             }
         )
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            return_value=MagicMock()
+        )
 
-        with patch(
-            "keycloak_operator.services.backup_service.client.CustomObjectsApi",
-            return_value=mock_api,
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+                return_value=mock_custom_api,
+            ),
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
         ):
             result = await service._backup_volume_snapshot(
                 "test-kc", "default", _make_db_config("managed"), 600
@@ -478,23 +520,33 @@ class TestVolumeSnapshotBackup:
     @pytest.mark.asyncio
     async def test_snapshot_timeout(self):
         service = PreUpgradeBackupService(k8s_client=MagicMock())
-        mock_api = MagicMock()
-        mock_api.create_namespaced_custom_object = MagicMock(return_value={})
-        mock_api.get_namespaced_custom_object = MagicMock(
+        mock_custom_api = MagicMock()
+        mock_custom_api.create_namespaced_custom_object = MagicMock(return_value={})
+        mock_custom_api.get_namespaced_custom_object = MagicMock(
             return_value={"status": {"readyToUse": False}}
         )
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            return_value=MagicMock()
+        )
 
-        with patch(
-            "keycloak_operator.services.backup_service.client.CustomObjectsApi",
-            return_value=mock_api,
-        ):
-            with patch(
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+                return_value=mock_custom_api,
+            ),
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
+            patch(
                 "keycloak_operator.services.backup_service.asyncio.sleep",
                 new_callable=AsyncMock,
-            ):
-                result = await service._backup_volume_snapshot(
-                    "test-kc", "default", _make_db_config("managed"), 10
-                )
+            ),
+        ):
+            result = await service._backup_volume_snapshot(
+                "test-kc", "default", _make_db_config("managed"), 10
+            )
 
         assert result.success is False
         assert "timed out" in result.message
@@ -510,6 +562,110 @@ class TestVolumeSnapshotBackup:
 
         assert result.success is False
         assert "Managed database configuration is missing" in result.message
+
+    @pytest.mark.asyncio
+    async def test_snapshot_pvc_not_found(self):
+        """PVC does not exist => fail with descriptive message."""
+        service = PreUpgradeBackupService(k8s_client=MagicMock())
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            side_effect=ApiException(status=404, reason="Not Found")
+        )
+
+        with patch(
+            "keycloak_operator.services.backup_service.client.CoreV1Api",
+            return_value=mock_core_api,
+        ):
+            result = await service._backup_volume_snapshot(
+                "test-kc", "default", _make_db_config("managed"), 600
+            )
+
+        assert result.success is False
+        assert "PVC 'data-pvc' not found" in result.message
+
+    @pytest.mark.asyncio
+    async def test_snapshot_pvc_api_error_propagates(self):
+        """Non-404 errors from PVC check should propagate."""
+        service = PreUpgradeBackupService(k8s_client=MagicMock())
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            side_effect=ApiException(status=500, reason="Internal Server Error")
+        )
+
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
+            pytest.raises(ApiException) as exc_info,
+        ):
+            await service._backup_volume_snapshot(
+                "test-kc", "default", _make_db_config("managed"), 600
+            )
+
+        assert exc_info.value.status == 500
+
+    @pytest.mark.asyncio
+    async def test_snapshot_class_not_found(self):
+        """VolumeSnapshotClass does not exist => fail with descriptive message."""
+        service = PreUpgradeBackupService(k8s_client=MagicMock())
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            return_value=MagicMock()
+        )
+        mock_custom_api = MagicMock()
+        mock_custom_api.get_cluster_custom_object = MagicMock(
+            side_effect=ApiException(status=404, reason="Not Found")
+        )
+
+        db_config = _make_db_config("managed", snapshot_class="nonexistent-class")
+
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
+            patch(
+                "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+                return_value=mock_custom_api,
+            ),
+        ):
+            result = await service._backup_volume_snapshot(
+                "test-kc", "default", db_config, 600
+            )
+
+        assert result.success is False
+        assert "VolumeSnapshotClass 'nonexistent-class' not found" in result.message
+
+    @pytest.mark.asyncio
+    async def test_snapshot_class_api_error_propagates(self):
+        """Non-404 errors from VolumeSnapshotClass check should propagate."""
+        service = PreUpgradeBackupService(k8s_client=MagicMock())
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            return_value=MagicMock()
+        )
+        mock_custom_api = MagicMock()
+        mock_custom_api.get_cluster_custom_object = MagicMock(
+            side_effect=ApiException(status=403, reason="Forbidden")
+        )
+
+        db_config = _make_db_config("managed", snapshot_class="some-class")
+
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
+            patch(
+                "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+                return_value=mock_custom_api,
+            ),
+            pytest.raises(ApiException) as exc_info,
+        ):
+            await service._backup_volume_snapshot("test-kc", "default", db_config, 600)
+
+        assert exc_info.value.status == 403
 
 
 # ===========================================================================

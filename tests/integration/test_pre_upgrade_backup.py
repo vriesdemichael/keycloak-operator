@@ -232,7 +232,7 @@ class TestPreUpgradeBackupLegacyTier:
                         updated = True
                         break
                 except ApiException:
-                    pass
+                    pass  # Deployment may not exist yet; retry on next poll
 
             assert updated, (
                 f"Deployment image was not updated to {new_image} within timeout. "
@@ -336,7 +336,7 @@ class TestPreUpgradeBackupLegacyTier:
                         blocked = False
                         break
                 except ApiException:
-                    pass
+                    pass  # Deployment may not exist yet; retry on next poll
 
             assert blocked, (
                 "Deployment image was updated despite requireBackupConfirmation=true. "
@@ -373,7 +373,7 @@ class TestPreUpgradeBackupLegacyTier:
                         unblocked = True
                         break
                 except ApiException:
-                    pass
+                    pass  # Deployment may not exist yet; retry on next poll
 
             assert unblocked, (
                 f"Deployment image was not updated to {new_image} after applying "
@@ -473,7 +473,7 @@ class TestPreUpgradeBackupPatchVersion:
                         updated = True
                         break
                 except ApiException:
-                    pass
+                    pass  # Deployment may not exist yet; retry on next poll
 
             assert updated, (
                 f"Deployment image was not updated to {new_image} within timeout. "
@@ -655,7 +655,7 @@ class TestPreUpgradeBackupCNPGTier:
                             )
                         break
                 except ApiException:
-                    pass
+                    pass  # Backup CR may not exist yet; retry on next poll
 
             assert backup_found, (
                 f"No CNPG Backup CR was created for Keycloak {keycloak_name} "
@@ -825,7 +825,7 @@ class TestPreUpgradeBackupExternalTier:
                         updated = True
                         break
                 except ApiException:
-                    pass
+                    pass  # Deployment may not exist yet; retry on next poll
 
             assert updated, (
                 f"Deployment image was not updated to {new_image}. "
@@ -969,7 +969,7 @@ class TestPreUpgradeBackupExternalTier:
                         blocked = False
                         break
                 except ApiException:
-                    pass
+                    pass  # Deployment may not exist yet; retry on next poll
 
             assert blocked, (
                 "Deployment updated despite requireBackupConfirmation=true on external tier."
@@ -1005,7 +1005,7 @@ class TestPreUpgradeBackupExternalTier:
                         unblocked = True
                         break
                 except ApiException:
-                    pass
+                    pass  # Deployment may not exist yet; retry on next poll
 
             assert unblocked, (
                 f"Deployment not updated to {new_image} after applying backup-confirmed annotation."

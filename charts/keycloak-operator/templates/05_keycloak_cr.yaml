@@ -37,9 +37,11 @@ spec:
       username: {{ . }}
       {{- end }}
       {{- with .Values.keycloak.database.managed.passwordSecret }}
+      {{- if .name }}
       passwordSecret:
         name: {{ .name }}
         key: {{ .key | default "password" }}
+      {{- end }}
       {{- end }}
       {{- with .Values.keycloak.database.managed.credentialsSecret }}
       credentialsSecret: {{ . }}
@@ -61,9 +63,11 @@ spec:
       username: {{ . }}
       {{- end }}
       {{- with .Values.keycloak.database.external.passwordSecret }}
+      {{- if .name }}
       passwordSecret:
         name: {{ .name }}
         key: {{ .key | default "password" }}
+      {{- end }}
       {{- end }}
       {{- with .Values.keycloak.database.external.credentialsSecret }}
       credentialsSecret: {{ . }}

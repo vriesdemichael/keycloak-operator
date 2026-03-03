@@ -1050,7 +1050,7 @@
           "properties": {
             "requireBackupConfirmation": {
               "type": "boolean",
-              "description": "Require manual backup confirmation before proceeding with upgrades on external/legacy database tiers. When true, the operator halts at WaitingForBackupConfirmation until the annotation operator.keycloak.io/backup-confirmed is set to true.",
+              "description": "Require manual backup confirmation before proceeding with upgrades on external/legacy database tiers. When true, the operator blocks the upgrade via retry loop until the annotation operator.keycloak.io/backup-confirmed is set to true.",
               "default": false
             },
             "backupTimeout": {

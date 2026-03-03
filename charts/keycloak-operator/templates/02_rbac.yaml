@@ -242,11 +242,6 @@ rules:
   resources: ["events"]
   verbs: ["create", "patch"]
 
-# VolumeSnapshot management for pre-upgrade backups (ADR-088 Phase 2)
-- apiGroups: ["snapshot.storage.k8s.io"]
-  resources: ["volumesnapshots"]
-  verbs: ["get", "list", "watch", "create", "delete"]
-
 ---
 # ClusterRoleBinding for minimal cluster-wide permissions
 apiVersion: rbac.authorization.k8s.io/v1
