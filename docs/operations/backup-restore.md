@@ -10,8 +10,8 @@ The operator automatically orchestrates backups before Keycloak **major or minor
 |---------------|---------------|-----------------|
 | **CNPG** (Tier 1) | Creates a CNPG `Backup` CR, waits for completion | Yes, until backup succeeds |
 | **Managed** (Tier 2) | Creates a `VolumeSnapshot` of the database PVC | Yes, until snapshot is ready |
-| **External** (Tier 3) | Emits warning event, sets `BackupNotVerified` condition | Only if `requireBackupConfirmation: true` |
-| **Legacy** (Tier 4) | Emits warning event, sets `BackupNotVerified` condition | Only if `requireBackupConfirmation: true` |
+| **External** (Tier 3) | Logs a warning; operator cannot back up automatically | Only if `requireBackupConfirmation: true` (default: warn-and-proceed) |
+| **Legacy** (Tier 4) | Logs a warning; operator cannot back up automatically | Only if `requireBackupConfirmation: true` (default: warn-and-proceed) |
 
 **Patch-level** version changes (e.g., `26.0.1` to `26.0.2`) skip the backup step entirely.
 
@@ -41,18 +41,20 @@ spec:
     backupTimeout: 600
 ```
 
-### Status Phases During Backup
+### Behavior During Backup
 
-During an upgrade, the Keycloak CR transitions through additional phases:
+When a version upgrade triggers a pre-upgrade backup, the operator blocks the
+upgrade by raising a `TemporaryError`, which causes Kopf to retry reconciliation
+until the backup completes. The Keycloak CR status phase does **not** change to a
+special backup phase — it remains in its current phase (typically `Ready` or
+`Provisioning`) and the operator logs indicate the backup is in progress.
 
-- **`BackingUp`**: A CNPG Backup or VolumeSnapshot is in progress.
-- **`WaitingForBackupConfirmation`**: The operator cannot back up automatically (external/legacy tier) and `requireBackupConfirmation` is enabled. The upgrade is paused.
-
-After backup completes (or is skipped), the CR returns to normal reconciliation phases (`Provisioning`, `Ready`, etc.).
+For external/legacy tiers with `requireBackupConfirmation: true`, the operator
+retries indefinitely until the confirmation annotation is applied.
 
 ### Manual Backup Confirmation (External/Legacy Tiers)
 
-When `requireBackupConfirmation: true` and you use an external or legacy database, the operator pauses the upgrade at `WaitingForBackupConfirmation`. To proceed:
+When `requireBackupConfirmation: true` and you use an external or legacy database, the operator blocks the upgrade via retry loop. To proceed:
 
 1. Take a backup of your database using your own tooling.
 2. Annotate the Keycloak CR to confirm:
@@ -70,18 +72,14 @@ The operator will detect the annotation on the next reconciliation cycle and pro
 # Check Keycloak CR status phase
 kubectl get keycloak <name> -n <namespace> -o jsonpath='{.status.phase}'
 
-# Check for BackupNotVerified condition (external/legacy tiers)
-kubectl get keycloak <name> -n <namespace> -o jsonpath='{.status.conditions}'
-
-# Check status fields for backup tracking
-kubectl get keycloak <name> -n <namespace> -o jsonpath='{.status.lastBackupName}'
-kubectl get keycloak <name> -n <namespace> -o jsonpath='{.status.lastBackupTime}'
+# Check operator logs for backup progress
+kubectl logs deploy/<operator-deployment> -n <operator-namespace> | grep -i backup
 
 # For CNPG tier: check the Backup CR
-kubectl get backup -n <cnpg-namespace> -l operator.keycloak.io/managed-by=keycloak-operator
+kubectl get backup -n <cnpg-namespace> -l vriesdemichael.github.io/keycloak-managed-by=keycloak-operator
 
 # For Managed tier: check VolumeSnapshot
-kubectl get volumesnapshot -n <namespace> -l operator.keycloak.io/managed-by=keycloak-operator
+kubectl get volumesnapshot -n <namespace> -l vriesdemichael.github.io/keycloak-managed-by=keycloak-operator
 ```
 
 ---

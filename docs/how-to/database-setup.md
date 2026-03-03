@@ -567,8 +567,8 @@ The operator supports four database configuration tiers, each with different lev
 |------|-----------|-------------------|-------------|
 | **CNPG** | `database.cnpg` | Automatic (CNPG Backup CR) | CloudNativePG-managed cluster — full lifecycle management |
 | **Managed** | `database.managed` | Automatic (VolumeSnapshot) | K8s-hosted DB with PVC — requires CSI snapshot support |
-| **External** | `database.external` | Manual confirmation | External database (RDS, Cloud SQL, etc.) — operator cannot back up |
-| **Legacy** | `database.type` + flat fields | Manual confirmation | Backward-compatible flat config — same behavior as External |
+| **External** | `database.external` | Warn-and-proceed (opt-in gate via `requireBackupConfirmation`) | External database (RDS, Cloud SQL, etc.) — operator cannot back up |
+| **Legacy** | `database.type` + flat fields | Warn-and-proceed (opt-in gate via `requireBackupConfirmation`) | Backward-compatible flat config — same behavior as External |
 
 For upgrade backup behavior, see [Backup & Restore: Automated Pre-Upgrade Backups](../operations/backup-restore.md#automated-pre-upgrade-backups).
 

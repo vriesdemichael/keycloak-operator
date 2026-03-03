@@ -6,8 +6,8 @@ Keycloak version upgrades. The backup strategy depends on the database tier:
 
 - **Tier 1 (CNPG)**: Creates a CNPG ``Backup`` CR and polls until complete.
 - **Tier 2 (Managed)**: Creates a ``VolumeSnapshot`` of the database PVC.
-- **Tier 3 (External)**: Cannot back up automatically. Emits a warning
-  event and sets a ``BackupNotVerified`` condition. Optionally blocks
+- **Tier 3 (External)**: Cannot back up automatically. Logs a warning
+  and returns a result indicating no backup was performed. Optionally blocks
   until manual confirmation via annotation.
 - **Tier 4 (Legacy)**: Same as External — warn-and-proceed or manual gate.
 """
@@ -286,6 +286,48 @@ class PreUpgradeBackupService:
                 ],
             )
 
+        # Pre-flight validation: verify PVC exists
+        core_api = client.CoreV1Api(self.k8s_client)
+        try:
+            core_api.read_namespaced_persistent_volume_claim(
+                name=pvc_name, namespace=namespace
+            )
+        except ApiException as e:
+            if e.status == 404:
+                return BackupResult(
+                    success=False,
+                    tier="managed",
+                    message=(
+                        f"PVC '{pvc_name}' not found in namespace '{namespace}'. "
+                        "Verify database.managed.pvcName is correct."
+                    ),
+                )
+            raise
+
+        custom_api = client.CustomObjectsApi(self.k8s_client)
+
+        # Pre-flight validation: verify VolumeSnapshotClass exists (if specified)
+        if snapshot_class:
+            try:
+                custom_api.get_cluster_custom_object(
+                    group="snapshot.storage.k8s.io",
+                    version="v1",
+                    plural="volumesnapshotclasses",
+                    name=snapshot_class,
+                )
+            except ApiException as e:
+                if e.status == 404:
+                    return BackupResult(
+                        success=False,
+                        tier="managed",
+                        message=(
+                            f"VolumeSnapshotClass '{snapshot_class}' not found. "
+                            "Verify database.managed.volumeSnapshotClassName is correct, "
+                            "or omit it to use the cluster default."
+                        ),
+                    )
+                raise
+
         timestamp = datetime.datetime.now(tz=datetime.UTC).strftime("%Y%m%d%H%M%S")
         snapshot_name = f"{keycloak_name}-pre-upgrade-{timestamp}"
 
@@ -310,8 +352,6 @@ class PreUpgradeBackupService:
 
         if snapshot_class:
             snapshot_body["spec"]["volumeSnapshotClassName"] = snapshot_class
-
-        custom_api = client.CustomObjectsApi(self.k8s_client)
 
         try:
             custom_api.create_namespaced_custom_object(

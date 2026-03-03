@@ -203,7 +203,7 @@ class ManagedDatabaseConfig(BaseModel):
         None,
         alias="volumeSnapshotClassName",
         description="VolumeSnapshotClass name for backup snapshots (ADR-088 Phase 2). "
-        "Required when pvcName is set.",
+        "Optional — if omitted, the cluster default VolumeSnapshotClass is used.",
     )
 
     @field_validator("port")
@@ -777,7 +777,7 @@ class UpgradePolicy(BaseModel):
       via ``require_backup_confirmation``.
 
     When ``require_backup_confirmation`` is true for external/legacy tiers,
-    the operator halts at ``WaitingForBackupConfirmation`` phase until the
+    the operator blocks the upgrade via ``TemporaryError`` retry loop until the
     annotation ``operator.keycloak.io/backup-confirmed: "true"`` is applied
     to the Keycloak CR.
     """
@@ -789,8 +789,8 @@ class UpgradePolicy(BaseModel):
         alias="requireBackupConfirmation",
         description=(
             "Require manual backup confirmation before proceeding with upgrades "
-            "on external/legacy database tiers. When true, the operator halts "
-            "at WaitingForBackupConfirmation until the annotation "
+            "on external/legacy database tiers. When true, the operator blocks "
+            "the upgrade via retry loop until the annotation "
             "operator.keycloak.io/backup-confirmed is set to 'true'. "
             "Default: false (warn-and-proceed)."
         ),

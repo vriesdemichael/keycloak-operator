@@ -88,6 +88,9 @@ class TestFreshInstall:
             side_effect=ApiException(status=404, reason="Not Found")
         )
 
+        # Set the mock BEFORE calling the method so we can verify it wasn't called
+        reconciler.backup_service.perform_backup = AsyncMock()
+
         with patch(
             "keycloak_operator.services.keycloak_reconciler.client.AppsV1Api",
             return_value=mock_apps_api,
@@ -98,7 +101,6 @@ class TestFreshInstall:
             )
 
         # backup_service.perform_backup should NOT have been called
-        reconciler.backup_service.perform_backup = AsyncMock()
         assert reconciler.backup_service.perform_backup.call_count == 0
 
     @pytest.mark.asyncio
@@ -716,10 +718,9 @@ class TestAnnotationsPassthrough:
 
         # The `or {}` in the code should handle None
         call_kwargs = reconciler.backup_service.perform_backup.call_args[1]
-        # None is passed through because the code does `annotations or {}`
-        # Actually checking the code: `annotations = kwargs.get("meta", {}).get("annotations", {}) or {}`
+        # The code does `annotations = kwargs.get("meta", {}).get("annotations", {}) or {}`
         # So None gets converted to {} by the `or {}` part
-        assert call_kwargs["annotations"] == {} or call_kwargs["annotations"] is None
+        assert call_kwargs["annotations"] == {}
 
 
 # ===========================================================================
