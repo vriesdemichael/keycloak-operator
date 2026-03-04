@@ -7,6 +7,7 @@ accepted by Kubernetes, enforcing:
 - Valid configuration
 - Database settings
 - Resource requirements
+- Semantic version image tags (when upgradePolicy is configured)
 """
 
 import asyncio
@@ -18,6 +19,12 @@ from pydantic import ValidationError
 
 from keycloak_operator.models.keycloak import KeycloakSpec
 from keycloak_operator.utils.isolation import is_managed_by_this_operator
+from keycloak_operator.utils.validation import (
+    ValidationError as ImageValidationError,
+)
+from keycloak_operator.utils.validation import (
+    validate_semver_image_tag,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -98,12 +105,23 @@ async def validate_keycloak(
 
     # Validate with Pydantic model first
     try:
-        _keycloak_spec = KeycloakSpec.model_validate(spec)
+        keycloak_spec = KeycloakSpec.model_validate(spec)
         logger.debug(f"Pydantic validation passed for Keycloak {name}")
     except ValidationError as e:
         error_msg = f"Invalid Keycloak specification: {e}"
         logger.warning(f"Keycloak {name} validation failed: {error_msg}")
         raise kopf.AdmissionError(error_msg) from e
+
+    # Enforce semantic version image tag only when upgradePolicy is configured.
+    # Without upgradePolicy, the operator does not orchestrate upgrades and
+    # therefore does not need deterministic version information from the tag.
+    if keycloak_spec.upgrade_policy is not None:
+        try:
+            validate_semver_image_tag(keycloak_spec.image)
+        except ImageValidationError as e:
+            error_msg = f"Invalid image for Keycloak {name}: {e}"
+            logger.warning(f"Keycloak {name} image validation failed: {error_msg}")
+            raise kopf.AdmissionError(error_msg) from e
 
     # Enforce one Keycloak per namespace (ADR-062)
     if operation == "CREATE":

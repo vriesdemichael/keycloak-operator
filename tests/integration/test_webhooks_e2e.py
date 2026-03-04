@@ -389,3 +389,148 @@ class TestWebhooksE2E:
             # Cleanup
             with contextlib.suppress(ApiException):
                 k8s_core.delete_namespace(name=namespace)
+
+    async def test_keycloak_non_semver_image_rejected(
+        self, k8s_custom_objects, shared_operator, operator_namespace
+    ):
+        """Test that Keycloak CRs with non-semver image tags are rejected when upgradePolicy is set."""
+        namespace = f"test-webhook-semver-{uuid.uuid4().hex[:8]}"
+
+        try:
+            # Create test namespace
+            k8s_core = client.CoreV1Api()
+            k8s_core.create_namespace(
+                body=client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+            )
+
+            # Attempt to create Keycloak with 'latest' tag + upgradePolicy - should be rejected
+            with pytest.raises(ApiException) as exc_info:
+                await k8s_custom_objects.create_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloaks",
+                    body={
+                        "apiVersion": "vriesdemichael.github.io/v1",
+                        "kind": "Keycloak",
+                        "metadata": {"name": "keycloak-latest"},
+                        "spec": {
+                            "operatorRef": {"namespace": operator_namespace},
+                            "image": "quay.io/keycloak/keycloak:latest",
+                            "replicas": 1,
+                            "upgradePolicy": {"backupTimeout": 600},
+                            "database": {
+                                "type": "postgresql",
+                                "vendor": "postgres",
+                                "host": "postgres.default.svc",
+                                "port": 5432,
+                                "database": "keycloak",
+                                "username": "keycloak",
+                                "password": "keycloak",
+                            },
+                        },
+                    },
+                )
+
+            # Verify rejection by webhook
+            assert exc_info.value.status in (400, 500)
+            assert "not a valid semantic version" in exc_info.value.body.lower()  # type: ignore[union-attr]
+
+        finally:
+            # Cleanup
+            with contextlib.suppress(ApiException):
+                k8s_core.delete_namespace(name=namespace)
+
+    async def test_keycloak_non_semver_accepted_without_upgrade_policy(
+        self, k8s_custom_objects, shared_operator, operator_namespace
+    ):
+        """Test that non-semver image tags are accepted when no upgradePolicy is set."""
+        namespace = f"test-webhook-nosemver-ok-{uuid.uuid4().hex[:8]}"
+
+        try:
+            # Create test namespace
+            k8s_core = client.CoreV1Api()
+            k8s_core.create_namespace(
+                body=client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+            )
+
+            # Create Keycloak with 'latest' tag but NO upgradePolicy - should succeed
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                body={
+                    "apiVersion": "vriesdemichael.github.io/v1",
+                    "kind": "Keycloak",
+                    "metadata": {"name": "keycloak-latest-ok"},
+                    "spec": {
+                        "operatorRef": {"namespace": operator_namespace},
+                        "image": "quay.io/keycloak/keycloak:latest",
+                        "replicas": 1,
+                        "database": {
+                            "type": "postgresql",
+                            "vendor": "postgres",
+                            "host": "postgres.default.svc",
+                            "port": 5432,
+                            "database": "keycloak",
+                            "username": "keycloak",
+                            "password": "keycloak",
+                        },
+                    },
+                },
+            )
+
+            # If we got here, the webhook accepted it (no ApiException)
+
+        finally:
+            # Cleanup
+            with contextlib.suppress(ApiException):
+                k8s_core.delete_namespace(name=namespace)
+
+    async def test_keycloak_semver_image_accepted(
+        self, k8s_custom_objects, shared_operator, operator_namespace
+    ):
+        """Test that Keycloak CRs with valid semver image tags pass the webhook."""
+        namespace = f"test-webhook-semver-ok-{uuid.uuid4().hex[:8]}"
+
+        try:
+            # Create test namespace
+            k8s_core = client.CoreV1Api()
+            k8s_core.create_namespace(
+                body=client.V1Namespace(metadata=client.V1ObjectMeta(name=namespace))
+            )
+
+            # Create Keycloak with valid semver tag - should succeed
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                body={
+                    "apiVersion": "vriesdemichael.github.io/v1",
+                    "kind": "Keycloak",
+                    "metadata": {"name": "keycloak-semver"},
+                    "spec": {
+                        "operatorRef": {"namespace": operator_namespace},
+                        "image": "quay.io/keycloak/keycloak:26.4.0",
+                        "replicas": 1,
+                        "database": {
+                            "type": "postgresql",
+                            "vendor": "postgres",
+                            "host": "postgres.default.svc",
+                            "port": 5432,
+                            "database": "keycloak",
+                            "username": "keycloak",
+                            "password": "keycloak",
+                        },
+                    },
+                },
+            )
+
+            # If we got here, the webhook accepted it (no ApiException)
+
+        finally:
+            # Cleanup
+            with contextlib.suppress(ApiException):
+                k8s_core.delete_namespace(name=namespace)

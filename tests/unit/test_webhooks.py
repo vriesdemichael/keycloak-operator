@@ -194,6 +194,21 @@ class TestClientWebhook:
 class TestKeycloakWebhook:
     """Unit tests for Keycloak admission webhook."""
 
+    # ── Helper to build a base spec ──────────────────────────────
+
+    @staticmethod
+    def _base_db():
+        return {
+            "type": "postgresql",
+            "host": "postgres.default.svc",
+            "port": 5432,
+            "database": "keycloak",
+            "username": "keycloak",
+            "password": "keycloak",
+        }
+
+    # ── Basic validation ──────────────────────────────────────────
+
     @pytest.mark.asyncio
     async def test_valid_keycloak_spec_passes(self, monkeypatch):
         """Valid Keycloak spec should pass Pydantic validation."""
@@ -204,14 +219,8 @@ class TestKeycloakWebhook:
             "operatorRef": {"namespace": "keycloak-system"},
             "version": "26.4.1",
             "replicas": 1,
-            "database": {
-                "type": "postgresql",
-                "host": "postgres.default.svc",
-                "port": 5432,
-                "database": "keycloak",
-                "username": "keycloak",
-                "password": "keycloak",
-            },
+            "image": "quay.io/keycloak/keycloak:26.4.1",
+            "database": self._base_db(),
         }
 
         with patch(
@@ -220,6 +229,244 @@ class TestKeycloakWebhook:
         ):
             result = await validate_keycloak(
                 spec=valid_spec,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="CREATE",
+                dryrun=False,
+            )
+            assert result == {}
+
+    @pytest.mark.asyncio
+    async def test_default_image_passes(self, monkeypatch):
+        """Keycloak spec using default image (no explicit image field) should pass."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec_default = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "database": self._base_db(),
+        }
+
+        with patch(
+            "keycloak_operator.webhooks.keycloak.get_keycloak_count_in_namespace",
+            return_value=0,
+        ):
+            result = await validate_keycloak(
+                spec=spec_default,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="CREATE",
+                dryrun=False,
+            )
+            assert result == {}
+
+    # ── Without upgradePolicy: non-semver tags should PASS ────────
+
+    @pytest.mark.asyncio
+    async def test_latest_tag_passes_without_upgrade_policy(self, monkeypatch):
+        """Without upgradePolicy, 'latest' tag is accepted (no enforcement)."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "image": "quay.io/keycloak/keycloak:latest",
+            "database": self._base_db(),
+        }
+
+        with patch(
+            "keycloak_operator.webhooks.keycloak.get_keycloak_count_in_namespace",
+            return_value=0,
+        ):
+            result = await validate_keycloak(
+                spec=spec,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="CREATE",
+                dryrun=False,
+            )
+            assert result == {}
+
+    @pytest.mark.asyncio
+    async def test_digest_image_passes_without_upgrade_policy(self, monkeypatch):
+        """Without upgradePolicy, digest-only image is accepted."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "image": "quay.io/keycloak/keycloak@sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abcd1234",
+            "database": self._base_db(),
+        }
+
+        with patch(
+            "keycloak_operator.webhooks.keycloak.get_keycloak_count_in_namespace",
+            return_value=0,
+        ):
+            result = await validate_keycloak(
+                spec=spec,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="CREATE",
+                dryrun=False,
+            )
+            assert result == {}
+
+    @pytest.mark.asyncio
+    async def test_no_tag_passes_without_upgrade_policy(self, monkeypatch):
+        """Without upgradePolicy, tagless image is accepted."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "image": "quay.io/keycloak/keycloak",
+            "database": self._base_db(),
+        }
+
+        with patch(
+            "keycloak_operator.webhooks.keycloak.get_keycloak_count_in_namespace",
+            return_value=0,
+        ):
+            result = await validate_keycloak(
+                spec=spec,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="CREATE",
+                dryrun=False,
+            )
+            assert result == {}
+
+    # ── With upgradePolicy: non-semver tags should FAIL ───────────
+
+    @pytest.mark.asyncio
+    async def test_latest_tag_rejected_with_upgrade_policy(self, monkeypatch):
+        """With upgradePolicy, 'latest' tag is rejected."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "image": "quay.io/keycloak/keycloak:latest",
+            "upgradePolicy": {"backupTimeout": 600},
+            "database": self._base_db(),
+        }
+
+        with pytest.raises(kopf.AdmissionError) as exc_info:
+            await validate_keycloak(
+                spec=spec,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="CREATE",
+                dryrun=False,
+            )
+
+        assert "not a valid semantic version" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_digest_image_rejected_with_upgrade_policy(self, monkeypatch):
+        """With upgradePolicy, digest-only image is rejected."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "image": "quay.io/keycloak/keycloak@sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abcd1234",
+            "upgradePolicy": {"backupTimeout": 600},
+            "database": self._base_db(),
+        }
+
+        with pytest.raises(kopf.AdmissionError) as exc_info:
+            await validate_keycloak(
+                spec=spec,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="CREATE",
+                dryrun=False,
+            )
+
+        assert "digest reference" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_no_tag_rejected_with_upgrade_policy(self, monkeypatch):
+        """With upgradePolicy, tagless image is rejected."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "image": "quay.io/keycloak/keycloak",
+            "upgradePolicy": {"backupTimeout": 600},
+            "database": self._base_db(),
+        }
+
+        with pytest.raises(kopf.AdmissionError) as exc_info:
+            await validate_keycloak(
+                spec=spec,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="CREATE",
+                dryrun=False,
+            )
+
+        assert "no tag" in str(exc_info.value)
+
+    @pytest.mark.asyncio
+    async def test_update_with_non_semver_rejected_with_upgrade_policy(
+        self, monkeypatch
+    ):
+        """UPDATE with non-semver + upgradePolicy is also rejected."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "image": "quay.io/keycloak/keycloak:latest",
+            "upgradePolicy": {"backupTimeout": 600},
+            "database": self._base_db(),
+        }
+
+        with pytest.raises(kopf.AdmissionError) as exc_info:
+            await validate_keycloak(
+                spec=spec,
+                namespace="keycloak-system",
+                name="keycloak",
+                operation="UPDATE",
+                dryrun=False,
+            )
+
+        assert "not a valid semantic version" in str(exc_info.value)
+
+    # ── With upgradePolicy: semver tags should PASS ───────────────
+
+    @pytest.mark.asyncio
+    async def test_semver_with_suffix_passes_with_upgrade_policy(self, monkeypatch):
+        """With upgradePolicy, semver+suffix image tag passes."""
+        monkeypatch.setenv("OPERATOR_NAMESPACE", "keycloak-system")
+        from keycloak_operator.webhooks.keycloak import validate_keycloak
+
+        spec = {
+            "operatorRef": {"namespace": "keycloak-system"},
+            "replicas": 1,
+            "image": "quay.io/keycloak/keycloak:26.0.0-custom",
+            "upgradePolicy": {"backupTimeout": 600},
+            "database": self._base_db(),
+        }
+
+        with patch(
+            "keycloak_operator.webhooks.keycloak.get_keycloak_count_in_namespace",
+            return_value=0,
+        ):
+            result = await validate_keycloak(
+                spec=spec,
                 namespace="keycloak-system",
                 name="keycloak",
                 operation="CREATE",

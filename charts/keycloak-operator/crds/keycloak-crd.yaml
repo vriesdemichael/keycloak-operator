@@ -502,15 +502,8 @@ spec:
                 description: >-
                   Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 2).
                   Controls pre-upgrade backup behavior and upgrade strategy.
+                  When present, the admission webhook also enforces semantic version image tags.
                 properties:
-                  requireBackupConfirmation:
-                    type: boolean
-                    description: >-
-                      Require manual backup confirmation before proceeding with upgrades
-                      on external/legacy database tiers. When true, the operator blocks
-                      the upgrade via retry loop until the annotation
-                      operator.keycloak.io/backup-confirmed is set to 'true'.
-                    default: false
                   backupTimeout:
                     type: integer
                     description: >-

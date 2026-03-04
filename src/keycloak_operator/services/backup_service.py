@@ -6,10 +6,9 @@ Keycloak version upgrades. The backup strategy depends on the database tier:
 
 - **Tier 1 (CNPG)**: Creates a CNPG ``Backup`` CR and polls until complete.
 - **Tier 2 (Managed)**: Creates a ``VolumeSnapshot`` of the database PVC.
-- **Tier 3 (External)**: Cannot back up automatically. Logs a warning
-  and returns a result indicating no backup was performed. Optionally blocks
-  until manual confirmation via annotation.
-- **Tier 4 (Legacy)**: Same as External — warn-and-proceed or manual gate.
+- **Tier 3 (External)**: Not managed by the operator. Logs a warning and
+  proceeds. Users must perform their own backups before upgrading.
+- **Tier 4 (Legacy)**: Same as External — warn-and-proceed.
 """
 
 from __future__ import annotations
@@ -24,7 +23,6 @@ from kubernetes import client
 from kubernetes.client.rest import ApiException
 
 from keycloak_operator.constants import (
-    BACKUP_CONFIRMED_ANNOTATION,
     DEFAULT_BACKUP_TIMEOUT,
     INSTANCE_LABEL_KEY,
     OPERATOR_LABEL_KEY,
@@ -44,8 +42,6 @@ class BackupResult:
         tier: The database tier that was backed up.
         backup_name: Name of the backup resource (CNPG Backup or VolumeSnapshot).
         message: Human-readable description of the result.
-        requires_confirmation: True if the upgrade is blocked pending manual
-            confirmation (external/legacy tier with requireBackupConfirmation).
         warnings: Non-fatal warnings emitted during the backup.
     """
 
@@ -53,7 +49,6 @@ class BackupResult:
     tier: str
     backup_name: str | None = None
     message: str = ""
-    requires_confirmation: bool = False
     warnings: list[str] = field(default_factory=list)
 
 
@@ -80,7 +75,6 @@ class PreUpgradeBackupService:
         db_tier: str,
         db_config: Any,
         upgrade_policy: Any | None = None,
-        annotations: dict[str, str] | None = None,
     ) -> BackupResult:
         """
         Perform a pre-upgrade backup based on the database tier.
@@ -91,7 +85,6 @@ class PreUpgradeBackupService:
             db_tier: Database tier ('cnpg', 'managed', 'external', 'legacy').
             db_config: The database configuration object (KeycloakDatabaseConfig).
             upgrade_policy: Optional UpgradePolicy from the Keycloak spec.
-            annotations: Current annotations on the Keycloak CR.
 
         Returns:
             BackupResult with outcome details.
@@ -107,9 +100,7 @@ class PreUpgradeBackupService:
                 keycloak_name, namespace, db_config, timeout
             )
         elif db_tier in ("external", "legacy"):
-            return await self._handle_external_backup(
-                keycloak_name, namespace, db_tier, upgrade_policy, annotations
-            )
+            return self._handle_external_backup(keycloak_name, namespace, db_tier)
         else:
             return BackupResult(
                 success=False,
@@ -446,85 +437,36 @@ class PreUpgradeBackupService:
         )
 
     # ──────────────────────────────────────────────────────────────
-    # Tier 3+4: External / Legacy — warn or gate
+    # Tier 3+4: External / Legacy — warn and proceed
     # ──────────────────────────────────────────────────────────────
 
-    async def _handle_external_backup(
+    def _handle_external_backup(
         self,
         keycloak_name: str,
         namespace: str,
         db_tier: str,
-        upgrade_policy: Any | None,
-        annotations: dict[str, str] | None,
     ) -> BackupResult:
         """
         Handle backup for external/legacy tiers.
 
-        Default (requireBackupConfirmation=false): warn-and-proceed.
-        Opt-in (requireBackupConfirmation=true): block until annotation.
+        The operator cannot perform automated backups for databases outside
+        its control. It logs a warning and proceeds with the upgrade.
+        Users must ensure they have a recent backup before upgrading.
         """
-        require_confirmation = False
-        if upgrade_policy is not None:
-            require_confirmation = getattr(
-                upgrade_policy, "require_backup_confirmation", False
-            )
-
-        if not require_confirmation:
-            # Warn-and-proceed
-            logger.warning(
-                "Keycloak %s/%s uses %s database tier. "
-                "The operator cannot perform automated backups for this tier. "
-                "Ensure you have a recent backup before upgrading.",
-                namespace,
-                keycloak_name,
-                db_tier,
-            )
-            return BackupResult(
-                success=True,
-                tier=db_tier,
-                message=(
-                    f"No automated backup available for {db_tier} database tier. "
-                    "Proceeding with upgrade. Ensure a manual backup exists."
-                ),
-                warnings=[
-                    f"Database tier '{db_tier}' does not support automated backups. "
-                    "Set upgradePolicy.requireBackupConfirmation=true to enforce "
-                    "manual backup verification before upgrades."
-                ],
-            )
-
-        # Manual gate: check for confirmation annotation
-        annotations = annotations or {}
-        confirmed = annotations.get(BACKUP_CONFIRMED_ANNOTATION, "").lower() == "true"
-
-        if confirmed:
-            logger.info(
-                "Backup confirmation annotation found for Keycloak %s/%s. "
-                "Proceeding with upgrade.",
-                namespace,
-                keycloak_name,
-            )
-            return BackupResult(
-                success=True,
-                tier=db_tier,
-                message=(f"Manual backup confirmed via annotation for {db_tier} tier."),
-            )
-
-        # Not confirmed — block
         logger.warning(
-            "Keycloak %s/%s upgrade blocked: waiting for manual backup confirmation. "
-            "Apply annotation '%s: \"true\"' to proceed.",
-            namespace,
-            keycloak_name,
-            BACKUP_CONFIRMED_ANNOTATION,
+            f"Keycloak {namespace}/{keycloak_name} uses {db_tier} database tier. "
+            f"The operator cannot perform automated backups for this tier. "
+            f"Ensure you have a recent backup before upgrading."
         )
         return BackupResult(
-            success=False,
+            success=True,
             tier=db_tier,
-            requires_confirmation=True,
             message=(
-                f"Upgrade blocked for {db_tier} database tier. "
-                f"Apply annotation '{BACKUP_CONFIRMED_ANNOTATION}: \"true\"' "
-                "to the Keycloak CR after ensuring a manual backup exists."
+                f"No automated backup available for {db_tier} database tier. "
+                "Proceeding with upgrade. Ensure a manual backup exists."
             ),
+            warnings=[
+                f"Database tier '{db_tier}' does not support automated backups. "
+                "Ensure you have performed a manual backup before upgrading Keycloak."
+            ],
         )

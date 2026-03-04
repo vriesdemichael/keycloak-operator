@@ -24,6 +24,7 @@ from keycloak_operator.utils.validation import (
     validate_resource_limits,
     validate_resource_name,
     validate_security_settings,
+    validate_semver_image_tag,
     validate_url,
 )
 
@@ -261,6 +262,97 @@ class TestImageReferenceValidation:
         caplog.clear()
         validate_image_reference("keycloak:latest")
         assert "latest" in caplog.text
+
+
+class TestSemverImageTagValidation:
+    """Test cases for semantic version image tag enforcement."""
+
+    def test_valid_semver_tags_pass(self):
+        """Test that standard semver tags pass validation."""
+        valid_images = [
+            "keycloak:26.0.0",
+            "quay.io/keycloak/keycloak:25.0.6",
+            "registry.example.com/keycloak:24.0.0",
+            "keycloak:26.4.0-beta.1",
+            "myregistry.io/kc:25.0.0-rc.1",
+            "keycloak:100.200.300",
+        ]
+        for image in valid_images:
+            validate_semver_image_tag(image)  # Should not raise
+
+    def test_latest_tag_rejected(self):
+        """Test that 'latest' tag is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("quay.io/keycloak/keycloak:latest")
+        assert "not a valid semantic version" in str(exc_info.value)
+        assert "latest" in str(exc_info.value)
+
+    def test_nightly_tag_rejected(self):
+        """Test that 'nightly' tag is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("keycloak:nightly")
+        assert "not a valid semantic version" in str(exc_info.value)
+
+    def test_dev_tag_rejected(self):
+        """Test that 'dev' tag is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("keycloak:dev")
+        assert "not a valid semantic version" in str(exc_info.value)
+
+    def test_digest_only_rejected(self):
+        """Test that digest-only images are rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag(
+                "keycloak@sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abcd1234"
+            )
+        assert "digest reference" in str(exc_info.value)
+
+    def test_no_tag_rejected(self):
+        """Test that images without tags are rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("quay.io/keycloak/keycloak")
+        assert "no tag" in str(exc_info.value)
+
+    def test_empty_image_rejected(self):
+        """Test that empty image string is rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("")
+        assert "cannot be empty" in str(exc_info.value)
+
+    def test_v_prefixed_tag_rejected(self):
+        """Test that v-prefixed tags (non-semver) are rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("keycloak:v26.0.0")
+        assert "not a valid semantic version" in str(exc_info.value)
+
+    def test_partial_version_tag_rejected(self):
+        """Test that partial version tags like '26' or '26.0' are rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("keycloak:26")
+        assert "not a valid semantic version" in str(exc_info.value)
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("keycloak:26.0")
+        assert "not a valid semantic version" in str(exc_info.value)
+
+    def test_custom_suffix_with_semver_passes(self):
+        """Test that semver tags with custom suffixes pass."""
+        # _parse_version uses ^(\d+)\.(\d+)\.(\d+) which allows trailing content
+        valid_images = [
+            "keycloak:26.0.0-custom",
+            "keycloak:25.0.1-alpine",
+            "keycloak:24.0.0-202401",
+        ]
+        for image in valid_images:
+            validate_semver_image_tag(image)  # Should not raise
+
+    def test_error_message_includes_guidance(self):
+        """Test that error messages include helpful guidance."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("keycloak:latest")
+        error_msg = str(exc_info.value)
+        assert "quay.io/keycloak/keycloak:26.0.0" in error_msg
+        assert "pre-upgrade backups" in error_msg
 
 
 class TestParseKubernetesQuantity:

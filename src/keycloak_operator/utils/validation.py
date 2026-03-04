@@ -596,6 +596,70 @@ def validate_image_reference(image: str) -> None:
     logger.debug(f"Validated image reference: {image}")
 
 
+def validate_semver_image_tag(image: str) -> None:
+    """
+    Validate that a container image uses a parseable semantic version tag.
+
+    This is an admission-time enforcement: the operator needs deterministic
+    version information from the image tag to detect upgrades and decide
+    whether pre-upgrade backups are required.  Tags like ``latest``,
+    ``nightly``, bare digests, or missing tags make version comparison
+    impossible and are therefore rejected.
+
+    Accepted examples::
+
+        quay.io/keycloak/keycloak:26.0.0
+        keycloak:25.0.6-custom
+        myregistry.io/kc:24.0.0-rc.1
+
+    Rejected examples::
+
+        keycloak:latest
+        keycloak:nightly
+        keycloak@sha256:abcdef1234567890...
+        keycloak              (no tag at all)
+
+    Args:
+        image: Container image reference.
+
+    Raises:
+        ValidationError: If the image tag is not a valid semantic version.
+    """
+    if not image:
+        raise ValidationError("Image reference cannot be empty")
+
+    # Digest-only images have no tag to parse
+    if "@sha256:" in image:
+        raise ValidationError(
+            f"Image '{image}' uses a digest reference without a version tag. "
+            f"The operator requires a semantic version tag (e.g. "
+            f"'quay.io/keycloak/keycloak:26.0.0') to detect upgrades and "
+            f"manage pre-upgrade backups."
+        )
+
+    # No tag at all — Docker defaults to :latest which is equally opaque
+    if ":" not in image:
+        raise ValidationError(
+            f"Image '{image}' has no tag. "
+            f"The operator requires an explicit semantic version tag (e.g. "
+            f"'quay.io/keycloak/keycloak:26.0.0')."
+        )
+
+    tag = image.split(":")[-1]
+
+    # Try to parse as semver — _parse_version expects "X.Y.Z" at the start
+    try:
+        _parse_version(tag)
+    except ValueError as e:
+        raise ValidationError(
+            f"Image tag '{tag}' is not a valid semantic version. "
+            f"The operator requires a semantic version tag (e.g. "
+            f"'quay.io/keycloak/keycloak:26.0.0') to detect upgrades and "
+            f"manage pre-upgrade backups. "
+            f"Tags like 'latest', 'nightly', or non-numeric tags are not accepted."
+        ) from e
+
+
 def validate_keycloak_version(image: str) -> None:
     """
     Validate Keycloak version is supported by this operator.

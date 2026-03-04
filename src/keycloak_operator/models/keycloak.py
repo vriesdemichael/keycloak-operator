@@ -768,39 +768,28 @@ class UpgradePolicy(BaseModel):
     """
     Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 2).
 
-    Controls pre-upgrade backup behavior and (in Phase 3) blue-green
-    deployment strategy. The backup behavior depends on the database tier:
+    Controls pre-upgrade backup behavior for automated database tiers:
 
     - **cnpg**: Automated backup via CNPG Backup API.
     - **managed**: Automated backup via VolumeSnapshot (requires pvcName).
-    - **external/legacy**: Warn-and-proceed by default; opt-in manual gate
-      via ``require_backup_confirmation``.
+    - **external/legacy**: Not managed by the operator. The operator logs a
+      warning and proceeds. Users must perform their own backups before
+      upgrading Keycloak when using an external database.
 
-    When ``require_backup_confirmation`` is true for external/legacy tiers,
-    the operator blocks the upgrade via ``TemporaryError`` retry loop until the
-    annotation ``operator.keycloak.io/backup-confirmed: "true"`` is applied
-    to the Keycloak CR.
+    The presence of an ``upgradePolicy`` in the Keycloak spec also enables
+    semantic version tag enforcement in the admission webhook, since version
+    detection is required for upgrade orchestration.
     """
 
     model_config = {"populate_by_name": True}
 
-    require_backup_confirmation: bool = Field(
-        False,
-        alias="requireBackupConfirmation",
-        description=(
-            "Require manual backup confirmation before proceeding with upgrades "
-            "on external/legacy database tiers. When true, the operator blocks "
-            "the upgrade via retry loop until the annotation "
-            "operator.keycloak.io/backup-confirmed is set to 'true'. "
-            "Default: false (warn-and-proceed)."
-        ),
-    )
     backup_timeout: int = Field(
         600,
         alias="backupTimeout",
         description=(
             "Maximum time in seconds to wait for a pre-upgrade backup to complete. "
-            "Applies to CNPG and VolumeSnapshot backups. Default: 600 (10 minutes)."
+            "Applies to CNPG and VolumeSnapshot backups only. Has no effect on "
+            "external or legacy database tiers. Default: 600 (10 minutes)."
         ),
         ge=60,
         le=3600,

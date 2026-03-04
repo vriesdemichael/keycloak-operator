@@ -11,7 +11,6 @@ Covers `_maybe_perform_pre_upgrade_backup()`:
 - Unparseable version (skip with warning)
 - Backup success (continues normally)
 - Backup failure (raises TemporaryError delay=60)
-- Backup requires confirmation (raises TemporaryError delay=30)
 - Backup warnings are logged
 - No running image extractable (skip with warning)
 - Default image used when spec.image is None
@@ -531,49 +530,6 @@ class TestBackupFailure:
 
 
 # ===========================================================================
-# Backup Requires Confirmation (TemporaryError delay=30)
-# ===========================================================================
-
-
-class TestBackupRequiresConfirmation:
-    """When backup requires confirmation, a TemporaryError with delay=30 is raised."""
-
-    @pytest.mark.asyncio
-    async def test_confirmation_required_raises_temporary_error(self):
-        reconciler = _make_reconciler()
-        spec = _make_spec(image="quay.io/keycloak/keycloak:26.0.0", db_tier="external")
-        kwargs = _make_kwargs()
-
-        deployment = _make_deployment("quay.io/keycloak/keycloak:25.0.0")
-        mock_apps_api = MagicMock()
-        mock_apps_api.read_namespaced_deployment = MagicMock(return_value=deployment)
-
-        reconciler.backup_service.perform_backup = AsyncMock(
-            return_value=BackupResult(
-                success=False,
-                tier="external",
-                requires_confirmation=True,
-                message="Apply annotation to proceed",
-                warnings=[],
-            )
-        )
-
-        with (
-            patch(
-                "keycloak_operator.services.keycloak_reconciler.client.AppsV1Api",
-                return_value=mock_apps_api,
-            ),
-            pytest.raises(TemporaryError) as exc_info,
-        ):
-            await reconciler._maybe_perform_pre_upgrade_backup(
-                spec, "test-kc", "default", kwargs
-            )
-
-        assert exc_info.value.delay == 30
-        assert "manual backup confirmation" in str(exc_info.value)
-
-
-# ===========================================================================
 # Backup Warnings Are Logged
 # ===========================================================================
 
@@ -619,111 +575,6 @@ class TestBackupWarnings:
 
 
 # ===========================================================================
-# Annotations Passed Through
-# ===========================================================================
-
-
-class TestAnnotationsPassthrough:
-    """Annotations from kwargs.meta should be passed to the backup service."""
-
-    @pytest.mark.asyncio
-    async def test_annotations_forwarded_to_backup_service(self):
-        reconciler = _make_reconciler()
-        spec = _make_spec(image="quay.io/keycloak/keycloak:26.0.0", db_tier="external")
-        annotations = {"operator.keycloak.io/backup-confirmed": "true"}
-        kwargs = _make_kwargs(annotations=annotations)
-
-        deployment = _make_deployment("quay.io/keycloak/keycloak:25.0.0")
-        mock_apps_api = MagicMock()
-        mock_apps_api.read_namespaced_deployment = MagicMock(return_value=deployment)
-
-        reconciler.backup_service.perform_backup = AsyncMock(
-            return_value=BackupResult(
-                success=True,
-                tier="external",
-                message="Manual backup confirmed",
-                warnings=[],
-            )
-        )
-
-        with patch(
-            "keycloak_operator.services.keycloak_reconciler.client.AppsV1Api",
-            return_value=mock_apps_api,
-        ):
-            await reconciler._maybe_perform_pre_upgrade_backup(
-                spec, "test-kc", "default", kwargs
-            )
-
-        call_kwargs = reconciler.backup_service.perform_backup.call_args[1]
-        assert call_kwargs["annotations"] == annotations
-
-    @pytest.mark.asyncio
-    async def test_missing_annotations_handled(self):
-        """When meta has no annotations key, it should default to empty dict."""
-        reconciler = _make_reconciler()
-        spec = _make_spec(image="quay.io/keycloak/keycloak:26.0.0", db_tier="external")
-        kwargs = {"meta": {}}  # No annotations key
-
-        deployment = _make_deployment("quay.io/keycloak/keycloak:25.0.0")
-        mock_apps_api = MagicMock()
-        mock_apps_api.read_namespaced_deployment = MagicMock(return_value=deployment)
-
-        reconciler.backup_service.perform_backup = AsyncMock(
-            return_value=BackupResult(
-                success=True,
-                tier="external",
-                message="Warn and proceed",
-                warnings=[],
-            )
-        )
-
-        with patch(
-            "keycloak_operator.services.keycloak_reconciler.client.AppsV1Api",
-            return_value=mock_apps_api,
-        ):
-            await reconciler._maybe_perform_pre_upgrade_backup(
-                spec, "test-kc", "default", kwargs
-            )
-
-        call_kwargs = reconciler.backup_service.perform_backup.call_args[1]
-        assert call_kwargs["annotations"] == {}
-
-    @pytest.mark.asyncio
-    async def test_none_annotations_handled(self):
-        """When annotations is explicitly None in meta."""
-        reconciler = _make_reconciler()
-        spec = _make_spec(image="quay.io/keycloak/keycloak:26.0.0", db_tier="external")
-        kwargs = {"meta": {"annotations": None}}
-
-        deployment = _make_deployment("quay.io/keycloak/keycloak:25.0.0")
-        mock_apps_api = MagicMock()
-        mock_apps_api.read_namespaced_deployment = MagicMock(return_value=deployment)
-
-        reconciler.backup_service.perform_backup = AsyncMock(
-            return_value=BackupResult(
-                success=True,
-                tier="external",
-                message="Warn and proceed",
-                warnings=[],
-            )
-        )
-
-        with patch(
-            "keycloak_operator.services.keycloak_reconciler.client.AppsV1Api",
-            return_value=mock_apps_api,
-        ):
-            await reconciler._maybe_perform_pre_upgrade_backup(
-                spec, "test-kc", "default", kwargs
-            )
-
-        # The `or {}` in the code should handle None
-        call_kwargs = reconciler.backup_service.perform_backup.call_args[1]
-        # The code does `annotations = kwargs.get("meta", {}).get("annotations", {}) or {}`
-        # So None gets converted to {} by the `or {}` part
-        assert call_kwargs["annotations"] == {}
-
-
-# ===========================================================================
 # Upgrade Policy Passed Through
 # ===========================================================================
 
@@ -734,7 +585,6 @@ class TestUpgradePolicyPassthrough:
     @pytest.mark.asyncio
     async def test_upgrade_policy_forwarded(self):
         upgrade_policy = SimpleNamespace(
-            require_backup_confirmation=True,
             backup_timeout=120,
         )
         reconciler = _make_reconciler()
@@ -751,19 +601,16 @@ class TestUpgradePolicyPassthrough:
 
         reconciler.backup_service.perform_backup = AsyncMock(
             return_value=BackupResult(
-                success=False,
+                success=True,
                 tier="external",
-                requires_confirmation=True,
-                message="Blocked",
+                message="Warn and proceed",
+                warnings=["External tier does not support automated backups"],
             )
         )
 
-        with (
-            patch(
-                "keycloak_operator.services.keycloak_reconciler.client.AppsV1Api",
-                return_value=mock_apps_api,
-            ),
-            pytest.raises(TemporaryError),
+        with patch(
+            "keycloak_operator.services.keycloak_reconciler.client.AppsV1Api",
+            return_value=mock_apps_api,
         ):
             await reconciler._maybe_perform_pre_upgrade_backup(
                 spec, "test-kc", "default", kwargs

@@ -1046,13 +1046,8 @@
         },
         "upgradePolicy": {
           "type": "object",
-          "description": "Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2). Controls automated backup behavior before Keycloak version upgrades.",
+          "description": "Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2). Controls automated backup behavior before Keycloak version upgrades. When present, enables semantic version image tag enforcement.",
           "properties": {
-            "requireBackupConfirmation": {
-              "type": "boolean",
-              "description": "Require manual backup confirmation before proceeding with upgrades on external/legacy database tiers. When true, the operator blocks the upgrade via retry loop until the annotation operator.keycloak.io/backup-confirmed is set to true.",
-              "default": false
-            },
             "backupTimeout": {
               "type": "integer",
               "description": "Maximum time in seconds to wait for a pre-upgrade backup to complete. Applies to CNPG and VolumeSnapshot backups.",

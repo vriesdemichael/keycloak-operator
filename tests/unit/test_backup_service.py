@@ -6,7 +6,6 @@ Covers:
 - CNPG backup creation and polling (Tier 1)
 - VolumeSnapshot backup creation and polling (Tier 2)
 - External/Legacy warn-and-proceed (Tier 3/4)
-- External/Legacy manual gate with annotation (Tier 3/4)
 - Unknown tier handling
 - Timeout handling for all tiers
 """
@@ -17,7 +16,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from kubernetes.client.rest import ApiException
 
-from keycloak_operator.constants import BACKUP_CONFIRMED_ANNOTATION
 from keycloak_operator.services.backup_service import (
     BackupResult,
     PreUpgradeBackupService,
@@ -36,7 +34,6 @@ class TestBackupResult:
         assert result.success is True
         assert result.tier == "cnpg"
         assert result.backup_name == "test-backup"
-        assert result.requires_confirmation is False
         assert result.warnings == []
 
     def test_failed_result(self):
@@ -47,15 +44,6 @@ class TestBackupResult:
         )
         assert result.success is False
         assert result.message == "Backup failed"
-
-    def test_confirmation_result(self):
-        result = BackupResult(
-            success=False,
-            tier="external",
-            requires_confirmation=True,
-            message="Waiting for confirmation",
-        )
-        assert result.requires_confirmation is True
 
     def test_warnings_list(self):
         result = BackupResult(
@@ -96,10 +84,9 @@ def _make_db_config(tier="cnpg", **overrides):
         return SimpleNamespace(cnpg=None, managed=None, external=None)
 
 
-def _make_upgrade_policy(require_confirmation=False, backup_timeout=600):
+def _make_upgrade_policy(backup_timeout=600):
     """Create a mock UpgradePolicy."""
     return SimpleNamespace(
-        require_backup_confirmation=require_confirmation,
         backup_timeout=backup_timeout,
     )
 
@@ -157,9 +144,7 @@ class TestPerformBackupDispatch:
     @pytest.mark.asyncio
     async def test_dispatches_to_external(self):
         service = PreUpgradeBackupService()
-        with patch.object(
-            service, "_handle_external_backup", new_callable=AsyncMock
-        ) as mock_ext:
+        with patch.object(service, "_handle_external_backup") as mock_ext:
             mock_ext.return_value = BackupResult(success=True, tier="external")
             await service.perform_backup(
                 keycloak_name="test",
@@ -172,9 +157,7 @@ class TestPerformBackupDispatch:
     @pytest.mark.asyncio
     async def test_dispatches_to_legacy(self):
         service = PreUpgradeBackupService()
-        with patch.object(
-            service, "_handle_external_backup", new_callable=AsyncMock
-        ) as mock_ext:
+        with patch.object(service, "_handle_external_backup") as mock_ext:
             mock_ext.return_value = BackupResult(success=True, tier="legacy")
             await service.perform_backup(
                 keycloak_name="test",
@@ -674,114 +657,38 @@ class TestVolumeSnapshotBackup:
 
 
 class TestExternalLegacyBackup:
-    """Test external/legacy tier backup handling."""
+    """Test external/legacy tier backup handling (always warn-and-proceed)."""
 
-    @pytest.mark.asyncio
-    async def test_warn_and_proceed_default(self):
-        """Default: warn and proceed for external tier."""
+    def test_warn_and_proceed_external(self):
+        """External tier: always warn and proceed."""
         service = PreUpgradeBackupService()
-        result = await service._handle_external_backup(
-            "test-kc", "default", "external", None, None
-        )
+        result = service._handle_external_backup("test-kc", "default", "external")
 
         assert result.success is True
+        assert result.tier == "external"
         assert len(result.warnings) == 1
-        assert "requireBackupConfirmation" in result.warnings[0]
+        assert "does not support automated backups" in result.warnings[0]
 
-    @pytest.mark.asyncio
-    async def test_warn_and_proceed_legacy(self):
-        """Default: warn and proceed for legacy tier."""
+    def test_warn_and_proceed_legacy(self):
+        """Legacy tier: always warn and proceed."""
         service = PreUpgradeBackupService()
-        result = await service._handle_external_backup(
-            "test-kc", "default", "legacy", None, None
-        )
+        result = service._handle_external_backup("test-kc", "default", "legacy")
 
         assert result.success is True
         assert result.tier == "legacy"
+        assert len(result.warnings) == 1
+        assert "does not support automated backups" in result.warnings[0]
 
-    @pytest.mark.asyncio
-    async def test_warn_and_proceed_with_policy_false(self):
-        """Explicit requireBackupConfirmation=false => warn and proceed."""
+    def test_message_mentions_manual_backup(self):
+        """Message should tell users to ensure a manual backup exists."""
         service = PreUpgradeBackupService()
-        policy = _make_upgrade_policy(require_confirmation=False)
-        result = await service._handle_external_backup(
-            "test-kc", "default", "external", policy, None
-        )
+        result = service._handle_external_backup("test-kc", "default", "external")
 
-        assert result.success is True
+        assert "manual backup" in result.message.lower()
 
-    @pytest.mark.asyncio
-    async def test_manual_gate_blocks_without_annotation(self):
-        """requireBackupConfirmation=true with no annotation => blocked."""
+    def test_no_backup_name(self):
+        """No backup resource is created for external/legacy tiers."""
         service = PreUpgradeBackupService()
-        policy = _make_upgrade_policy(require_confirmation=True)
-        result = await service._handle_external_backup(
-            "test-kc", "default", "external", policy, {}
-        )
+        result = service._handle_external_backup("test-kc", "default", "external")
 
-        assert result.success is False
-        assert result.requires_confirmation is True
-        assert BACKUP_CONFIRMED_ANNOTATION in result.message
-
-    @pytest.mark.asyncio
-    async def test_manual_gate_blocks_with_wrong_annotation(self):
-        """Annotation present but not 'true' => still blocked."""
-        service = PreUpgradeBackupService()
-        policy = _make_upgrade_policy(require_confirmation=True)
-        annotations = {BACKUP_CONFIRMED_ANNOTATION: "false"}
-        result = await service._handle_external_backup(
-            "test-kc", "default", "external", policy, annotations
-        )
-
-        assert result.success is False
-        assert result.requires_confirmation is True
-
-    @pytest.mark.asyncio
-    async def test_manual_gate_confirmed(self):
-        """Annotation set to 'true' => proceed."""
-        service = PreUpgradeBackupService()
-        policy = _make_upgrade_policy(require_confirmation=True)
-        annotations = {BACKUP_CONFIRMED_ANNOTATION: "true"}
-        result = await service._handle_external_backup(
-            "test-kc", "default", "external", policy, annotations
-        )
-
-        assert result.success is True
-        assert result.requires_confirmation is False
-
-    @pytest.mark.asyncio
-    async def test_manual_gate_confirmed_case_insensitive(self):
-        """Annotation value is case-insensitive."""
-        service = PreUpgradeBackupService()
-        policy = _make_upgrade_policy(require_confirmation=True)
-        annotations = {BACKUP_CONFIRMED_ANNOTATION: "True"}
-        result = await service._handle_external_backup(
-            "test-kc", "default", "external", policy, annotations
-        )
-
-        assert result.success is True
-
-    @pytest.mark.asyncio
-    async def test_manual_gate_legacy_tier(self):
-        """Manual gate works for legacy tier too."""
-        service = PreUpgradeBackupService()
-        policy = _make_upgrade_policy(require_confirmation=True)
-        result = await service._handle_external_backup(
-            "test-kc", "default", "legacy", policy, {}
-        )
-
-        assert result.success is False
-        assert result.requires_confirmation is True
-        assert result.tier == "legacy"
-
-    @pytest.mark.asyncio
-    async def test_none_annotations(self):
-        """None annotations => treated as empty dict."""
-        service = PreUpgradeBackupService()
-        policy = _make_upgrade_policy(require_confirmation=True)
-        result = await service._handle_external_backup(
-            "test-kc", "default", "external", policy, None
-        )
-
-        assert result.success is False
-        assert result.requires_confirmation is True
+        assert result.backup_name is None
