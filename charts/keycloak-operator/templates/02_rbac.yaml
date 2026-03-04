@@ -152,7 +152,7 @@ rules:
 
 # VolumeSnapshot management for pre-upgrade backups (ADR-088 Phase 2)
 - apiGroups: ["snapshot.storage.k8s.io"]
-  resources: ["volumesnapshots"]
+  resources: ["volumesnapshots", "volumesnapshotclasses"]
   verbs: ["get", "list", "watch", "create", "delete"]
 
 # Webhook configuration

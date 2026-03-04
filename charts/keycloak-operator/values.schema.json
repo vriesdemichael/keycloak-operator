@@ -1045,17 +1045,23 @@
           }
         },
         "upgradePolicy": {
-          "type": "object",
-          "description": "Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2). Controls automated backup behavior before Keycloak version upgrades. When present, enables semantic version image tag enforcement.",
-          "properties": {
-            "backupTimeout": {
-              "type": "integer",
-              "description": "Maximum time in seconds to wait for a pre-upgrade backup to complete. Applies to CNPG and VolumeSnapshot backups.",
-              "default": 600,
-              "minimum": 60,
-              "maximum": 3600
+          "oneOf": [
+            {"type": "null"},
+            {
+              "type": "object",
+              "description": "Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2). Controls automated backup behavior before Keycloak version upgrades. When present, enables semantic version image tag enforcement.",
+              "properties": {
+                "backupTimeout": {
+                  "type": "integer",
+                  "description": "Maximum time in seconds to wait for a pre-upgrade backup to complete. Applies to CNPG and VolumeSnapshot backups.",
+                  "default": 600,
+                  "minimum": 60,
+                  "maximum": 3600
+                }
+              }
             }
-          }
+          ],
+          "description": "Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2). Set to a map to opt in; leave null to disable."
         },
         "ingress": {
           "type": "object",

@@ -410,6 +410,8 @@ class TestPreUpgradeBackupCNPGTier:
                 raise
 
         # Build CNPG-tier spec (NOT legacy)
+        # upgradePolicy MUST be set to opt in to pre-upgrade backup behaviour;
+        # without it the reconciler gate skips _maybe_perform_pre_upgrade_backup.
         spec = {
             "replicas": 1,
             "image": get_keycloak_test_image(),
@@ -424,6 +426,9 @@ class TestPreUpgradeBackupCNPGTier:
             "resources": {
                 "requests": {"cpu": "200m", "memory": "512Mi"},
                 "limits": {"cpu": "2000m", "memory": "2Gi"},
+            },
+            "upgradePolicy": {
+                "backupTimeout": 600,
             },
         }
 

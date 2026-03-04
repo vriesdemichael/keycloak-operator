@@ -650,6 +650,66 @@ class TestVolumeSnapshotBackup:
 
         assert exc_info.value.status == 403
 
+    @pytest.mark.asyncio
+    async def test_cnpg_backup_409_idempotent(self):
+        """CNPG Backup 409 Conflict is treated as idempotent — polling continues."""
+        service = PreUpgradeBackupService(k8s_client=MagicMock())
+        mock_api = MagicMock()
+        mock_api.create_namespaced_custom_object = MagicMock(
+            side_effect=ApiException(status=409, reason="Conflict")
+        )
+        mock_api.get_namespaced_custom_object = MagicMock(
+            return_value={"status": {"phase": "completed"}}
+        )
+
+        with patch(
+            "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+            return_value=mock_api,
+        ):
+            result = await service._backup_cnpg(
+                "test-kc", "default", _make_db_config("cnpg"), 600
+            )
+
+        assert result.success is True
+        assert result.tier == "cnpg"
+        # Verify polling happened (get was called) even after 409
+        mock_api.get_namespaced_custom_object.assert_called()
+
+    @pytest.mark.asyncio
+    async def test_snapshot_409_idempotent(self):
+        """VolumeSnapshot 409 Conflict is treated as idempotent — polling continues."""
+        service = PreUpgradeBackupService(k8s_client=MagicMock())
+        mock_custom_api = MagicMock()
+        mock_custom_api.create_namespaced_custom_object = MagicMock(
+            side_effect=ApiException(status=409, reason="Conflict")
+        )
+        mock_custom_api.get_namespaced_custom_object = MagicMock(
+            return_value={"status": {"readyToUse": True}}
+        )
+        mock_core_api = MagicMock()
+        mock_core_api.read_namespaced_persistent_volume_claim = MagicMock(
+            return_value=MagicMock()
+        )
+
+        with (
+            patch(
+                "keycloak_operator.services.backup_service.client.CustomObjectsApi",
+                return_value=mock_custom_api,
+            ),
+            patch(
+                "keycloak_operator.services.backup_service.client.CoreV1Api",
+                return_value=mock_core_api,
+            ),
+        ):
+            result = await service._backup_volume_snapshot(
+                "test-kc", "default", _make_db_config("managed"), 600
+            )
+
+        assert result.success is True
+        assert result.tier == "managed"
+        # Verify polling happened (get was called) even after 409
+        mock_custom_api.get_namespaced_custom_object.assert_called()
+
 
 # ===========================================================================
 # Tier 3+4: External / Legacy

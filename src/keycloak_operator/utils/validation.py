@@ -611,13 +611,16 @@ def validate_semver_image_tag(image: str) -> None:
         quay.io/keycloak/keycloak:26.0.0
         keycloak:25.0.6-custom
         myregistry.io/kc:24.0.0-rc.1
+        localhost:5000/keycloak:26.0.0
+        myregistry.io/kc:26.0.0@sha256:abcdef...
 
     Rejected examples::
 
         keycloak:latest
         keycloak:nightly
-        keycloak@sha256:abcdef1234567890...
-        keycloak              (no tag at all)
+        keycloak@sha256:abcdef1234567890...   (digest-only, no tag)
+        keycloak                               (no tag at all)
+        localhost:5000/keycloak                (port but no tag)
 
     Args:
         image: Container image reference.
@@ -628,24 +631,32 @@ def validate_semver_image_tag(image: str) -> None:
     if not image:
         raise ValidationError("Image reference cannot be empty")
 
-    # Digest-only images have no tag to parse
-    if "@sha256:" in image:
-        raise ValidationError(
-            f"Image '{image}' uses a digest reference without a version tag. "
-            f"The operator requires a semantic version tag (e.g. "
-            f"'quay.io/keycloak/keycloak:26.0.0') to detect upgrades and "
-            f"manage pre-upgrade backups."
-        )
+    # Strip digest suffix first — we only care about the tag portion.
+    # Images can be `name:tag@sha256:...` (tag+digest) or `name@sha256:...`
+    # (digest-only).
+    name_and_tag = image.split("@")[0] if "@" in image else image
 
-    # No tag at all — Docker defaults to :latest which is equally opaque
-    if ":" not in image:
+    # Isolate the name component after the last '/' to avoid confusing
+    # a registry port (e.g. localhost:5000) with a tag separator.
+    last_segment = name_and_tag.rsplit("/", 1)[-1]
+
+    # Check for a tag in the last segment
+    if ":" not in last_segment:
+        # No tag — either truly untagged or digest-only
+        if "@sha256:" in image:
+            raise ValidationError(
+                f"Image '{image}' uses a digest reference without a version tag. "
+                f"The operator requires a semantic version tag (e.g. "
+                f"'quay.io/keycloak/keycloak:26.0.0') to detect upgrades and "
+                f"manage pre-upgrade backups."
+            )
         raise ValidationError(
             f"Image '{image}' has no tag. "
             f"The operator requires an explicit semantic version tag (e.g. "
             f"'quay.io/keycloak/keycloak:26.0.0')."
         )
 
-    tag = image.split(":")[-1]
+    tag = last_segment.split(":", 1)[1]
 
     # Try to parse as semver — _parse_version expects "X.Y.Z" at the start
     try:

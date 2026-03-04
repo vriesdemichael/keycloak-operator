@@ -354,6 +354,37 @@ class TestSemverImageTagValidation:
         assert "quay.io/keycloak/keycloak:26.0.0" in error_msg
         assert "pre-upgrade backups" in error_msg
 
+    def test_registry_port_with_valid_tag(self):
+        """Registry port should not be confused with tag separator."""
+        valid_images = [
+            "localhost:5000/keycloak:26.0.0",
+            "registry.local:5000/org/keycloak:25.0.6",
+            "myhost:8080/deep/path/keycloak:24.0.0-rc.1",
+        ]
+        for image in valid_images:
+            validate_semver_image_tag(image)  # Should not raise
+
+    def test_registry_port_without_tag_rejected(self):
+        """Port-bearing registry without a tag must be rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("localhost:5000/keycloak")
+        assert "no tag" in str(exc_info.value)
+
+    def test_tag_with_digest_suffix_accepted(self):
+        """Tag+digest images should pass (digest is stripped, tag validated)."""
+        validate_semver_image_tag(
+            "keycloak:26.0.0@sha256:abc123def456"
+        )  # Should not raise
+        validate_semver_image_tag(
+            "localhost:5000/keycloak:25.0.1@sha256:deadbeef"
+        )  # Should not raise
+
+    def test_digest_only_no_path_rejected(self):
+        """Digest-only without any path component must be rejected."""
+        with pytest.raises(ValidationError) as exc_info:
+            validate_semver_image_tag("keycloak@sha256:abc123")
+        assert "digest reference" in str(exc_info.value)
+
 
 class TestParseKubernetesQuantity:
     """Test cases for Kubernetes quantity parsing."""

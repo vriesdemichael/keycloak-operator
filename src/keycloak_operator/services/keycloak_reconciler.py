@@ -364,12 +364,13 @@ class KeycloakInstanceReconciler(BaseReconciler):
         )
 
         # Pre-upgrade backup hook (ADR-088 Phase 2)
-        # Detect version changes by comparing the running deployment image
-        # against the desired spec image. If a major/minor upgrade is detected,
-        # perform a tier-appropriate backup before proceeding.
-        await self._maybe_perform_pre_upgrade_backup(
-            keycloak_spec, name, namespace, kwargs
-        )
+        # Only active when upgradePolicy is explicitly configured — this is
+        # the opt-in switch for upgrade orchestration (backup + semver
+        # enforcement in the webhook).
+        if keycloak_spec.upgrade_policy is not None:
+            await self._maybe_perform_pre_upgrade_backup(
+                keycloak_spec, name, namespace, kwargs
+            )
 
         # Ensure admin access first (required by deployment)
         await self.ensure_admin_access(keycloak_spec, name, namespace)

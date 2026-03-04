@@ -169,12 +169,19 @@ class PreUpgradeBackupService:
                 cnpg_namespace,
             )
         except ApiException as e:
-            return BackupResult(
-                success=False,
-                tier="cnpg",
-                backup_name=backup_name,
-                message=f"Failed to create CNPG Backup: {e.reason}",
-            )
+            if e.status == 409:
+                # Backup with this name already exists (retry within same second).
+                # Treat as idempotent and proceed to poll for completion.
+                logger.info(
+                    f"CNPG Backup {backup_name} already exists in {cnpg_namespace}, reusing it"
+                )
+            else:
+                return BackupResult(
+                    success=False,
+                    tier="cnpg",
+                    backup_name=backup_name,
+                    message=f"Failed to create CNPG Backup: {e.reason}",
+                )
 
         # Poll for completion
         return await self._wait_for_cnpg_backup(
@@ -359,12 +366,19 @@ class PreUpgradeBackupService:
                 namespace,
             )
         except ApiException as e:
-            return BackupResult(
-                success=False,
-                tier="managed",
-                backup_name=snapshot_name,
-                message=f"Failed to create VolumeSnapshot: {e.reason}",
-            )
+            if e.status == 409:
+                # Snapshot with this name already exists (retry within same second).
+                # Treat as idempotent and proceed to poll for readyToUse.
+                logger.info(
+                    f"VolumeSnapshot {snapshot_name} already exists in {namespace}, reusing it"
+                )
+            else:
+                return BackupResult(
+                    success=False,
+                    tier="managed",
+                    backup_name=snapshot_name,
+                    message=f"Failed to create VolumeSnapshot: {e.reason}",
+                )
 
         # Poll for readyToUse
         return await self._wait_for_volume_snapshot(
