@@ -533,11 +533,13 @@ keycloak:
   # Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2)
   # Controls automated backup behavior before Keycloak version upgrades.
   # When present, the admission webhook enforces semantic version image tags.
-  upgradePolicy:
-    # Maximum time in seconds to wait for a pre-upgrade backup to complete
-    # Applies to CNPG and VolumeSnapshot backups only
-    # Range: 60-3600 seconds (1 minute to 1 hour)
-    backupTimeout: 600
+  # Set to a map (e.g. upgradePolicy: {}) to opt in; leave null to disable.
+  upgradePolicy: null
+  # upgradePolicy:
+  #   # Maximum time in seconds to wait for a pre-upgrade backup to complete
+  #   # Applies to CNPG and VolumeSnapshot backups only
+  #   # Range: 60-3600 seconds (1 minute to 1 hour)
+  #   backupTimeout: 600
   # Ingress configuration (used when managed: true)
   ingress:
     enabled: false
