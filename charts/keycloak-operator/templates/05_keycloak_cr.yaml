@@ -137,14 +137,11 @@ spec:
   {{- end }}
 
   {{- if .Values.keycloak.upgradePolicy }}
-  {{- if or .Values.keycloak.upgradePolicy.requireBackupConfirmation (ne (int .Values.keycloak.upgradePolicy.backupTimeout) 600) }}
+  {{- if ne (int .Values.keycloak.upgradePolicy.backupTimeout) 600 }}
   upgradePolicy:
-    {{- if .Values.keycloak.upgradePolicy.requireBackupConfirmation }}
-    requireBackupConfirmation: true
-    {{- end }}
-    {{- if ne (int .Values.keycloak.upgradePolicy.backupTimeout) 600 }}
     backupTimeout: {{ .Values.keycloak.upgradePolicy.backupTimeout }}
-    {{- end }}
+  {{- else }}
+  upgradePolicy: {}
   {{- end }}
   {{- end }}
 

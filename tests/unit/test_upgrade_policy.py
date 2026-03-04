@@ -12,11 +12,8 @@ import pytest
 from pydantic import ValidationError
 
 from keycloak_operator.constants import (
-    BACKUP_CONFIRMED_ANNOTATION,
-    CONDITION_BACKUP_NOT_VERIFIED,
     DEFAULT_BACKUP_TIMEOUT,
     PHASE_BACKING_UP,
-    PHASE_WAITING_FOR_BACKUP_CONFIRMATION,
 )
 from keycloak_operator.models.keycloak import (
     KeycloakSpec,
@@ -34,24 +31,19 @@ class TestUpgradePolicy:
 
     def test_default_values(self):
         policy = UpgradePolicy()
-        assert policy.require_backup_confirmation is False
         assert policy.backup_timeout == 600
 
-    def test_custom_values(self):
+    def test_custom_timeout(self):
         policy = UpgradePolicy(
-            require_backup_confirmation=True,
             backup_timeout=120,
         )
-        assert policy.require_backup_confirmation is True
         assert policy.backup_timeout == 120
 
     def test_alias_names(self):
         """Test that camelCase aliases work."""
         policy = UpgradePolicy(
-            requireBackupConfirmation=True,
             backupTimeout=300,
         )
-        assert policy.require_backup_confirmation is True
         assert policy.backup_timeout == 300
 
     def test_backup_timeout_minimum(self):
@@ -75,13 +67,10 @@ class TestUpgradePolicy:
     def test_model_dump_by_alias(self):
         """Dump with aliases produces camelCase keys."""
         policy = UpgradePolicy(
-            require_backup_confirmation=True,
             backup_timeout=300,
         )
         data = policy.model_dump(by_alias=True, exclude_none=True)
-        assert "requireBackupConfirmation" in data
         assert "backupTimeout" in data
-        assert data["requireBackupConfirmation"] is True
         assert data["backupTimeout"] == 300
 
 
@@ -171,28 +160,24 @@ class TestKeycloakSpecUpgradePolicy:
     def test_upgrade_policy_set(self):
         spec = self._base_spec(
             upgrade_policy=UpgradePolicy(
-                require_backup_confirmation=True,
                 backup_timeout=120,
             )
         )
         assert spec.upgrade_policy is not None
-        assert spec.upgrade_policy.require_backup_confirmation is True
         assert spec.upgrade_policy.backup_timeout == 120
 
     def test_upgrade_policy_from_dict(self):
         spec = self._base_spec(
             upgrade_policy={
-                "requireBackupConfirmation": True,
                 "backupTimeout": 300,
             }
         )
         assert spec.upgrade_policy is not None
-        assert spec.upgrade_policy.require_backup_confirmation is True
+        assert spec.upgrade_policy.backup_timeout == 300
 
     def test_upgrade_policy_alias(self):
         spec = self._base_spec(
             upgradePolicy={
-                "requireBackupConfirmation": False,
                 "backupTimeout": 600,
             }
         )
@@ -208,17 +193,8 @@ class TestKeycloakSpecUpgradePolicy:
 class TestPhase2Constants:
     """Verify Phase 2 constants exist and have expected values."""
 
-    def test_backup_confirmed_annotation(self):
-        assert BACKUP_CONFIRMED_ANNOTATION == "operator.keycloak.io/backup-confirmed"
-
     def test_phase_backing_up(self):
         assert PHASE_BACKING_UP == "BackingUp"
-
-    def test_phase_waiting_for_confirmation(self):
-        assert PHASE_WAITING_FOR_BACKUP_CONFIRMATION == "WaitingForBackupConfirmation"
-
-    def test_condition_backup_not_verified(self):
-        assert CONDITION_BACKUP_NOT_VERIFIED == "BackupNotVerified"
 
     def test_default_backup_timeout(self):
         assert DEFAULT_BACKUP_TIMEOUT == 600

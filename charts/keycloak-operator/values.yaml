@@ -531,16 +531,11 @@ keycloak:
     # Auto-append Keycloak version to cluster name for isolation
     autoSuffix: false
   # Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2)
-  # Controls automated backup behavior before Keycloak version upgrades
+  # Controls automated backup behavior before Keycloak version upgrades.
+  # When present, the admission webhook enforces semantic version image tags.
   upgradePolicy:
-    # Require manual backup confirmation before proceeding with upgrades
-    # on external/legacy database tiers. When true, the operator halts at
-    # WaitingForBackupConfirmation until the annotation
-    # operator.keycloak.io/backup-confirmed is set to "true"
-    # Default: false (warn-and-proceed for external/legacy tiers)
-    requireBackupConfirmation: false
     # Maximum time in seconds to wait for a pre-upgrade backup to complete
-    # Applies to CNPG and VolumeSnapshot backups
+    # Applies to CNPG and VolumeSnapshot backups only
     # Range: 60-3600 seconds (1 minute to 1 hour)
     backupTimeout: 600
   # Ingress configuration (used when managed: true)

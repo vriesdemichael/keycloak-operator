@@ -922,9 +922,8 @@ class KeycloakInstanceReconciler(BaseReconciler):
             f"({version_change.bump_type.value} upgrade)"
         )
 
-        # Determine database tier and gather context
+        # Determine database tier
         db_tier = spec.database.tier
-        annotations = kwargs.get("meta", {}).get("annotations", {}) or {}
 
         result = await self.backup_service.perform_backup(
             keycloak_name=name,
@@ -932,20 +931,11 @@ class KeycloakInstanceReconciler(BaseReconciler):
             db_tier=db_tier,
             db_config=spec.database,
             upgrade_policy=spec.upgrade_policy,
-            annotations=annotations,
         )
 
         # Log warnings from the backup result
         for warning in result.warnings:
             self.logger.warning(f"Pre-upgrade backup warning for {name}: {warning}")
-
-        if result.requires_confirmation:
-            # Block until manual confirmation annotation is applied
-            self.logger.warning(f"Upgrade blocked for {name}: {result.message}")
-            raise TemporaryError(
-                f"Waiting for manual backup confirmation: {result.message}",
-                delay=30,
-            )
 
         if not result.success:
             # Backup failed — do not proceed with the upgrade

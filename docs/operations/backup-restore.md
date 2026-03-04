@@ -10,8 +10,8 @@ The operator automatically orchestrates backups before Keycloak **major or minor
 |---------------|---------------|-----------------|
 | **CNPG** (Tier 1) | Creates a CNPG `Backup` CR, waits for completion | Yes, until backup succeeds |
 | **Managed** (Tier 2) | Creates a `VolumeSnapshot` of the database PVC | Yes, until snapshot is ready |
-| **External** (Tier 3) | Logs a warning; operator cannot back up automatically | Only if `requireBackupConfirmation: true` (default: warn-and-proceed) |
-| **Legacy** (Tier 4) | Logs a warning; operator cannot back up automatically | Only if `requireBackupConfirmation: true` (default: warn-and-proceed) |
+| **External** (Tier 3) | Logs a warning; operator cannot back up automatically | No — warn-and-proceed |
+| **Legacy** (Tier 4) | Logs a warning; operator cannot back up automatically | No — warn-and-proceed |
 
 **Patch-level** version changes (e.g., `26.0.1` to `26.0.2`) skip the backup step entirely.
 
@@ -22,8 +22,6 @@ Configure the upgrade policy in your Helm values:
 ```yaml
 keycloak:
   upgradePolicy:
-    # Block external/legacy upgrades until manual confirmation
-    requireBackupConfirmation: false  # default: false (warn-and-proceed)
     # Max seconds to wait for CNPG/VolumeSnapshot backup completion
     backupTimeout: 600  # default: 600 (10 minutes), range: 60-3600
 ```
@@ -37,7 +35,6 @@ metadata:
   name: keycloak
 spec:
   upgradePolicy:
-    requireBackupConfirmation: false
     backupTimeout: 600
 ```
 
@@ -49,22 +46,8 @@ until the backup completes. The Keycloak CR status phase does **not** change to 
 special backup phase — it remains in its current phase (typically `Ready` or
 `Provisioning`) and the operator logs indicate the backup is in progress.
 
-For external/legacy tiers with `requireBackupConfirmation: true`, the operator
-retries indefinitely until the confirmation annotation is applied.
-
-### Manual Backup Confirmation (External/Legacy Tiers)
-
-When `requireBackupConfirmation: true` and you use an external or legacy database, the operator blocks the upgrade via retry loop. To proceed:
-
-1. Take a backup of your database using your own tooling.
-2. Annotate the Keycloak CR to confirm:
-
-```bash
-kubectl annotate keycloak <name> -n <namespace> \
-  operator.keycloak.io/backup-confirmed=true
-```
-
-The operator will detect the annotation on the next reconciliation cycle and proceed with the upgrade.
+For external/legacy tiers, the operator logs a warning and proceeds immediately.
+Users with external databases are responsible for their own backup procedures.
 
 ### Monitoring Backup Progress
 
