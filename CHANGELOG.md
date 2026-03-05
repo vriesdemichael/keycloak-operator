@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.9.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.0...operator-image-v0.9.1) (2026-03-05)
+
+
+### Features
+
+* **chart-operator+operator:** add pre-upgrade backup infrastructure for blue-green Phase 2 ([11c967a](https://github.com/vriesdemichael/keycloak-operator/commit/11c967a4c9a1a3c89160beeb69ef47ba6a4f876b))
+
+
+### Bug Fixes
+
+* **chart-operator+operator:** address PR [#639](https://github.com/vriesdemichael/keycloak-operator/issues/639) review feedback ([9aded08](https://github.com/vriesdemichael/keycloak-operator/commit/9aded08f9ed0867fd0216e0f65a7373f1901eb55))
+* **chart-operator+operator:** address review round 2 feedback ([95c018e](https://github.com/vriesdemichael/keycloak-operator/commit/95c018e82ad2b92cf270d98f24ebf59cfb9ce7e5))
+
+
+### Code Refactoring
+
+* **chart-operator+operator:** remove external backup gate, make semver enforcement conditional ([374b833](https://github.com/vriesdemichael/keycloak-operator/commit/374b83363e9157cebbd4950f637683c69d46daa4))
+
 ## [0.9.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.8.0...operator-image-v0.9.0) (2026-03-02)
 
 
