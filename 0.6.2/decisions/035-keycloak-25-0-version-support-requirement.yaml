@@ -1,0 +1,25 @@
+number: 35
+title: Keycloak 25.0+ version support requirement
+category: architecture
+decision: Require Keycloak 25.0.0 or later. Operator validates Keycloak version and
+  rejects unsupported versions. Default to latest stable Keycloak version (currently
+  26.4.x).
+agent_instructions: 'SUPERSEDED - See ADR-059 for current multi-version support (24.x+).
+  This ADR is kept for historical context only.
+
+  '
+rationale: Keycloak 25.0.0 introduced separate management interface (port 9000) which
+  is required for proper health checks and metrics without impacting user traffic.
+  Earlier versions lack this feature. Enforcing minimum version ensures consistent
+  behavior and allows operator to depend on modern Keycloak features. Clear version
+  requirement reduces support burden from incompatible configurations.
+provenance: human
+superseded_by: 59
+rejected_alternatives:
+- alternative: Support all Keycloak versions
+  reason: Pre-25.0 lacks management port, forcing health checks on user-facing port.
+    Different behavior paths increase complexity.
+- alternative: Support back to Keycloak 20.x
+  reason: Significant API changes between versions. Supporting multiple API versions
+    increases maintenance burden.
+status: superseded
