@@ -2103,6 +2103,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.keycloak.UpgradePolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UpgradePolicy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.realm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -3775,6 +3786,17 @@
     <span class="md-ellipsis">
       
         _delete_service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._maybe_perform_pre_upgrade_backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _maybe_perform_pre_upgrade_backup
       
     </span>
   </a>
@@ -7336,6 +7358,17 @@
     <span class="md-ellipsis">
       
         validate_security_settings
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.validation.validate_semver_image_tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_semver_image_tag
       
     </span>
   </a>
@@ -11071,6 +11104,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.models.keycloak.UpgradePolicy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        UpgradePolicy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.models.realm" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -12743,6 +12787,17 @@
     <span class="md-ellipsis">
       
         _delete_service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._maybe_perform_pre_upgrade_backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        _maybe_perform_pre_upgrade_backup
       
     </span>
   </a>
@@ -16311,6 +16366,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#keycloak_operator.utils.validation.validate_semver_image_tag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_semver_image_tag
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#keycloak_operator.utils.validation.validate_spec_no_placeholders" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -18491,6 +18557,64 @@ and whether new realm creation is allowed.</p>
         <p>Reference to a secret key for sensitive data.</p>
 <p>The secret must be in the same namespace as the resource referencing it.
 Cross-namespace secret references are not supported for security reasons.</p>
+
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="keycloak_operator.models.keycloak.UpgradePolicy" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">UpgradePolicy</span>
+
+
+<a href="#keycloak_operator.models.keycloak.UpgradePolicy" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
+
+        <p>Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 2).</p>
+<p>Controls pre-upgrade backup behavior for automated database tiers:</p>
+<ul>
+<li><strong>cnpg</strong>: Automated backup via CNPG Backup API.</li>
+<li><strong>managed</strong>: Automated backup via VolumeSnapshot (requires pvcName).</li>
+<li><strong>external/legacy</strong>: Not managed by the operator. The operator logs a
+  warning and proceeds. Users must perform their own backups before
+  upgrading Keycloak when using an external database.</li>
+</ul>
+<p>The presence of an <code>upgradePolicy</code> in the Keycloak spec also enables
+semantic version tag enforcement in the admission webhook, since version
+detection is required for upgrade orchestration.</p>
 
 
 
@@ -26860,6 +26984,137 @@ deployment, services, persistence, and administrative access.</p>
     <div class="doc doc-contents ">
 
         <p>Delete service resource.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._maybe_perform_pre_upgrade_backup" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">_maybe_perform_pre_upgrade_backup</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#keycloak_operator.services.keycloak_reconciler.KeycloakInstanceReconciler._maybe_perform_pre_upgrade_backup" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">_maybe_perform_pre_upgrade_backup</span><span class="p">(</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">spec</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">namespace</span><span class="p">,</span> <span class="n">kwargs</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Check for Keycloak version upgrades and perform pre-upgrade backup if needed.</p>
+<p>This method reads the current deployment, compares the running image
+against the desired spec image, and — for major/minor upgrades — triggers
+a tier-appropriate backup before proceeding with the deployment update.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>spec</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="KeycloakSpec (keycloak_operator.models.keycloak.KeycloakSpec)" href="#keycloak_operator.models.keycloak.KeycloakSpec">KeycloakSpec</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Validated Keycloak specification.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>name</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Resource name.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>namespace</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Resource namespace.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>kwargs</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#dict">dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Handler kwargs (contains <code>meta</code> with annotations).</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="keycloak_operator.errors.TemporaryError">TemporaryError</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If backup is pending confirmation or failed.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
@@ -58746,6 +59001,99 @@ cannot be resolved and will be passed literally to Keycloak, causing unexpected 
             </td>
             <td>
                 <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="keycloak_operator.utils.validation.validate_semver_image_tag" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">validate_semver_image_tag</span>
+
+
+<a href="#keycloak_operator.utils.validation.validate_semver_image_tag" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">validate_semver_image_tag</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Validate that a container image uses a parseable semantic version tag.</p>
+<p>This is an admission-time enforcement: the operator needs deterministic
+version information from the image tag to detect upgrades and decide
+whether pre-upgrade backups are required.  Tags like <code>latest</code>,
+<code>nightly</code>, bare digests, or missing tags make version comparison
+impossible and are therefore rejected.</p>
+<p>Accepted examples::</p>
+<div class="language-text highlight"><pre><span></span><code>quay.io/keycloak/keycloak:26.0.0
+keycloak:25.0.6-custom
+myregistry.io/kc:24.0.0-rc.1
+localhost:5000/keycloak:26.0.0
+myregistry.io/kc:26.0.0@sha256:abcdef...
+</code></pre></div>
+<p>Rejected examples::</p>
+<div class="language-text highlight"><pre><span></span><code>keycloak:latest
+keycloak:nightly
+keycloak@sha256:abcdef1234567890...   (digest-only, no tag)
+keycloak                               (no tag at all)
+localhost:5000/keycloak                (port but no tag)
+</code></pre></div>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>image</code>
+            </td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Container image reference.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><a class="autorefs autorefs-internal" title="ValidationError (keycloak_operator.utils.validation.ValidationError)" href="#keycloak_operator.utils.validation.ValidationError">ValidationError</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>If the image tag is not a valid semantic version.</p>
+              </div>
             </td>
           </tr>
       </tbody>

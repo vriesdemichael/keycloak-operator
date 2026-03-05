@@ -1535,6 +1535,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#image-tag-requirement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image Tag Requirement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#port-behavior-by-version" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4565,6 +4576,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#image-tag-requirement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Image Tag Requirement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#port-behavior-by-version" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4873,6 +4895,29 @@
 <p>See <code>scripts/keycloak_versions.yaml</code> for the complete validation history.</p>
 <h3 id="minimum-version-requirement">Minimum Version Requirement<a class="headerlink" href="#minimum-version-requirement" title="Permanent link">&para;</a></h3>
 <p>The operator requires <strong>Keycloak 24.0.0 or later</strong>.</p>
+<h3 id="image-tag-requirement">Image Tag Requirement<a class="headerlink" href="#image-tag-requirement" title="Permanent link">&para;</a></h3>
+<p>When <code>spec.upgradePolicy</code> is configured, the operator <strong>requires a semantic version tag</strong> on the Keycloak container image. Tags like <code>latest</code>, <code>nightly</code>, or digest-only references (<code>@sha256:...</code>) are rejected at admission time by the validating webhook.</p>
+<p>Without <code>upgradePolicy</code>, non-semver image tags are accepted — this allows small teams or development environments to use tags like <code>latest</code> without upgrade orchestration.</p>
+<p>Semver enforcement exists because the operator needs deterministic version information from the image tag to:</p>
+<ul>
+<li>Detect version upgrades and downgrades</li>
+<li>Trigger pre-upgrade backups for major/minor upgrades (ADR-088)</li>
+<li>Configure version-specific behavior (health ports, tracing support)</li>
+</ul>
+<p><strong>Accepted image tags</strong> (always pass):</p>
+<ul>
+<li><code>quay.io/keycloak/keycloak:26.0.0</code> — standard semver</li>
+<li><code>keycloak:25.0.6-custom</code> — semver with suffix</li>
+<li><code>myregistry.io/kc:24.0.0-rc.1</code> — semver with pre-release</li>
+</ul>
+<p><strong>Rejected image tags</strong> (only when <code>upgradePolicy</code> is set):</p>
+<ul>
+<li><code>keycloak:latest</code> — mutable, no version info</li>
+<li><code>keycloak:nightly</code> — not semver</li>
+<li><code>keycloak@sha256:abc...</code> — no tag, only digest</li>
+<li><code>keycloak</code> — no tag at all</li>
+</ul>
+<p>For custom images that don't use standard version tags, tag the image with a semver-compatible tag (e.g. <code>myregistry.io/custom-keycloak:26.0.0-custom</code>). The <code>keycloakVersion</code> CR field overrides capability detection (health ports, tracing) but does not bypass the image tag requirement when <code>upgradePolicy</code> is present.</p>
 <h3 id="port-behavior-by-version">Port Behavior by Version<a class="headerlink" href="#port-behavior-by-version" title="Permanent link">&para;</a></h3>
 <p>The operator automatically detects the Keycloak version and configures health probes accordingly:</p>
 <table>

@@ -4311,6 +4311,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#block-upgrades-by-default-for-external-databases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block upgrades by default for external databases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#general-purpose-backup-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General-purpose backup feature
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4463,6 +4485,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#block-upgrades-by-default-for-external-databases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block upgrades by default for external databases
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#general-purpose-backup-feature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General-purpose backup feature
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4497,11 +4541,11 @@
 <p><strong>Category:</strong> architecture
 <strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Support blue-green deployment strategy for Keycloak major version upgrades with zero downtime. This supersedes decision 079 (No managed Keycloak upgrades) which rejected automated upgrades and blue-green deployment. The implementation is split into three phases: (1) Foundation — tiered database configuration, ingress maintenance mode, and JGroups cache isolation; (2) Database backup automation — CNPG backup API, VolumeSnapshot, and manual gate for external databases; (3) Blue-green orchestration — the upgrade CRD and state machine that coordinates the full process.</p>
+<p>Support blue-green deployment strategy for Keycloak major version upgrades with zero downtime. This supersedes decision 079 (No managed Keycloak upgrades) which rejected automated upgrades and blue-green deployment. This also supersedes decision 056 (No opinionated backup or secret management) for the backup portion — pre-upgrade backup orchestration is now an operator responsibility, while secret management remains tool-agnostic (ESO, Sealed Secrets, etc. via SecretKeySelector references and extraManifests). The implementation is split into three phases: (1) Foundation — tiered database configuration, ingress maintenance mode, and JGroups cache isolation; (2) Pre-upgrade backup automation — CNPG Backup API for Tier 1, VolumeSnapshot for Tier 2 managed databases, and a warn-and-proceed default with opt-in manual gate for Tier 3 external/legacy databases; (3) Blue-green orchestration — the upgradePolicy CRD section and state machine that coordinates the full upgrade process including database migration, green deployment, and traffic cutover.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>ADR 079 rejected blue-green deployment because it "requires duplicate database, complex migration coordination, wastes resources." This was correct at the time but the situation has changed. The blue-green strategy does NOT require a duplicate live database — it uses backup-restore to create the green database, so only one database is active at any time. CNPG integration (ADR 015) now provides native backup/restore APIs, making backup orchestration feasible without reimplementing it. Zero- downtime upgrades are a hard requirement for production GitOps environments where maintenance windows are impractical. The tiered database model acknowledges that not all deployments have the same backup capabilities and provides appropriate strategies for each tier. Phase 1 delivers independently useful features (maintenance mode, cache isolation, better DB config) even if Phase 3 is never completed.</p>
+<p>ADR 079 rejected blue-green deployment because it "requires duplicate database, complex migration coordination, wastes resources." This was correct at the time but the situation has changed. The blue-green strategy does NOT require a duplicate live database — it uses backup-restore to create the green database, so only one database is active at any time. CNPG integration (ADR 015) now provides native backup/restore APIs, making backup orchestration feasible without reimplementing it. Zero- downtime upgrades are a hard requirement for production GitOps environments where maintenance windows are impractical. The tiered database model acknowledges that not all deployments have the same backup capabilities and provides appropriate strategies for each tier. ADR 056 rejected built-in backup because it would mean maintaining storage connectors (S3, GCS, Azure). Pre-upgrade backup orchestration avoids this — the operator triggers existing backup mechanisms (CNPG Backup API, Kubernetes VolumeSnapshot API) rather than implementing backup storage. For external databases the operator cannot automate, it warns and proceeds by default. External databases are explicitly out of scope for operator-managed backups — users must handle their own backup procedures before upgrading. This is narrowly scoped to the upgrade workflow, not a general backup feature. Phase 1 delivers independently useful features (maintenance mode, cache isolation, better DB config) even if Phase 3 is never completed.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>ADR 079 is superseded by this decision. When users ask about Keycloak upgrades, explain that blue-green upgrades are supported (or will be, if Phase 3 is not yet implemented). The database configuration now uses a tiered model: CNPG (Tier 1) with cluster_name reference, Managed Postgres (Tier 2) with direct connection details, and External (Tier 3) with operator-opaque credentials. The KeycloakDatabaseConfig model supports both the new tiered fields (cnpg, managed, external) and the legacy flat fields for backward compatibility. Ingress maintenance mode can be toggled via spec.maintenanceMode to block or limit traffic during upgrades. JGroups cache isolation via spec.cacheIsolation ensures blue and green deployments do not share Infinispan caches. When implementing new features that interact with database configuration, always check the tier property to determine which backup strategy applies. When creating deployments, respect the cacheIsolation settings for JGroups cluster name and discovery service label selectors.</p>
+<p>ADR 079 and the backup portion of ADR 056 are superseded by this decision. Secret management remains tool-agnostic — recommend ESO or Sealed Secrets, reference via SecretKeySelector fields, integrate via extraManifests. The database configuration uses a tiered model: CNPG (Tier 1) with cluster_name reference, Managed Postgres (Tier 2) with direct connection details plus pvc_name and volume_snapshot_class_name for backup, and External (Tier 3) with operator-opaque credentials. The KeycloakDatabaseConfig model supports both the new tiered fields (cnpg, managed, external) and the legacy flat fields for backward compatibility. When a major version bump is detected, the operator triggers a tier-appropriate pre-upgrade backup: CNPG Backup CR for Tier 1, VolumeSnapshot for Tier 2, warn-and-proceed for Tier 3 and legacy (external databases are out of scope for operator-managed backups). The spec.upgradePolicy section controls upgrade behavior including backupTimeout. Semver image tag enforcement is conditional on upgradePolicy being present — without it, non-semver tags like :latest are accepted. Ingress maintenance mode can be toggled via spec.maintenanceMode to block or limit traffic during upgrades. JGroups cache isolation via spec.cacheIsolation ensures blue and green deployments do not share Infinispan caches. When implementing new features that interact with database configuration, always check the tier property to determine which backup strategy applies. When creating deployments, respect the cacheIsolation settings for JGroups cluster name and discovery service label selectors.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="rolling-update-for-keycloak-upgrades">Rolling update for Keycloak upgrades<a class="headerlink" href="#rolling-update-for-keycloak-upgrades" title="Permanent link">&para;</a></h3>
 <p>Keycloak does not support mixed-version clusters. Old and new pods would share Infinispan caches with incompatible serialization formats, causing data corruption and session loss.</p>
@@ -4509,6 +4553,10 @@
 <p>No rollback path if migration fails. Database schema changes in major Keycloak versions are destructive and cannot be reversed without a backup. This was the core objection in ADR 079 and remains valid.</p>
 <h3 id="operator-manages-database-migrations-directly">Operator manages database migrations directly<a class="headerlink" href="#operator-manages-database-migrations-directly" title="Permanent link">&para;</a></h3>
 <p>Database migration is Keycloak's responsibility (Liquibase). The operator should orchestrate the environment (backup, deploy, verify) but not reimplement migration logic.</p>
+<h3 id="block-upgrades-by-default-for-external-databases">Block upgrades by default for external databases<a class="headerlink" href="#block-upgrades-by-default-for-external-databases" title="Permanent link">&para;</a></h3>
+<p>Blocking until manual annotation is safe but hostile for users who accept the risk. The operator warns loudly and proceeds — external databases are out of scope for operator-managed backups.</p>
+<h3 id="general-purpose-backup-feature">General-purpose backup feature<a class="headerlink" href="#general-purpose-backup-feature" title="Permanent link">&para;</a></h3>
+<p>Would replicate ADR 056's rejected approach — maintaining storage connectors, duplicating Velero/CNPG. Pre-upgrade backup is narrowly scoped to the upgrade workflow, using existing Kubernetes APIs.</p>
 
 
 

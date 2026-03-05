@@ -1467,6 +1467,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#automated-pre-upgrade-backups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated Pre-Upgrade Backups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pre-upgrade-checklist_1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4896,6 +4907,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#automated-pre-upgrade-backups" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automated Pre-Upgrade Backups
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#pre-upgrade-checklist_1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -5340,23 +5362,37 @@
 <li><strong>Recommended</strong>: Keycloak 26.0.0+</li>
 <li><strong>Maximum</strong>: Latest Keycloak release</li>
 </ul>
+<h3 id="automated-pre-upgrade-backups">Automated Pre-Upgrade Backups<a class="headerlink" href="#automated-pre-upgrade-backups" title="Permanent link">&para;</a></h3>
+<div class="admonition note">
+<p class="admonition-title">Automatic for CNPG and Managed tiers</p>
+<p>When upgrading Keycloak to a new <strong>major or minor</strong> version, the operator automatically creates a backup before applying the change. Patch-level upgrades (e.g., <code>26.0.1</code> → <code>26.0.2</code>) skip this step.</p>
+</div>
+<p>The backup behavior depends on your database tier:</p>
+<ul>
+<li><strong>CNPG</strong>: Creates a CNPG <code>Backup</code> CR and waits for completion before proceeding.</li>
+<li><strong>Managed</strong>: Creates a <code>VolumeSnapshot</code> of the database PVC.</li>
+<li><strong>External/Legacy</strong>: Cannot back up automatically. The operator emits a warning and proceeds. Users with external databases must handle backups independently before upgrading.</li>
+</ul>
+<p>See <a href="../backup-restore/#automated-pre-upgrade-backups">Backup &amp; Restore: Automated Pre-Upgrade Backups</a> for full configuration details.</p>
 <h3 id="pre-upgrade-checklist_1">Pre-Upgrade Checklist<a class="headerlink" href="#pre-upgrade-checklist_1" title="Permanent link">&para;</a></h3>
 <ul class="task-list">
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Check Keycloak release notes</strong> - Review breaking changes</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Backup database</strong> - CloudNativePG backup or manual export</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Verify backup configuration</strong> - Ensure <code>upgradePolicy</code> settings match your requirements</li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Test in non-production</strong> - Verify compatibility</li>
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Schedule maintenance window</strong> - Plan for brief downtime</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" disabled/><span class="task-list-indicator"></span></label> <strong>Schedule maintenance window</strong> - Plan for brief downtime (rolling update) or zero-downtime (blue-green, Phase 3)</li>
 </ul>
 <h3 id="upgrade-strategy">Upgrade Strategy<a class="headerlink" href="#upgrade-strategy" title="Permanent link">&para;</a></h3>
-<p><strong>Blue-Green Deployment (Recommended)</strong>:
+<p><strong>Blue-Green Deployment (Future — Phase 3)</strong>:
 1. Deploy new Keycloak version alongside old version
-2. Switch traffic to new version
-3. Keep old version for quick rollback
-4. Remove old version after verification</p>
-<p><strong>Rolling Update (Simpler)</strong>:
+2. Migrate database schema via Liquibase job
+3. Switch traffic to new version
+4. Keep old version for quick rollback
+5. Remove old version after verification</p>
+<p><strong>Rolling Update (Current)</strong>:
 1. Update Keycloak resource with new image tag
-2. Operator performs rolling update
-3. Brief downtime during pod restarts</p>
+2. Operator triggers pre-upgrade backup (automatic for CNPG/Managed)
+3. Operator performs rolling update
+4. Brief downtime during pod restarts</p>
 <h3 id="rolling-update-procedure">Rolling Update Procedure<a class="headerlink" href="#rolling-update-procedure" title="Permanent link">&para;</a></h3>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># Check current Keycloak version</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>kubectl<span class="w"> </span>get<span class="w"> </span>keycloak<span class="w"> </span>&lt;name&gt;<span class="w"> </span>-n<span class="w"> </span>&lt;namespace&gt;<span class="w"> </span><span class="se">\</span>
