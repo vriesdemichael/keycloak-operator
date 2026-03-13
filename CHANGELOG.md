@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.2...operator-image-v0.9.3) (2026-03-13)
+
+
+### Bug Fixes
+
+* **operator-image:** bump black from 25.9.0 to 26.3.1 ([26b3c24](https://github.com/vriesdemichael/keycloak-operator/commit/26b3c240e2dc702477a74d3c5339034692bc5d9a))
+
 ## [0.9.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.1...operator-image-v0.9.2) (2026-03-10)
 
 
