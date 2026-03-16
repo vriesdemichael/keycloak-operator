@@ -1,0 +1,24 @@
+number: 37
+title: Support for operator-managed and external Keycloak instances
+category: architecture
+decision: Support both operator-managed Keycloak (deployed by operator) and external
+  Keycloak instances (pre-existing, managed outside operator). Users choose via CRD
+  configuration.
+agent_instructions: 'When designing Keycloak CRD, support both deployment modes. For
+  operator-managed: include deployment spec (image, resources, database, etc.). For
+  external: reference existing Keycloak via URL and credentials. Reconcilers must
+  handle both cases. External Keycloak allows using existing instances without redeployment.'
+rationale: 'Operator-managed Keycloak provides easy getting-started experience and
+  full lifecycle management. External Keycloak supports existing deployments, migrations,
+  and cases where Keycloak is managed separately (different team, external service).
+  Flexibility increases adoption - users not forced to adopt operator''s Keycloak
+  management to use realm/client automation. Allows gradual migration: start with
+  external, migrate to operator-managed later.'
+provenance: human
+rejected_alternatives:
+- alternative: Only operator-managed Keycloak
+  reason: Forces users to redeploy existing Keycloak instances. High migration barrier.
+    Can't use with external Keycloak services.
+- alternative: Only external Keycloak
+  reason: No getting-started path. Users must deploy Keycloak separately before using
+    operator.
