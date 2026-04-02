@@ -727,6 +727,30 @@ class MaintenanceMode(BaseModel):
                 )
         return v
 
+    @field_validator("blocked_paths")
+    @classmethod
+    def validate_blocked_paths(cls, v: list[str]) -> list[str]:
+        """Validate that blocked paths are safe for embedding in nginx snippets.
+
+        Unlike ``exclude_paths``, ``blocked_paths`` supports nginx regex characters
+        (e.g. ``[^/]+``) so an allowlist would be too restrictive.  Instead, a
+        denylist blocks characters that can break the generated ``server-snippet``
+        or inject arbitrary nginx directives: double-quotes, newlines, semicolons,
+        and curly braces.  Every path must also start with ``/``.
+        """
+        unsafe_chars = re.compile(r'["\n\r;{}]')
+        for path in v:
+            if not path.startswith("/"):
+                raise ValueError(
+                    f"Invalid blocked path '{path}'. Paths must start with '/'."
+                )
+            if unsafe_chars.search(path):
+                raise ValueError(
+                    f"Invalid blocked path '{path}'. "
+                    "Paths must not contain quotes, newlines, semicolons, or braces."
+                )
+        return v
+
 
 class CacheIsolation(BaseModel):
     """

@@ -631,6 +631,49 @@ class TestMaintenanceModeModel:
         mm = MaintenanceMode(blocked_paths=["/custom-admin", "/special"])
         assert mm.blocked_paths == ["/custom-admin", "/special"]
 
+    def test_blocked_paths_regex_chars_allowed(self):
+        """Regex chars like [^/]+ are allowed (nginx regex)."""
+        mm = MaintenanceMode(blocked_paths=["/realms/[^/]+/account"])
+        assert mm.blocked_paths == ["/realms/[^/]+/account"]
+
+    def test_blocked_paths_must_start_with_slash(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError, match="must start with '/'"):
+            MaintenanceMode(blocked_paths=["no-leading-slash"])
+
+    def test_blocked_paths_rejects_double_quote(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(
+            ValidationError, match="quotes, newlines, semicolons, or braces"
+        ):
+            MaintenanceMode(blocked_paths=['/admin"injected'])
+
+    def test_blocked_paths_rejects_newline(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(
+            ValidationError, match="quotes, newlines, semicolons, or braces"
+        ):
+            MaintenanceMode(blocked_paths=["/admin\nreturn 200"])
+
+    def test_blocked_paths_rejects_semicolon(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(
+            ValidationError, match="quotes, newlines, semicolons, or braces"
+        ):
+            MaintenanceMode(blocked_paths=["/admin; return 200"])
+
+    def test_blocked_paths_rejects_braces(self):
+        from pydantic import ValidationError
+
+        with pytest.raises(
+            ValidationError, match="quotes, newlines, semicolons, or braces"
+        ):
+            MaintenanceMode(blocked_paths=["/admin{injected}"])
+
 
 class TestBuildMaintenanceModeAnnotations:
     """Tests for build_maintenance_mode_annotations() in kubernetes.py."""
