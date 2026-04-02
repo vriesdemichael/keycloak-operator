@@ -2054,6 +2054,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#keycloak_operator.models.keycloak.MaintenanceMode.validate_blocked_paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_blocked_paths
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#keycloak_operator.models.keycloak.MaintenanceMode.validate_exclude_paths" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -10497,6 +10508,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/089-kc-hostname-strict-default/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-089: Keep KC_HOSTNAME_STRICT=false as operator default
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -11053,6 +11092,17 @@
   
     <nav class="md-nav" aria-label="MaintenanceMode">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keycloak_operator.models.keycloak.MaintenanceMode.validate_blocked_paths" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        validate_blocked_paths
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#keycloak_operator.models.keycloak.MaintenanceMode.validate_exclude_paths" class="md-nav__link">
@@ -18421,6 +18471,35 @@ ensures graceful connection draining during major version upgrades.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="keycloak_operator.models.keycloak.MaintenanceMode.validate_blocked_paths" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">validate_blocked_paths</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#keycloak_operator.models.keycloak.MaintenanceMode.validate_blocked_paths" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="language-python doc-signature highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nf">validate_blocked_paths</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+</span></code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Validate that blocked paths are safe for embedding in nginx snippets.</p>
+<p>Unlike <code>exclude_paths</code>, <code>blocked_paths</code> supports nginx regex characters
+(e.g. <code>[^/]+</code>) so an allowlist would be too restrictive.  Instead, a
+denylist blocks characters that can break the generated <code>server-snippet</code>
+or inject arbitrary nginx directives: double-quotes, newlines, semicolons,
+and curly braces.  Every path must also start with <code>/</code>.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -34613,8 +34692,13 @@ is trimmed from both ends to ensure alphanumeric boundaries.</p>
 
         <p>Build nginx ingress annotations for maintenance mode (ADR-088).</p>
 <p>When maintenance mode is enabled, the ingress is annotated to return
-503 Service Unavailable (full-block) or to reject mutating HTTP methods
-(read-only), while always allowing health-check paths through.</p>
+503 Service Unavailable for blocked paths, while always allowing
+health-check paths through.</p>
+<p><strong>full-block</strong>: All requests except excluded paths return 503.</p>
+<p><strong>read-only</strong>: Requests matching <code>blockedPaths</code> return 503 regardless
+of HTTP method. Authentication and token endpoints (<code>/realms/.../protocol</code>)
+are NOT in the default block list and remain fully available, so existing
+sessions and SSO flows are unaffected during an upgrade window.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>

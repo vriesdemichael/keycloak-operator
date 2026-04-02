@@ -397,6 +397,10 @@
          <lastmod>2026-04-02</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/089-kc-hostname-strict-default/</loc>
+         <lastmod>2026-04-02</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/testing/</loc>
          <lastmod>2026-04-02</lastmod>
     </url>
