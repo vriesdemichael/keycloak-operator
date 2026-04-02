@@ -13,11 +13,13 @@ Tests verify the reconciler correctly manages Keycloak instances:
 from __future__ import annotations
 
 import contextlib
+import re
 import uuid
 
 import pytest
 from kubernetes.client.rest import ApiException
 
+from .conftest import get_keycloak_test_image
 from .wait_helpers import wait_for_resource_deleted, wait_for_resource_ready
 
 
@@ -490,6 +492,113 @@ class TestKeycloakReconciler:
             assert cluster_formed, (
                 "Infinispan cluster not formed: ISPN000094 message with 2 members "
                 "not found in any pod logs. JGroups DNS_PING may not be working."
+            )
+
+        finally:
+            with contextlib.suppress(ApiException):
+                await k8s_custom_objects.delete_namespaced_custom_object(
+                    group="vriesdemichael.github.io",
+                    version="v1",
+                    namespace=namespace,
+                    plural="keycloaks",
+                    name=keycloak_name,
+                )
+
+    @pytest.mark.timeout(240)
+    async def test_keycloak_cache_isolation_auto_revision(
+        self,
+        k8s_custom_objects,
+        k8s_core_v1,
+        k8s_apps_v1,
+        test_keycloak_namespace,
+        operator_namespace,
+        shared_operator,
+        sample_keycloak_spec_factory,
+    ) -> None:
+        """Test that autoRevision cache isolation sets pod label and discovery service selector.
+
+        When cacheIsolation.autoRevision is true, the operator must:
+        1. Set the pod template label vriesdemichael.github.io/cache-cluster to
+           "<name>-v<major>" (e.g. "my-kc-v26") derived from the image tag.
+        2. Add the same label to the discovery service selector so JGroups
+           DNS_PING only finds same-major-version peers.
+        """
+        suffix = uuid.uuid4().hex[:8]
+        keycloak_name = f"test-autorev-{suffix}"
+        namespace = test_keycloak_namespace
+
+        spec = await sample_keycloak_spec_factory(namespace)
+
+        # Derive expected major version from the test image
+        image = get_keycloak_test_image()
+        tag_match = re.search(r":(\d+)\.", image)
+        assert tag_match is not None, (
+            f"Cannot determine major version from test image '{image}'. "
+            "Integration test requires a semver tag (e.g. ':26.4.1')."
+        )
+        expected_major = tag_match.group(1)
+        expected_cluster = f"{keycloak_name}-v{expected_major}"
+        cache_cluster_label = "vriesdemichael.github.io/cache-cluster"
+
+        keycloak_manifest = {
+            "apiVersion": "vriesdemichael.github.io/v1",
+            "kind": "Keycloak",
+            "metadata": {"name": keycloak_name, "namespace": namespace},
+            "spec": {
+                **spec,
+                "operatorRef": {"namespace": operator_namespace},
+                "cacheIsolation": {"autoRevision": True},
+            },
+        }
+
+        try:
+            await k8s_custom_objects.create_namespaced_custom_object(
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                body=keycloak_manifest,
+            )
+
+            await wait_for_resource_ready(
+                k8s_custom_objects=k8s_custom_objects,
+                group="vriesdemichael.github.io",
+                version="v1",
+                namespace=namespace,
+                plural="keycloaks",
+                name=keycloak_name,
+                timeout=200,
+                operator_namespace=operator_namespace,
+            )
+
+            # Verify pod template label is set to "<name>-v<major>"
+            deployment_name = f"{keycloak_name}-keycloak"
+            deployment = await k8s_apps_v1.read_namespaced_deployment(
+                deployment_name, namespace
+            )
+            pod_labels = deployment.spec.template.metadata.labels or {}
+            assert cache_cluster_label in pod_labels, (
+                f"Pod template missing label '{cache_cluster_label}'. "
+                f"Got labels: {pod_labels}"
+            )
+            assert pod_labels[cache_cluster_label] == expected_cluster, (
+                f"Expected pod label '{cache_cluster_label}={expected_cluster}', "
+                f"got '{pod_labels[cache_cluster_label]}'"
+            )
+
+            # Verify discovery service selector uses the same cluster label
+            discovery_service_name = f"{keycloak_name}-discovery"
+            discovery_service = await k8s_core_v1.read_namespaced_service(
+                discovery_service_name, namespace
+            )
+            svc_selector = discovery_service.spec.selector or {}
+            assert cache_cluster_label in svc_selector, (
+                f"Discovery service selector missing label '{cache_cluster_label}'. "
+                f"Got selector: {svc_selector}"
+            )
+            assert svc_selector[cache_cluster_label] == expected_cluster, (
+                f"Expected discovery service selector '{cache_cluster_label}={expected_cluster}', "
+                f"got '{svc_selector[cache_cluster_label]}'"
             )
 
         finally:

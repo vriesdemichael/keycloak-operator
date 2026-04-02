@@ -526,10 +526,14 @@ keycloak:
   # Ensures old and new Keycloak versions form separate clusters
   # to prevent cross-version cache poisoning during upgrades
   cacheIsolation:
-    # Explicit JGroups cluster name (overrides autoSuffix)
+    # Explicit JGroups cluster name (overrides autoSuffix and autoRevision)
     clusterName: ""
-    # Auto-append Keycloak version to cluster name for isolation
+    # Auto-append Keycloak version to cluster name for isolation (uses full image tag)
     autoSuffix: false
+    # Auto-derive cluster name from major version only (e.g. my-kc-v26).
+    # Stable across patch upgrades; requires a semver image tag.
+    # Takes priority over autoSuffix when both are set.
+    autoRevision: false
   # Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2)
   # Controls automated backup behavior before Keycloak version upgrades.
   # When present, the admission webhook enforces semantic version image tags.

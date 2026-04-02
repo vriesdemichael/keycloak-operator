@@ -97,10 +97,13 @@ spec:
   {{- end }}
 
   {{- if .Values.keycloak.cacheIsolation }}
-  {{- if or .Values.keycloak.cacheIsolation.clusterName .Values.keycloak.cacheIsolation.autoSuffix }}
+  {{- if or .Values.keycloak.cacheIsolation.clusterName .Values.keycloak.cacheIsolation.autoSuffix .Values.keycloak.cacheIsolation.autoRevision }}
   cacheIsolation:
     {{- with .Values.keycloak.cacheIsolation.clusterName }}
     clusterName: {{ . }}
+    {{- end }}
+    {{- if .Values.keycloak.cacheIsolation.autoRevision }}
+    autoRevision: true
     {{- end }}
     {{- if .Values.keycloak.cacheIsolation.autoSuffix }}
     autoSuffix: true

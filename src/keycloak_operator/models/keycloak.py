@@ -779,6 +779,20 @@ class CacheIsolation(BaseModel):
             "to isolate caches between versions. Overridden by explicit clusterName."
         ),
     )
+    auto_revision: bool = Field(
+        False,
+        alias="autoRevision",
+        description=(
+            "Automatically derive a revision-based cluster name using only the "
+            "major version from the image tag (e.g. 'my-kc-v26'). "
+            "Provides stable isolation across patch upgrades — the cluster name "
+            "remains the same when upgrading 26.0.0 → 26.0.1, preventing "
+            "unnecessary JGroups cluster splits. "
+            "Requires a semver image tag; non-semver tags (e.g. ':latest', digests) "
+            "will disable isolation and emit a warning event. "
+            "Overridden by explicit clusterName. Takes priority over autoSuffix."
+        ),
+    )
 
     @field_validator("cluster_name")
     @classmethod
