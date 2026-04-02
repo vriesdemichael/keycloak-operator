@@ -585,7 +585,7 @@ class TestMaintenanceModeModel:
     """Tests for the MaintenanceMode Pydantic model."""
 
     def test_defaults(self):
-        """Defaults: disabled, full-block mode, standard health paths."""
+        """Defaults: disabled, full-block mode, standard health paths, default blocked paths."""
         mm = MaintenanceMode()
         assert mm.enabled is False
         assert mm.mode == "full-block"
@@ -593,6 +593,11 @@ class TestMaintenanceModeModel:
         assert "/health/live" in mm.exclude_paths
         assert "/health/ready" in mm.exclude_paths
         assert "/health/started" in mm.exclude_paths
+        # Default blocked paths for read-only mode
+        assert "/admin" in mm.blocked_paths
+        assert "/realms/[^/]+/account" in mm.blocked_paths
+        assert "/realms/[^/]+/login-actions/registration" in mm.blocked_paths
+        assert "/realms/[^/]+/broker" in mm.blocked_paths
 
     def test_enabled(self):
         mm = MaintenanceMode(enabled=True)
@@ -614,9 +619,17 @@ class TestMaintenanceModeModel:
         mm = MaintenanceMode(exclude_paths=["/custom", "/api/v1/status"])
         assert mm.exclude_paths == ["/custom", "/api/v1/status"]
 
-    def test_camelcase_alias(self):
+    def test_camelcase_alias_exclude_paths(self):
         mm = MaintenanceMode.model_validate({"excludePaths": ["/x"]})
         assert mm.exclude_paths == ["/x"]
+
+    def test_camelcase_alias_blocked_paths(self):
+        mm = MaintenanceMode.model_validate({"blockedPaths": ["/custom-admin"]})
+        assert mm.blocked_paths == ["/custom-admin"]
+
+    def test_custom_blocked_paths(self):
+        mm = MaintenanceMode(blocked_paths=["/custom-admin", "/special"])
+        assert mm.blocked_paths == ["/custom-admin", "/special"]
 
 
 class TestBuildMaintenanceModeAnnotations:
@@ -647,8 +660,8 @@ class TestBuildMaintenanceModeAnnotations:
         snippet = annotations[MAINTENANCE_MODE_SNIPPET_ANNOTATION]
         assert "return 503" in snippet
 
-    def test_read_only_annotations(self):
-        """Read-only mode blocks mutating methods."""
+    def test_read_only_blocks_admin_paths(self):
+        """Read-only mode blocks admin/account/registration/broker paths."""
         spec = _spec_with_db(
             maintenance_mode=MaintenanceMode(enabled=True, mode="read-only"),
         )
@@ -656,8 +669,79 @@ class TestBuildMaintenanceModeAnnotations:
 
         assert annotations[MAINTENANCE_MODE_ANNOTATION] == "read-only"
         snippet = annotations[MAINTENANCE_MODE_SNIPPET_ANNOTATION]
-        assert "GET|HEAD|OPTIONS" in snippet
+        assert "/admin" in snippet
+        assert "/realms/[^/]+/account" in snippet
+        assert "/realms/[^/]+/login-actions/registration" in snippet
+        assert "/realms/[^/]+/broker" in snippet
         assert "return 503" in snippet
+
+    def test_read_only_does_not_block_token_endpoint(self):
+        """Read-only mode must NOT block POST /realms/.../protocol/openid-connect/token.
+
+        Authentication flows use POST. Blocking all POST requests is wrong
+        and would prevent users from logging in during an upgrade window.
+        """
+        spec = _spec_with_db(
+            maintenance_mode=MaintenanceMode(enabled=True, mode="read-only"),
+        )
+        snippet = build_maintenance_mode_annotations(spec)[
+            MAINTENANCE_MODE_SNIPPET_ANNOTATION
+        ]
+        # The default block list must not contain the token endpoint path
+        assert "protocol/openid-connect/token" not in snippet
+        # Method-based blocking (GET|HEAD|OPTIONS pattern) must not appear
+        assert "GET|HEAD|OPTIONS" not in snippet
+        assert "$request_method" not in snippet
+
+    def test_read_only_custom_blocked_paths(self):
+        """Custom blocked paths are reflected in the snippet."""
+        spec = _spec_with_db(
+            maintenance_mode=MaintenanceMode(
+                enabled=True,
+                mode="read-only",
+                blocked_paths=["/custom-admin", "/special-route"],
+            ),
+        )
+        snippet = build_maintenance_mode_annotations(spec)[
+            MAINTENANCE_MODE_SNIPPET_ANNOTATION
+        ]
+        assert "/custom-admin" in snippet
+        assert "/special-route" in snippet
+        # Default paths are NOT present since we overrode the list
+        assert "/realms/[^/]+/account" not in snippet
+
+    def test_read_only_empty_blocked_paths_produces_empty_snippet(self):
+        """Empty blocked_paths in read-only mode produces a minimal snippet."""
+        spec = _spec_with_db(
+            maintenance_mode=MaintenanceMode(
+                enabled=True,
+                mode="read-only",
+                blocked_paths=[],
+            ),
+        )
+        annotations = build_maintenance_mode_annotations(spec)
+        # Annotation key should still be present
+        assert MAINTENANCE_MODE_ANNOTATION in annotations
+        # Snippet may be empty or contain only whitespace after stripping
+        snippet = annotations.get(MAINTENANCE_MODE_SNIPPET_ANNOTATION, "")
+        assert "return 503" not in snippet
+
+    def test_full_block_ignores_blocked_paths(self):
+        """blocked_paths have no effect in full-block mode."""
+        spec = _spec_with_db(
+            maintenance_mode=MaintenanceMode(
+                enabled=True,
+                mode="full-block",
+                blocked_paths=["/special"],
+            ),
+        )
+        snippet = build_maintenance_mode_annotations(spec)[
+            MAINTENANCE_MODE_SNIPPET_ANNOTATION
+        ]
+        # Full-block returns 503 for everything; path-specific blocks are not added
+        assert "return 503" in snippet
+        # The blocked path should not appear as a targeted rule
+        assert "/special" not in snippet
 
     def test_exclude_paths_in_snippet(self):
         """Excluded paths appear in the nginx server-snippet."""
