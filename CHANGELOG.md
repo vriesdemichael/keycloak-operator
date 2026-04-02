@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.4...operator-image-v0.9.5) (2026-04-02)
+
+
+### Features
+
+* **chart-operator+operator:** fix read-only maintenance mode with path-targeted blocking, add ADR-089 ([4dcefb6](https://github.com/vriesdemichael/keycloak-operator/commit/4dcefb6d1d6bc202d9bfa62707a7e337a1f6a7c7)), closes [#674](https://github.com/vriesdemichael/keycloak-operator/issues/674)
+
+
+### Bug Fixes
+
+* **operator:** add validate_blocked_paths to prevent nginx snippet injection ([dcbe317](https://github.com/vriesdemichael/keycloak-operator/commit/dcbe3179e39004bbe11f50a13c6cb95d6706e263))
+
 ## [0.9.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.3...operator-image-v0.9.4) (2026-04-02)
 
 
