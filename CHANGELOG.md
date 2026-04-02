@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.4](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.3...operator-image-v0.9.4) (2026-04-02)
+
+
+### Bug Fixes
+
+* **operator-image:** big bang dependency update and CI/CD fixes ([8789405](https://github.com/vriesdemichael/keycloak-operator/commit/8789405022ae90f8fbeeee3fb8565aaeb661eb5f))
+
 ## [0.9.3](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.2...operator-image-v0.9.3) (2026-03-13)
 
 
