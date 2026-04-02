@@ -1094,24 +1094,11 @@ class KeycloakInstanceReconciler(BaseReconciler):
             current_cluster = current_selector.get(CACHE_CLUSTER_LABEL)
 
             if current_cluster != desired_cluster:
-                # Build the updated selector: start from existing, add/remove the label
-                new_selector = {
-                    k: v
-                    for k, v in current_selector.items()
-                    if k != CACHE_CLUSTER_LABEL
-                }
-                new_labels = {
-                    k: v
-                    for k, v in (existing.metadata.labels or {}).items()
-                    if k != CACHE_CLUSTER_LABEL
-                }
-                if desired_cluster is not None:
-                    new_selector[CACHE_CLUSTER_LABEL] = desired_cluster
-                    new_labels[CACHE_CLUSTER_LABEL] = desired_cluster
-
+                # Patch only the cache-cluster key — set to None to explicitly
+                # delete it (strategic-merge patch treats null as a delete).
                 patch_body = {
-                    "metadata": {"labels": new_labels},
-                    "spec": {"selector": new_selector},
+                    "metadata": {"labels": {CACHE_CLUSTER_LABEL: desired_cluster}},
+                    "spec": {"selector": {CACHE_CLUSTER_LABEL: desired_cluster}},
                 }
                 core_api.patch_namespaced_service(
                     name=discovery_service_name,
