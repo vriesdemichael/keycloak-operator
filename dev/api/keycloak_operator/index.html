@@ -23,7 +23,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -16879,7 +16879,7 @@ KEYCLOAK_OPERATOR_DRY_RUN: Set to 'true' for dry-run mode</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17242,7 +17242,7 @@ for the operator development.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17268,6 +17268,7 @@ for the operator development.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>JGroups cache isolation configuration for blue-green upgrades (ADR-088).</p>
 <p>Ensures old and new Keycloak versions form separate JGroups clusters
 by using distinct cluster names and discovery service selectors. This
@@ -17283,7 +17284,7 @@ prevents cross-version cache poisoning during blue-green upgrades.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17345,6 +17346,7 @@ end with an alphanumeric character.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Tier 1: CloudNativePG-managed database configuration (ADR-088).</p>
 <p>When using CNPG, the operator resolves connection details from the
 CNPG Cluster CR automatically. Users only need to specify the cluster
@@ -17360,7 +17362,7 @@ name. This tier supports automated backup via the CNPG Backup API.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17395,6 +17397,7 @@ name. This tier supports automated backup via the CNPG Backup API.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Database connection pool configuration.</p>
 
 
@@ -17407,7 +17410,7 @@ name. This tier supports automated backup via the CNPG Backup API.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17442,6 +17445,7 @@ name. This tier supports automated backup via the CNPG Backup API.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Tier 3: Externally managed database configuration (ADR-088).</p>
 <p>For databases fully managed outside the operator's control. The operator
 can connect but cannot perform backups. During upgrades, a manual gate
@@ -17457,7 +17461,7 @@ can connect but cannot perform backups. During upgrades, a manual gate
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17492,6 +17496,7 @@ can connect but cannot perform backups. During upgrades, a manual gate
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Complete Keycloak custom resource model.</p>
 <p>This represents the full Kubernetes custom resource including
 metadata, spec, and status sections.</p>
@@ -17506,7 +17511,7 @@ metadata, spec, and status sections.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17541,6 +17546,7 @@ metadata, spec, and status sections.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for Keycloak administrator credentials.</p>
 
 
@@ -17553,7 +17559,7 @@ metadata, spec, and status sections.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17588,6 +17594,7 @@ metadata, spec, and status sections.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Status condition for Keycloak instance.</p>
 
 
@@ -17600,7 +17607,7 @@ metadata, spec, and status sections.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17635,6 +17642,7 @@ metadata, spec, and status sections.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Database configuration for Keycloak instance.</p>
 <p>Supports three tiers (ADR-088):
 - cnpg: CloudNativePG-managed (Tier 1) — operator resolves connection from CNPG Cluster
@@ -17654,7 +17662,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17949,6 +17957,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Endpoints for accessing Keycloak instance.</p>
 
 
@@ -17961,7 +17970,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -17996,6 +18005,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Ingress configuration for Keycloak instance.</p>
 
 
@@ -18008,7 +18018,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18043,6 +18053,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Reference to a Keycloak instance in any namespace.</p>
 
 
@@ -18055,7 +18066,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18090,6 +18101,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Resource requirements for Keycloak pods.</p>
 
 
@@ -18102,7 +18114,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18137,6 +18149,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Service configuration for Keycloak instance.</p>
 
 
@@ -18149,7 +18162,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18184,6 +18197,7 @@ the tiered fields are set, the flat fields are used and the tier is "legacy"
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Specification for a Keycloak instance.</p>
 <p>This model defines all configurable aspects of a Keycloak deployment
 including resources, networking, persistence, and authentication.</p>
@@ -18198,7 +18212,7 @@ including resources, networking, persistence, and authentication.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18233,6 +18247,7 @@ including resources, networking, persistence, and authentication.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Status of a Keycloak instance.</p>
 <p>This model represents the current state and health of a Keycloak deployment
 as observed by the operator.</p>
@@ -18247,7 +18262,7 @@ as observed by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18282,6 +18297,7 @@ as observed by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>TLS configuration for Keycloak instance.</p>
 
 
@@ -18294,7 +18310,7 @@ as observed by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18329,6 +18345,7 @@ as observed by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>OpenTelemetry distributed tracing configuration for Keycloak.</p>
 <p>Keycloak 26.x+ has built-in OpenTelemetry support via Quarkus.
 This configuration enables end-to-end distributed tracing.</p>
@@ -18343,7 +18360,7 @@ This configuration enables end-to-end distributed tracing.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18378,6 +18395,7 @@ This configuration enables end-to-end distributed tracing.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Maintenance mode configuration for blue-green upgrades (ADR-088).</p>
 <p>When enabled, the operator annotates the Keycloak ingress to block
 or limit traffic before the old deployment is scaled down. This
@@ -18393,7 +18411,7 @@ ensures graceful connection draining during major version upgrades.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18455,6 +18473,7 @@ injection of regex metacharacters into the nginx server-snippet.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Tier 2: Generic managed PostgreSQL database configuration (ADR-088).</p>
 <p>For databases where the operator has connection access but does not
 manage the database lifecycle. Supports backup via VolumeSnapshot
@@ -18470,7 +18489,7 @@ manage the database lifecycle. Supports backup via VolumeSnapshot
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18505,6 +18524,7 @@ manage the database lifecycle. Supports backup via VolumeSnapshot
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Capacity management for realms.</p>
 <p>Controls how many realms can be managed by this Keycloak operator
 and whether new realm creation is allowed.</p>
@@ -18519,7 +18539,7 @@ and whether new realm creation is allowed.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18554,6 +18574,7 @@ and whether new realm creation is allowed.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Reference to a secret key for sensitive data.</p>
 <p>The secret must be in the same namespace as the resource referencing it.
 Cross-namespace secret references are not supported for security reasons.</p>
@@ -18568,7 +18589,7 @@ Cross-namespace secret references are not supported for security reasons.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18603,6 +18624,7 @@ Cross-namespace secret references are not supported for security reasons.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 2).</p>
 <p>Controls pre-upgrade backup behavior for automated database tiers:</p>
 <ul>
@@ -18626,7 +18648,7 @@ detection is required for upgrade orchestration.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18675,7 +18697,7 @@ authentication flows, identity providers, and user federation.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18701,6 +18723,7 @@ authentication flows, identity providers, and user federation.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Authentication execution step configuration.</p>
 <p>Maps to AuthenticationExecutionExportRepresentation in Keycloak API.
 Represents a single step in an authentication flow.</p>
@@ -18715,7 +18738,7 @@ Represents a single step in an authentication flow.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18770,6 +18793,7 @@ Represents a single step in an authentication flow.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for a configurable authenticator execution.</p>
 <p>Maps to AuthenticatorConfigRepresentation in Keycloak API.
 Used for authenticators that have configuration options (e.g., OTP settings).</p>
@@ -18784,7 +18808,7 @@ Used for authenticators that have configuration options (e.g., OTP settings).</p
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18819,6 +18843,7 @@ Used for authenticators that have configuration options (e.g., OTP settings).</p
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Client policy that conditionally applies profiles to clients.</p>
 <p>Policies define WHEN profiles should be applied (via conditions)
 and WHICH profiles to apply. When all conditions match, all
@@ -18849,7 +18874,7 @@ referenced profiles' executors are enforced on the client.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18884,6 +18909,7 @@ referenced profiles' executors are enforced on the client.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Condition that determines when a client policy applies.</p>
 <p>Conditions evaluate client attributes to decide if the policy's
 profiles should be applied. Multiple conditions in a policy are
@@ -18912,7 +18938,7 @@ ANDed together.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -18947,6 +18973,7 @@ ANDed together.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Client profile defining a set of executors applied to matching clients.</p>
 <p>Client profiles group multiple executors together under a single name.
 Profiles are referenced by client policies to apply their executors
@@ -18977,7 +19004,7 @@ when policy conditions match.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19012,6 +19039,7 @@ when policy conditions match.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Executor configuration for a client profile.</p>
 <p>Executors enforce specific behaviors on clients, such as:
 - secure-client-authenticator: Require specific authentication methods
@@ -19037,7 +19065,7 @@ when policy conditions match.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19072,6 +19100,7 @@ when policy conditions match.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Authentication flow configuration.</p>
 <p>Maps to AuthenticationFlowRepresentation in Keycloak API.
 Defines a complete authentication flow with its executions.</p>
@@ -19086,7 +19115,7 @@ Defines a complete authentication flow with its executions.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19121,6 +19150,7 @@ Defines a complete authentication flow with its executions.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Browser security headers configuration.</p>
 <p>Maps to the <code>browserSecurityHeaders</code> dictionary in Keycloak API.
 These headers are served on Keycloak login pages.</p>
@@ -19135,7 +19165,7 @@ These headers are served on Keycloak login pages.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19170,6 +19200,7 @@ These headers are served on Keycloak login pages.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Client scope definition.</p>
 
 
@@ -19182,7 +19213,7 @@ These headers are served on Keycloak login pages.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19217,6 +19248,7 @@ These headers are served on Keycloak login pages.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Event logging configuration.</p>
 
 
@@ -19229,7 +19261,7 @@ These headers are served on Keycloak login pages.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19264,6 +19296,7 @@ These headers are served on Keycloak login pages.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Group definition.</p>
 
 
@@ -19276,7 +19309,7 @@ These headers are served on Keycloak login pages.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19311,6 +19344,7 @@ These headers are served on Keycloak login pages.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Identity provider configuration.</p>
 
 
@@ -19323,7 +19357,7 @@ These headers are served on Keycloak login pages.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19378,6 +19412,7 @@ These headers are served on Keycloak login pages.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Identity provider mapper configuration.</p>
 <p>Mappers transform claims/attributes from the identity provider
 into Keycloak user attributes, roles, or session attributes.</p>
@@ -19392,7 +19427,7 @@ into Keycloak user attributes, roles, or session attributes.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19427,6 +19462,7 @@ into Keycloak user attributes, roles, or session attributes.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Reference to Kubernetes secret containing identity provider secrets.</p>
 <p>The secret must be in the same namespace as the KeycloakRealm.
 Cross-namespace secret references are not supported for security reasons.</p>
@@ -19441,7 +19477,7 @@ Cross-namespace secret references are not supported for security reasons.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19476,6 +19512,7 @@ Cross-namespace secret references are not supported for security reasons.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>OTP (One-Time Password) policy configuration.</p>
 <p>Maps to flat otpPolicy* fields in Keycloak RealmRepresentation.</p>
 
@@ -19489,7 +19526,7 @@ Cross-namespace secret references are not supported for security reasons.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19524,6 +19561,7 @@ Cross-namespace secret references are not supported for security reasons.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Password policy configuration for a realm.</p>
 <p>Enforces password requirements for users. The policy is converted to
 Keycloak's "and"-separated policy string format.</p>
@@ -19538,7 +19576,7 @@ Keycloak's "and"-separated policy string format.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19616,6 +19654,7 @@ Keycloak's "and"-separated policy string format.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Protocol mapper for client scopes.</p>
 
 
@@ -19628,7 +19667,7 @@ Keycloak's "and"-separated policy string format.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19663,6 +19702,7 @@ Keycloak's "and"-separated policy string format.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Complete KeycloakRealm custom resource model.</p>
 <p>This represents the full Kubernetes custom resource for comprehensive
 realm management with authentication flows and identity providers.</p>
@@ -19677,7 +19717,7 @@ realm management with authentication flows and identity providers.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19712,6 +19752,7 @@ realm management with authentication flows and identity providers.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Status condition for KeycloakRealm resource.</p>
 
 
@@ -19724,7 +19765,7 @@ realm management with authentication flows and identity providers.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19759,6 +19800,7 @@ realm management with authentication flows and identity providers.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Endpoints for the KeycloakRealm.</p>
 
 
@@ -19771,7 +19813,7 @@ realm management with authentication flows and identity providers.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19806,6 +19848,7 @@ realm management with authentication flows and identity providers.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Features configured for the realm.</p>
 
 
@@ -19818,7 +19861,7 @@ realm management with authentication flows and identity providers.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19853,6 +19896,7 @@ realm management with authentication flows and identity providers.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Localization configuration for a realm.</p>
 
 
@@ -19865,7 +19909,7 @@ realm management with authentication flows and identity providers.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19900,6 +19944,7 @@ realm management with authentication flows and identity providers.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Realm role definition.</p>
 
 
@@ -19912,7 +19957,7 @@ realm management with authentication flows and identity providers.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19947,6 +19992,7 @@ realm management with authentication flows and identity providers.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Security settings for a realm.</p>
 
 
@@ -19959,7 +20005,7 @@ realm management with authentication flows and identity providers.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -19994,6 +20040,7 @@ realm management with authentication flows and identity providers.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Specification for a KeycloakRealm resource.</p>
 <p>This model defines all configurable aspects of a Keycloak realm
 including security, authentication, and user management settings.</p>
@@ -20008,7 +20055,7 @@ including security, authentication, and user management settings.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20143,6 +20190,7 @@ including security, authentication, and user management settings.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Status of a KeycloakRealm resource.</p>
 <p>This model represents the current state of a realm as managed
 by the operator.</p>
@@ -20157,7 +20205,7 @@ by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20192,6 +20240,7 @@ by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Theme configuration for a realm.</p>
 
 
@@ -20204,7 +20253,7 @@ by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20239,6 +20288,7 @@ by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Token settings for a realm.</p>
 
 
@@ -20251,7 +20301,7 @@ by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20286,6 +20336,7 @@ by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Realm and client role definitions.</p>
 
 
@@ -20298,7 +20349,7 @@ by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20333,6 +20384,7 @@ by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>SMTP server configuration with validation.</p>
 
 
@@ -20345,7 +20397,7 @@ by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20424,6 +20476,7 @@ by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Reference to Kubernetes secret containing SMTP password.</p>
 <p>The secret must be in the same namespace as the KeycloakRealm.
 Cross-namespace secret references are not supported for security reasons.</p>
@@ -20438,7 +20491,7 @@ Cross-namespace secret references are not supported for security reasons.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20473,6 +20526,7 @@ Cross-namespace secret references are not supported for security reasons.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Scope mapping configuration.</p>
 <p>Maps roles (realm or client) to a client scope or directly to a client.
 Scope mappings control which roles are included in the token when a specific
@@ -20488,7 +20542,7 @@ scope is granted.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20543,6 +20597,7 @@ scope is granted.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Complete user federation configuration for LDAP/AD/Kerberos.</p>
 <p>This model supports:
 - LDAP federation with full attribute mapping
@@ -20575,7 +20630,7 @@ scope is granted.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20654,6 +20709,7 @@ scope is granted.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>User federation mapper configuration.</p>
 <p>Mappers transform LDAP/AD attributes into Keycloak user properties,
 roles, or group memberships.</p>
@@ -20668,7 +20724,7 @@ roles, or group memberships.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20703,6 +20759,7 @@ roles, or group memberships.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Reference to Kubernetes secret for user federation sensitive data.</p>
 <p>Used for bind credentials (LDAP) or keytab (Kerberos).</p>
 
@@ -20716,7 +20773,7 @@ roles, or group memberships.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20751,6 +20808,7 @@ roles, or group memberships.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Status of a user federation provider.</p>
 <p>This provides observability into the health and sync state of each
 configured user federation provider (LDAP, AD, Kerberos).</p>
@@ -20765,7 +20823,7 @@ configured user federation provider (LDAP, AD, Kerberos).</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20800,6 +20858,7 @@ configured user federation provider (LDAP, AD, Kerberos).</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Synchronization settings for user federation.</p>
 
 
@@ -20812,7 +20871,7 @@ configured user federation provider (LDAP, AD, Kerberos).</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20847,6 +20906,7 @@ configured user federation provider (LDAP, AD, Kerberos).</p>
               Bases: <code><a class="autorefs autorefs-internal" title="KeycloakWebAuthnPolicy (keycloak_operator.models.realm.KeycloakWebAuthnPolicy)" href="#keycloak_operator.models.realm.KeycloakWebAuthnPolicy">KeycloakWebAuthnPolicy</a></code></p>
 
 
+
         <p>WebAuthn Passwordless policy configuration.</p>
 <p>Inherits all fields from KeycloakWebAuthnPolicy.</p>
 
@@ -20860,7 +20920,7 @@ configured user federation provider (LDAP, AD, Kerberos).</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20895,6 +20955,7 @@ configured user federation provider (LDAP, AD, Kerberos).</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>WebAuthn policy configuration.</p>
 <p>Used for both regular WebAuthn and Passwordless WebAuthn policies.</p>
 
@@ -20908,7 +20969,7 @@ configured user federation provider (LDAP, AD, Kerberos).</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -20941,6 +21002,7 @@ configured user federation provider (LDAP, AD, Kerberos).</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
+
 
 
         <p>Organization definition for multi-tenancy support (Keycloak 26+).</p>
@@ -20976,7 +21038,7 @@ to create organizations.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21011,6 +21073,7 @@ to create organizations.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Domain configuration for an organization.</p>
 <p>Domains are used to identify members of an organization based on their
 email domain. Members with emails matching verified domains can be
@@ -21026,7 +21089,7 @@ automatically associated with the organization.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21061,6 +21124,7 @@ automatically associated with the organization.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Identity provider linked to an organization.</p>
 <p>Organizations can have their own identity providers that members use
 for authentication. This enables federated identity for organization members.</p>
@@ -21075,7 +21139,7 @@ for authentication. This enables federated identity for organization members.</p
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21110,6 +21174,7 @@ for authentication. This enables federated identity for organization members.</p
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Required action configuration.</p>
 <p>Maps to RequiredActionProviderRepresentation in Keycloak API.
 Required actions are actions users must perform (e.g., verify email, configure OTP).</p>
@@ -21124,7 +21189,7 @@ Required actions are actions users must perform (e.g., verify email, configure O
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21173,7 +21238,7 @@ with proper validation and GitOps compatibility.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21199,6 +21264,7 @@ with proper validation and GitOps compatibility.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Aggregate authorization policy.</p>
 <p>Combines multiple policies using a decision strategy.</p>
 
@@ -21212,7 +21278,7 @@ with proper validation and GitOps compatibility.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21247,6 +21313,7 @@ with proper validation and GitOps compatibility.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Container for all authorization permission types.</p>
 <p>Permissions tie policies to resources/scopes to create the complete
 authorization model. They define WHAT can be accessed and link to
@@ -21262,7 +21329,7 @@ policies that define WHO can access.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21297,6 +21364,7 @@ policies that define WHO can access.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Container for all authorization policy types.</p>
 <p>Policies define WHO can access resources. They are referenced by permissions
 to create the complete authorization model.</p>
@@ -21311,7 +21379,7 @@ to create the complete authorization model.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21346,6 +21414,7 @@ to create the complete authorization model.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Protected resource definition.</p>
 <p>Resources represent the objects being protected by authorization policies
 (e.g., APIs, documents, users).</p>
@@ -21360,7 +21429,7 @@ to create the complete authorization model.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21395,6 +21464,7 @@ to create the complete authorization model.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Authorization scope definition.</p>
 <p>Scopes define the actions that can be performed on resources
 (e.g., 'read', 'write', 'delete').</p>
@@ -21409,7 +21479,7 @@ to create the complete authorization model.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21444,6 +21514,7 @@ to create the complete authorization model.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Authorization services settings for a client.</p>
 <p>Contains the resource server configuration including enforcement mode,
 decision strategy, scopes, and resources.</p>
@@ -21458,7 +21529,7 @@ decision strategy, scopes, and resources.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21493,6 +21564,7 @@ decision strategy, scopes, and resources.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Client-based authorization policy.</p>
 <p>Grants access to specific OAuth2 clients.</p>
 
@@ -21506,7 +21578,7 @@ decision strategy, scopes, and resources.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21541,6 +21613,7 @@ decision strategy, scopes, and resources.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Group-based authorization policy.</p>
 <p>Grants access based on group membership.</p>
 
@@ -21554,7 +21627,7 @@ decision strategy, scopes, and resources.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21589,6 +21662,7 @@ decision strategy, scopes, and resources.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>JavaScript-based authorization policy.</p>
 <p>WARNING: JavaScript policies require the 'upload-scripts' feature to be enabled
 in Keycloak, which is disabled by default for security reasons. Use with caution.</p>
@@ -21604,7 +21678,7 @@ in Keycloak, which is disabled by default for security reasons. Use with caution
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21639,6 +21713,7 @@ in Keycloak, which is disabled by default for security reasons. Use with caution
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Complete KeycloakClient custom resource model.</p>
 <p>This represents the full Kubernetes custom resource for dynamic
 client provisioning with cross-namespace support.</p>
@@ -21653,7 +21728,7 @@ client provisioning with cross-namespace support.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21688,6 +21763,7 @@ client provisioning with cross-namespace support.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for client authentication flows.</p>
 
 
@@ -21700,7 +21776,7 @@ client provisioning with cross-namespace support.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21735,6 +21811,7 @@ client provisioning with cross-namespace support.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Status condition for KeycloakClient resource.</p>
 
 
@@ -21747,7 +21824,7 @@ client provisioning with cross-namespace support.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21782,6 +21859,7 @@ client provisioning with cross-namespace support.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Endpoints for the KeycloakClient.</p>
 
 
@@ -21794,7 +21872,7 @@ client provisioning with cross-namespace support.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21829,6 +21907,7 @@ client provisioning with cross-namespace support.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for protocol mappers.</p>
 
 
@@ -21841,7 +21920,7 @@ client provisioning with cross-namespace support.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21876,6 +21955,7 @@ client provisioning with cross-namespace support.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for client scopes.</p>
 
 
@@ -21888,7 +21968,7 @@ client provisioning with cross-namespace support.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21923,6 +22003,7 @@ client provisioning with cross-namespace support.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Reference to an existing Kubernetes secret containing the client secret.</p>
 <p>Used when manually managing the client secret instead of letting the operator
 generate one.</p>
@@ -21937,7 +22018,7 @@ generate one.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -21972,6 +22053,7 @@ generate one.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Advanced client settings.</p>
 
 
@@ -21984,7 +22066,7 @@ generate one.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22019,6 +22101,7 @@ generate one.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Specification for a KeycloakClient resource.</p>
 <p>This model defines all configurable aspects of a Keycloak client
 including authentication, authorization, and protocol settings.</p>
@@ -22033,7 +22116,7 @@ including authentication, authorization, and protocol settings.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22161,6 +22244,7 @@ including authentication, authorization, and protocol settings.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Status of a KeycloakClient resource.</p>
 <p>This model represents the current state of a client as managed
 by the operator.</p>
@@ -22175,7 +22259,7 @@ by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22210,6 +22294,7 @@ by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Reference to a parent KeycloakRealm.</p>
 
 
@@ -22222,7 +22307,7 @@ by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22257,6 +22342,7 @@ by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Regex-based authorization policy.</p>
 <p>Grants access based on regex matching against a token claim.</p>
 
@@ -22270,7 +22356,7 @@ by the operator.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22305,6 +22391,7 @@ by the operator.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Resource-based authorization permission.</p>
 <p>Defines access rights for specific resources with associated policies.
 This permission type grants access to entire resources (all scopes).</p>
@@ -22319,7 +22406,7 @@ This permission type grants access to entire resources (all scopes).</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22354,6 +22441,7 @@ This permission type grants access to entire resources (all scopes).</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Role-based authorization policy.</p>
 <p>Grants access based on realm or client role assignments.</p>
 
@@ -22367,7 +22455,7 @@ This permission type grants access to entire resources (all scopes).</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22402,6 +22490,7 @@ This permission type grants access to entire resources (all scopes).</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>A role reference for role-based policies.</p>
 
 
@@ -22414,7 +22503,7 @@ This permission type grants access to entire resources (all scopes).</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22449,6 +22538,7 @@ This permission type grants access to entire resources (all scopes).</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Scope-based authorization permission.</p>
 <p>Defines access rights for specific scopes, optionally on specific resources.
 This permission type provides finer-grained control than resource permissions.</p>
@@ -22463,7 +22553,7 @@ This permission type provides finer-grained control than resource permissions.</
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22498,6 +22588,7 @@ This permission type provides finer-grained control than resource permissions.</
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Metadata to be added to the managed secret.</p>
 
 
@@ -22510,7 +22601,7 @@ This permission type provides finer-grained control than resource permissions.</
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22545,6 +22636,7 @@ This permission type provides finer-grained control than resource permissions.</
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Configuration for automated client secret rotation.</p>
 
 
@@ -22557,7 +22649,7 @@ This permission type provides finer-grained control than resource permissions.</
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22616,6 +22708,7 @@ This permission type provides finer-grained control than resource permissions.</
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Role mappings for service account users.</p>
 
 
@@ -22628,7 +22721,7 @@ This permission type provides finer-grained control than resource permissions.</
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22663,6 +22756,7 @@ This permission type provides finer-grained control than resource permissions.</
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>Time-based authorization policy.</p>
 <p>Grants access based on time constraints.
 All time fields are optional - only specified constraints are enforced.</p>
@@ -22677,7 +22771,7 @@ All time fields are optional - only specified constraints are enforced.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22712,6 +22806,7 @@ All time fields are optional - only specified constraints are enforced.</p>
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
 
+
         <p>User-based authorization policy.</p>
 <p>Grants access to specific users by username.</p>
 
@@ -22725,7 +22820,7 @@ All time fields are optional - only specified constraints are enforced.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22780,7 +22875,7 @@ ensuring that the desired state is maintained regardless of restart or failure.<
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22806,6 +22901,7 @@ ensuring that the desired state is maintained regardless of restart or failure.<
               Bases: <code><a class="autorefs autorefs-external" title="typing.TypedDict" href="https://docs.python.org/3/library/typing.html#typing.TypedDict">TypedDict</a></code></p>
 
 
+
         <p>Type hints for common kopf handler kwargs.</p>
 
 
@@ -22818,7 +22914,7 @@ ensuring that the desired state is maintained regardless of restart or failure.<
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22853,6 +22949,7 @@ ensuring that the desired state is maintained regardless of restart or failure.<
               Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
 
 
+
         <p>Protocol for kopf Status objects that allow dynamic attribute assignment.</p>
 <p>Wrapped by StatusWrapper to allow safe mutation irrespective of kopf internal
 status object semantics.</p>
@@ -22867,7 +22964,7 @@ status object semantics.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -22903,6 +23000,7 @@ status object semantics.</p>
               Bases: <code><a class="autorefs autorefs-external" title="collections.abc.MutableMapping" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.MutableMapping">MutableMapping</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code></p>
 
 
+
         <p>Safe mutable wrapper around kopf patch.status for both item &amp; attribute access.</p>
 <p>Automatically converts snake_case Python attribute names to camelCase for K8s API.</p>
 
@@ -22916,7 +23014,7 @@ status object semantics.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -23706,7 +23804,7 @@ and can be managed independently across different namespaces.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -23732,6 +23830,7 @@ and can be managed independently across different namespaces.</p>
               Bases: <code><a class="autorefs autorefs-external" title="typing.Protocol" href="https://docs.python.org/3/library/typing.html#typing.Protocol">Protocol</a></code></p>
 
 
+
         <p>Protocol for kopf Status objects that allow dynamic attribute assignment.</p>
 
 
@@ -23744,7 +23843,7 @@ and can be managed independently across different namespaces.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -23778,6 +23877,7 @@ and can be managed independently across different namespaces.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Wrapper to make kopf patch.status compatible with StatusProtocol.</p>
 <p>This wrapper provides both attribute and dict-like access to patch.status,
 ensuring all updates are written directly to the underlying patch object.</p>
@@ -23793,7 +23893,7 @@ ensuring all updates are written directly to the underlying patch object.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -25251,7 +25351,7 @@ enables GitOps-compatible client management. Key features:</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -25276,6 +25376,7 @@ enables GitOps-compatible client management. Key features:</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Wrapper to make kopf patch.status compatible with StatusProtocol.</p>
 <p>This wrapper provides both attribute and dict-like access to patch.status,
 ensuring all updates are written directly to the underlying patch object.</p>
@@ -25291,7 +25392,7 @@ ensuring all updates are written directly to the underlying patch object.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -26607,7 +26708,7 @@ deployment, services, persistence, and administrative access.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -26637,6 +26738,7 @@ deployment, services, persistence, and administrative access.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="keycloak_operator.services.base_reconciler.BaseReconciler">BaseReconciler</span></code></p>
+
 
 
         <p>Reconciler for Keycloak instance resources.</p>
@@ -26738,7 +26840,7 @@ deployment, services, persistence, and administrative access.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -29001,7 +29103,7 @@ themes, authentication flows, identity providers, and user federation.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -29031,6 +29133,7 @@ themes, authentication flows, identity providers, and user federation.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="keycloak_operator.services.base_reconciler.BaseReconciler">BaseReconciler</span></code></p>
+
 
 
         <p>Reconciler for Keycloak realm resources.</p>
@@ -29133,7 +29236,7 @@ themes, authentication flows, identity providers, and user federation.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -33468,7 +33571,7 @@ client creation, credential management, and OAuth2 configuration.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -33498,6 +33601,7 @@ client creation, credential management, and OAuth2 configuration.</p>
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
               Bases: <code><span title="keycloak_operator.services.base_reconciler.BaseReconciler">BaseReconciler</span></code></p>
+
 
 
         <p>Reconciler for Keycloak client resources.</p>
@@ -33600,7 +33704,7 @@ client creation, credential management, and OAuth2 configuration.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -34337,7 +34441,7 @@ including resource management, RBAC validation, and cluster operations.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -36502,7 +36606,7 @@ for managing Keycloak instances, realms, clients, and other resources.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -36537,6 +36641,7 @@ for managing Keycloak instances, realms, clients, and other resources.</p>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
+
 
 
         <div class="language-text highlight"><pre><span></span><code>High-level client for Keycloak Admin API operations.
@@ -36751,7 +36856,7 @@ session management, and provides a clean interface for the operator.
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -56530,6 +56635,7 @@ success = await admin_client.update_identity_provider(
               Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
 
 
+
         <p>Base exception for Keycloak Admin API errors.</p>
 
 
@@ -56542,7 +56648,7 @@ success = await admin_client.update_identity_provider(
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -56596,6 +56702,7 @@ success = await admin_client.update_identity_provider(
     <div class="doc doc-contents ">
 
 
+
         <p>Global cache for Keycloak server version detection.</p>
 <p>Handles TTL, request coalescing, and validation to prevent cache poisoning.</p>
 
@@ -56609,7 +56716,7 @@ success = await admin_client.update_identity_provider(
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -57300,7 +57407,7 @@ configurations, and operator settings. It includes:</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -57327,6 +57434,7 @@ configurations, and operator settings. It includes:</p>
               Bases: <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/exceptions.html#Exception">Exception</a></code></p>
 
 
+
         <p>Exception raised for validation failures.</p>
 
 
@@ -57339,7 +57447,7 @@ configurations, and operator settings. It includes:</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -59317,7 +59425,7 @@ operator performance, resource reconciliation, and system health.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -59342,6 +59450,7 @@ operator performance, resource reconciliation, and system health.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Collects and manages metrics for the Keycloak operator.</p>
 
         <p>Initialize metrics collector.</p>
@@ -59356,7 +59465,7 @@ operator performance, resource reconciliation, and system health.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -60219,6 +60328,7 @@ generation and in Ready state, avoiding redundant API calls.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>HTTP server for exposing Prometheus metrics.</p>
 
         <p>Initialize metrics server.</p>
@@ -60280,7 +60390,7 @@ generation and in Ready state, avoiding redundant API calls.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -60560,7 +60670,7 @@ for monitoring operator and system component health.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -60596,6 +60706,7 @@ for monitoring operator and system component health.</p>
     <div class="doc doc-contents ">
 
 
+
         <p>Result of a health check operation.</p>
 
 
@@ -60608,7 +60719,7 @@ for monitoring operator and system component health.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
@@ -60640,6 +60751,7 @@ for monitoring operator and system component health.</p>
 </span></code></pre></div>
 
     <div class="doc doc-contents ">
+
 
 
         <p>Performs comprehensive health checks for the operator.</p>
@@ -60687,7 +60799,7 @@ for monitoring operator and system component health.</p>
 
 
 
-  <div class="doc doc-children">
+<div class="doc doc-children">
 
 
 
