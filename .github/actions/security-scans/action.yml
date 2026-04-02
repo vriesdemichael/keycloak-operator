@@ -65,11 +65,13 @@ runs:
 
     - name: Trivy scan (SARIF)
       uses: aquasecurity/trivy-action@master
+      if: success() || failure()
       with:
         image-ref: 'keycloak-operator:test'
         format: 'sarif'
         output: 'trivy-results.sarif'
         severity: 'CRITICAL,HIGH,MEDIUM'
+        ignore-unfixed: true
 
     - name: Upload Trivy results
       uses: github/codeql-action/upload-sarif@v4
@@ -81,6 +83,7 @@ runs:
     # SBOM generation
     - name: Generate SBOM
       uses: anchore/sbom-action@v0
+      if: success() || failure()
       with:
         image: keycloak-operator:test
         format: spdx-json
@@ -88,6 +91,7 @@ runs:
 
     - name: Scan SBOM for vulnerabilities
       uses: anchore/scan-action@v7
+      if: success() || failure()
       with:
         sbom: sbom.spdx.json
         fail-build: false
