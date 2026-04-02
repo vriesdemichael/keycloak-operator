@@ -789,7 +789,7 @@ class CacheIsolation(BaseModel):
             "remains the same when upgrading 26.0.0 → 26.0.1, preventing "
             "unnecessary JGroups cluster splits. "
             "Requires a semver image tag; non-semver tags (e.g. ':latest', digests) "
-            "will disable isolation and emit a warning event. "
+            "will disable isolation and log a warning. "
             "Overridden by explicit clusterName. Takes priority over autoSuffix."
         ),
     )

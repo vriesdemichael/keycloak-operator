@@ -245,7 +245,8 @@ If you tag your Keycloak image with a proper semver version (e.g., `quay.io/keyc
 ```yaml
 # keycloak-values.yaml
 keycloak:
-  image: quay.io/keycloak/keycloak:26.4.1
+  image: quay.io/keycloak/keycloak
+  version: "26.4.1"
   cacheIsolation:
     autoRevision: true
 ```

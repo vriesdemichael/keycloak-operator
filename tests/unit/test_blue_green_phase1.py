@@ -1679,7 +1679,8 @@ class TestDiscoveryServiceSelectorReconciliation:
 
         mock_core_api.patch_namespaced_service.assert_called_once()
         patch_body = mock_core_api.patch_namespaced_service.call_args[1]["body"]
+        # The new patch sets the key to None (strategic-merge-patch delete)
         assert (
-            "vriesdemichael.github.io/cache-cluster"
-            not in patch_body["spec"]["selector"]
+            patch_body["spec"]["selector"]["vriesdemichael.github.io/cache-cluster"]
+            is None
         )
