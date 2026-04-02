@@ -1,6 +1,6 @@
 {
   ".": "0.9.5",
-  "charts/keycloak-operator": "0.6.6",
+  "charts/keycloak-operator": "0.6.7",
   "charts/keycloak-client": "0.4.5",
   "charts/keycloak-realm": "0.4.7",
   "tools/migration-toolkit": "0.1.2"
