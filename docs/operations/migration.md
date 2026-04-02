@@ -232,6 +232,70 @@ kubectl get pods -n <namespace> -l app=keycloak
 
 ---
 
+### Cache Isolation During Upgrades
+
+When running multiple Keycloak pods, all members must form a single Infinispan/JGroups cluster to share distributed caches (user sessions, action tokens, login flows in progress). If pods from two **different major versions** try to cluster together during a rolling upgrade, they may encounter serialization incompatibilities in the JGroups protocol, causing subtle split-brain issues.
+
+The `cacheIsolation` feature solves this by restricting which pods can join the same JGroups cluster using a Kubernetes label selector on the headless discovery service.
+
+#### Recommended: `autoRevision: true` for semver images
+
+If you tag your Keycloak image with a proper semver version (e.g., `quay.io/keycloak/keycloak:26.4.1`), enable automatic revision-based isolation:
+
+```yaml
+# keycloak-values.yaml
+keycloak:
+  image: quay.io/keycloak/keycloak:26.4.1
+  cacheIsolation:
+    autoRevision: true
+```
+
+The operator derives the cluster identity from the **major version** only (`v26`), so patch and minor upgrades (e.g., `26.4.1` → `26.5.0`) remain in the same cluster. A major upgrade (e.g., `26.x` → `27.x`) automatically creates a new isolated cluster.
+
+**Pod label set by the operator:**
+
+```
+vriesdemichael.github.io/cache-cluster: <name>-v26
+```
+
+The discovery service selector is updated to match the current major version on every reconcile loop, so stale selectors after upgrades are corrected automatically.
+
+#### Alternative: `clusterName` for non-semver or custom names
+
+If you use non-semver tags (e.g., `:nightly`, `:latest`, or custom CI builds), use an explicit cluster name:
+
+```yaml
+keycloak:
+  cacheIsolation:
+    clusterName: my-keycloak-prod
+```
+
+!!! warning "`:latest` and `autoRevision`"
+    If `autoRevision: true` is set but the image tag is non-semver (`:latest`, `:nightly`, SHA digest), the operator **cannot determine a major version**. It will log a warning and disable cache isolation for that instance. You must use `clusterName` or a semver-tagged image in this case.
+
+#### What is isolated — and what survives an upgrade
+
+| Data | Survives upgrade? | Why |
+|------|-------------------|-----|
+| User sessions | ✅ Yes | Stored in the database |
+| Realm & client config | ✅ Yes | Stored in the database |
+| Offline tokens | ✅ Yes | Stored in the database |
+| In-progress login flows (action tokens) | ⚠️ Lost during upgrade window | Stored in Infinispan only |
+| Active SSO sessions (not yet flushed) | ⚠️ May be lost | Flushed periodically to DB |
+
+Users mid-flow during the rolling upgrade window (typically seconds to a few minutes) may need to restart the flow. This is the same behaviour as any rolling pod restart.
+
+#### Priority of `cacheIsolation` options
+
+If multiple fields are set, the operator applies this resolution order (highest priority first):
+
+1. `clusterName` — explicit static name, always wins
+2. `autoRevision` — derives `<name>-v<major>` from image tag
+3. `autoSuffix` — appends the full image tag as-is
+4. No isolation — pods join Keycloak's default cluster
+
+---
+
 ## Comparison with Official Keycloak Operator
 
 ### Overview

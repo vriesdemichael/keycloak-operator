@@ -497,7 +497,7 @@ spec:
               cacheIsolation:
                 type: object
                 description: >-
-                  JGroups cache isolation configuration for blue-green upgrades (ADR-088).
+                  JGroups cache isolation configuration for blue-green upgrades (ADR-088, ADR-090).
                   Ensures old and new Keycloak versions form separate clusters
                   by using distinct JGroups cluster names and discovery service selectors.
                 properties:
@@ -507,6 +507,15 @@ spec:
                       Explicit JGroups cluster name. When set, the discovery service
                       selector is scoped to pods with this cluster label, preventing
                       cross-version cache poisoning during blue-green upgrades.
+                  autoRevision:
+                    type: boolean
+                    description: >-
+                      Derive the cluster name from the image major version only
+                      (e.g. 'my-kc-v26'). Stable across patch upgrades — the cluster
+                      name stays the same for 26.0.0 → 26.0.1. Requires a semver
+                      image tag; non-semver tags disable isolation and emit a warning.
+                      Takes priority over autoSuffix. Overridden by explicit clusterName.
+                    default: false
                   autoSuffix:
                     type: boolean
                     description: >-

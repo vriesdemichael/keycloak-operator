@@ -1370,3 +1370,316 @@ class TestMaintenanceModeAnnotationRemoval:
         ]
         # re.escape escapes the dot: v1\.0
         assert r"v1\.0" in snippet
+
+
+class TestExtractMajorVersion:
+    """Tests for _extract_major_version() (ADR-090)."""
+
+    def test_standard_semver(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak:26.0.0") == 26
+
+    def test_minor_only(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak:26.1") == 26
+
+    def test_major_only(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak:26") == 26
+
+    def test_latest_returns_none(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak:latest") is None
+
+    def test_nightly_returns_none(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak:nightly") is None
+
+    def test_no_tag_returns_none(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak") is None
+
+    def test_digest_only_returns_none(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak@sha256:abc123") is None
+
+    def test_semver_with_suffix(self):
+        """Tags like 26.0.0-redhat-1 still yield major 26."""
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak:26.0.0-redhat-1") == 26
+
+    def test_registry_with_port(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("registry:5000/keycloak/keycloak:26.0.0") == 26
+
+    def test_different_major(self):
+        from keycloak_operator.utils.kubernetes import _extract_major_version
+
+        assert _extract_major_version("quay.io/keycloak/keycloak:25.0.6") == 25
+
+
+class TestAutoRevisionCacheIsolationModel:
+    """Tests for CacheIsolation.auto_revision field (ADR-090)."""
+
+    def test_auto_revision_defaults_false(self):
+        ci = CacheIsolation()
+        assert ci.auto_revision is False
+
+    def test_auto_revision_set_true(self):
+        ci = CacheIsolation(auto_revision=True)
+        assert ci.auto_revision is True
+
+    def test_camelcase_alias(self):
+        ci = CacheIsolation.model_validate({"autoRevision": True})
+        assert ci.auto_revision is True
+
+    def test_auto_revision_and_auto_suffix_independent(self):
+        ci = CacheIsolation(auto_revision=True, auto_suffix=True)
+        assert ci.auto_revision is True
+        assert ci.auto_suffix is True
+
+
+class TestResolveCacheClusterNameAutoRevision:
+    """Tests for _resolve_cache_cluster_name with auto_revision (ADR-090)."""
+
+    def test_auto_revision_semver(self):
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.0",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        assert _resolve_cache_cluster_name("my-kc", spec) == "my-kc-v26"
+
+    def test_auto_revision_patch_upgrade_stable(self):
+        """26.0.0 and 26.0.1 both produce the same cluster name."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec_a = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.0",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        spec_b = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.1",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        assert _resolve_cache_cluster_name("kc", spec_a) == _resolve_cache_cluster_name(
+            "kc", spec_b
+        )
+
+    def test_auto_revision_major_upgrade_splits(self):
+        """25.x and 26.x produce different cluster names."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec_25 = _spec_with_db(
+            image="quay.io/keycloak/keycloak:25.0.6",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        spec_26 = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.0",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        assert _resolve_cache_cluster_name(
+            "kc", spec_25
+        ) != _resolve_cache_cluster_name("kc", spec_26)
+
+    def test_auto_revision_non_semver_returns_none(self):
+        """Non-semver tag disables isolation and returns None."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:latest",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        assert _resolve_cache_cluster_name("kc", spec) is None
+
+    def test_auto_revision_non_semver_logs_warning(self):
+        """Non-semver tag triggers a logger.warning call."""
+        import logging
+        from unittest.mock import MagicMock
+
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        mock_logger = MagicMock(spec=logging.Logger)
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:latest",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        result = _resolve_cache_cluster_name("kc", spec, logger=mock_logger)
+        assert result is None
+        mock_logger.warning.assert_called_once()
+        warning_msg = mock_logger.warning.call_args[0][0]
+        assert "autoRevision" in warning_msg
+        assert "semver" in warning_msg
+
+    def test_auto_revision_no_logger_is_safe(self):
+        """Non-semver tag with no logger passed does not raise."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:latest",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        result = _resolve_cache_cluster_name("kc", spec, logger=None)
+        assert result is None
+
+    def test_auto_revision_overrides_auto_suffix(self):
+        """auto_revision takes priority over auto_suffix."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.0",
+            cache_isolation=CacheIsolation(auto_revision=True, auto_suffix=True),
+        )
+        result = _resolve_cache_cluster_name("kc", spec)
+        assert result == "kc-v26"
+
+    def test_cluster_name_overrides_auto_revision(self):
+        """Explicit cluster_name overrides auto_revision."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.0",
+            cache_isolation=CacheIsolation(cluster_name="explicit", auto_revision=True),
+        )
+        assert _resolve_cache_cluster_name("kc", spec) == "explicit"
+
+    def test_auto_revision_digest_returns_none(self):
+        """Digest-only reference has no parseable major version."""
+        from keycloak_operator.utils.kubernetes import _resolve_cache_cluster_name
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak@sha256:abc123",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+        assert _resolve_cache_cluster_name("kc", spec) is None
+
+
+class TestDiscoveryServiceSelectorReconciliation:
+    """Tests for ensure_discovery_service patching stale selectors (ADR-090)."""
+
+    @pytest.mark.asyncio
+    async def test_selector_patched_when_cluster_name_changes(self):
+        """When the existing selector has a stale cluster label, it is patched."""
+        from unittest.mock import MagicMock, patch
+
+        from keycloak_operator.services.keycloak_reconciler import (
+            KeycloakInstanceReconciler,
+        )
+
+        mock_core_api = MagicMock()
+
+        existing_service = MagicMock()
+        existing_service.spec.selector = {
+            "app": "keycloak",
+            "vriesdemichael.github.io/keycloak-instance": "my-kc",
+            "vriesdemichael.github.io/cache-cluster": "my-kc-v25",
+        }
+        existing_service.metadata.labels = {
+            "vriesdemichael.github.io/cache-cluster": "my-kc-v25"
+        }
+        mock_core_api.read_namespaced_service.return_value = existing_service
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.0",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+
+        reconciler = MagicMock(spec=KeycloakInstanceReconciler)
+        reconciler.kubernetes_client = MagicMock()
+        reconciler.logger = MagicMock()
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            await KeycloakInstanceReconciler.ensure_discovery_service(
+                reconciler, "my-kc", "ns", spec
+            )
+
+        mock_core_api.patch_namespaced_service.assert_called_once()
+        patch_body = mock_core_api.patch_namespaced_service.call_args[1]["body"]
+        assert (
+            patch_body["spec"]["selector"]["vriesdemichael.github.io/cache-cluster"]
+            == "my-kc-v26"
+        )
+
+    @pytest.mark.asyncio
+    async def test_no_patch_when_selector_is_current(self):
+        """When selector already has the correct label, no patch is made."""
+        from unittest.mock import MagicMock, patch
+
+        from keycloak_operator.services.keycloak_reconciler import (
+            KeycloakInstanceReconciler,
+        )
+
+        mock_core_api = MagicMock()
+
+        existing_service = MagicMock()
+        existing_service.spec.selector = {
+            "app": "keycloak",
+            "vriesdemichael.github.io/cache-cluster": "my-kc-v26",
+        }
+        existing_service.metadata.labels = {}
+        mock_core_api.read_namespaced_service.return_value = existing_service
+
+        spec = _spec_with_db(
+            image="quay.io/keycloak/keycloak:26.0.1",
+            cache_isolation=CacheIsolation(auto_revision=True),
+        )
+
+        reconciler = MagicMock(spec=KeycloakInstanceReconciler)
+        reconciler.kubernetes_client = MagicMock()
+        reconciler.logger = MagicMock()
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            await KeycloakInstanceReconciler.ensure_discovery_service(
+                reconciler, "my-kc", "ns", spec
+            )
+
+        mock_core_api.patch_namespaced_service.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_selector_label_removed_when_isolation_disabled(self):
+        """When cache isolation is removed from spec, stale label is patched out."""
+        from unittest.mock import MagicMock, patch
+
+        from keycloak_operator.services.keycloak_reconciler import (
+            KeycloakInstanceReconciler,
+        )
+
+        mock_core_api = MagicMock()
+
+        existing_service = MagicMock()
+        existing_service.spec.selector = {
+            "app": "keycloak",
+            "vriesdemichael.github.io/cache-cluster": "my-kc-v26",
+        }
+        existing_service.metadata.labels = {
+            "vriesdemichael.github.io/cache-cluster": "my-kc-v26"
+        }
+        mock_core_api.read_namespaced_service.return_value = existing_service
+
+        spec = _spec_with_db()
+
+        reconciler = MagicMock(spec=KeycloakInstanceReconciler)
+        reconciler.kubernetes_client = MagicMock()
+        reconciler.logger = MagicMock()
+
+        with patch("kubernetes.client.CoreV1Api", return_value=mock_core_api):
+            await KeycloakInstanceReconciler.ensure_discovery_service(
+                reconciler, "my-kc", "ns", spec
+            )
+
+        mock_core_api.patch_namespaced_service.assert_called_once()
+        patch_body = mock_core_api.patch_namespaced_service.call_args[1]["body"]
+        assert (
+            "vriesdemichael.github.io/cache-cluster"
+            not in patch_body["spec"]["selector"]
+        )

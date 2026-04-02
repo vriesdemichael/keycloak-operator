@@ -671,15 +671,45 @@ def _extract_image_tag(image: str) -> str:
     return "latest"
 
 
-def _resolve_cache_cluster_name(name: str, spec: KeycloakSpec | None) -> str | None:
+def _extract_major_version(image: str) -> int | None:
+    """Extract the major version number from a container image tag.
+
+    Returns the integer major version when the tag is a semver string
+    (e.g. ``26.0.0`` → ``26``, ``26.1`` → ``26``).  Returns ``None`` for
+    non-semver tags such as ``:latest``, ``:nightly``, or digest-only
+    references — the caller is responsible for handling the fallback.
+
+    Examples::
+
+        _extract_major_version("quay.io/keycloak/keycloak:26.0.0") → 26
+        _extract_major_version("quay.io/keycloak/keycloak:26.1")   → 26
+        _extract_major_version("quay.io/keycloak/keycloak:latest") → None
+        _extract_major_version("quay.io/keycloak/keycloak")        → None
+        _extract_major_version("quay.io/keycloak/keycloak@sha256:abc") → None
     """
-    Resolve the effective JGroups cache cluster name from the spec (ADR-088).
+    import re as _re
+
+    tag = _extract_image_tag(image)
+    # Accept tags like "26", "26.0", "26.0.0", "26.0.0-redhat-1"
+    m = _re.match(r"^(\d+)(?:[.\-].*)?$", tag)
+    if m is None:
+        return None
+    return int(m.group(1))
+
+
+def _resolve_cache_cluster_name(
+    name: str, spec: KeycloakSpec | None, logger: logging.Logger | None = None
+) -> str | None:
+    """
+    Resolve the effective JGroups cache cluster name from the spec (ADR-088, ADR-090).
 
     Resolution order:
     1. Explicit ``cache_isolation.cluster_name`` takes priority.
-    2. ``cache_isolation.auto_suffix=True`` appends the image tag (version)
-       to the Keycloak instance name.
-    3. Otherwise returns None (no cache isolation).
+    2. ``cache_isolation.auto_revision=True`` appends only the major version
+       (e.g. ``my-kc-v26``), stable across patch upgrades.  Requires a
+       semver image tag; logs a warning and returns ``None`` for non-semver tags.
+    3. ``cache_isolation.auto_suffix=True`` appends the full image tag (legacy).
+    4. Otherwise returns None (no cache isolation).
 
     The returned value is guaranteed to be a valid Kubernetes label value
     (<=63 chars, alphanumeric boundaries).
@@ -687,6 +717,7 @@ def _resolve_cache_cluster_name(name: str, spec: KeycloakSpec | None) -> str | N
     Args:
         name: Keycloak instance name (used as base for auto-suffix)
         spec: Keycloak specification (may be None)
+        logger: Optional logger for emitting warnings on non-semver tags
 
     Returns:
         Cluster name string, or None when cache isolation is not configured.
@@ -699,9 +730,24 @@ def _resolve_cache_cluster_name(name: str, spec: KeycloakSpec | None) -> str | N
     if ci.cluster_name:
         return ci.cluster_name
 
+    image = spec.image or DEFAULT_KEYCLOAK_IMAGE
+
+    if ci.auto_revision:
+        major = _extract_major_version(image)
+        if major is None:
+            if logger:
+                logger.warning(
+                    f"autoRevision requires a semver image tag; "
+                    f"image '{image}' has no parseable major version. "
+                    f"Cache isolation is disabled. "
+                    f"Use an explicit clusterName for non-semver tags."
+                )
+            return None
+        raw = f"{name}-v{major}"
+        return _normalize_k8s_label_value(raw)
+
     if ci.auto_suffix:
         # Derive version suffix from image tag
-        image = spec.image or DEFAULT_KEYCLOAK_IMAGE
         tag = _extract_image_tag(image)
         raw = f"{name}-{tag}"
         return _normalize_k8s_label_value(raw)

@@ -1053,13 +1053,17 @@ class KeycloakInstanceReconciler(BaseReconciler):
         self, name: str, namespace: str, spec: KeycloakSpec | None = None
     ) -> None:
         """
-        Ensure headless discovery service exists for JGroups clustering.
+        Ensure headless discovery service exists and its selector is up to date.
 
         This headless service enables Keycloak replicas to discover each other
         via DNS_PING for proper session replication and cache synchronization.
 
-        When cache isolation is configured (ADR-088), the spec is passed through
-        to add cache cluster labels on the discovery service selector.
+        When cache isolation is configured (ADR-088, ADR-090), the service
+        selector includes the cache-cluster label so only pods with the same
+        cluster name can discover each other.  On every reconcile the selector
+        is compared to the desired cluster name and patched when they diverge —
+        this covers the case where ``autoRevision`` or ``autoSuffix`` produces a
+        different name after a version change.
 
         Args:
             name: Resource name
@@ -1070,18 +1074,58 @@ class KeycloakInstanceReconciler(BaseReconciler):
         from kubernetes import client
         from kubernetes.client.rest import ApiException
 
-        from ..utils.kubernetes import create_keycloak_discovery_service
+        from ..constants import CACHE_CLUSTER_LABEL
+        from ..utils.kubernetes import (
+            _resolve_cache_cluster_name,
+            create_keycloak_discovery_service,
+        )
 
         discovery_service_name = f"{name}-discovery"
         core_api = client.CoreV1Api(self.kubernetes_client)
 
+        desired_cluster = _resolve_cache_cluster_name(name, spec, self.logger)
+
         try:
-            core_api.read_namespaced_service(
+            existing = core_api.read_namespaced_service(
                 name=discovery_service_name, namespace=namespace
             )
-            self.logger.info(
-                f"Keycloak discovery service {discovery_service_name} already exists"
-            )
+            # Service exists — check whether the cache-cluster selector label needs updating
+            current_selector = existing.spec.selector or {}
+            current_cluster = current_selector.get(CACHE_CLUSTER_LABEL)
+
+            if current_cluster != desired_cluster:
+                # Build the updated selector: start from existing, add/remove the label
+                new_selector = {
+                    k: v
+                    for k, v in current_selector.items()
+                    if k != CACHE_CLUSTER_LABEL
+                }
+                new_labels = {
+                    k: v
+                    for k, v in (existing.metadata.labels or {}).items()
+                    if k != CACHE_CLUSTER_LABEL
+                }
+                if desired_cluster is not None:
+                    new_selector[CACHE_CLUSTER_LABEL] = desired_cluster
+                    new_labels[CACHE_CLUSTER_LABEL] = desired_cluster
+
+                patch_body = {
+                    "metadata": {"labels": new_labels},
+                    "spec": {"selector": new_selector},
+                }
+                core_api.patch_namespaced_service(
+                    name=discovery_service_name,
+                    namespace=namespace,
+                    body=patch_body,
+                )
+                self.logger.info(
+                    f"Patched discovery service {discovery_service_name} "
+                    f"selector: {current_cluster!r} → {desired_cluster!r}"
+                )
+            else:
+                self.logger.info(
+                    f"Keycloak discovery service {discovery_service_name} already exists and selector is current"
+                )
         except ApiException as e:
             if e.status == 404:
                 try:
