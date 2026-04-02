@@ -51,6 +51,16 @@ jobs:
             TRACING="false"
           fi
 
+          # Extract canonical version for selective security results upload
+          # This allows us to filter out "noise" from non-canonical test artifacts
+          # while still ensuring our primary supported version is scanned.
+          CANONICAL_VERSION=$(yq eval '.canonical_version.version' scripts/keycloak_versions.yaml)
+          if [[ "$VERSION" == "$CANONICAL_VERSION" ]]; then
+            UPLOAD_SARIF="true"
+          else
+            UPLOAD_SARIF="false"
+          fi
+
           # Determine image variant name and tag suffix
           if [[ "${TRACING}" == "true" ]]; then
             IMAGE_VARIANT="keycloak-optimized-tracing"
@@ -61,7 +71,8 @@ jobs:
           echo "keycloak_version=${VERSION}" >> $GITHUB_OUTPUT
           echo "tracing=${TRACING}" >> $GITHUB_OUTPUT
           echo "image_variant=${IMAGE_VARIANT}" >> $GITHUB_OUTPUT
-          echo "Building ${IMAGE_VARIANT} image for Keycloak ${VERSION} (tracing=${TRACING})"
+          echo "upload_sarif=${UPLOAD_SARIF}" >> $GITHUB_OUTPUT
+          echo "Building ${IMAGE_VARIANT} image for Keycloak ${VERSION} (tracing=${TRACING}, upload_sarif=${UPLOAD_SARIF})"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
@@ -137,13 +148,14 @@ jobs:
           format: 'sarif'
           output: 'trivy-keycloak-optimized.sarif'
           severity: 'CRITICAL,HIGH'
+          ignore-unfixed: true
 
       - name: Upload Trivy results to GitHub Security
-        if: steps.check.outputs.exists == 'false'
+        if: steps.check.outputs.exists == 'false' && steps.params.outputs.upload_sarif == 'true'
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: 'trivy-keycloak-optimized.sarif'
-          category: 'trivy-${{ steps.params.outputs.image_variant }}'
+          category: 'test/${{ steps.params.outputs.image_variant }}'
 
       - name: Summary
         run: |

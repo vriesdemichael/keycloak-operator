@@ -76,7 +76,7 @@ runs:
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
-        category: 'trivy-test-image'
+        category: 'main/operator'
 
     # SBOM generation
     - name: Generate SBOM
