@@ -670,7 +670,8 @@ class MaintenanceMode(BaseModel):
     mode: str = Field(
         "full-block",
         description=(
-            "Maintenance mode type: 'read-only' allows GET/HEAD/OPTIONS, "
+            "Maintenance mode type: 'read-only' blocks mutating admin/account "
+            "paths while keeping authentication/token flows available; "
             "'full-block' returns 503 for all requests."
         ),
     )
@@ -683,6 +684,21 @@ class MaintenanceMode(BaseModel):
         ],
         alias="excludePaths",
         description="Paths excluded from maintenance mode (always accessible)",
+    )
+    blocked_paths: list[str] = Field(
+        default_factory=lambda: [
+            "/admin",
+            "/realms/[^/]+/account",
+            "/realms/[^/]+/login-actions/registration",
+            "/realms/[^/]+/broker",
+        ],
+        alias="blockedPaths",
+        description=(
+            "Paths blocked in 'read-only' mode (any HTTP method). "
+            "Supports nginx regex. Defaults target admin console, user account, "
+            "sign-up, and IdP-linking routes while leaving authentication/token "
+            "flows unaffected. Has no effect in 'full-block' mode."
+        ),
     )
 
     @field_validator("mode")

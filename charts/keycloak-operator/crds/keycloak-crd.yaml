@@ -462,7 +462,8 @@ spec:
                   mode:
                     type: string
                     description: >-
-                      Maintenance mode type: read-only allows GET/HEAD/OPTIONS,
+                      Maintenance mode type: read-only blocks mutating admin/account
+                      paths while keeping authentication and token flows available;
                       full-block returns 503 for all requests.
                     enum:
                     - read-only
@@ -478,6 +479,21 @@ spec:
                     - /health/live
                     - /health/ready
                     - /health/started
+                  blockedPaths:
+                    type: array
+                    description: >-
+                      Paths blocked in read-only mode (any HTTP method). Supports nginx regex.
+                      Defaults target admin console, user account self-service,
+                      new user registration, and IdP-linking routes.
+                      Authentication and token endpoints are not blocked by default.
+                      Has no effect in full-block mode.
+                    items:
+                      type: string
+                    default:
+                    - /admin
+                    - /realms/[^/]+/account
+                    - /realms/[^/]+/login-actions/registration
+                    - /realms/[^/]+/broker
               cacheIsolation:
                 type: object
                 description: >-

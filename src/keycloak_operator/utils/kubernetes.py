@@ -1094,8 +1094,15 @@ def build_maintenance_mode_annotations(spec: KeycloakSpec) -> dict[str, str]:
     Build nginx ingress annotations for maintenance mode (ADR-088).
 
     When maintenance mode is enabled, the ingress is annotated to return
-    503 Service Unavailable (full-block) or to reject mutating HTTP methods
-    (read-only), while always allowing health-check paths through.
+    503 Service Unavailable for blocked paths, while always allowing
+    health-check paths through.
+
+    **full-block**: All requests except excluded paths return 503.
+
+    **read-only**: Requests matching ``blockedPaths`` return 503 regardless
+    of HTTP method. Authentication and token endpoints (``/realms/.../protocol``)
+    are NOT in the default block list and remain fully available, so existing
+    sessions and SSO flows are unaffected during an upgrade window.
 
     Args:
         spec: Keycloak specification containing maintenance_mode config
@@ -1130,11 +1137,17 @@ def build_maintenance_mode_annotations(spec: KeycloakSpec) -> dict[str, str]:
         snippet = f"""{exclude_block}
     return 503;"""
     else:
-        # read-only: block mutating methods, allow GET/HEAD/OPTIONS
-        snippet = f"""{exclude_block}
-    if ($request_method !~ ^(GET|HEAD|OPTIONS)$) {{
+        # read-only: block specific admin/mutation paths, keep auth/token flows alive.
+        # Method-based blocking (POST/PUT/DELETE) is intentionally avoided because
+        # OAuth2 token endpoints use POST — blocking all POSTs breaks authentication.
+        block_lines = ""
+        if mm.blocked_paths:
+            for path in mm.blocked_paths:
+                block_lines += f"""
+    if ($request_uri ~* "^{path}") {{
         return 503;
     }}"""
+        snippet = f"""{exclude_block}{block_lines}"""
 
     annotations[MAINTENANCE_MODE_SNIPPET_ANNOTATION] = snippet.strip()
     return annotations
