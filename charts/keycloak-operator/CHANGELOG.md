@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.6.6...chart-operator-v0.6.7) (2026-04-02)
+
+
+### Features
+
+* **chart-operator+operator:** fix read-only maintenance mode with path-targeted blocking, add ADR-089 ([4dcefb6](https://github.com/vriesdemichael/keycloak-operator/commit/4dcefb6d1d6bc202d9bfa62707a7e337a1f6a7c7)), closes [#674](https://github.com/vriesdemichael/keycloak-operator/issues/674)
+
 ## [0.6.6](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.6.5...chart-operator-v0.6.6) (2026-04-02)
 
 
