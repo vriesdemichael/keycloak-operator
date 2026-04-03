@@ -401,6 +401,10 @@
          <lastmod>2026-04-03</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/090-revision-oriented-cache-isolation/</loc>
+         <lastmod>2026-04-03</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/testing/</loc>
          <lastmod>2026-04-03</lastmod>
     </url>
