@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.6...operator-image-v0.9.7) (2026-04-03)
+
+
+### Features
+
+* **operator:** implement blue-green upgrade orchestration (ADR-092) ([f7b7f0b](https://github.com/vriesdemichael/keycloak-operator/commit/f7b7f0b6d05702f1e714c1ab5cb994434ba6f45a))
+
+
+### Bug Fixes
+
+* **operator:** address review comments for blue-green upgrade (ADR-092) ([bc09d46](https://github.com/vriesdemichael/keycloak-operator/commit/bc09d46a4e631993cf929cad6529e34abb02d7e9))
+
 ## [0.9.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.5...operator-image-v0.9.6) (2026-04-03)
 
 
