@@ -534,8 +534,8 @@ keycloak:
     # Stable across patch upgrades; requires a semver image tag.
     # Takes priority over autoSuffix when both are set.
     autoRevision: false
-  # Pre-upgrade backup and upgrade strategy configuration (ADR-088 Phase 2)
-  # Controls automated backup behavior before Keycloak version upgrades.
+  # Pre-upgrade backup and upgrade strategy configuration (ADR-088)
+  # Controls automated backup behavior and upgrade orchestration strategy.
   # When present, the admission webhook enforces semantic version image tags.
   # Set to a map (e.g. upgradePolicy: {}) to opt in; leave null to disable.
   upgradePolicy: null
@@ -544,6 +544,11 @@ keycloak:
   #   # Applies to CNPG and VolumeSnapshot backups only
   #   # Range: 60-3600 seconds (1 minute to 1 hour)
   #   backupTimeout: 600
+  #   # Upgrade strategy: Recreate (default, brief downtime) or BlueGreen (zero downtime)
+  #   # BlueGreen requires CNPG or managed database tier (ADR-092)
+  #   strategy: Recreate
+  #   # BlueGreen only: automatically delete the blue (old) deployment after cutover
+  #   autoTeardown: true
   # Ingress configuration (used when managed: true)
   ingress:
     enabled: false

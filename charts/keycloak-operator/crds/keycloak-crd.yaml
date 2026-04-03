@@ -525,7 +525,7 @@ spec:
               upgradePolicy:
                 type: object
                 description: >-
-                  Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 2).
+                  Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 3).
                   Controls pre-upgrade backup behavior and upgrade strategy.
                   When present, the admission webhook also enforces semantic version image tags.
                 properties:
@@ -537,6 +537,25 @@ spec:
                     default: 600
                     minimum: 60
                     maximum: 3600
+                  strategy:
+                    type: string
+                    description: >-
+                      Upgrade strategy when a major or minor version bump is detected.
+                      Recreate (default): update the deployment in-place with brief downtime.
+                      BlueGreen: provision a parallel green deployment and cut over the
+                      Service selector atomically for zero-downtime upgrades (ADR-092).
+                      BlueGreen requires CNPG or managed database tier.
+                    enum:
+                    - Recreate
+                    - BlueGreen
+                    default: Recreate
+                  autoTeardown:
+                    type: boolean
+                    description: >-
+                      When strategy is BlueGreen, automatically delete the blue (previous)
+                      deployment after a successful Service cutover. Set to false to retain
+                      the blue deployment for manual verification. Default true.
+                    default: true
               operatorRef:
                 type: object
                 description: Reference to the operator instance managing this resource (ADR-062)
@@ -565,6 +584,7 @@ spec:
                 - Paused
                 - BackingUp
                 - WaitingForBackupConfirmation
+                - UpgradingBlueGreen
               message:
                 type: string
                 description: Human-readable status message
@@ -659,6 +679,47 @@ spec:
                 type: string
                 format: date-time
                 description: Timestamp of the last pre-upgrade backup
+              blueGreen:
+                type: object
+                description: >-
+                  In-progress blue-green upgrade state (ADR-092). Present while an upgrade
+                  is being orchestrated; cleared after Completed or Failed.
+                properties:
+                  state:
+                    type: string
+                    description: Current state of the blue-green state machine
+                    enum:
+                    - Idle
+                    - BackingUp
+                    - ProvisioningGreen
+                    - WaitingForGreen
+                    - CuttingOver
+                    - TearingDownBlue
+                    - Completed
+                    - Failed
+                  blueRevision:
+                    type: string
+                    description: Image tag of the currently active (blue) deployment
+                  greenRevision:
+                    type: string
+                    description: Image tag of the new (green) deployment being provisioned
+                  greenDeployment:
+                    type: string
+                    description: Name of the green Deployment resource
+                  greenDiscoveryService:
+                    type: string
+                    description: Name of the green headless discovery Service resource
+                  message:
+                    type: string
+                    description: Human-readable description of the current state
+                  startedAt:
+                    type: string
+                    format: date-time
+                    description: ISO-8601 timestamp when the upgrade was initiated
+                  completedAt:
+                    type: string
+                    format: date-time
+                    description: ISO-8601 timestamp when the upgrade completed or failed
     additionalPrinterColumns:
     - name: Phase
       type: string
