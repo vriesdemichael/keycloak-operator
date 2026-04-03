@@ -1,0 +1,54 @@
+number: 87
+title: Operator-level reconciliation pause for safe maintenance windows
+category: architecture
+decision: >
+  Implement reconciliation pause as operator-level environment variables
+  (RECONCILE_PAUSE_KEYCLOAK, RECONCILE_PAUSE_REALMS, RECONCILE_PAUSE_CLIENTS)
+  that halt create/resume/update reconciliation per CR type. Delete handlers
+  always proceed regardless of pause state. Paused resources transition to a
+  "Paused" phase with a ReconciliationPaused condition. A configurable
+  RECONCILE_PAUSE_MESSAGE environment variable allows operators to communicate
+  the reason. Configuration is exposed through Helm values at
+  operator.reconciliation.pause. Drift detection is skipped when both realms
+  and clients are paused. Secret rotation daemons sleep while clients are
+  paused. Health daemons skip resources in Paused phase.
+agent_instructions: >
+  When implementing new CR types or handlers, always check the pause state
+  before reconciliation using the helpers in utils/pause.py. The pattern is:
+  check pause after ownership verification but before jitter sleep, call
+  update_status_paused() on the reconciler, and return early. Delete handlers
+  must NEVER check pause state — deletions always proceed. Add "Paused" to the
+  CRD phase enum for any new CR type. Health daemons must include "Paused" in
+  their skip-phases tuple. When adding new daemon handlers (like secret
+  rotation), include a pause check in the daemon's main loop that sleeps and
+  continues. The annotation namespace is "reconcile-*" (not "force-reconcile").
+  Use the constant ANNOTATION_RECONCILE_FORCE from constants.py.
+rationale: >
+  During Keycloak upgrades or maintenance windows, reconciliation can interfere
+  with manual changes or cause errors against an unavailable API. CR-level
+  annotations were rejected because (a) external Keycloak instances have no
+  Keycloak CR to annotate, (b) pausing individual resources is pointless since
+  not updating a CR already prevents changes, and (c) the pause is an
+  operational concern about operator behavior, not resource state. Operator-level
+  env vars follow the existing configuration pattern (like RECONCILE_JITTER),
+  work naturally with Helm values, and require a pod restart which is acceptable
+  given active-standby HA with leader election. Three independent toggles per CR
+  type provide granularity without complexity.
+rejected_alternatives:
+  - alternative: "CR-level annotations for per-resource pause"
+    reason: >
+      Does not work for external Keycloak (no Keycloak CR to annotate).
+      Pausing individual realms or clients is pointless — if you do not want
+      changes, simply do not update the CR. The pause is an operational concern
+      about the operator, not about individual resources.
+  - alternative: "Single global pause toggle for all CR types"
+    reason: >
+      Insufficient granularity. Operators may want to pause realm/client
+      reconciliation during a Keycloak upgrade while keeping the Keycloak
+      instance health monitoring active, or vice versa.
+  - alternative: "Dynamic ConfigMap-based pause without restart"
+    reason: >
+      Adds complexity (ConfigMap watch, dynamic reload) with minimal benefit.
+      Rolling restart with leader election is safe and follows existing patterns
+      for operator configuration changes.
+provenance: guided-ai
