@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.10](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.6.9...chart-operator-v0.6.10) (2026-04-03)
+
+
+### Features
+
+* **operator:** implement blue-green upgrade orchestration (ADR-092) ([f7b7f0b](https://github.com/vriesdemichael/keycloak-operator/commit/f7b7f0b6d05702f1e714c1ab5cb994434ba6f45a))
+
 ## [0.6.9](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.6.8...chart-operator-v0.6.9) (2026-04-03)
 
 
