@@ -33,7 +33,7 @@ async def test_monitor_client_secrets_deleted():
         mock_api_cls.return_value = mock_api
 
         # Execute
-        await monitor_client_secrets(event, logger)
+        await monitor_client_secrets(event=event, logger=logger)
 
         # Verify
         # Should call patch_namespaced_custom_object
@@ -87,7 +87,7 @@ async def test_monitor_client_secrets_ignored():
     with patch(
         "keycloak_operator.handlers.client.get_kubernetes_client"
     ) as mock_get_client:
-        await monitor_client_secrets(event, logger)
+        await monitor_client_secrets(event=event, logger=logger)
         assert not mock_get_client.called
 
     # Setup - Missing label
@@ -98,5 +98,5 @@ async def test_monitor_client_secrets_ignored():
     with patch(
         "keycloak_operator.handlers.client.get_kubernetes_client"
     ) as mock_get_client:
-        await monitor_client_secrets(event, logger)
+        await monitor_client_secrets(event=event, logger=logger)
         assert not mock_get_client.called
