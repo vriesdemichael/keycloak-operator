@@ -35,7 +35,9 @@ agent_instructions: >
   VolumeSnapshot for Tier 2, warn-and-proceed for Tier 3 (external and
   flat-field configs, which are out of scope for operator-managed backups).
   The spec.upgradePolicy section controls upgrade behavior including
-  backupTimeout. Semver image tag enforcement is conditional on
+  backupTimeout, strategy (Recreate or BlueGreen), and autoTeardown.
+  See ADR-092 for the full blue-green state machine design.
+  Semver image tag enforcement is conditional on
   upgradePolicy being present — without it, non-semver tags like
   :latest are accepted. Ingress maintenance mode
   can be toggled via spec.maintenanceMode to block or limit traffic during

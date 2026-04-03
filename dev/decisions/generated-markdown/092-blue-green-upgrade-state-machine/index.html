@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/067-integration-test-coverage-via-sigusr1/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/092-blue-green-upgrade-state-machine/">
       
       
-        <link rel="prev" href="../066-centralized-settings-with-pydantic/">
+        <link rel="prev" href="../091-legacy-flat-db-config-normalized-to-external-tier/">
       
       
-        <link rel="next" href="../068-always-recreate-test-cluster/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-067: Integration test coverage collection via SIGUSR1 signal - Keycloak Operator</title>
+        <title>ADR-092: Blue-green upgrade state machine for zero-downtime Keycloak upgrades - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-067-integration-test-coverage-collection-via-sigusr1-signal" class="md-skip">
+        <a href="#adr-092-blue-green-upgrade-state-machine-for-zero-downtime-keycloak-upgrades" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-067: Integration test coverage collection via SIGUSR1 signal
+              ADR-092: Blue-green upgrade state machine for zero-downtime Keycloak upgrades
             
           </span>
         </div>
@@ -3583,37 +3583,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-067: Integration test coverage collection via SIGUSR1 signal
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../067-integration-test-coverage-via-sigusr1/" class="md-nav__link">
         
   
   
@@ -3629,59 +3602,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4363,10 +4283,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../092-blue-green-upgrade-state-machine/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-092: Blue-green upgrade state machine for zero-downtime Keycloak upgrades
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4382,6 +4329,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#block-event-loop-during-waitingforgreen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block event loop during WaitingForGreen
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#store-state-in-a-configmap-rather-than-cr-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store state in a ConfigMap rather than CR status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#random-hash-suffix-for-green-resource-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Random hash suffix for green resource names
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4480,6 +4530,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#block-event-loop-during-waitingforgreen" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Block event loop during WaitingForGreen
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#store-state-in-a-configmap-rather-than-cr-status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Store state in a ConfigMap rather than CR status
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#random-hash-suffix-for-green-resource-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Random hash suffix for green resource names
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4497,7 +4597,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/067-integration-test-coverage-via-sigusr1.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/092-blue-green-upgrade-state-machine.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4505,15 +4605,36 @@
   
 
 
-<h1 id="adr-067-integration-test-coverage-collection-via-sigusr1-signal">ADR-067: Integration test coverage collection via SIGUSR1 signal<a class="headerlink" href="#adr-067-integration-test-coverage-collection-via-sigusr1-signal" title="Permanent link">&para;</a></h1>
-<p><strong>Category:</strong> development
+<h1 id="adr-092-blue-green-upgrade-state-machine-for-zero-downtime-keycloak-upgrades">ADR-092: Blue-green upgrade state machine for zero-downtime Keycloak upgrades<a class="headerlink" href="#adr-092-blue-green-upgrade-state-machine-for-zero-downtime-keycloak-upgrades" title="Permanent link">&para;</a></h1>
+<p><strong>Category:</strong> architecture
 <strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Coverage data from integration tests running in Kubernetes pods must be collected using SIGUSR1 signal handling rather than relying on process termination. The operator registers a signal handler that flushes coverage data on demand, allowing retrieval while the process continues running.</p>
+<p>Implement a resumable state machine in BlueGreenUpgradeService that orchestrates zero-downtime Keycloak major/minor version upgrades by provisioning a parallel green deployment, polling until it becomes ready, atomically patching the Service selector (cutover), and optionally deleting the blue deployment.  The state is persisted to status.blueGreen on every transition so the operator can resume after a restart without repeating completed steps.
+The feature is opt-in via spec.upgradePolicy.strategy: BlueGreen. It only supports CNPG and managed database tiers; external databases receive the existing warn-and-proceed behaviour and are not blocked.
+Naming convention: green deployment is {name}-green-keycloak and green discovery service is {name}-green-discovery.  After successful cutover and teardown the green resources are promoted (renamed) to the canonical names {name}-keycloak and {name}-discovery and the Service selector is restored to the original instance label.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>Kubernetes termination issues: When pods are deleted, atexit handlers often don't run or coverage data is lost before retrieval. Signal-based approach: SIGUSR1 allows explicit, controlled flushing while process continues running. Works with parallel tests: pytest-xdist's pytest_sessionfinish hook runs on controller node, ensuring single retrieval after all workers complete. Path differences: Host uses relative paths (src/keycloak_operator), container uses absolute paths (/app/src/keycloak_operator). Production safety: Signal handler only registers when COVERAGE_PROCESS_START env var is set, zero overhead in production. Combined coverage: Retrieval happens before cluster teardown, allowing combination of unit test and integration test coverage data. Current baseline: 54.5% combined coverage with integration tests contributing real operator execution paths.</p>
+<p>ADR-088 Phase 3 delivers the actual blue-green orchestration promised when Phases 1 (foundation) and 2 (pre-upgrade backup) were merged.  The key design choices addressed here:
+Resumable state machine: Keycloak takes 2-5 minutes to boot, and the operator pod may be restarted at any point.  Without persisted state, a restart during WaitingForGreen would re-provision the green deployment (wasteful) or worse, miss the cutover entirely.  Writing state to the CR status on every transition is the standard Kubernetes controller pattern for long-running operations.
+Quick-poll + TemporaryError: Blocking the event loop for 10 minutes inside run_upgrade would prevent all other reconciliations from proceeding.  Instead we do a short 10-second check and raise TemporaryError(delay=30) to let kopf retry.  Total wait time is the same but the event loop stays responsive.
+Naming convention: Using "{name}-green-keycloak" is deterministic — no random hashes — so GitOps tools (ArgoCD, Flux) do not see spurious resource churn between reconciliations.
+Promotion (rename) after cutover: Kubernetes does not support in-place resource rename.  The promotion step reads the green Deployment, creates a copy with the canonical name, and deletes the green-suffixed resource.  This keeps the CR status clean and ensures subsequent reconciliations work against the expected resource names.
+Managed-only: External databases cannot be snapshotted by the operator so the pre-upgrade backup step warns-and-proceeds.  Running the blue-green orchestration itself (provision, cutover, teardown) is safe regardless of DB tier — it only manages Kubernetes resources.
+autoTeardown default true: The expected production behaviour is that the blue deployment is deleted after a successful cutover to free resources.  Operators who want to keep the old version around for manual rollback can set autoTeardown: false.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When modifying integration test infrastructure, preserve the coverage collection mechanism. The operator listens for SIGUSR1 and calls coverage.save(). The pytest_sessionfinish hook in conftest.py triggers coverage retrieval by calling an internal script which sends SIGUSR1 to PID 1 in the operator pod, waits for flush, then retrieves files via kubectl cp. Never rely on atexit handlers for coverage in containerized tests - they're unreliable with Kubernetes pod termination. Coverage config differs between host (.coveragerc) and container (images/operator/coveragerc.container) due to different path structures.</p>
+<p>When working with blue-green upgrade logic, always check status.blueGreen.state to resume mid-upgrade rather than restarting from scratch.  State constants are defined in src/keycloak_operator/services/blue_green_service.py (STATE_IDLE, STATE_PROVISIONING_GREEN, STATE_WAITING_FOR_GREEN, STATE_CUTTING_OVER, STATE_TEARING_DOWN_BLUE, STATE_COMPLETED, STATE_FAILED).
+The state machine is driven by BlueGreenUpgradeService.run_upgrade() which is called from both do_update (image change detected) and do_reconcile (resume path).  do_reconcile checks status.blueGreen for a non-terminal state before doing the normal reconcile flow.
+Green resource naming: {name}-green-keycloak and {name}-green-discovery. After promotion they become {name}-keycloak and {name}-discovery.
+The WaitingForGreen step does a quick 10-second non-blocking poll and raises kopf.TemporaryError(delay=30) if the green deployment is not yet ready.  This lets the kopf retry loop manage the wait rather than blocking the event loop.
+autoTeardown (default true) is read from spec.upgradePolicy.auto_teardown. When false, the state machine stops at CuttingOver (skips TearingDownBlue) and goes directly to Completed.  The blue deployment remains for manual inspection.
+BlueGreen is only wired in do_update when an image change is detected AND spec.upgradePolicy.strategy == "BlueGreen".  The existing Recreate strategy path (normal _update_deployment call) is unchanged.
+When writing tests: mock BlueGreenUpgradeService.run_upgrade for unit tests of the reconciler integration; test the state machine steps directly in tests/unit/test_blue_green_service.py and end-to-end orchestration mechanics in tests/integration/test_blue_green_upgrade.py.</p>
+<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="block-event-loop-during-waitingforgreen">Block event loop during WaitingForGreen<a class="headerlink" href="#block-event-loop-during-waitingforgreen" title="Permanent link">&para;</a></h3>
+<p>Blocks all other reconciliations for up to 10 minutes.  Incompatible with the kopf single-event-loop architecture.</p>
+<h3 id="store-state-in-a-configmap-rather-than-cr-status">Store state in a ConfigMap rather than CR status<a class="headerlink" href="#store-state-in-a-configmap-rather-than-cr-status" title="Permanent link">&para;</a></h3>
+<p>Adds an extra Kubernetes resource that must be cleaned up.  CR status is the idiomatic place for operator-managed state and is automatically garbage collected with the CR.</p>
+<h3 id="random-hash-suffix-for-green-resource-names">Random hash suffix for green resource names<a class="headerlink" href="#random-hash-suffix-for-green-resource-names" title="Permanent link">&para;</a></h3>
+<p>Non-deterministic names cause ArgoCD sync loops and make it harder to inspect or debug an in-progress upgrade via kubectl.</p>
 
 
 
@@ -4549,7 +4670,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../066-centralized-settings-with-pydantic/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-066: Centralized settings management with pydantic-settings">
+          <a href="../091-legacy-flat-db-config-normalized-to-external-tier/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-091: Legacy flat-field database config normalized to external tier">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4559,20 +4680,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-066: Centralized settings management with pydantic-settings
+                ADR-091: Legacy flat-field database config normalized to external tier
               </div>
             </div>
           </a>
         
         
           
-          <a href="../068-always-recreate-test-cluster/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-068: Always recreate test cluster">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-068: Always recreate test cluster
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">

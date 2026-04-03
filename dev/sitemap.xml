@@ -409,6 +409,10 @@
          <lastmod>2026-04-03</lastmod>
     </url>
     <url>
+         <loc>https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/092-blue-green-upgrade-state-machine/</loc>
+         <lastmod>2026-04-03</lastmod>
+    </url>
+    <url>
          <loc>https://vriesdemichael.github.io/keycloak-operator/dev/development/testing/</loc>
          <lastmod>2026-04-03</lastmod>
     </url>
