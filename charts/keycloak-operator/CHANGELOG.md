@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.6.7...chart-operator-v0.6.8) (2026-04-03)
+
+
+### Features
+
+* **chart-operator+operator:** add autoRevision cache isolation mode ([8c2ce3c](https://github.com/vriesdemichael/keycloak-operator/commit/8c2ce3cf90245d2db9c99fd51584c5e50b1ca807)), closes [#675](https://github.com/vriesdemichael/keycloak-operator/issues/675)
+
+
+### Bug Fixes
+
+* **chart-operator:** update for operator v0.9.5 ([731e738](https://github.com/vriesdemichael/keycloak-operator/commit/731e7388d99517311754915113ada4d80684bbb4))
+
 ## [0.6.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.6.6...chart-operator-v0.6.7) (2026-04-02)
 
 
