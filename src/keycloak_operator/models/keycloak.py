@@ -824,9 +824,9 @@ class CacheIsolation(BaseModel):
 
 class UpgradePolicy(BaseModel):
     """
-    Upgrade policy configuration for Keycloak version upgrades (ADR-088 Phase 2).
+    Upgrade policy configuration for Keycloak version upgrades (ADR-088).
 
-    Controls pre-upgrade backup behavior for automated database tiers:
+    Controls pre-upgrade backup behavior and upgrade orchestration strategy:
 
     - **cnpg**: Automated backup via CNPG Backup API.
     - **managed**: Automated backup via VolumeSnapshot (requires pvcName).
@@ -838,6 +838,12 @@ class UpgradePolicy(BaseModel):
     The presence of an ``upgradePolicy`` in the Keycloak spec also enables
     semantic version tag enforcement in the admission webhook, since version
     detection is required for upgrade orchestration.
+
+    When ``strategy`` is ``BlueGreen`` the operator orchestrates a full
+    zero-downtime upgrade (ADR-092): it provisions a second (green)
+    deployment, waits for it to become ready, then patches the Service
+    selector to point to the green pods.  Only supported for CNPG and
+    managed database tiers.
     """
 
     model_config = {"populate_by_name": True}
@@ -853,6 +859,37 @@ class UpgradePolicy(BaseModel):
         ge=60,
         le=3600,
     )
+
+    strategy: str = Field(
+        "Recreate",
+        description=(
+            "Upgrade strategy to use when a major or minor version bump is detected. "
+            "``Recreate`` (default): update the existing deployment in-place using "
+            "Kubernetes' Recreate strategy (brief downtime). "
+            "``BlueGreen``: provision a parallel green deployment, wait for it to "
+            "become ready, then atomically switch the Service selector (zero downtime). "
+            "BlueGreen requires CNPG or managed database tier (ADR-092)."
+        ),
+    )
+
+    auto_teardown: bool = Field(
+        True,
+        alias="autoTeardown",
+        description=(
+            "When ``strategy`` is ``BlueGreen``, automatically delete the blue "
+            "(previous) deployment after a successful Service cutover. "
+            "Set to ``false`` to retain the blue deployment for manual verification "
+            "before deleting it. Default: true."
+        ),
+    )
+
+    @field_validator("strategy")
+    @classmethod
+    def _validate_strategy(cls, v: str) -> str:
+        allowed = {"Recreate", "BlueGreen"}
+        if v not in allowed:
+            raise ValueError(f"strategy must be one of {sorted(allowed)}, got {v!r}")
+        return v
 
 
 class KeycloakTracingConfig(BaseModel):
@@ -1115,6 +1152,62 @@ class KeycloakCondition(BaseModel):
     )
 
 
+class BlueGreenUpgradeStatus(BaseModel):
+    """
+    Status of an in-progress blue-green upgrade (ADR-092).
+
+    This sub-object is written to ``status.blueGreen`` while an upgrade is
+    being orchestrated and cleared once the upgrade reaches a terminal state
+    (Completed or Failed).  It lets the operator resume a partially completed
+    upgrade across pod restarts without re-running already completed steps.
+    """
+
+    model_config = {"populate_by_name": True}
+
+    state: str = Field(
+        "Idle",
+        description=(
+            "Current state of the blue-green state machine. "
+            "One of: Idle, BackingUp, ProvisioningGreen, WaitingForGreen, "
+            "CuttingOver, TearingDownBlue, Completed, Failed."
+        ),
+    )
+    blue_revision: str | None = Field(
+        None,
+        alias="blueRevision",
+        description="Image tag of the currently active (blue) deployment.",
+    )
+    green_revision: str | None = Field(
+        None,
+        alias="greenRevision",
+        description="Image tag of the new (green) deployment being provisioned.",
+    )
+    green_deployment: str | None = Field(
+        None,
+        alias="greenDeployment",
+        description="Name of the green Deployment resource.",
+    )
+    green_discovery_service: str | None = Field(
+        None,
+        alias="greenDiscoveryService",
+        description="Name of the green headless discovery Service resource.",
+    )
+    message: str | None = Field(
+        None,
+        description="Human-readable description of the current state.",
+    )
+    started_at: str | None = Field(
+        None,
+        alias="startedAt",
+        description="ISO-8601 timestamp when the upgrade was initiated.",
+    )
+    completed_at: str | None = Field(
+        None,
+        alias="completedAt",
+        description="ISO-8601 timestamp when the upgrade completed or failed.",
+    )
+
+
 class KeycloakStatus(BaseModel):
     """
     Status of a Keycloak instance.
@@ -1205,6 +1298,16 @@ class KeycloakStatus(BaseModel):
     # Statistics (optional)
     stats: OperationalStats = Field(
         default_factory=dict, description="Operational statistics"
+    )
+
+    # Blue-green upgrade state (ADR-092)
+    blue_green: BlueGreenUpgradeStatus | None = Field(
+        None,
+        alias="blueGreen",
+        description=(
+            "In-progress blue-green upgrade state. Present only while an upgrade "
+            "is being orchestrated; cleared after Completed or Failed."
+        ),
     )
 
 

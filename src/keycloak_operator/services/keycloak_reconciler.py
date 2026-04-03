@@ -33,6 +33,7 @@ from ..utils.version import (
 )
 from .backup_service import PreUpgradeBackupService
 from .base_reconciler import BaseReconciler, StatusProtocol
+from .blue_green_service import BlueGreenUpgradeService
 
 
 class KeycloakInstanceReconciler(BaseReconciler):
@@ -69,6 +70,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
         )
         self.rate_limiter = rate_limiter
         self.backup_service = PreUpgradeBackupService(k8s_client)
+        self.blue_green_service = BlueGreenUpgradeService(k8s_client)
 
     async def do_update(
         self,
@@ -130,6 +132,7 @@ class KeycloakInstanceReconciler(BaseReconciler):
                     f"Updating Keycloak image from {old_value} to {new_value}"
                 )
                 deployment_changes["image"] = new_value
+                deployment_changes["_running_image"] = old_value or ""
                 deployment_needs_update = True
 
             elif field_path == ("spec", "resources"):
@@ -151,7 +154,29 @@ class KeycloakInstanceReconciler(BaseReconciler):
                 new_keycloak_spec, name, namespace, kwargs
             )
 
-        # Apply deployment updates if needed
+        # Blue-green upgrade orchestration (ADR-088 Phase 3 / ADR-092)
+        # When strategy == "BlueGreen" and an image change is detected,
+        # delegate to the blue-green service instead of the normal in-place
+        # deployment update.
+        if (
+            "image" in deployment_changes
+            and new_keycloak_spec.upgrade_policy is not None
+            and new_keycloak_spec.upgrade_policy.strategy == "BlueGreen"
+        ):
+            running_image = deployment_changes.get("_running_image", "")
+            desired_image = deployment_changes["image"]
+            await self.blue_green_service.run_upgrade(
+                name=name,
+                namespace=namespace,
+                spec=new_keycloak_spec,
+                running_image=running_image,
+                desired_image=desired_image,
+                status=status,
+            )
+            # Blue-green handles its own deployment lifecycle; skip normal update
+            deployment_needs_update = False
+
+        # Apply deployment updates if needed (non-blue-green changes)
         if deployment_needs_update:
             await self._update_deployment(
                 deployment_name, namespace, deployment_changes, apps_api
@@ -371,6 +396,30 @@ class KeycloakInstanceReconciler(BaseReconciler):
             await self._maybe_perform_pre_upgrade_backup(
                 keycloak_spec, name, namespace, kwargs
             )
+
+        # Blue-green resume (ADR-092)
+        # If a blue-green upgrade was in progress when the operator
+        # restarted, resume it before doing normal reconciliation.
+        raw_bg = status.get("blueGreen") if hasattr(status, "get") else None  # type: ignore[union-attr]
+        if isinstance(raw_bg, dict):
+            from ..services.blue_green_service import STATE_COMPLETED, STATE_FAILED
+
+            bg_state = raw_bg.get("state", "")
+            if bg_state not in (STATE_COMPLETED, STATE_FAILED, "Idle", ""):
+                self.logger.info(
+                    f"Resuming blue-green upgrade for {name} from state={bg_state}"
+                )
+                await self.blue_green_service.run_upgrade(
+                    name=name,
+                    namespace=namespace,
+                    spec=keycloak_spec,
+                    running_image=raw_bg.get("blueRevision", ""),
+                    desired_image=raw_bg.get("greenRevision", ""),
+                    status=status,
+                    db_connection_info=db_connection_info,
+                )
+                # After blue-green completes the canonical deployment is the
+                # promoted green one — fall through to normal readiness check.
 
         # Ensure admin access first (required by deployment)
         await self.ensure_admin_access(keycloak_spec, name, namespace)
