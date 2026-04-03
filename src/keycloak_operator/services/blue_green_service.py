@@ -267,9 +267,19 @@ class BlueGreenUpgradeService:
                 f"[{name}] Blue-green upgrade completed successfully. "
                 f"{bg.blue_revision} -> {bg.green_revision}"
             )
-            # Rename green deployment to canonical name so the next reconcile
-            # pass treats it as the primary deployment.
-            await self._promote_green_to_primary(name, namespace, spec)
+            if spec.upgrade_policy and spec.upgrade_policy.auto_teardown:
+                # autoTeardown=True: blue was already deleted; rename green to
+                # canonical name so the next reconcile pass treats it as primary.
+                await self._promote_green_to_primary(name, namespace, spec)
+            else:
+                # autoTeardown=False: intentionally keep both deployments.
+                # The Service selector already points to green pods; leave it.
+                # The canonical reconciler will see the green deployment is not
+                # named {name}-keycloak and will not overwrite it.
+                self.logger.info(
+                    f"[{name}] Auto teardown disabled; retaining blue deployment "
+                    "and leaving Service selector on green pods"
+                )
 
     # ------------------------------------------------------------------
     # Internal steps
@@ -308,6 +318,11 @@ class BlueGreenUpgradeService:
                     spec=green_spec,
                     k8s_client=self._k8s,
                     db_connection_info=db_connection_info,
+                    # Use the canonical admin secret so green pods can authenticate.
+                    # The reconciler only creates "{name}-admin-credentials"; using
+                    # "{name}-green-admin-credentials" would leave green pods unable
+                    # to start because the secret never exists.
+                    admin_secret_name=f"{name}-admin-credentials",
                 )
                 self.logger.info(
                     f"Created green deployment: {deployment.metadata.name}"
@@ -480,7 +495,9 @@ class BlueGreenUpgradeService:
                 green_dep = apps_api.read_namespaced_deployment(
                     name=green_deploy_name, namespace=namespace
                 )
-                # Copy and rename
+                # Copy with canonical name.  Also rewrite the pod template labels
+                # and selector so the canonical Service (selector: {name}) routes
+                # to the promoted pods instead of hitting zero matches.
                 new_meta = client.V1ObjectMeta(
                     name=canonical_deploy_name,
                     namespace=namespace,
@@ -489,6 +506,16 @@ class BlueGreenUpgradeService:
                 )
                 green_dep.metadata = new_meta
                 green_dep.status = None
+                # Rewrite instance label in selector and pod template
+                instance_label = "vriesdemichael.github.io/keycloak-instance"
+                if green_dep.spec.selector and green_dep.spec.selector.match_labels:
+                    green_dep.spec.selector.match_labels[instance_label] = name
+                if (
+                    green_dep.spec.template
+                    and green_dep.spec.template.metadata
+                    and green_dep.spec.template.metadata.labels
+                ):
+                    green_dep.spec.template.metadata.labels[instance_label] = name
                 apps_api.create_namespaced_deployment(
                     namespace=namespace, body=green_dep
                 )

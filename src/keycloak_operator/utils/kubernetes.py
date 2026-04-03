@@ -148,6 +148,7 @@ def create_keycloak_deployment(
     spec: KeycloakSpec,
     k8s_client: client.ApiClient,
     db_connection_info: dict[str, Any] | None = None,
+    admin_secret_name: str | None = None,
 ) -> client.V1Deployment:
     """
         Create Kubernetes Deployment for a Keycloak instance.
@@ -158,6 +159,10 @@ def create_keycloak_deployment(
             spec: Keycloak specification
             k8s_client: Kubernetes API client
             db_connection_info: Optional resolved database connection details (for CNPG)
+            admin_secret_name: Override for the admin credentials secret name.
+                Defaults to ``{name}-admin-credentials``.  Pass the canonical
+                CR name's secret when creating a green deployment so it shares
+                the same credentials as the blue deployment.
 
         Returns:
             Created Deployment object
@@ -170,8 +175,10 @@ def create_keycloak_deployment(
     deployment_name = f"{name}-keycloak"
 
     # Build environment variables list
-    # Admin credentials come from operator-generated secret
-    admin_secret_name = f"{name}-admin-credentials"
+    # Admin credentials come from operator-generated secret.
+    # Use the provided override (e.g., canonical CR name) so a green deployment
+    # can share the same admin secret as the blue deployment.
+    admin_secret_name = admin_secret_name or f"{name}-admin-credentials"
 
     # Determine version-specific configuration
     image = spec.image or DEFAULT_KEYCLOAK_IMAGE
