@@ -159,6 +159,21 @@ class TestPerformBackupDispatch:
             mock_ext.assert_called_once()
 
     @pytest.mark.asyncio
+    async def test_stray_legacy_value_normalizes_to_external(self):
+        """A stray db_tier='legacy' must normalize to 'external' — never surface 'legacy' in output."""
+        service = PreUpgradeBackupService()
+        result = await service.perform_backup(
+            keycloak_name="test",
+            namespace="default",
+            db_tier="legacy",
+            db_config=_make_db_config("external"),
+        )
+        assert result.success is True
+        assert result.tier == "external"
+        assert "legacy" not in result.message
+        assert all("legacy" not in w for w in result.warnings)
+
+    @pytest.mark.asyncio
     async def test_custom_backup_timeout(self):
         """upgrade_policy.backup_timeout is passed to the tier handler."""
         service = PreUpgradeBackupService()
@@ -717,7 +732,7 @@ class TestExternalBackup:
     def test_warn_and_proceed_external(self):
         """External tier: always warn and proceed."""
         service = PreUpgradeBackupService()
-        result = service._handle_external_backup("test-kc", "default", "external")
+        result = service._handle_external_backup("test-kc", "default")
 
         assert result.success is True
         assert result.tier == "external"
@@ -727,13 +742,13 @@ class TestExternalBackup:
     def test_message_mentions_manual_backup(self):
         """Message should tell users to ensure a manual backup exists."""
         service = PreUpgradeBackupService()
-        result = service._handle_external_backup("test-kc", "default", "external")
+        result = service._handle_external_backup("test-kc", "default")
 
         assert "manual backup" in result.message.lower()
 
     def test_no_backup_name(self):
-        """No backup resource is created for external/legacy tiers."""
+        """No backup resource is created for the external tier."""
         service = PreUpgradeBackupService()
-        result = service._handle_external_backup("test-kc", "default", "external")
+        result = service._handle_external_backup("test-kc", "default")
 
         assert result.backup_name is None

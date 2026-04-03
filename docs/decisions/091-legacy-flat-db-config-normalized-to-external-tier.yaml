@@ -14,9 +14,14 @@ agent_instructions: >
   Do not implement a fourth tier called 'legacy'. Flat-field database configs
   (no cnpg/managed/external sub-object) ARE external tier with a different
   syntax — KeycloakDatabaseConfig.tier returns 'external' for them.
-  When working on backup logic, never branch on 'legacy' — it cannot appear
-  from the production code path (the model normalizes it upstream).
-  When writing tests, verify tier == 'external' for flat-field configs.
+  In backup logic, do not add distinct behavior for 'legacy'. If a defensive
+  compatibility path ever receives a stray 'legacy' value, normalize it to
+  'external' immediately (before dispatch, before logging, before BackupResult
+  construction) so 'legacy' never surfaces in logs, results, or user-facing
+  output.
+  When writing tests, verify tier == 'external' for flat-field configs. If
+  you add compatibility tests for stray 'legacy' input, assert it normalizes
+  to 'external' before dispatch/behavior/logging.
   When writing documentation, show a three-row tier table (CNPG, Managed,
   External) and add a note that flat-field syntax is treated as External.
 rationale: >
