@@ -830,9 +830,10 @@ class UpgradePolicy(BaseModel):
 
     - **cnpg**: Automated backup via CNPG Backup API.
     - **managed**: Automated backup via VolumeSnapshot (requires pvcName).
-    - **external/legacy**: Not managed by the operator. The operator logs a
+    - **external**: Not managed by the operator. The operator logs a
       warning and proceeds. Users must perform their own backups before
-      upgrading Keycloak when using an external database.
+      upgrading Keycloak when using an external database. Flat-field
+      (legacy) configs normalize to this tier (ADR-091).
 
     The presence of an ``upgradePolicy`` in the Keycloak spec also enables
     semantic version tag enforcement in the admission webhook, since version

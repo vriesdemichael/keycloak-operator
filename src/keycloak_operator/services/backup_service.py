@@ -94,14 +94,18 @@ class PreUpgradeBackupService:
         if upgrade_policy is not None:
             timeout = getattr(upgrade_policy, "backup_timeout", DEFAULT_BACKUP_TIMEOUT)
 
+        # Normalize any stray 'legacy' value — flat-field configs are external tier (ADR-091)
+        if db_tier == "legacy":
+            db_tier = "external"
+
         if db_tier == "cnpg":
             return await self._backup_cnpg(keycloak_name, namespace, db_config, timeout)
         elif db_tier == "managed":
             return await self._backup_volume_snapshot(
                 keycloak_name, namespace, db_config, timeout
             )
-        elif db_tier in ("external", "legacy"):
-            return self._handle_external_backup(keycloak_name, namespace, db_tier)
+        elif db_tier == "external":
+            return self._handle_external_backup(keycloak_name, namespace)
         else:
             return BackupResult(
                 success=False,
@@ -459,30 +463,30 @@ class PreUpgradeBackupService:
         self,
         keycloak_name: str,
         namespace: str,
-        db_tier: str,
     ) -> BackupResult:
         """
-        Handle backup for the external tier (and legacy flat-field configs,
-        which normalize to external per ADR-091).
+        Handle backup for the external tier (Tier 3).
 
-        The operator cannot perform automated backups for databases outside
-        its control. It logs a warning and proceeds with the upgrade.
-        Users must ensure they have a recent backup before upgrading.
+        Also reached by flat-field (legacy) configs that normalize to 'external'
+        at the model layer (ADR-091). The operator cannot perform automated
+        backups for databases outside its control. It logs a warning and
+        proceeds with the upgrade. Users must ensure they have a recent
+        backup before upgrading.
         """
         logger.warning(
-            f"Keycloak {namespace}/{keycloak_name} uses {db_tier} database tier. "
+            f"Keycloak {namespace}/{keycloak_name} uses external database tier. "
             f"The operator cannot perform automated backups for this tier. "
             f"Ensure you have a recent backup before upgrading."
         )
         return BackupResult(
             success=True,
-            tier=db_tier,
+            tier="external",
             message=(
-                f"No automated backup available for {db_tier} database tier. "
+                "No automated backup available for external database tier. "
                 "Proceeding with upgrade. Ensure a manual backup exists."
             ),
             warnings=[
-                f"Database tier '{db_tier}' does not support automated backups. "
+                "Database tier 'external' does not support automated backups. "
                 "Ensure you have performed a manual backup before upgrading Keycloak."
             ],
         )
