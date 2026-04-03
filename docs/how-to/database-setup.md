@@ -561,14 +561,16 @@ kubectl exec -it -n keycloak-db keycloak-db-1 -- \
 
 ### Database Tiers
 
-The operator supports four database configuration tiers, each with different levels of automation:
+The operator supports three database configuration tiers, each with different levels of automation:
 
 | Tier | Config Key | Backup on Upgrade | Description |
 |------|-----------|-------------------|-------------|
 | **CNPG** | `database.cnpg` | Automatic (CNPG Backup CR) | CloudNativePG-managed cluster — full lifecycle management |
 | **Managed** | `database.managed` | Automatic (VolumeSnapshot) | K8s-hosted DB with PVC — requires CSI snapshot support |
 | **External** | `database.external` | Warn-and-proceed | External database (RDS, Cloud SQL, etc.) — operator cannot back up |
-| **Legacy** | `database.type` + flat fields | Warn-and-proceed | Backward-compatible flat config — same behavior as External |
+
+!!! note "Flat-field (legacy) config is External tier"
+    For backward compatibility, `database.type` + flat connection fields (no `cnpg`, `managed`, or `external` sub-object) are still accepted. They are treated as the **External** tier: warn-and-proceed on upgrades, no automated backup. Prefer `database.external` for new deployments.
 
 For upgrade backup behavior, see [Backup & Restore: Automated Pre-Upgrade Backups](../operations/backup-restore.md#automated-pre-upgrade-backups).
 
@@ -614,7 +616,7 @@ spec:
   # The operator logs a warning and proceeds when an upgrade is detected.
 ```
 
-**Legacy Tier** (backward-compatible flat config):
+**Flat-field config** (backward-compatible; treated as External tier):
 ```yaml
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
@@ -631,7 +633,8 @@ spec:
     database: keycloak
     credentialsSecret: keycloak-db-credentials
 
-  # Rest of Keycloak configuration...
+  # Same upgrade behavior as the external tier: warn-and-proceed.
+  # Migrate to database.external sub-object for new deployments.
 ```
 
 ### Connection Details

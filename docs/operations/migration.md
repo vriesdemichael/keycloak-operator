@@ -144,7 +144,7 @@ The backup behavior depends on your database tier:
 
 - **CNPG**: Creates a CNPG `Backup` CR and waits for completion before proceeding.
 - **Managed**: Creates a `VolumeSnapshot` of the database PVC.
-- **External/Legacy**: Cannot back up automatically. The operator emits a warning and proceeds. Users with external databases must handle backups independently before upgrading.
+- **External**: Cannot back up automatically. The operator logs a warning and proceeds. Users with external databases must handle backups independently before upgrading. Flat-field (legacy) configs are treated identically (ADR-091).
 
 See [Backup & Restore: Automated Pre-Upgrade Backups](./backup-restore.md#automated-pre-upgrade-backups) for full configuration details.
 

@@ -11,7 +11,9 @@ The operator automatically orchestrates backups before Keycloak **major or minor
 | **CNPG** (Tier 1) | Creates a CNPG `Backup` CR, waits for completion | Yes, until backup succeeds |
 | **Managed** (Tier 2) | Creates a `VolumeSnapshot` of the database PVC | Yes, until snapshot is ready |
 | **External** (Tier 3) | Logs a warning; operator cannot back up automatically | No — warn-and-proceed |
-| **Legacy** (Tier 4) | Logs a warning; operator cannot back up automatically | No — warn-and-proceed |
+
+!!! note "Flat-field (legacy) config"
+    Flat-field database configs (top-level `host`, `database`, etc. without a `cnpg`, `managed`, or `external` sub-object) are treated as **External** tier: warn-and-proceed, no automated backup (ADR-091).
 
 **Patch-level** version changes (e.g., `26.0.1` to `26.0.2`) skip the backup step entirely.
 

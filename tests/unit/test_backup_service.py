@@ -5,7 +5,7 @@ Covers:
 - BackupResult dataclass
 - CNPG backup creation and polling (Tier 1)
 - VolumeSnapshot backup creation and polling (Tier 2)
-- External/Legacy warn-and-proceed (Tier 3/4)
+- External warn-and-proceed (Tier 3, including flat-field configs normalized per ADR-091)
 - Unknown tier handling
 - Timeout handling for all tiers
 """
@@ -61,7 +61,11 @@ class TestBackupResult:
 
 
 def _make_db_config(tier="cnpg", **overrides):
-    """Create a mock database config for the given tier."""
+    """Create a mock database config for the given tier.
+
+    Accepted values: 'cnpg', 'managed', 'managed_no_pvc', 'external'.
+    Any other value produces an empty config (no sub-objects set).
+    """
     if tier == "cnpg":
         cnpg_config = SimpleNamespace(
             cluster_name="keycloak-postgres",
@@ -106,7 +110,7 @@ class TestPerformBackupDispatch:
             keycloak_name="test",
             namespace="default",
             db_tier="unknown_tier",
-            db_config=_make_db_config("legacy"),
+            db_config=_make_db_config("external"),
         )
         assert result.success is False
         assert "Unknown database tier" in result.message
@@ -151,19 +155,6 @@ class TestPerformBackupDispatch:
                 namespace="default",
                 db_tier="external",
                 db_config=_make_db_config("external"),
-            )
-            mock_ext.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_dispatches_to_legacy(self):
-        service = PreUpgradeBackupService()
-        with patch.object(service, "_handle_external_backup") as mock_ext:
-            mock_ext.return_value = BackupResult(success=True, tier="legacy")
-            await service.perform_backup(
-                keycloak_name="test",
-                namespace="default",
-                db_tier="legacy",
-                db_config=_make_db_config("legacy"),
             )
             mock_ext.assert_called_once()
 
@@ -712,12 +703,16 @@ class TestVolumeSnapshotBackup:
 
 
 # ===========================================================================
-# Tier 3+4: External / Legacy
+# Tier 3: External (includes flat-field configs normalized per ADR-091)
 # ===========================================================================
 
 
-class TestExternalLegacyBackup:
-    """Test external/legacy tier backup handling (always warn-and-proceed)."""
+class TestExternalBackup:
+    """Test external tier backup handling (always warn-and-proceed).
+
+    Flat-field (legacy) configs are normalized to 'external' at the model
+    level (ADR-091), so they also exercise this path in production.
+    """
 
     def test_warn_and_proceed_external(self):
         """External tier: always warn and proceed."""
@@ -726,16 +721,6 @@ class TestExternalLegacyBackup:
 
         assert result.success is True
         assert result.tier == "external"
-        assert len(result.warnings) == 1
-        assert "does not support automated backups" in result.warnings[0]
-
-    def test_warn_and_proceed_legacy(self):
-        """Legacy tier: always warn and proceed."""
-        service = PreUpgradeBackupService()
-        result = service._handle_external_backup("test-kc", "default", "legacy")
-
-        assert result.success is True
-        assert result.tier == "legacy"
         assert len(result.warnings) == 1
         assert "does not support automated backups" in result.warnings[0]
 

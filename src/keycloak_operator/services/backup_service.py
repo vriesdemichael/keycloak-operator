@@ -8,7 +8,7 @@ Keycloak version upgrades. The backup strategy depends on the database tier:
 - **Tier 2 (Managed)**: Creates a ``VolumeSnapshot`` of the database PVC.
 - **Tier 3 (External)**: Not managed by the operator. Logs a warning and
   proceeds. Users must perform their own backups before upgrading.
-- **Tier 4 (Legacy)**: Same as External — warn-and-proceed.
+  Legacy flat-field configs normalize to this tier (ADR-091).
 """
 
 from __future__ import annotations
@@ -82,7 +82,8 @@ class PreUpgradeBackupService:
         Args:
             keycloak_name: Name of the Keycloak CR.
             namespace: Namespace of the Keycloak CR.
-            db_tier: Database tier ('cnpg', 'managed', 'external', 'legacy').
+            db_tier: Database tier ('cnpg', 'managed', 'external'). Legacy
+                flat-field configs normalize to 'external' (ADR-091).
             db_config: The database configuration object (KeycloakDatabaseConfig).
             upgrade_policy: Optional UpgradePolicy from the Keycloak spec.
 
@@ -461,7 +462,8 @@ class PreUpgradeBackupService:
         db_tier: str,
     ) -> BackupResult:
         """
-        Handle backup for external/legacy tiers.
+        Handle backup for the external tier (and legacy flat-field configs,
+        which normalize to external per ADR-091).
 
         The operator cannot perform automated backups for databases outside
         its control. It logs a warning and proceeds with the upgrade.

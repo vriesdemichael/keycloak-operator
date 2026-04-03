@@ -148,10 +148,10 @@ class TestKeycloakDatabaseConfigTiers:
 
     # ---- tier property ----
 
-    def test_tier_legacy(self):
-        """No tier sub-object → 'legacy'."""
+    def test_tier_flat_fields_normalized_to_external(self):
+        """Flat-field configs (no sub-object) normalize to 'external' tier (ADR-091)."""
         cfg = KeycloakDatabaseConfig(**_legacy_db())
-        assert cfg.tier == "legacy"
+        assert cfg.tier == "external"
 
     def test_tier_cnpg(self):
         """CNPG sub-object → 'cnpg'."""

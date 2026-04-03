@@ -302,9 +302,10 @@ class KeycloakDatabaseConfig(BaseModel):
     - managed: Generic PostgreSQL (Tier 2) — operator has direct connection access
     - external: Externally managed (Tier 3) — operator connects but cannot back up
 
-    Legacy flat fields are preserved for backward compatibility. When none of
-    the tiered fields are set, the flat fields are used and the tier is "legacy"
-    (treated as external for upgrade purposes).
+    Legacy flat fields (``host``, ``database``, etc. at the top level) are
+    preserved for backward compatibility. When none of the tiered sub-objects
+    are set, the flat fields are used and the ``tier`` property returns
+    ``"external"`` — normalizing them to the same contract as Tier 3 (ADR-091).
     """
 
     model_config = {"populate_by_name": True}
@@ -313,7 +314,7 @@ class KeycloakDatabaseConfig(BaseModel):
         ..., description="Database type (no default - must be explicitly specified)"
     )
 
-    # Tiered configuration (ADR-088) — exactly one should be set, or none for legacy
+    # Tiered configuration (ADR-088) — exactly one should be set, or none for flat-field (legacy) mode
     cnpg: CnpgDatabaseConfig | None = Field(
         None,
         description="Tier 1: CloudNativePG-managed database (ADR-088)",
@@ -369,14 +370,17 @@ class KeycloakDatabaseConfig(BaseModel):
 
     @property
     def tier(self) -> str:
-        """Return the database tier: 'cnpg', 'managed', 'external', or 'legacy'."""
+        """Return the database tier: 'cnpg', 'managed', or 'external'.
+
+        Legacy flat-field configs (no cnpg/managed/external sub-object) are
+        normalized to 'external' — they share the same backup contract:
+        warn-and-proceed (ADR-091).
+        """
         if self.cnpg is not None:
             return "cnpg"
         if self.managed is not None:
             return "managed"
-        if self.external is not None:
-            return "external"
-        return "legacy"
+        return "external"
 
     @property
     def effective_host(self) -> str | None:
@@ -843,7 +847,7 @@ class UpgradePolicy(BaseModel):
         description=(
             "Maximum time in seconds to wait for a pre-upgrade backup to complete. "
             "Applies to CNPG and VolumeSnapshot backups only. Has no effect on "
-            "external or legacy database tiers. Default: 600 (10 minutes)."
+            "external database tier (including flat-field legacy configs). Default: 600 (10 minutes)."
         ),
         ge=60,
         le=3600,
