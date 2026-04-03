@@ -741,3 +741,110 @@ class TestAuthenticationFlowModels:
         assert "topLevel" in data
         assert "builtIn" in data
         assert "copyFrom" in data
+
+
+# ===========================================================================
+# Legacy database compatibility contract (ADR-091)
+# ===========================================================================
+
+
+class TestLegacyDbCompatibilityContract:
+    """Lock the contract: flat-field DB configs normalize to the 'external' tier.
+
+    Issue #676 / ADR-091: legacy flat-field configuration and the explicit
+    external sub-object both produce tier == 'external', share the same
+    warn-and-proceed backup behavior, and expose the same effective_* properties.
+    """
+
+    def _flat_field_config(self):
+        """Return a KeycloakDatabaseConfig using only top-level flat fields."""
+        from keycloak_operator.models.keycloak import KeycloakDatabaseConfig
+
+        return KeycloakDatabaseConfig(
+            type="postgresql",
+            host="db.example.com",
+            database="keycloak",
+            username="kc",
+            credentials_secret="kc-db-secret",
+        )
+
+    def test_flat_field_config_tier_is_external(self):
+        """Core contract: flat-field configs normalize to 'external' tier (ADR-091)."""
+        cfg = self._flat_field_config()
+        assert cfg.tier == "external"
+
+    def test_flat_field_no_sub_object_set(self):
+        """Flat-field configs must not set any of the tier sub-objects."""
+        cfg = self._flat_field_config()
+        assert cfg.cnpg is None
+        assert cfg.managed is None
+        assert cfg.external is None
+
+    def test_flat_field_effective_host(self):
+        """effective_host returns the flat-field host for legacy configs."""
+        cfg = self._flat_field_config()
+        assert cfg.effective_host == "db.example.com"
+
+    def test_flat_field_effective_database(self):
+        """effective_database returns the flat-field database name."""
+        cfg = self._flat_field_config()
+        assert cfg.effective_database == "keycloak"
+
+    def test_flat_field_effective_username(self):
+        """effective_username returns the flat-field username."""
+        cfg = self._flat_field_config()
+        assert cfg.effective_username == "kc"
+
+    def test_flat_field_effective_port_defaults_to_5432(self):
+        """Port defaults to 5432 for postgresql flat-field configs."""
+        cfg = self._flat_field_config()
+        assert cfg.effective_port == 5432
+
+    def test_explicit_external_tier_is_external(self):
+        """Explicit database.external sub-object also produces tier == 'external'."""
+        from keycloak_operator.models.keycloak import (
+            ExternalDatabaseConfig,
+            KeycloakDatabaseConfig,
+        )
+
+        cfg = KeycloakDatabaseConfig(
+            type="postgresql",
+            external=ExternalDatabaseConfig(
+                host="rds.example.com",
+                database="keycloak",
+                username="kc",
+                credentials_secret="kc-db-secret",
+            ),
+        )
+        assert cfg.tier == "external"
+
+    def test_cnpg_tier_unchanged(self):
+        """CNPG tier detection is unaffected by the legacy normalization."""
+        from keycloak_operator.models.keycloak import (
+            CnpgDatabaseConfig,
+            KeycloakDatabaseConfig,
+        )
+
+        cfg = KeycloakDatabaseConfig(
+            type="postgresql",
+            cnpg=CnpgDatabaseConfig(cluster_name="pg-cluster"),
+        )
+        assert cfg.tier == "cnpg"
+
+    def test_managed_tier_unchanged(self):
+        """Managed tier detection is unaffected by the legacy normalization."""
+        from keycloak_operator.models.keycloak import (
+            KeycloakDatabaseConfig,
+            ManagedDatabaseConfig,
+        )
+
+        cfg = KeycloakDatabaseConfig(
+            type="postgresql",
+            managed=ManagedDatabaseConfig(
+                host="postgres.svc",
+                database="keycloak",
+                username="kc",
+                credentials_secret="kc-db-secret",
+            ),
+        )
+        assert cfg.tier == "managed"
