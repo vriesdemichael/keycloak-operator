@@ -4403,6 +4403,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../091-legacy-flat-db-config-normalized-to-external-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-091: Legacy flat-field database config normalized to external tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4601,7 +4629,7 @@
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
 <p>ADR 079 rejected blue-green deployment because it "requires duplicate database, complex migration coordination, wastes resources." This was correct at the time but the situation has changed. The blue-green strategy does NOT require a duplicate live database — it uses backup-restore to create the green database, so only one database is active at any time. CNPG integration (ADR 015) now provides native backup/restore APIs, making backup orchestration feasible without reimplementing it. Zero- downtime upgrades are a hard requirement for production GitOps environments where maintenance windows are impractical. The tiered database model acknowledges that not all deployments have the same backup capabilities and provides appropriate strategies for each tier. ADR 056 rejected built-in backup because it would mean maintaining storage connectors (S3, GCS, Azure). Pre-upgrade backup orchestration avoids this — the operator triggers existing backup mechanisms (CNPG Backup API, Kubernetes VolumeSnapshot API) rather than implementing backup storage. For external databases the operator cannot automate, it warns and proceeds by default. External databases are explicitly out of scope for operator-managed backups — users must handle their own backup procedures before upgrading. This is narrowly scoped to the upgrade workflow, not a general backup feature. Phase 1 delivers independently useful features (maintenance mode, cache isolation, better DB config) even if Phase 3 is never completed.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>ADR 079 and the backup portion of ADR 056 are superseded by this decision. Secret management remains tool-agnostic — recommend ESO or Sealed Secrets, reference via SecretKeySelector fields, integrate via extraManifests. The database configuration uses a tiered model: CNPG (Tier 1) with cluster_name reference, Managed Postgres (Tier 2) with direct connection details plus pvc_name and volume_snapshot_class_name for backup, and External (Tier 3) with operator-opaque credentials. The KeycloakDatabaseConfig model supports both the new tiered fields (cnpg, managed, external) and the legacy flat fields for backward compatibility. When a major version bump is detected, the operator triggers a tier-appropriate pre-upgrade backup: CNPG Backup CR for Tier 1, VolumeSnapshot for Tier 2, warn-and-proceed for Tier 3 and legacy (external databases are out of scope for operator-managed backups). The spec.upgradePolicy section controls upgrade behavior including backupTimeout. Semver image tag enforcement is conditional on upgradePolicy being present — without it, non-semver tags like :latest are accepted. Ingress maintenance mode can be toggled via spec.maintenanceMode to block or limit traffic during upgrades. JGroups cache isolation via spec.cacheIsolation ensures blue and green deployments do not share Infinispan caches. When implementing new features that interact with database configuration, always check the tier property to determine which backup strategy applies. When creating deployments, respect the cacheIsolation settings for JGroups cluster name and discovery service label selectors.</p>
+<p>ADR 079 and the backup portion of ADR 056 are superseded by this decision. Secret management remains tool-agnostic — recommend ESO or Sealed Secrets, reference via SecretKeySelector fields, integrate via extraManifests. The database configuration uses a tiered model: CNPG (Tier 1) with cluster_name reference, Managed Postgres (Tier 2) with direct connection details plus pvc_name and volume_snapshot_class_name for backup, and External (Tier 3) with operator-opaque credentials. The KeycloakDatabaseConfig model supports both the new tiered fields (cnpg, managed, external) and the legacy flat fields for backward compatibility. Legacy flat-field configs (no cnpg/managed/external sub-object) normalize to the 'external' tier — see ADR-091 for the compatibility contract. When a major version bump is detected, the operator triggers a tier-appropriate pre-upgrade backup: CNPG Backup CR for Tier 1, VolumeSnapshot for Tier 2, warn-and-proceed for Tier 3 (external and flat-field configs, which are out of scope for operator-managed backups). The spec.upgradePolicy section controls upgrade behavior including backupTimeout. Semver image tag enforcement is conditional on upgradePolicy being present — without it, non-semver tags like :latest are accepted. Ingress maintenance mode can be toggled via spec.maintenanceMode to block or limit traffic during upgrades. JGroups cache isolation via spec.cacheIsolation ensures blue and green deployments do not share Infinispan caches. When implementing new features that interact with database configuration, always check the tier property to determine which backup strategy applies. When creating deployments, respect the cacheIsolation settings for JGroups cluster name and discovery service label selectors.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
 <h3 id="rolling-update-for-keycloak-upgrades">Rolling update for Keycloak upgrades<a class="headerlink" href="#rolling-update-for-keycloak-upgrades" title="Permanent link">&para;</a></h3>
 <p>Keycloak does not support mixed-version clusters. Old and new pods would share Infinispan caches with incompatible serialization formats, causing data corruption and session loss.</p>

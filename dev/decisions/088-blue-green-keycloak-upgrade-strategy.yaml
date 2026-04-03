@@ -28,10 +28,12 @@ agent_instructions: >
   and External (Tier 3) with operator-opaque credentials. The
   KeycloakDatabaseConfig model supports both the new tiered fields (cnpg,
   managed, external) and the legacy flat fields for backward compatibility.
+  Legacy flat-field configs (no cnpg/managed/external sub-object) normalize
+  to the 'external' tier — see ADR-091 for the compatibility contract.
   When a major version bump is detected, the operator triggers a
   tier-appropriate pre-upgrade backup: CNPG Backup CR for Tier 1,
-  VolumeSnapshot for Tier 2, warn-and-proceed for Tier 3 and legacy
-  (external databases are out of scope for operator-managed backups).
+  VolumeSnapshot for Tier 2, warn-and-proceed for Tier 3 (external and
+  flat-field configs, which are out of scope for operator-managed backups).
   The spec.upgradePolicy section controls upgrade behavior including
   backupTimeout. Semver image tag enforcement is conditional on
   upgradePolicy being present — without it, non-semver tags like

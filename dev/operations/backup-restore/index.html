@@ -4787,6 +4787,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-091: Legacy flat-field database config normalized to external tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5389,13 +5417,12 @@
 <td>Logs a warning; operator cannot back up automatically</td>
 <td>No — warn-and-proceed</td>
 </tr>
-<tr>
-<td><strong>Legacy</strong> (Tier 4)</td>
-<td>Logs a warning; operator cannot back up automatically</td>
-<td>No — warn-and-proceed</td>
-</tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Flat-field (legacy) config</p>
+<p>Flat-field database configs (top-level <code>host</code>, <code>database</code>, etc. without a <code>cnpg</code>, <code>managed</code>, or <code>external</code> sub-object) are treated as <strong>External</strong> tier: warn-and-proceed, no automated backup (ADR-091).</p>
+</div>
 <p><strong>Patch-level</strong> version changes (e.g., <code>26.0.1</code> to <code>26.0.2</code>) skip the backup step entirely.</p>
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
 <p>Configure the upgrade policy in your Helm values:</p>

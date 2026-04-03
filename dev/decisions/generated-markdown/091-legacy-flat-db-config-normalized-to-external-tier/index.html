@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/062-one-keycloak-per-operator/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier/">
       
       
-        <link rel="prev" href="../061-github-issues-with-ai-instructions/">
+        <link rel="prev" href="../090-revision-oriented-cache-isolation/">
       
       
-        <link rel="next" href="../063-namespace-grant-list-authorization/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-062: One Keycloak instance per operator deployment - Keycloak Operator</title>
+        <title>ADR-091: Legacy flat-field database config normalized to external tier - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-062-one-keycloak-instance-per-operator-deployment" class="md-skip">
+        <a href="#adr-091-legacy-flat-field-database-config-normalized-to-external-tier" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-062: One Keycloak instance per operator deployment
+              ADR-091: Legacy flat-field database config normalized to external tier
             
           </span>
         </div>
@@ -3443,37 +3443,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-062: One Keycloak instance per operator deployment
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../062-one-keycloak-per-operator/" class="md-nav__link">
         
   
   
@@ -3489,120 +3462,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rejected-alternatives" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rejected Alternatives
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rejected Alternatives">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#one-operator-manages-multiple-keycloak-instances" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        One operator manages multiple Keycloak instances
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#global-operator-manages-all-keycloak-instances-cluster-wide" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Global operator manages all Keycloak instances cluster-wide
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#always-require-managed-keycloak-no-external-option" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Always require managed Keycloak (no external option)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#never-deploy-managed-keycloak-external-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Never deploy managed Keycloak (external only)
-      
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4396,10 +4255,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../091-legacy-flat-db-config-normalized-to-external-tier/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-091: Legacy flat-field database config normalized to external tier
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4415,6 +4301,98 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#keep-legacy-as-a-distinct-fourth-tier" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Keep legacy as a distinct fourth tier
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#raise-a-deprecation-warning-or-admission-webhook-error-for-flat-field-configs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Raise a deprecation warning or admission webhook error for flat-field configs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4526,10 +4504,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#one-operator-manages-multiple-keycloak-instances" class="md-nav__link">
+  <a href="#keep-legacy-as-a-distinct-fourth-tier" class="md-nav__link">
     <span class="md-ellipsis">
       
-        One operator manages multiple Keycloak instances
+        Keep legacy as a distinct fourth tier
       
     </span>
   </a>
@@ -4537,32 +4515,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#global-operator-manages-all-keycloak-instances-cluster-wide" class="md-nav__link">
+  <a href="#raise-a-deprecation-warning-or-admission-webhook-error-for-flat-field-configs" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Global operator manages all Keycloak instances cluster-wide
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#always-require-managed-keycloak-no-external-option" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Always require managed Keycloak (no external option)
-      
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#never-deploy-managed-keycloak-external-only" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Never deploy managed Keycloak (external only)
+        Raise a deprecation warning or admission webhook error for flat-field configs
       
     </span>
   </a>
@@ -4591,7 +4547,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/062-one-keycloak-per-operator.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4599,24 +4555,20 @@
   
 
 
-<h1 id="adr-062-one-keycloak-instance-per-operator-deployment">ADR-062: One Keycloak instance per operator deployment<a class="headerlink" href="#adr-062-one-keycloak-instance-per-operator-deployment" title="Permanent link">&para;</a></h1>
+<h1 id="adr-091-legacy-flat-field-database-config-normalized-to-external-tier">ADR-091: Legacy flat-field database config normalized to external tier<a class="headerlink" href="#adr-091-legacy-flat-field-database-config-normalized-to-external-tier" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> architecture
-<strong>Provenance:</strong> human</p>
+<strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Each operator deployment manages exactly one Keycloak instance. Default Helm chart deploys managed Keycloak alongside operator in same namespace. External Keycloak instances supported as alternative.</p>
+<p>Flat-field database configuration (setting top-level 'host', 'database', etc. on KeycloakDatabaseConfig without a cnpg, managed, or external sub-object) is normalized to the 'external' tier at the model layer. The KeycloakDatabaseConfig .tier property returns 'external' for these configs. There is no fourth tier called 'legacy'. The flat fields remain valid for backward compatibility but are semantically equivalent to database.external with identical backup behavior: warn-and-proceed.</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>One-to-one mapping simplifies operator configuration and reduces complexity. Operator maintains single admin connection, single rate limiter, single health check target. Multi-Keycloak support would require connection pooling, per-instance rate limiting, complex failover logic. Users needing multiple Keycloak instances deploy multiple operators (horizontal scaling per decision 045). Managed Keycloak in same namespace enables quick start - single Helm install gets working system. External Keycloak supports production deployments where Keycloak managed separately. Clear 1:1 relationship simplifies troubleshooting and RBAC. Operator namespace contains everything for that Keycloak instance - clean isolation.</p>
+<p>ADR-088 introduced tiered database configuration but retained a conceptual 'legacy' tier as a temporary bridging concept. This created ambiguity: the backup service had a 'Tier 4 (Legacy)' concept, documentation showed a four-row tier table, and tests asserted tier == 'legacy'. In practice, legacy and external have been identical in behavior since ADR-088 was implemented (both warn-and-proceed on upgrades, both connect using direct DB credentials). Keeping them conceptually separate served no purpose — it only added confusion for operators trying to understand what tier their config belongs to. Normalizing legacy to external at the model layer collapses the four-tier concept back to three, eliminates dead code in the backup dispatcher, and gives operators a single, clear contract: if the operator cannot automate your backup, it logs a warning and proceeds. Full backward compatibility is preserved — all existing CRs using flat fields continue to work unchanged.</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>Operator manages one Keycloak instance only. Chart default (keycloak.enabled=false in charts/keycloak-operator/values.yaml line 240) deploys operator without managed Keycloak - expects external instance. Set keycloak.enabled=true to deploy managed Keycloak in operator namespace. Realms and Clients reference their Keycloak instance via keycloak_instance field (src/keycloak_operator/models/realm.py line 718, client.py line 517). Multiple Keycloak instances require multiple operator deployments. Decision 037 covers external vs managed Keycloak. Decision 047 covers managed Keycloak for quick start.</p>
+<p>There are exactly three database tiers: 'cnpg', 'managed', 'external'. Do not implement a fourth tier called 'legacy'. Flat-field database configs (no cnpg/managed/external sub-object) ARE external tier with a different syntax — KeycloakDatabaseConfig.tier returns 'external' for them. In backup logic, do not add distinct behavior for 'legacy'. If a defensive compatibility path ever receives a stray 'legacy' value, normalize it to 'external' immediately (before dispatch, before logging, before BackupResult construction) so 'legacy' never surfaces in logs, results, or user-facing output. When writing tests, verify tier == 'external' for flat-field configs. If you add compatibility tests for stray 'legacy' input, assert it normalizes to 'external' before dispatch/behavior/logging. When writing documentation, show a three-row tier table (CNPG, Managed, External) and add a note that flat-field syntax is treated as External.</p>
 <h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
-<h3 id="one-operator-manages-multiple-keycloak-instances">One operator manages multiple Keycloak instances<a class="headerlink" href="#one-operator-manages-multiple-keycloak-instances" title="Permanent link">&para;</a></h3>
-<p>Complex connection management. Rate limiter shared across instances or per-instance complexity. Health checks for N instances. Configuration explosion.</p>
-<h3 id="global-operator-manages-all-keycloak-instances-cluster-wide">Global operator manages all Keycloak instances cluster-wide<a class="headerlink" href="#global-operator-manages-all-keycloak-instances-cluster-wide" title="Permanent link">&para;</a></h3>
-<p>Single point of failure. No isolation between Keycloak instances. RBAC and security boundaries unclear. Scaling bottleneck.</p>
-<h3 id="always-require-managed-keycloak-no-external-option">Always require managed Keycloak (no external option)<a class="headerlink" href="#always-require-managed-keycloak-no-external-option" title="Permanent link">&para;</a></h3>
-<p>Doesn't support existing Keycloak deployments. Forces specific deployment pattern. Reduces flexibility.</p>
-<h3 id="never-deploy-managed-keycloak-external-only">Never deploy managed Keycloak (external only)<a class="headerlink" href="#never-deploy-managed-keycloak-external-only" title="Permanent link">&para;</a></h3>
-<p>No quick start path. Users must deploy Keycloak separately before using operator. Higher barrier to entry.</p>
+<h3 id="keep-legacy-as-a-distinct-fourth-tier">Keep legacy as a distinct fourth tier<a class="headerlink" href="#keep-legacy-as-a-distinct-fourth-tier" title="Permanent link">&para;</a></h3>
+<p>Legacy and external are behaviorally identical. Distinguishing them as separate tiers adds conceptual overhead with no operational benefit. If they ever need to diverge (e.g. a manual gate only for external), a new ADR can re-introduce the split with explicit intent.</p>
+<h3 id="raise-a-deprecation-warning-or-admission-webhook-error-for-flat-field-configs">Raise a deprecation warning or admission webhook error for flat-field configs<a class="headerlink" href="#raise-a-deprecation-warning-or-admission-webhook-error-for-flat-field-configs" title="Permanent link">&para;</a></h3>
+<p>Flat-field configs are a backward-compat path that existing users rely on. Blocking or warning on them would be a breaking change without justification. They remain accepted silently and normalize to external.</p>
 
 
 
@@ -4652,7 +4604,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../061-github-issues-with-ai-instructions/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-061: GitHub Issues for planned work with AI agent instructions">
+          <a href="../090-revision-oriented-cache-isolation/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-090: Revision-oriented JGroups cache isolation with major-version identity">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4662,20 +4614,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-061: GitHub Issues for planned work with AI agent instructions
+                ADR-090: Revision-oriented JGroups cache isolation with major-version identity
               </div>
             </div>
           </a>
         
         
           
-          <a href="../063-namespace-grant-list-authorization/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-063: Namespace grant list authorization for clients">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-063: Namespace grant list authorization for clients
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">

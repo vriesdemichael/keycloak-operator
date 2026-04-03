@@ -4853,6 +4853,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-091: Legacy flat-field database config normalized to external tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5967,7 +5995,7 @@
 <hr />
 <h2 id="connecting-keycloak-to-database">Connecting Keycloak to Database<a class="headerlink" href="#connecting-keycloak-to-database" title="Permanent link">&para;</a></h2>
 <h3 id="database-tiers">Database Tiers<a class="headerlink" href="#database-tiers" title="Permanent link">&para;</a></h3>
-<p>The operator supports four database configuration tiers, each with different levels of automation:</p>
+<p>The operator supports three database configuration tiers, each with different levels of automation:</p>
 <table>
 <thead>
 <tr>
@@ -5996,14 +6024,12 @@
 <td>Warn-and-proceed</td>
 <td>External database (RDS, Cloud SQL, etc.) — operator cannot back up</td>
 </tr>
-<tr>
-<td><strong>Legacy</strong></td>
-<td><code>database.type</code> + flat fields</td>
-<td>Warn-and-proceed</td>
-<td>Backward-compatible flat config — same behavior as External</td>
-</tr>
 </tbody>
 </table>
+<div class="admonition note">
+<p class="admonition-title">Flat-field (legacy) config is External tier</p>
+<p>For backward compatibility, <code>database.type</code> + flat connection fields (no <code>cnpg</code>, <code>managed</code>, or <code>external</code> sub-object) are still accepted. They are treated as the <strong>External</strong> tier: warn-and-proceed on upgrades, no automated backup. Prefer <code>database.external</code> for new deployments.</p>
+</div>
 <p>For upgrade backup behavior, see <a href="../../operations/backup-restore/#automated-pre-upgrade-backups">Backup &amp; Restore: Automated Pre-Upgrade Backups</a>.</p>
 <h3 id="keycloak-crd-configuration">Keycloak CRD Configuration<a class="headerlink" href="#keycloak-crd-configuration" title="Permanent link">&para;</a></h3>
 <p><strong>CNPG Tier (Recommended)</strong>:
@@ -6042,7 +6068,7 @@
 </span><span id="__span-25-16"><a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a><span class="w">  </span><span class="c1"># External databases: back up your database before Keycloak upgrades.</span>
 </span><span id="__span-25-17"><a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a><span class="w">  </span><span class="c1"># The operator logs a warning and proceeds when an upgrade is detected.</span>
 </span></code></pre></div></p>
-<p><strong>Legacy Tier</strong> (backward-compatible flat config):
+<p><strong>Flat-field config</strong> (backward-compatible; treated as External tier):
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-26-1"><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="nt">apiVersion</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vriesdemichael.github.io/v1</span>
 </span><span id="__span-26-2"><a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="nt">kind</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keycloak</span>
 </span><span id="__span-26-3"><a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="nt">metadata</span><span class="p">:</span>
@@ -6058,7 +6084,8 @@
 </span><span id="__span-26-13"><a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="w">    </span><span class="nt">database</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak</span>
 </span><span id="__span-26-14"><a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a><span class="w">    </span><span class="nt">credentialsSecret</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">keycloak-db-credentials</span>
 </span><span id="__span-26-15"><a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a>
-</span><span id="__span-26-16"><a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a><span class="w">  </span><span class="c1"># Rest of Keycloak configuration...</span>
+</span><span id="__span-26-16"><a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a><span class="w">  </span><span class="c1"># Same upgrade behavior as the external tier: warn-and-proceed.</span>
+</span><span id="__span-26-17"><a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a><span class="w">  </span><span class="c1"># Migrate to database.external sub-object for new deployments.</span>
 </span></code></pre></div></p>
 <h3 id="connection-details">Connection Details<a class="headerlink" href="#connection-details" title="Permanent link">&para;</a></h3>
 <p>CNPG provides two service endpoints:</p>

@@ -4824,6 +4824,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-091: Legacy flat-field database config normalized to external tier
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -5549,7 +5577,7 @@
 <ul>
 <li><strong>CNPG</strong>: Creates a CNPG <code>Backup</code> CR and waits for completion before proceeding.</li>
 <li><strong>Managed</strong>: Creates a <code>VolumeSnapshot</code> of the database PVC.</li>
-<li><strong>External/Legacy</strong>: Cannot back up automatically. The operator emits a warning and proceeds. Users with external databases must handle backups independently before upgrading.</li>
+<li><strong>External</strong>: Cannot back up automatically. The operator logs a warning and proceeds. Users with external databases must handle backups independently before upgrading. Flat-field (legacy) configs are treated identically (ADR-091).</li>
 </ul>
 <p>See <a href="../backup-restore/#automated-pre-upgrade-backups">Backup &amp; Restore: Automated Pre-Upgrade Backups</a> for full configuration details.</p>
 <h3 id="pre-upgrade-checklist_1">Pre-Upgrade Checklist<a class="headerlink" href="#pre-upgrade-checklist_1" title="Permanent link">&para;</a></h3>
