@@ -1,11 +1,14 @@
 name: Auto-Rebase PRs
 
-# Rebase all open non-draft PRs when main is updated.
+# Rebase all open non-draft PRs when main is updated,
+# or rebase a specific PR when it is opened or converted from draft.
 # Uses PAT to ensure rebased PRs trigger CI workflows.
 
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [opened, ready_for_review, reopened]
   workflow_dispatch:
 
 permissions:
