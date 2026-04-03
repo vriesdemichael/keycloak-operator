@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.6](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.5...operator-image-v0.9.6) (2026-04-03)
+
+
+### Features
+
+* **chart-operator+operator:** add autoRevision cache isolation mode ([8c2ce3c](https://github.com/vriesdemichael/keycloak-operator/commit/8c2ce3cf90245d2db9c99fd51584c5e50b1ca807)), closes [#675](https://github.com/vriesdemichael/keycloak-operator/issues/675)
+
+
+### Bug Fixes
+
+* **chart-operator+operator:** address review comments from Copilot on PR [#683](https://github.com/vriesdemichael/keycloak-operator/issues/683) ([529d1ef](https://github.com/vriesdemichael/keycloak-operator/commit/529d1efa55220a1fab4e3b80fca6356e7527ea3c))
+
 ## [0.9.5](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.4...operator-image-v0.9.5) (2026-04-02)
 
 
