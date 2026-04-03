@@ -207,6 +207,11 @@ class TestBlueGreenServiceProvisionGreen:
                 await svc._provision_green("kc", "ns", spec, "keycloak:27.0.0", None)
 
         mock_create_deploy.assert_called_once()
+        # Verify canonical admin secret is forwarded so green pods can authenticate
+        assert (
+            mock_create_deploy.call_args.kwargs.get("admin_secret_name")
+            == "kc-admin-credentials"
+        )
         mock_create_disc.assert_called_once()
 
     @pytest.mark.asyncio
@@ -454,7 +459,7 @@ class TestRunUpgrade:
 
     @pytest.mark.asyncio
     async def test_no_teardown_when_auto_teardown_false(self):
-        """autoTeardown=False skips TearingDownBlue."""
+        """autoTeardown=False skips TearingDownBlue AND _promote_green_to_primary."""
         svc = _make_service()
         spec = _make_spec(strategy="BlueGreen", auto_teardown=False)
         status = _make_status()
@@ -468,7 +473,9 @@ class TestRunUpgrade:
             patch.object(
                 svc, "_teardown_blue", new_callable=AsyncMock
             ) as mock_teardown,
-            patch.object(svc, "_promote_green_to_primary", new_callable=AsyncMock),
+            patch.object(
+                svc, "_promote_green_to_primary", new_callable=AsyncMock
+            ) as mock_promote,
         ):
             await svc.run_upgrade(
                 name="kc",
@@ -481,6 +488,8 @@ class TestRunUpgrade:
 
         assert status["blueGreen"]["state"] == STATE_COMPLETED
         mock_teardown.assert_not_awaited()
+        # With autoTeardown=False, green deployment stays; do NOT rename/promote
+        mock_promote.assert_not_awaited()
 
     @pytest.mark.asyncio
     async def test_raises_temporary_error_when_green_not_ready(self):
@@ -639,8 +648,7 @@ class TestRunUpgrade:
         mock_wait.assert_not_awaited()
         mock_cutover.assert_not_awaited()
         mock_teardown.assert_not_awaited()
-        # promote IS called as part of Completed handling (if re-entered)
-        # but all destructive steps are skipped
+        # promote IS called because default spec has auto_teardown=True
 
 
 # ===========================================================================

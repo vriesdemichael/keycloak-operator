@@ -259,11 +259,12 @@ class TestBlueGreenUpgradeTriggersGreenDeployment:
 
 @pytest.mark.integration
 @pytest.mark.requires_cluster
-class TestBlueGreenUpgradeFullFlow:
-    """End-to-end: full blue-green upgrade completes with same image."""
+class TestBlueGreenSchemaValidation:
+    """Validate BlueGreen strategy schema: stored correctly, no spurious green
+    deployment when image is unchanged."""
 
     @pytest.mark.timeout(420)
-    async def test_blue_green_completes_with_same_image(
+    async def test_blue_green_strategy_schema_and_no_spurious_green(
         self,
         k8s_custom_objects,
         k8s_apps_v1,
@@ -273,8 +274,11 @@ class TestBlueGreenUpgradeFullFlow:
         shared_operator,
         sample_keycloak_spec_factory,
     ) -> None:
-        """Full blue-green upgrade completes end-to-end when green deployment
-        starts up successfully (same image = immediate ready).
+        """Verify BlueGreen strategy is persisted in the CR spec and no green
+        deployment is created when the image is unchanged.
+
+        This validates the schema and operator guard (no spurious blue-green
+        cycle when there is nothing to upgrade).
 
         Steps:
         1. Deploy Keycloak with BlueGreen strategy, wait for Ready.
