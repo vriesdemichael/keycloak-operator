@@ -1,0 +1,108 @@
+number: 92
+title: Blue-green upgrade state machine for zero-downtime Keycloak upgrades
+category: architecture
+decision: >
+  Implement a resumable state machine in BlueGreenUpgradeService that
+  orchestrates zero-downtime Keycloak major/minor version upgrades by
+  provisioning a parallel green deployment, polling until it becomes ready,
+  atomically patching the Service selector (cutover), and optionally
+  deleting the blue deployment.  The state is persisted to
+  status.blueGreen on every transition so the operator can resume after
+  a restart without repeating completed steps.
+
+  The feature is opt-in via spec.upgradePolicy.strategy: BlueGreen.
+  It only supports CNPG and managed database tiers; external databases
+  receive the existing warn-and-proceed behaviour and are not blocked.
+
+  Naming convention: green deployment is {name}-green-keycloak and green
+  discovery service is {name}-green-discovery.  After successful cutover
+  and teardown the green resources are promoted (renamed) to the canonical
+  names {name}-keycloak and {name}-discovery and the Service selector is
+  restored to the original instance label.
+agent_instructions: >
+  When working with blue-green upgrade logic, always check
+  status.blueGreen.state to resume mid-upgrade rather than restarting
+  from scratch.  State constants are defined in
+  src/keycloak_operator/services/blue_green_service.py
+  (STATE_IDLE, STATE_PROVISIONING_GREEN, STATE_WAITING_FOR_GREEN,
+  STATE_CUTTING_OVER, STATE_TEARING_DOWN_BLUE, STATE_COMPLETED,
+  STATE_FAILED).
+
+  The state machine is driven by BlueGreenUpgradeService.run_upgrade()
+  which is called from both do_update (image change detected) and
+  do_reconcile (resume path).  do_reconcile checks status.blueGreen for
+  a non-terminal state before doing the normal reconcile flow.
+
+  Green resource naming: {name}-green-keycloak and {name}-green-discovery.
+  After promotion they become {name}-keycloak and {name}-discovery.
+
+  The WaitingForGreen step does a quick 10-second non-blocking poll and
+  raises kopf.TemporaryError(delay=30) if the green deployment is not
+  yet ready.  This lets the kopf retry loop manage the wait rather than
+  blocking the event loop.
+
+  autoTeardown (default true) is read from spec.upgradePolicy.auto_teardown.
+  When false, the state machine stops at CuttingOver (skips TearingDownBlue)
+  and goes directly to Completed.  The blue deployment remains for
+  manual inspection.
+
+  BlueGreen is only wired in do_update when an image change is detected
+  AND spec.upgradePolicy.strategy == "BlueGreen".  The existing Recreate
+  strategy path (normal _update_deployment call) is unchanged.
+
+  When writing tests: mock BlueGreenUpgradeService.run_upgrade for unit
+  tests of the reconciler integration; test the state machine steps
+  directly in tests/unit/test_blue_green_service.py and end-to-end
+  orchestration mechanics in tests/integration/test_blue_green_upgrade.py.
+rationale: >
+  ADR-088 Phase 3 delivers the actual blue-green orchestration promised
+  when Phases 1 (foundation) and 2 (pre-upgrade backup) were merged.  The
+  key design choices addressed here:
+
+  Resumable state machine: Keycloak takes 2-5 minutes to boot, and the
+  operator pod may be restarted at any point.  Without persisted state, a
+  restart during WaitingForGreen would re-provision the green deployment
+  (wasteful) or worse, miss the cutover entirely.  Writing state to the CR
+  status on every transition is the standard Kubernetes controller pattern
+  for long-running operations.
+
+  Quick-poll + TemporaryError: Blocking the event loop for 10 minutes
+  inside run_upgrade would prevent all other reconciliations from
+  proceeding.  Instead we do a short 10-second check and raise
+  TemporaryError(delay=30) to let kopf retry.  Total wait time is the
+  same but the event loop stays responsive.
+
+  Naming convention: Using "{name}-green-keycloak" is deterministic —
+  no random hashes — so GitOps tools (ArgoCD, Flux) do not see spurious
+  resource churn between reconciliations.
+
+  Promotion (rename) after cutover: Kubernetes does not support
+  in-place resource rename.  The promotion step reads the green Deployment,
+  creates a copy with the canonical name, and deletes the green-suffixed
+  resource.  This keeps the CR status clean and ensures subsequent
+  reconciliations work against the expected resource names.
+
+  Managed-only: External databases cannot be snapshotted by the operator
+  so the pre-upgrade backup step warns-and-proceeds.  Running the
+  blue-green orchestration itself (provision, cutover, teardown) is
+  safe regardless of DB tier — it only manages Kubernetes resources.
+
+  autoTeardown default true: The expected production behaviour is that
+  the blue deployment is deleted after a successful cutover to free
+  resources.  Operators who want to keep the old version around for
+  manual rollback can set autoTeardown: false.
+rejected_alternatives:
+  - alternative: Block event loop during WaitingForGreen
+    reason: >
+      Blocks all other reconciliations for up to 10 minutes.  Incompatible
+      with the kopf single-event-loop architecture.
+  - alternative: Store state in a ConfigMap rather than CR status
+    reason: >
+      Adds an extra Kubernetes resource that must be cleaned up.  CR
+      status is the idiomatic place for operator-managed state and is
+      automatically garbage collected with the CR.
+  - alternative: Random hash suffix for green resource names
+    reason: >
+      Non-deterministic names cause ArgoCD sync loops and make it harder
+      to inspect or debug an in-progress upgrade via kubectl.
+provenance: guided-ai
