@@ -221,7 +221,22 @@ If migrating the entire installation, backup and restore the PostgreSQL database
 
 *   See [Database Setup Guide](./database-setup.md) for restore instructions.
 
-**Option B: Partial Import (Manual)**
+**Option B: Automated Import (`keycloak-migrate import-users`)**
+Use the migration toolkit for a repeatable, idempotent, GitOps-friendly import:
+
+```bash
+keycloak-migrate import-users \
+  --input migration-output/my-realm/users.json \
+  --keycloak my-keycloak \
+  --namespace keycloak-system \
+  --realm my-realm
+```
+
+Credentials are resolved automatically from the cluster. The command is idempotent (SKIP mode by default) — re-running it is safe even if some users already exist.
+
+See the [import-users command reference](./migration-toolkit.md#import-users) for all flags and options.
+
+**Option C: Partial Import (Manual)**
 If starting fresh and only migrating specific users:
 
 1.  Deploy Keycloak using the operator.

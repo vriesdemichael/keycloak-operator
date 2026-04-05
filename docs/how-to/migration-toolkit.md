@@ -199,7 +199,109 @@ Refer to the generated `unsupported-features.json` for the full list. Common exa
 
 The toolkit extracts users from the export into `users.json` but does **not** generate CRDs for them. User management is stateful data, not desired-state configuration, and is deliberately outside the scope of this operator's CRD model.
 
-For user migration options, see the [Realm Export Guide — Import Users](./export-realms.md#3-import-users-data-migration).
+Use the `import-users` subcommand to import `users.json` into a running Keycloak instance managed by this operator:
+
+```bash
+keycloak-migrate import-users \
+  --input migration-output/my-realm/users.json \
+  --keycloak my-keycloak \
+  --namespace keycloak-system \
+  --realm my-realm
+```
+
+For all options see [`import-users` command reference](#import-users) below. For background on user migration strategies, see the [Realm Export Guide — Import Users](./export-realms.md#3-import-users-data-migration).
+
+---
+
+### `import-users`
+
+Imports the `users.json` file produced by `transform` into a Keycloak realm using the Partial Import API. The import is idempotent by default (SKIP mode): running it twice does not duplicate users.
+
+```bash
+keycloak-migrate import-users [flags]
+```
+
+#### Input flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--input` | `users.json` | Path to `users.json` from `keycloak-migrate transform` |
+| `--max-age` | `24h` | Reject input files older than this duration (0 = no limit) |
+
+#### Credential resolution — cluster mode
+
+Reads admin credentials directly from the Kubernetes cluster using your current `kubeconfig` context. No explicit credentials needed.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--keycloak` | | Name of the `Keycloak` CR to read credentials from |
+| `--namespace`, `-n` | *(current namespace)* | Namespace of the `Keycloak` CR |
+
+#### Credential resolution — explicit flags
+
+For environments where RBAC does not permit reading secrets from the cluster.
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--server-url` | | Keycloak server URL (e.g. `https://keycloak.example.com`) |
+| `--username` | | Admin username |
+| `--password` | | Admin password |
+
+!!! tip "Credential resolution priority"
+    If `--username` or `--password` is provided, explicit credentials are used and `--server-url` is required. Otherwise, `--keycloak` triggers cluster-based credential resolution. Exactly one mode must be chosen.
+
+#### Import behaviour flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--realm` | *(required)* | Name of the realm to import users into |
+| `--mode` | `skip` | How to handle existing users: `skip`, `fail`, `overwrite` |
+| `--batch-size` | `500` | Users sent per API call (Partial Import is non-atomic) |
+| `--dry-run` | `false` | Print what would be done without making API calls |
+
+#### Import modes
+
+| Mode | Behaviour |
+|------|-----------|
+| `skip` | Already-existing users are silently skipped. Re-running is safe. **(Default)** |
+| `fail` | Stop on the first user that already exists (HTTP 409). |
+| `overwrite` | Replace existing users with data from the file. |
+
+!!! warning "SKIP mode and partial failures"
+    Any API-level error (as opposed to a skip) causes the command to exit non-zero immediately. Check the output for details. Batches that completed before the failure are **not** rolled back.
+
+#### Examples
+
+```bash
+# Cluster credentials from current kubeconfig
+keycloak-migrate import-users \
+  --input ./migration/users.json \
+  --keycloak my-keycloak \
+  --namespace keycloak-system \
+  --realm my-realm
+
+# Explicit credentials (e.g. in a CI pipeline)
+keycloak-migrate import-users \
+  --input ./migration/users.json \
+  --server-url https://keycloak.example.com \
+  --username admin \
+  --password "$KEYCLOAK_ADMIN_PASSWORD" \
+  --realm my-realm
+
+# Dry run to preview what would be sent
+keycloak-migrate import-users \
+  --input ./migration/users.json \
+  --keycloak my-keycloak --namespace keycloak-system \
+  --realm my-realm \
+  --dry-run
+
+# Accept an older export file (skip age check)
+keycloak-migrate import-users \
+  --input ./migration/users.json \
+  --keycloak my-keycloak --namespace keycloak-system \
+  --realm my-realm \
+  --max-age 0
+```
 
 ## Example: Full Migration
 
@@ -234,6 +336,10 @@ for client_dir in gitops/keycloak/production/clients/*/; do
     -n production
 done
 
-# 6. Import users via Admin Console Partial Import
-#    (see NEXT-STEPS.md for details)
+# 6. Import users (idempotent — safe to re-run)
+keycloak-migrate import-users \
+  --input gitops/keycloak/production/users.json \
+  --keycloak production-keycloak \
+  --namespace keycloak-system \
+  --realm production
 ```
