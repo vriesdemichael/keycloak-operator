@@ -19,6 +19,7 @@ keycloak-client Helm charts from the keycloak-operator project.
 It extracts secrets, generates NEXT-STEPS.md documentation, and warns
 about unsupported features that require manual attention or upstream
 issue resolution.`,
+	Version: version,
 }
 
 func Execute() error {
@@ -34,5 +35,6 @@ var versionCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.SetVersionTemplate("keycloak-migrate {{.Version}}\n")
 	rootCmd.AddCommand(versionCmd)
 }
