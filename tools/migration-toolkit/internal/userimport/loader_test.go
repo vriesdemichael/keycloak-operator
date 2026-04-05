@@ -80,6 +80,33 @@ func TestLoadUsersFile_MissingUsername(t *testing.T) {
 	}
 }
 
+func TestLoadUsersFile_EmptyUsername(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "users.json")
+	// Write raw JSON with empty username string
+	if err := os.WriteFile(path, []byte(`[{"username":""}]`), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := LoadUsersFile(path, 0)
+	if err == nil {
+		t.Fatal("expected error for empty username string")
+	}
+}
+
+func TestLoadUsersFile_NullUsername(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "users.json")
+	if err := os.WriteFile(path, []byte(`[{"username":null}]`), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := LoadUsersFile(path, 0)
+	if err == nil {
+		t.Fatal("expected error for null username")
+	}
+}
+
 func TestLoadUsersFile_InvalidJSON(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.json")

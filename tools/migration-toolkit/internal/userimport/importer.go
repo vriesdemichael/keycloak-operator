@@ -23,11 +23,16 @@ const (
 
 // ImportOptions controls the import execution.
 type ImportOptions struct {
-	Target    *ResolvedTarget
-	Users     []map[string]any
-	Mode      ImportMode
-	BatchSize int
-	DryRun    bool
+	Target     *ResolvedTarget
+	Users      []map[string]any
+	Mode       ImportMode
+	BatchSize  int
+	DryRun     bool
+	// Out receives progress messages. Defaults to io.Discard if nil.
+	Out        io.Writer
+	// HTTPClient is the client used for all API calls. Defaults to http.DefaultClient.
+	// Callers should set a timeout appropriate for their environment.
+	HTTPClient *http.Client
 }
 
 // ImportResult summarises what happened across all batches.
@@ -42,6 +47,13 @@ type ImportResult struct {
 
 // ImportUsers executes the Partial Import for all users in batches.
 func ImportUsers(ctx context.Context, opts ImportOptions) (*ImportResult, error) {
+	if opts.Out == nil {
+		opts.Out = io.Discard
+	}
+	if opts.HTTPClient == nil {
+		opts.HTTPClient = http.DefaultClient
+	}
+
 	result := &ImportResult{TotalUsers: len(opts.Users)}
 
 	if opts.BatchSize <= 0 {
@@ -52,32 +64,32 @@ func ImportUsers(ctx context.Context, opts ImportOptions) (*ImportResult, error)
 	result.Batches = len(batches)
 
 	if opts.DryRun {
-		fmt.Printf("Dry run: would import %d users in %d batches of up to %d\n",
+		fmt.Fprintf(opts.Out, "Dry run: would import %d users in %d batches of up to %d\n",
 			result.TotalUsers, result.Batches, opts.BatchSize)
-		fmt.Printf("  Server:    %s\n", opts.Target.ServerURL)
-		fmt.Printf("  Realm:     %s\n", opts.Target.Realm)
-		fmt.Printf("  Mode:      %s\n", opts.Mode)
-		fmt.Printf("  Username:  %s\n", opts.Target.Username)
+		fmt.Fprintf(opts.Out, "  Server:    %s\n", opts.Target.ServerURL)
+		fmt.Fprintf(opts.Out, "  Realm:     %s\n", opts.Target.Realm)
+		fmt.Fprintf(opts.Out, "  Mode:      %s\n", opts.Mode)
+		fmt.Fprintf(opts.Out, "  Username:  %s\n", opts.Target.Username)
 		return result, nil
 	}
 
-	token, expiry, err := authenticate(ctx, opts.Target)
+	token, expiry, err := authenticate(ctx, opts.Target, opts.HTTPClient)
 	if err != nil {
 		return nil, fmt.Errorf("authentication failed: %w", err)
 	}
 
 	for i, batch := range batches {
-		fmt.Printf("Importing batch %d/%d (%d users)...\n", i+1, len(batches), len(batch))
+		fmt.Fprintf(opts.Out, "Importing batch %d/%d (%d users)...\n", i+1, len(batches), len(batch))
 
 		// Refresh token if within 30s of expiry
 		if time.Until(expiry) < 30*time.Second {
-			token, expiry, err = authenticate(ctx, opts.Target)
+			token, expiry, err = authenticate(ctx, opts.Target, opts.HTTPClient)
 			if err != nil {
 				return nil, fmt.Errorf("token refresh failed before batch %d: %w", i+1, err)
 			}
 		}
 
-		batchResult, err := importBatch(ctx, opts.Target, token, batch, opts.Mode)
+		batchResult, err := importBatch(ctx, opts.Target, token, batch, opts.Mode, opts.HTTPClient)
 		if err != nil {
 			return nil, fmt.Errorf("batch %d/%d failed: %w", i+1, len(batches), err)
 		}
@@ -101,7 +113,7 @@ func ImportUsers(ctx context.Context, opts ImportOptions) (*ImportResult, error)
 
 // authenticate obtains an admin access token from Keycloak using the password grant.
 // Returns the token string and its expiry time.
-func authenticate(ctx context.Context, target *ResolvedTarget) (string, time.Time, error) {
+func authenticate(ctx context.Context, target *ResolvedTarget, client *http.Client) (string, time.Time, error) {
 	tokenURL := fmt.Sprintf("%s/realms/master/protocol/openid-connect/token", target.ServerURL)
 
 	form := url.Values{}
@@ -117,13 +129,16 @@ func authenticate(ctx context.Context, target *ResolvedTarget) (string, time.Tim
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return "", time.Time{}, fmt.Errorf("token request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", time.Time{}, fmt.Errorf("reading token response body (status %d): %w", resp.StatusCode, err)
+	}
 	if resp.StatusCode != http.StatusOK {
 		return "", time.Time{}, fmt.Errorf("token request returned %d: %s", resp.StatusCode, body)
 	}
@@ -150,7 +165,7 @@ type batchResult struct {
 	ErrorDetails []string
 }
 
-func importBatch(ctx context.Context, target *ResolvedTarget, token string, users []map[string]any, mode ImportMode) (*batchResult, error) {
+func importBatch(ctx context.Context, target *ResolvedTarget, token string, users []map[string]any, mode ImportMode, client *http.Client) (*batchResult, error) {
 	importURL := fmt.Sprintf("%s/admin/realms/%s/partialImport",
 		target.ServerURL, url.PathEscape(target.Realm))
 
@@ -171,13 +186,16 @@ func importBatch(ctx context.Context, target *ResolvedTarget, token string, user
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+token)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("import request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	respBody, _ := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading import response body: %w", err)
+	}
 
 	if resp.StatusCode == http.StatusForbidden {
 		return nil, fmt.Errorf("HTTP 403 Forbidden — ensure the admin user has realm management permissions for realm %q", target.Realm)

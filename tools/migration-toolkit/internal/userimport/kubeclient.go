@@ -2,7 +2,6 @@ package userimport
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -84,17 +83,25 @@ func ResolveFromCluster(ctx context.Context, keycloakName, namespace, realm, ser
 	}
 	if serverURL == "" {
 		return nil, fmt.Errorf(
-			"cannot determine Keycloak URL for %q: status.endpoints is empty and spec.hostname is not set. "+
+			"cannot determine Keycloak URL for %q: status.externalUrl, status.internalUrl, "+
+				"status.endpoints and spec.ingress.host are all empty. "+
 				"Pass --server-url to specify the URL explicitly",
 			keycloakName,
 		)
 	}
 	serverURL = strings.TrimRight(serverURL, "/")
 
-	// Resolve admin credentials secret name
+	// Resolve admin credentials secret name.
+	// Priority: spec.admin.existingSecret → spec.admin_access.existingSecret (legacy
+	// alias) → status.adminSecret written by the operator → conventional name.
 	secretName := kc.Spec.Admin.ExistingSecret
 	if secretName == "" {
-		// Fall back to the auto-generated convention used by the operator
+		secretName = kc.Spec.AdminAccess.ExistingSecret
+	}
+	if secretName == "" && kc.Status.AdminSecret != "" {
+		secretName = kc.Status.AdminSecret
+	}
+	if secretName == "" {
 		secretName = keycloakName + "-admin-credentials"
 	}
 
@@ -103,11 +110,11 @@ func ResolveFromCluster(ctx context.Context, keycloakName, namespace, realm, ser
 		return nil, fmt.Errorf("reading admin credentials secret %q in namespace %q: %w", secretName, namespace, err)
 	}
 
-	username, err := decodeSecretKey(secret.Data, "username", secretName)
+	username, err := secretKey(secret.Data, "username", secretName)
 	if err != nil {
 		return nil, err
 	}
-	password, err := decodeSecretKey(secret.Data, "password", secretName)
+	password, err := secretKey(secret.Data, "password", secretName)
 	if err != nil {
 		return nil, err
 	}
@@ -144,55 +151,45 @@ func ResolveFromFlags(serverURL, username, password, realm string) (*ResolvedTar
 }
 
 func resolveURL(kc internalk8s.KeycloakCR) string {
-	// Prefer status.endpoints.internal for in-cluster, but the toolkit
-	// runs outside the cluster so prefer admin > public > internal.
+	// Priority for an out-of-cluster tool:
+	//   1. status.endpoints.admin (explicit admin endpoint)
+	//   2. status.endpoints.public (explicit public endpoint)
+	//   3. status.externalUrl (operator-written external URL)
+	//   4. status.endpoints.internal (last resort — may not be reachable externally)
+	//   5. status.internalUrl
+	//   6. spec.ingress.host (derive from ingress config)
 	if u := kc.Status.Endpoints.Admin; u != "" {
 		return u
 	}
 	if u := kc.Status.Endpoints.Public; u != "" {
 		return u
 	}
+	if u := kc.Status.ExternalUrl; u != "" {
+		return u
+	}
 	if u := kc.Status.Endpoints.Internal; u != "" {
 		return u
 	}
-	// Fall back to constructing from spec.hostname
-	if kc.Spec.Hostname != "" {
+	if u := kc.Status.InternalUrl; u != "" {
+		return u
+	}
+	if kc.Spec.Ingress.Host != "" {
 		scheme := "http"
-		if kc.Spec.TLS.Enabled {
+		if kc.Spec.Ingress.TLSEnabled {
 			scheme = "https"
 		}
-		return fmt.Sprintf("%s://%s", scheme, kc.Spec.Hostname)
+		return fmt.Sprintf("%s://%s", scheme, kc.Spec.Ingress.Host)
 	}
 	return ""
 }
 
-func decodeSecretKey(data map[string][]byte, key, secretName string) (string, error) {
+// secretKey returns the string value of a key in a Kubernetes Secret's Data map.
+// Secret.Data is always base64-decoded by the Kubernetes client library —
+// the raw bytes can be used directly as the string value.
+func secretKey(data map[string][]byte, key, secretName string) (string, error) {
 	raw, ok := data[key]
 	if !ok {
 		return "", fmt.Errorf("key %q not found in secret %q", key, secretName)
 	}
-	// Kubernetes secret data is already base64-decoded by the client library,
-	// but guard against double-encoding in case the secret was created manually.
-	decoded := string(raw)
-	if isBase64(decoded) {
-		if b, err := base64.StdEncoding.DecodeString(decoded); err == nil {
-			return string(b), nil
-		}
-	}
-	return decoded, nil
-}
-
-// isBase64 is a heuristic — only used to handle manually created secrets
-// where operators may have base64-encoded the value themselves.
-func isBase64(s string) bool {
-	if len(s) == 0 || len(s)%4 != 0 {
-		return false
-	}
-	for _, c := range s {
-		if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-			(c >= '0' && c <= '9') || c == '+' || c == '/' || c == '=') {
-			return false
-		}
-	}
-	return true
+	return string(raw), nil
 }
