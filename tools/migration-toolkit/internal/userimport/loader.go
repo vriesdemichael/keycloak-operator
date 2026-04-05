@@ -56,10 +56,15 @@ func LoadUsersFile(path string, maxAge time.Duration) (*LoadResult, error) {
 		return nil, fmt.Errorf("parsing %q as user array: %w", path, err)
 	}
 
-	// Validate each user has at minimum a username field
+	// Validate each user has a non-empty username string
 	for i, u := range users {
-		if _, ok := u["username"]; !ok {
+		v, ok := u["username"]
+		if !ok {
 			return nil, fmt.Errorf("user at index %d in %q is missing required field \"username\"", i, path)
+		}
+		s, isStr := v.(string)
+		if !isStr || s == "" {
+			return nil, fmt.Errorf("user at index %d in %q has an empty or non-string \"username\" field", i, path)
 		}
 	}
 

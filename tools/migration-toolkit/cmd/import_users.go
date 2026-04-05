@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -85,7 +86,10 @@ func init() {
 }
 
 func runImportUsers(cmd *cobra.Command, args []string) error {
-	ctx := context.Background()
+	ctx := cmd.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
 
 	// Validate mode
 	mode, err := parseImportMode(importUsersOpts.mode)
@@ -148,12 +152,15 @@ func runImportUsers(cmd *cobra.Command, args []string) error {
 	}
 
 	// Execute import
+	httpClient := &http.Client{Timeout: 5 * time.Minute}
 	opts := userimport.ImportOptions{
-		Target:    target,
-		Users:     loaded.Users,
-		Mode:      mode,
-		BatchSize: importUsersOpts.batchSize,
-		DryRun:    importUsersOpts.dryRun,
+		Target:     target,
+		Users:      loaded.Users,
+		Mode:       mode,
+		BatchSize:  importUsersOpts.batchSize,
+		DryRun:     importUsersOpts.dryRun,
+		Out:        cmd.OutOrStdout(),
+		HTTPClient: httpClient,
 	}
 
 	result, err := userimport.ImportUsers(ctx, opts)

@@ -14,9 +14,12 @@ type KeycloakCR struct {
 
 // KeycloakSpec holds the relevant parts of the Keycloak CR spec.
 type KeycloakSpec struct {
-	Admin    KeycloakAdminConfig `json:"admin"`
-	Hostname string              `json:"hostname"`
-	TLS      KeycloakTLS         `json:"tls"`
+	// Admin holds credentials config (spec.admin).
+	Admin KeycloakAdminConfig `json:"admin"`
+	// AdminAccess is the legacy alias for Admin (spec.admin_access).
+	AdminAccess KeycloakAdminConfig `json:"admin_access"`
+	// Ingress holds ingress configuration used to derive the server URL as a fallback.
+	Ingress KeycloakIngress `json:"ingress"`
 }
 
 // KeycloakAdminConfig holds the admin credentials configuration.
@@ -25,15 +28,21 @@ type KeycloakAdminConfig struct {
 	ExistingSecret string `json:"existingSecret"`
 }
 
-// KeycloakTLS holds TLS configuration.
-type KeycloakTLS struct {
-	Enabled bool `json:"enabled"`
+// KeycloakIngress holds the ingress fields relevant to URL derivation.
+type KeycloakIngress struct {
+	Host       string `json:"host"`
+	TLSEnabled bool   `json:"tlsEnabled"`
 }
 
 // KeycloakStatus holds the relevant parts of the Keycloak CR status.
 type KeycloakStatus struct {
-	Phase     string             `json:"phase"`
-	Endpoints KeycloakEndpoints  `json:"endpoints"`
+	Phase string `json:"phase"`
+	// AdminSecret is the name of the Kubernetes secret holding admin credentials,
+	// written by the operator (always "{name}-admin-credentials").
+	AdminSecret string            `json:"adminSecret"`
+	ExternalUrl string            `json:"externalUrl"`
+	InternalUrl string            `json:"internalUrl"`
+	Endpoints   KeycloakEndpoints `json:"endpoints"`
 }
 
 // KeycloakEndpoints holds the access endpoints for the Keycloak instance.
