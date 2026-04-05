@@ -618,7 +618,10 @@ tasks:
   toolkit:build:
     desc: Build migration toolkit binary
     dir: tools/migration-toolkit
-    cmd: go build -o ../../.tmp/keycloak-migrate .
+    vars:
+      VERSION:
+        sh: git -C ../.. describe --tags --match "migration-toolkit-v*" --abbrev=7 2>/dev/null | sed 's/migration-toolkit-v//' || echo "dev"
+    cmd: go build -ldflags "-s -w -X github.com/vriesdemichael/keycloak-operator/tools/migration-toolkit/cmd.version={{.VERSION}}" -o ../../.tmp/keycloak-migrate .
     sources:
       - tools/migration-toolkit/**/*.go
       - tools/migration-toolkit/go.mod

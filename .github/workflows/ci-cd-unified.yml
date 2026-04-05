@@ -239,6 +239,10 @@ jobs:
       chart_realm_version: ${{ steps.release.outputs.chart_realm_version }}
       chart_client_released: ${{ steps.release.outputs.chart_client_released }}
       chart_client_version: ${{ steps.release.outputs.chart_client_version }}
+      # Migration Toolkit (Go binary)
+      toolkit_released: ${{ steps.release.outputs.toolkit_released }}
+      toolkit_version: ${{ steps.release.outputs.toolkit_version }}
+      toolkit_tag: ${{ steps.release.outputs.toolkit_tag }}
       # PRs info (for auto-merge) - with separate-pull-requests, this is an array
       prs: ${{ steps.release.outputs.prs }}
       releases_created: ${{ steps.release.outputs.releases_created }}
@@ -314,6 +318,9 @@ jobs:
           RP1_CHART_REALM_VERSION: ${{ steps.release-1.outputs['charts/keycloak-realm--version'] }}
           RP1_CHART_CLIENT_RELEASED: ${{ steps.release-1.outputs['charts/keycloak-client--release_created'] }}
           RP1_CHART_CLIENT_VERSION: ${{ steps.release-1.outputs['charts/keycloak-client--version'] }}
+          RP1_TOOLKIT_RELEASED: ${{ steps.release-1.outputs['tools/migration-toolkit--release_created'] }}
+          RP1_TOOLKIT_VERSION: ${{ steps.release-1.outputs['tools/migration-toolkit--version'] }}
+          RP1_TOOLKIT_TAG: ${{ steps.release-1.outputs['tools/migration-toolkit--tag_name'] }}
           # Attempt 2 outputs
           RP2_RELEASES_CREATED: ${{ steps.release-2.outputs.releases_created }}
           RP2_PRS: ${{ steps.release-2.outputs.prs }}
@@ -330,6 +337,9 @@ jobs:
           RP2_CHART_REALM_VERSION: ${{ steps.release-2.outputs['charts/keycloak-realm--version'] }}
           RP2_CHART_CLIENT_RELEASED: ${{ steps.release-2.outputs['charts/keycloak-client--release_created'] }}
           RP2_CHART_CLIENT_VERSION: ${{ steps.release-2.outputs['charts/keycloak-client--version'] }}
+          RP2_TOOLKIT_RELEASED: ${{ steps.release-2.outputs['tools/migration-toolkit--release_created'] }}
+          RP2_TOOLKIT_VERSION: ${{ steps.release-2.outputs['tools/migration-toolkit--version'] }}
+          RP2_TOOLKIT_TAG: ${{ steps.release-2.outputs['tools/migration-toolkit--tag_name'] }}
           # Attempt 3 outputs
           RP3_RELEASES_CREATED: ${{ steps.release-3.outputs.releases_created }}
           RP3_PRS: ${{ steps.release-3.outputs.prs }}
@@ -346,6 +356,9 @@ jobs:
           RP3_CHART_REALM_VERSION: ${{ steps.release-3.outputs['charts/keycloak-realm--version'] }}
           RP3_CHART_CLIENT_RELEASED: ${{ steps.release-3.outputs['charts/keycloak-client--release_created'] }}
           RP3_CHART_CLIENT_VERSION: ${{ steps.release-3.outputs['charts/keycloak-client--version'] }}
+          RP3_TOOLKIT_RELEASED: ${{ steps.release-3.outputs['tools/migration-toolkit--release_created'] }}
+          RP3_TOOLKIT_VERSION: ${{ steps.release-3.outputs['tools/migration-toolkit--version'] }}
+          RP3_TOOLKIT_TAG: ${{ steps.release-3.outputs['tools/migration-toolkit--tag_name'] }}
         run: |
           # Debug: Show all release-please outputs
           echo "### Debug: Release Please Outputs" >> $GITHUB_STEP_SUMMARY
@@ -381,6 +394,11 @@ jobs:
                   CHART_CLIENT_RELEASED="true"
                   CHART_CLIENT_VERSION="$SINGLE_VERSION"
                   ;;
+                "tools/migration-toolkit")
+                  TOOLKIT_RELEASED="true"
+                  TOOLKIT_VERSION="$SINGLE_VERSION"
+                  TOOLKIT_TAG="$SINGLE_TAG"
+                  ;;
               esac
             fi
           }
@@ -400,6 +418,9 @@ jobs:
             CHART_REALM_VERSION="$RP1_CHART_REALM_VERSION"
             CHART_CLIENT_RELEASED="$RP1_CHART_CLIENT_RELEASED"
             CHART_CLIENT_VERSION="$RP1_CHART_CLIENT_VERSION"
+            TOOLKIT_RELEASED="$RP1_TOOLKIT_RELEASED"
+            TOOLKIT_VERSION="$RP1_TOOLKIT_VERSION"
+            TOOLKIT_TAG="$RP1_TOOLKIT_TAG"
             # If single release format, map it to the correct component
             map_single_release "$RP1_SINGLE_RELEASED" "$RP1_SINGLE_VERSION" "$RP1_SINGLE_TAG" "$RP1_SINGLE_PATH"
           elif [[ "${{ steps.release-2.outcome }}" == "success" ]]; then
@@ -415,6 +436,9 @@ jobs:
             CHART_REALM_VERSION="$RP2_CHART_REALM_VERSION"
             CHART_CLIENT_RELEASED="$RP2_CHART_CLIENT_RELEASED"
             CHART_CLIENT_VERSION="$RP2_CHART_CLIENT_VERSION"
+            TOOLKIT_RELEASED="$RP2_TOOLKIT_RELEASED"
+            TOOLKIT_VERSION="$RP2_TOOLKIT_VERSION"
+            TOOLKIT_TAG="$RP2_TOOLKIT_TAG"
             map_single_release "$RP2_SINGLE_RELEASED" "$RP2_SINGLE_VERSION" "$RP2_SINGLE_TAG" "$RP2_SINGLE_PATH"
           elif [[ "${{ steps.release-3.outcome }}" == "success" ]]; then
             echo "Release Please succeeded on attempt 3"
@@ -429,6 +453,9 @@ jobs:
             CHART_REALM_VERSION="$RP3_CHART_REALM_VERSION"
             CHART_CLIENT_RELEASED="$RP3_CHART_CLIENT_RELEASED"
             CHART_CLIENT_VERSION="$RP3_CHART_CLIENT_VERSION"
+            TOOLKIT_RELEASED="$RP3_TOOLKIT_RELEASED"
+            TOOLKIT_VERSION="$RP3_TOOLKIT_VERSION"
+            TOOLKIT_TAG="$RP3_TOOLKIT_TAG"
             map_single_release "$RP3_SINGLE_RELEASED" "$RP3_SINGLE_VERSION" "$RP3_SINGLE_TAG" "$RP3_SINGLE_PATH"
           else
             echo "### ❌ Release Please Failed" >> $GITHUB_STEP_SUMMARY
@@ -465,6 +492,11 @@ jobs:
           echo "chart_client_released=${CHART_CLIENT_RELEASED:-false}" >> $GITHUB_OUTPUT
           echo "chart_client_version=${CHART_CLIENT_VERSION:-}" >> $GITHUB_OUTPUT
 
+          # Migration toolkit outputs
+          echo "toolkit_released=${TOOLKIT_RELEASED:-false}" >> $GITHUB_OUTPUT
+          echo "toolkit_version=${TOOLKIT_VERSION:-}" >> $GITHUB_OUTPUT
+          echo "toolkit_tag=${TOOLKIT_TAG:-}" >> $GITHUB_OUTPUT
+
           # Summary
           echo "### 🎯 Release Please Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -476,6 +508,7 @@ jobs:
             [[ "$CHART_OP_RELEASED" == "true" ]] && echo "- ✅ Chart Operator: v${CHART_OP_VERSION}" >> $GITHUB_STEP_SUMMARY || true
             [[ "$CHART_REALM_RELEASED" == "true" ]] && echo "- ✅ Chart Realm: v${CHART_REALM_VERSION}" >> $GITHUB_STEP_SUMMARY || true
             [[ "$CHART_CLIENT_RELEASED" == "true" ]] && echo "- ✅ Chart Client: v${CHART_CLIENT_VERSION}" >> $GITHUB_STEP_SUMMARY || true
+            [[ "$TOOLKIT_RELEASED" == "true" ]] && echo "- ✅ Migration Toolkit: v${TOOLKIT_VERSION}" >> $GITHUB_STEP_SUMMARY || true
           elif [[ -n "$PRS" && "$PRS" != "[]" ]]; then
             echo "**Release PRs:** Created/Updated" >> $GITHUB_STEP_SUMMARY
           else
@@ -820,6 +853,83 @@ jobs:
           registry-owner: ${{ github.repository_owner }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           github-actor: ${{ github.actor }}
+
+  publish-migration-toolkit:
+    name: Publish Migration Toolkit Binaries
+    needs: [release-please]
+    if: needs.release-please.outputs.toolkit_released == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/migration-toolkit/go.mod
+          cache-dependency-path: tools/migration-toolkit/go.sum
+
+      - name: Build binaries
+        env:
+          VERSION: ${{ needs.release-please.outputs.toolkit_version }}
+        run: |
+          cd tools/migration-toolkit
+          mkdir -p dist
+          platforms=(
+            "linux/amd64"
+            "linux/arm64"
+            "darwin/amd64"
+            "darwin/arm64"
+            "windows/amd64"
+          )
+          for platform in "${platforms[@]}"; do
+            GOOS="${platform%/*}"
+            GOARCH="${platform#*/}"
+            output="dist/keycloak-migrate-${GOOS}-${GOARCH}"
+            [[ "$GOOS" == "windows" ]] && output="${output}.exe"
+            echo "Building $output..."
+            GOOS="$GOOS" GOARCH="$GOARCH" go build \
+              -ldflags "-s -w -X github.com/vriesdemichael/keycloak-operator/tools/migration-toolkit/cmd.version=${VERSION}" \
+              -o "$output" .
+          done
+
+      - name: Generate checksums
+        run: |
+          cd tools/migration-toolkit/dist
+          sha256sum * > checksums.txt
+          echo "Checksums:"
+          cat checksums.txt
+
+      - name: Generate SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          path: tools/migration-toolkit
+          format: cyclonedx-json
+          output-file: tools/migration-toolkit/dist/sbom.cyclonedx.json
+          upload-release-assets: false
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: tools/migration-toolkit/dist/keycloak-migrate-*
+
+      - name: Upload release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: migration-toolkit-v${{ needs.release-please.outputs.toolkit_version }}
+        run: |
+          gh release upload "$TAG" tools/migration-toolkit/dist/* \
+            --repo "${{ github.repository }}"
+          echo "### 📦 Migration Toolkit Released" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Tag: \`$TAG\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Assets uploaded:**" >> $GITHUB_STEP_SUMMARY
+          ls tools/migration-toolkit/dist/ | while read f; do echo "- \`$f\`"; done >> $GITHUB_STEP_SUMMARY
 
   # =====================================================
   # PHASE 5: DOCUMENTATION
