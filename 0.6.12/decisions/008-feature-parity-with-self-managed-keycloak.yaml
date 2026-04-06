@@ -1,0 +1,14 @@
+number: 8
+title: Feature parity with self-managed Keycloak
+category: architecture
+decision: The operator must support all Keycloak configuration options available in
+  self-managed instances. CRDs should map 1:1 to Keycloak Admin API capabilities.
+agent_instructions: Map CRD fields directly to Keycloak API representations. Use
+  Pydantic models from src/keycloak_operator/models/keycloak_api.py (generated from
+  OpenAPI spec keycloak-api-spec.yaml). Support all Keycloak features. Document any
+  intentional feature exclusions with rationale.
+rationale: 'No lock-in: Users can migrate from self-managed to operator-managed without
+  losing functionality. Complete solution: Operator should handle all Keycloak use
+  cases, not just basic ones. API alignment: Following Keycloak''s data models ensures
+  correctness and updates. Trade-off: Larger CRD specs, but complete feature coverage.'
+provenance: guided-ai
