@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.4](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.3...migration-toolkit-v0.1.4) (2026-04-06)
+
+
+### Features
+
+* **migration-toolkit:** add GHA release workflow with cross-platform binaries, checksums, and SBOM ([2af35ee](https://github.com/vriesdemichael/keycloak-operator/commit/2af35ee1b60048167b7675d6f18478f07efe60c6)), closes [#537](https://github.com/vriesdemichael/keycloak-operator/issues/537)
+
+
+### Bug Fixes
+
+* **migration-toolkit:** address Copilot review comments on E2E test suite and release workflow ([600b435](https://github.com/vriesdemichael/keycloak-operator/commit/600b435e97422127b10a2399a165b018d8f534f5))
+
 ## [0.1.3](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.2...migration-toolkit-v0.1.3) (2026-04-06)
 
 
