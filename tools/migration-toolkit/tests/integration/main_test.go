@@ -15,6 +15,7 @@ package integration
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -306,15 +307,13 @@ func kubectlGetSecretKey(secret, ns, key string) (string, error) {
 	return decoded, nil
 }
 
-// kubectlDecodeBase64 decodes a base64 string using the system's base64 tool.
+// kubectlDecodeBase64 decodes a base64 string using the Go standard library.
 func kubectlDecodeBase64(encoded string) (string, error) {
-	cmd := exec.Command("base64", "-d")
-	cmd.Stdin = strings.NewReader(encoded)
-	out, err := cmd.Output()
+	decoded, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encoded))
 	if err != nil {
 		return "", fmt.Errorf("base64 decode: %w", err)
 	}
-	return string(out), nil
+	return string(decoded), nil
 }
 
 // startPortForward starts `kubectl port-forward` and returns the local port.

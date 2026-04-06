@@ -271,7 +271,8 @@ func applyTransformOutput(t *testing.T, outputDir string) string {
 	return realmName
 }
 
-// waitForRealmReady waits until the realm CR is Ready and clients are Ready.
+// waitForRealmReady waits until the realm CR is Ready and all client CRs in
+// testRealmNS are Ready.
 func waitForRealmReady(t *testing.T, realmName string, timeout time.Duration) {
 	t.Helper()
 	// Realm CR name is typically the realm name lowercased
@@ -279,6 +280,19 @@ func waitForRealmReady(t *testing.T, realmName string, timeout time.Duration) {
 	if err := waitForKeycloakRealmCRReady(crName, testRealmNS, timeout); err != nil {
 		dumpCRStatus(t)
 		t.Fatal(err)
+	}
+	// Also wait for every KeycloakClient CR in the namespace to reach Ready.
+	out, err := kubectl("get", "keycloakclient", "-n", testRealmNS,
+		"-o", "jsonpath={.items[*].metadata.name}")
+	if err != nil {
+		// No client CRs present — that's fine.
+		return
+	}
+	for _, clientCRName := range strings.Fields(out) {
+		if err := waitForKeycloakClientCRReady(clientCRName, testRealmNS, timeout); err != nil {
+			dumpCRStatus(t)
+			t.Fatal(err)
+		}
 	}
 }
 
