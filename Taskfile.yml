@@ -630,9 +630,28 @@ tasks:
       - .tmp/keycloak-migrate
 
   toolkit:test:
-    desc: Run migration toolkit tests
+    desc: Run migration toolkit unit tests
     dir: tools/migration-toolkit
     cmd: go test ./... -v
+
+  toolkit:test:integration:
+    desc: Run migration toolkit E2E integration tests (requires Kind cluster with operator image loaded)
+    dir: tools/migration-toolkit
+    env:
+      REPO_ROOT: "{{.ROOT_DIR}}"
+      KEYCLOAK_VERSION: "{{.KEYCLOAK_VERSION}}"
+    cmd: go test -tags integration ./tests/integration/... -v -timeout 600s
+
+  toolkit:test:all:
+    desc: Full migration toolkit test suite (unit + E2E) with fresh Kind cluster
+    cmds:
+      - task: cluster:create
+      - task: infra:cnpg
+      - task: infra:cert-manager
+      - task: image:load-operator
+      - task: image:load-keycloak
+      - task: toolkit:test
+      - task: toolkit:test:integration
 
   toolkit:lint:
     desc: Lint migration toolkit (go vet)

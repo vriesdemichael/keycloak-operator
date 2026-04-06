@@ -1,0 +1,130 @@
+{
+  "realm": "toolkit-e2e",
+  "enabled": true,
+  "displayName": "Toolkit E2E Test Realm",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": false,
+  "resetPasswordAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "failureFactor": 30,
+  "passwordPolicy": "length(8) and upperCase(1) and specialChars(1)",
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "roles": {
+    "realm": [
+      {
+        "name": "offline_access",
+        "description": "${role_offline-access}",
+        "composite": false
+      },
+      {
+        "name": "uma_authorization",
+        "description": "${role_uma_authorization}",
+        "composite": false
+      },
+      {
+        "name": "default-roles-toolkit-e2e",
+        "description": "${role_default-roles}",
+        "composite": true,
+        "composites": {
+          "realm": ["offline_access", "uma_authorization"]
+        }
+      },
+      {
+        "name": "app-user",
+        "description": "Standard application user",
+        "composite": false
+      },
+      {
+        "name": "app-admin",
+        "description": "Application administrator",
+        "composite": false
+      }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "toolkit-public-app",
+      "name": "Toolkit Public App",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": [
+        "https://app.toolkit-test.example.com/*",
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "https://app.toolkit-test.example.com",
+        "http://localhost:3000"
+      ],
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "toolkit-backend",
+      "name": "Toolkit Backend Service",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "secret": "toolkit-backend-secret-value-e2e",
+      "protocol": "openid-connect",
+      "attributes": {
+        "use.jwks.url": "false"
+      }
+    }
+  ],
+  "users": [
+    {
+      "username": "alice",
+      "email": "alice@toolkit-test.example.com",
+      "firstName": "Alice",
+      "lastName": "Testuser",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["app-user"],
+      "credentials": [
+        {
+          "type": "password",
+          "secretData": "{\"value\":\"AQIDBAUGBwgJCgsMDQ4PEA==\",\"salt\":\"ZmFrZXNhbHQ=\"}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
+        }
+      ]
+    },
+    {
+      "username": "bob",
+      "email": "bob@toolkit-test.example.com",
+      "firstName": "Bob",
+      "lastName": "Manager",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["app-user", "app-admin"],
+      "credentials": [
+        {
+          "type": "password",
+          "secretData": "{\"value\":\"BQIDBAUGBwgJCgsMDQ4PEA==\",\"salt\":\"ZmFrZXNhbHQ=\"}",
+          "credentialData": "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\"}"
+        }
+      ]
+    },
+    {
+      "username": "charlie",
+      "email": "charlie@toolkit-test.example.com",
+      "firstName": "Charlie",
+      "lastName": "Viewer",
+      "enabled": true,
+      "emailVerified": false,
+      "realmRoles": [],
+      "credentials": []
+    }
+  ]
+}
