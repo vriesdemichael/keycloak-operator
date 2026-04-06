@@ -128,6 +128,7 @@ nav:
       - Backup & Restore: operations/backup-restore.md
       - Troubleshooting: operations/troubleshooting.md
       - Migration & Upgrade: operations/migration.md
+      - Escape Hatch: operations/escape-hatch.md
   - Reference:
       - Keycloak CRD: reference/keycloak-crd.md
       - KeycloakRealm CRD: reference/keycloak-realm-crd.md
