@@ -1,0 +1,141 @@
+number: 94
+title: End-to-end integration testing for migration toolkit
+category: development
+decision: >
+  Add a Go-based end-to-end integration test suite for the migration toolkit
+  (`tools/migration-toolkit/tests/integration/`). Tests exercise the full
+  round-trip pipeline:
+
+    1. A curated Keycloak realm export JSON (testdata/source-realm.json) is
+       the authoritative input.
+    2. `keycloak-migrate transform` converts it to Helm chart values and
+       users.json.
+    3. The generated values are applied via `helm upgrade --install` against
+       the keycloak-realm and keycloak-client charts, targeting an
+       operator-managed Keycloak instance running in the Kind test cluster.
+    4. The operator reconciles the CRs, creating the realm and clients in
+       Keycloak.
+    5. `keycloak-migrate import-users` loads users from users.json.
+    6. The final state is read back from Keycloak via its Admin REST API and
+       compared semantically against the original testdata.
+
+  Tests are tagged `//go:build integration` and run separately from the
+  fast unit tests via `task toolkit:test:integration`. The new
+  `task toolkit:test:all` task recreates a Kind cluster and then runs both
+  unit and integration tests.
+
+  A dedicated `toolkit-integration-tests` CI job runs the suite in parallel
+  with the Python operator integration tests in the same pipeline phase.
+
+  Verification uses the Keycloak Admin REST API directly (net/http + stdlib
+  only, no new Go dependencies). For client secrets, the Keycloak Admin API
+  endpoint `GET /admin/realms/{realm}/clients/{id}/client-secret` is used
+  to confirm the secret value was preserved from the source export.
+
+  kc.sh export is NOT used for the round-trip comparison because it requires
+  database-level access and a Kubernetes Job, which is high infrastructure
+  cost for a primarily unit-level assertion. The partial-export REST API
+  provides sufficient fidelity for realm settings, client config, and role
+  assignments. The one known gap (hashed credentials) is explicitly
+  documented and tested separately (see credential round-trip limitation
+  below).
+
+agent_instructions: >
+  Integration tests live in `tools/migration-toolkit/tests/integration/`.
+  All test files use `//go:build integration` build tag.
+  Run with: `go test -tags integration ./tests/integration/... -v -timeout 600s`
+  Or via Taskfile: `task toolkit:test:integration`
+
+  Test infrastructure requirements (provided by the Kind cluster):
+  - CNPG operator installed (infra:cnpg)
+  - Cert-manager installed (infra:cert-manager)
+  - Operator image loaded as `keycloak-operator:test` into Kind
+  - `keycloak-optimized:{KEYCLOAK_VERSION}` image loaded into Kind
+
+  TestMain deploys the operator + KC via `helm upgrade --install` using
+  `charts/keycloak-operator/` from the repo root. The REPO_ROOT env var
+  (set by Taskfile) provides the absolute path to the repo root.
+
+  After TestMain runs helm, it waits for the Keycloak CR to reach Ready
+  phase by polling `kubectl get keycloak {name} -n {ns} -o jsonpath`.
+  Then port-forwards using `kubectl port-forward` and reads admin
+  credentials from the `{name}-admin-credentials` secret.
+
+  Package-level vars in main_test.go expose infrastructure to all tests:
+    binaryPath - absolute path to compiled keycloak-migrate binary
+    testKCURL  - http://localhost:{port}
+    testKCUser, testKCPass - admin credentials
+    testKCName, testKCNS   - KC CR name and namespace
+    testRealm NS           - namespace for realm/client CRs
+    repoRoot               - absolute path to repo root
+
+  Credential round-trip limitation: Keycloak's partial-export REST API
+  does NOT return hashed passwords. The round-trip test therefore skips
+  credential comparison and instead verifies users exist with correct
+  attributes and role assignments (credentials are verified to be non-empty
+  via the credentials field length in the Keycloak Admin users API).
+
+  Client secret round-trip: The full kc.sh export DOES include client
+  secrets (they are stored in the database). The tests therefore verify
+  client secret values via `GET /admin/realms/{realm}/clients/{id}/
+  client-secret` after applying the transformed CRs, comparing against the
+  value in the source testdata.
+
+  Test naming: Use TestRoundTrip_* for pipeline tests, TestImportUsers_*
+  for import-specific tests, TestBinary_* for binary sanity tests.
+
+rationale: >
+  The migration toolkit is an operator-adjacent tool that touches all three
+  deployment concerns (file transformation, Kubernetes resource creation,
+  Keycloak API). Unit tests cover the transformation logic in isolation but
+  cannot detect regressions in the end-to-end flow. A live-cluster test
+  catches integration failures that unit tests miss: chart rendering bugs,
+  CRD schema mismatches, operator reconciliation race conditions, and
+  Keycloak API version skew.
+
+  Black-box testing via the compiled binary (rather than white-box go test
+  importing internal packages) is preferred because:
+  - It tests the actual artifact that ships to users.
+  - It catches ldflags issues (e.g. version injection failures).
+  - It validates the full CLI surface, including flag parsing and error output.
+
+  The Admin REST API for verification is chosen over kc.sh export because:
+  - It requires no additional Kubernetes Job infrastructure.
+  - It runs entirely from the test host via port-forward.
+  - It is sufficient for the key assertions (realm settings, clients, users,
+    roles, and client secret values via the dedicated secret endpoint).
+  - kc.sh export would require database credentials and scaling Keycloak
+    down, which is unnecessarily destructive for a per-PR integration test.
+
+  A parallel CI job (not blocking the Python integration test job) keeps
+  feedback fast. Both jobs must pass before merge via all-required-checks-
+  passed.
+
+rejected_alternatives:
+  - alternative: Embed toolkit E2E tests within the Python integration suite
+    reason: >
+      The Python test suite already takes 20+ minutes and requires Python
+      dependencies. Adding Go binary invocation from Python would create an
+      awkward cross-language testing dependency. A dedicated Go test suite
+      is idiomatic and independently runnable.
+  - alternative: Use kc.sh export for the full round-trip comparison
+    reason: >
+      kc.sh export requires database access (KC scaled down), a Kubernetes
+      Job, and kubectl cp to retrieve the export. This adds ~3 minutes per
+      test run and couples the test to the database configuration. The Admin
+      REST API provides equivalent fidelity for all assertions except raw
+      credential hashes (which are not meaningful to compare anyway since
+      Keycloak generates new salt on import).
+  - alternative: White-box testing via go test importing internal packages
+    reason: >
+      Does not test the binary artifact. Misses CLI surface bugs. The
+      userimport and transform packages are already covered by unit tests;
+      the integration tests should validate that the pieces work together
+      as a user would invoke them.
+  - alternative: Single combined toolkit:test:all to replace existing test:all
+    reason: >
+      The Python operator tests and Go toolkit tests have different
+      infrastructure needs and lifecycle. Combining them would require
+      waiting for both test suites sequentially and would make test failure
+      attribution harder.
+provenance: guided-ai

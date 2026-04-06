@@ -149,12 +149,97 @@ jobs:
           github-actor: ${{ github.actor }}
           run-id: ${{ github.run_id }}
 
+  toolkit-integration-tests:
+    name: Migration Toolkit E2E Tests
+    needs: [detect, build-operator, unit-tests, code-quality]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tools/migration-toolkit/go.mod
+          cache-dependency-path: tools/migration-toolkit/go.sum
+
+      - name: Download operator image
+        uses: actions/download-artifact@v6
+        with:
+          name: operator-image
+          path: /tmp
+
+      - name: Load operator image
+        run: |
+          docker load --input /tmp/operator-test.tar
+          mkdir -p .task
+          touch .task/image_build_operator
+
+      - uses: ./.github/actions/setup-tools
+
+      - uses: helm/kind-action@v1.13.0
+        with:
+          install_only: true
+          version: v0.20.0
+          kubectl_version: v1.30.0
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.14.0
+
+      - name: Create Kind cluster and install infrastructure
+        env:
+          KIND_CLUSTER_NAME: toolkit-test-${{ github.run_id }}
+          KEYCLOAK_VERSION: ${{ env.KEYCLOAK_VERSION }}
+        run: |
+          KIND_CLUSTER_NAME=$KIND_CLUSTER_NAME bash scripts/kind-setup.sh
+          kubectl config use-context kind-$KIND_CLUSTER_NAME
+          bash scripts/install-cnpg.sh
+          bash scripts/install-cert-manager.sh
+
+      - name: Prepare Keycloak optimized image
+        env:
+          KEYCLOAK_IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
+        run: |
+          docker pull "${KEYCLOAK_IMAGE}"
+          docker tag "${KEYCLOAK_IMAGE}" keycloak-optimized:${{ env.KEYCLOAK_VERSION }}
+          kind load docker-image keycloak-optimized:${{ env.KEYCLOAK_VERSION }} \
+            --name toolkit-test-${{ github.run_id }}
+
+      - name: Load operator image into Kind
+        run: |
+          kind load docker-image keycloak-operator:test \
+            --name toolkit-test-${{ github.run_id }}
+
+      - name: Run toolkit E2E integration tests
+        env:
+          REPO_ROOT: ${{ github.workspace }}
+          KEYCLOAK_VERSION: ${{ env.KEYCLOAK_VERSION }}
+          KUBECONFIG: ${{ env.HOME }}/.kube/config
+        run: |
+          cd tools/migration-toolkit
+          go test -tags integration ./tests/integration/... -v -timeout 600s 2>&1 | \
+            tee /tmp/toolkit-integration-output.txt
+
+      - name: Upload test output on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: toolkit-integration-output-${{ github.run_id }}
+          path: /tmp/toolkit-integration-output.txt
+          retention-days: 7
+
   # =====================================================
   # CHECKPOINT: All required checks passed
   # =====================================================
   all-required-checks-passed:
     name: All Required Checks Passed
-    needs: [detect, unit-tests, code-quality, docs-validation, security-scans, integration-tests]
+    needs: [detect, unit-tests, code-quality, docs-validation, security-scans, integration-tests, toolkit-integration-tests]
     if: always()
     runs-on: ubuntu-latest
     outputs:
@@ -171,6 +256,7 @@ jobs:
           echo "- Docs Validation: ${{ needs.docs-validation.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Security Scans: ${{ needs.security-scans.result }}" >> $GITHUB_STEP_SUMMARY
           echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Toolkit E2E Tests: ${{ needs.toolkit-integration-tests.result }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           # Check if any required job failed or was cancelled
@@ -179,11 +265,13 @@ jobs:
              [[ "${{ needs.docs-validation.result }}" == "failure" ]] || \
              [[ "${{ needs.security-scans.result }}" == "failure" ]] || \
              [[ "${{ needs.integration-tests.result }}" == "failure" ]] || \
+             [[ "${{ needs.toolkit-integration-tests.result }}" == "failure" ]] || \
              [[ "${{ needs.unit-tests.result }}" == "cancelled" ]] || \
              [[ "${{ needs.code-quality.result }}" == "cancelled" ]] || \
              [[ "${{ needs.docs-validation.result }}" == "cancelled" ]] || \
              [[ "${{ needs.security-scans.result }}" == "cancelled" ]] || \
-             [[ "${{ needs.integration-tests.result }}" == "cancelled" ]]; then
+             [[ "${{ needs.integration-tests.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.toolkit-integration-tests.result }}" == "cancelled" ]]; then
             echo "❌ Required checks failed or were cancelled" >> $GITHUB_STEP_SUMMARY
             echo "passed=false" >> $GITHUB_OUTPUT
             exit 1
@@ -194,7 +282,8 @@ jobs:
              [[ "${{ needs.code-quality.result }}" == "skipped" ]] || \
              [[ "${{ needs.docs-validation.result }}" == "skipped" ]] || \
              [[ "${{ needs.security-scans.result }}" == "skipped" ]] || \
-             [[ "${{ needs.integration-tests.result }}" == "skipped" ]]; then
+             [[ "${{ needs.integration-tests.result }}" == "skipped" ]] || \
+             [[ "${{ needs.toolkit-integration-tests.result }}" == "skipped" ]]; then
             echo "⚠️ Quality checks should not be skipped" >> $GITHUB_STEP_SUMMARY
             echo "passed=false" >> $GITHUB_OUTPUT
             exit 1
