@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.9.8](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.7...operator-image-v0.9.8) (2026-04-06)
+
+
+### Features
+
+* **migration-toolkit:** add GHA release workflow with cross-platform binaries, checksums, and SBOM ([2af35ee](https://github.com/vriesdemichael/keycloak-operator/commit/2af35ee1b60048167b7675d6f18478f07efe60c6)), closes [#537](https://github.com/vriesdemichael/keycloak-operator/issues/537)
+
+
+### Bug Fixes
+
+* **migration-toolkit:** address Copilot review comments on E2E test suite and release workflow ([600b435](https://github.com/vriesdemichael/keycloak-operator/commit/600b435e97422127b10a2399a165b018d8f534f5))
+
 ## [0.9.7](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.6...operator-image-v0.9.7) (2026-04-03)
 
 
