@@ -1318,6 +1318,95 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="User Migration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#import-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        import-users
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="import-users">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input-flags_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credential-resolution-cluster-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credential resolution — cluster mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credential-resolution-explicit-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credential resolution — explicit flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#import-behaviour-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import behaviour flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#import-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -4615,6 +4704,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/093-user-import-via-migration-toolkit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-093: User import via migration toolkit import-users command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4923,6 +5040,95 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="User Migration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#import-users" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        import-users
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="import-users">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#input-flags_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Input flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credential-resolution-cluster-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credential resolution — cluster mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#credential-resolution-explicit-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Credential resolution — explicit flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#import-behaviour-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import behaviour flags
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#import-modes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Import modes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -5196,40 +5402,222 @@
 </ul>
 <h2 id="user-migration">User Migration<a class="headerlink" href="#user-migration" title="Permanent link">&para;</a></h2>
 <p>The toolkit extracts users from the export into <code>users.json</code> but does <strong>not</strong> generate CRDs for them. User management is stateful data, not desired-state configuration, and is deliberately outside the scope of this operator's CRD model.</p>
-<p>For user migration options, see the <a href="../export-realms/#3-import-users-data-migration">Realm Export Guide — Import Users</a>.</p>
+<p>Use the <code>import-users</code> subcommand to import <code>users.json</code> into a running Keycloak instance managed by this operator:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>--input<span class="w"> </span>migration-output/my-realm/users.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span>--keycloak<span class="w"> </span>my-keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span>--realm<span class="w"> </span>my-realm
+</span></code></pre></div>
+<p>For all options see <a href="#import-users"><code>import-users</code> command reference</a> below. For background on user migration strategies, see the <a href="../export-realms/#3-import-users-data-migration">Realm Export Guide — Import Users</a>.</p>
+<hr />
+<h3 id="import-users"><code>import-users</code><a class="headerlink" href="#import-users" title="Permanent link">&para;</a></h3>
+<p>Imports the <code>users.json</code> file produced by <code>transform</code> into a Keycloak realm using the Partial Import API. The import is idempotent by default (SKIP mode): running it twice does not duplicate users.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="o">[</span>flags<span class="o">]</span>
+</span></code></pre></div>
+<h4 id="input-flags_1">Input flags<a class="headerlink" href="#input-flags_1" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--input</code></td>
+<td><code>users.json</code></td>
+<td>Path to <code>users.json</code> from <code>keycloak-migrate transform</code></td>
+</tr>
+<tr>
+<td><code>--max-age</code></td>
+<td><code>24h</code></td>
+<td>Reject input files older than this duration (0 = no limit)</td>
+</tr>
+</tbody>
+</table>
+<h4 id="credential-resolution-cluster-mode">Credential resolution — cluster mode<a class="headerlink" href="#credential-resolution-cluster-mode" title="Permanent link">&para;</a></h4>
+<p>Reads admin credentials directly from the Kubernetes cluster using your current <code>kubeconfig</code> context. No explicit credentials needed.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--keycloak</code></td>
+<td></td>
+<td>Name of the <code>Keycloak</code> CR to read credentials from</td>
+</tr>
+<tr>
+<td><code>--namespace</code>, <code>-n</code></td>
+<td><em>(current namespace)</em></td>
+<td>Namespace of the <code>Keycloak</code> CR</td>
+</tr>
+</tbody>
+</table>
+<h4 id="credential-resolution-explicit-flags">Credential resolution — explicit flags<a class="headerlink" href="#credential-resolution-explicit-flags" title="Permanent link">&para;</a></h4>
+<p>For environments where RBAC does not permit reading secrets from the cluster.</p>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--server-url</code></td>
+<td></td>
+<td>Keycloak server URL (e.g. <code>https://keycloak.example.com</code>)</td>
+</tr>
+<tr>
+<td><code>--username</code></td>
+<td></td>
+<td>Admin username</td>
+</tr>
+<tr>
+<td><code>--password</code></td>
+<td></td>
+<td>Admin password</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition tip">
+<p class="admonition-title">Credential resolution priority</p>
+<p>If <code>--username</code> or <code>--password</code> is provided, explicit credentials are used and <code>--server-url</code> is required. Otherwise, <code>--keycloak</code> triggers cluster-based credential resolution. Exactly one mode must be chosen.</p>
+</div>
+<h4 id="import-behaviour-flags">Import behaviour flags<a class="headerlink" href="#import-behaviour-flags" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Flag</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--realm</code></td>
+<td><em>(required)</em></td>
+<td>Name of the realm to import users into</td>
+</tr>
+<tr>
+<td><code>--mode</code></td>
+<td><code>skip</code></td>
+<td>How to handle existing users: <code>skip</code>, <code>fail</code>, <code>overwrite</code></td>
+</tr>
+<tr>
+<td><code>--batch-size</code></td>
+<td><code>500</code></td>
+<td>Users sent per API call (Partial Import is non-atomic)</td>
+</tr>
+<tr>
+<td><code>--dry-run</code></td>
+<td><code>false</code></td>
+<td>Print what would be done without making API calls</td>
+</tr>
+</tbody>
+</table>
+<h4 id="import-modes">Import modes<a class="headerlink" href="#import-modes" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>skip</code></td>
+<td>Already-existing users are silently skipped. Re-running is safe. <strong>(Default)</strong></td>
+</tr>
+<tr>
+<td><code>fail</code></td>
+<td>Stop on the first user that already exists (HTTP 409).</td>
+</tr>
+<tr>
+<td><code>overwrite</code></td>
+<td>Replace existing users with data from the file.</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition warning">
+<p class="admonition-title">SKIP mode and partial failures</p>
+<p>Any API-level error (as opposed to a skip) causes the command to exit non-zero immediately. Check the output for details. Batches that completed before the failure are <strong>not</strong> rolled back.</p>
+</div>
+<h4 id="examples">Examples<a class="headerlink" href="#examples" title="Permanent link">&para;</a></h4>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Cluster credentials from current kubeconfig</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span>--input<span class="w"> </span>./migration/users.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span>--keycloak<span class="w"> </span>my-keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="w">  </span>--realm<span class="w"> </span>my-realm
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="c1"># Explicit credentials (e.g. in a CI pipeline)</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="w">  </span>--input<span class="w"> </span>./migration/users.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="w">  </span>--server-url<span class="w"> </span>https://keycloak.example.com<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="w">  </span>--username<span class="w"> </span>admin<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="w">  </span>--password<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$KEYCLOAK_ADMIN_PASSWORD</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-14"><a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a><span class="w">  </span>--realm<span class="w"> </span>my-realm
+</span><span id="__span-13-15"><a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>
+</span><span id="__span-13-16"><a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a><span class="c1"># Dry run to preview what would be sent</span>
+</span><span id="__span-13-17"><a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-18"><a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a><span class="w">  </span>--input<span class="w"> </span>./migration/users.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-19"><a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a><span class="w">  </span>--keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-20"><a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a><span class="w">  </span>--realm<span class="w"> </span>my-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-21"><a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a><span class="w">  </span>--dry-run
+</span><span id="__span-13-22"><a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a>
+</span><span id="__span-13-23"><a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a><span class="c1"># Accept an older export file (skip age check)</span>
+</span><span id="__span-13-24"><a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-25"><a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a><span class="w">  </span>--input<span class="w"> </span>./migration/users.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-26"><a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a><span class="w">  </span>--keycloak<span class="w"> </span>my-keycloak<span class="w"> </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-27"><a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a><span class="w">  </span>--realm<span class="w"> </span>my-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-13-28"><a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a><span class="w">  </span>--max-age<span class="w"> </span><span class="m">0</span>
+</span></code></pre></div>
 <h2 id="example-full-migration">Example: Full Migration<a class="headerlink" href="#example-full-migration" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># 1. Export from Keycloak (see export-realms.md)</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># 2. Transform with ESO secret management</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>keycloak-migrate<span class="w"> </span>transform<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span>--input<span class="w"> </span>./exports/production-realm.json<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span>--output-dir<span class="w"> </span>./gitops/keycloak<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">  </span>--operator-namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span>--realm-namespace<span class="w"> </span>production<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">  </span>--secret-mode<span class="w"> </span>eso<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">  </span>--eso-store<span class="w"> </span>vault-backend<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">  </span>--client-grants<span class="w"> </span>team-a,team-b
-</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>
-</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="c1"># 3. Review the output</span>
-</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>cat<span class="w"> </span>gitops/keycloak/production/NEXT-STEPS.md
-</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a>
-</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="c1"># 4. Populate secrets in your backend</span>
-</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="c1"># (follow instructions in NEXT-STEPS.md)</span>
-</span><span id="__span-11-18"><a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a>
-</span><span id="__span-11-19"><a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="c1"># 5. Deploy</span>
-</span><span id="__span-11-20"><a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a>helm<span class="w"> </span>install<span class="w"> </span>prod-realm<span class="w"> </span>keycloak-realm<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-21"><a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="w">  </span>-f<span class="w"> </span>gitops/keycloak/production/realm-values.yaml<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-22"><a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="w">  </span>-n<span class="w"> </span>production
-</span><span id="__span-11-23"><a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a>
-</span><span id="__span-11-24"><a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="k">for</span><span class="w"> </span>client_dir<span class="w"> </span><span class="k">in</span><span class="w"> </span>gitops/keycloak/production/clients/*/<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-</span><span id="__span-11-25"><a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="w">  </span><span class="nv">client_name</span><span class="o">=</span><span class="k">$(</span>basename<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$client_dir</span><span class="s2">&quot;</span><span class="k">)</span>
-</span><span id="__span-11-26"><a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a><span class="w">  </span>helm<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$client_name</span><span class="s2">&quot;</span><span class="w"> </span>keycloak-client<span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-27"><a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a><span class="w">    </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$client_dir</span><span class="s2">/values.yaml&quot;</span><span class="w"> </span><span class="se">\</span>
-</span><span id="__span-11-28"><a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="w">    </span>-n<span class="w"> </span>production
-</span><span id="__span-11-29"><a id="__codelineno-11-29" name="__codelineno-11-29" href="#__codelineno-11-29"></a><span class="k">done</span>
-</span><span id="__span-11-30"><a id="__codelineno-11-30" name="__codelineno-11-30" href="#__codelineno-11-30"></a>
-</span><span id="__span-11-31"><a id="__codelineno-11-31" name="__codelineno-11-31" href="#__codelineno-11-31"></a><span class="c1"># 6. Import users via Admin Console Partial Import</span>
-</span><span id="__span-11-32"><a id="__codelineno-11-32" name="__codelineno-11-32" href="#__codelineno-11-32"></a><span class="c1">#    (see NEXT-STEPS.md for details)</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># 1. Export from Keycloak (see export-realms.md)</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="c1"># 2. Transform with ESO secret management</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>keycloak-migrate<span class="w"> </span>transform<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--input<span class="w"> </span>./exports/production-realm.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="w">  </span>--output-dir<span class="w"> </span>./gitops/keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="w">  </span>--operator-namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span>--realm-namespace<span class="w"> </span>production<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="w">  </span>--secret-mode<span class="w"> </span>eso<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="w">  </span>--eso-store<span class="w"> </span>vault-backend<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="w">  </span>--client-grants<span class="w"> </span>team-a,team-b
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="c1"># 3. Review the output</span>
+</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>cat<span class="w"> </span>gitops/keycloak/production/NEXT-STEPS.md
+</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>
+</span><span id="__span-14-16"><a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="c1"># 4. Populate secrets in your backend</span>
+</span><span id="__span-14-17"><a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="c1"># (follow instructions in NEXT-STEPS.md)</span>
+</span><span id="__span-14-18"><a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>
+</span><span id="__span-14-19"><a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="c1"># 5. Deploy</span>
+</span><span id="__span-14-20"><a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>helm<span class="w"> </span>install<span class="w"> </span>prod-realm<span class="w"> </span>keycloak-realm<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-21"><a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="w">  </span>-f<span class="w"> </span>gitops/keycloak/production/realm-values.yaml<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-22"><a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="w">  </span>-n<span class="w"> </span>production
+</span><span id="__span-14-23"><a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>
+</span><span id="__span-14-24"><a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a><span class="k">for</span><span class="w"> </span>client_dir<span class="w"> </span><span class="k">in</span><span class="w"> </span>gitops/keycloak/production/clients/*/<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+</span><span id="__span-14-25"><a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a><span class="w">  </span><span class="nv">client_name</span><span class="o">=</span><span class="k">$(</span>basename<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$client_dir</span><span class="s2">&quot;</span><span class="k">)</span>
+</span><span id="__span-14-26"><a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a><span class="w">  </span>helm<span class="w"> </span>install<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$client_name</span><span class="s2">&quot;</span><span class="w"> </span>keycloak-client<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-27"><a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a><span class="w">    </span>-f<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$client_dir</span><span class="s2">/values.yaml&quot;</span><span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-28"><a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a><span class="w">    </span>-n<span class="w"> </span>production
+</span><span id="__span-14-29"><a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a><span class="k">done</span>
+</span><span id="__span-14-30"><a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>
+</span><span id="__span-14-31"><a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="c1"># 6. Import users (idempotent — safe to re-run)</span>
+</span><span id="__span-14-32"><a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-33"><a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a><span class="w">  </span>--input<span class="w"> </span>gitops/keycloak/production/users.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-34"><a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a><span class="w">  </span>--keycloak<span class="w"> </span>production-keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-35"><a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-36"><a id="__codelineno-14-36" name="__codelineno-14-36" href="#__codelineno-14-36"></a><span class="w">  </span>--realm<span class="w"> </span>production
 </span></code></pre></div>
 
 

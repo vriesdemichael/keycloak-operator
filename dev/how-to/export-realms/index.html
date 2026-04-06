@@ -4493,6 +4493,34 @@
 
               
             
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../decisions/generated-markdown/093-user-import-via-migration-toolkit/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-093: User import via migration toolkit import-users command
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
           </ul>
         </nav>
       
@@ -4909,7 +4937,17 @@ If migrating the entire installation, backup and restore the PostgreSQL database
 <ul>
 <li>See <a href="../database-setup/">Database Setup Guide</a> for restore instructions.</li>
 </ul>
-<p><strong>Option B: Partial Import (Manual)</strong>
+<p><strong>Option B: Automated Import (<code>keycloak-migrate import-users</code>)</strong>
+Use the migration toolkit for a repeatable, idempotent, GitOps-friendly import:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>keycloak-migrate<span class="w"> </span>import-users<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span>--input<span class="w"> </span>migration-output/my-realm/users.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span>--keycloak<span class="w"> </span>my-keycloak<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span>--namespace<span class="w"> </span>keycloak-system<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="w">  </span>--realm<span class="w"> </span>my-realm
+</span></code></pre></div>
+<p>Credentials are resolved automatically from the cluster. The command is idempotent (SKIP mode by default) — re-running it is safe even if some users already exist.</p>
+<p>See the <a href="../migration-toolkit/#import-users">import-users command reference</a> for all flags and options.</p>
+<p><strong>Option C: Partial Import (Manual)</strong>
 If starting fresh and only migrating specific users:</p>
 <ol>
 <li>Deploy Keycloak using the operator.</li>

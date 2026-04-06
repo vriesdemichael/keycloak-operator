@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/015-cloudnativepg-as-first-class-database/">
+        <link rel="canonical" href="https://vriesdemichael.github.io/keycloak-operator/dev/decisions/generated-markdown/093-user-import-via-migration-toolkit/">
       
       
-        <link rel="prev" href="../014-separate-helm-charts-per-resource-type/">
+        <link rel="prev" href="../092-blue-green-upgrade-state-machine/">
       
       
-        <link rel="next" href="../016-multi-namespace-operation-by-default/">
+        <link rel="next" href="../../../faq/">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>ADR-015: CloudNativePG as first-class database - Keycloak Operator</title>
+        <title>ADR-093: User import via migration toolkit import-users command - Keycloak Operator</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#adr-015-cloudnativepg-as-first-class-database" class="md-skip">
+        <a href="#adr-093-user-import-via-migration-toolkit-import-users-command" class="md-skip">
           Skip to content
         </a>
       
@@ -119,7 +119,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              ADR-015: CloudNativePG as first-class database
+              ADR-093: User import via migration toolkit import-users command
             
           </span>
         </div>
@@ -2127,37 +2127,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    ADR-015: CloudNativePG as first-class database
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../015-cloudnativepg-as-first-class-database/" class="md-nav__link">
         
   
   
@@ -2173,59 +2146,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#decision" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Decision
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rationale" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Rationale
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#agent-instructions" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Agent Instructions
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -4391,10 +4311,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../093-user-import-via-migration-toolkit/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    ADR-093: User import via migration toolkit import-users command
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -4410,6 +4357,109 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rationale" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rationale
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agent-instructions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent Instructions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#add-a-keycloakuserimport-crd-managed-by-the-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add a KeycloakUserImport CRD managed by the operator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-the-individual-users-api-post-adminrealmsrealmusers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use the individual Users API (POST /admin/realms/{realm}/users)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-fail-mode-as-default-fail-hard-on-any-existing-user" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use FAIL mode as default (fail hard on any existing user)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -4508,6 +4558,56 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rejected Alternatives
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rejected Alternatives">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#add-a-keycloakuserimport-crd-managed-by-the-operator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Add a KeycloakUserImport CRD managed by the operator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-the-individual-users-api-post-adminrealmsrealmusers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use the individual Users API (POST /admin/realms/{realm}/users)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#use-fail-mode-as-default-fail-hard-on-any-existing-user" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use FAIL mode as default (fail hard on any existing user)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -4525,7 +4625,7 @@
 
 
   
-    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/015-cloudnativepg-as-first-class-database.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/vriesdemichael/keycloak-operator/blob/main/docs/decisions/generated-markdown/093-user-import-via-migration-toolkit.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -4533,15 +4633,29 @@
   
 
 
-<h1 id="adr-015-cloudnativepg-as-first-class-database">ADR-015: CloudNativePG as first-class database<a class="headerlink" href="#adr-015-cloudnativepg-as-first-class-database" title="Permanent link">&para;</a></h1>
+<h1 id="adr-093-user-import-via-migration-toolkit-import-users-command">ADR-093: User import via migration toolkit import-users command<a class="headerlink" href="#adr-093-user-import-via-migration-toolkit-import-users-command" title="Permanent link">&para;</a></h1>
 <p><strong>Category:</strong> architecture
 <strong>Provenance:</strong> guided-ai</p>
 <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
-<p>Support CloudNativePG (CNPG) as the officially recommended PostgreSQL solution for GitOps workflows. Provide examples and documentation for CNPG integration.</p>
+<p>Extend the migration toolkit with an <code>import-users</code> subcommand that reads the <code>users.json</code> produced by <code>keycloak-migrate transform</code>, resolves Keycloak admin credentials either from the Kubernetes cluster (via the current kube context reading the Keycloak CR and its admin credentials secret) or via explicit <code>--username</code>/<code>--password</code> flags, and imports users into a target realm using the Keycloak Partial Import API (<code>POST /admin/realms/{realm}/partialImport</code>).
+The default conflict mode is SKIP (ifResourceExists=SKIP), which makes the import idempotent and re-runnable after partial failures. FAIL and OVERWRITE modes are available via <code>--mode</code> flag. The import is implemented as a one-time migration tool, not a continuous sync mechanism.
+Users are chunked into configurable batch sizes (default 500) to avoid HTTP body size limits and timeouts. A hard failure is triggered if any batch returns <code>errors &gt; 0</code> in the Partial Import response.
+The <code>users.json</code> file age is checked against a configurable <code>--max-age</code> (default 24h) to prevent accidentally importing a stale export.
+No user CRD is introduced. This decision extends ADR-025 (Realm and Client as primary CRD resource types) and ADR-086 (Go-based migration toolkit).</p>
 <h2 id="rationale">Rationale<a class="headerlink" href="#rationale" title="Permanent link">&para;</a></h2>
-<p>GitOps native: CNPG is declarative, matches operator's GitOps philosophy. High availability: CNPG provides HA PostgreSQL clusters out of the box. Backup/restore: Built-in backup capabilities for disaster recovery. Kubernetes native: Follows K8s patterns, integrates with operator ecosystem. Trade-off: Users can still use external databases if needed.</p>
+<p>The Partial Import API is the correct Keycloak mechanism for bulk user import. It handles credential hashes, role assignments, and group memberships atomically per-user server-side. The alternative (individual Users API) would require N*M API calls for N users with M role/group assignments and provides no advantage for one-time migration use.
+SKIP as default mode makes the command safe to re-run after partial failures without burning the import operation. Keycloak's Partial Import is non-atomic at the batch level — there is no rollback if a batch partially succeeds before an error. SKIP mode combined with errors&gt;0 failure detection gives correct convergence behavior: re-runs skip already-imported users and fail only on true errors.
+Credential resolution via kube context avoids requiring users to handle plaintext credentials on the CLI, but explicit username/password flags are provided because some security teams restrict secret-reading RBAC for operations personnel. Both paths are equally valid.
+The migration toolkit already has the right architectural home for this command: it is a standalone Go binary with zero Python dependencies that performs one-time migration operations. Adding a user CRD would introduce stateful data into the GitOps configuration which violates the operator's design principles (ADR-025).</p>
 <h2 id="agent-instructions">Agent Instructions<a class="headerlink" href="#agent-instructions" title="Permanent link">&para;</a></h2>
-<p>When creating Keycloak examples or tests, prefer CNPG Cluster resources over manual PostgreSQL. Document CNPG setup in how-to guides. Integration tests use CNPG for Keycloak database (deployed by test harness). Support both CNPG and external databases for flexibility.</p>
+<p>The import-users command lives in tools/migration-toolkit/cmd/import_users.go. Implementation packages are under tools/migration-toolkit/internal/userimport/. Credential resolution priority: (1) --username + --password flags (no kube access required), (2) kube context resolution by reading the Keycloak CR spec.admin.existingSecret, falling back to the auto-generated secret named "{keycloak-name}-admin-credentials" with keys "username" and "password". The Keycloak CR API group is vriesdemichael.github.io/v1, kind Keycloak. The keycloak admin URL is resolved from status.endpoints.admin or status.endpoints.internal, with --server-url as an override. Use Keycloak Partial Import API: POST /admin/realms/{realm}/partialImport. The request body is {"users": [...], "ifResourceExists": "SKIP|FAIL|OVERWRITE"}. Authenticate via POST /realms/master/protocol/openid-connect/token (password grant, client_id=admin-cli). Refresh the token before each batch if it is within 30s of expiry. Fail hard if any batch response has errors &gt; 0. In SKIP mode, "errors &gt; 0" is a real problem (conflict that Keycloak cannot resolve), not "user already exists" (that's counted as skipped). Add k8s.io/client-go and k8s.io/apimachinery as new go.mod dependencies as needed for kube context credential resolution.</p>
+<h2 id="rejected-alternatives">Rejected Alternatives<a class="headerlink" href="#rejected-alternatives" title="Permanent link">&para;</a></h2>
+<h3 id="add-a-keycloakuserimport-crd-managed-by-the-operator">Add a KeycloakUserImport CRD managed by the operator<a class="headerlink" href="#add-a-keycloakuserimport-crd-managed-by-the-operator" title="Permanent link">&para;</a></h3>
+<p>User data is stateful and not desired-state configuration. A CRD implies continuous reconciliation, which is inappropriate for a one-time migration operation. It would also require the operator to hold user data in etcd indefinitely after import, which is wasteful and a privacy concern.</p>
+<h3 id="use-the-individual-users-api-post-adminrealmsrealmusers">Use the individual Users API (POST /admin/realms/{realm}/users)<a class="headerlink" href="#use-the-individual-users-api-post-adminrealmsrealmusers" title="Permanent link">&para;</a></h3>
+<p>Would require N+M API calls per user (create + role assignments + group memberships). For 50k users this is millions of API calls. The Partial Import API handles all of this server-side in a single call per batch.</p>
+<h3 id="use-fail-mode-as-default-fail-hard-on-any-existing-user">Use FAIL mode as default (fail hard on any existing user)<a class="headerlink" href="#use-fail-mode-as-default-fail-hard-on-any-existing-user" title="Permanent link">&para;</a></h3>
+<p>Keycloak Partial Import is non-atomic. With FAIL mode, if the command crashes after user 500 of 5000, the next run immediately 409s on user 1, making the import unretriable without manual cleanup. SKIP mode gives correct idempotent convergence behavior.</p>
 
 
 
@@ -4577,7 +4691,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../014-separate-helm-charts-per-resource-type/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-014: Separate Helm charts per resource type">
+          <a href="../092-blue-green-upgrade-state-machine/" class="md-footer__link md-footer__link--prev" aria-label="Previous: ADR-092: Blue-green upgrade state machine for zero-downtime Keycloak upgrades">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -4587,20 +4701,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                ADR-014: Separate Helm charts per resource type
+                ADR-092: Blue-green upgrade state machine for zero-downtime Keycloak upgrades
               </div>
             </div>
           </a>
         
         
           
-          <a href="../016-multi-namespace-operation-by-default/" class="md-footer__link md-footer__link--next" aria-label="Next: ADR-016: Multi-namespace operation by default">
+          <a href="../../../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                ADR-016: Multi-namespace operation by default
+                FAQ
               </div>
             </div>
             <div class="md-footer__button md-icon">
