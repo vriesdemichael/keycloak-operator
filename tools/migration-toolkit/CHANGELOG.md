@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.3](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.2...migration-toolkit-v0.1.3) (2026-04-06)
+
+
+### Features
+
+* **migration-toolkit:** add import-users command with chunked Partial Import ([e244932](https://github.com/vriesdemichael/keycloak-operator/commit/e244932ff7f7c058249c44e367f51aa08aa58b95)), closes [#490](https://github.com/vriesdemichael/keycloak-operator/issues/490)
+
+
+### Bug Fixes
+
+* **migration-toolkit:** address review comments on import-users command ([51c0541](https://github.com/vriesdemichael/keycloak-operator/commit/51c054128e87b4186ff4e0706adfc1849e068579))
+
 ## [0.1.2](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.1...migration-toolkit-v0.1.2) (2026-02-20)
 
 
