@@ -8,7 +8,10 @@ import (
 	"time"
 )
 
-// TestBinary_Version verifies the --version flag works and injection is correct.
+// TestBinary_Version verifies the --version flag is accepted and produces output.
+// Note: the binary is built without -ldflags injection in the test harness, so
+// the version will always be the default "dev". CI release builds embed the real
+// version via -ldflags at publish time.
 func TestBinary_Version(t *testing.T) {
 	out, err := runBinary(t, "--version")
 	if err != nil {

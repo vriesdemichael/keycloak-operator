@@ -220,7 +220,6 @@ jobs:
         env:
           REPO_ROOT: ${{ github.workspace }}
           KEYCLOAK_VERSION: ${{ env.KEYCLOAK_VERSION }}
-          KUBECONFIG: ${{ env.HOME }}/.kube/config
         run: |
           cd tools/migration-toolkit
           go test -tags integration ./tests/integration/... -v -timeout 600s 2>&1 | \
@@ -986,13 +985,6 @@ jobs:
               -o "$output" .
           done
 
-      - name: Generate checksums
-        run: |
-          cd tools/migration-toolkit/dist
-          sha256sum * > checksums.txt
-          echo "Checksums:"
-          cat checksums.txt
-
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
@@ -1000,6 +992,13 @@ jobs:
           format: cyclonedx-json
           output-file: tools/migration-toolkit/dist/sbom.cyclonedx.json
           upload-release-assets: false
+
+      - name: Generate checksums
+        run: |
+          cd tools/migration-toolkit/dist
+          sha256sum * > checksums.txt
+          echo "Checksums:"
+          cat checksums.txt
 
       - name: Attest build provenance
         uses: actions/attest-build-provenance@v2

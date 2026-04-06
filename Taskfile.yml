@@ -620,7 +620,12 @@ tasks:
     dir: tools/migration-toolkit
     vars:
       VERSION:
-        sh: git -C ../.. describe --tags --match "migration-toolkit-v*" --abbrev=7 2>/dev/null | sed 's/migration-toolkit-v//' || echo "dev"
+        sh: |
+          if version="$(git -C ../.. describe --tags --match "migration-toolkit-v*" --abbrev=7 2>/dev/null)"; then
+            printf '%s\n' "$version" | sed 's/migration-toolkit-v//'
+          else
+            echo "dev"
+          fi
     cmd: go build -ldflags "-s -w -X github.com/vriesdemichael/keycloak-operator/tools/migration-toolkit/cmd.version={{.VERSION}}" -o ../../.tmp/keycloak-migrate .
     sources:
       - tools/migration-toolkit/**/*.go
