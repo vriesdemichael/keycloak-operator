@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.9](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.8...operator-image-v0.9.9) (2026-04-06)
+
+
+### Documentation
+
+* address Copilot review comments on escape-hatch guide ([4c50622](https://github.com/vriesdemichael/keycloak-operator/commit/4c506225f724b726542fceba34c26cb17e9d9fac))
+
 ## [0.9.8](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.7...operator-image-v0.9.8) (2026-04-06)
 
 
