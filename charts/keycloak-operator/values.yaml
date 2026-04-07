@@ -568,6 +568,17 @@ keycloak:
       memory: 1Gi
   # JVM options (used when managed: true)
   jvmOptions: []
+  # Environment variables for managed Keycloak pods (used when managed: true)
+  # Uses the same Kubernetes env entry structure as operator.env, so valueFrom
+  # works with Secrets created by extraManifests, External Secrets, or Sealed Secrets.
+  env: []
+  # - name: KC_PROXY_HEADERS
+  #   value: xforwarded
+  # - name: KC_DB_PASSWORD
+  #   valueFrom:
+  #     secretKeyRef:
+  #       name: keycloak-db-password
+  #       key: password
   # Optimized mode (used when managed: true)
   optimized: true
 # ============================================================================

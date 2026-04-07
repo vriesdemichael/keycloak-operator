@@ -1791,6 +1791,17 @@ async def shared_operator(
             "replicas": 1,
             "image": keycloak_image,  # Use optimized image for faster startup
             "version": keycloak_version,
+            "env": [
+                {
+                    "name": "KC_TEST_SHARED_OPERATOR_ENV",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": "shared-keycloak-runtime-env",
+                            "key": "test-value",
+                        }
+                    },
+                }
+            ],
             "resources": {
                 "requests": {
                     "cpu": "1000m",
@@ -1879,6 +1890,20 @@ async def shared_operator(
                 },
             },
         },
+        "extraManifests": [
+            {
+                "apiVersion": "v1",
+                "kind": "Secret",
+                "metadata": {
+                    "name": "shared-keycloak-runtime-env",
+                    "namespace": operator_namespace,
+                },
+                "type": "Opaque",
+                "stringData": {
+                    "test-value": "shared-operator",
+                },
+            }
+        ],
     }
 
     # Create values file

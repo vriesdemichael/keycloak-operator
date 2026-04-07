@@ -1131,6 +1131,27 @@
             }
           }
         },
+        "env": {
+          "type": "array",
+          "description": "Environment variables for managed Keycloak pods",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "valueFrom": {
+                "type": "object"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
+        },
         "tracing": {
           "type": "object",
           "description": "OpenTelemetry tracing configuration for the Keycloak instance (Keycloak 26.x+ required)",

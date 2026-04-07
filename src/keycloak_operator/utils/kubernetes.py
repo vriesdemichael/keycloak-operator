@@ -25,7 +25,7 @@ from keycloak_operator.constants import (
     MAINTENANCE_MODE_ANNOTATION,
     MAINTENANCE_MODE_SNIPPET_ANNOTATION,
 )
-from keycloak_operator.models.keycloak import KeycloakSpec
+from keycloak_operator.models.keycloak import KeycloakEnvVarSource, KeycloakSpec
 from keycloak_operator.settings import settings
 from keycloak_operator.utils.validation import (
     get_health_port,
@@ -34,6 +34,77 @@ from keycloak_operator.utils.validation import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _build_env_var_source(
+    value_from: KeycloakEnvVarSource,
+) -> client.V1EnvVarSource:
+    return client.V1EnvVarSource(
+        secret_key_ref=(
+            client.V1SecretKeySelector(
+                name=value_from.secret_key_ref.name,
+                key=value_from.secret_key_ref.key,
+                optional=value_from.secret_key_ref.optional,
+            )
+            if value_from.secret_key_ref
+            else None
+        ),
+        config_map_key_ref=(
+            client.V1ConfigMapKeySelector(
+                name=value_from.config_map_key_ref.name,
+                key=value_from.config_map_key_ref.key,
+                optional=value_from.config_map_key_ref.optional,
+            )
+            if value_from.config_map_key_ref
+            else None
+        ),
+        field_ref=(
+            client.V1ObjectFieldSelector(
+                api_version=value_from.field_ref.api_version,
+                field_path=value_from.field_ref.field_path,
+            )
+            if value_from.field_ref
+            else None
+        ),
+        resource_field_ref=(
+            client.V1ResourceFieldSelector(
+                container_name=value_from.resource_field_ref.container_name,
+                resource=value_from.resource_field_ref.resource,
+                divisor=value_from.resource_field_ref.divisor,
+            )
+            if value_from.resource_field_ref
+            else None
+        ),
+    )
+
+
+def _build_user_env_vars(spec: KeycloakSpec) -> list[client.V1EnvVar]:
+    return [
+        client.V1EnvVar(
+            name=env_var.name,
+            value=env_var.value,
+            value_from=(
+                _build_env_var_source(env_var.value_from)
+                if env_var.value_from is not None
+                else None
+            ),
+        )
+        for env_var in spec.env
+    ]
+
+
+def _merge_env_vars(env_vars: list[client.V1EnvVar]) -> list[client.V1EnvVar]:
+    merged: list[client.V1EnvVar] = []
+    seen_indices: dict[str, int] = {}
+
+    for env_var in env_vars:
+        if env_var.name in seen_indices:
+            merged[seen_indices[env_var.name]] = env_var
+        else:
+            seen_indices[env_var.name] = len(merged)
+            merged.append(env_var)
+
+    return merged
 
 
 def get_kubernetes_client() -> client.ApiClient:
@@ -305,6 +376,9 @@ def create_keycloak_deployment(
                 f"Image: {image}"
             )
 
+    if spec.env:
+        env_vars.extend(_build_user_env_vars(spec))
+
     # Add database configuration environment variables if configured
     if spec.database and spec.database.type != "h2":
         # Database type - map CRD values to Keycloak values
@@ -445,7 +519,7 @@ def create_keycloak_deployment(
         command=["/opt/keycloak/bin/kc.sh"],
         args=kc_args,
         ports=container_ports,
-        env=env_vars,
+        env=_merge_env_vars(env_vars),
         resources=client.V1ResourceRequirements(
             requests={
                 "cpu": spec.resources.requests.get("cpu", "500m"),
