@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.10.0](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.9...operator-image-v0.10.0) (2026-04-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-operator+operator:** Keycloak spec.env is now documented and schema-validated as Kubernetes-style env entries instead of a string map.
+
+### Features
+
+* **chart-operator+operator:** support secret-backed keycloak env vars ([9615cab](https://github.com/vriesdemichael/keycloak-operator/commit/9615cabc3ee8970187bc63fa935903b57e757407))
+
 ## [0.9.9](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.9.8...operator-image-v0.9.9) (2026-04-06)
 
 
