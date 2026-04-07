@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.7...chart-realm-v0.4.8) (2026-04-07)
+
+
+### Bug Fixes
+
+* **chart-operator+chart-realm:** wire realm idp mappers and organizations flag ([8bc91f3](https://github.com/vriesdemichael/keycloak-operator/commit/8bc91f3d33ddabf43d8eafcab84eff3a8ce3f6fb))
+
 ## [0.4.7](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.6...chart-realm-v0.4.7) (2026-02-21)
 
 
