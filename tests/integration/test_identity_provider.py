@@ -7,16 +7,10 @@ These tests verify that the operator correctly:
 3. Supports OIDC provider integration (using Dex as test IDP)
 """
 
-import asyncio
-import contextlib
 import logging
-import subprocess
-import tempfile
 import uuid
-from pathlib import Path
 
 import pytest
-import yaml
 from kubernetes import client
 
 from keycloak_operator.models.realm import (
@@ -28,149 +22,6 @@ from keycloak_operator.models.realm import (
 from .wait_helpers import wait_for_resource_ready
 
 logger = logging.getLogger(__name__)
-
-
-@pytest.fixture
-async def dex_ready(shared_operator, operator_namespace):
-    """Deploy Dex OIDC provider for testing IDP integration.
-
-    Uses kubectl apply for simplicity and waits for deployment to be ready.
-    Deploys to operator_namespace alongside the operator and Keycloak.
-    """
-    dex_manifest_path = Path(__file__).parent / "fixtures" / "dex-deployment.yaml"
-    with open(dex_manifest_path) as f:
-        manifests = list(yaml.safe_load_all(f))
-
-    # Update namespace in all manifests
-    for manifest in manifests:
-        manifest["metadata"]["namespace"] = operator_namespace
-
-    # Write updated manifests to temp file
-    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
-        yaml.safe_dump_all(manifests, f)
-        temp_manifest = f.name
-
-    try:
-        # Apply manifests using kubectl
-        result = subprocess.run(
-            ["kubectl", "apply", "-f", temp_manifest],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        logger.info(f"Applied Dex manifests: {result.stdout}")
-
-        # Wait for Dex deployment to be ready using the apps API
-        # Timeout: 50 iterations × 5 seconds = 250 seconds (under pytest 300s timeout)
-        TIMEOUT_SECONDS = 250
-        MAX_ITERATIONS = TIMEOUT_SECONDS // 5
-        apps_api = client.AppsV1Api()
-        for i in range(MAX_ITERATIONS):
-            try:
-                deployment = apps_api.read_namespaced_deployment(
-                    "dex", operator_namespace
-                )
-                if (
-                    deployment.status.ready_replicas
-                    and deployment.status.ready_replicas > 0
-                ):
-                    logger.info("Dex deployment is ready")
-                    break
-                elif i % 10 == 0:  # Log every 10 iterations (50 seconds)
-                    logger.info(
-                        f"Waiting for Dex... ({i * 5}s elapsed, "
-                        f"ready: {deployment.status.ready_replicas or 0}/"
-                        f"{deployment.status.replicas or 0})"
-                    )
-            except Exception:
-                # Ignore exception if deployment is not yet available; will retry in next loop iteration
-                if i % 10 == 0:
-                    logger.debug("Waiting for Dex deployment to be created")
-            await asyncio.sleep(5)
-        else:
-            # Get pod logs for debugging
-            try:
-                result = subprocess.run(
-                    [
-                        "kubectl",
-                        "get",
-                        "pods",
-                        "-n",
-                        operator_namespace,
-                        "-l",
-                        "app=dex",
-                        "-o",
-                        "wide",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                )
-                logger.error(f"Dex pods status:\n{result.stdout}")
-
-                # Try to get logs
-                result = subprocess.run(
-                    [
-                        "kubectl",
-                        "logs",
-                        "-n",
-                        operator_namespace,
-                        "-l",
-                        "app=dex",
-                        "--tail=50",
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                )
-                logger.error(f"Dex logs:\n{result.stdout}\n{result.stderr}")
-
-                # Get deployment describe
-                result = subprocess.run(
-                    [
-                        "kubectl",
-                        "describe",
-                        "deployment",
-                        "dex",
-                        "-n",
-                        operator_namespace,
-                    ],
-                    capture_output=True,
-                    text=True,
-                    timeout=10,
-                )
-                logger.error(f"Dex deployment describe:\n{result.stdout}")
-            except Exception as e:
-                logger.error(f"Failed to get Dex debug info: {e}")
-
-            raise TimeoutError(
-                f"Dex deployment did not become ready within {TIMEOUT_SECONDS}s in {operator_namespace}"
-            )
-
-        yield {
-            "namespace": operator_namespace,
-            "service_name": "dex",
-            "issuer_url": f"http://dex.{operator_namespace}.svc.cluster.local:5556/dex",
-            "client_id": "keycloak",
-            "client_secret": "keycloak-secret",
-        }
-
-    finally:
-        # Cleanup
-        try:
-            subprocess.run(
-                ["kubectl", "delete", "-f", temp_manifest, "--ignore-not-found=true"],
-                check=False,
-                capture_output=True,
-                timeout=30,
-            )
-            logger.info("Deleted Dex resources")
-        except Exception as e:
-            logger.warning(f"Failed to delete Dex resources: {e}")
-        finally:
-            # Remove temp file
-            with contextlib.suppress(Exception):
-                Path(temp_manifest).unlink()
 
 
 @pytest.mark.asyncio
