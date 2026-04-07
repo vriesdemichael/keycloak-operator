@@ -1,14 +1,14 @@
-"""
-Integration tests for Helm chart-based realm and client deployment.
-
-These tests demonstrate using Helm charts instead of manual YAML to deploy
-KeycloakRealm and KeycloakClient resources.
-"""
+"""Integration tests for Helm chart-based realm and client deployment."""
 
 import uuid
 
 import pytest
 from kubernetes.client.rest import ApiException
+
+
+def _check_keycloak_version_supports_organizations(keycloak_admin_client) -> bool:
+    """Check if the current Keycloak version supports organizations."""
+    return keycloak_admin_client.adapter.major_version >= 26
 
 
 @pytest.mark.asyncio
@@ -644,6 +644,188 @@ class TestHelmRealmAdvancedFields:
         assert any(
             p.get("name") == "helm-profile" for p in profiles.get("profiles", [])
         ), "Client profile should exist"
+
+    @pytest.mark.timeout(600)
+    async def test_helm_realm_with_identity_provider_mappers(
+        self,
+        helm_realm,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+        keycloak_admin_client,
+        dex_ready,
+    ):
+        """Test Helm propagation of IDP mapper configuration into Keycloak."""
+        from .wait_helpers import wait_for_resource_ready
+
+        realm_name = f"helm-idp-{uuid.uuid4().hex[:8]}"
+        release_name = f"helm-idp-{uuid.uuid4().hex[:8]}"
+        secret_name = f"dex-idp-secret-{uuid.uuid4().hex[:8]}"
+
+        await helm_realm(
+            release_name=release_name,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            extraManifests=[
+                {
+                    "apiVersion": "v1",
+                    "kind": "Secret",
+                    "metadata": {
+                        "name": secret_name,
+                        "labels": {
+                            "vriesdemichael.github.io/keycloak-allow-operator-read": "true"
+                        },
+                    },
+                    "stringData": {"clientSecret": dex_ready["client_secret"]},
+                }
+            ],
+            identityProviders=[
+                {
+                    "alias": "dex",
+                    "providerId": "oidc",
+                    "enabled": True,
+                    "trustEmail": True,
+                    "firstBrokerLoginFlowAlias": "first broker login",
+                    "config": {
+                        "clientId": dex_ready["client_id"],
+                        "authorizationUrl": f"{dex_ready['issuer_url']}/auth",
+                        "tokenUrl": f"{dex_ready['issuer_url']}/token",
+                        "userInfoUrl": f"{dex_ready['issuer_url']}/userinfo",
+                        "jwksUrl": f"{dex_ready['issuer_url']}/keys",
+                        "issuer": dex_ready["issuer_url"],
+                        "defaultScope": "openid profile email",
+                        "syncMode": "IMPORT",
+                    },
+                    "configSecrets": {
+                        "clientSecret": {
+                            "name": secret_name,
+                            "key": "clientSecret",
+                        }
+                    },
+                    "mappers": [
+                        {
+                            "name": "email-mapper",
+                            "identityProviderMapper": "oidc-user-attribute-idp-mapper",
+                            "config": {
+                                "claim": "email",
+                                "user.attribute": "email",
+                                "syncMode": "INHERIT",
+                            },
+                        }
+                    ],
+                }
+            ],
+        )
+
+        realm_cr_name = f"{release_name}-keycloak-realm"
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=300,
+            operator_namespace=operator_namespace,
+        )
+
+        realm = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+        )
+        spec = realm.get("spec", {})
+        assert spec["identityProviders"][0]["mappers"][0]["name"] == "email-mapper"
+
+        async def mapper_exists() -> bool:
+            mappers = await keycloak_admin_client.get_identity_provider_mappers(
+                realm_name,
+                "dex",
+                test_namespace,
+            )
+            return any(mapper.name == "email-mapper" for mapper in mappers)
+
+        assert await _simple_wait(mapper_exists, timeout=120, interval=5), (
+            "IDP mapper should be created in Keycloak"
+        )
+
+    @pytest.mark.timeout(600)
+    async def test_helm_realm_with_organizations_enabled(
+        self,
+        helm_realm,
+        test_namespace,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+        keycloak_admin_client,
+    ):
+        """Test Helm propagation of organizationsEnabled and organization config."""
+        from .wait_helpers import wait_for_resource_ready
+
+        if not _check_keycloak_version_supports_organizations(keycloak_admin_client):
+            pytest.skip(
+                reason="Keycloak version does not support organizations (requires 26+)"
+            )
+
+        realm_name = f"helm-orgs-{uuid.uuid4().hex[:8]}"
+        release_name = f"helm-orgs-{uuid.uuid4().hex[:8]}"
+
+        await helm_realm(
+            release_name=release_name,
+            realm_name=realm_name,
+            operator_namespace=operator_namespace,
+            organizationsEnabled=True,
+            organizations=[
+                {
+                    "name": "acme-corp",
+                    "alias": "acme",
+                    "description": "ACME via Helm",
+                    "domains": [
+                        {"name": "acme.example.com", "verified": True},
+                    ],
+                }
+            ],
+        )
+
+        realm_cr_name = f"{release_name}-keycloak-realm"
+
+        await wait_for_resource_ready(
+            k8s_custom_objects,
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+            timeout=300,
+            operator_namespace=operator_namespace,
+        )
+
+        realm = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=test_namespace,
+            plural="keycloakrealms",
+            name=realm_cr_name,
+        )
+        assert realm["spec"]["organizationsEnabled"] is True
+
+        async def organization_exists() -> bool:
+            orgs = await keycloak_admin_client.get_organizations(
+                realm_name,
+                test_namespace,
+            )
+            return any(
+                (org.get("name") if isinstance(org, dict) else org.name) == "acme-corp"
+                for org in orgs
+            )
+
+        assert await _simple_wait(organization_exists, timeout=120, interval=5), (
+            "Organization should be created in Keycloak"
+        )
 
 
 @pytest.mark.asyncio

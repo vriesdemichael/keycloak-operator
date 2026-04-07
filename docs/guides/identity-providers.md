@@ -21,6 +21,12 @@ The operator supports configuring identity providers through the `KeycloakRealm`
 
 When a user tries to log in to your Keycloak realm, they'll see buttons for each enabled identity provider on the login page, allowing them to authenticate through external systems.
 
+Sensitive identity provider values such as `clientSecret` must not be placed in `identityProviders[].config`. The realm model rejects known sensitive keys in `config`; provide them through `identityProviders[].configSecrets` instead.
+
+Secrets referenced from `configSecrets` must:
+- live in the same namespace as the `KeycloakRealm`
+- include the label `vriesdemichael.github.io/keycloak-allow-operator-read: "true"`
+
 ## Supported Providers
 
 The operator supports all Keycloak built-in identity providers:
@@ -62,9 +68,24 @@ spec:
       firstBrokerLoginFlowAlias: first broker login
       config:
         clientId: your-github-oauth-app-client-id
-        clientSecret: your-github-oauth-app-client-secret
         defaultScope: "user:email"
         syncMode: IMPORT
+      configSecrets:
+        clientSecret:
+          name: github-idp-secret
+          key: clientSecret
+
+# Secret must be in the same namespace as the realm and labeled for operator read access
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-idp-secret
+  namespace: my-app
+  labels:
+    vriesdemichael.github.io/keycloak-allow-operator-read: "true"
+stringData:
+  clientSecret: your-github-oauth-app-client-secret
 ```
 
 **Important Configuration Options:**
@@ -109,10 +130,13 @@ spec:
       firstBrokerLoginFlowAlias: first broker login
       config:
         clientId: your-google-oauth-client-id.apps.googleusercontent.com
-        clientSecret: your-google-oauth-client-secret
         hostedDomain: ""  # Optional: restrict to specific domain (e.g., "company.com")
         defaultScope: "openid profile email"
         syncMode: IMPORT
+      configSecrets:
+        clientSecret:
+          name: google-idp-secret
+          key: clientSecret
 ```
 
 **Domain Restriction:**
@@ -156,7 +180,6 @@ spec:
       firstBrokerLoginFlowAlias: first broker login
       config:
         clientId: your-azure-app-client-id
-        clientSecret: your-azure-app-client-secret
         authorizationUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/authorize
         tokenUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token
         userInfoUrl: https://graph.microsoft.com/oidc/userinfo
@@ -166,6 +189,10 @@ spec:
         syncMode: IMPORT
         validateSignature: "true"
         useJwksUrl: "true"
+      configSecrets:
+        clientSecret:
+          name: azure-ad-idp-secret
+          key: clientSecret
 ```
 
 Replace `YOUR_TENANT_ID` with your Azure AD tenant ID.
@@ -195,7 +222,6 @@ spec:
       firstBrokerLoginFlowAlias: first broker login
       config:
         clientId: your-client-id
-        clientSecret: your-client-secret
         authorizationUrl: https://idp.example.com/oauth2/authorize
         tokenUrl: https://idp.example.com/oauth2/token
         userInfoUrl: https://idp.example.com/oauth2/userinfo
@@ -205,6 +231,10 @@ spec:
         syncMode: IMPORT
         validateSignature: "true"
         useJwksUrl: "true"
+      configSecrets:
+        clientSecret:
+          name: custom-oidc-idp-secret
+          key: clientSecret
 ```
 
 **Discovery Endpoint:**
@@ -250,9 +280,9 @@ spec:
 
 ## IDP Mappers
 
-**Note:** Currently, protocol mappers are supported for client scopes, but IDP-specific mappers (attribute importers) will be added in a future release.
+Identity provider mappers are supported through the `identityProviders[].mappers` field. Use them to import claims from the external provider into Keycloak user attributes, roles, or session notes.
 
-Protocol mappers allow you to customize the claims/attributes in tokens. Here's an example of protocol mappers on a client scope:
+Example:
 
 ```yaml
 apiVersion: vriesdemichael.github.io/v1
@@ -264,22 +294,28 @@ spec:
   operatorRef:
     namespace: keycloak-operator
 
-  clientScopes:
-    - name: custom-claims
-      protocol: openid-connect
-      protocolMappers:
-        - name: groups-mapper
-          protocol: openid-connect
-          protocolMapper: oidc-group-membership-mapper
+  identityProviders:
+    - alias: dex
+      providerId: oidc
+      config:
+        clientId: my-client-id
+        authorizationUrl: https://dex.example.com/auth
+        tokenUrl: https://dex.example.com/token
+        userInfoUrl: https://dex.example.com/userinfo
+        jwksUrl: https://dex.example.com/keys
+        issuer: https://dex.example.com
+      configSecrets:
+        clientSecret:
+          name: dex-idp-secret
+          key: clientSecret
+      mappers:
+        - name: email-mapper
+          identityProviderMapper: oidc-user-attribute-idp-mapper
           config:
-            claim.name: groups
-            full.path: "false"
-            id.token.claim: "true"
-            access.token.claim: "true"
-            userinfo.token.claim: "true"
+            claim: email
+            user.attribute: email
+            syncMode: INHERIT
 ```
-
-For IDP attribute mappers (to import user attributes from the IDP), this functionality is planned for a future release.
 
 ## Complete Examples
 
@@ -306,9 +342,12 @@ spec:
       trustEmail: false
       config:
         clientId: github-client-id
-        clientSecret: github-client-secret
         defaultScope: "user:email"
         syncMode: IMPORT
+      configSecrets:
+        clientSecret:
+          name: github-idp-secret
+          key: clientSecret
 
     # Google Workspace for employees
     - alias: google
@@ -317,10 +356,13 @@ spec:
       trustEmail: true
       config:
         clientId: google-client-id.apps.googleusercontent.com
-        clientSecret: google-client-secret
         hostedDomain: "company.com"
         defaultScope: "openid profile email"
         syncMode: FORCE
+      configSecrets:
+        clientSecret:
+          name: google-idp-secret
+          key: clientSecret
 
     # Azure AD for enterprise SSO
     - alias: azure-ad
@@ -329,7 +371,6 @@ spec:
       trustEmail: true
       config:
         clientId: azure-client-id
-        clientSecret: azure-client-secret
         authorizationUrl: https://login.microsoftonline.com/TENANT_ID/oauth2/v2.0/authorize
         tokenUrl: https://login.microsoftonline.com/TENANT_ID/oauth2/v2.0/token
         userInfoUrl: https://graph.microsoft.com/oidc/userinfo
@@ -339,17 +380,27 @@ spec:
         syncMode: FORCE
         validateSignature: "true"
         useJwksUrl: "true"
+      configSecrets:
+        clientSecret:
+          name: azure-ad-idp-secret
+          key: clientSecret
 ```
 
 ### Using Secrets for Credentials
 
-**Best Practice:** Store IDP client secrets in Kubernetes Secrets instead of hardcoding them in the CR.
-
-**Note:** This feature is planned for a future release. Currently, secrets must be included in the `config` directly.
-
-Planned syntax (coming soon):
+Store IDP client secrets in Kubernetes Secrets and reference them with `configSecrets`.
 
 ```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: github-oauth-secret
+  namespace: my-app
+  labels:
+    vriesdemichael.github.io/keycloak-allow-operator-read: "true"
+stringData:
+  client-secret: your-github-oauth-app-client-secret
+---
 identityProviders:
   - alias: github
     providerId: github
@@ -357,11 +408,12 @@ identityProviders:
     trustEmail: false
     config:
       clientId: my-github-client-id
-      clientSecretRef:  # Reference to Kubernetes Secret
-        name: github-oauth-secret
-        key: client-secret
       defaultScope: "user:email"
       syncMode: IMPORT
+    configSecrets:
+      clientSecret:
+        name: github-oauth-secret
+        key: client-secret
 ```
 
 ## Troubleshooting

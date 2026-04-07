@@ -117,6 +117,171 @@ def get_keycloak_test_image() -> str:
     return f"{image_name}:{version}"
 
 
+@pytest.fixture
+async def dex_ready(shared_operator, operator_namespace):
+    """Deploy Dex OIDC provider for identity provider integration tests."""
+    import subprocess
+    import uuid
+
+    import yaml
+
+    dex_manifest_path = Path(__file__).parent / "fixtures" / "dex-deployment.yaml"
+    with open(dex_manifest_path) as f:
+        manifests = list(yaml.safe_load_all(f))
+
+    worker_id = os.environ.get("PYTEST_XDIST_WORKER", "gw0")
+    resource_suffix = f"{worker_id}-{uuid.uuid4().hex[:8]}"
+    app_label = f"dex-{resource_suffix}"
+    configmap_name = f"dex-config-{resource_suffix}"
+    service_name = f"dex-{resource_suffix}"
+
+    issuer_url = (
+        f"http://{service_name}.{operator_namespace}.svc.cluster.local:5556/dex"
+    )
+
+    for manifest in manifests:
+        manifest["metadata"]["namespace"] = operator_namespace
+
+        kind = manifest.get("kind")
+        if kind == "ConfigMap":
+            manifest["metadata"]["name"] = configmap_name
+            manifest["data"]["config.yaml"] = manifest["data"]["config.yaml"].replace(
+                "http://dex.default.svc.cluster.local:5556/dex",
+                issuer_url,
+            )
+        elif kind == "Deployment":
+            manifest["metadata"]["name"] = service_name
+            manifest["metadata"]["labels"]["app"] = app_label
+            manifest["spec"]["selector"]["matchLabels"]["app"] = app_label
+            manifest["spec"]["template"]["metadata"]["labels"]["app"] = app_label
+            manifest["spec"]["template"]["spec"]["volumes"][0]["configMap"]["name"] = (
+                configmap_name
+            )
+        elif kind == "Service":
+            manifest["metadata"]["name"] = service_name
+            manifest["metadata"]["labels"]["app"] = app_label
+            manifest["spec"]["selector"]["app"] = app_label
+
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+        yaml.safe_dump_all(manifests, f)
+        temp_manifest = f.name
+
+    try:
+        apply_timeout_seconds = 30
+        try:
+            result = subprocess.run(
+                ["kubectl", "apply", "-f", temp_manifest],
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=apply_timeout_seconds,
+            )
+        except subprocess.CalledProcessError as e:
+            logger.error(
+                "Failed to apply Dex manifests. stdout:\n%s\nstderr:\n%s",
+                e.stdout,
+                e.stderr,
+            )
+            raise
+        except subprocess.TimeoutExpired as e:
+            logger.error(
+                "Timed out after %ss applying Dex manifests. stdout:\n%s\nstderr:\n%s",
+                apply_timeout_seconds,
+                e.stdout,
+                e.stderr,
+            )
+            raise
+        logger.info("Applied Dex manifests: %s", result.stdout)
+
+        timeout_seconds = 250
+        max_iterations = timeout_seconds // 5
+        apps_api = client.AppsV1Api()
+        for i in range(max_iterations):
+            try:
+                deployment = apps_api.read_namespaced_deployment(
+                    service_name, operator_namespace
+                )
+                if (
+                    deployment.status.ready_replicas
+                    and deployment.status.ready_replicas > 0
+                ):
+                    logger.info("Dex deployment is ready")
+                    break
+                if i % 10 == 0:
+                    logger.info(
+                        "Waiting for Dex... (%ss elapsed, ready: %s/%s)",
+                        i * 5,
+                        deployment.status.ready_replicas or 0,
+                        deployment.status.replicas or 0,
+                    )
+            except Exception:
+                if i % 10 == 0:
+                    logger.debug("Waiting for Dex deployment to be created")
+            await asyncio.sleep(5)
+        else:
+            try:
+                result = subprocess.run(
+                    [
+                        "kubectl",
+                        "get",
+                        "pods",
+                        "-n",
+                        operator_namespace,
+                        "-l",
+                        f"app={app_label}",
+                        "-o",
+                        "wide",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                logger.error("Dex pods status:\n%s", result.stdout)
+                result = subprocess.run(
+                    [
+                        "kubectl",
+                        "logs",
+                        "-n",
+                        operator_namespace,
+                        "-l",
+                        f"app={app_label}",
+                        "--tail=50",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                logger.error("Dex logs:\n%s\n%s", result.stdout, result.stderr)
+            except Exception as e:
+                logger.error("Failed to get Dex debug info: %s", e)
+
+            raise TimeoutError(
+                f"Dex deployment did not become ready within {timeout_seconds}s in {operator_namespace}"
+            )
+
+        yield {
+            "namespace": operator_namespace,
+            "service_name": service_name,
+            "issuer_url": issuer_url,
+            "client_id": "keycloak",
+            "client_secret": "keycloak-secret",
+        }
+
+    finally:
+        try:
+            subprocess.run(
+                ["kubectl", "delete", "-f", temp_manifest, "--ignore-not-found=true"],
+                check=False,
+                capture_output=True,
+                timeout=30,
+            )
+            logger.info("Deleted Dex resources")
+        except Exception as e:
+            logger.warning("Failed to delete Dex resources: %s", e)
+        finally:
+            Path(temp_manifest).unlink(missing_ok=True)
+
+
 def _is_tracing_enabled() -> bool:
     """Determine whether OTEL tracing should be enabled for tests.
 

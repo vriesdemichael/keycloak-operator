@@ -460,6 +460,26 @@ spec:
                         required:
                         - name
                         - key
+                    mappers:
+                      type: array
+                      description: Identity provider mappers for claim/attribute transformation
+                      items:
+                        type: object
+                        properties:
+                          name:
+                            type: string
+                            description: Mapper name (unique within identity provider)
+                          identityProviderMapper:
+                            type: string
+                            description: Mapper type (e.g., oidc-user-attribute-idp-mapper)
+                          config:
+                            type: object
+                            description: Mapper-specific configuration
+                            additionalProperties:
+                              type: string
+                        required:
+                        - name
+                        - identityProviderMapper
                   required:
                   - alias
                   - providerId

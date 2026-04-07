@@ -270,6 +270,29 @@
               },
               "required": ["name", "key"]
             }
+          },
+          "mappers": {
+            "type": "array",
+            "description": "Identity provider mappers for claim and attribute transformation",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Mapper name"
+                },
+                "identityProviderMapper": {
+                  "type": "string",
+                  "description": "Mapper type (e.g., oidc-user-attribute-idp-mapper)"
+                },
+                "config": {
+                  "type": "object",
+                  "description": "Mapper-specific configuration",
+                  "additionalProperties": {"type": "string"}
+                }
+              },
+              "required": ["name", "identityProviderMapper"]
+            }
           }
         },
         "required": ["alias", "providerId"]
@@ -638,6 +661,11 @@
           }
         }
       }
+    },
+    "organizationsEnabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable organizations feature for multi-tenancy support (Keycloak 26+)"
     },
     "organizations": {
       "type": "array",
