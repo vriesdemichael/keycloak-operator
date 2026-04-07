@@ -371,10 +371,20 @@ spec:
                     additionalProperties:
                       type: string
               env:
-                type: object
+                type: array
                 description: Environment variables
-                additionalProperties:
-                  type: string
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+                    valueFrom:
+                      type: object
+                      x-kubernetes-preserve-unknown-fields: true
+                  required:
+                  - name
               jvmOptions:
                 type: array
                 description: JVM options for Keycloak (e.g., heap size, GC settings)

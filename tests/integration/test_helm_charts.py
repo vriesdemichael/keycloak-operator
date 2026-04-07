@@ -521,6 +521,44 @@ class TestHelmRealmAdvancedFields:
             "hashIterations should be 210000"
         )
 
+
+@pytest.mark.asyncio
+class TestHelmOperatorManagedKeycloak:
+    """Test Helm chart support for managed Keycloak-specific values."""
+
+    async def test_managed_keycloak_env_supports_secret_refs(
+        self,
+        k8s_custom_objects,
+        operator_namespace,
+        shared_operator,
+    ):
+        """Test that managed Keycloak env supports Kubernetes-style secretKeyRef entries."""
+        keycloak = await k8s_custom_objects.get_namespaced_custom_object(
+            group="vriesdemichael.github.io",
+            version="v1",
+            namespace=operator_namespace,
+            plural="keycloaks",
+            name="keycloak",
+        )
+
+        env_entries = keycloak.get("spec", {}).get("env", [])
+        matching = [
+            entry
+            for entry in env_entries
+            if entry.get("name") == "KC_TEST_SHARED_OPERATOR_ENV"
+        ]
+
+        assert len(matching) == 1
+        assert matching[0] == {
+            "name": "KC_TEST_SHARED_OPERATOR_ENV",
+            "valueFrom": {
+                "secretKeyRef": {
+                    "name": "shared-keycloak-runtime-env",
+                    "key": "test-value",
+                }
+            },
+        }
+
     @pytest.mark.timeout(600)
     async def test_helm_realm_feature_propagation(
         self,

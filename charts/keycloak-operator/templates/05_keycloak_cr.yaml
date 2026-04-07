@@ -134,6 +134,11 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
+  {{- with .Values.keycloak.env }}
+  env:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+
   {{- with .Values.keycloak.jvmOptions }}
   jvmOptions:
     {{- toYaml . | nindent 4 }}

@@ -786,6 +786,132 @@ class TestKeycloakDeploymentJvmOptions:
             assert "-XX:CompileThresholdScaling=0.3" in java_opts
 
 
+class TestKeycloakDeploymentEnv:
+    """Tests for user-supplied Keycloak environment variables."""
+
+    def test_deployment_supports_legacy_env_map(self):
+        """Test that legacy env maps are normalized into literal env vars."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            env={
+                "KC_LOG_LEVEL": "DEBUG",
+                "KC_FEATURES": "token-exchange",
+            },
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            assert env_var_dict["KC_LOG_LEVEL"].value == "DEBUG"
+            assert env_var_dict["KC_FEATURES"].value == "token-exchange"
+
+    def test_deployment_supports_value_from_secret_key_ref(self):
+        """Test that Kubernetes-style env entries with secretKeyRef are supported."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            env=[
+                {
+                    "name": "KC_DB_PASSWORD",
+                    "valueFrom": {
+                        "secretKeyRef": {
+                            "name": "db-password",
+                            "key": "password",
+                        }
+                    },
+                }
+            ],
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "username": "keycloak",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            env_var_dict = {env.name: env for env in container.env}
+
+            db_password = env_var_dict["KC_DB_PASSWORD"]
+            assert db_password.value is None
+            assert db_password.value_from.secret_key_ref.name == "db-password"
+            assert db_password.value_from.secret_key_ref.key == "password"
+
+    def test_deployment_user_env_overrides_default_env_by_name(self):
+        """Test that user env entries override operator defaults with the same name."""
+        from keycloak_operator.models.keycloak import KeycloakSpec
+
+        mock_k8s_client = MagicMock()
+        mock_apps_api = MagicMock()
+
+        spec = KeycloakSpec(
+            replicas=1,
+            env=[{"name": "KC_HOSTNAME_STRICT", "value": "true"}],
+            database={
+                "type": "postgresql",
+                "host": "db",
+                "database": "keycloak",
+                "credentials_secret": "db-credentials",
+            },
+        )
+
+        with patch("kubernetes.client.AppsV1Api", return_value=mock_apps_api):
+            create_keycloak_deployment(
+                name="my-keycloak",
+                namespace="test-ns",
+                spec=spec,
+                k8s_client=mock_k8s_client,
+            )
+
+            call_args = mock_apps_api.create_namespaced_deployment.call_args
+            deployment = call_args[1]["body"]
+
+            container = deployment.spec.template.spec.containers[0]
+            hostname_strict = [
+                env for env in container.env if env.name == "KC_HOSTNAME_STRICT"
+            ]
+
+            assert len(hostname_strict) == 1
+            assert hostname_strict[0].value == "true"
+
+
 class TestKeycloakDeploymentConnectionPool:
     """Tests for database connection pool configuration in Keycloak deployment."""
 

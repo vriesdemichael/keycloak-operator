@@ -248,14 +248,21 @@ Inject custom environment variables into Keycloak containers.
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `env` | map[string]string | No | `{}` | Environment variables as key-value pairs |
+| `env` | `[]EnvVar` | No | `[]` | Kubernetes-style environment variable entries |
 
 **Example:**
 ```yaml
 spec:
   env:
-    KC_LOG_LEVEL: "INFO"
-    KC_FEATURES: "token-exchange,admin-fine-grained-authz"
+    - name: KC_LOG_LEVEL
+      value: "INFO"
+    - name: KC_FEATURES
+      value: "token-exchange,admin-fine-grained-authz"
+    - name: KC_PROXY_HEADERS
+      valueFrom:
+        secretKeyRef:
+          name: keycloak-runtime-env
+          key: proxy-headers
 ```
 
 **Common Keycloak environment variables:**

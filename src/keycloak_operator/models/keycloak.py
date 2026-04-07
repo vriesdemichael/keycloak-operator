@@ -7,6 +7,7 @@ for the operator development.
 """
 
 import re
+from typing import Any
 
 from pydantic import AliasChoices, BaseModel, Field, field_validator, model_validator
 
@@ -938,6 +939,119 @@ class KeycloakAdminConfig(BaseModel):
     )
 
 
+class KeycloakEnvVarSecretKeyRef(BaseModel):
+    """Reference to a secret key for an environment variable."""
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Name of the secret")
+    key: str = Field(..., description="Key within the secret")
+    optional: bool | None = Field(
+        None, description="Whether the secret or key is optional"
+    )
+
+
+class KeycloakEnvVarConfigMapKeyRef(BaseModel):
+    """Reference to a ConfigMap key for an environment variable."""
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Name of the ConfigMap")
+    key: str = Field(..., description="Key within the ConfigMap")
+    optional: bool | None = Field(
+        None, description="Whether the ConfigMap or key is optional"
+    )
+
+
+class KeycloakEnvVarFieldRef(BaseModel):
+    """Reference to a pod field for an environment variable."""
+
+    model_config = {"populate_by_name": True}
+
+    field_path: str = Field(..., alias="fieldPath", description="Pod field path")
+    api_version: str | None = Field(
+        None, alias="apiVersion", description="API version of the field path"
+    )
+
+
+class KeycloakEnvVarResourceFieldRef(BaseModel):
+    """Reference to a container resource field for an environment variable."""
+
+    model_config = {"populate_by_name": True}
+
+    resource: str = Field(..., description="Resource name")
+    container_name: str | None = Field(
+        None, alias="containerName", description="Container name"
+    )
+    divisor: str | None = Field(None, description="Resource divisor")
+
+
+class KeycloakEnvVarSource(BaseModel):
+    """Kubernetes valueFrom source for an environment variable."""
+
+    model_config = {"populate_by_name": True}
+
+    secret_key_ref: KeycloakEnvVarSecretKeyRef | None = Field(
+        None,
+        alias="secretKeyRef",
+        description="Reference to a secret key",
+    )
+    config_map_key_ref: KeycloakEnvVarConfigMapKeyRef | None = Field(
+        None,
+        alias="configMapKeyRef",
+        description="Reference to a ConfigMap key",
+    )
+    field_ref: KeycloakEnvVarFieldRef | None = Field(
+        None,
+        alias="fieldRef",
+        description="Reference to a pod field",
+    )
+    resource_field_ref: KeycloakEnvVarResourceFieldRef | None = Field(
+        None,
+        alias="resourceFieldRef",
+        description="Reference to a container resource field",
+    )
+
+    @model_validator(mode="after")
+    def validate_single_source(self):
+        configured_sources = [
+            self.secret_key_ref,
+            self.config_map_key_ref,
+            self.field_ref,
+            self.resource_field_ref,
+        ]
+        configured_count = sum(source is not None for source in configured_sources)
+        if configured_count != 1:
+            raise ValueError(
+                "valueFrom must specify exactly one of secretKeyRef, configMapKeyRef, fieldRef, or resourceFieldRef"
+            )
+        return self
+
+
+class KeycloakEnvVar(BaseModel):
+    """Environment variable for Keycloak pods."""
+
+    model_config = {"populate_by_name": True}
+
+    name: str = Field(..., description="Environment variable name")
+    value: str | None = Field(None, description="Literal environment variable value")
+    value_from: KeycloakEnvVarSource | None = Field(
+        None,
+        alias="valueFrom",
+        description="Reference source for the environment variable value",
+    )
+
+    @model_validator(mode="after")
+    def validate_value_or_value_from(self):
+        has_value = self.value is not None
+        has_value_from = self.value_from is not None
+        if has_value == has_value_from:
+            raise ValueError(
+                "Environment variable must set exactly one of value or valueFrom"
+            )
+        return self
+
+
 class KeycloakSpec(BaseModel):
     """
     Specification for a Keycloak instance.
@@ -996,8 +1110,9 @@ class KeycloakSpec(BaseModel):
     )
 
     # Environment and configuration
-    env: dict[str, str] = Field(
-        default_factory=dict, description="Additional environment variables"
+    env: list[KeycloakEnvVar] = Field(
+        default_factory=list,
+        description="Additional environment variables. Supports both the legacy map[string]string format and Kubernetes-style env entries with valueFrom.",
     )
     jvm_options: list[str] = Field(
         default_factory=list, alias="jvmOptions", description="JVM options for Keycloak"
@@ -1011,6 +1126,18 @@ class KeycloakSpec(BaseModel):
         "operator Helm chart should explicitly set this to true when using a "
         "pre-built optimized image.",
     )
+
+    @field_validator("env", mode="before")
+    @classmethod
+    def normalize_env(cls, value: Any):
+        if value is None:
+            return []
+        if isinstance(value, dict):
+            return [
+                {"name": env_name, "value": str(env_value)}
+                for env_name, env_value in value.items()
+            ]
+        return value
 
     # Operational settings
     startup_probe: KubernetesProbeConfig = Field(

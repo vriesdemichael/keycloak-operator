@@ -221,6 +221,9 @@ The chart can optionally deploy a Keycloak instance:
 | `keycloak.ingress.tlsEnabled` | Enable TLS for ingress | `true` |
 | `keycloak.ingress.tlsSecretName` | Secret containing TLS certificate | `""` |
 | `keycloak.resources` | Keycloak resource limits/requests | See [values.yaml](values.yaml) |
+| `keycloak.env` | Environment variables for managed Keycloak pods | `[]` |
+
+`keycloak.env` uses the same Kubernetes env entry structure as `operator.env`, so you can use `valueFrom.secretKeyRef` with Secrets created by `extraManifests`, External Secrets Operator, or Sealed Secrets.
 
 **Example:** Deploy Keycloak with CloudNativePG:
 
@@ -234,6 +237,28 @@ keycloak:
     cnpg:
       enabled: true
       clusterName: keycloak-postgres
+
+**Example:** Provide Keycloak env vars from an extra manifest secret:
+
+```yaml
+extraManifests:
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: keycloak-runtime-env
+    type: Opaque
+    stringData:
+      proxy-headers: xforwarded
+
+keycloak:
+  managed: true
+  env:
+    - name: KC_PROXY_HEADERS
+      valueFrom:
+        secretKeyRef:
+          name: keycloak-runtime-env
+          key: proxy-headers
+```
 ```
 
 #### Extra Manifests
