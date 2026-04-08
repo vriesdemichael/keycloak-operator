@@ -201,14 +201,22 @@ The chart can optionally deploy a Keycloak instance:
 - `keycloak.managed: true` deploys and manages a `Keycloak` CR in the operator namespace.
 - `keycloak.managed: false` connects the operator to an existing Keycloak instance using `keycloak.url` and `keycloak.adminSecret`.
 
+For managed Keycloak instances, set `keycloak.admin.existingSecret` when you want the operator to source admin credentials from an existing Kubernetes `Secret` instead of generating them. The referenced secret must live in the same namespace as the managed `Keycloak` and include `username` and `password` keys.
+
+These settings are not interchangeable:
+
+- `keycloak.admin.existingSecret` configures the managed `Keycloak` CR and is only used when `keycloak.managed=true`.
+- `keycloak.adminSecret` and `keycloak.adminPasswordKey` configure how the operator authenticates to Keycloak. They are required for `keycloak.managed=false` and default to the generated proxy secret in managed mode.
+
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `keycloak.managed` | Deploy and manage a Keycloak instance | `true` |
 | `keycloak.name` | Keycloak instance name | `keycloak` |
 | `keycloak.url` | Existing Keycloak URL when `managed=false` | `""` |
-| `keycloak.adminUsername` | Admin username for managed or external mode | `admin` |
-| `keycloak.adminSecret` | Secret containing admin password | `""` |
-| `keycloak.adminPasswordKey` | Key in the admin secret | `password` |
+| `keycloak.adminUsername` | Username the operator uses when authenticating to Keycloak | `admin` |
+| `keycloak.adminSecret` | Secret name the operator reads for the admin password | `""` |
+| `keycloak.adminPasswordKey` | Key in `keycloak.adminSecret` containing the admin password | `password` |
+| `keycloak.admin.existingSecret` | Existing secret to seed admin credentials for a managed Keycloak instance | `""` |
 | `keycloak.replicas` | Number of Keycloak replicas | `1` |
 | `keycloak.version` | Keycloak version (image tag) | `"26.4.1"` |
 | `keycloak.image` | Keycloak container image | `quay.io/keycloak/keycloak` |
