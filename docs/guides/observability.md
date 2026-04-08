@@ -1,655 +1,275 @@
 # Observability
 
-This document describes the observability features available in the Keycloak operator, including status conditions, metrics, and monitoring capabilities.
+This guide covers status reporting, metrics, health endpoints, logging, and tracing for the Keycloak operator.
 
-## Status Conditions
+## Status Conditions and Phases
 
-All custom resources (Keycloak, KeycloakRealm, KeycloakClient) expose Kubernetes-standard status conditions that can be used by GitOps tools like Argo CD and Flux CD to determine resource health.
+All primary resources expose Kubernetes-style conditions and an operator phase.
 
-### Standard Conditions
+Common condition types:
 
-Each resource implements the following condition types:
+- `Ready`
+- `Available`
+- `Progressing`
+- `Degraded`
 
-#### Ready
-Indicates whether the resource is fully reconciled and operational.
+Common reasons include:
 
-- **Status**: `True`, `False`, or `Unknown`
-- **Reason**: `ReconciliationSucceeded`, `ReconciliationFailed`, `ReconciliationInProgress`
-- **Usage**: Primary health indicator for GitOps tools
+- `ReconciliationSucceeded`
+- `ReconciliationFailed`
+- `ReconciliationInProgress`
+- `ReconciliationPaused`
 
-#### Available
-Indicates whether the resource is available for use (Kubernetes standard).
+Common phases you will see in practice:
 
-- **Status**: `True` or `False`
-- **Reason**: `ReconciliationSucceeded`, `ReconciliationFailed`
-- **Usage**: Determines if the resource can serve its purpose
+- `Pending`
+- `Reconciling`
+- `Ready`
+- `Degraded`
+- `Failed`
+- `Updating`
+- `Paused`
 
-#### Progressing
-Indicates an ongoing reconciliation operation (Kubernetes standard).
+## Observed Generation
 
-- **Status**: `True` or `False`
-- **Reason**: `ReconciliationInProgress`
-- **Usage**: Shows active reconciliation work
+`status.observedGeneration` tells you which spec generation the operator has processed.
 
-#### Degraded
-Indicates the resource is operational but not in optimal state.
+- when it matches `metadata.generation`, the resource has been reconciled against the latest spec
+- when it does not match, reconciliation is still pending or in progress
 
-- **Status**: `True` or `False`
-- **Reason**: `PartialFunctionality`, `ReconciliationFailed`
-- **Usage**: Alerts about suboptimal conditions
-
-### Checking Resource Status
-
-View the status of a resource:
+Example:
 
 ```bash
-# Get resource with status
-kubectl get keycloak my-keycloak -o yaml
-
-# Check conditions specifically
-kubectl get keycloak my-keycloak -o jsonpath='{.status.conditions}' | jq
-
-# Check if a resource is ready
-kubectl get keycloak my-keycloak -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}'
+kubectl get keycloak my-keycloak -o json | jq '{generation: .metadata.generation, observedGeneration: .status.observedGeneration}'
 ```
 
-### Example Status Output
+## Resource-Specific Status Fields
+
+### Keycloak
+
+`Keycloak.status` includes fields such as:
 
 ```yaml
 status:
   phase: Ready
-  message: Keycloak instance is ready
-  lastUpdated: "2025-10-15T20:00:00Z"
-  observedGeneration: 5
-  conditions:
-    - type: Ready
-      status: "True"
-      reason: ReconciliationSucceeded
-      message: Reconciliation completed successfully
-      lastTransitionTime: "2025-10-15T20:00:00Z"
-      observedGeneration: 5
-    - type: Available
-      status: "True"
-      reason: ReconciliationSucceeded
-      message: Resource is available
-      lastTransitionTime: "2025-10-15T20:00:00Z"
-      observedGeneration: 5
   deployment: my-keycloak-keycloak
   service: my-keycloak-keycloak
+  adminSecret: my-keycloak-admin-credentials
   endpoints:
     admin: http://my-keycloak-keycloak.default.svc.cluster.local:8080
     public: http://my-keycloak-keycloak.default.svc.cluster.local:8080
     management: http://my-keycloak-keycloak.default.svc.cluster.local:9000
 ```
 
-## ObservedGeneration
+Notes:
 
-All resources track `observedGeneration` which indicates the generation of the spec that was last reconciled. This is crucial for GitOps workflows:
+- `management` is present only when the Keycloak version supports the separate management port.
+- Keycloak 24.x uses port `8080` for health endpoints.
+- Keycloak 25.x and later use port `9000` for the management interface.
 
-- **Match**: When `status.observedGeneration` equals `metadata.generation`, the resource is fully reconciled
-- **Mismatch**: When they differ, reconciliation is pending or in progress
-- **Usage**: GitOps tools use this to detect drift and sync status
+### KeycloakRealm
 
-Example check:
+`KeycloakRealm.status` includes:
 
-```bash
-# Check if resource is fully synced
-kubectl get keycloak my-keycloak -o json | \
-  jq 'if .status.observedGeneration == .metadata.generation then "Synced" else "OutOfSync" end'
-```
+- `realmName`
+- `keycloakInstance`
+- `features`
+- `endpoints`
+- `userFederationStatus`
 
-## Resource-Specific Status Fields
+The realm reconciler also populates standard OIDC endpoints in status when it can resolve the Keycloak base URL.
 
-### Keycloak Status
+### KeycloakClient
+
+`KeycloakClient.status` includes:
 
 ```yaml
 status:
-  deployment: my-keycloak-keycloak  # Name of the deployment
-  service: my-keycloak-keycloak      # Name of the service
-  adminSecret: my-keycloak-admin-credentials  # Admin credentials secret
+  phase: Ready
+  clientId: my-client
+  internalId: 12345678-1234-1234-1234-123456789abc
+  realm: my-realm
+  keycloakInstance: default/my-keycloak
+  credentialsSecret: my-client-credentials
+  authorizationGranted: true
   endpoints:
-    admin: http://...    # Admin API endpoint
-    public: http://...   # Public endpoint
-    management: http://... # Management endpoint (health checks)
-```
-
-### KeycloakRealm Status
-
-```yaml
-status:
-  realmName: my-realm  # Actual realm name in Keycloak
-  keycloakInstance: default/keycloak  # Referenced Keycloak instance
-  features:
-    userRegistration: true
-    passwordReset: true
-    identityProviders: 2
-    userFederationProviders: 1
-    customThemes: true
-```
-
-### KeycloakClient Status
-
-```yaml
-status:
-  client_id: my-client  # Client ID
-  client_uuid: abc-123  # UUID in Keycloak
-  realm: my-realm  # Realm name
-  keycloak_instance: default/keycloak  # Keycloak instance reference
-  credentials_secret: my-client-credentials  # Client credentials secret
-  public_client: false  # Whether this is a public client
-  endpoints:
-    auth: https://keycloak.example.com/realms/my-realm
+    issuer: https://keycloak.example.com/realms/my-realm
+    auth: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/auth
     token: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/token
     userinfo: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/userinfo
+    jwks: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/certs
+    endSession: https://keycloak.example.com/realms/my-realm/protocol/openid-connect/logout
 ```
+
+## Metrics Endpoint
+
+The operator pod exposes its own health and metrics server on:
+
+- host: `METRICS_HOST` or `0.0.0.0`
+- port: `METRICS_PORT` or `8081`
+
+Endpoints:
+
+- `/metrics`
+- `/healthz`
+- `/ready`
+
+This endpoint belongs to the operator deployment and is what the chart's `ServiceMonitor` scrapes when `monitoring.enabled=true`.
+
+Do not confuse the operator metrics port `8081` with the managed Keycloak management port `9000`. Keycloak application metrics and management endpoints are separate from the operator's `/metrics` endpoint.
 
 ## Prometheus Metrics
 
-The operator exposes Prometheus metrics on port 8081 at `/metrics`.
-
-### Available Metrics
-
-#### Reconciliation Metrics
+### Reconciliation
 
 ```prometheus
-# Reconciliation operations counter
-keycloak_operator_reconciliation_total{resource_type="keycloak|realm|client", namespace="...", result="success|failure"}
-
-# Reconciliation duration histogram
-keycloak_operator_reconciliation_duration_seconds{resource_type="...", namespace="...", operation="reconcile|update|delete"}
-
-# Active resources gauge
-keycloak_operator_active_resources{resource_type="...", namespace="...", phase="Ready|Failed|Pending"}
+keycloak_operator_reconciliation_total{resource_type,namespace,result}
+keycloak_operator_reconciliation_duration_seconds{resource_type,namespace,operation}
+keycloak_operator_reconciliation_errors_total{resource_type,namespace,error_type,retryable}
+keycloak_operator_reconciliation_skipped_total{resource_type,namespace}
+keycloak_operator_active_resources{resource_type,namespace,phase}
 ```
 
-#### Resource Status Metrics
+### Database and API Protection
 
 ```prometheus
-# Resource status by phase
-keycloak_operator_active_resources{resource_type="keycloak|realm|client", namespace="...", phase="Ready|Failed|Pending"}
+keycloak_operator_database_connection_status{namespace,database_type}
+keycloak_operator_database_connection_duration_seconds{namespace,database_type}
+keycloak_operator_api_rate_limit_wait_seconds{namespace,limit_type}
+keycloak_operator_api_rate_limit_acquired_total{namespace,limit_type}
+keycloak_operator_api_rate_limit_timeouts_total{namespace,limit_type}
+keycloak_operator_api_rate_limit_budget_available{namespace}
+keycloak_operator_circuit_breaker_state{keycloak_instance,keycloak_namespace}
 ```
 
-#### Error Metrics
+### Drift Detection and Federation
 
 ```prometheus
-# Error counter by type
-keycloak_operator_reconciliation_errors_total{error_type="...", resource_type="...", namespace="...", retryable="true|false"}
+keycloak_operator_orphaned_resources{resource_type,operator_instance}
+keycloak_operator_config_drift{resource_type,cr_namespace}
+keycloak_operator_unmanaged_resources{resource_type}
+keycloak_operator_drift_check_duration_seconds{resource_type}
+keycloak_operator_drift_check_errors_total{resource_type}
+keycloak_operator_drift_check_last_success_timestamp
+keycloak_operator_user_federation_status{realm,provider_id}
 ```
 
-### Scraping Metrics
+### Secret Rotation
 
-Configure Prometheus to scrape the operator:
+```prometheus
+keycloak_operator_secret_rotation_total{namespace,result}
+keycloak_operator_secret_rotation_errors_total{namespace}
+```
 
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: keycloak-operator-metrics
-  labels:
-    app: keycloak-operator
-spec:
-  ports:
-    - name: metrics
-      port: 8081
-      targetPort: 8081
-  selector:
-    app: keycloak-operator
----
-apiVersion: monitoring.coreos.com/v1
-kind: ServiceMonitor
-metadata:
-  name: keycloak-operator
-spec:
-  selector:
-    matchLabels:
-      app: keycloak-operator
-  endpoints:
-    - port: metrics
-      interval: 30s
+## Real Prometheus Queries
+
+Slow reconciliations:
+
+```prometheus
+histogram_quantile(0.95, sum by (le, resource_type) (rate(keycloak_operator_reconciliation_duration_seconds_bucket[5m])))
+```
+
+Failed reconciliations:
+
+```prometheus
+sum by (resource_type, namespace) (increase(keycloak_operator_reconciliation_errors_total[5m]))
+```
+
+Open circuit breakers:
+
+```prometheus
+keycloak_operator_circuit_breaker_state == 1
+```
+
+Disconnected federation providers:
+
+```prometheus
+keycloak_operator_user_federation_status == 0
 ```
 
 ## Logging
 
-The operator uses structured logging with correlation IDs for request tracing.
+The operator supports structured logging and selective noise reduction.
 
-### Log Levels
+Useful settings include:
 
-- **DEBUG**: Detailed operational information
-- **INFO**: General operational messages
-- **WARNING**: Warning conditions (degraded but functioning)
-- **ERROR**: Error conditions requiring attention
+- `LOG_LEVEL`
+- `JSON_LOGS`
+- `CORRELATION_IDS`
+- `LOG_HEALTH_PROBES`
+- `WEBHOOK_LOG_LEVEL`
 
-### Viewing Logs
-
-```bash
-# Follow operator logs
-kubectl logs -f -l app=keycloak-operator -n keycloak-operator-system
-
-# View logs with correlation ID
-kubectl logs -l app=keycloak-operator -n keycloak-operator-system | grep "correlation_id=abc-123"
-
-# Check reconciliation logs for specific resource
-kubectl logs -l app=keycloak-operator -n keycloak-operator-system | \
-  grep "resource_name=my-keycloak"
-```
-
-### Log Format
-
-Logs include structured fields:
-
-```json
-{
-  "timestamp": "2025-10-15T20:00:00Z",
-  "level": "INFO",
-  "logger": "KeycloakReconciler",
-  "message": "Reconciliation completed successfully",
-  "resource_type": "keycloak",
-  "resource_name": "my-keycloak",
-  "namespace": "default",
-  "correlation_id": "abc-123",
-  "duration": 2.5
-}
-```
-
-## Health Checks
-
-The operator pod exposes health endpoints:
-
-- **Liveness**: HTTP GET on `/healthz` (port 8081)
-- **Readiness**: HTTP GET on `/ready` (port 8081)
-
-## GitOps Integration
-
-### Argo CD Health Assessment
-
-Argo CD automatically uses the `Ready` condition to determine resource health:
-
-```yaml
-# Argo CD will show:
-# - Healthy: Ready=True
-# - Progressing: Progressing=True or observedGeneration mismatch
-# - Degraded: Ready=False or Degraded=True
-```
-
-### Flux CD Health Assessment
-
-Flux CD checks the `Ready` condition and `observedGeneration`:
-
-```yaml
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: keycloak-resources
-spec:
-  healthChecks:
-    - apiVersion: vriesdemichael.github.io/v1
-      kind: Keycloak
-      name: my-keycloak
-      namespace: default
-```
-
-## Circuit Breaker Status
-
-The operator uses a circuit breaker to protect the Keycloak API from overload. When the circuit breaker opens:
-
-1. The operator logs: `Circuit breaker open for Keycloak at http://...`
-2. API calls return HTTP 503 (Service Unavailable)
-3. Reconciliation is retried with exponential backoff
-4. The circuit resets after 60 seconds of no failures
-
-Check circuit breaker state in logs:
+Example:
 
 ```bash
-kubectl logs -l app=keycloak-operator | grep "circuit breaker"
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator
 ```
 
-## Troubleshooting with Status
+## Tracing
 
-### Resource Stuck in Pending
-
-```bash
-# Check status conditions
-kubectl describe keycloak my-keycloak
-
-# Look for the message in status
-kubectl get keycloak my-keycloak -o jsonpath='{.status.message}'
-
-# Check if generation matches (sync status)
-kubectl get keycloak my-keycloak -o json | \
-  jq '{generation: .metadata.generation, observedGeneration: .status.observedGeneration}'
-```
-
-### Reconciliation Failures
-
-```bash
-# Check Ready condition for reason
-kubectl get keycloak my-keycloak -o json | \
-  jq '.status.conditions[] | select(.type=="Ready")'
-
-# View recent events
-kubectl get events --field-selector involvedObject.name=my-keycloak
-
-# Check operator logs for this resource
-kubectl logs -l app=keycloak-operator | grep "resource_name=my-keycloak"
-```
-
-### Performance Issues
-
-```bash
-# Query Prometheus for slow reconciliations
-histogram_quantile(0.95,
-  rate(kopf_reconciliation_duration_seconds_bucket[5m])
-) by (resource_type)
-
-# Check active reconciliation count
-kopf_reconciliation_active
-```
-
-## Distributed Tracing
-
-The Keycloak operator supports OpenTelemetry distributed tracing for end-to-end visibility into reconciliation operations. When enabled, traces are exported to an OTLP collector and can be viewed in tools like Jaeger, Tempo, or any OTEL-compatible backend.
-
-### Enabling Tracing
-
-Configure tracing in your Helm values:
+Tracing is configured through the operator chart under `operator.tracing`.
 
 ```yaml
 operator:
   tracing:
-    # Enable OpenTelemetry tracing
     enabled: true
-
-    # OTLP collector endpoint (gRPC protocol)
-    # Examples:
-    # - "http://otel-collector.monitoring:4317" (in-cluster)
-    # - "http://tempo.monitoring:4317" (Grafana Tempo)
-    # - "http://jaeger-collector.monitoring:4317" (Jaeger)
-    endpoint: "http://otel-collector.monitoring:4317"
-
-    # Service name for traces (identifies the operator)
-    serviceName: "keycloak-operator"
-
-    # Trace sampling rate (0.0-1.0)
-    # 1.0 = 100% of traces, 0.1 = 10% of traces
-    # Lower values reduce overhead in high-throughput environments
+    endpoint: http://otel-collector.monitoring:4317
+    serviceName: keycloak-operator
     sampleRate: 1.0
-
-    # Use insecure connection to OTLP collector (no TLS)
     insecure: true
-
-    # Propagate tracing to managed Keycloak instances
-    # Enables end-to-end distributed tracing
     propagateToKeycloak: true
 ```
 
-### What Gets Traced
+Key points:
 
-When tracing is enabled, the operator creates spans for:
+- `insecure` defaults to `false`
+- set `insecure: true` only for local development or when TLS is terminated elsewhere
+- `propagateToKeycloak: true` tells the chart to render a `spec.tracing` block into the managed `Keycloak` CR so Keycloak exports traces to the same collector
+- the propagated Keycloak tracing configuration uses the same collector endpoint and sample rate, but Keycloak reports as its own service rather than as the operator
+- `propagateToKeycloak: true` only works for chart-managed Keycloak instances and only when the managed Keycloak version supports built-in tracing
+- built-in Keycloak tracing requires Keycloak `26.0.0+`
 
-1. **Kopf Handlers**: Reconciliation operations for Keycloak, KeycloakRealm, and KeycloakClient resources
-2. **HTTP Requests**: All outgoing HTTP requests to Keycloak are automatically instrumented
-3. **Keycloak API Calls**: Admin API operations include trace context
+With propagation enabled, the operator and the managed Keycloak pods can participate in the same distributed trace across reconciliation work, ingress traffic, and Keycloak request handling.
 
-Each span includes semantic attributes:
+Environment variables:
 
-```text
-k8s.namespace: default
-k8s.resource.name: my-keycloak
-k8s.resource.type: keycloak
-kopf.handler: handle_keycloak_create
-```
+- `OTEL_TRACING_ENABLED`
+- `OTEL_EXPORTER_OTLP_ENDPOINT`
+- `OTEL_SERVICE_NAME`
+- `OTEL_SAMPLE_RATE`
+- `OTEL_EXPORTER_OTLP_INSECURE`
+- `OTEL_PROPAGATE_TO_KEYCLOAK`
 
-### End-to-End Tracing with Keycloak
+## Monitoring Setup
 
-When `propagateToKeycloak: true`, the operator configures managed Keycloak instances to export traces to the same collector. This enables:
-
-- Visibility into Keycloak internal operations (authentication, token issuance)
-- Trace correlation between operator reconciliation and Keycloak processing
-- Full request lifecycle from operator to Keycloak database
-
-**Requirements**: Keycloak 26.x or later (has built-in OpenTelemetry support via Quarkus)
-
-The Keycloak CR will automatically include:
+The operator chart can create a `ServiceMonitor` when `monitoring.enabled=true`.
 
 ```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: Keycloak
-metadata:
-  name: example
-spec:
-  tracing:
-    enabled: true
-    endpoint: "http://otel-collector.monitoring:4317"
-    serviceName: "keycloak"
-    sampleRate: 1.0
+monitoring:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
 ```
 
-### Viewing Traces
+## Troubleshooting
 
-#### Jaeger
+### Resource stuck in `Paused`
 
-```bash
-# Port-forward Jaeger UI
-kubectl port-forward -n monitoring svc/jaeger-query 16686:16686
+Check whether operator pause controls are enabled for that resource type.
 
-# Open in browser: http://localhost:16686
-# Search for service: keycloak-operator
-```
+### Missing management endpoint
 
-#### Grafana Tempo
+This is normal for Keycloak 24.x. The separate management port exists only for 25.x and later.
 
-```bash
-# Access Grafana
-kubectl port-forward -n monitoring svc/grafana 3000:3000
+### Trace propagation not working end-to-end
 
-# Navigate to Explore > Tempo
-# Search by service name: keycloak-operator
-```
+- verify the operator tracing config
+- verify `propagateToKeycloak: true` is set when you expect the managed Keycloak pods to emit traces too
+- verify Keycloak version is `26.0.0+`
+- verify collector reachability from both operator and Keycloak pods
 
-### Trace Propagation
+## See Also
 
-The operator uses W3C Trace Context (`traceparent` header) for trace propagation. This is automatically added to:
-
-- Keycloak Admin API requests
-- Any HTTP requests made via httpx or aiohttp clients
-
-Example trace context header:
-
-```text
-traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
-```
-
-### Debugging with Traces
-
-Traces are particularly useful for debugging:
-
-1. **Slow Reconciliations**: Identify which Keycloak API calls are slow
-2. **Failures**: See the exact sequence of operations before an error
-3. **Cross-Service Issues**: Trace requests from operator through Keycloak to database
-
-Example: Finding slow realm reconciliations
-
-1. Search for traces with `service.name = keycloak-operator`
-2. Filter by operation: `reconcile_realm`
-3. Sort by duration to find outliers
-4. Drill into spans to see individual API calls
-
-### Environment Variables
-
-The following environment variables control tracing:
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `OTEL_TRACING_ENABLED` | Enable tracing | `false` |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | OTLP collector endpoint | `http://localhost:4317` |
-| `OTEL_SERVICE_NAME` | Service name for traces | `keycloak-operator` |
-| `OTEL_SAMPLE_RATE` | Sampling rate (0.0-1.0) | `1.0` |
-| `OTEL_EXPORTER_OTLP_INSECURE` | Use insecure connection | `true` |
-| `OTEL_PROPAGATE_TO_KEYCLOAK` | Propagate to Keycloak | `true` |
-
-### Integration Examples
-
-#### With OpenTelemetry Collector
-
-Deploy the OpenTelemetry Collector to receive and export traces:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: otel-collector-config
-  namespace: monitoring
-data:
-  config.yaml: |
-    receivers:
-      otlp:
-        protocols:
-          grpc:
-            endpoint: 0.0.0.0:4317
-
-    processors:
-      batch:
-        timeout: 1s
-
-    exporters:
-      jaeger:
-        endpoint: jaeger-collector.monitoring:14250
-        tls:
-          insecure: true
-
-    service:
-      pipelines:
-        traces:
-          receivers: [otlp]
-          processors: [batch]
-          exporters: [jaeger]
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: otel-collector
-  namespace: monitoring
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: otel-collector
-  template:
-    metadata:
-      labels:
-        app: otel-collector
-    spec:
-      containers:
-      - name: collector
-        image: otel/opentelemetry-collector-contrib:0.96.0
-        ports:
-        - containerPort: 4317
-          name: otlp-grpc
-        volumeMounts:
-        - name: config
-          mountPath: /etc/otelcol-contrib/config.yaml
-          subPath: config.yaml
-      volumes:
-      - name: config
-        configMap:
-          name: otel-collector-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: otel-collector
-  namespace: monitoring
-spec:
-  selector:
-    app: otel-collector
-  ports:
-  - port: 4317
-    name: otlp-grpc
-```
-
-#### With Grafana Tempo
-
-```yaml
-operator:
-  tracing:
-    enabled: true
-    endpoint: "http://tempo.monitoring:4317"
-    serviceName: "keycloak-operator"
-```
-
-### Performance Considerations
-
-- **Sampling**: For high-throughput environments, reduce `sampleRate` (e.g., 0.1 for 10%)
-- **Batch Processing**: The operator uses `BatchSpanProcessor` for efficient trace export
-- **Overhead**: With 1.0 sampling, expect ~5-10% overhead on reconciliation time
-- **Storage**: Traces consume storage in your backend; configure retention appropriately
-
-## Debugging Test Failures with Traces
-
-The operator's integration test infrastructure includes trace collection for post-mortem debugging of test failures.
-
-### How It Works
-
-1. **OTEL Collector Deployment**: The test cluster includes an OpenTelemetry Collector that writes traces to JSONL files
-2. **Test Context Markers**: Each test is logged with `[TRACE_CONTEXT]` markers that include test names and timestamps
-3. **Trace Retrieval**: After tests complete, traces are extracted from the collector pod and saved as artifacts
-
-### Analyzing Traces After CI Failures
-
-When integration tests fail in CI:
-
-1. Download the `test-logs-*` artifact from the failed GitHub Actions run
-2. Look in `test-logs/traces/` for `traces.jsonl`
-3. Use the analysis tool to find relevant traces:
-
-```bash
-# Show summary of all traces
-python scripts/analyze-trace.py test-logs/traces/traces.jsonl --summary
-
-# Show only error spans
-python scripts/analyze-trace.py test-logs/traces/traces.jsonl --errors-only
-
-# Filter by test name
-python scripts/analyze-trace.py test-logs/traces/traces.jsonl --filter "test_create_realm"
-
-# Show traces in tree format
-python scripts/analyze-trace.py test-logs/traces/traces.jsonl --tree
-
-# Filter by time range (use timestamps from test logs)
-python scripts/analyze-trace.py test-logs/traces/traces.jsonl \
-    --time-range "2024-01-01T10:00:00" "2024-01-01T10:05:00"
-```
-
-### Correlating Traces with Tests
-
-Test logs include markers like:
-
-```
-[TRACE_CONTEXT] START tests/integration/test_realm.py::test_create 2024-01-01T10:00:00.123456+00:00
-[TRACE_CONTEXT] END tests/integration/test_realm.py::test_create 2024-01-01T10:00:05.654321+00:00 duration=5531ms outcome=passed
-```
-
-Use these timestamps with `--time-range` to find traces for specific tests.
-
-### Local Debugging with Traces
-
-When running tests locally with `task test:all`, traces are collected to `.tmp/traces/`:
-
-```bash
-# Run tests
-task test:all
-
-# Analyze traces from the test run
-python scripts/analyze-trace.py .tmp/traces/traces.jsonl --summary
-python scripts/analyze-trace.py .tmp/traces/traces.jsonl --errors-only
-```
-
-### Trace Content
-
-Traces capture:
-
-- **Reconciliation loops**: Start/end of each reconcile operation
-- **Keycloak API calls**: HTTP method, endpoint, status code, duration
-- **Resource operations**: Create, update, delete of Keycloak resources
-- **Errors**: Exception details and stack traces
-- **Context**: Namespace, resource name, reconciliation phase
+- [Drift Detection](./drift-detection.md)
+- [Keycloak Version Support](../reference/keycloak-version-support.md)
+- [Troubleshooting](../operations/troubleshooting.md)

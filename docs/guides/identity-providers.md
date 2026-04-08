@@ -1,82 +1,53 @@
-# Identity Providers (IDPs)
+# Identity Providers
 
-Identity Providers allow Keycloak to delegate authentication to external systems, enabling Single Sign-On (SSO) and user federation from providers like GitHub, Google, Azure AD, or custom OIDC/SAML providers.
+Identity providers let a realm delegate authentication to external systems such as GitHub, Google, Microsoft Entra ID, or another OIDC or SAML provider.
 
-## Table of Contents
-
-- [Overview](#overview)
-- [Supported Providers](#supported-providers)
-- [Configuration](#configuration)
-  - [GitHub OAuth](#github-oauth)
-  - [Google OAuth](#google-oauth)
-  - [Azure AD (Microsoft Entra ID)](#azure-ad-microsoft-entra-id)
-  - [Custom OIDC Provider](#custom-oidc-provider)
-  - [SAML Provider](#saml-provider)
-- [IDP Mappers](#idp-mappers)
-- [Complete Examples](#complete-examples)
+The recommended deployment path is the `keycloak-realm` Helm chart. Raw `KeycloakRealm` manifests are still supported, but they are the advanced path when you want to manage the CR directly.
 
 ## Overview
 
-The operator supports configuring identity providers through the `KeycloakRealm` custom resource. Identity providers are configured in the `identityProviders` field of the realm spec.
+The realm chart maps identity provider configuration directly from `values.yaml` into `spec.identityProviders` on the generated `KeycloakRealm`.
 
-When a user tries to log in to your Keycloak realm, they'll see buttons for each enabled identity provider on the login page, allowing them to authenticate through external systems.
+```yaml
+# values.yaml for charts/keycloak-realm
+identityProviders:
+  - alias: github
+    providerId: github
+    enabled: true
+    trustEmail: false
+    firstBrokerLoginFlowAlias: first broker login
+    config:
+      clientId: your-github-client-id
+      defaultScope: "user:email"
+      syncMode: IMPORT
+    configSecrets:
+      clientSecret:
+        name: github-idp-secret
+        key: clientSecret
+```
 
-Sensitive identity provider values such as `clientSecret` must not be placed in `identityProviders[].config`. The realm model rejects known sensitive keys in `config`; provide them through `identityProviders[].configSecrets` instead.
+The underlying CR field is `spec.identityProviders`.
 
-Secrets referenced from `configSecrets` must:
+## Secret Handling
+
+Sensitive values must go in `configSecrets`, not in `config`.
+
+The realm model rejects plaintext values for known sensitive keys such as:
+
+- `clientSecret`
+- `secret`
+- `password`
+- `privateKey`
+- `signingKey`
+
+Referenced secrets must:
+
 - live in the same namespace as the `KeycloakRealm`
 - include the label `vriesdemichael.github.io/keycloak-allow-operator-read: "true"`
 
-## Supported Providers
-
-The operator supports all Keycloak built-in identity providers:
-
-- **Social Providers**: GitHub, Google, Facebook, LinkedIn, Stack Overflow, Microsoft, etc.
-- **Enterprise Providers**: OIDC (OpenID Connect), SAML 2.0
-- **Keycloak-to-Keycloak**: Federation between Keycloak instances
-
-## Configuration
-
-### GitHub OAuth
-
-GitHub OAuth allows users to sign in with their GitHub accounts.
-
-**Prerequisites:**
-1. Create a GitHub OAuth App:
-   - Go to Settings → Developer settings → OAuth Apps → New OAuth App
-   - Set Authorization callback URL to: `https://your-keycloak-domain/realms/your-realm/broker/github/endpoint`
-   - Note your Client ID and Client Secret
-
-**Example:**
+Example:
 
 ```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: my-realm
-  namespace: my-app
-spec:
-  realmName: my-realm
-  operatorRef:
-    namespace: keycloak-operator
-
-  identityProviders:
-    - alias: github
-      providerId: github
-      enabled: true
-      trustEmail: false
-      firstBrokerLoginFlowAlias: first broker login
-      config:
-        clientId: your-github-oauth-app-client-id
-        defaultScope: "user:email"
-        syncMode: IMPORT
-      configSecrets:
-        clientSecret:
-          name: github-idp-secret
-          key: clientSecret
-
-# Secret must be in the same namespace as the realm and labeled for operator read access
----
 apiVersion: v1
 kind: Secret
 metadata:
@@ -88,370 +59,258 @@ stringData:
   clientSecret: your-github-oauth-app-client-secret
 ```
 
-**Important Configuration Options:**
+To label an existing secret:
 
-- `alias`: Unique identifier for this IDP (will be part of the callback URL)
-- `trustEmail`: Whether to trust email addresses from GitHub (set to `false` for security)
-- `syncMode`: How to sync users (`IMPORT`, `FORCE`, or `LEGACY`)
-  - `IMPORT`: Create new users, update on first login only
-  - `FORCE`: Update user data on every login
-  - `LEGACY`: Don't update existing users
+```bash
+kubectl label secret github-idp-secret -n my-app \
+  vriesdemichael.github.io/keycloak-allow-operator-read=true
+```
+
+## Flow Aliases
+
+Two optional fields control the user journey around brokered login:
+
+- `firstBrokerLoginFlowAlias`: runs when a user signs in through the provider for the first time and Keycloak needs to create or link the local account.
+- `postBrokerLoginFlowAlias`: runs after successful brokered login for follow-up steps you want on normal brokered authentication.
+
+If you do not need custom flows, leave them unset or use the standard Keycloak defaults.
+
+## Using Helm
+
+### GitHub OAuth
+
+```yaml
+identityProviders:
+  - alias: github
+    providerId: github
+    displayName: GitHub
+    enabled: true
+    trustEmail: false
+    firstBrokerLoginFlowAlias: first broker login
+    config:
+      clientId: your-github-oauth-app-client-id
+      defaultScope: "user:email"
+      syncMode: IMPORT
+    configSecrets:
+      clientSecret:
+        name: github-idp-secret
+        key: clientSecret
+```
 
 ### Google OAuth
 
-Google OAuth allows users to sign in with their Google accounts.
-
-**Prerequisites:**
-1. Create a Google Cloud Project and OAuth 2.0 Client:
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create a project → APIs & Services → Credentials → Create OAuth Client ID
-   - Application type: Web application
-   - Authorized redirect URIs: `https://your-keycloak-domain/realms/your-realm/broker/google/endpoint`
-   - Note your Client ID and Client Secret
-
-**Example:**
-
 ```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: my-realm
-  namespace: my-app
-spec:
-  realmName: my-realm
-  operatorRef:
-    namespace: keycloak-operator
-
-  identityProviders:
-    - alias: google
-      providerId: google
-      enabled: true
-      trustEmail: true
-      firstBrokerLoginFlowAlias: first broker login
-      config:
-        clientId: your-google-oauth-client-id.apps.googleusercontent.com
-        hostedDomain: ""  # Optional: restrict to specific domain (e.g., "company.com")
-        defaultScope: "openid profile email"
-        syncMode: IMPORT
-      configSecrets:
-        clientSecret:
-          name: google-idp-secret
-          key: clientSecret
+identityProviders:
+  - alias: google
+    providerId: google
+    displayName: Google
+    enabled: true
+    trustEmail: true
+    firstBrokerLoginFlowAlias: first broker login
+    config:
+      clientId: your-google-client-id.apps.googleusercontent.com
+      hostedDomain: company.com
+      defaultScope: "openid profile email"
+      syncMode: IMPORT
+    configSecrets:
+      clientSecret:
+        name: google-idp-secret
+        key: clientSecret
 ```
 
-**Domain Restriction:**
+### Azure AD / Microsoft Entra ID
 
-To restrict logins to a specific Google Workspace domain:
-
-```yaml
-config:
-  hostedDomain: "company.com"
-```
-
-### Azure AD (Microsoft Entra ID)
-
-Azure AD integration allows users to sign in with their Microsoft work or school accounts.
-
-**Prerequisites:**
-1. Register an application in Azure AD:
-   - Go to [Azure Portal](https://portal.azure.com/) → Azure Active Directory → App registrations → New registration
-   - Set Redirect URI: `https://your-keycloak-domain/realms/your-realm/broker/azure-ad/endpoint`
-   - Create a client secret in Certificates & secrets
-   - Note your Application (client) ID, Directory (tenant) ID, and client secret
-
-**Example:**
+Use the OIDC provider with explicit Microsoft endpoints.
 
 ```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: my-realm
-  namespace: my-app
-spec:
-  realmName: my-realm
-  operatorRef:
-    namespace: keycloak-operator
-
-  identityProviders:
-    - alias: azure-ad
-      providerId: oidc
-      enabled: true
-      trustEmail: true
-      firstBrokerLoginFlowAlias: first broker login
-      config:
-        clientId: your-azure-app-client-id
-        authorizationUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/authorize
-        tokenUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token
-        userInfoUrl: https://graph.microsoft.com/oidc/userinfo
-        jwksUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/discovery/v2.0/keys
-        issuer: https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0
-        defaultScope: "openid profile email"
-        syncMode: IMPORT
-        validateSignature: "true"
-        useJwksUrl: "true"
-      configSecrets:
-        clientSecret:
-          name: azure-ad-idp-secret
-          key: clientSecret
+identityProviders:
+  - alias: azure-ad
+    providerId: oidc
+    displayName: Microsoft Entra ID
+    enabled: true
+    trustEmail: true
+    firstBrokerLoginFlowAlias: first broker login
+    postBrokerLoginFlowAlias: post broker login
+    config:
+      clientId: 00000000-0000-0000-0000-000000000000
+      authorizationUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/authorize
+      tokenUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/oauth2/v2.0/token
+      userInfoUrl: https://graph.microsoft.com/oidc/userinfo
+      jwksUrl: https://login.microsoftonline.com/YOUR_TENANT_ID/discovery/v2.0/keys
+      issuer: https://login.microsoftonline.com/YOUR_TENANT_ID/v2.0
+      defaultScope: "openid profile email"
+      syncMode: IMPORT
+      validateSignature: "true"
+      useJwksUrl: "true"
+    configSecrets:
+      clientSecret:
+        name: azure-ad-idp-secret
+        key: clientSecret
 ```
 
-Replace `YOUR_TENANT_ID` with your Azure AD tenant ID.
+Replace:
+
+- `YOUR_TENANT_ID` with the Microsoft tenant ID
+- `clientId` with the application registration client ID
 
 ### Custom OIDC Provider
 
-For any OpenID Connect-compliant identity provider.
-
-**Example:**
-
 ```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: my-realm
-  namespace: my-app
-spec:
-  realmName: my-realm
-  operatorRef:
-    namespace: keycloak-operator
-
-  identityProviders:
-    - alias: custom-oidc
-      providerId: oidc
-      enabled: true
-      trustEmail: false
-      firstBrokerLoginFlowAlias: first broker login
-      config:
-        clientId: your-client-id
-        authorizationUrl: https://idp.example.com/oauth2/authorize
-        tokenUrl: https://idp.example.com/oauth2/token
-        userInfoUrl: https://idp.example.com/oauth2/userinfo
-        jwksUrl: https://idp.example.com/oauth2/keys
-        issuer: https://idp.example.com
-        defaultScope: "openid profile email"
-        syncMode: IMPORT
-        validateSignature: "true"
-        useJwksUrl: "true"
-      configSecrets:
-        clientSecret:
-          name: custom-oidc-idp-secret
-          key: clientSecret
-```
-
-**Discovery Endpoint:**
-
-Most OIDC providers support auto-discovery. You can find URLs at:
-```
-https://idp.example.com/.well-known/openid-configuration
+identityProviders:
+  - alias: custom-oidc
+    providerId: oidc
+    enabled: true
+    trustEmail: false
+    config:
+      clientId: your-client-id
+      authorizationUrl: https://idp.example.com/oauth2/authorize
+      tokenUrl: https://idp.example.com/oauth2/token
+      userInfoUrl: https://idp.example.com/oauth2/userinfo
+      jwksUrl: https://idp.example.com/oauth2/keys
+      issuer: https://idp.example.com
+      defaultScope: "openid profile email"
+      syncMode: IMPORT
+      validateSignature: "true"
+      useJwksUrl: "true"
+    configSecrets:
+      clientSecret:
+        name: custom-oidc-idp-secret
+        key: clientSecret
 ```
 
 ### SAML Provider
 
-For SAML 2.0 identity providers.
-
-**Example:**
-
 ```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: my-realm
-  namespace: my-app
-spec:
-  realmName: my-realm
-  operatorRef:
-    namespace: keycloak-operator
-
-  identityProviders:
-    - alias: saml-idp
-      providerId: saml
-      enabled: true
-      trustEmail: false
-      firstBrokerLoginFlowAlias: first broker login
-      config:
-        singleSignOnServiceUrl: https://idp.example.com/saml/sso
-        singleLogoutServiceUrl: https://idp.example.com/saml/logout
-        backchannelSupported: "true"
-        nameIDPolicyFormat: urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
-        principalType: SUBJECT
-        signatureAlgorithm: RSA_SHA256
-        xmlSigKeyInfoKeyNameTransformer: NONE
-        syncMode: IMPORT
+identityProviders:
+  - alias: saml-idp
+    providerId: saml
+    enabled: true
+    config:
+      singleSignOnServiceUrl: https://idp.example.com/saml/sso
+      singleLogoutServiceUrl: https://idp.example.com/saml/logout
+      backchannelSupported: "true"
+      nameIDPolicyFormat: urn:oasis:names:tc:SAML:2.0:nameid-format:persistent
+      principalType: SUBJECT
+      signatureAlgorithm: RSA_SHA256
+      xmlSigKeyInfoKeyNameTransformer: NONE
+      syncMode: IMPORT
 ```
 
-## IDP Mappers
+## OIDC Endpoint Discovery
 
-Identity provider mappers are supported through the `identityProviders[].mappers` field. Use them to import claims from the external provider into Keycloak user attributes, roles, or session notes.
+The operator does not expose a dedicated `discoveryUrl` field for identity providers. For OIDC providers, fetch the provider's discovery document and copy the resolved endpoints into `config`.
 
 Example:
 
+```bash
+curl -s https://idp.example.com/.well-known/openid-configuration | jq '{issuer, authorization_endpoint, token_endpoint, userinfo_endpoint, jwks_uri}'
+```
+
+Then map those values into:
+
+- `issuer`
+- `authorizationUrl`
+- `tokenUrl`
+- `userInfoUrl`
+- `jwksUrl`
+
+## Raw CR Example
+
+If you are managing the CR directly, the same structure lives under `spec.identityProviders`.
+
 ```yaml
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 metadata:
   name: my-realm
+  namespace: my-app
 spec:
   realmName: my-realm
   operatorRef:
-    namespace: keycloak-operator
-
+    namespace: keycloak-system
   identityProviders:
-    - alias: dex
-      providerId: oidc
-      config:
-        clientId: my-client-id
-        authorizationUrl: https://dex.example.com/auth
-        tokenUrl: https://dex.example.com/token
-        userInfoUrl: https://dex.example.com/userinfo
-        jwksUrl: https://dex.example.com/keys
-        issuer: https://dex.example.com
-      configSecrets:
-        clientSecret:
-          name: dex-idp-secret
-          key: clientSecret
-      mappers:
-        - name: email-mapper
-          identityProviderMapper: oidc-user-attribute-idp-mapper
-          config:
-            claim: email
-            user.attribute: email
-            syncMode: INHERIT
-```
-
-## Complete Examples
-
-### Multi-IDP Setup
-
-A realm with multiple identity providers:
-
-```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: multi-idp-realm
-  namespace: my-app
-spec:
-  realmName: multi-idp
-  operatorRef:
-    namespace: keycloak-operator
-
-  identityProviders:
-    # GitHub for developers
     - alias: github
       providerId: github
       enabled: true
-      trustEmail: false
       config:
-        clientId: github-client-id
+        clientId: your-github-client-id
         defaultScope: "user:email"
         syncMode: IMPORT
       configSecrets:
         clientSecret:
           name: github-idp-secret
           key: clientSecret
-
-    # Google Workspace for employees
-    - alias: google
-      providerId: google
-      enabled: true
-      trustEmail: true
-      config:
-        clientId: google-client-id.apps.googleusercontent.com
-        hostedDomain: "company.com"
-        defaultScope: "openid profile email"
-        syncMode: FORCE
-      configSecrets:
-        clientSecret:
-          name: google-idp-secret
-          key: clientSecret
-
-    # Azure AD for enterprise SSO
-    - alias: azure-ad
-      providerId: oidc
-      enabled: true
-      trustEmail: true
-      config:
-        clientId: azure-client-id
-        authorizationUrl: https://login.microsoftonline.com/TENANT_ID/oauth2/v2.0/authorize
-        tokenUrl: https://login.microsoftonline.com/TENANT_ID/oauth2/v2.0/token
-        userInfoUrl: https://graph.microsoft.com/oidc/userinfo
-        jwksUrl: https://login.microsoftonline.com/TENANT_ID/discovery/v2.0/keys
-        issuer: https://login.microsoftonline.com/TENANT_ID/v2.0
-        defaultScope: "openid profile email"
-        syncMode: FORCE
-        validateSignature: "true"
-        useJwksUrl: "true"
-      configSecrets:
-        clientSecret:
-          name: azure-ad-idp-secret
-          key: clientSecret
 ```
 
-### Using Secrets for Credentials
+## Common Mappers
 
-Store IDP client secrets in Kubernetes Secrets and reference them with `configSecrets`.
+Identity provider mappers use the `identityProviders[].mappers` field.
 
 ```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: github-oauth-secret
-  namespace: my-app
-  labels:
-    vriesdemichael.github.io/keycloak-allow-operator-read: "true"
-stringData:
-  client-secret: your-github-oauth-app-client-secret
----
 identityProviders:
-  - alias: github
-    providerId: github
-    enabled: true
-    trustEmail: false
+  - alias: custom-oidc
+    providerId: oidc
     config:
-      clientId: my-github-client-id
-      defaultScope: "user:email"
-      syncMode: IMPORT
+      clientId: my-client-id
+      authorizationUrl: https://idp.example.com/auth
+      tokenUrl: https://idp.example.com/token
+      userInfoUrl: https://idp.example.com/userinfo
+      jwksUrl: https://idp.example.com/keys
+      issuer: https://idp.example.com
     configSecrets:
       clientSecret:
-        name: github-oauth-secret
-        key: client-secret
+        name: custom-oidc-secret
+        key: clientSecret
+    mappers:
+      - name: email-mapper
+        identityProviderMapper: oidc-user-attribute-idp-mapper
+        config:
+          claim: email
+          user.attribute: email
+          syncMode: INHERIT
+      - name: team-mapper
+        identityProviderMapper: oidc-user-attribute-idp-mapper
+        config:
+          claim: team
+          user.attribute: team
+          syncMode: INHERIT
 ```
+
+Use mappers when you need to:
+
+- copy claims into user attributes
+- map upstream attributes into roles or groups
+- preserve brokered attributes in the local Keycloak user model
 
 ## Troubleshooting
 
-### Common Issues
+### Sensitive value rejected in `config`
 
-**1. "Invalid redirect URI" error:**
-- Verify your redirect URI in the IDP matches exactly: `https://your-keycloak-domain/realms/your-realm/broker/{alias}/endpoint`
-- Check for trailing slashes and protocol (http vs https)
+Move the value to `configSecrets`. Sensitive keys are intentionally blocked from plaintext config.
 
-**2. Users can't log in:**
-- Check that `enabled: true` is set
-- Verify client ID and secret are correct
-- Check IDP logs for authentication failures
+### Login button does not appear
 
-**3. User attributes not syncing:**
-- Set `syncMode: FORCE` to update on every login
-- Verify the requested scopes include the attributes you need
-- Check IDP mapper configuration
+- verify `enabled: true`
+- verify the provider `alias` is unique in the realm
+- verify the upstream client ID and secret are correct
 
-**4. Email not trusted:**
-- Set `trustEmail: true` only for trusted providers
-- If false, users must verify their email after first login
+### Redirect URI mismatch
 
-### Checking IDP Status
+The broker endpoint format is:
 
-Verify IDP configuration through the CRD status:
-
-```bash
-# Check realm status includes IDP configuration
-kubectl get keycloakrealm <name> -n <namespace> -o yaml
-
-# Check operator logs for IDP reconciliation
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep "identity.*provider"
+```text
+https://your-keycloak-domain/realms/your-realm/broker/<alias>/endpoint
 ```
+
+### Claims are missing
+
+- request the necessary scopes from the upstream provider
+- add or correct the mapper configuration
+- switch `syncMode` if you expect attributes to refresh on later logins
 
 ## See Also
 
 - [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md)
-- [Quick Start Guide](../quickstart/README.md)
+- [Multi-Tenant Guide](../how-to/multi-tenant.md)
+- `charts/keycloak-realm/README.md` for chart-specific values context
+- `examples/realm-with-azure-ad-idp.yaml`, `examples/realm-with-github-idp.yaml`, and `examples/realm-with-google-idp.yaml` for full manifest examples

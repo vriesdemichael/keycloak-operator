@@ -55,58 +55,13 @@
 
 ## docs/guides/identity-providers.md
 
-- Add a new introductory section that presents the keycloak-realm Helm chart as the primary deployment method for identity providers.
-- Include Helm values examples for `identityProviders` before or alongside the raw KeycloakRealm examples.
-- Mark the raw CR manifest examples as advanced or power-user material rather than the default path.
-- Make the secret-label requirement more visually prominent and include a copy-paste command for applying the label.
-- Add a "Common Mappers" subsection with realistic mapper examples and better guidance on mapper usage.
-- Add an OIDC auto-discovery subsection and explain minimal issuer-based configuration.
-- Add clearer placeholder guidance for Azure AD values such as tenant ID and client ID.
-- Explain the difference between `firstBrokerLoginFlowAlias` and `postBrokerLoginFlowAlias`.
-- Add a short "See Also" section linking to the realm Helm chart README, the CRD reference, and related multi-tenant or setup guides.
-
 ## docs/guides/user-federation.md
-
-- Add a "Using Helm (Recommended)" section with Helm values examples first, and treat raw KeycloakRealm manifests as the advanced path.
-- Verify the documented federation status fields against the actual `KeycloakUserFederationStatus` model and correct the guide if needed.
-- Add a short explanation of the camelCase field naming convention used in the CR and Helm values.
-- Document the meaning of the `keycloak_operator_user_federation_status` metric values and labels.
-- Add guidance on LDAP connection security and port selection (`389` with StartTLS vs `636` with LDAPS).
-- Clarify the difference between `allowKerberosAuthentication` and `useKerberosForPasswordAuthentication`.
-- Add a prominent warning that referenced secrets must live in the same namespace as the realm.
-- Optionally add a small comparison between user federation and identity providers so readers choose the right feature.
 
 ## docs/guides/observability.md
 
-- Replace the non-existent `kopf_reconciliation_*` metric queries with the actual `keycloak_operator_*` metrics exposed by the operator.
-- Fix the documented circuit-breaker recovery timeout to match the real default, and note that it is configurable.
-- Correct the example status fields that currently use names like `adminSecret` and `client_uuid` when the real status fields differ.
-- Add a warning that end-to-end tracing propagation requires a supported Keycloak version and explain the fallback or disablement path for older versions.
-- Validate the documented Keycloak endpoints example structure against the actual status model and fix it if needed.
-- Add a small note that local or dev tracing setups may need `insecure: true`.
-
 ## docs/guides/drift-detection.md
 
-- Add a clear section explaining that admin events are mandatory for drift detection and are enforced automatically when drift detection is enabled.
-- Fix the documented default for `DRIFT_DETECTION_MINIMUM_AGE_HOURS` so it matches the real default.
-- Add a note that each operator instance manages one Keycloak instance when explaining the multi-operator drift scenario.
-- Add a "How Drift Detection Works" section explaining the `lastReconcileEventTime` timestamp mechanism.
-- Add a short explanation of which resource phases run drift detection and which phases are skipped.
-- Verify the Prometheus metric names and labels against the actual implementation and update the guide accordingly.
-- Update or qualify the Prometheus alert examples so they use real label names and current metrics.
-- Reframe the raw-manifest scenarios as advanced examples or provide Helm-first equivalents.
-- Add a Mermaid flowchart showing the drift-detection timer, event query, decision, and remediation flow.
-- Link to ADR-019 as the authoritative design reference and mention the CR existence re-check safety step in the orphan-deletion example.
-
 ## docs/operations/day-two.md
-
-- Replace the outdated "Maintenance Mode (Coming Soon)" section with the actual implemented maintenance and pause features.
-- Add a subsection documenting reconciliation pause, when to use it, how to configure it via Helm, and how it affects resource phases.
-- Add a Helm-first admin-credentials example or clearly explain when a raw Keycloak CR example is required.
-- Add a short database-tier context note so operators understand that day-two behavior differs for CNPG, managed, and external database setups.
-- Add a "See Also" section linking to secret-management, backup-restore, migration, and escape-hatch documentation.
-- Clarify whether the "external secret" example is really a raw Kubernetes Secret example and point readers to ESO or Sealed Secrets patterns for GitOps.
-- Add a short GitOps note in the philosophy section recommending ESO or Sealed Secrets for secret management.
 
 ## docs/operations/secret-management.md
 
