@@ -265,6 +265,8 @@ serviceAccountRoles:
       - write
 ```
 
+Referenced clients and roles must already exist in the target realm. Reconciliation fails fast if they do not.
+
 #### Protocol Mappers
 
 | Parameter | Description | Default |
@@ -319,10 +321,77 @@ protocolMappers:
 When `manageSecret: true` and `publicClient: false`, the operator creates a secret containing:
 - `client-id` - The OAuth2 client ID
 - `client-secret` - The client secret
-- `issuer-url` - The OIDC issuer URL
-- `token-url` - The token endpoint
-- `auth-url` - The authorization endpoint
-- `userinfo-url` - The userinfo endpoint
+- `issuer` - The OIDC issuer URL
+- `keycloak-url` - The base Keycloak URL
+- `realm` - The realm name
+- `token-endpoint` - The token endpoint
+- `userinfo-endpoint` - The userinfo endpoint
+- `jwks-endpoint` - The JWKS endpoint
+
+If `secretName` is not set, the chart defaults to `<release-fullname>-credentials`.
+
+For same-namespace workloads, wire that Secret directly into the Deployment instead of manually extracting values from the CLI:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: my-team
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+        - name: webapp
+          image: ghcr.io/example/webapp:latest
+          env:
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: client-id
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: client-secret
+            - name: OIDC_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: issuer
+            - name: OIDC_TOKEN_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: token-endpoint
+```
+
+If your application expects a bulk env import, `envFrom` works as well:
+
+```yaml
+envFrom:
+  - secretRef:
+      name: my-client-keycloak-client-credentials
+```
+
+#### Secret Rotation
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `secretRotation.enabled` | Enable automated client secret rotation | `false` |
+| `secretRotation.rotationPeriod` | Rotation interval such as `90d` or `24h` | `90d` |
+| `secretRotation.rotationTime` | Optional target time in `HH:MM` format | `""` |
+| `secretRotation.timezone` | IANA timezone for scheduled rotation | `UTC` |
+
+Use secret rotation only for confidential clients whose consuming applications can tolerate credential updates.
 
 #### Extra Manifests
 

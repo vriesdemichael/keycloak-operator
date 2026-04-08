@@ -2,6 +2,8 @@
 
 This directory contains three Helm charts for deploying and managing Keycloak infrastructure with GitOps compatibility.
 
+These charts are the recommended deployment path. Managing raw `Keycloak`, `KeycloakRealm`, or `KeycloakClient` manifests directly is supported, but it is an advanced/manual workflow. See [Helm vs Direct CR Deployments](../docs/how-to/helm-vs-cr-deployments.md).
+
 ## Charts Overview
 
 ### 1. keycloak-operator
@@ -39,25 +41,21 @@ This directory contains three Helm charts for deploying and managing Keycloak in
 
 ## Installation Flow
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│ 1. Platform Admin: Install Operator                         │
-│    helm install keycloak-operator ./keycloak-operator       │
-└─────────────────────────────────────────────────────────────┘
-                               ↓
-                  Grant RBAC permissions to teams
-                               ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 2. Dev Team: Create Realm                                   │
-│    helm install my-realm ./keycloak-realm                   │
-│         --set clientAuthorizationGrants={team-alpha}        │
-└─────────────────────────────────────────────────────────────┘
-                               ↓
-┌─────────────────────────────────────────────────────────────┐
-│ 3. Dev Team: Create Client                                  │
-│    helm install my-client ./keycloak-client                 │
-│         --set realmRef.name=my-realm                        │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+  subgraph Platform_Admin ["Platform Admin"]
+    operator("1. Install keycloak-operator")
+    grants("2. Grant namespace access\n& realm client authorization")
+  end
+
+  subgraph Application_Team ["Application Team"]
+    realm("3. Install keycloak-realm")
+    client("4. Install keycloak-client")
+  end
+
+  operator --> grants
+  grants --> realm
+  realm --> client
 ```
 
 ## Quick Start
@@ -104,14 +102,14 @@ kubectl wait --for=jsonpath='{.status.phase}'=Ready \
 Create additional realms as needed:
 
 ```bash
-# Create additional realms without specifying a token
+# Create additional realms without any extra token distribution step
 helm install another-realm ./charts/keycloak-realm \
   --namespace my-team \
   --set realmName=another \
   --set displayName="Another Realm" \
   --set operatorRef.namespace=keycloak-system
 
-# that was generated after the first realm creation
+# Authorization remains declarative through RBAC and clientAuthorizationGrants
 ```
 
 ### Step 4: Create a Client
@@ -132,11 +130,63 @@ helm install my-client ./charts/keycloak-client \
 kubectl wait --for=jsonpath='{.status.phase}'=Ready \
   keycloakclient/my-client \
   -n my-team --timeout=300s
+```
 
-# Get client secret (for confidential clients)
-kubectl get secret my-client-client-secret \
-  -n my-team \
-  -o jsonpath='{.data.client-secret}' | base64 -d
+For confidential clients, the chart creates a same-namespace Secret containing the ready-to-consume connection data your workload needs:
+
+- `client-id`
+- `client-secret`
+- `issuer`
+- `keycloak-url`
+- `realm`
+- `token-endpoint`
+- `userinfo-endpoint`
+- `jwks-endpoint`
+
+If you do not set `secretName`, the default secret name is `<release-fullname>-credentials`. For the example above, that becomes `my-client-keycloak-client-credentials`.
+
+Wire that Secret directly into an application Deployment in the same namespace instead of manually reading it:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: my-team
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+        - name: myapp
+          image: ghcr.io/example/myapp:latest
+          env:
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: client-id
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: client-secret
+            - name: OIDC_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: issuer
+            - name: OIDC_TOKEN_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: token-endpoint
 ```
 
 ## Using with GitOps
@@ -165,11 +215,10 @@ spec:
         displayName: "My Team Realm"
         operatorRef:
           namespace: keycloak-system
-          authorizationSecretRef:
         security:
           registrationAllowed: false
           resetPasswordAllowed: true
-        smtp:
+        smtpServer:
           enabled: true
           host: smtp.example.com
           from: noreply@myteam.com
@@ -320,12 +369,12 @@ security:
   resetPasswordAllowed: true
   bruteForceProtected: true
 
-smtp:
+smtpServer:
   enabled: true
   host: smtp.example.com
   from: noreply@example.com
 
-tokens:
+tokenSettings:
   accessTokenLifespan: 300
   ssoSessionIdleTimeout: 1800
 ```
@@ -439,14 +488,11 @@ kubectl describe keycloakclient my-client -n my-team
 
 **Issue:** Realm stuck in "Failed" state with "Authorization failed" message
 
-**Solution:** Verify the operator token is correct:
-```bash
-kubectl get secret keycloak-operator-auth-token -n keycloak-system -o jsonpath='{.data.token}' | base64 -d
-```
+**Solution:** Verify the namespace has the expected RBAC wiring and that any referenced Secret has the required operator-read label.
 
 **Issue:** Client stuck in "Failed" state
 
-**Solution:** Verify the realm token is correct and the realm is Ready:
+**Solution:** Verify the realm grants the namespace via `clientAuthorizationGrants` and that the realm is Ready:
 ```bash
 kubectl get keycloakrealm my-realm -n my-team -o jsonpath='{.status}'
 ```

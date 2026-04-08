@@ -4,6 +4,8 @@ This guide walks you through deploying a **production-ready** Keycloak setup fro
 
 For a simpler quick start, see the [Quick Start Guide](../quickstart/README.md).
 
+This guide is aimed at platform teams setting up shared Keycloak infrastructure and the first tenant onboarding flow. If you plan to manage raw CR manifests directly instead of using the charts, see [Helm vs Direct CR Deployments](helm-vs-cr-deployments.md).
+
 ## Overview
 
 This guide covers:
@@ -165,11 +167,10 @@ helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-oper
   --set keycloak.database.cnpg.storage.storageClass=standard \
   --set keycloak.ingress.enabled=true \
   --set keycloak.ingress.className=nginx \
-  --set keycloak.ingress.hosts[0].host=keycloak.example.com \
-  --set keycloak.ingress.hosts[0].paths[0].path=/ \
-  --set keycloak.ingress.hosts[0].paths[0].pathType=Prefix \
-  --set keycloak.ingress.tls[0].secretName=keycloak-tls \
-  --set keycloak.ingress.tls[0].hosts[0]=keycloak.example.com \
+  --set keycloak.ingress.host=keycloak.example.com \
+  --set keycloak.ingress.path=/ \
+  --set keycloak.ingress.tlsEnabled=true \
+  --set keycloak.ingress.tlsSecretName=keycloak-tls \
   --set keycloak.ingress.annotations."cert-manager\.io/cluster-issuer"=letsencrypt-prod \
   --set monitoring.enabled=true \
   --set operator.replicaCount=2
@@ -328,7 +329,7 @@ kubectl get keycloakrealm -n team-alpha
 helm install my-webapp-client oci://ghcr.io/vriesdemichael/charts/keycloak-client \
   --namespace team-alpha \
   --set clientId=my-webapp \
-  --set clientName="My Web Application" \
+  --set description="My Web Application" \
   --set realmRef.name=my-app-realm \
   --set realmRef.namespace=team-alpha \
   --set publicClient=false \
@@ -345,7 +346,7 @@ helm install my-webapp-client oci://ghcr.io/vriesdemichael/charts/keycloak-clien
 helm install my-api-client oci://ghcr.io/vriesdemichael/charts/keycloak-client \
   --namespace team-alpha \
   --set clientId=my-api \
-  --set clientName="My API Service" \
+  --set description="My API Service" \
   --set realmRef.name=my-app-realm \
   --set realmRef.namespace=team-alpha \
   --set publicClient=false \
@@ -365,34 +366,73 @@ kubectl wait --for=condition=Ready keycloakclient/my-webapp-client \
 kubectl get keycloakclient -n team-alpha
 ```
 
-### 5.4 Retrieve Client Credentials
+### 5.4 Managed Client Credentials Secret
 
-The operator automatically creates a secret with all OAuth2 credentials:
+The operator automatically creates a same-namespace Secret for confidential clients. If you do not set `secretName`, the default secret name is `<release-fullname>-credentials`, so the `my-webapp-client` release above produces `my-webapp-client-credentials`.
 
-```bash
-# View secret contents
-kubectl get secret my-webapp-client-credentials -n team-alpha -o yaml
+That Secret contains the fields most applications need directly:
 
-# Extract individual values
-CLIENT_ID=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
-  -o jsonpath='{.data.client_id}' | base64 -d)
-CLIENT_SECRET=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
-  -o jsonpath='{.data.client_secret}' | base64 -d)
-ISSUER_URL=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
-  -o jsonpath='{.data.issuer_url}' | base64 -d)
+- `client-id`
+- `client-secret`
+- `issuer`
+- `keycloak-url`
+- `realm`
+- `token-endpoint`
+- `userinfo-endpoint`
+- `jwks-endpoint`
 
-echo "Client ID: $CLIENT_ID"
-echo "Client Secret: $CLIENT_SECRET"
-echo "Issuer URL: $ISSUER_URL"
+### 5.5 Wire the Secret Into an Application Deployment
+
+Keep the application in the same namespace and read the generated Secret through `secretKeyRef` or `envFrom`.
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-webapp
+  namespace: team-alpha
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: my-webapp
+  template:
+    metadata:
+      labels:
+        app: my-webapp
+    spec:
+      containers:
+        - name: webapp
+          image: ghcr.io/example/my-webapp:latest
+          env:
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: my-webapp-client-credentials
+                  key: client-id
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-webapp-client-credentials
+                  key: client-secret
+            - name: OIDC_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: my-webapp-client-credentials
+                  key: issuer
+            - name: OIDC_JWKS_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: my-webapp-client-credentials
+                  key: jwks-endpoint
 ```
 
-### 5.5 Generate Environment File
+If your application can consume all keys as environment variables, `envFrom` also works:
 
-```bash
-kubectl get secret my-webapp-client-credentials -n team-alpha -o json | \
-  jq -r '.data | to_entries[] | "\(.key | ascii_upcase)=\(.value | @base64d)"' > oauth2.env
-
-cat oauth2.env
+```yaml
+envFrom:
+  - secretRef:
+      name: my-webapp-client-credentials
 ```
 
 ---
@@ -424,7 +464,7 @@ All resources should show `PHASE=Ready`.
 
 ```bash
 ISSUER_URL=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
-  -o jsonpath='{.data.issuer_url}' | base64 -d)
+  -o jsonpath='{.data.issuer}' | base64 -d)
 
 curl -s "$ISSUER_URL/.well-known/openid-configuration" | jq .
 ```
@@ -433,11 +473,11 @@ curl -s "$ISSUER_URL/.well-known/openid-configuration" | jq .
 
 ```bash
 CLIENT_ID=$(kubectl get secret my-api-client-credentials -n team-alpha \
-  -o jsonpath='{.data.client_id}' | base64 -d)
+  -o jsonpath='{.data.client-id}' | base64 -d)
 CLIENT_SECRET=$(kubectl get secret my-api-client-credentials -n team-alpha \
-  -o jsonpath='{.data.client_secret}' | base64 -d)
+  -o jsonpath='{.data.client-secret}' | base64 -d)
 TOKEN_URL=$(kubectl get secret my-api-client-credentials -n team-alpha \
-  -o jsonpath='{.data.token_url}' | base64 -d)
+  -o jsonpath='{.data.token-endpoint}' | base64 -d)
 
 curl -s -X POST "$TOKEN_URL" \
   -d "grant_type=client_credentials" \
@@ -449,9 +489,10 @@ curl -s -X POST "$TOKEN_URL" \
 
 ```bash
 CLIENT_ID=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
-  -o jsonpath='{.data.client_id}' | base64 -d)
-AUTH_URL=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
-  -o jsonpath='{.data.auth_url}' | base64 -d)
+  -o jsonpath='{.data.client-id}' | base64 -d)
+ISSUER_URL=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
+  -o jsonpath='{.data.issuer}' | base64 -d)
+AUTH_URL="${ISSUER_URL}/protocol/openid-connect/auth"
 
 echo "Open in browser:"
 echo "${AUTH_URL}?client_id=${CLIENT_ID}&redirect_uri=https://myapp.example.com/callback&response_type=code&scope=openid%20profile%20email"
