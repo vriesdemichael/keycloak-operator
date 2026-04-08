@@ -393,6 +393,8 @@ envFrom:
 
 Use secret rotation only for confidential clients whose consuming applications can tolerate credential updates.
 
+For operator-managed credential secrets, manual `clientSecret` binding, and restart-coordination guidance, see [Operations: Secret Management](../../docs/operations/secret-management.md).
+
 #### Extra Manifests
 
 | Parameter | Description | Default |
