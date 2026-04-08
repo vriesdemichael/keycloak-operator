@@ -1,1240 +1,225 @@
 # Troubleshooting Guide
 
-This guide helps you diagnose and resolve common issues with the Keycloak operator. Issues are organized by **symptom** for faster troubleshooting.
+This guide focuses on practical diagnosis of operator, Keycloak, realm, and client issues using the current implementation contracts.
 
-## Quick Diagnostic Commands
+Use Helm values and normal reconciliation flows as the primary fix path. Raw `kubectl patch` commands are useful as temporary diagnostics, not as the steady-state operating model.
+
+## Quick Diagnostics
 
 ```bash
-# Check all Keycloak resources at once
 kubectl get keycloak,keycloakrealm,keycloakclient --all-namespaces
-
-# Check operator health
-kubectl get pods -n keycloak-operator-system
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator --tail=100
-
-# Check events (recent issues)
+kubectl get pods -n keycloak-system
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=100
 kubectl get events --all-namespaces --sort-by='.lastTimestamp' | tail -20
 ```
 
----
+## Understand The Status You Are Seeing
 
-## Table of Contents
+Common phases across the operator include:
 
-1. [Operator Issues](#operator-issues)
-2. [Keycloak Instance Issues](#keycloak-instance-issues)
-3. [Realm Issues](#realm-issues)
-4. [Client Issues](#client-issues)
-5. [Authorization Issues](#authorization-issues)
-6. [Database Issues](#database-issues)
-7. [Networking & Ingress Issues](#networking-ingress-issues)
-8. [Performance Issues](#performance-issues)
-9. [Common Pitfalls](#common-pitfalls)
+- `Pending`
+- `Provisioning`
+- `Reconciling`
+- `Ready`
+- `Degraded`
+- `Updating`
+- `Failed`
+- `Paused`
 
----
+Additional upgrade progress for managed Keycloak instances may appear under `status.blueGreen`, including states such as `BackingUp`.
+
+Practical interpretation:
+
+- `Pending`, `Provisioning`, and `Reconciling` usually mean the operator is still working
+- `Degraded` means the resource is running but needs attention
+- `Failed` means the current reconciliation path hit a terminal problem
+- `Paused` means operator configuration intentionally suspended reconciliation
+
+## Version And Port Confusion
+
+Supported Keycloak versions start at `24.x`.
+
+Important port split:
+
+- Keycloak `24.x` uses `8080` for health handling
+- Keycloak `25.x+` exposes the separate management interface on `9000`
+- operator metrics are on the operator pod, typically `8081`
+
+Treat `9000` as version-conditional. On `24.x`, health and management behavior still lives on `8080`.
+
+## Admin Credentials Secret Lifecycle
+
+Managed Keycloak instances use a proxy secret named:
+
+- `<keycloak-name>-admin-credentials`
+
+That secret always contains:
+
+- `username`
+- `password`
+
+The operator reads from that proxy secret when it needs to authenticate to Keycloak.
+
+If `keycloak.admin.existingSecret` is configured, the operator copies the source secret into the proxy secret and marks it as externally sourced. Otherwise it generates credentials itself.
 
 ## Operator Issues
 
-### Symptom: Operator Pods Not Starting
+### Symptom: Operator Pods Are Restarting Or Failing Readiness
 
-**Possible Causes:**
-- Image pull failure
-- RBAC permissions missing
-- Resource constraints
-- CRD installation failure
-
-**Diagnosis:**
+Check:
 
 ```bash
-# Check pod status
-kubectl get pods -n keycloak-operator-system
-
-# Check pod events
-kubectl describe pod -n keycloak-operator-system <pod-name>
-
-# Check operator logs
-kubectl logs -n keycloak-operator-system <pod-name>
+kubectl get pods -n keycloak-system
+kubectl describe pod -n keycloak-system <pod-name>
+kubectl logs -n keycloak-system <pod-name> --previous
 ```
 
-**Solutions:**
+Common causes:
 
-**Image Pull Failure:**
-```bash
-# Check imagePullSecrets configured
-kubectl get deployment -n keycloak-operator-system keycloak-operator -o yaml | grep imagePullSecrets
-
-# Verify image exists and is accessible
-kubectl run test-pull --image=<operator-image> --restart=Never -n keycloak-operator-system
-kubectl delete pod test-pull -n keycloak-operator-system
-```
-
-**RBAC Issues:**
-```bash
-# Verify ClusterRole exists
-kubectl get clusterrole keycloak-operator
-
-# Verify ClusterRoleBinding exists
-kubectl get clusterrolebinding keycloak-operator
-
-# Test operator service account permissions
-kubectl auth can-i get keycloaks \
-  --as=system:serviceaccount:keycloak-operator-system:keycloak-operator
-```
-
-**Resource Constraints:**
-```bash
-# Check node resources
-kubectl top nodes
-
-# Increase operator resources
-helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --namespace keycloak-operator-system \
-  --set operator.resources.requests.cpu=200m \
-  --set operator.resources.requests.memory=512Mi
-```
-
----
-
-### Symptom: Operator Crashes or Restarts Frequently
-
-**Possible Causes:**
-- Memory pressure (OOMKilled)
-- Unhandled exceptions
-- Rate limiting issues
-- Too many reconciliation loops
-
-**Diagnosis:**
-
-```bash
-# Check restart count
-kubectl get pods -n keycloak-operator-system
-
-# Check for OOMKilled
-kubectl describe pod -n keycloak-operator-system <pod-name> | grep -A5 "Last State"
-
-# Check logs before crash
-kubectl logs -n keycloak-operator-system <pod-name> --previous
-
-# Check memory usage
-kubectl top pod -n keycloak-operator-system
-```
-
-**Solutions:**
-
-**OOMKilled:**
-```bash
-# Increase memory limits
-helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --namespace keycloak-operator-system \
-  --set operator.resources.limits.memory=1Gi
-```
-
-**Reconciliation Loops:**
-```bash
-# Check for stuck resources
-kubectl get keycloaks,keycloakrealms,keycloakclients --all-namespaces \
-  | grep -v Ready
-
-# Check operator logs for specific resource
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep "namespace/resource-name"
-```
-
-**Rate Limiting:**
-```bash
-# Check rate limit metrics
-kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -s localhost:8081/metrics | grep rate_limit
-
-# Increase rate limits if needed
-helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --namespace keycloak-operator-system \
-  --set 'operator.env[0].name=KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS' \
-  --set 'operator.env[0].value=100'
-```
-
----
-
-### Symptom: Operator Not Reconciling Resources
-
-**Possible Causes:**
-- Operator not watching the namespace
-- Resource validation failures
-- API server connectivity issues
-- Rate limiting
-
-**Diagnosis:**
-
-```bash
-# Check if operator sees the resource
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep "namespace/resource-name"
-
-# Check resource status
-kubectl describe keycloakrealm <name> -n <namespace>
-
-# Check for validation errors
-kubectl get keycloakrealm <name> -n <namespace> -o yaml | grep -A10 status
-```
-
-**Solutions:**
-
-**Operator Not Watching Namespace:**
-```bash
-# Verify operator is cluster-scoped (watches all namespaces)
-kubectl get clusterrole keycloak-operator -o yaml | grep namespaces
-
-# Restart operator to pick up new namespaces
-kubectl rollout restart deployment/keycloak-operator -n keycloak-operator-system
-```
-
-**Validation Failures:**
-```bash
-# Check resource against schema
-kubectl get keycloakrealm <name> -n <namespace> -o yaml
-
-# Fix validation issues and reapply
-kubectl apply -f fixed-resource.yaml
-```
-
----
+- resource pressure or OOMKilled restarts
+- missing RBAC
+- bad image configuration
+- cluster API or webhook startup issues
 
 ## Keycloak Instance Issues
 
-### Symptom: Keycloak Instance Stuck in Pending/Provisioning
+## Symptom: Operator Not Reconciling A Resource
 
-**Possible Causes:**
-- Database not ready
-- Image pull failure
-- Insufficient resources
-- PVC not bound
-
-**Diagnosis:**
+Check:
 
 ```bash
-# Check Keycloak status
-kubectl describe keycloak <name> -n <namespace>
-
-# Check Keycloak pods
-kubectl get pods -n <namespace> -l app=keycloak
-
-# Check events
-kubectl get events -n <namespace> --sort-by='.lastTimestamp' | tail -20
-
-# Check database cluster
-kubectl get cluster -n <db-namespace>
-```
-
-**Solutions:**
-
-**Database Not Ready:**
-```bash
-# Check database cluster status
-kubectl get cluster <cluster-name> -n <db-namespace>
-kubectl get pods -n <db-namespace> -l cnpg.io/cluster=<cluster-name>
-
-# Wait for database to become ready
-kubectl wait --for=condition=Ready cluster/<cluster-name> \
-  -n <db-namespace> --timeout=10m
-```
-
-**Image Pull Failure:**
-```bash
-# Check image name/tag
-kubectl get keycloak <name> -n <namespace> -o jsonpath='{.spec.image}'
-
-# Test image pull manually
-kubectl run test-keycloak --image=quay.io/keycloak/keycloak:26.0.0 \
-  --restart=Never -n <namespace>
-kubectl delete pod test-keycloak -n <namespace>
-```
-
-**Insufficient Resources:**
-```bash
-# Check node resources
-kubectl top nodes
-
-# Check resource requests
-kubectl get keycloak <name> -n <namespace> -o yaml | grep -A5 resources
-
-# Reduce resource requests temporarily
-kubectl patch keycloak <name> -n <namespace> --type=merge -p '
-spec:
-  resources:
-    requests:
-      cpu: 250m
-      memory: 512Mi
-'
-```
-
----
-
-### Symptom: Keycloak Pods CrashLoopBackOff
-
-**Possible Causes:**
-- Database connection failure
-- Invalid configuration
-- Port conflicts
-- Health check failures
-
-**Diagnosis:**
-
-```bash
-# Check pod logs
-kubectl logs -n <namespace> <keycloak-pod> --tail=100
-
-# Check previous container logs
-kubectl logs -n <namespace> <keycloak-pod> --previous
-
-# Check liveness/readiness probes
-kubectl describe pod -n <namespace> <keycloak-pod> | grep -A5 "Liveness\|Readiness"
-```
-
-**Solutions:**
-
-**Database Connection Failure:**
-```bash
-# Verify database credentials secret exists
-kubectl get secret <db-credentials-secret> -n <db-namespace>
-
-# Test database connection from pod
-kubectl exec -it -n <namespace> <keycloak-pod> -- \
-  psql -h <db-host> -U <db-user> -d keycloak -c "SELECT 1;"
-
-# Check database credentials are correct
-kubectl get secret <db-credentials-secret> -n <db-namespace> \
-  -o jsonpath='{.data.username}' | base64 -d && echo
-```
-
-**Port 9000 Not Available (Keycloak < 25.0.0):**
-```bash
-# Check Keycloak version
-kubectl get keycloak <name> -n <namespace> \
-  -o jsonpath='{.spec.image.tag}'
-
-# Keycloak requires version 25.0.0+ for management port 9000
-# Upgrade to supported version:
-kubectl patch keycloak <name> -n <namespace> --type=merge -p '
-spec:
-  image:
-    tag: "26.0.0"
-'
-```
-
-**Health Check Too Aggressive:**
-```bash
-# Increase probe delays
-kubectl patch keycloak <name> -n <namespace> --type=merge -p '
-spec:
-  probes:
-    liveness:
-      initialDelaySeconds: 180
-      periodSeconds: 30
-    readiness:
-      initialDelaySeconds: 120
-      periodSeconds: 10
-'
-```
-
----
-
-### Symptom: Need to Verify Keycloak Internal State
-
-**Important:** You should **never** need to access the Keycloak admin console. All configuration and verification should be done through CRDs and Kubernetes-native tools.
-
-**Preferred Verification Methods:**
-
-```bash
-# Check Keycloak instance status
-kubectl get keycloak <name> -n <namespace>
-kubectl describe keycloak <name> -n <namespace>
-
-# Check all managed resources
-kubectl get keycloakrealm,keycloakclient -n <namespace>
-
-# View detailed realm configuration
-kubectl get keycloakrealm <name> -n <namespace> -o yaml
-
-# Check operator reconciliation logs
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator --tail=100
-```
-
-**Advanced Debugging (Operator Developers Only):**
-
-If CRD status fields are insufficient and you need to query Keycloak's internal state directly:
-
-```bash
-# Port-forward to management API (port 9000, NOT UI)
-kubectl port-forward svc/<keycloak-service> -n <namespace> 9000:9000
-
-# Get admin credentials
-ADMIN_USER=$(kubectl get secret <name>-admin-credentials -n <namespace> \
-  -o jsonpath='{.data.username}' | base64 -d)
-ADMIN_PASS=$(kubectl get secret <name>-admin-credentials -n <namespace> \
-  -o jsonpath='{.data.password}' | base64 -d)
-
-# Get access token
-TOKEN=$(curl -s -X POST http://localhost:9000/realms/master/protocol/openid-connect/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=$ADMIN_USER" \
-  -d "password=$ADMIN_PASS" \
-  -d "grant_type=password" \
-  -d "client_id=admin-cli" | jq -r '.access_token')
-
-# Query Keycloak API (example: get realm)
-curl -s http://localhost:9000/admin/realms/<realm-name> \
-  -H "Authorization: Bearer $TOKEN" | jq .
-```
-
-**Note:** The admin console UI (port 8080) is intentionally not exposed. This operator enforces least privilege - all configuration must be done through GitOps/CRDs.
-
----
-
-## Realm Issues
-
-### Symptom: Realm Stuck in Pending/Provisioning
-
-**Possible Causes:**
-- Keycloak instance not ready
-- API connectivity issues
-- Rate limiting
-
-**Diagnosis:**
-
-```bash
-# Check realm status
 kubectl describe keycloakrealm <name> -n <namespace>
-
-# Check Keycloak instance status
-kubectl get keycloak -n <keycloak-namespace>
-
-# Check operator logs
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep "keycloakrealm/<name>"
+kubectl get keycloakrealm <name> -n <namespace> -o yaml
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator | grep '<namespace>'
 ```
 
-**Solutions:**
+Common causes:
 
-**Keycloak Instance Not Ready:**
-```bash
-# Wait for Keycloak to become ready
-kubectl wait --for=condition=Ready keycloak/<name> \
-  -n <keycloak-namespace> --timeout=5m
+- bad `operatorRef`
+- namespace not actually authorized by the referenced realm
+- admission validation failure
+- reconciliation pause enabled for that resource type
 
-# Check Keycloak pods
-kubectl get pods -n <keycloak-namespace> -l app=keycloak
-```
+## Symptom: Keycloak Pod Fails Health Checks
 
-**API Connectivity:**
-```bash
-# Test connectivity from operator to Keycloak
-kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -v http://keycloak-keycloak.<keycloak-namespace>.svc:8080/health
-
-# Check network policies
-kubectl get networkpolicy -n <keycloak-namespace>
-```
-
----
-
-### Symptom: Realm Configuration Not Applied
-
-**Possible Causes:**
-- Drift detection disabled
-- Manual changes in Keycloak admin console
-- Reconciliation not triggered
-- Invalid configuration values
-
-**Diagnosis:**
+Check the version first.
 
 ```bash
-# Check realm status
-kubectl get keycloakrealm <name> -n <namespace> -o yaml | grep -A20 status
-
-# Check if drift detected
-kubectl describe keycloakrealm <name> -n <namespace> | grep -i drift
-
-# Compare CRD config to Keycloak
-# (Requires admin access to Keycloak)
-
-# Check operator logs for reconciliation
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep "keycloakrealm/<namespace>/<name>"
+kubectl get keycloak <name> -n <namespace> -o jsonpath='{.spec.image}{"\n"}'
+kubectl logs -n <namespace> <keycloak-pod> --tail=100
 ```
 
-**Solutions:**
+If the deployment expects `9000` on a `24.x` image, you are debugging stale assumptions, not a real platform bug.
 
-**Force Reconciliation:**
-```bash
-# Add/update annotation to trigger reconciliation
-kubectl annotate keycloakrealm <name> -n <namespace> \
-  reconcile=$(date +%s) --overwrite
+### Symptom: Realm Stuck In Pending/Provisioning
 
-# Watch reconciliation
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator -f \
-  | grep "keycloakrealm/<namespace>/<name>"
-```
-
-**Drift Detection:**
-```bash
-# Check if drift detection is enabled (check operator config)
-kubectl get deployment -n keycloak-operator-system keycloak-operator \
-  -o yaml | grep DRIFT_DETECTION
-
-# Drift detection automatically corrects manual changes
-# Manual changes in admin console will be reverted on next reconciliation
-```
-
----
-
-## Client Issues
-
-### Symptom: Client Creation Fails
-
-**Possible Causes:**
-- Realm not ready
-- Namespace not authorized (Grant List)
-- Invalid client configuration
-- Client ID already exists
-
-**Diagnosis:**
+Check:
 
 ```bash
-# Check client status
-kubectl describe keycloakclient <name> -n <namespace>
-
-# Check realm is Ready
-kubectl get keycloakrealm <realm-name> -n <namespace>
-
-# Check operator logs
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep "keycloakclient/<namespace>/<name>"
+kubectl describe keycloakrealm <name> -n <namespace>
+kubectl get keycloakrealm <name> -n <namespace> -o yaml
+kubectl get keycloak <name> -n <namespace>
 ```
 
-**Solutions:**
+Common causes:
 
-**Realm Not Ready:**
-```bash
-# Wait for realm
-kubectl wait --for=condition=Ready keycloakrealm/<realm-name> \
-  -n <namespace> --timeout=2m
-```
-
-**Namespace Not Authorized:**
-```bash
-# Check realm's grant list
-kubectl get keycloakrealm <realm-name> -n <namespace> \
-  -o jsonpath='{.spec.clientAuthorizationGrants}'
-
-# Add client namespace to grant list
-kubectl patch keycloakrealm <realm-name> -n <namespace> --type=merge -p '
-spec:
-  clientAuthorizationGrants:
-    - <existing-namespaces>
-    - <client-namespace>
-'
-```
-
-**Invalid Configuration:**
-```bash
-# Check client spec for validation errors
-kubectl get keycloakclient <name> -n <namespace> -o yaml
-
-# Common issues:
-# - Invalid redirect URIs
-# - Missing required fields for client type
-# - Invalid protocol mapper configuration
-
-# Fix and reapply
-kubectl apply -f fixed-client.yaml
-```
-
----
-
-### Symptom: Client Credentials Not Created
-
-**Possible Causes:**
-- Client not Ready
-- Secret name conflict
-- RBAC issues preventing secret creation
-
-**Diagnosis:**
-
-```bash
-# Check client status
-kubectl get keycloakclient <name> -n <namespace>
-
-# Check if credentials secret exists
-kubectl get secret <name>-credentials -n <namespace>
-
-# Check operator logs for secret creation
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep "secret/<namespace>/<name>-credentials"
-```
-
-**Solutions:**
-
-**Wait for Client to become Ready:**
-```bash
-kubectl wait --for=condition=Ready keycloakclient/<name> \
-  -n <namespace> --timeout=2m
-
-# Secret is created when client transitions to Ready
-```
-
-**Secret Name Conflict:**
-```bash
-# Check if secret already exists (from previous client)
-kubectl get secret <name>-credentials -n <namespace>
-
-# Delete old secret if safe to do so
-kubectl delete secret <name>-credentials -n <namespace>
-
-# Force client reconciliation
-kubectl annotate keycloakclient <name> -n <namespace> \
-  reconcile=$(date +%s) --overwrite
-```
-
----
+- the referenced Keycloak instance is still provisioning
+- `operatorRef` points at the wrong namespace or instance
+- the realm is blocked on authorization or validation before first reconcile
 
 ## Authorization Issues
 
-### Symptom: Realm Creation Fails with Permission Denied
+### Symptom: Namespace Grant Looks Correct But Client Creation Still Fails
 
-**Possible Causes:**
-- Missing RBAC permissions to create KeycloakRealm resources
-- ServiceAccount lacks necessary ClusterRole binding
-- Namespace doesn't exist
-
-**Diagnosis:**
+Check the realm-side grant list directly:
 
 ```bash
-# Check if user/ServiceAccount can create realms
-kubectl auth can-i create keycloakrealms.vriesdemichael.github.io \
-  --namespace=<namespace>
-
-# Check existing RoleBindings
-kubectl get rolebinding,clusterrolebinding -A \
-  -o json | jq '.items[] | select(.subjects[]?.name=="<serviceaccount-name>") | {name: .metadata.name, namespace: .metadata.namespace, role: .roleRef.name}'
-
-# Check operator logs for authorization errors
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep -i "permission\|forbidden\|unauthorized"
-```
-
-**Solutions:**
-
-**Grant Realm Creation Permission:**
-```bash
-# Create RoleBinding in target namespace
-kubectl create rolebinding realm-creator \
-  --clusterrole=keycloak-realm-manager \
-  --serviceaccount=<namespace>:<serviceaccount> \
-  --namespace=<namespace>
-
-# Or use ClusterRoleBinding for cluster-wide access
-kubectl create clusterrolebinding realm-creator-global \
-  --clusterrole=keycloak-realm-manager \
-  --serviceaccount=<namespace>:<serviceaccount>
-```
-
-**Verify Permissions:**
-```bash
-# Test as the ServiceAccount
-kubectl auth can-i create keycloakrealms.vriesdemichael.github.io \
-  --as=system:serviceaccount:<namespace>:<serviceaccount> \
-  --namespace=<namespace>
-# Should return "yes"
-```
-
----
-
-### Symptom: Client Creation Fails - Namespace Not Authorized
-
-**Possible Causes:**
-- Client's namespace not in realm's `clientAuthorizationGrants` list
-- Realm doesn't exist or isn't ready
-- Typo in namespace name
-
-**Diagnosis:**
-
-```bash
-# Check realm's authorization grants
 kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
   -o jsonpath='{.spec.clientAuthorizationGrants}' | jq
 
-# Check if client namespace is in the list
-kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
-  -o jsonpath='{.spec.clientAuthorizationGrants[*]}' | grep -w <client-namespace>
-
-# Check operator logs
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator \
-  | grep -i "authorization\|grant"
-```
-
-**Solutions:**
-
-**Add Namespace to Grant List:**
-```bash
-# Add client's namespace to realm's grants
-kubectl patch keycloakrealm <realm-name> -n <realm-namespace> --type=merge -p '
-spec:
-  clientAuthorizationGrants:
-    - <existing-namespace>
-    - <client-namespace>  # Add this
-'
-
-# Verify the update
-kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
-  -o jsonpath='{.spec.clientAuthorizationGrants}' | jq
-```
-
-**Check Realm Status:**
-```bash
-# Ensure realm is Ready before creating clients
-kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
-  -o jsonpath='{.status.phase}'
-# Should be "Ready"
-
-# If not ready, check status
-kubectl describe keycloakrealm <realm-name> -n <realm-namespace>
-```
-
----
-
-### Symptom: Operator Can't Read Secrets in Client Namespace
-
-**Possible Causes:**
-- Missing RoleBinding in client's namespace
-- Operator ServiceAccount lacks namespace access
-- `rbac.create=false` in Helm chart
-
-**Diagnosis:**
-
-```bash
-# Check if operator can read secrets in namespace
-kubectl auth can-i get secrets \
-  --as=system:serviceaccount:keycloak-system:keycloak-operator \
-  --namespace=<client-namespace>
-
-# Check for RoleBinding
-kubectl get rolebinding -n <client-namespace> \
-  -o json | jq '.items[] | select(.subjects[]?.name=="keycloak-operator")'
-
-# Check operator logs
-kubectl logs -n keycloak-system -l app=keycloak-operator \
-  | grep -i "forbidden\|access denied" | grep <client-namespace>
-```
-
-**Solutions:**
-
-**Create RoleBinding for Operator:**
-```bash
-# Grant operator read access to secrets
-kubectl create rolebinding keycloak-operator-secret-reader \
-  --clusterrole=keycloak-operator-namespace-access \
-  --serviceaccount=keycloak-system:keycloak-operator \
-  --namespace=<client-namespace>
-
-# Or use Helm chart with rbac.create=true
-helm install my-client charts/keycloak-client \
-  --set rbac.create=true \
-  --set rbac.operatorNamespace=keycloak-system \
-  --namespace=<client-namespace>
-```
-
----
-
-### Symptom: Cross-Namespace Client Creation Not Working
-
-**Possible Causes:**
-- Realm and client in different namespaces without grant
-- Incorrect namespace in `realmRef`
-- Network policies blocking cross-namespace communication
-
-**Diagnosis:**
-
-```bash
-# Verify realmRef is correct
 kubectl get keycloakclient <client-name> -n <client-namespace> \
-  -o jsonpath='{.spec.realmRef}' | jq
-
-# Check if client namespace is authorized
-kubectl get keycloakrealm <realm-name> -n <realm-namespace> \
-  -o jsonpath='{.spec.clientAuthorizationGrants[*]}' \
-  | tr ' ' '\n' | grep -w <client-namespace>
-
-# Check operator can access both namespaces
-for ns in <realm-namespace> <client-namespace>; do
-  echo "Checking namespace: $ns"
-  kubectl auth can-i get secrets \
-    --as=system:serviceaccount:keycloak-system:keycloak-operator \
-    --namespace=$ns
-done
+  -o jsonpath='{.status.authorizationGranted}{"\n"}{.status.authorizationMessage}{"\n"}'
 ```
 
-**Solutions:**
+Things to verify:
 
-**Ensure Proper Configuration:**
-```yaml
-# Realm in namespace "platform"
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: shared-realm
-  namespace: platform
-spec:
-  clientAuthorizationGrants:
-    - app-team-a
-    - app-team-b
+- the client namespace is present in `spec.clientAuthorizationGrants`
+- the `realmRef` points at the realm you actually intended
+- the realm and client namespaces are not being confused
+- the realm’s `operatorRef` points at the correct operator-managed Keycloak
 
----
-# Client in namespace "app-team-a"
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
-metadata:
-  name: my-app
-  namespace: app-team-a
-spec:
-  realmRef:
-    name: shared-realm
-    namespace: platform  # Points to realm's namespace
-```
+This operator authorizes client creation through Kubernetes RBAC plus realm-managed namespace grants. A valid ServiceAccount alone is not enough if the realm grant list does not include the client namespace.
 
----
+## Client Issues
 
-## Database Issues
+## Symptom: Manual Admin Console Changes Keep Disappearing
 
-### Symptom: Database Cluster Not Starting
+That is usually normal drift correction.
 
-**Possible Causes:**
-- Storage not available
-- Credentials secret missing
-- CNPG operator not running
-- Resource constraints
+Direct UI access is not technically impossible, but it is the wrong source of truth for managed configuration. If you change realms or clients manually in the admin console, the operator may reconcile them back to the CR spec.
 
-**Diagnosis:**
+Use the CRs or Helm values instead.
+
+## Symptom: Client Credentials Stop Working After Rotation
+
+Check:
 
 ```bash
-# Check cluster status
-kubectl get cluster <name> -n <namespace>
-
-# Check cluster events
-kubectl describe cluster <name> -n <namespace>
-
-# Check pods
-kubectl get pods -n <namespace> -l cnpg.io/cluster=<name>
-
-# Check CNPG operator
-kubectl get pods -n cnpg-system
+kubectl get secret <client-secret-name> -n <namespace> -o yaml
+kubectl get keycloakclient <name> -n <namespace> -o jsonpath='{.status.lastSecretRotation}{"\n"}'
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator | grep rotation
 ```
 
-**Solutions:**
+Likely cause:
 
-**Storage Issues:**
-```bash
-# Check PVCs
-kubectl get pvc -n <namespace>
+- the workload did not restart or reload after atomic secret rotation
 
-# Check StorageClass
-kubectl get storageclass
+Fix the restart coordination, usually with Reloader or an equivalent policy.
 
-# Ensure StorageClass exists and is default
-kubectl patch storageclass <name> \
-  -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
-```
+## Symptom: Rate Limiting Or Slow Reconciliation
 
-**Credentials Secret Missing:**
-```bash
-# Check secret exists
-kubectl get secret <credentials-secret> -n <namespace>
-
-# Recreate if missing
-kubectl create secret generic <credentials-secret> \
-  --from-literal=username=keycloak \
-  --from-literal=password="$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))')" \
-  --namespace=<namespace>
-```
-
----
-
-### Symptom: Database Connection Refused
-
-**Possible Causes:**
-- Database pods not ready
-- Wrong database host/port
-- Network policies blocking traffic
-- Credentials incorrect
-
-**Diagnosis:**
+Inspect the operator’s metrics endpoint, not the managed Keycloak pod:
 
 ```bash
-# Check database pods
-kubectl get pods -n <db-namespace> -l cnpg.io/cluster=<cluster-name>
-
-# Identify primary pod
-kubectl get cluster <cluster-name> -n <db-namespace> \
-  -o jsonpath='{.status.currentPrimary}'
-
-# Test connection from Keycloak pod
-kubectl exec -it -n <keycloak-namespace> <keycloak-pod> -- \
-  psql -h <cluster-name>-rw.<db-namespace>.svc -U keycloak -d keycloak -c "SELECT 1;"
-```
-
-**Solutions:**
-
-**Database Not Ready:**
-```bash
-# Wait for database
-kubectl wait --for=condition=Ready cluster/<cluster-name> \
-  -n <db-namespace> --timeout=5m
-```
-
-**Wrong Connection String:**
-```bash
-# Correct format for CNPG:
-# Host: <cluster-name>-rw.<namespace>.svc
-# Port: 5432
-# Database: keycloak
-
-# Update Keycloak resource with correct database config
-kubectl patch keycloak <name> -n <namespace> --type=merge -p '
-spec:
-  database:
-    type: cnpg
-    cluster: <cluster-name>
-    namespace: <db-namespace>
-'
-```
-
----
-
-## Networking & Ingress Issues
-
-### Symptom: Cannot Access Keycloak via Ingress
-
-**Possible Causes:**
-- Ingress not created
-- DNS not configured
-- TLS certificate not ready
-- Ingress controller not working
-
-**Diagnosis:**
-
-```bash
-# Check ingress exists
-kubectl get ingress -n <namespace>
-
-# Check ingress details
-kubectl describe ingress <name> -n <namespace>
-
-# Check ingress controller
-kubectl get pods -n ingress-nginx
-
-# Test DNS resolution
-nslookup <hostname>
-
-# Check certificate
-kubectl get certificate -n <namespace>
-```
-
-**Solutions:**
-
-**DNS Not Configured:**
-```bash
-# Get ingress external IP
-kubectl get svc -n ingress-nginx ingress-nginx-controller
-
-# Configure DNS A record:
-# <hostname> → <external-ip>
-
-# Verify DNS propagation
-nslookup <hostname>
-```
-
-**TLS Certificate Not Ready:**
-```bash
-# Check certificate status
-kubectl describe certificate <name>-tls -n <namespace>
-
-# Check cert-manager logs
-kubectl logs -n cert-manager -l app=cert-manager
-
-# Force certificate renewal
-kubectl delete certificaterequest -n <namespace> --all
-```
-
-**Ingress Not Created:**
-```bash
-# Enable ingress in Keycloak resource
-kubectl patch keycloak <name> -n <namespace> --type=merge -p '
-spec:
-  ingress:
-    enabled: true
-    className: nginx
-    host: keycloak.example.com
-'
-```
-
----
-
-### Symptom: Port-Forward Not Working
-
-**Possible Causes:**
-- Service not found
-- Pods not ready
-- kubectl not configured correctly
-- Port already in use
-
-**Diagnosis:**
-
-```bash
-# Check service exists
-kubectl get svc -n <namespace>
-
-# Check pods are running
-kubectl get pods -n <namespace>
-
-# Check port not already in use
-lsof -i :8080  # On macOS/Linux
-netstat -ano | findstr :8080  # On Windows
-```
-
-**Solutions:**
-
-**Use Different Local Port:**
-```bash
-# Use different local port
-kubectl port-forward svc/<service-name> -n <namespace> 8888:8080
-
-# Access at http://localhost:8888
-```
-
-**Port-Forward to Pod Directly:**
-```bash
-# If service not working, port-forward to pod
-kubectl port-forward -n <namespace> <pod-name> 8080:8080
-```
-
----
-
-## Performance Issues
-
-### Symptom: Slow Reconciliation
-
-**Possible Causes:**
-- Rate limiting too aggressive
-- High API latency
-- Resource constraints on operator
-- Large number of resources
-
-**Diagnosis:**
-
-```bash
-# Check rate limit metrics
-kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
+kubectl exec -n keycloak-system deploy/keycloak-operator -- \
   curl -s localhost:8081/metrics | grep rate_limit
-
-# Check operator resource usage
-kubectl top pod -n keycloak-operator-system
-
-# Check reconciliation metrics
-kubectl exec -n keycloak-operator-system deployment/keycloak-operator -- \
-  curl -s localhost:8081/metrics | grep reconcile
 ```
 
-**Solutions:**
+If you need to adjust rate limits, change the chart values under:
 
-**Increase Rate Limits:**
-```bash
-# Increase global and namespace rate limits
-helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --namespace keycloak-operator-system \
-  --set env.KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS=100 \
-  --set env.KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS=10
-```
+- `operator.rateLimiting.global.*`
+- `operator.rateLimiting.namespace.*`
+- `operator.reconciliation.jitterMaxSeconds`
 
-**Increase Operator Resources:**
-```bash
-# Increase CPU/memory for operator
-helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --namespace keycloak-operator-system \
-  --set resources.requests.cpu=500m \
-  --set resources.requests.memory=512Mi
-```
+Then upgrade the chart instead of injecting ad hoc env var overrides.
 
----
+## Symptom: Host-Side Access To Keycloak Fails
 
-### Symptom: High Memory Usage
+Tests and local debugging from the host often require port forwarding because cluster-internal DNS names are not resolvable from your laptop or WSL host.
 
-**Possible Causes:**
-- Memory leak in operator
-- Too many reconciliation loops
-- Large resource specifications
-- Not enough replicas
-
-**Diagnosis:**
+Use:
 
 ```bash
-# Check memory usage
-kubectl top pod -n keycloak-operator-system
-
-# Check for OOMKills
-kubectl describe pod -n keycloak-operator-system <pod-name> | grep -i oom
-
-# Check operator logs for memory errors
-kubectl logs -n keycloak-operator-system <pod-name> | grep -i memory
+kubectl port-forward -n <namespace> svc/<keycloak-service> 8080:8080
 ```
 
-**Solutions:**
+Then hit `http://localhost:8080` locally.
 
-**Increase Memory Limits:**
-```bash
-helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --namespace keycloak-operator-system \
-  --set resources.limits.memory=1Gi
-```
+## Symptom: Authorization Looks Correct But Clients Still Fail
 
-**Scale Operator Replicas:**
-```bash
-# Distribute load across multiple replicas
-helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --namespace keycloak-operator-system \
-  --set replicas=3
-```
+Check all of these together:
 
----
+- the `KeycloakClient.spec.realmRef`
+- the target realm’s namespace authorization configuration
+- the realm’s `spec.clientAuthorizationGrants`
+- the `operatorRef` on the realm or Keycloak instance
+- whether the client namespace and realm namespace are actually the ones you think they are
 
-## Common Pitfalls
-
-### Pitfall 1: Wrong Keycloak Version (< 25.0.0)
-
-**Problem**: Using Keycloak version < 25.0.0 which doesn't support management port 9000.
-
-**Impact**: Health checks fail, pods crash
-
-**Solution**: Upgrade to Keycloak 25.0.0+:
-```bash
-kubectl patch keycloak <name> -n <namespace> --type=merge -p '
-spec:
-  image:
-    tag: "26.0.0"
-'
-```
-
----
-
-### Pitfall 2: Manual Changes in Keycloak Admin Console
-
-**Problem**: Making configuration changes directly in Keycloak admin console instead of updating CRDs.
-
-**Impact**: Changes reverted on next reconciliation (drift detection)
-
-**Solution**: Always update CRDs, not admin console:
-```bash
-kubectl edit keycloakrealm <name> -n <namespace>
-# Changes apply automatically via reconciliation
-```
-
----
-
-### Pitfall 5: Port 8080 vs Port 9000 Confusion
-
-**Problem**: Trying to access management endpoints on port 8080 or user endpoints on port 9000.
-
-**Ports**:
-- **8080**: User-facing (realms, OAuth2, admin console)
-- **9000**: Management only (health checks, metrics) - internal use
-
-**Solution**: Always use port 8080 for user/admin access:
-```bash
-kubectl port-forward svc/<keycloak-service> -n <namespace> 8080:8080
-```
-
----
-
-### Pitfall 6: RBAC in Multi-Namespace Setup
-
-**Problem**: Not configuring RBAC for application teams to read authorization secrets.
-
-**Impact**: Teams can't create realms/clients
-
-**Solution**: Create Role allowing secret read access:
-```bash
-kubectl apply -f - <<EOF
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: keycloak-realm-manager
-  namespace: <team-namespace>
-rules:
-  - apiGroups: ["vriesdemichael.github.io"]
-    resources: ["keycloakrealms", "keycloakclients"]
-    verbs: ["create", "update", "patch", "delete", "get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["secrets"]
-    resourceNames: ["<namespace>-operator-token", "*-realm-auth"]
-    verbs: ["get"]
-EOF
-```
-
----
-
-## Getting Help
-
-If you've tried the solutions above and still have issues:
-
-1. **Check Operator Logs**:
-   ```bash
-   kubectl logs -n keycloak-operator-system -l app=keycloak-operator --tail=200
-   ```
-
-2. **Gather Diagnostics**:
-   ```bash
-   kubectl get keycloak,keycloakrealm,keycloakclient --all-namespaces -o yaml > diagnostics.yaml
-   kubectl get events --all-namespaces --sort-by='.lastTimestamp' > events.txt
-   ```
-
-3. **Report Issue**:
-   - [GitHub Issues](https://github.com/vriesdemichael/keycloak-operator/issues)
-   - Include operator logs, resource YAML, and error messages
-
-4. **Community Support**:
-   - [GitHub Discussions](https://github.com/vriesdemichael/keycloak-operator/discussions)
-
----
+Cross-namespace mistakes are common and look deceptively similar to permission bugs.
 
 ## See Also
 
-**Problem-Specific Guides:**
-
-- [Security Model](../concepts/security.md) - Authorization and access control
-- [Migration Guide](migration.md) - Troubleshooting migration from official Keycloak operator
-- [FAQ: Troubleshooting](../faq.md#troubleshooting) - Quick answers to frequent problems
-
-**Configuration Reference:**
-
-- [Keycloak CRD Reference](../reference/keycloak-crd.md) - Valid configuration for Keycloak instances
-- [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md) - Valid realm configurations
-- [KeycloakClient CRD Reference](../reference/keycloak-client-crd.md) - Valid client configurations
-
-**Setup Guides:**
-
-- [End-to-End Setup](../how-to/end-to-end-setup.md) - Complete production deployment walkthrough
-- [Database Setup](../how-to/database-setup.md) - PostgreSQL configuration and troubleshooting
-- [High Availability Deployment](../how-to/ha-deployment.md) - HA-specific troubleshooting
-- [Multi-Tenant Setup](../how-to/multi-tenant.md) - Multi-tenant configuration issues
-
-**Architecture:**
-
-- [Architecture Overview](../concepts/architecture.md) - Understanding reconciliation flow and token system
-- [Security Model](../concepts/security.md) - Authorization model and token types
-- [Observability](../guides/observability.md) - Metrics and monitoring for proactive issue detection
-
----
-
-## Related Documentation
-
-- [End-to-End Setup Guide](../how-to/end-to-end-setup.md)
-- [Multi-Tenant Configuration](../how-to/multi-tenant.md)
-- [Security Model](../concepts/security.md)
-- [FAQ](../faq.md)
+- [Day Two Operations](./day-two.md)
+- [Observability](../guides/observability.md)
+- [Multi-Tenant](../how-to/multi-tenant.md)
+- [Keycloak Version Support](../reference/keycloak-version-support.md)
