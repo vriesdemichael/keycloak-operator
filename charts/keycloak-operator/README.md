@@ -12,6 +12,8 @@ This chart installs the Keycloak Operator which enables declarative management o
 
 **Target Users:** Platform administrators and cluster operators who want to provide Keycloak-as-a-Service to development teams.
 
+This chart is the recommended deployment path for the operator. Managing raw `Keycloak` manifests directly is supported, but it is an advanced/manual workflow. See [Helm vs Direct CR Deployments](../../docs/how-to/helm-vs-cr-deployments.md).
+
 ## Prerequisites
 
 - Kubernetes 1.27+
@@ -194,10 +196,19 @@ monitoring:
 
 The chart can optionally deploy a Keycloak instance:
 
+##### Operating Modes
+
+- `keycloak.managed: true` deploys and manages a `Keycloak` CR in the operator namespace.
+- `keycloak.managed: false` connects the operator to an existing Keycloak instance using `keycloak.url` and `keycloak.adminSecret`.
+
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `keycloak.enabled` | Deploy a Keycloak instance | `false` |
+| `keycloak.managed` | Deploy and manage a Keycloak instance | `true` |
 | `keycloak.name` | Keycloak instance name | `keycloak` |
+| `keycloak.url` | Existing Keycloak URL when `managed=false` | `""` |
+| `keycloak.adminUsername` | Admin username for managed or external mode | `admin` |
+| `keycloak.adminSecret` | Secret containing admin password | `""` |
+| `keycloak.adminPasswordKey` | Key in the admin secret | `password` |
 | `keycloak.replicas` | Number of Keycloak replicas | `1` |
 | `keycloak.version` | Keycloak version (image tag) | `"26.4.1"` |
 | `keycloak.image` | Keycloak container image | `quay.io/keycloak/keycloak` |
@@ -210,9 +221,6 @@ The chart can optionally deploy a Keycloak instance:
 | `keycloak.database.passwordSecret.key` | Key in secret | `password` |
 | `keycloak.database.cnpg.enabled` | Use CloudNativePG cluster | `false` |
 | `keycloak.database.cnpg.clusterName` | CNPG cluster name | `keycloak-postgres` |
-| `keycloak.admin.username` | Admin username | `admin` |
-| `keycloak.admin.passwordSecret.name` | Secret containing admin password | `keycloak-admin-password` |
-| `keycloak.admin.passwordSecret.key` | Key in secret | `password` |
 | `keycloak.ingress.enabled` | Enable ingress | `false` |
 | `keycloak.ingress.className` | Ingress class name | `""` |
 | `keycloak.ingress.annotations` | Ingress annotations | `{}` |
@@ -222,6 +230,10 @@ The chart can optionally deploy a Keycloak instance:
 | `keycloak.ingress.tlsSecretName` | Secret containing TLS certificate | `""` |
 | `keycloak.resources` | Keycloak resource limits/requests | See [values.yaml](values.yaml) |
 | `keycloak.env` | Environment variables for managed Keycloak pods | `[]` |
+| `operator.rateLimiting.*` | Global and per-namespace API throttling | See [values.yaml](values.yaml) |
+| `operator.circuitBreaker.*` | Keycloak API circuit breaker settings | See [values.yaml](values.yaml) |
+| `operator.tracing.*` | OpenTelemetry tracing configuration | See [values.yaml](values.yaml) |
+| `operator.reconciliation.pause.*` | Pause reconciliation by resource type | See [values.yaml](values.yaml) |
 
 `keycloak.env` uses the same Kubernetes env entry structure as `operator.env`, so you can use `valueFrom.secretKeyRef` with Secrets created by `extraManifests`, External Secrets Operator, or Sealed Secrets.
 
@@ -229,7 +241,7 @@ The chart can optionally deploy a Keycloak instance:
 
 ```yaml
 keycloak:
-  enabled: true
+  managed: true
   replicas: 3
   version: "26.4.1"
   database:
@@ -458,7 +470,7 @@ Before creating realms, you need a Keycloak instance. You have two options:
 
 **Option A: Using the chart's built-in Keycloak (Quick Evaluation)**
 
-Set `keycloak.enabled: true` during installation:
+Set `keycloak.managed: true` during installation:
 
 ```yaml
 # values-with-keycloak.yaml
