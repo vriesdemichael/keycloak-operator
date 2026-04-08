@@ -2,6 +2,8 @@
 
 This operator is structured into clear layers to keep reconciliation logic maintainable and testable.
 
+Helm charts are the primary deployment path for this project. Raw `Keycloak`, `KeycloakRealm`, and `KeycloakClient` manifests are supported, but they are the advanced/manual path when you need full control over the surrounding Kubernetes wiring.
+
 ## High-Level Components
 
 | Layer | Purpose |
@@ -11,6 +13,18 @@ This operator is structured into clear layers to keep reconciliation logic maint
 | Services (Reconcilers) | Idempotent business logic for converging desired -> actual state. |
 | Utils | Reusable helpers: Kubernetes API interactions, Keycloak admin client, validation. |
 | Observability | Metrics, health endpoints, structured logging. |
+
+## Primary CRDs
+
+The operator API is centered on three primary custom resources:
+
+| Resource | Scope | Primary owner |
+|----------|-------|---------------|
+| `Keycloak` | One Keycloak instance per operator namespace | `handlers/keycloak.py` + `services/keycloak_reconciler.py` |
+| `KeycloakRealm` | Realm-scoped identity configuration | `handlers/realm.py` + `services/realm_reconciler.py` |
+| `KeycloakClient` | Client-scoped application configuration | `handlers/client.py` + `services/client_reconciler.py` |
+
+`operatorRef.namespace` selects which operator instance manages a realm or client. Each operator instance manages exactly one Keycloak instance in its own namespace, so `operatorRef` is the routing key for multi-operator deployments.
 
 
 ## Authorization Architecture
@@ -79,8 +93,7 @@ metadata:
   namespace: platform
 spec:
   realmName: shared
-  instanceRef:
-    name: keycloak
+  operatorRef:
     namespace: keycloak-system
   # Only these namespaces can create clients
   clientAuthorizationGrants:
@@ -95,7 +108,7 @@ spec:
 2. Operator reads client's \`realmRef\` to find realm
 3. Operator checks if \`app-team-a\` is in realm's \`clientAuthorizationGrants\`
 4. If authorized: Client created in Keycloak
-5. If not authorized: Client enters \`Error\` phase with clear message
+5. If not authorized: Client is rejected by the admission webhook when enabled, or enters \`Failed\` phase during reconciliation when webhooks are disabled
 
 **Example: Client in authorized namespace**
 
@@ -366,6 +379,8 @@ The scaling strategy should be driven by **actual performance metrics and requir
 
 The operator implements a three-layer rate limiting strategy to protect Keycloak instances from API overload, particularly during mass reconciliation events (operator restarts, database reconnections, or intentional/malicious resource spam).
 
+Execution order is `jitter -> namespace limiter -> global limiter`. The layer numbers below describe protection scope, not the chronological order of evaluation.
+
 ```mermaid
 flowchart TB
     subgraph Reconciliation["Reconciliation Request Flow"]
@@ -490,13 +505,6 @@ The operator exposes Prometheus metrics for rate limiting (when implemented):
 - `keycloak_operator_rate_limit_tokens_available`: Current token bucket levels
 
 See [Observability](../guides/observability.md) for complete metrics documentation.
-
-## Future Enhancements
-
-- Finalizers for deterministic teardown
-- Smarter diffing of realm/client sub-resources
-- Rate limiting & backoff policies
-- Pluggable auth strategies for Keycloak admin API
 
 ## See Also
 
