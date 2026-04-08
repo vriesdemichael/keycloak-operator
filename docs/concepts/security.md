@@ -2,6 +2,8 @@
 
 This document explains the security and authorization model of the Keycloak operator.
 
+Helm charts are the main deployment path. The raw YAML examples on this page are intended to explain the authorization model and the advanced/manual workflow, not to replace the chart-based setup guides.
+
 ## Overview
 
 The Keycloak operator uses **Kubernetes RBAC** combined with **declarative namespace grant lists** for authorization.
@@ -38,6 +40,8 @@ The operator combines Kubernetes RBAC with declarative namespace authorization:
 - ✅ **Fully Declarative**: All authorization in Git-committable manifests
 - ✅ **Self-Service**: Teams can grant access via PR workflow
 - ✅ **Clear Audit Trail**: Git history shows all authorization changes
+
+## Namespace Authorization
 
 ## Authorization Model
 
@@ -99,8 +103,7 @@ metadata:
   namespace: my-app
 spec:
   realmName: my-app
-  instanceRef:
-    name: keycloak
+  operatorRef:
     namespace: keycloak-system
   # Grant these namespaces permission to create clients
   clientAuthorizationGrants:
@@ -116,7 +119,7 @@ When a `KeycloakClient` resource is created:
 1. Operator reads the client's `realmRef` to find the realm
 2. Operator reads the realm's `spec.clientAuthorizationGrants`
 3. Operator checks if client's namespace is in the grant list
-4. If **not authorized**: Client enters `Error` phase with clear message
+4. If **not authorized**: Client is rejected by the admission webhook when enabled, or enters `Failed` phase with a clear message during reconciliation
 5. If **authorized**: Client is created in Keycloak
 
 **Example: Client in authorized namespace**
@@ -140,7 +143,7 @@ spec:
 
 ```yaml
 status:
-  phase: Error
+  phase: Failed
   conditions:
     - type: Ready
       status: "False"
@@ -178,15 +181,18 @@ status:
 
 ### Namespace Isolation
 
-- **No cross-namespace secrets**: Client credentials only in client's namespace
-- **Realm secrets isolated**: Each realm's secrets only in realm's namespace
-- **Operator service account**: Has cluster-wide read for authorization checks
+- **Realm ownership stays explicit**: A realm owner chooses which namespaces may create clients by maintaining `spec.clientAuthorizationGrants`.
+- **Cross-namespace access is narrow**: A client may reference a realm in another namespace only when that namespace is explicitly listed in the realm's grant list.
+- **Secrets stay local to the workload namespace**: Realm and client Secret references resolve in the same namespace as the `KeycloakRealm` or `KeycloakClient` using them.
+
 
 ### Least Privilege
 
 - **Realm creators**: Only need RBAC in their namespace
 - **Client creators**: Only need namespace in grant list
 - **Operator**: Runs with minimal RBAC (see ADR 032)
+
+These restrictions are operator-level settings. In chart-based deployments they are configured through `operator.security.*` values, which become environment variables on the operator pod and apply cluster-wide for that operator instance.
 
 ### Revocation
 
@@ -204,11 +210,14 @@ spec:
 ```
 
 **Effect:**
-- ✅ Existing clients continue to work (by design)
-- ✅ New client creation from `team-b` namespace fails
-- ✅ Updates to existing clients from `team-b` fail
+- ✅ Existing client credentials and runtime traffic continue to work until you remove the client itself
+- ✅ New client creation from `team-b` namespace fails immediately
+- ✅ Updates to existing clients from `team-b` fail because reconciliation is no longer authorized
 
-**To fully revoke**: Delete the client CR from `team-b` namespace
+**To fully revoke intentionally:**
+1. Remove the namespace from `clientAuthorizationGrants`.
+2. Delete the `KeycloakClient` objects in that namespace.
+3. Remove or rotate any application credentials that were already distributed.
 
 ### Audit Trail
 
@@ -233,7 +242,7 @@ git log -p -- realms/my-realm.yaml | grep clientAuthorizationGrants
 
 ### Operator Service Account
 
-The operator needs these cluster-wide permissions:
+The operator needs these core cluster-wide permissions:
 
 **Read access for authorization checks:**
 ```yaml
@@ -249,12 +258,22 @@ The operator needs these cluster-wide permissions:
   verbs: ["update", "patch"]
 ```
 
-**Secret access (read-only):**
+The operator does not get a blanket cluster-wide "read all secrets" grant.
+
+**Delegated Secret access in opted-in namespaces:**
 ```yaml
 - apiGroups: [""]
   resources: ["secrets"]
-  verbs: ["get", "list"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ```
+
+**Guarantees around this Secret access:**
+- The rule above lives on the operator chart's release-scoped `*-namespace-access` `ClusterRole`, not on the operator's always-on core cluster role.
+- It is inactive until a tenant namespace creates a `RoleBinding` to that `ClusterRole`.
+- The `keycloak-realm` and `keycloak-client` charts create that `RoleBinding` by default when `rbac.create=true`.
+- The binding targets one concrete operator ServiceAccount in one concrete namespace, so another operator release does not inherit the access.
+- The operator still rejects unlabeled Secrets. Tenant Secrets must carry `vriesdemichael.github.io/keycloak-allow-operator-read=true`.
+- Secret references remain same-namespace, so the operator is not allowed to roam across unrelated namespaces looking for credentials.
 
 See [ADR 032](../decisions/032-minimal-rbac-with-namespaced-service-accounts.yaml) for complete RBAC design.
 
@@ -366,6 +385,24 @@ spec:
 
 **Scenario**: Grant temporary access for testing
 
+- **Opt-in namespace access**: The operator cannot read tenant namespace secrets unless that namespace contains a `RoleBinding` pointing at the operator chart's `*-namespace-access` `ClusterRole`.
+- **Chart-created binding by default**: The `keycloak-realm` and `keycloak-client` charts create that `RoleBinding` automatically when `rbac.create=true`, binding the operator ServiceAccount from `operatorRef.namespace` or `rbac.operatorNamespace` into the tenant namespace.
+- **Release-scoped subject**: The binding targets a specific ServiceAccount name and namespace, not a wildcard. A different operator release does not inherit that access unless you bind it explicitly.
+- **Secret-label gate**: Even with the `RoleBinding`, the operator only accepts tenant secrets that carry `vriesdemichael.github.io/keycloak-allow-operator-read=true`. Unlabeled secrets are rejected by validation and runtime checks.
+- **Same-namespace secret references**: Realm and client secret references stay in the namespace of the resource that uses them. The operator is not allowed to jump across arbitrary namespaces looking for credentials.
+- **Auditable wiring**: The access path is visible in Git and Kubernetes objects: the operator chart creates the `ClusterRole`, realm/client charts create per-namespace `RoleBinding`s, and the Secret itself carries an explicit allow-read label.
+
+**What this means in practice:** security reviewers can treat secret access as a two-step allowlist. First, a namespace must opt in by binding the operator ServiceAccount. Second, the specific Secret must opt in with the operator-read label. Missing either one blocks access.
+
+**How the charts wire this:**
+
+1. The operator chart creates a release-scoped `ClusterRole` named like `<operator-release>-<namespace>-namespace-access`.
+2. The realm and client charts create a namespaced `RoleBinding` such as `<release>-operator-access` in the tenant namespace.
+3. That `RoleBinding` points to the operator access `ClusterRole` and binds only the operator ServiceAccount from the configured operator namespace.
+4. Secrets still need the `vriesdemichael.github.io/keycloak-allow-operator-read=true` label before the operator will use them.
+
+**Cleanup:**
+
 ```yaml
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
@@ -380,8 +417,6 @@ spec:
     - my-app
     - test-team  # Temporary grant
 ```
-
-**Cleanup:**
 - Set calendar reminder for expiration date
 - Remove from grant list after testing complete
 - Document in Git commit message

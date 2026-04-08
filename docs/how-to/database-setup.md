@@ -2,6 +2,8 @@
 
 This guide covers PostgreSQL database setup for Keycloak using CloudNativePG (CNPG), including configuration, backup, restore, and high availability.
 
+For operator deployments, prefer the Helm chart values shown later in this guide. Raw `Keycloak` manifests remain useful for explaining the CRD shape, but the chart values are the recommended path for real installs.
+
 ## Overview
 
 Keycloak requires a PostgreSQL database for storing:
@@ -574,6 +576,56 @@ The operator supports three database configuration tiers, each with different le
 
 For upgrade backup behavior, see [Backup & Restore: Automated Pre-Upgrade Backups](../operations/backup-restore.md#automated-pre-upgrade-backups).
 
+### Helm Values (Recommended)
+
+Use the operator chart values as the main interface for database selection.
+
+**CNPG Tier**:
+
+```yaml
+keycloak:
+  managed: true
+  database:
+    cnpg:
+      enabled: true
+      clusterName: keycloak-db
+```
+
+**Managed Tier**:
+
+```yaml
+keycloak:
+  managed: true
+  database:
+    managed:
+      enabled: true
+      host: postgres.keycloak-db.svc.cluster.local
+      port: 5432
+      database: keycloak
+      username: keycloak
+      passwordSecret:
+        name: keycloak-db-password
+        key: password
+      pvcName: keycloak-db-data
+```
+
+**External Tier**:
+
+```yaml
+keycloak:
+  managed: true
+  database:
+    external:
+      enabled: true
+      host: my-rds-instance.abc123.us-east-1.rds.amazonaws.com
+      port: 5432
+      database: keycloak
+      username: keycloak
+      passwordSecret:
+        name: keycloak-db-password
+        key: password
+```
+
 ### Keycloak CRD Configuration
 
 **CNPG Tier (Recommended)**:
@@ -590,7 +642,6 @@ spec:
     cnpg:
       clusterName: keycloak-db         # ← CNPG cluster name
       namespace: keycloak-db           # ← Database namespace
-      credentialsSecret: keycloak-db-credentials
 
   # Rest of Keycloak configuration...
 ```
@@ -610,7 +661,10 @@ spec:
       host: my-rds-instance.abc123.us-east-1.rds.amazonaws.com
       port: 5432
       database: keycloak
-      credentialsSecret: keycloak-db-credentials
+      username: keycloak
+      passwordSecret:
+        name: keycloak-db-credentials
+        key: password
 
   # External databases: back up your database before Keycloak upgrades.
   # The operator logs a warning and proceeds when an upgrade is detected.
@@ -631,7 +685,10 @@ spec:
     host: keycloak-db-rw.keycloak-db.svc.cluster.local
     port: 5432
     database: keycloak
-    credentialsSecret: keycloak-db-credentials
+    username: keycloak
+    passwordSecret:
+      name: keycloak-db-credentials
+      key: password
 
   # Same upgrade behavior as the external tier: warn-and-proceed.
   # Migrate to database.external sub-object for new deployments.

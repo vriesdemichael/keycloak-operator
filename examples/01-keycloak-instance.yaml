@@ -28,16 +28,20 @@ spec:
   image: quay.io/keycloak/keycloak:26.0.0
 
   # Database configuration for CloudNativePG
-  # Note: Use standard PostgreSQL connection to CNPG cluster
+  # Preferred tiered configuration: reference the CNPG Cluster directly.
+  # The current published schema still expects the legacy connection fields,
+  # so this example includes both the CNPG reference and the resolved connection details.
   database:
-    type: postgresql
-    host: keycloak-postgres-rw  # CNPG read-write service
-    port: 5432
-    database: app
-    username: app
-    passwordSecret:
-      name: keycloak-postgres-app  # CNPG-generated secret
-      key: password
+      type: postgresql
+      host: keycloak-postgres-rw
+      port: 5432
+      database: app
+      username: app
+      passwordSecret:
+        name: keycloak-postgres-app
+        key: password
+      cnpg:
+        clusterName: keycloak-postgres
 
   # Resource limits for Keycloak pods
   resources:

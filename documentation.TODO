@@ -43,45 +43,14 @@
 
 ## docs/concepts/architecture.md
 
-- Fix the stale `instanceRef` example to use `operatorRef` and remove the nonexistent `name` field.
-- Add a short explanation that `operatorRef` selects the operator namespace and that each operator manages exactly one Keycloak instance.
-- Add a concise explanation of the three primary CRDs (`Keycloak`, `KeycloakRealm`, `KeycloakClient`) and which reconciler owns each.
-- Clarify the rate-limiting layer numbering so readers understand priority versus execution order.
-- Add an explicit note that Helm charts are the main deployment method, while raw CR usage is the advanced/power-user path.
-- Review the "Future Enhancements" section and either add status/context or remove it if it is just stale roadmap noise.
-
 ## docs/concepts/security.md
-
-- Fix the invalid status example so it uses a real CRD phase instead of `Error`.
-- Add a clear note that Helm charts are the main deployment path and that the raw YAML examples on this page are conceptual or advanced-use examples.
-- Rewrite the security-restrictions section to explain that these controls are operator-level environment-variable settings with cluster-wide effect.
-- Expand the revocation section to explain why existing clients continue to work after grant removal and how to perform full revocation intentionally.
-- Clarify the cross-namespace secret-access and RBAC model for the operator, especially how namespace-scoped access is granted.
 
 ## docs/admission-webhooks.md
 
-- Rewrite the Technical Details section so it reflects cert-manager and Helm-managed webhook resources instead of Kopf auto-management.
-- Remove the invalid `spec.realmQuota.perNamespace` example and replace it with the real Helm values-based quota configuration.
-- Fix the readiness and bootstrap explanation so it matches the actual `/ready` probe and startup behavior.
-- Add Helm-first guidance and reframe the raw CR examples as conceptual or advanced examples.
-- Update the documented error-message examples so they match the current webhook implementation.
-- Clarify the ADR-062 terminology around one Keycloak per operator instance versus per namespace.
-- Link directly to the authoritative webhook-related Helm values for configuration reference.
-
 ## docs/how-to/multi-tenant.md
-
-- Add an explicit note that the realm and client Helm charts auto-create the needed RoleBindings by default, and that the manual RBAC path is the advanced/manual option.
-- Clarify that the `*-namespace-access` ClusterRole is created by the operator Helm chart and that its actual name depends on the Helm release name.
-- Restructure the platform-team setup section so Helm is the primary path and the raw `kubectl` steps are secondary.
-- Add the required secret-label guidance for secrets the operator must read across namespaces.
-- Expand the GitOps section with a concrete `values.yaml` example and a stronger message that production changes should flow through Git rather than ad hoc commands.
 
 ## docs/how-to/database-setup.md
 
-- Remove the invalid `credentialsSecret` field from the CNPG example.
-- Reframe the flat-field database syntax as legacy or compatibility syntax and steer readers toward the tiered `cnpg` / `managed` / `external` model.
-- Update `examples/01-keycloak-instance.yaml` so it aligns with the recommended tiered database configuration shown in the guide.
-- Add Helm-values examples for each supported database tier instead of relying mainly on raw CR examples.
 - Review the linked backup and restore flow for token-era drift because it affects the database operations path from this guide.
 
 ## docs/guides/identity-providers.md

@@ -6,6 +6,8 @@ Configure the operator for multi-tenant environments where multiple teams manage
 
 When introducing the Keycloak Operator to your organization, clear role definitions are essential for a smooth "Realm-as-Tenant" adoption.
 
+<a id="roles--responsibilities-matrix"></a>
+
 ### Roles & Responsibilities Matrix
 
 | Responsibility | Platform Team 🛠️ | Realm Owner (App Team A) 👑 | Client Owner (App Team B) 👤 |
@@ -79,6 +81,8 @@ graph LR
 
 ## Platform Team Setup
 
+Helm is the primary path for multi-tenant installs. The raw RBAC examples later in this guide are for clusters that intentionally manage the surrounding permissions outside the charts.
+
 ### 1. Deploy Shared Keycloak
 
 Install the operator with Keycloak instance using Helm:
@@ -86,13 +90,13 @@ Install the operator with Keycloak instance using Helm:
 ```bash
 helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace platform \
-  --set keycloak.enabled=true \
+  --set keycloak.managed=true \
   --set keycloak.replicas=3 \
   --set keycloak.database.cnpg.enabled=true \
   --set keycloak.ingress.enabled=true \
-  --set keycloak.ingress.hosts[0].host=keycloak.company.com \
-  --set keycloak.ingress.hosts[0].paths[0].path=/ \
-  --set keycloak.ingress.hosts[0].paths[0].pathType=Prefix
+  --set keycloak.ingress.host=keycloak.company.com \
+  --set keycloak.ingress.path=/ \
+  --set keycloak.ingress.tlsEnabled=true
 ```
 
 ### 2. Create Namespaces for Teams
@@ -151,17 +155,23 @@ kubectl create rolebinding realm-manager-gamma \
 
 ### 4. Grant Operator Namespace Access
 
+If you use the `keycloak-realm` and `keycloak-client` charts with their default `rbac.create=true` setting, they create the namespace RoleBindings for you. The manual commands below are only for the advanced/manual path.
+
+The namespace-access `ClusterRole` is created by the operator Helm chart. Its actual name depends on the Helm release and namespace, so for the example below the chart produces `keycloak-operator-platform-namespace-access`.
+
 The operator needs to read secrets in each team namespace:
 
 ```bash
 # Create RoleBinding for each team namespace
 for TEAM in team-alpha team-beta team-gamma; do
   kubectl create rolebinding keycloak-operator-access \
-    --clusterrole=keycloak-operator-namespace-access \
+    --clusterrole=keycloak-operator-platform-namespace-access \
     --serviceaccount=platform:keycloak-operator \
     --namespace=$TEAM
 done
 ```
+
+Secrets the operator reads from tenant namespaces must also carry the label `vriesdemichael.github.io/keycloak-allow-operator-read=true`.
 
 ---
 
@@ -312,6 +322,19 @@ gitops-repo/
 ```
 
 ### Updating Authorization Grants
+
+In GitOps workflows, update the realm chart values in Git and let ArgoCD or Flux apply the change instead of patching live objects by hand.
+
+```yaml
+# team-alpha/realms/alpha-production.values.yaml
+realmName: alpha-production
+operatorRef:
+  namespace: platform
+clientAuthorizationGrants:
+  - team-alpha
+  - team-alpha-dev
+  - new-namespace
+```
 
 To grant a new namespace access:
 
