@@ -105,6 +105,7 @@ nav:
   - Getting Started:
       - Home: index.md
       - Quick Start: quickstart/README.md
+      - Helm vs Direct CR Deployments: how-to/helm-vs-cr-deployments.md
       - Installation: how-to/end-to-end-setup.md
   - Concepts:
       - Architecture: concepts/architecture.md

@@ -1,0 +1,363 @@
+# Documentation Review TODO
+
+## Cross-cutting Documentation Work
+
+- Add a dedicated page that makes Helm-based deployments the recommended path and documents direct CR deployments as an advanced/manual path, including the extra RBAC and manifest-management responsibilities users take on when they do not use the charts.
+- Use that page as the main cross-link target from quickstart, setup, chart READMEs, conceptual docs, and troubleshooting pages whenever the docs need to explain Helm-first versus raw CR workflows.
+
+## README.md
+
+- Fix the external Keycloak configuration example to match the actual chart contract, or update it after the chart/schema contract is standardized.
+
+## docs/index.md
+
+- Replace the raw RBAC Role example with Helm-first guidance, or clearly mark it as an advanced/manual path.
+- Clarify that "no separate token system" refers to provisioning authorization, not normal OAuth2/OIDC tokens issued to applications.
+
+## docs/quickstart/README.md
+
+- Call out that the chart currently has `enabled`/`managed` drift in supporting templates, because that blocks documentation correctness until resolved.
+- Explain that applications should consume the generated credentials Secret directly in-cluster instead of manually reading the secret in the quick start.
+- Show at least one concrete example of how to inject the generated Secret into an application Deployment.
+- Add a short explanation of how the generated credentials secret name is derived from the client resource name.
+
+## docs/how-to/end-to-end-setup.md
+
+- Fix the operator install example to use the real chart contract instead of `keycloak.enabled=true`.
+- Fix the ingress example to match the chart's real flat values structure instead of array-style `hosts[]` and `tls[]` fields.
+- Fix the client examples to use `description` instead of the undefined `clientName` field.
+- Add a short explanation of how the generated client credentials secret name is derived from the client resource name.
+- Split or clearly label the guide by audience so platform-team setup work is distinct from application-team realm/client setup; right now the page mixes cluster bootstrap and app onboarding into one linear path.
+- Rename the docs navigation label from a generic "Installation" to something closer to "End-to-End Setup" or "Production Deployment" so readers do not mistake this longer, infrastructure-heavy guide for the basic install path.
+
+## charts/README.md
+
+- Remove token-era troubleshooting commands and replace them with current namespace-grant-based guidance.
+- Remove the stale `authorizationSecretRef` entry from the ArgoCD example.
+- Remove token-era wording such as "without specifying a token" from the installation flow.
+- Decide whether this page should move into the MkDocs hierarchy or be reduced to a short GitHub-facing pointer, because it is currently not reachable from the published docs navigation.
+- Replace the ASCII chart installation flow with a Mermaid diagram.
+
+## charts/keycloak-operator/README.md
+
+- Replace `keycloak.enabled` with the real chart contract `keycloak.managed` throughout the README, and align the supporting templates that still reference the stale flag.
+- Add an "Operating Modes" section that explains managed versus external Keycloak and the required fields for each path.
+- Document the missing production controls: rate limiting, circuit breaker, reconciliation timers, pause semantics, metrics host/port, and tracing.
+- Make the one-Keycloak-per-namespace limit explicit in the README instead of leaving it implicit in webhook quota configuration.
+- Fix the Keycloak examples so they reflect the current chart contract rather than the stale flag name.
+
+## charts/keycloak-realm/README.md
+
+- Replace `instanceRef` with the real field `operatorRef` throughout the README and remove the nonexistent `instanceRef.name` field from examples and tables.
+- Fix the theme examples to use the real `themes.*` field names instead of `loginTheme` and similar stale keys.
+- Add a proper SMTP secret-label example so users know how to grant the operator read access to the SMTP password secret.
+- Add a concrete multi-namespace `clientAuthorizationGrants` example showing how a realm authorizes clients from other namespaces.
+- Add a short statement that the Helm chart is the recommended deployment path for realms.
+
+## charts/keycloak-client/README.md
+
+- Fix the documented client credentials secret keys and all extraction/configuration examples that depend on them so they match the actual generated secret contents.
+- Investigate and fix the `authenticationFlow` versus `authenticationFlows` mismatch across the chart, schema, template, and documentation.
+- Add `clientName`, `clientRoles`, and clearer secret-rotation coverage to the configuration section.
+- Expand the service-account example with role-resolution guidance and expectations when referenced roles do not exist.
+- Clarify the generated secret contents and show how application code should consume the pre-built endpoint keys.
+
+## docs/concepts/architecture.md
+
+- Fix the stale `instanceRef` example to use `operatorRef` and remove the nonexistent `name` field.
+- Add a short explanation that `operatorRef` selects the operator namespace and that each operator manages exactly one Keycloak instance.
+- Add a concise explanation of the three primary CRDs (`Keycloak`, `KeycloakRealm`, `KeycloakClient`) and which reconciler owns each.
+- Clarify the rate-limiting layer numbering so readers understand priority versus execution order.
+- Add an explicit note that Helm charts are the main deployment method, while raw CR usage is the advanced/power-user path.
+- Review the "Future Enhancements" section and either add status/context or remove it if it is just stale roadmap noise.
+
+## docs/concepts/security.md
+
+- Fix the invalid status example so it uses a real CRD phase instead of `Error`.
+- Add a clear note that Helm charts are the main deployment path and that the raw YAML examples on this page are conceptual or advanced-use examples.
+- Rewrite the security-restrictions section to explain that these controls are operator-level environment-variable settings with cluster-wide effect.
+- Expand the revocation section to explain why existing clients continue to work after grant removal and how to perform full revocation intentionally.
+- Clarify the cross-namespace secret-access and RBAC model for the operator, especially how namespace-scoped access is granted.
+
+## docs/admission-webhooks.md
+
+- Rewrite the Technical Details section so it reflects cert-manager and Helm-managed webhook resources instead of Kopf auto-management.
+- Remove the invalid `spec.realmQuota.perNamespace` example and replace it with the real Helm values-based quota configuration.
+- Fix the readiness and bootstrap explanation so it matches the actual `/ready` probe and startup behavior.
+- Add Helm-first guidance and reframe the raw CR examples as conceptual or advanced examples.
+- Update the documented error-message examples so they match the current webhook implementation.
+- Clarify the ADR-062 terminology around one Keycloak per operator instance versus per namespace.
+- Link directly to the authoritative webhook-related Helm values for configuration reference.
+
+## docs/how-to/multi-tenant.md
+
+- Add an explicit note that the realm and client Helm charts auto-create the needed RoleBindings by default, and that the manual RBAC path is the advanced/manual option.
+- Clarify that the `*-namespace-access` ClusterRole is created by the operator Helm chart and that its actual name depends on the Helm release name.
+- Restructure the platform-team setup section so Helm is the primary path and the raw `kubectl` steps are secondary.
+- Add the required secret-label guidance for secrets the operator must read across namespaces.
+- Expand the GitOps section with a concrete `values.yaml` example and a stronger message that production changes should flow through Git rather than ad hoc commands.
+
+## docs/how-to/database-setup.md
+
+- Remove the invalid `credentialsSecret` field from the CNPG example.
+- Reframe the flat-field database syntax as legacy or compatibility syntax and steer readers toward the tiered `cnpg` / `managed` / `external` model.
+- Update `examples/01-keycloak-instance.yaml` so it aligns with the recommended tiered database configuration shown in the guide.
+- Add Helm-values examples for each supported database tier instead of relying mainly on raw CR examples.
+- Review the linked backup and restore flow for token-era drift because it affects the database operations path from this guide.
+
+## docs/guides/identity-providers.md
+
+- Add a new introductory section that presents the keycloak-realm Helm chart as the primary deployment method for identity providers.
+- Include Helm values examples for `identityProviders` before or alongside the raw KeycloakRealm examples.
+- Mark the raw CR manifest examples as advanced or power-user material rather than the default path.
+- Make the secret-label requirement more visually prominent and include a copy-paste command for applying the label.
+- Add a "Common Mappers" subsection with realistic mapper examples and better guidance on mapper usage.
+- Add an OIDC auto-discovery subsection and explain minimal issuer-based configuration.
+- Add clearer placeholder guidance for Azure AD values such as tenant ID and client ID.
+- Explain the difference between `firstBrokerLoginFlowAlias` and `postBrokerLoginFlowAlias`.
+- Add a short "See Also" section linking to the realm Helm chart README, the CRD reference, and related multi-tenant or setup guides.
+
+## docs/guides/user-federation.md
+
+- Add a "Using Helm (Recommended)" section with Helm values examples first, and treat raw KeycloakRealm manifests as the advanced path.
+- Verify the documented federation status fields against the actual `KeycloakUserFederationStatus` model and correct the guide if needed.
+- Add a short explanation of the camelCase field naming convention used in the CR and Helm values.
+- Document the meaning of the `keycloak_operator_user_federation_status` metric values and labels.
+- Add guidance on LDAP connection security and port selection (`389` with StartTLS vs `636` with LDAPS).
+- Clarify the difference between `allowKerberosAuthentication` and `useKerberosForPasswordAuthentication`.
+- Add a prominent warning that referenced secrets must live in the same namespace as the realm.
+- Optionally add a small comparison between user federation and identity providers so readers choose the right feature.
+
+## docs/guides/observability.md
+
+- Replace the non-existent `kopf_reconciliation_*` metric queries with the actual `keycloak_operator_*` metrics exposed by the operator.
+- Fix the documented circuit-breaker recovery timeout to match the real default, and note that it is configurable.
+- Correct the example status fields that currently use names like `adminSecret` and `client_uuid` when the real status fields differ.
+- Add a warning that end-to-end tracing propagation requires a supported Keycloak version and explain the fallback or disablement path for older versions.
+- Validate the documented Keycloak endpoints example structure against the actual status model and fix it if needed.
+- Add a small note that local or dev tracing setups may need `insecure: true`.
+
+## docs/guides/drift-detection.md
+
+- Add a clear section explaining that admin events are mandatory for drift detection and are enforced automatically when drift detection is enabled.
+- Fix the documented default for `DRIFT_DETECTION_MINIMUM_AGE_HOURS` so it matches the real default.
+- Add a note that each operator instance manages one Keycloak instance when explaining the multi-operator drift scenario.
+- Add a "How Drift Detection Works" section explaining the `lastReconcileEventTime` timestamp mechanism.
+- Add a short explanation of which resource phases run drift detection and which phases are skipped.
+- Verify the Prometheus metric names and labels against the actual implementation and update the guide accordingly.
+- Update or qualify the Prometheus alert examples so they use real label names and current metrics.
+- Reframe the raw-manifest scenarios as advanced examples or provide Helm-first equivalents.
+- Add a Mermaid flowchart showing the drift-detection timer, event query, decision, and remediation flow.
+- Link to ADR-019 as the authoritative design reference and mention the CR existence re-check safety step in the orphan-deletion example.
+
+## docs/operations/day-two.md
+
+- Replace the outdated "Maintenance Mode (Coming Soon)" section with the actual implemented maintenance and pause features.
+- Add a subsection documenting reconciliation pause, when to use it, how to configure it via Helm, and how it affects resource phases.
+- Add a Helm-first admin-credentials example or clearly explain when a raw Keycloak CR example is required.
+- Add a short database-tier context note so operators understand that day-two behavior differs for CNPG, managed, and external database setups.
+- Add a "See Also" section linking to secret-management, backup-restore, migration, and escape-hatch documentation.
+- Clarify whether the "external secret" example is really a raw Kubernetes Secret example and point readers to ESO or Sealed Secrets patterns for GitOps.
+- Add a short GitOps note in the philosophy section recommending ESO or Sealed Secrets for secret management.
+
+## docs/operations/secret-management.md
+
+- Fix the Kyverno policy example so it targets the actual secret label used by the operator.
+- Add a practical "Using External Secrets Operator (ESO)" section and cover Sealed Secrets as a supported GitOps-friendly pattern.
+- Restructure the page into three clear concerns: secret provisioning, automated rotation, and application restart coordination.
+- Document the `clientSecret` field for manual pre-existing secret binding and explain its constraints.
+- Add a table of the operator-managed secret keys and show how applications should consume them.
+- Add a short section explaining rotation scheduling semantics, including timezone behavior and timing edge cases.
+- Add the missing note about the secret label required for operator read access where relevant.
+- Convert the examples to Helm-first patterns where possible and treat raw CR examples as advanced.
+- Consider renaming the page or expanding it so the title matches the actual scope.
+- Add a note that operator-level reconciliation pause also pauses secret rotation daemons.
+- Add a cross-link from the keycloak-client chart README to this operations guide.
+
+## docs/operations/backup-restore.md
+
+- Remove all `keycloak-operator-token-metadata` ConfigMap references and delete the stale "Token Metadata" row from the backup inventory table.
+- Restructure the guide so Helm values and supported operator workflows are the primary path, with raw CR examples moved into an advanced section.
+- Add a dedicated section explaining the implemented blue-green upgrade strategy and the relevant state-machine concepts for backup and restore.
+- Add a "Database Restore by Tier" subsection covering CNPG, managed, and external database restore expectations separately.
+- Add YAML examples that contrast legacy flat-field database config with the recommended explicit tiered configuration.
+- Fix the relative links to database-setup and HA deployment docs if they are currently incorrect from this page.
+- Add guidance for interrupted blue-green upgrades during disaster recovery.
+- Verify the documented label selectors against the real constants and update the monitoring commands if needed.
+
+## docs/operations/migration.md
+
+- Add the migration toolkit workflow as the primary migration path for users coming from the official operator or self-managed Keycloak exports.
+- Update the blue-green upgrade section so it describes the implemented feature instead of presenting it as future work.
+- Convert the upgrade examples to Helm-first commands, with raw `kubectl patch` examples treated as secondary or advanced.
+- Document the cache-isolation priority order and show the relevant Helm values paths.
+- Clarify the automatic pre-upgrade backup blocking behavior and the lack of a special backup status phase.
+- Qualify the session-loss guidance so readers understand it applies to recreate or rolling behavior, not blue-green cutover.
+- Improve the official-operator comparison table to better explain the RBAC and scaling model differences.
+- Add a clearer warning about non-semver image tags disabling `autoRevision` isolation.
+- Fix the table-of-contents numbering.
+- Add cross-references to the migration toolkit guide, escape-hatch guide, and relevant ADRs.
+
+## docs/operations/troubleshooting.md
+
+- Expand the documented phase list so it matches the real set of phases used by the operator, including `Reconciling`, `Paused`, and `BackingUp`.
+- Rewrite the admin-console section so it explains that direct UI access is discouraged for drift reasons rather than technically impossible.
+- Add explicit version guards wherever management port `9000` is mentioned, with guidance for Keycloak 24.x users.
+- Rework troubleshooting fixes so Helm values and Helm upgrades are the primary path, with raw `kubectl patch` commands marked as temporary or advanced.
+- Add a section explaining the operator-managed admin credentials secret naming pattern and lifecycle.
+- Fix the rate-limiting troubleshooting commands so they use the actual Helm values paths instead of inconsistent env-style fields.
+- Add clearer context on why port-forwarding is required for host-side access to cluster-internal services.
+- Expand the authorization troubleshooting section to cover missing or incorrect `operatorRef` and namespace-reference mistakes.
+
+## docs/operations/escape-hatch.md
+
+- Reframe the page so it presents supported migration paths without implying that the operator itself is unstable or only suitable for evaluation.
+- Reduce and heavily caveat the realm-operator migration path, since it points toward the very design this project was created to replace.
+- Replace the hardcoded Keycloak image version in export jobs with a version-detection step and placeholder-based example.
+- Add a disclaimer that any realm-operator CRD mapping table must be verified against the target realm-operator version.
+- Link the import-users workflow directly to the full migration-toolkit guide.
+- Add an export validation step before destructive import or migration work.
+- Replace the vague ConfigMap-size warning with concrete recommended alternatives such as PVCs or object storage.
+- Reframe the non-Keycloak migration scenario in a less dismissive tone and acknowledge real business constraints.
+- Replace the subjective summary-table recommendation column with more neutral descriptors.
+- Add bidirectional links with export-realms and migration documentation.
+
+## docs/versioning.md
+
+- Update all version examples so they reflect current real component versions rather than ancient placeholder values.
+- Add the migration-toolkit as a first-class independently versioned component throughout the guide.
+- Lead with the OCI registry installation method and present the traditional Helm repository flow as an alternative.
+- Explain the operator image versus operator chart version divergence with a concrete current example.
+- Refresh the version-alignment table using real current values, including chart appVersion where relevant.
+- Add clearer links to the versioning guide from quickstart and end-to-end setup docs.
+- Add or link to a compatibility matrix so users understand how independently versioned charts relate.
+- Investigate why `pyproject.toml` appears out of sync and either fix the release flow or stop implying it is authoritative for users.
+- Consider whether this page belongs somewhere more discoverable than the Reference section.
+
+## docs/how-to/ha-deployment.md
+
+- Remove or replace the unsupported `affinity` and `podAntiAffinity` examples, since those fields are not currently part of the Keycloak CRD.
+- Rework the guide so Helm-based HA deployment is the primary path and raw CR examples are clearly marked as advanced.
+- Add a section explaining automatic JGroups DNS_PING clustering and the Keycloak version requirement for horizontal scaling.
+- Replace the raw PDB example with guidance on how to manage disruption budgets in a Helm- or GitOps-friendly way.
+- Improve the resource-sizing guidance so it explains the relationship between replicas, JVM settings, and database connection counts.
+- Expand the failover tests so they validate real traffic continuity and session behavior, not just pod deletion.
+- Add clearer explanation of CNPG replication settings such as `minSyncReplicas` and `maxSyncReplicas`.
+- Add missing prerequisites and verification steps for the S3 backup example.
+- Add alerting context or recommended thresholds for the monitoring queries.
+
+## docs/faq.md
+
+- Replace the stale `Token-based delegation` wording in the scaling table with the current namespace-grant-based authorization model.
+- Fix the supported-version answer to state that Keycloak 24.x is supported, and explain that the operator handles the 24.x versus 25.x+ health-port difference automatically.
+- Update `docs/operations/migration.md` in parallel so it does not repeat the same incorrect minimum-version claim.
+- Strengthen the GitOps answer by linking directly to the relevant section in `charts/README.md` instead of using a vague repository-level pointer.
+- Add a small link from the docs landing page to the FAQ so first-time readers can discover it without hunting through the nav.
+- Add an explicit FAQ entry answering why there is no `User` CR, explaining that users are stateful data rather than desired-state configuration and therefore are intentionally not modeled as a reconciled CR.
+- Add an explicit FAQ entry answering why the operator exposes `KeycloakRealm` and `KeycloakClient` rather than a larger set of fine-grained CRDs, explaining that supported configuration is either realm-scoped or client-scoped and the API surface is intentionally centered on those two ownership boundaries.
+- Remove unsupported scale claims such as the current "real world tested" sentence unless they are backed by documented evidence.
+
+## docs/how-to/migration-toolkit.md
+
+- Add a short "Who Should Read This?" section that distinguishes standalone Keycloak migrations from realm-operator escape-hatch workflows and from existing-operator re-import scenarios.
+- Add a version-compatibility note explaining that the toolkit transforms exports generically, but the target operator only supports the Keycloak versions documented in the version-support matrix.
+- Add a minimal expected `realm-values.yaml` output example so readers can verify the transformed structure against the current realm chart contract.
+- Link the `import-users` behavior and the secret-mode design back to the relevant ADRs so the documented defaults and safety tradeoffs have an authoritative explanation.
+- Verify and explicitly reference the current chart field names involved in transformed output and secret behavior so the guide does not drift silently from chart reality.
+- Update the Helm install examples to include namespace context.
+- Add a note in the full migration example that the realm must already authorize the target client namespaces before the client chart installs will succeed.
+- Add or strengthen cross-links from migration and escape-hatch documentation back to this guide where users are likely to look first.
+
+## docs/how-to/export-realms.md
+
+- Add an explicit Helm-first note explaining that the migration toolkit produces Helm values files for the recommended deployment path, not raw CRDs.
+- Split the guide more clearly between desired-state configuration export and stateful user/session data export so readers do not confuse backup concerns with GitOps-managed configuration.
+- Replace the hardcoded Keycloak `26.0.0` image examples with version-detection guidance and placeholder-based examples.
+- Add a prerequisite note and direct link to the migration-toolkit installation steps before the first `keycloak-migrate` command appears.
+- Rename or rewrite the import section so it clearly states that the operator manages configuration, while user import uses separate workflows outside normal desired-state reconciliation.
+- Tighten the prerequisites for the database-migration path so it is only recommended where the source and target database setup actually make sense.
+- Add a bidirectional cross-link with the escape-hatch guide and clarify when this page applies versus when the operator-specific escape-hatch doc applies.
+- Make the legacy WildFly guidance explicit about supported target versions and link directly to the version-support documentation.
+- Add an export-validation step before destructive follow-up work and a post-import verification step after migration.
+- Improve the security of password-handling examples so the guide does not normalize plaintext credentials in shell history.
+
+## docs/how-to/smtp-configuration.md
+
+- Replace every raw CR example that uses `spec.smtp` with the real field path `spec.smtpServer`.
+- Replace every `credentialsSecret` example with the real nested `passwordSecret.name` and `passwordSecret.key` structure.
+- Update all provider examples and the testing example so they validate against the current realm schema instead of failing on copy-paste.
+- Add a clearer explanation of how SMTP credentials map into the spec: username as a normal field, password via secret reference.
+- Add a prominent warning that the SMTP password secret must live in the same namespace as the `KeycloakRealm`.
+- Add a Helm-versus-raw-CR callout so readers know how the realm chart values map onto the CRD fields.
+- Investigate and fix the broader `smtp` versus `smtpServer` drift in chart examples so the page can point at a trustworthy Helm example.
+- Move the SSL/TLS port guidance earlier in the guide so users see the common 587/465 configuration split before troubleshooting.
+
+## docs/reference/keycloak-version-support.md
+
+- Keep this page as the single source of truth for supported Keycloak versions and remove conflicting minimum-version claims from other docs by linking back here instead of duplicating tables.
+- Convert the ASCII canonical-model architecture diagram to Mermaid.
+- Tighten the wording around `keycloakVersion` and semver-tag requirements so it is clear which rules are conditional and which are always enforced.
+- Trim or relocate upgrade-strategy and backup-specific content that belongs in migration or operations guides rather than in the version-support reference.
+- Add a freshness/source note for the validated-version table and point readers to the authoritative generated data source.
+- Add clearer explanation of where version validation failures surface and how users should inspect them.
+- Expand the Organizations/version-gated feature notes so readers know which field enables the feature and what version requirement applies.
+- Add stronger cross-links from this page to FAQ, migration, and setup docs, and from those docs back to this page.
+- Verify and modernize any command examples for model regeneration or version testing so they match current task-based workflows.
+
+## docs/development.md
+
+- Update the architecture diagram so it matches the current repository structure, including the real service, utility, and observability modules, and remove references to nonexistent files.
+- Add the repo's explicit warning that `mkdocs serve` is for humans only and should not be used by agents.
+- Replace the draft release checklist with a short pointer to the authoritative release process in `RELEASES.md`, or fully align the section if it remains.
+- Fix the documented Python version so it matches the current repository requirement.
+- Align the testing workflow guidance with the current `task test:all` expectation and link directly to the critical integration-testing rules in `tests/integration/TESTING.md`.
+- Add a reference to the decision records as part of the expected contributor workflow.
+- Fix minor structural drift such as duplicate step numbering and incomplete example snippets.
+
+## docs/development/testing.md
+
+- Clarify the `task test:integration` lifecycle so readers understand that the task provisions fresh integration infrastructure rather than simply reusing an existing cluster as-is.
+- Tighten the cleanup wording so it clearly states what is deleted after a run and what remains until explicit cluster teardown.
+- Remove the redundant quick-start comment and clean up any other small duplicated wording.
+- Add a short note or cross-reference covering the actual container-based coverage test image path so testing documentation and agent guidance stay aligned.
+
+## docs/rbac-implementation.md
+
+- Fix every use of the secret label so it matches the real required value `vriesdemichael.github.io/keycloak-allow-operator-read`.
+- Clarify that the Helm-managed RBAC creation path is the default and explain what changes when `rbac.create` is disabled.
+- Add a short explanation that the secret-label requirement is enforced by operator validation, not just recommended by convention.
+- Add a stronger cross-link to the multi-tenant guide for readers moving from RBAC concepts to practical namespace setup.
+- Consider converting the ASCII architecture diagram to Mermaid while this page is being refreshed.
+
+## docs/decisions/README.md
+
+- Align the documented ADR-inspection command with the authoritative workflow in `AGENTS.md` so contributors and agents are not given two different extraction patterns.
+- Expand the template and field reference to cover lifecycle fields such as `status`, `supersedes`, and `superseded_by`.
+- Make the task-based validation workflow the primary recommendation and present direct script use as the lower-level alternative.
+- Clarify that agent-specific ADR workflow rules live in `AGENTS.md`, while this README is the general contributor-facing field and process reference.
+- Document the supporting decision-doc generation scripts so users understand how YAML records become rendered docs.
+
+## docs/reference/keycloak-crd.md
+
+- Expand the spec reference to cover the newer Keycloak fields such as `keycloakVersion`, `optimized`, `operatorRef`, `realmCapacity`, `tracing`, `maintenanceMode`, `cacheIsolation`, and `upgradePolicy`.
+- Rewrite the database section around the current tiered architecture instead of treating the legacy flat-field shape as the main model.
+- Expand the documented status phases and status fields so backup, pause, capacity, and blue-green upgrade states are represented accurately.
+- Add current advanced examples for managed and external databases, blue-green upgrades, realm capacity, tracing, and custom-version images.
+- Add cross-links to the ADRs that define the newer database, upgrade, and cache-isolation behavior.
+- Resolve any documented default/value ambiguity such as the `optimized` field before presenting defaults as authoritative.
+
+## docs/reference/keycloak-realm-crd.md
+
+- Add missing top-level realm features such as `clientAuthorizationGrants`, password policy, OTP policy, WebAuthn policies, client profiles, client policies, organizations, flow bindings, and required actions.
+- Rework the page positioning or wording so it does not claim to be complete while omitting major supported sections.
+- Fix field-name drift such as non-canonical authentication execution naming and align examples with the current schema/model terminology.
+- Add clear notes for advanced or version-gated features, especially organizations and other security-related configuration areas.
+- Add stronger cross-links to the practical guides that explain how multi-namespace authorization and advanced security features are used operationally.
+
+## docs/reference/keycloak-client-crd.md
+
+- Add a full section for fine-grained authorization settings, including resources, scopes, policies, permissions, decision strategy, and enforcement mode.
+- Expand the secret-management documentation with the actual `secretRotation` configuration block and scheduling semantics.
+- Add at least one advanced example showing a client with authorization settings configured.
+- Add fuller prose explanations for URL-related fields and other client settings that currently only appear in tables.
+- Clarify any security-sensitive authorization options, such as JavaScript policy support, when documenting the advanced authorization section.

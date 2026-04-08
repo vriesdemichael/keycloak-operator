@@ -32,20 +32,20 @@ helm install cnpg cloudnative-pg/cloudnative-pg \
   --namespace cnpg-system --create-namespace
 
 # 2. Install operator + Keycloak instance
-helm install keycloak-operator keycloak-operator/keycloak-operator \
+helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system --create-namespace \
-  --set keycloak.enabled=true \
+  --set keycloak.managed=true \
   --set keycloak.database.cnpg.enabled=true
 
 # 3. Create realm (in your app namespace)
-helm install my-realm keycloak-operator/keycloak-realm \
+helm install my-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
   --namespace my-app --create-namespace \
   --set realmName=my-app \
   --set operatorRef.namespace=keycloak-system \
   --set 'clientAuthorizationGrants={my-app}'
 
 # 4. Create OAuth2 client
-helm install my-client keycloak-operator/keycloak-client \
+helm install my-client oci://ghcr.io/vriesdemichael/charts/keycloak-client \
   --namespace my-app \
   --set clientId=my-app \
   --set realmRef.name=my-realm \
@@ -53,6 +53,8 @@ helm install my-client keycloak-operator/keycloak-client \
 ```
 
 **📖 [Complete Quick Start Guide →](quickstart/README.md)**
+
+**Need to choose between Helm and raw manifests?** See [Helm vs Direct CR Deployments](how-to/helm-vs-cr-deployments.md).
 
 ## ✨ Key Features
 
@@ -68,10 +70,12 @@ helm install my-client keycloak-operator/keycloak-client \
 The operator manages three core resources:
 
 ```
-┌──────────────┐     ┌─────────────────┐     ┌──────────────────┐
-│  Keycloak    │────▶│ KeycloakRealm   │────▶│ KeycloakClient   │
-│  (Instance)  │     │ (Identity)      │     │ (OAuth2/OIDC)    │
-└──────────────┘     └─────────────────┘     └──────────────────┘
+flowchart LR
+  kc[Keycloak\nInstance]
+  realm[KeycloakRealm\nIdentity Boundary]
+  client[KeycloakClient\nOAuth2/OIDC Boundary]
+
+  kc --> realm --> client
 ```
 
 - **Keycloak**: Identity server instance with PostgreSQL database
@@ -82,6 +86,7 @@ The operator manages three core resources:
 
 ### Getting Started
 - **[Quick Start Guide](quickstart/README.md)** - Get running in 10 minutes
+- **[Helm vs Direct CR Deployments](how-to/helm-vs-cr-deployments.md)** - Recommended workflow versus advanced manual path
 - **[Architecture Overview](concepts/architecture.md)** - How the operator works
 - **[Security Model](concepts/security.md)** - Authorization and access control
 
@@ -102,7 +107,7 @@ The operator manages three core resources:
 
 ## 🔒 Security & Authorization
 
-The operator uses **Kubernetes RBAC** for all authorization - no separate token system.
+The operator uses **Kubernetes RBAC** together with declarative namespace grant lists for provisioning authorization. There is no separate provisioning token system.
 
 ### Realm Creation
 Any user with RBAC permission to create `KeycloakRealm` resources can create realms. Control this with standard Kubernetes RoleBindings:
@@ -136,6 +141,8 @@ spec:
 Only namespaces in the grant list can create clients in that realm.
 
 **📖 [Full Security Model Documentation →](concepts/security.md)**
+
+**FAQ:** See [FAQ](faq.md) for common questions such as why there is no `User` CR and why the API surface is centered on realms and clients.
 
 ## 📊 Status & Observability
 

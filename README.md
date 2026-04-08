@@ -10,30 +10,45 @@ A Kubernetes operator for managing Keycloak instances, realms, and OAuth2/OIDC c
 
 ## 🚀 Quick Start
 
-Get a complete Keycloak setup running in under 10 minutes:
+Get a complete Keycloak setup running in under 10 minutes.
+
+Helm charts are the recommended deployment path. Direct CR manifests are supported for advanced/manual workflows where you want to manage RBAC, secret access, and lifecycle wiring yourself.
 
 ```bash
-# 1. Install the operator (OCI registry)
+# 1. Install the operator and a managed Keycloak instance
 # Note: The chart creates the namespace by default, don't use --create-namespace
 helm install keycloak-operator \
   oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
-  --namespace keycloak-system
+  --namespace keycloak-system \
+  --set keycloak.managed=true \
+  --set keycloak.database.cnpg.enabled=true
 
 # Or install from local charts:
 # helm install keycloak-operator ./charts/keycloak-operator \
 #   --namespace keycloak-system
 
-# 2. Deploy Keycloak with database
-kubectl apply -f examples/01-keycloak-instance.yaml
+# 2. Create an identity realm
+helm install my-app-realm \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+  --namespace my-app \
+  --create-namespace \
+  --set realmName=my-app \
+  --set operatorRef.namespace=keycloak-system \
+  --set 'clientAuthorizationGrants={my-app}'
 
-# 3. Create an identity realm
-kubectl apply -f examples/02-realm-example.yaml
-
-# 4. Create an OAuth2 client
-kubectl apply -f examples/03-client-example.yaml
+# 3. Create an OAuth2 client
+helm install my-app-client \
+  oci://ghcr.io/vriesdemichael/charts/keycloak-client \
+  --namespace my-app \
+  --set clientId=my-app \
+  --set realmRef.name=my-app-realm \
+  --set realmRef.namespace=my-app \
+  --set 'redirectUris={https://my-app.example.com/callback}'
 ```
 
 **📖 [Full Quick Start Guide →](https://vriesdemichael.github.io/keycloak-operator/latest/quickstart/)**
+
+**Advanced:** If you want to work directly with CR manifests instead of Helm releases, see [Helm vs Direct CR Deployments](https://vriesdemichael.github.io/keycloak-operator/latest/how-to/helm-vs-cr-deployments/).
 
 ## ✨ Features
 
@@ -59,6 +74,7 @@ kubectl apply -f examples/03-client-example.yaml
 ### Quick Links
 
 - **[Quick Start Guide](https://vriesdemichael.github.io/keycloak-operator/latest/quickstart/)** - Get started in 10 minutes
+- **[Helm vs Direct CR Deployments](https://vriesdemichael.github.io/keycloak-operator/latest/how-to/helm-vs-cr-deployments/)** - Recommended workflow versus advanced manual path
 - **[Architecture](https://vriesdemichael.github.io/keycloak-operator/latest/concepts/architecture/)** - How the operator works
 - **[Admission Webhooks](https://vriesdemichael.github.io/keycloak-operator/latest/admission-webhooks/)** - Resource validation and quotas
 - **[Security Model](https://vriesdemichael.github.io/keycloak-operator/latest/concepts/security/)** - Secret-based authorization explained
@@ -76,10 +92,12 @@ kubectl apply -f examples/03-client-example.yaml
 The operator manages three custom resources:
 
 ```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│    Keycloak     │    │  KeycloakRealm   │    │ KeycloakClient  │
-│   (Instance)    │◄───┤   (Identity)     │◄───┤   (OAuth2/OIDC) │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
+flowchart LR
+  kc[Keycloak\nInstance]
+  realm[KeycloakRealm\nIdentity Boundary]
+  client[KeycloakClient\nOAuth2/OIDC Boundary]
+
+  kc --> realm --> client
 ```
 
 - **Keycloak**: The identity server instance with database and networking
@@ -96,13 +114,11 @@ In your `values.yaml`:
 
 ```yaml
 keycloak:
-  enabled: false  # Disable managed Keycloak
-  external:
-    enabled: true
-    url: "https://keycloak.example.com"
-    adminSecret: "my-external-secret"  # Secret in operator namespace
-    adminUsername: "admin"             # Optional (default: admin)
-    adminPasswordKey: "password"       # Optional (default: password)
+  managed: false
+  url: "https://keycloak.example.com"
+  adminUsername: "admin"
+  adminSecret: "my-external-secret"  # Secret in operator namespace
+  adminPasswordKey: "password"
 ```
 
 #### Creating the Admin Secret
@@ -115,7 +131,7 @@ kubectl create secret generic my-external-secret \
   --namespace keycloak-system
 ```
 
-**Note:** In External Mode, `Keycloak` Custom Resources are ignored. The operator connects directly using the configured credentials.
+**Note:** In external mode, the operator connects directly to the existing Keycloak instance using the configured URL and secret. You typically do not deploy a managed `Keycloak` CR from this chart in that setup.
 
 ## 📊 Example
 
@@ -174,7 +190,7 @@ spec:
     - "https://my-app.example.com/callback"
 ```
 
-See [examples/](examples/) for complete manifests with detailed configuration options.
+See [examples/](examples/) for advanced raw-manifest examples. For normal installs, prefer the Helm charts and the quick start flow above.
 
 ## 🎯 IDE Integration
 
