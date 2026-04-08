@@ -741,11 +741,11 @@
         },
         "adminSecret": {
           "type": "string",
-          "description": "Name of the Secret containing the admin password. In managed mode this defaults to <name>-admin-credentials."
+          "description": "Name of the Secret containing the admin password used by the operator to connect to Keycloak. In managed mode this defaults to <name>-admin-credentials. When managed=false, this must point to the external Keycloak admin password secret in the operator namespace."
         },
         "adminPasswordKey": {
           "type": "string",
-          "description": "Key in the admin Secret containing the password",
+          "description": "Key in keycloak.adminSecret containing the password used by the operator to connect to Keycloak",
           "default": "password"
         },
         "replicas": {
@@ -971,25 +971,11 @@
         },
         "admin": {
           "type": "object",
-          "description": "Admin user configuration",
+          "description": "Managed Keycloak admin credential source configuration",
           "properties": {
-            "username": {
+            "existingSecret": {
               "type": "string",
-              "description": "Admin username",
-              "default": "admin"
-            },
-            "passwordSecret": {
-              "type": "object",
-              "description": "Secret containing admin password",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "key": {
-                  "type": "string",
-                  "default": "password"
-                }
-              }
+              "description": "Existing Secret for a managed Keycloak admin user. The secret must contain username and password keys. When set, the operator copies those values into the generated <name>-admin-credentials proxy secret instead of generating credentials."
             }
           }
         },

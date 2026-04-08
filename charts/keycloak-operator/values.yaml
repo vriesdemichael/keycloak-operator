@@ -444,11 +444,17 @@ keycloak:
   # Admin username for initial access
   adminUsername: "admin"
   # Name of the Secret containing the admin password.
+  # Used by the operator when authenticating to Keycloak.
   # If managed is true, this defaults to "<name>-admin-credentials".
   # If managed is false, this secret must exist in the operator's namespace.
   adminSecret: ""
-  # Key in the adminSecret containing the password.
+  # Key in the adminSecret containing the password used by the operator.
   adminPasswordKey: "password"
+  # Managed Keycloak admin credential source.
+  # When set, the operator copies username/password from this secret into the
+  # generated <name>-admin-credentials proxy secret instead of generating new credentials.
+  admin:
+    existingSecret: ""
   # Keycloak version to deploy (used when managed: true)
   version: "26.1.2"
   # Container image for Keycloak (used when managed: true)
