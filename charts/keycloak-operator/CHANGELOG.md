@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.7.0](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.6.13...chart-operator-v0.7.0) (2026-04-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* **chart-operator+operator:** Keycloak spec.env is now documented and schema-validated as Kubernetes-style env entries instead of a string map.
+
+### Features
+
+* **chart-operator+operator:** support secret-backed keycloak env vars ([9615cab](https://github.com/vriesdemichael/keycloak-operator/commit/9615cabc3ee8970187bc63fa935903b57e757407))
+
+
+### Bug Fixes
+
+* **chart-operator+chart-realm:** wire realm idp mappers and organizations flag ([8bc91f3](https://github.com/vriesdemichael/keycloak-operator/commit/8bc91f3d33ddabf43d8eafcab84eff3a8ce3f6fb))
+
 ## [0.6.13](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.6.12...chart-operator-v0.6.13) (2026-04-07)
 
 
