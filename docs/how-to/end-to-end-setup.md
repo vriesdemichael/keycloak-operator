@@ -155,7 +155,7 @@ Deploy the operator with a production-ready Keycloak instance and CloudNativePG 
 ```bash
 helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system \
-  --set keycloak.enabled=true \
+  --set keycloak.managed=true \
   --set keycloak.replicas=3 \
   --set keycloak.version="26.0.0" \
   --set keycloak.database.cnpg.enabled=true \

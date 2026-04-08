@@ -77,10 +77,8 @@ See: [Security Model](concepts/security.md#namespace-authorization-workflow)
 | **Operator** | 100+ replicas | Stateless, leader election |
 | **Keycloak** | 100+ replicas | Session replication via Infinispan |
 | **Database** | 10+ replicas | PostgreSQL replication |
-| **Teams/Namespaces** | 1000+ | Token-based delegation |
+| **Teams/Namespaces** | 1000+ | Namespace grant lists |
 | **Realms per instance** | 1000+ | Limited by Keycloak, not operator |
-
-**Real-world tested:** Supports 50+ teams, 200+ realms, 100K+ users in production.
 
 **Rate limiting** prevents API overload:
 - Global: 50 req/s (default)
@@ -182,18 +180,13 @@ curl -s http://localhost:9000/admin/realms/<realm-name> \
 
 ### What Keycloak versions are supported?
 
-- **Minimum:** Keycloak 25.0.0 (management port 9000 requirement)
+- **Minimum:** Keycloak 24.0.0
 - **Recommended:** Keycloak 26.0.0+
 - **Maximum:** Latest Keycloak release
 
-**Why 25.0.0+?** Keycloak 25.0.0 introduced the management port (9000) for health checks, separate from user traffic (8080).
+**Why 24.0.0+?** The operator supports Keycloak 24.x, 25.x, and 26.x. It uses compatibility adapters to handle version-specific behavior such as the health and management port split between 24.x and 25.x+.
 
-**Using older versions?** Upgrade to 26.0.0:
-```yaml
-spec:
-  image:
-    tag: "26.0.0"
-```
+See: [Keycloak Version Support](reference/keycloak-version-support.md)
 
 ---
 
@@ -273,7 +266,34 @@ spec:
 - Separate repos per team
 - Health checks via `status.phase`
 
-See charts/README.md in the repository root for GitOps examples.
+See [Using with GitOps in charts/README.md](../charts/README.md#using-with-gitops) for GitOps examples.
+
+---
+
+### Why is there no `User` CR?
+
+Because users are **stateful data**, not desired-state configuration.
+
+This operator reconciles declarative configuration that fits clean ownership boundaries and GitOps workflows. Realms and clients are good CR candidates because they describe stable desired state. Users, sessions, credentials, and similar runtime data are different: they change frequently, are operationally sensitive, and do not behave like declarative infrastructure.
+
+That is why user import and migration are handled through dedicated workflows such as the migration toolkit instead of a reconciled `User` CR.
+
+See: [Migration Toolkit](how-to/migration-toolkit.md) and [Realm Export](how-to/export-realms.md)
+
+---
+
+### Why only `KeycloakRealm` and `KeycloakClient`, and not many finer-grained CRs?
+
+Because the supported API surface is intentionally centered on the two main ownership boundaries in the system:
+
+- **Realm-scoped configuration** belongs in `KeycloakRealm`
+- **Client-scoped configuration** belongs in `KeycloakClient`
+
+Most supported Keycloak configuration naturally falls into one of those two scopes. Keeping the API centered on those boundaries avoids exploding the number of CRDs, keeps GitOps ownership clearer, and matches how teams usually work in practice: platform or identity teams own realms, and application teams own clients inside authorized realms.
+
+This is a deliberate design choice, not a missing feature.
+
+See: [Architecture](concepts/architecture.md) and [Security Model](concepts/security.md)
 
 ---
 
