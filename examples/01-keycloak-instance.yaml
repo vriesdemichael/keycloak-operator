@@ -32,16 +32,16 @@ spec:
   # The current published schema still expects the legacy connection fields,
   # so this example includes both the CNPG reference and the resolved connection details.
   database:
-      type: postgresql
-      host: keycloak-postgres-rw
-      port: 5432
-      database: app
-      username: app
-      passwordSecret:
-        name: keycloak-postgres-app
-        key: password
-      cnpg:
-        clusterName: keycloak-postgres
+    type: postgresql
+    host: keycloak-postgres-rw
+    port: 5432
+    database: app
+    username: app
+    passwordSecret:
+      name: keycloak-postgres-app
+      key: password
+    cnpg:
+      clusterName: keycloak-postgres
 
   # Resource limits for Keycloak pods
   resources:

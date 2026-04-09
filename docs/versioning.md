@@ -108,7 +108,9 @@ Release page:
 
 ## About `pyproject.toml`
 
-The `pyproject.toml` version is currently `0.1.0`, but that is not the authoritative release version for deployed operator artifacts.
+The `pyproject.toml` version is currently `0.1.0`, but that is not the authoritative release version users should follow for deployed operator artifacts.
+
+It still matters for the Python package and image build pipeline metadata, so maintainers should keep it aligned with the release process. The distinction is that users choose what to deploy from release tags and chart metadata, not from `pyproject.toml` alone.
 
 For users, the authoritative sources are:
 

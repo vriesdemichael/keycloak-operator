@@ -368,7 +368,7 @@ kubectl get keycloakclient -n team-alpha
 
 ### 5.4 Managed Client Credentials Secret
 
-The operator automatically creates a same-namespace Secret for confidential clients. If you do not set `secretName`, the default secret name is `<release-fullname>-credentials`, so the `my-webapp-client` release above produces `my-webapp-client-credentials`.
+The operator automatically creates a same-namespace Secret for confidential clients. If you do not set `secretName`, the default secret name is `<release-fullname>-credentials`, so the `my-webapp-client` release above produces `my-webapp-client-keycloak-client-credentials`.
 
 That Secret contains the fields most applications need directly:
 
@@ -408,22 +408,22 @@ spec:
             - name: OIDC_CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: my-webapp-client-credentials
+                  name: my-webapp-client-keycloak-client-credentials
                   key: client-id
             - name: OIDC_CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: my-webapp-client-credentials
+                  name: my-webapp-client-keycloak-client-credentials
                   key: client-secret
             - name: OIDC_ISSUER
               valueFrom:
                 secretKeyRef:
-                  name: my-webapp-client-credentials
+                  name: my-webapp-client-keycloak-client-credentials
                   key: issuer
             - name: OIDC_JWKS_ENDPOINT
               valueFrom:
                 secretKeyRef:
-                  name: my-webapp-client-credentials
+                  name: my-webapp-client-keycloak-client-credentials
                   key: jwks-endpoint
 ```
 
@@ -432,7 +432,7 @@ If your application can consume all keys as environment variables, `envFrom` als
 ```yaml
 envFrom:
   - secretRef:
-      name: my-webapp-client-credentials
+  name: my-webapp-client-keycloak-client-credentials
 ```
 
 ---
@@ -463,7 +463,7 @@ All resources should show `PHASE=Ready`.
 ### 6.2 Test OIDC Discovery
 
 ```bash
-ISSUER_URL=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
+ISSUER_URL=$(kubectl get secret my-webapp-client-keycloak-client-credentials -n team-alpha \
   -o jsonpath='{.data.issuer}' | base64 -d)
 
 curl -s "$ISSUER_URL/.well-known/openid-configuration" | jq .
@@ -472,11 +472,11 @@ curl -s "$ISSUER_URL/.well-known/openid-configuration" | jq .
 ### 6.3 Test Client Credentials Flow
 
 ```bash
-CLIENT_ID=$(kubectl get secret my-api-client-credentials -n team-alpha \
+CLIENT_ID=$(kubectl get secret my-api-client-keycloak-client-credentials -n team-alpha \
   -o jsonpath='{.data.client-id}' | base64 -d)
-CLIENT_SECRET=$(kubectl get secret my-api-client-credentials -n team-alpha \
+CLIENT_SECRET=$(kubectl get secret my-api-client-keycloak-client-credentials -n team-alpha \
   -o jsonpath='{.data.client-secret}' | base64 -d)
-TOKEN_URL=$(kubectl get secret my-api-client-credentials -n team-alpha \
+TOKEN_URL=$(kubectl get secret my-api-client-keycloak-client-credentials -n team-alpha \
   -o jsonpath='{.data.token-endpoint}' | base64 -d)
 
 curl -s -X POST "$TOKEN_URL" \
@@ -488,9 +488,9 @@ curl -s -X POST "$TOKEN_URL" \
 ### 6.4 Test Authorization Code Flow
 
 ```bash
-CLIENT_ID=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
+CLIENT_ID=$(kubectl get secret my-webapp-client-keycloak-client-credentials -n team-alpha \
   -o jsonpath='{.data.client-id}' | base64 -d)
-ISSUER_URL=$(kubectl get secret my-webapp-client-credentials -n team-alpha \
+ISSUER_URL=$(kubectl get secret my-webapp-client-keycloak-client-credentials -n team-alpha \
   -o jsonpath='{.data.issuer}' | base64 -d)
 AUTH_URL="${ISSUER_URL}/protocol/openid-connect/auth"
 

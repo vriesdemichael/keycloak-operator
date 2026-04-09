@@ -69,7 +69,7 @@ helm install my-client oci://ghcr.io/vriesdemichael/charts/keycloak-client \
 
 The operator manages three core resources:
 
-```
+```mermaid
 flowchart LR
   kc[Keycloak\nInstance]
   realm[KeycloakRealm\nIdentity Boundary]
