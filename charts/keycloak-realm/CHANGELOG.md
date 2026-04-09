@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.9](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.8...chart-realm-v0.4.9) (2026-04-09)
+
+
+### Documentation
+
+* align chart and setup documentation ([3f41a4c](https://github.com/vriesdemichael/keycloak-operator/commit/3f41a4c644a8f7dc8b6d5f51c11141dbfd658a97))
+
 ## [0.4.8](https://github.com/vriesdemichael/keycloak-operator/compare/chart-realm-v0.4.7...chart-realm-v0.4.8) (2026-04-07)
 
 
