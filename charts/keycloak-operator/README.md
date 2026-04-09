@@ -14,6 +14,8 @@ This chart installs the Keycloak Operator which enables declarative management o
 
 This chart is the recommended deployment path for the operator. Managing raw `Keycloak` manifests directly is supported, but it is an advanced/manual workflow. See [Helm vs Direct CR Deployments](../../docs/how-to/helm-vs-cr-deployments.md).
 
+The chart follows the one-operator-per-Keycloak model. In managed mode, the chart is built around a single Keycloak instance in the operator namespace, and admission controls enforce a one-Keycloak-per-namespace limit to avoid ownership and resource conflicts.
+
 ## Prerequisites
 
 - Kubernetes 1.27+
@@ -201,6 +203,8 @@ The chart can optionally deploy a Keycloak instance:
 - `keycloak.managed: true` deploys and manages a `Keycloak` CR in the operator namespace.
 - `keycloak.managed: false` connects the operator to an existing Keycloak instance using `keycloak.url` and `keycloak.adminSecret`.
 
+Managed mode is the normal path when this chart owns the platform deployment. External mode is for bring-your-own-Keycloak setups where the operator should reconcile realms and clients against an already running instance.
+
 For managed Keycloak instances, set `keycloak.admin.existingSecret` when you want the operator to source admin credentials from an existing Kubernetes `Secret` instead of generating them. The referenced secret must live in the same namespace as the managed `Keycloak` and include `username` and `password` keys.
 
 These settings are not interchangeable:
@@ -245,6 +249,60 @@ These settings are not interchangeable:
 
 `keycloak.env` uses the same Kubernetes env entry structure as `operator.env`, so you can use `valueFrom.secretKeyRef` with Secrets created by `extraManifests`, External Secrets Operator, or Sealed Secrets.
 
+##### Production Controls
+
+These are the operator runtime controls most teams end up tuning in production.
+
+**Rate Limiting**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `operator.rateLimiting.global.tps` | Global Keycloak API requests per second across all namespaces | `50.0` |
+| `operator.rateLimiting.global.burst` | Allowed global burst capacity | `100` |
+| `operator.rateLimiting.namespace.tps` | Fair-share per-namespace requests per second | `5.0` |
+| `operator.rateLimiting.namespace.burst` | Allowed per-namespace burst capacity | `10` |
+
+**Circuit Breaker**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `operator.circuitBreaker.enabled` | Enable Keycloak API circuit breaker protection | `true` |
+| `operator.circuitBreaker.failureThreshold` | Consecutive failures before the circuit opens | `5` |
+| `operator.circuitBreaker.recoveryTimeout` | Seconds before trying half-open recovery | `30` |
+| `operator.circuitBreaker.apiTimeout` | Timeout for individual Keycloak API calls | `30` |
+
+**Metrics & Tracing**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `operator.metrics.port` | Prometheus metrics port | `8081` |
+| `operator.metrics.host` | Bind address for `/metrics` | `0.0.0.0` |
+| `operator.tracing.enabled` | Enable OpenTelemetry export | `false` |
+| `operator.tracing.endpoint` | OTLP gRPC collector endpoint | `http://localhost:4317` |
+| `operator.tracing.serviceName` | Trace service name | `keycloak-operator` |
+| `operator.tracing.sampleRate` | Trace sampling ratio | `1.0` |
+| `operator.tracing.insecure` | Disable TLS to the collector | `false` |
+| `operator.tracing.propagateToKeycloak` | Propagate tracing config to managed Keycloak | `true` |
+
+**Reconciliation Tuning**
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `operator.reconciliation.timerIntervals.keycloak` | Periodic Keycloak health check interval in seconds | `300` |
+| `operator.reconciliation.timerIntervals.realm` | Periodic realm reconciliation interval in seconds | `300` |
+| `operator.reconciliation.timerIntervals.client` | Periodic client reconciliation interval in seconds | `300` |
+| `operator.reconciliation.jitterMaxSeconds` | Startup jitter to prevent thundering-herd behavior | `10.0` |
+| `operator.reconciliation.pause.keycloak` | Pause Keycloak reconciliation | `false` |
+| `operator.reconciliation.pause.realms` | Pause realm reconciliation | `false` |
+| `operator.reconciliation.pause.clients` | Pause client reconciliation | `false` |
+| `operator.reconciliation.pause.message` | Status message shown while paused | `Reconciliation paused by operator configuration` |
+
+Pause controls require an operator restart to take effect because they are wired through deployment environment variables. Delete handlers still continue, so pause is suitable for maintenance windows and upgrades but not as a hard delete lock.
+
+**Webhook Quotas**
+
+The admission webhook also enforces per-namespace quotas. Realms and clients are configurable. Keycloak instances are intentionally not a free-form quota: the platform supports one Keycloak instance per namespace by design, matching [ADR 062](../../docs/decisions/generated-markdown/062-one-keycloak-per-operator.md).
+
 **Example:** Deploy Keycloak with CloudNativePG:
 
 ```yaml
@@ -257,6 +315,7 @@ keycloak:
     cnpg:
       enabled: true
       clusterName: keycloak-postgres
+```
 
 **Example:** Provide Keycloak env vars from an extra manifest secret:
 
@@ -393,7 +452,7 @@ Deploy operator and Keycloak instance together:
 ```yaml
 # values-with-keycloak.yaml
 keycloak:
-  enabled: true
+  managed: true
   replicas: 3
   version: "26.4.1"
 
@@ -483,7 +542,7 @@ Set `keycloak.managed: true` during installation:
 ```yaml
 # values-with-keycloak.yaml
 keycloak:
-  enabled: true
+  managed: true
   replicas: 1
   version: "26.4.1"
   database:
@@ -734,5 +793,3 @@ operator:
 ## License
 
 MIT License - see [LICENSE](https://github.com/vriesdemichael/keycloak-operator/blob/main/LICENSE) for details.
-# Trigger chart release for v0.3.3 operator
-# Test release flow - Tue Nov 18 01:14:44 CET 2025

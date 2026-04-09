@@ -4,7 +4,7 @@ This guide walks you through deploying a **production-ready** Keycloak setup fro
 
 For a simpler quick start, see the [Quick Start Guide](../quickstart/README.md).
 
-This guide is aimed at platform teams setting up shared Keycloak infrastructure and the first tenant onboarding flow. If you plan to manage raw CR manifests directly instead of using the charts, see [Helm vs Direct CR Deployments](helm-vs-cr-deployments.md).
+This is the longer infrastructure-heavy path for platform teams setting up shared Keycloak infrastructure and the first tenant onboarding flow. If you plan to manage raw CR manifests directly instead of using the charts, see [Helm vs Direct CR Deployments](helm-vs-cr-deployments.md).
 
 ## Overview
 

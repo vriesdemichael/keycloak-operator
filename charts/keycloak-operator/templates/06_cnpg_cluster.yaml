@@ -1,4 +1,4 @@
-{{- if and .Values.keycloak.enabled .Values.keycloak.database.cnpg.enabled }}
+{{- if and .Values.keycloak.managed .Values.keycloak.database.cnpg.enabled }}
 apiVersion: postgresql.cnpg.io/v1
 kind: Cluster
 metadata:

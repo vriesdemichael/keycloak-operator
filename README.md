@@ -117,13 +117,22 @@ keycloak:
   managed: false
   url: "https://keycloak.example.com"
   adminUsername: "admin"
-  adminSecret: "my-external-secret"  # Secret in operator namespace
+  adminSecret: "my-external-secret"  # Secret in the operator namespace
   adminPasswordKey: "password"
 ```
 
+This is the actual chart contract for external mode:
+
+- `keycloak.managed=false` disables templating of the managed `Keycloak` CR
+- `keycloak.url` tells the operator where the existing Keycloak instance lives
+- `keycloak.adminSecret` tells the operator which Secret to read for the admin password
+- `keycloak.adminPasswordKey` defaults to `password`, but can be overridden when your Secret uses a different key
+
+Do not confuse this with `keycloak.admin.existingSecret`, which is only used for managed mode when `keycloak.managed=true`.
+
 #### Creating the Admin Secret
 
-The admin secret must exist in the operator's namespace. It should contain the password for the external Keycloak instance.
+The admin secret must exist in the operator's namespace. It only needs to contain the password value the operator will use together with `keycloak.adminUsername`.
 
 ```bash
 kubectl create secret generic my-external-secret \
@@ -131,7 +140,7 @@ kubectl create secret generic my-external-secret \
   --namespace keycloak-system
 ```
 
-**Note:** In external mode, the operator connects directly to the existing Keycloak instance using the configured URL and secret. You typically do not deploy a managed `Keycloak` CR from this chart in that setup.
+**Note:** In external mode, the operator connects directly to the existing Keycloak instance using `keycloak.url` and the configured admin Secret. You typically do not deploy a managed `Keycloak` CR from this chart in that setup.
 
 ## 📊 Example
 

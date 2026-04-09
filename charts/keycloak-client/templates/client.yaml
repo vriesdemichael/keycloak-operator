@@ -115,15 +115,16 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 
-  {{- if or .Values.authenticationFlow.browserFlow .Values.authenticationFlow.directGrantFlow .Values.authenticationFlow.clientAuthenticationFlow }}
-  authenticationFlow:
-    {{- with .Values.authenticationFlow.browserFlow }}
+  {{- $authenticationFlows := .Values.authenticationFlows | default .Values.authenticationFlow }}
+  {{- if or $authenticationFlows.browserFlow $authenticationFlows.directGrantFlow $authenticationFlows.clientAuthenticationFlow }}
+  authenticationFlows:
+    {{- with $authenticationFlows.browserFlow }}
     browserFlow: {{ . | quote }}
     {{- end }}
-    {{- with .Values.authenticationFlow.directGrantFlow }}
+    {{- with $authenticationFlows.directGrantFlow }}
     directGrantFlow: {{ . | quote }}
     {{- end }}
-    {{- with .Values.authenticationFlow.clientAuthenticationFlow }}
+    {{- with $authenticationFlows.clientAuthenticationFlow }}
     clientAuthenticationFlow: {{ . | quote }}
     {{- end }}
   {{- end }}
