@@ -80,3 +80,23 @@ updates:
     labels:
       - "dependencies"
       - "helm"
+
+  - package-ecosystem: docker
+    directory: /images/kerberos-test
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /images/keycloak-optimized
+    schedule:
+      interval: daily
+
+  - package-ecosystem: docker
+    directory: /images/operator
+    schedule:
+      interval: daily
+
+  - package-ecosystem: gomod
+    directory: /tools/migration-toolkit
+    schedule:
+      interval: daily
