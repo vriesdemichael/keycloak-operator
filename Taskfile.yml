@@ -277,6 +277,8 @@ tasks:
       - |
         docker build -f images/keycloak-optimized/Dockerfile \
           --build-arg KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
+          --build-arg REVISION=$(git rev-parse HEAD 2>/dev/null || echo unknown) \
+          --build-arg CREATED=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
           -t keycloak-optimized:{{.KEYCLOAK_VERSION}} \
           .
       - mkdir -p .task && touch .task/image_build_keycloak
@@ -298,6 +300,8 @@ tasks:
         docker build -f images/keycloak-optimized/Dockerfile \
           --build-arg KEYCLOAK_VERSION={{.KEYCLOAK_VERSION}} \
           --build-arg TRACING_ENABLED=true \
+          --build-arg REVISION=$(git rev-parse HEAD 2>/dev/null || echo unknown) \
+          --build-arg CREATED=$(date -u +'%Y-%m-%dT%H:%M:%SZ') \
           -t keycloak-optimized-tracing:{{.KEYCLOAK_VERSION}} \
           .
       - mkdir -p .task && touch .task/image_build_keycloak_tracing

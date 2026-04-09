@@ -48,19 +48,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ============================================================================
 FROM python:3.14-alpine AS production
 
-ARG VERSION
-ARG REVISION
-ARG CREATED
-
-LABEL org.opencontainers.image.title="Keycloak Operator" \
-      org.opencontainers.image.description="A GitOps-compatible Keycloak operator built with Kopf" \
-      org.opencontainers.image.source="https://github.com/vriesdemichael/keycloak-operator" \
-      org.opencontainers.image.url="https://github.com/vriesdemichael/keycloak-operator" \
-      org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version="${VERSION}" \
-      org.opencontainers.image.revision="${REVISION}" \
-      org.opencontainers.image.created="${CREATED}"
-
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONPATH=/app/src \
     PYTHONUNBUFFERED=1 \
@@ -96,6 +83,21 @@ EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD python -c "import requests; requests.get('http://localhost:8080/healthz', timeout=5)" || exit 1
+
+# OCI image labels - declared last to avoid busting the layer cache for expensive
+# COPY/RUN steps above. In multi-stage builds each stage must declare its own ARGs.
+ARG VERSION
+ARG REVISION
+ARG CREATED
+
+LABEL org.opencontainers.image.title="Keycloak Operator" \
+      org.opencontainers.image.description="A GitOps-compatible Keycloak operator built with Kopf" \
+      org.opencontainers.image.source="https://github.com/vriesdemichael/keycloak-operator" \
+      org.opencontainers.image.url="https://github.com/vriesdemichael/keycloak-operator" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.created="${CREATED}"
 
 CMD ["python", "-m", "keycloak_operator.operator"]
 
