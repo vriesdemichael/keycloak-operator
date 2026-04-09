@@ -53,7 +53,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: keycloak
-          image: ${KEYCLOAK_IMAGE}
+          image: quay.io/keycloak/keycloak:26.5.2  # Replace with the exact version from Step 1.
           command: ["/bin/sh", "-c"]
           args:
             - |

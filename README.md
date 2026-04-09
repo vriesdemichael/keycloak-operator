@@ -91,7 +91,7 @@ helm install my-app-client \
 
 The operator manages three custom resources:
 
-```
+```mermaid
 flowchart LR
   kc[Keycloak\nInstance]
   realm[KeycloakRealm\nIdentity Boundary]
