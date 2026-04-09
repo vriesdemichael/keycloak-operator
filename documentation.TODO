@@ -1,5 +1,0 @@
-# Documentation Review TODO
-
-## Cross-cutting Documentation Work
-
-- Use that page as the main cross-link target from quickstart, setup, chart READMEs, conceptual docs, and troubleshooting pages whenever the docs need to explain Helm-first versus raw CR workflows.
