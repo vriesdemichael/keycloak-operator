@@ -51,19 +51,19 @@ task test:all
 
 The current Python package layout is:
 
-```mermaid
-flowchart TD
-    root[src/keycloak_operator]
-    root --> models[models<br/>CRD specs and Keycloak API models]
-    root --> handlers[handlers<br/>Kopf event entrypoints]
-    root --> services[services<br/>reconcilers and support services]
-    root --> utils[utils<br/>Kubernetes, RBAC, version, pause, rate limiting]
-    root --> compatibility[compatibility<br/>version adapters]
-    root --> observability[observability<br/>health, leader election, logging, metrics, tracing]
-    root --> webhooks[webhooks<br/>admission validation]
-    root --> errors[errors<br/>operator error types]
-    root --> operator[operator.py<br/>application entrypoint]
-    root --> settings[settings.py<br/>runtime configuration]
+```text
+src/keycloak_operator/
+|-- compatibility/   🔀 version adapters for 24.x, 25.x, and 26.x behavior
+|-- errors/          🚨 operator-specific exception types
+|-- handlers/        🎯 Kopf event entrypoints
+|-- models/          🧱 CRD specs and generated Keycloak API models
+|-- observability/   📈 health, leader election, logging, metrics, tracing
+|-- services/        ⚙️  reconcilers and reconciliation support services
+|-- utils/           🧰 Kubernetes, RBAC, pause, ownership, version, rate limiting
+|-- webhooks/        🛡️  admission validation
+|-- constants.py     📌 shared constants
+|-- operator.py      🚀 application entrypoint
+`-- settings.py      🔧 runtime configuration
 ```
 
 Important implementation boundaries:
@@ -74,15 +74,16 @@ Important implementation boundaries:
 - observability code owns health, metrics, tracing, and leader-election behavior
 - webhooks handle admission-time validation before resources enter reconciliation
 
-## Running The Operator Locally
+## Local Development Path
 
-For fast iteration against the cluster in your current kubeconfig:
+Do not expect a host-side `uv run keycloak-operator` workflow to be the supported development path here. Local development is exercised through the container image path, with the operator loaded into Kind and run in-cluster.
 
-```bash
-uv run keycloak-operator
-```
+In practice, use the task-driven flows:
 
-Use this when you want to debug reconciliation behavior without rebuilding the container image.
+- `task test:integration` for a fresh-cluster integration run
+- `task test:all` for the full project gate
+
+That matches how the operator is actually built, loaded, and exercised during development.
 
 ## Quality And Testing
 
