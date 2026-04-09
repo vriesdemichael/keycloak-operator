@@ -35,20 +35,49 @@ Freshness note: this table is derived from the checked-in version metadata in `s
 The operator does not maintain separate handwritten codepaths for every supported Keycloak version. It uses one canonical model plus adapters.
 
 ```mermaid
-flowchart TD
-    CRs[Keycloak / Realm / Client specs] --> Canonical[Canonical Pydantic models<br/>generated from 26.5.2]
-    Canonical --> Adapters[Version adapters<br/>V24 / V25 / V26]
-    Adapters --> API[Target Keycloak Admin API]
-    API --> Adapters
-    Adapters --> Status[VersionCompatibility conditions<br/>and reconciliation messages]
+sequenceDiagram
+    participant Target as Target Keycloak (v24)
+    participant A24 as V24 Adapter
+    participant A25 as V25 Adapter
+    participant A26 as V26 Adapter
+    participant Op as Operator (Canonical)
+    participant Status as Status Conditions
+
+    rect rgb(150, 150, 150)
+    Note over Target, Op: Phase 1: Ingestion and Upward Normalization
+    Target->>A24: Read v24 state
+    A24->>A25: Up-convert (v24 -> v25)
+    A25->>A26: Up-convert (v25 -> v26)
+    A26->>Op: Map to canonical (26.5.2)
+    end
+
+    rect rgb(100, 100, 100)
+    Note over Op: Phase 2: Core Processing
+    Op->>Op: Execute operator logic on canonical state
+    end
+
+    rect rgb(150, 150, 150)
+    Note over Target, Op: Phase 3: Downward Translation and Write
+    Op->>A26: Desired canonical state
+    A26->>A25: Down-convert (v26 -> v25)
+    A25->>A24: Down-convert (v25 -> v24)
+
+    opt Feature loss or unsupported fields
+        A24-->>Status: Log warning about v26 feature that cannot be represented in v24
+    end
+
+    A24->>Target: Apply desired v24 state
+    end
 ```
 
 What that means in practice:
 
 1. operator code is written against the canonical `26.5.2` model
 2. the runtime detects the actual Keycloak version, or uses `spec.keycloakVersion` when you set an override for custom images
-3. the matching adapter converts requests and responses for `24.x`, `25.x`, or `26.x`
+3. the matching adapter upgrades older payloads step-by-step until they match the canonical model
 4. unsupported fields or feature mismatches are surfaced as admission failures or status conditions instead of being silently ignored
+
+When the operator writes back to a target Keycloak version, the same adapter layer renders the canonical model back down to the version-specific API shape.
 
 ## Image Tag And `keycloakVersion` Rules
 
