@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.4...migration-toolkit-v0.1.5) (2026-04-09)
+
+
+### Bug Fixes
+
+* **migration-toolkit:** update golang.org/x dependencies ([b9cdfd7](https://github.com/vriesdemichael/keycloak-operator/commit/b9cdfd7523d665cdf4f93af1e44573941c80b783))
+
 ## [0.1.4](https://github.com/vriesdemichael/keycloak-operator/compare/migration-toolkit-v0.1.3...migration-toolkit-v0.1.4) (2026-04-06)
 
 
