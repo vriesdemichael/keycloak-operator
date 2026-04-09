@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.10.2](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.1...operator-image-v0.10.2) (2026-04-09)
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator:** align chart docs and rendered values ([7b63931](https://github.com/vriesdemichael/keycloak-operator/commit/7b63931cebb6ed6a9c2db22f42280e1c621e25b8))
+* **chart-client:** address PR review comments ([7818e0d](https://github.com/vriesdemichael/keycloak-operator/commit/7818e0d4f83c042ccde19e80fe2ef85ad65beb5f))
+
+
+### Documentation
+
+* align architecture and security documentation ([4091c45](https://github.com/vriesdemichael/keycloak-operator/commit/4091c45eef8362b24aacfb03e0676126c19d8de9))
+* align chart and setup documentation ([3f41a4c](https://github.com/vriesdemichael/keycloak-operator/commit/3f41a4c644a8f7dc8b6d5f51c11141dbfd658a97))
+* align Helm-first entrypoint documentation ([b4ef0ca](https://github.com/vriesdemichael/keycloak-operator/commit/b4ef0ca0daa9b6e0b896362668a57c108fa55f9b))
+* refresh batch four operations guides ([27d45ae](https://github.com/vriesdemichael/keycloak-operator/commit/27d45ae8866bc754c24274726828c03fa2ef4fa0))
+* refresh operations recovery guides ([35b1b05](https://github.com/vriesdemichael/keycloak-operator/commit/35b1b0583e8ce16a9996c3ef3fa451b1b8d85eac))
+* refresh RBAC, ADR, and CRD reference docs ([8a2f862](https://github.com/vriesdemichael/keycloak-operator/commit/8a2f862eac5938f2a96feadd0cfa6bd8aab6cfeb))
+* refresh setup and development guides ([8a5e376](https://github.com/vriesdemichael/keycloak-operator/commit/8a5e376c5887f7d3fbe6da47984b4560fee346bf))
+* refresh versioning and migration toolkit guides ([933e6c4](https://github.com/vriesdemichael/keycloak-operator/commit/933e6c42f22d6989126867c3e67dd35b9835c042))
+* remove completed documentation todo ([f5a9e75](https://github.com/vriesdemichael/keycloak-operator/commit/f5a9e75177bcf473d1d4b7a0d93f0839bde3a809))
+
 ## [0.10.1](https://github.com/vriesdemichael/keycloak-operator/compare/operator-image-v0.10.0...operator-image-v0.10.1) (2026-04-08)
 
 
