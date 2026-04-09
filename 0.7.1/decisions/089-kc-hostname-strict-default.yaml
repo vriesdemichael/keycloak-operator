@@ -1,0 +1,54 @@
+number: 89
+title: Keep KC_HOSTNAME_STRICT=false as operator default
+category: architecture
+decision: >
+  The operator sets KC_HOSTNAME_STRICT=false as default for all managed
+  Keycloak deployments and will not automatically set it to true. This is
+  an explicit, documented choice — not an oversight. The hostname-strictness
+  concern is already fully addressed at the Kubernetes infrastructure layer:
+  the Ingress controller routes only traffic that matches the configured host
+  rules, and --proxy-headers=xforwarded (always set by the operator) ensures
+  Keycloak uses the correct hostname from the forwarded header rather than the
+  internal pod address. Setting KC_HOSTNAME_STRICT=true in addition would
+  require also setting KC_HOSTNAME to a specific value, which creates coupling
+  between the Keycloak deployment environment configuration and the Ingress
+  hostname -- breaking installs without an Ingress host configured (service-only
+  setups, split-horizon DNS, development environments). Users who want
+  strict hostname validation at the application layer may set
+  KC_HOSTNAME_STRICT=true via spec.env overrides in the Keycloak CR, but this
+  is not the operator default and is not required for production security.
+agent_instructions: >
+  Do not set KC_HOSTNAME_STRICT=true in the operator's default environment
+  variables for Keycloak deployments. The current default of false is
+  intentional — all hostname validation is handled at the Kubernetes Ingress
+  layer. Do not accept requests to change this default without explicit user
+  approval and a review of the rationale in this ADR. If a user reports hostname
+  validation issues, direct them to verify their Ingress host rules and
+  --proxy-headers configuration, not to enable KC_HOSTNAME_STRICT.
+rationale: >
+  KC_HOSTNAME_STRICT=true requires KC_HOSTNAME to be explicitly set; otherwise
+  Keycloak fails to start or behaves unpredictably when it cannot determine the
+  canonical hostname. The operator cannot reliably auto-derive KC_HOSTNAME
+  because: (a) not all deployments use an Ingress (some use NodePort/LoadBalancer
+  directly), (b) a deployment may have multiple valid hostnames (Ingress, internal
+  service, custom DNS), and (c) setting KC_HOSTNAME incorrectly breaks token
+  validation for all clients. The security property KC_HOSTNAME_STRICT provides
+  (preventing host-header attacks) is already provided by the Ingress controller's
+  host matching rules, which reject requests with non-matching Host headers before
+  they reach Keycloak. Adding application-layer strictness on top would be
+  defence-in-depth at best and a source of misconfiguration breakage at worst.
+  Kubernetes is the security boundary, not the Keycloak process itself.
+rejected_alternatives:
+  - alternative: "Set KC_HOSTNAME_STRICT=true when spec.ingress.host is configured"
+    reason: >
+      Introduces state coupling: a field in spec.ingress (a routing concern)
+      silently changes KC_HOSTNAME_STRICT (a security posture concern). Users
+      removing or changing the Ingress host would inadvertently disable hostname
+      strictness. The separation of concerns is cleaner with strict=false as
+      a stable default.
+  - alternative: "Expose KC_HOSTNAME_STRICT as a CRD field"
+    reason: >
+      Adds unnecessary surface area. The same outcome is already achievable via
+      spec.env overrides. An explicit CRD field would imply the operator has an
+      opinion on the correct value, which contradicts this decision.
+provenance: guided-ai

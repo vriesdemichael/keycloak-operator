@@ -1,0 +1,26 @@
+number: 25
+title: Realm and Client as primary CRD resource types
+category: architecture
+decision: Only Realm and Client are defined as CRDs. Smaller Keycloak structures (users,
+  mappers, identity providers, etc.) are embedded within Realm or Client CRD specs,
+  not separate CRDs.
+agent_instructions: When implementing Keycloak features, add them to KeycloakRealm
+  or KeycloakClient CRD specs as nested structures. Never create separate CRDs for
+  users, mappers, identity providers, roles, scopes, etc. These are all part of the
+  realm or client specification. The CRD specs should mirror Keycloak's API structure
+  where these are nested resources.
+rationale: 'Keycloak''s API treats most resources as nested within realms or clients.
+  Creating separate CRDs for every entity would create excessive CRD proliferation
+  and complex cross-resource dependencies. Realm and Client CRDs provide complete
+  feature coverage - all Keycloak entities can be configured through these two resource
+  types. This matches how users think about Keycloak: realms contain configuration,
+  clients belong to realms. Fewer CRDs simplify RBAC, GitOps management, and reconciliation
+  logic. Users can configure everything in a single declarative resource.'
+provenance: human
+rejected_alternatives:
+- alternative: Create CRDs for every Keycloak entity (User, IdentityProvider, etc.)
+  reason: Would create CRD explosion with complex dependencies. RBAC becomes unmanageable.
+    Doesn't match Keycloak's hierarchical model.
+- alternative: Single Keycloak CRD containing everything
+  reason: Would create massive CRDs mixing operator-level and application-level concerns.
+    Can't delegate client management to app teams.

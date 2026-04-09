@@ -1,0 +1,88 @@
+number: 93
+title: User import via migration toolkit import-users command
+category: architecture
+decision: >
+  Extend the migration toolkit with an `import-users` subcommand that reads the
+  `users.json` produced by `keycloak-migrate transform`, resolves Keycloak admin
+  credentials either from the Kubernetes cluster (via the current kube context
+  reading the Keycloak CR and its admin credentials secret) or via explicit
+  `--username`/`--password` flags, and imports users into a target realm using
+  the Keycloak Partial Import API (`POST /admin/realms/{realm}/partialImport`).
+
+  The default conflict mode is SKIP (ifResourceExists=SKIP), which makes the
+  import idempotent and re-runnable after partial failures. FAIL and OVERWRITE
+  modes are available via `--mode` flag. The import is implemented as a
+  one-time migration tool, not a continuous sync mechanism.
+
+  Users are chunked into configurable batch sizes (default 500) to avoid HTTP
+  body size limits and timeouts. A hard failure is triggered if any batch
+  returns `errors > 0` in the Partial Import response.
+
+  The `users.json` file age is checked against a configurable `--max-age`
+  (default 24h) to prevent accidentally importing a stale export.
+
+  No user CRD is introduced. This decision extends ADR-025 (Realm and Client
+  as primary CRD resource types) and ADR-086 (Go-based migration toolkit).
+agent_instructions: >
+  The import-users command lives in tools/migration-toolkit/cmd/import_users.go.
+  Implementation packages are under tools/migration-toolkit/internal/userimport/.
+  Credential resolution priority: (1) --username + --password flags (no kube
+  access required), (2) kube context resolution by reading the Keycloak CR
+  spec.admin.existingSecret, falling back to the auto-generated secret named
+  "{keycloak-name}-admin-credentials" with keys "username" and "password".
+  The Keycloak CR API group is vriesdemichael.github.io/v1, kind Keycloak.
+  The keycloak admin URL is resolved from status.endpoints.admin or
+  status.endpoints.internal, with --server-url as an override.
+  Use Keycloak Partial Import API: POST /admin/realms/{realm}/partialImport.
+  The request body is {"users": [...], "ifResourceExists": "SKIP|FAIL|OVERWRITE"}.
+  Authenticate via POST /realms/master/protocol/openid-connect/token
+  (password grant, client_id=admin-cli).
+  Refresh the token before each batch if it is within 30s of expiry.
+  Fail hard if any batch response has errors > 0.
+  In SKIP mode, "errors > 0" is a real problem (conflict that Keycloak
+  cannot resolve), not "user already exists" (that's counted as skipped).
+  Add k8s.io/client-go and k8s.io/apimachinery as new go.mod dependencies
+  as needed for kube context credential resolution.
+rationale: >
+  The Partial Import API is the correct Keycloak mechanism for bulk user
+  import. It handles credential hashes, role assignments, and group memberships
+  atomically per-user server-side. The alternative (individual Users API) would
+  require N*M API calls for N users with M role/group assignments and provides
+  no advantage for one-time migration use.
+
+  SKIP as default mode makes the command safe to re-run after partial failures
+  without burning the import operation. Keycloak's Partial Import is non-atomic
+  at the batch level — there is no rollback if a batch partially succeeds before
+  an error. SKIP mode combined with errors>0 failure detection gives correct
+  convergence behavior: re-runs skip already-imported users and fail only on
+  true errors.
+
+  Credential resolution via kube context avoids requiring users to handle
+  plaintext credentials on the CLI, but explicit username/password flags are
+  provided because some security teams restrict secret-reading RBAC for
+  operations personnel. Both paths are equally valid.
+
+  The migration toolkit already has the right architectural home for this
+  command: it is a standalone Go binary with zero Python dependencies that
+  performs one-time migration operations. Adding a user CRD would introduce
+  stateful data into the GitOps configuration which violates the operator's
+  design principles (ADR-025).
+rejected_alternatives:
+  - alternative: Add a KeycloakUserImport CRD managed by the operator
+    reason: >
+      User data is stateful and not desired-state configuration. A CRD implies
+      continuous reconciliation, which is inappropriate for a one-time migration
+      operation. It would also require the operator to hold user data in etcd
+      indefinitely after import, which is wasteful and a privacy concern.
+  - alternative: Use the individual Users API (POST /admin/realms/{realm}/users)
+    reason: >
+      Would require N+M API calls per user (create + role assignments + group
+      memberships). For 50k users this is millions of API calls. The Partial
+      Import API handles all of this server-side in a single call per batch.
+  - alternative: Use FAIL mode as default (fail hard on any existing user)
+    reason: >
+      Keycloak Partial Import is non-atomic. With FAIL mode, if the command
+      crashes after user 500 of 5000, the next run immediately 409s on user 1,
+      making the import unretriable without manual cleanup. SKIP mode gives
+      correct idempotent convergence behavior.
+provenance: guided-ai

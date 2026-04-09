@@ -1,0 +1,25 @@
+number: 85
+title: Taskfile for development automation
+category: development
+decision: Use Taskfile as the primary interface for all development tasks, replacing
+  Makefile. All common workflows (testing, quality checks, deployment, cluster management)
+  must have corresponding Taskfile tasks.
+agent_instructions: Always check the Taskfile.yml for existing tasks before running
+  commands directly. Use 'task --list' to see available tasks. When adding new development
+  workflows, create corresponding tasks with descriptive help text. Use namespaced
+  tasks (e.g., 'test:unit', 'cluster:create') for better organization. Ensure tasks
+  are idempotent where possible using 'status' checks or 'sources/generates'. Do not
+  use 'make' commands anymore.
+rationale: Taskfile provides a modern, robust alternative to Make with better cross-platform
+  support, built-in dependency management (DAG), parallel execution, and declarative
+  syntax (YAML). It supports checksum-based caching (sources/generates) and status
+  checks natively, enabling true idempotency. This allows us to unify CI/CD and local
+  development workflows using the exact same commands.
+supersedes: 23
+provenance: autonomous-ai
+rejected_alternatives:
+- alternative: Keep Makefile
+  reason: Make syntax is arcane, hard to maintain for complex dependencies, and lacks
+    native checksum/status features.
+- alternative: Shell scripts only
+  reason: Hard to discover, no dependency management, harder to compose.

@@ -1,0 +1,15 @@
+number: 16
+title: Multi-namespace operation by default
+category: architecture
+decision: Operator watches and manages resources across all namespaces by default.
+  Not namespace-scoped. Team isolation via Kubernetes RBAC, not operator scope.
+agent_instructions: Handlers use '@kopf.on' without namespace parameter (watches all
+  namespaces). Authorization happens via K8s RBAC on CRD access, not namespace boundaries.
+  When checking permissions, verify CRD RBAC, not namespace ownership. Support --namespace
+  flag for debugging, but default is cluster-wide.
+rationale: 'Dynamic provisioning: Clients in any namespace can reference realms in
+  other namespaces (if RBAC allows). Flexibility: Single operator instance serves
+  entire cluster. RBAC-based isolation: Teams are isolated via K8s RBAC, more secure
+  than namespace scoping. Operational efficiency: One operator deployment instead
+  of per-namespace deployments.'
+provenance: guided-ai
