@@ -1,234 +1,169 @@
 # Keycloak Version Support
 
-This document describes which Keycloak versions are supported by the operator and how version compatibility is handled.
+This page is the user-facing source of truth for which Keycloak versions the operator supports, how version-specific behavior is handled, and where compatibility failures show up.
 
 ## Supported Versions
 
-| Major Version | Supported Versions | Status |
-|--------------|-------------------|--------|
-| **26.x** | 26.0.8+ | ✅ Fully Supported (26.5.2 is Canonical) |
-| **25.x** | 25.0.0+ | ✅ Supported |
-| **24.x** | 24.0.0+ | ✅ Supported |
-| **23.x and earlier** | - | ❌ Not Supported |
+The operator supports Keycloak `24.0.0` and later.
 
-### Validated Versions
+| Major version | Supported range | Status |
+| --- | --- | --- |
+| `26.x` | `26.0.8+` | fully supported, canonical model is `26.5.2` |
+| `25.x` | `25.0.0+` | supported |
+| `24.x` | `24.0.0+` | supported |
+| `23.x` and earlier | unsupported | rejected by project support policy |
 
-The following versions have been explicitly validated with the full integration test suite (840 unit tests + 135 integration tests):
+## Validated Versions
 
-| Version | Date Validated | Status |
-|---------|---------------|--------|
-| 24.0.0 | 2026-01-28 | ✅ Pass |
-| 25.0.0 | 2026-01-28 | ✅ Pass |
-| 26.0.8 | 2026-01-29 | ✅ Pass |
-| 26.1.5 | 2026-01-29 | ✅ Pass |
-| 26.2.0 | 2026-01-29 | ✅ Pass |
-| 26.3.0 | 2026-01-29 | ✅ Pass |
-| 26.4.0 | 2026-01-29 | ✅ Pass |
-| 26.5.2 | 2026-01-28 | ✅ Pass (Canonical) |
+These versions are currently recorded in `scripts/keycloak_versions.yaml` as having passed the full validation flow.
 
-See `scripts/keycloak_versions.yaml` for the complete validation history.
+| Version | Date | Result | Notes |
+| --- | --- | --- | --- |
+| `24.0.0` | `2026-01-28` | pass | full suite |
+| `25.0.0` | `2026-01-28` | pass | full suite |
+| `26.0.8` | `2026-01-29` | pass | full suite |
+| `26.1.5` | `2026-01-29` | pass | full suite |
+| `26.2.0` | `2026-01-29` | pass | full suite |
+| `26.3.0` | `2026-01-29` | pass | full suite |
+| `26.4.0` | `2026-01-29` | pass | full suite |
+| `26.5.2` | `2026-01-28` | pass | canonical version used in CI |
 
-### Minimum Version Requirement
-
-The operator requires **Keycloak 24.0.0 or later**.
-
-### Image Tag Requirement
-
-When `spec.upgradePolicy` is configured, the operator **requires a semantic version tag** on the Keycloak container image. Tags like `latest`, `nightly`, or digest-only references (`@sha256:...`) are rejected at admission time by the validating webhook.
-
-Without `upgradePolicy`, non-semver image tags are accepted — this allows small teams or development environments to use tags like `latest` without upgrade orchestration.
-
-Semver enforcement exists because the operator needs deterministic version information from the image tag to:
-
-- Detect version upgrades and downgrades
-- Trigger pre-upgrade backups for major/minor upgrades (ADR-088)
-- Configure version-specific behavior (health ports, tracing support)
-
-**Accepted image tags** (always pass):
-
-- `quay.io/keycloak/keycloak:26.0.0` — standard semver
-- `keycloak:25.0.6-custom` — semver with suffix
-- `myregistry.io/kc:24.0.0-rc.1` — semver with pre-release
-
-**Rejected image tags** (only when `upgradePolicy` is set):
-
-- `keycloak:latest` — mutable, no version info
-- `keycloak:nightly` — not semver
-- `keycloak@sha256:abc...` — no tag, only digest
-- `keycloak` — no tag at all
-
-For custom images that don't use standard version tags, tag the image with a semver-compatible tag (e.g. `myregistry.io/custom-keycloak:26.0.0-custom`). The `keycloakVersion` CR field overrides capability detection (health ports, tracing) but does not bypass the image tag requirement when `upgradePolicy` is present.
-
-### Port Behavior by Version
-
-The operator automatically detects the Keycloak version and configures health probes accordingly:
-
-| Version | Health Check Port | Notes |
-|---------|------------------|-------|
-| **24.x** | 8080 (HTTP port) | No separate management interface |
-| **25.x+** | 9000 (management port) | Uses dedicated `KC_HTTP_MANAGEMENT_PORT` |
-
-When using custom images, you can specify `keycloakVersion` in the CR spec to override version detection.
+Freshness note: this table is derived from the checked-in version metadata in `scripts/keycloak_versions.yaml`. When you need the latest repository truth, inspect that file directly.
 
 ## Canonical Model Architecture
 
-The operator uses a **single canonical model** approach for type safety and maintainability:
+The operator does not maintain separate handwritten codepaths for every supported Keycloak version. It uses one canonical model plus adapters.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     Operator Code                               │
-│  (Reconcilers, Handlers, Validation - written against v26.5.2) │
-└───────────────────────┬─────────────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│              Canonical Pydantic Models (v26.5.2)                │
-│           keycloak_operator/models/keycloak_api.py              │
-└───────────────────────┬─────────────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                   Version Adapters                              │
-│    V26Adapter │ V25Adapter │ V24Adapter                         │
-│  (Handles version-specific conversions and validations)         │
-└───────────────────────┬─────────────────────────────────────────┘
-                        │
-                        ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     Keycloak API                                │
-│              (24.x, 25.x, or 26.x instance)                     │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    CRs[Keycloak / Realm / Client specs] --> Canonical[Canonical Pydantic models<br/>generated from 26.5.2]
+    Canonical --> Adapters[Version adapters<br/>V24 / V25 / V26]
+    Adapters --> API[Target Keycloak Admin API]
+    API --> Adapters
+    Adapters --> Status[VersionCompatibility conditions<br/>and reconciliation messages]
 ```
 
-### How It Works
+What that means in practice:
 
-1. **Single Model**: All operator code uses Pydantic models generated from Keycloak 26.5.2 (the canonical version)
-2. **Version Detection**: When connecting to Keycloak, the operator detects the server version
-3. **Adapter Selection**: The appropriate adapter (V24, V25, or V26) is selected based on version
-4. **Outbound Conversion**: When sending data to Keycloak, the adapter converts canonical models to the target version format
-5. **Inbound Conversion**: When receiving data from Keycloak, the adapter converts responses back to canonical format
-6. **Validation**: The adapter validates CRD specs against version-specific constraints
+1. operator code is written against the canonical `26.5.2` model
+2. the runtime detects the actual Keycloak version, or uses `spec.keycloakVersion` when you set an override for custom images
+3. the matching adapter converts requests and responses for `24.x`, `25.x`, or `26.x`
+4. unsupported fields or feature mismatches are surfaced as admission failures or status conditions instead of being silently ignored
 
-## Version-Specific Behaviors
+## Image Tag And `keycloakVersion` Rules
 
-### Keycloak 25.0.0+ Changes
+### Always true
 
-The **management port** (9000) was introduced in Keycloak 25.0.0:
+- the minimum supported Keycloak version is `24.0.0`
+- `spec.keycloakVersion` can override capability detection when the image tag alone is not enough
 
-- Health checks (`/health/started`, `/health/live`, `/health/ready`) moved to port 9000
-- Metrics endpoint (`/metrics`) moved to port 9000
-- The operator automatically detects this and configures probes accordingly
+### Only true when `spec.upgradePolicy` is set
 
-For 24.x instances, the operator uses port 8080 for all health checks.
+When `spec.upgradePolicy` is configured, the admission webhook requires a semantic-version image tag. Tags such as `latest`, `nightly`, or digest-only references are rejected.
 
-### Keycloak 26.4.0+ Changes
+That requirement exists because upgrade orchestration depends on deterministic version information for:
 
-The following fields were **removed** in 26.4.0:
+- detecting upgrades and downgrades
+- deciding when backup logic applies
+- selecting version-specific runtime behavior
+
+Examples that pass when `upgradePolicy` is set:
+
+- `quay.io/keycloak/keycloak:26.5.2`
+- `myregistry.io/custom-keycloak:26.5.2-custom`
+- `myregistry.io/custom-keycloak:26.5.2-rc.1`
+
+Examples that fail when `upgradePolicy` is set:
+
+- `quay.io/keycloak/keycloak:latest`
+- `quay.io/keycloak/keycloak:nightly`
+- `quay.io/keycloak/keycloak@sha256:...`
+- `quay.io/keycloak/keycloak`
+
+`spec.keycloakVersion` helps with capability detection, but it does not bypass the semver-tag requirement when upgrade orchestration is enabled.
+
+## Version-Specific Behavior
+
+### 24.x versus 25.x health and metrics ports
+
+`24.x` exposes health checks on the main HTTP port `8080`.
+
+`25.x` and later use the management port `9000` for health and metrics endpoints. The operator switches probe behavior automatically.
+
+### 26.0.0+ organizations
+
+Realm organizations are only supported on Keycloak `26.0.0+`.
+
+If you use `organizations` or `organizationsEnabled` against `24.x` or `25.x`, reconciliation fails with a version-compatibility error.
+
+### 26.3.0 client-policy configuration shape
+
+Client policy condition and executor configuration changed shape in `26.3.0`.
+
+The adapter converts between older list-style payloads and the canonical dict-style model. This is typically non-blocking and is reported as a compatibility warning rather than a hard failure.
+
+### 26.4.0 removed OAuth2 device fields
+
+The following realm fields were removed in `26.4.0`:
 
 - `oAuth2DeviceCodeLifespan`
 - `oAuth2DevicePollingInterval`
 
-If you specify these fields in a `KeycloakRealm` spec targeting 26.4.0+, the operator will:
+If you target `26.4.0+` and still configure them, reconciliation fails with a clear compatibility error.
 
-1. Report an **error** in the CR status conditions
-2. Fail the reconciliation with a clear message
+## Where Compatibility Failures Surface
 
-### Keycloak 26.3.0+ Changes
+Compatibility failures show up in two different places.
 
-The `configuration` field in `ClientPolicyConditionRepresentation` and `ClientPolicyExecutorRepresentation` changed type:
+### Admission-time failures
 
-- **Before 26.3.0**: `list[Any]`
-- **26.3.0+**: `dict[str, Any]`
+The Keycloak validating webhook rejects invalid `Keycloak` specs before they are stored, for example when:
 
-The adapter automatically converts between these formats:
+- more than one `Keycloak` is created in the same namespace
+- the spec fails Pydantic validation
+- `upgradePolicy` is set but the Keycloak image tag is not semver-compatible
 
-- When sending to Keycloak < 26.3.0: Converts dict → list
-- When receiving from Keycloak < 26.3.0: Converts list → dict
+### Reconciliation-time failures
 
-A **warning** is added to the CR status conditions when this conversion occurs.
-
-### Keycloak 26.0.0+ Features
-
-The **Organizations** feature is only available in Keycloak 26.0.0+. If you enable `organizationsEnabled: true` on a 25.x or 24.x instance, the operator will:
-
-1. Report an **error** in the CR status conditions
-2. Fail the reconciliation with a message explaining the minimum version requirement
-
-## Status Conditions
-
-The operator reports version compatibility information in the CR status conditions:
+Realm and client compatibility checks are reported through status conditions such as:
 
 ```yaml
 status:
   conditions:
-    - type: VersionCompatibility/ClientPolicyConfigConverted
-      status: "True"
-      reason: ClientPolicyConfigConverted
-      message: "Client policy configuration converted from dict to list for Keycloak 26.2.0"
-      lastTransitionTime: "2025-01-28T14:30:00Z"
+    - type: VersionCompatibility/OrganizationsNotSupported
+      status: "False"
+      reason: OrganizationsNotSupported
+      message: "Organizations feature is not supported in Keycloak 25.0.0. Upgrade to Keycloak 26.0.0+ to use this feature."
 ```
 
-### Condition Types
-
-| Type | Level | Description |
-|------|-------|-------------|
-| `VersionCompatibility/*Warning` | Warning | Non-blocking issue, operation will proceed |
-| `VersionCompatibility/*Error` | Error | Blocking issue, reconciliation fails |
-
-## Checking Your Keycloak Version
-
-The operator automatically detects the Keycloak version. You can verify the detected version by checking the operator logs:
+Useful inspection commands:
 
 ```bash
-kubectl logs -n keycloak-system deployment/keycloak-operator | grep "Keycloak version"
+kubectl get keycloak my-keycloak -n keycloak-system -o jsonpath='{.status.version}{"\n"}'
+kubectl get keycloakrealm my-realm -n my-team -o yaml
+kubectl describe keycloakrealm my-realm -n my-team
 ```
 
-Or check the Keycloak CR status:
+## How To Validate Another Version
+
+Use the full repository flow so the result matches the project’s support policy:
 
 ```bash
-kubectl get keycloak my-keycloak -o jsonpath='{.status.version}'
-```
-
-## Upgrading Keycloak
-
-When upgrading Keycloak versions:
-
-1. **Check compatibility** - Review the version-specific behaviors above
-2. **Update Keycloak** - Perform the Keycloak upgrade
-3. **Verify operator** - The operator will automatically detect the new version and use the appropriate adapter
-4. **Update CRD specs** - Remove any deprecated fields (e.g., OAuth2 device fields for 26.4.0+)
-
-## Testing with Multiple Versions
-
-The operator's integration tests run against the canonical version (26.5.2) in CI/CD. However, all validated versions listed above have been manually tested with the full integration test suite.
-
-### Validating a New Version
-
-To validate support for a specific Keycloak version:
-
-```bash
-# Set the version and run the full test suite
 KEYCLOAK_VERSION=26.3.0 task test:all
 ```
 
-This will:
+If that passes, update `scripts/keycloak_versions.yaml` so the validation history stays authoritative.
 
-1. Run code quality checks
-2. Create a fresh Kind cluster
-3. Deploy Keycloak with the specified version
-4. Run 840 unit tests and 135 integration tests
-5. Report pass/fail status
-
-If all tests pass, the version should be added to `scripts/keycloak_versions.yaml` under `validated_versions`.
-
-## Regenerating Models
-
-If you need to update the canonical models (e.g., when a new Keycloak version is released):
+For API compatibility maintenance work:
 
 ```bash
-# Update the canonical version in keycloak_versions.yaml
-# Then regenerate the models
-uv run scripts/generate_keycloak_models.py
+task keycloak:verify-api
+task keycloak:models
 ```
 
-See the [Keycloak API Reference](../AGENTS.md#keycloak-api-reference) section in AGENTS.md for more details.
+## Related Guidance
+
+- [Versioning](../versioning.md)
+- [Migration & Upgrade Guide](../operations/migration.md)
+- [End-to-End Setup](../how-to/end-to-end-setup.md)
+- [FAQ](../faq.md)

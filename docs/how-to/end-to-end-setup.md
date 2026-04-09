@@ -696,7 +696,7 @@ After completing this guide:
 
 1. **Configure Identity Providers** - Add Google, GitHub, Azure AD SSO ([Guide](../guides/identity-providers.md))
 2. **Set Up Monitoring** - Import Grafana dashboards ([Observability](../guides/observability.md))
-3. **Configure Backups** - Set up CloudNativePG backups to S3 ([Backup Guide](./backup-restore.md))
+3. **Configure Backups** - Set up CloudNativePG backups to S3 ([Backup Guide](../operations/backup-restore.md))
 4. **Add More Teams** - Repeat Part 3-5 for additional teams
 5. **Review Security** - Implement network policies, audit logging
 
