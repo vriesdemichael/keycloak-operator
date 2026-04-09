@@ -4,7 +4,7 @@
 🔧 Namespace: {{ include "keycloak-operator.namespace" . }}
 📋 Operator Replicas: {{ .Values.operator.replicaCount }}
 
-{{- if .Values.keycloak.enabled }}
+{{- if .Values.keycloak.managed }}
 
 🔐 Keycloak Instance: {{ .Values.keycloak.name }}
    Replicas: {{ .Values.keycloak.replicas }}

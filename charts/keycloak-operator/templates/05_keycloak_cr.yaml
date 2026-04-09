@@ -21,6 +21,13 @@ spec:
   operatorRef:
     namespace: {{ include "keycloak-operator.namespace" . }}
 
+  {{- with .Values.keycloak.admin }}
+  {{- if .existingSecret }}
+  admin:
+    existingSecret: {{ .existingSecret }}
+  {{- end }}
+  {{- end }}
+
   {{- if .Values.keycloak.database.cnpg.enabled }}
   database:
     type: {{ .Values.keycloak.database.type }}

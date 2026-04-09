@@ -1,395 +1,217 @@
 # Frequently Asked Questions
 
-This page provides answers to common questions about the Keycloak Operator.
+This page answers the questions that come up most often when teams adopt the operator.
 
 ## Authorization & Security
 
 ### How does authorization work in this operator?
 
-The operator uses **two-level authorization**:
+The operator uses Kubernetes RBAC plus realm-managed namespace grants.
 
-1. **Realm Creation**: Controlled by Kubernetes RBAC
-   - Any user with RBAC permission to create \`KeycloakRealm\` resources can create realms
-   - Standard Kubernetes authorization model
+There are two separate checks:
 
-2. **Client Creation**: Controlled by namespace grant lists
-   - Realm owners specify which namespaces can create clients via \`clientAuthorizationGrants\`
-   - Fully declarative and GitOps-friendly
+1. creating or changing `KeycloakRealm` resources is controlled by Kubernetes RBAC
+2. creating `KeycloakClient` resources against a realm is controlled by that realm’s `clientAuthorizationGrants`
 
-**Example:**
-\`\`\`yaml
+Example:
+
+```yaml
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakRealm
 spec:
   clientAuthorizationGrants:
     - my-app
     - partner-team
-\`\`\`
+```
 
-See: [Security Model](concepts/security.md)
-
----
+See [Security Model](./concepts/security.md).
 
 ### Why not use traditional RBAC alone?
 
-**Problem with pure RBAC:**
-- Can't express "team A can create clients in realm X but not realm Y"
-- Requires cluster-wide RBAC updates for each team
-- Complex RoleBinding hierarchies for cross-namespace access
+Pure RBAC is not expressive enough for the main cross-namespace client ownership case.
 
-**Namespace grant benefits:**
-- ✅ Declarative authorization in realm manifest
-- ✅ GitOps-friendly (PR workflow for access changes)
-- ✅ Self-service for realm owners
-- ✅ Clear audit trail in Git history
+It can answer questions like “may this subject create `KeycloakClient` objects in namespace X?”, but it does not naturally answer “may namespace X create clients in realm Y but not realm Z?” without pushing that ownership logic into brittle cluster-wide RBAC structure.
 
-See: [Security Model](concepts/security.md#design-philosophy)
+The realm grant list solves that cleanly:
 
----
+- realm owners manage access declaratively in Git
+- cluster admins do not need to keep updating cross-namespace RoleBindings for every realm relationship
+- the authorization intent stays attached to the realm that owns it
 
 ### How do I grant a team access to create clients in my realm?
 
-Add their namespace to your realm's \`clientAuthorizationGrants\`:
+Add the team namespace to `clientAuthorizationGrants` in the realm definition and reconcile it through Helm or your GitOps workflow.
 
-\`\`\`bash
-kubectl patch keycloakrealm my-realm -n my-namespace --type=merge -p '
-spec:
-  clientAuthorizationGrants:
-    - my-namespace
-    - team-b-namespace  # ← Add this
-'
-\`\`\`
+If you need a temporary diagnostic check, you can inspect it directly:
 
-Or via GitOps: update realm manifest and create PR.
+```bash
+kubectl get keycloakrealm my-realm -n my-namespace \
+  -o jsonpath='{.spec.clientAuthorizationGrants}' | jq
+```
 
-See: [Security Model](concepts/security.md#namespace-authorization-workflow)
-
----
+See [Multi-Tenant](./how-to/multi-tenant.md).
 
 ## Scaling & Performance
 
-### Will this scale beyond high availability?
+### Will this scale beyond basic high availability?
 
-**Yes.** The operator is designed for horizontal scaling:
+Yes, but capacity depends on the Keycloak workload, database tier, cluster resources, and traffic shape. This repository does not currently publish a benchmark-backed scale ceiling, so the docs should not pretend otherwise.
 
-| Component | Scaling Limit | Notes |
-|-----------|---------------|-------|
-| **Operator** | 100+ replicas | Stateless, leader election |
-| **Keycloak** | 100+ replicas | Session replication via Infinispan |
-| **Database** | 10+ replicas | PostgreSQL replication |
-| **Teams/Namespaces** | 1000+ | Token-based delegation |
-| **Realms per instance** | 1000+ | Limited by Keycloak, not operator |
+What is supported:
 
-**Real-world tested:** Supports 50+ teams, 200+ realms, 100K+ users in production.
+- operator HA through multiple operator replicas with leader election
+- managed Keycloak horizontal scaling by increasing `keycloak.replicas`
+- automatic JGroups DNS_PING discovery for managed Keycloak replicas
+- CNPG or other PostgreSQL topologies sized for the actual write and connection load
 
-**Rate limiting** prevents API overload:
-- Global: 50 req/s (default)
-- Per-namespace: 5 req/s (default)
-- Configurable via environment variables
+Important distinction:
 
-See: [Architecture](concepts/architecture.md)
+- operator replicas improve availability
+- separate operator deployments are the capacity-scaling model for the control plane
+- Keycloak replicas scale the managed application itself
 
----
+See [High Availability Deployment](./how-to/ha-deployment.md).
 
 ### How many requests can the operator handle?
 
-**Default Configuration:**
-- 50 requests/second globally
-- 5 requests/second per namespace
-- Burst capacity: 100 (global), 10 (per namespace)
+The operator ships with rate limiting enabled by default.
 
-**Can be increased:**
-```bash
-helm upgrade keycloak-operator ./charts/keycloak-operator \
-  --set 'operator.env[0].name=KEYCLOAK_API_GLOBAL_RATE_LIMIT_TPS' \
-  --set 'operator.env[0].value=100' \
-  --set 'operator.env[1].name=KEYCLOAK_API_NAMESPACE_RATE_LIMIT_TPS' \
-  --set 'operator.env[1].value=10'
-```
+Default chart values:
 
-**Metrics available:**
-```promql
-keycloak_operator_api_rate_limit_wait_seconds
-keycloak_operator_api_rate_limit_acquired_total
-```
+- `operator.rateLimiting.global.tps = 50`
+- `operator.rateLimiting.global.burst = 100`
+- `operator.rateLimiting.namespace.tps = 5`
+- `operator.rateLimiting.namespace.burst = 10`
 
----
+Adjust those through the operator chart values, not by copying stale environment-variable snippets from old docs.
+
+See [Observability](./guides/observability.md).
 
 ## Access & Administration
 
-### Why can't I access the Keycloak admin console?
+### Can I access the Keycloak admin console?
 
-**By design.** This operator enforces least privilege through the following principles:
+You can, but it is discouraged as an operating model.
 
-1. **GitOps-Only Configuration**: All configuration is done through CRDs (`KeycloakRealm`, `KeycloakClient`), never through manual UI changes
-2. **No Admin Access Needed**: The operator manages Keycloak on your behalf - you never need to log into Keycloak directly
-3. **Reduced Attack Surface**: No admin credentials exposed = no credential theft, no unauthorized access, no manual mistakes
-4. **Prevents Configuration Drift**: Drift detection would revert manual changes anyway, so UI access serves no purpose
-5. **Audit Trail**: All changes tracked through Git and Kubernetes API, not Keycloak's internal audit log
+This operator is designed around declarative configuration through Helm values and CRs. Manual admin-console edits are not the source of truth and may be reverted by reconciliation or drift correction.
 
-**The admin console is not exposed because you should never need it.**
+Use the admin API or admin console for debugging only when CR status and logs are not enough.
 
----
+### How do I verify configuration without relying on the admin console?
 
-### How do I verify my Keycloak configuration without the admin console?
-
-**Use Kubernetes-native tools** to inspect and verify your configuration:
+Use Kubernetes-native inspection first:
 
 ```bash
-# Check realm configuration and status
 kubectl describe keycloakrealm <name> -n <namespace>
-
-# View full realm spec and status
 kubectl get keycloakrealm <name> -n <namespace> -o yaml
-
-# Check client configuration
 kubectl get keycloakclient <name> -n <namespace> -o yaml
-
-# Check operator reconciliation logs
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep keycloakrealm/<name>
+kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator --tail=100
 ```
 
-**For advanced debugging** (operator developers only), query Keycloak's management API directly:
+If you have to query Keycloak directly for debugging, remember that the management-port behavior depends on version:
 
-```bash
-# Port-forward to management API (port 9000, NOT UI on port 8080)
-kubectl port-forward svc/<keycloak-service> -n <namespace> 9000:9000
+- `24.x` uses `8080`
+- `25.x+` uses `9000` for the management interface
 
-# Get admin token from operator-managed secret
-ADMIN_USER=$(kubectl get secret <keycloak-name>-admin-credentials -n <namespace> \
-  -o jsonpath='{.data.username}' | base64 -d)
-ADMIN_PASS=$(kubectl get secret <keycloak-name>-admin-credentials -n <namespace> \
-  -o jsonpath='{.data.password}' | base64 -d)
-
-# Authenticate to get access token
-TOKEN=$(curl -s -X POST http://localhost:9000/realms/master/protocol/openid-connect/token \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=$ADMIN_USER" \
-  -d "password=$ADMIN_PASS" \
-  -d "grant_type=password" \
-  -d "client_id=admin-cli" | jq -r '.access_token')
-
-# Query Keycloak API
-curl -s http://localhost:9000/admin/realms/<realm-name> \
-  -H "Authorization: Bearer $TOKEN" | jq .
-```
-
-**Note:** Even for debugging, prefer CRD status fields over direct API access. The API should only be used when diagnosing operator bugs, never for configuration.
-
----
+See [Troubleshooting](./operations/troubleshooting.md).
 
 ## Compatibility & Requirements
 
 ### What Keycloak versions are supported?
 
-- **Minimum:** Keycloak 25.0.0 (management port 9000 requirement)
-- **Recommended:** Keycloak 26.0.0+
-- **Maximum:** Latest Keycloak release
+Supported versions start at Keycloak `24.x`.
 
-**Why 25.0.0+?** Keycloak 25.0.0 introduced the management port (9000) for health checks, separate from user traffic (8080).
+Use [Keycloak Version Support](./reference/keycloak-version-support.md) as the single source of truth for:
 
-**Using older versions?** Upgrade to 26.0.0:
-```yaml
-spec:
-  image:
-    tag: "26.0.0"
-```
-
----
+- validated versions
+- canonical version behavior
+- `24.x` versus `25.x+` management-port handling
+- version-gated features such as tracing and Organizations
 
 ### What database backends are supported?
 
-**Primary:** CloudNativePG (CNPG) - Kubernetes-native PostgreSQL
-- ✅ Automatic backups
-- ✅ High availability
-- ✅ Point-in-time recovery
+Primary path:
 
-**Manual:** External PostgreSQL
-- ⚠️ You manage backups/HA
-- ⚠️ Requires connection string
+- CloudNativePG for Kubernetes-native PostgreSQL operations
 
-**Not supported:** MySQL, MariaDB, H2 (Keycloak deprecated these)
+Supported but externally operated path:
 
-See: [Database Setup Guide](how-to/database-setup.md)
+- external PostgreSQL
+- generic managed PostgreSQL through the managed tier settings
 
----
+This operator does not support MySQL, MariaDB, or H2 as target production backends.
+
+See [Database Setup](./how-to/database-setup.md).
 
 ### Can I migrate from the official Keycloak operator?
 
-**Yes, but not automated.** Manual migration required:
+Yes, but the migration path is export-and-transform, not a magic in-place CRD conversion.
 
-1. Export realms from existing Keycloak
-2. Deploy this operator alongside (different namespace)
-3. Create new Keycloak with this operator
-4. Create KeycloakRealm/KeycloakClient CRDs
-5. Switch application traffic
-6. Decommission old operator
+Use:
 
-**Comparison table:** See [Migration Guide](operations/migration.md#comparison-with-official-keycloak-operator)
-
----
+1. [Exporting Realms & Users](./how-to/export-realms.md)
+2. [Migration Toolkit](./how-to/migration-toolkit.md)
+3. [Migration & Upgrade Guide](./operations/migration.md)
 
 ## Deployment & Operations
 
-### When should I use this operator vs the official one?
+### When should I use this operator instead of the official Keycloak operator?
 
-**Choose this operator if:**
-- ✅ Multi-tenant environment (10+ teams)
-- ✅ GitOps-first workflow
-- ✅ Strong namespace isolation needed
-- ✅ CloudNativePG database management
+Use this operator when you want:
 
-**Choose official operator if:**
-- ✅ Single-tenant environment
-- ✅ Need Keycloak's built-in security
-- ✅ Organization policy requires official operators
-- ✅ Integration with Red Hat/RHSSO
+- Helm-first and GitOps-first workflows
+- namespace-grant-based client ownership
+- explicit cross-namespace tenancy boundaries
+- Kubernetes-native secret and RBAC patterns
 
-See: [Migration Guide](operations/migration.md#comparison-with-official-keycloak-operator)
+The official operator may still be the better fit when an organization requires upstream alignment over this project’s API and tenancy model.
 
----
+See [Migration & Upgrade Guide](./operations/migration.md#comparison-with-official-keycloak-operator).
 
-### Can I use this operator with ArgoCD / Flux?
+### Can I use this operator with Argo CD or Flux?
 
-**Yes, fully supported.** The operator is GitOps-native.
+Yes. Helm and GitOps are the default operating model.
 
-**ArgoCD Example:**
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: keycloak-realm
-spec:
-  project: default
-  source:
-    repoURL: https://github.com/company/keycloak-config
-    path: realms/team-alpha
-  destination:
-    namespace: team-alpha
-```
+Start with the Helm-first deployment guidance in [Helm vs Direct CR Deployments](./how-to/helm-vs-cr-deployments.md), then see the GitOps examples in [charts/README.md on GitHub](https://github.com/vriesdemichael/keycloak-operator/blob/main/charts/README.md#using-with-gitops).
 
-**Best practices:**
-- Use SealedSecrets or external-secrets for sensitive data
-- Separate repos per team
-- Health checks via `status.phase`
+### Why is there no `User` CR?
 
-See charts/README.md in the repository root for GitOps examples.
+Because users are stateful data, not desired-state configuration.
 
----
+Realms and clients fit the declarative model well. Users, sessions, credentials, and other live identity records do not. They are migrated and imported through dedicated workflows instead of being continuously reconciled as CRs.
+
+See [Migration Toolkit](./how-to/migration-toolkit.md) and [Exporting Realms & Users](./how-to/export-realms.md).
+
+### Why only `KeycloakRealm` and `KeycloakClient`, and not many smaller CRDs?
+
+Because the supported API surface is intentionally centered on the two ownership boundaries that matter most in practice:
+
+- realm-scoped configuration belongs in `KeycloakRealm`
+- client-scoped configuration belongs in `KeycloakClient`
+
+That keeps ownership clear, avoids CRD sprawl, and matches how platform teams and application teams usually divide responsibility.
 
 ## Security
 
 ### Are secrets encrypted?
 
-**At rest:** Depends on cluster configuration
-- Enable Kubernetes encryption at rest
-- Use external secret managers (Vault, AWS Secrets Manager)
+The operator relies on the Kubernetes and secret-management systems around it.
 
-**In transit:** TLS between operator and Keycloak
+- encryption at rest depends on your cluster configuration
+- GitOps-safe workflows should use tools such as External Secrets Operator, Sealed Secrets, or SOPS-backed pipelines
+- secret read access is intentionally constrained and, for some features, requires the operator-read label contract
 
-**Best practices:**
-- Use SealedSecrets or SOPS for GitOps
-- Enable K8s encryption at rest
+See [Secret Management](./operations/secret-management.md) and [RBAC Implementation](./rbac-implementation.md).
 
----
+### How do I revoke access from a compromised namespace?
 
-### How do I revoke access to a compromised namespace?
+Remove the namespace from the realm’s `clientAuthorizationGrants`, reconcile the realm, delete the `KeycloakClient` objects in that namespace, and rotate any affected client credentials.
 
-**Immediate revocation:**
-```bash
-# Remove namespace from realm's authorization grants
-kubectl patch keycloakrealm <realm-name> -n <realm-namespace> --type=json -p '[
-  {
-    "op": "remove",
-    "path": "/spec/clientAuthorizationGrants/-",
-    "value": "compromised-namespace"
-  }
-]'
+If the namespace was consuming generated client secrets, also verify that the workload access path and any mirrored secrets are cleaned up.
 
-# Or edit directly
-kubectl edit keycloakrealm <realm-name> -n <realm-namespace>
-# Remove the namespace from clientAuthorizationGrants list
-```
+## See Also
 
-**Clean up existing clients:**
-```bash
-# List clients from compromised namespace
-kubectl get keycloakclient -n compromised-namespace
-
-# Delete specific client
-kubectl delete keycloakclient <client-name> -n compromised-namespace
-```
-
-**Prevention:**
-- Use Git history to audit authorization changes
-- Implement approval workflow for grant additions
-- Monitor client creation events
-
-See: [Security Model](concepts/security.md#namespace-authorization)
-
----
-
-## Troubleshooting
-
-### My realm is stuck in Pending
-
-**Check:**
-1. Authorization token exists and is correct
-2. Keycloak instance is Ready
-3. Operator can reach Keycloak API
-4. No rate limiting errors
-
-```bash
-# Check realm status
-kubectl describe keycloakrealm <name> -n <namespace>
-
-# Check token
-kubectl get secret <token-name> -n <namespace>
-
-# Check operator logs
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep <realm-name>
-```
-
-See: [Troubleshooting Guide](operations/troubleshooting.md#symptom-realm-stuck-in-pendingprovisioning)
-
----
-
-### My realm authorization not working
-
-**Check:**
-1. Namespace is listed in `clientAuthorizationGrants`
-2. Keycloak instance is Ready
-3. Operator can reach Keycloak API
-4. No rate limiting errors
-
-```bash
-# Check realm authorization grants
-kubectl get keycloakrealm <name> -n <namespace> -o jsonpath='{.spec.clientAuthorizationGrants}'
-
-# Check realm status
-kubectl describe keycloakrealm <name> -n <namespace>
-
-# Check operator logs
-kubectl logs -n keycloak-operator-system -l app=keycloak-operator | grep <realm-name>
-```
-
-See: [Troubleshooting Guide](operations/troubleshooting.md#symptom-realm-stuck-in-pendingprovisioning)
-
----
-
-## Getting Help
-
-**Documentation:**
-- [Quick Start Guide](quickstart/README.md)
-- [End-to-End Setup](how-to/end-to-end-setup.md)
-- [Troubleshooting](operations/troubleshooting.md)
-
-**Community:**
-- [GitHub Issues](https://github.com/vriesdemichael/keycloak-operator/issues)
-- [GitHub Discussions](https://github.com/vriesdemichael/keycloak-operator/discussions)
-
-**Before asking:**
-1. Check this FAQ
-2. Review troubleshooting guide
-3. Gather operator logs
-4. Check resource status
+- [Security Model](./concepts/security.md)
+- [High Availability Deployment](./how-to/ha-deployment.md)
+- [Migration Toolkit](./how-to/migration-toolkit.md)
+- [Exporting Realms & Users](./how-to/export-realms.md)

@@ -61,7 +61,7 @@ Install the operator with Keycloak instance enabled:
 # Install operator + Keycloak with CloudNativePG database (using OCI registry)
 helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system \
-  --set keycloak.enabled=true \
+  --set keycloak.managed=true \
   --set keycloak.database.cnpg.enabled=true \
   --set keycloak.database.cnpg.clusterName=keycloak-postgres \
   --set keycloak.replicas=3 \
@@ -104,7 +104,7 @@ If you have an existing PostgreSQL database:
 helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
   --namespace keycloak-system \
   --set namespace.create=false \
-  --set keycloak.enabled=true \
+  --set keycloak.managed=true \
   --set keycloak.database.host=postgresql.database.svc \
   --set keycloak.database.port=5432 \
   --set keycloak.database.database=keycloak \
@@ -112,6 +112,8 @@ helm install keycloak-operator oci://ghcr.io/vriesdemichael/charts/keycloak-oper
   --set keycloak.database.passwordSecret.name=db-password \
   --set keycloak.database.passwordSecret.key=password
 ```
+
+If you want to work directly with raw `Keycloak`, `KeycloakRealm`, and `KeycloakClient` manifests instead of Helm releases, treat that as an advanced/manual path. See [Helm vs Direct CR Deployments](../how-to/helm-vs-cr-deployments.md) for the extra RBAC and manifest-management work Helm normally handles for you.
 
 ## Step 3: Create Application Realm
 
@@ -133,15 +135,12 @@ helm install my-app-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
 Wait for the realm to become ready:
 
 ```bash
-kubectl wait --for=condition=Ready keycloakrealm/my-app-realm \
+kubectl wait --for=condition=Ready keycloakrealm --all \
   -n my-app \
   --timeout=2m
 
 # Check status
 kubectl get keycloakrealm -n my-app
-# Expected output:
-# NAME            PHASE   AGE
-# my-app-realm    Ready   45s
 ```
 
 ## Step 4: Create OAuth2/OIDC Client
@@ -165,48 +164,80 @@ helm install my-app-client oci://ghcr.io/vriesdemichael/charts/keycloak-client \
 Wait for the client to become ready:
 
 ```bash
-kubectl wait --for=condition=Ready keycloakclient/my-app-client \
+kubectl wait --for=condition=Ready keycloakclient --all \
   -n my-app \
   --timeout=2m
 
 # Check status
 kubectl get keycloakclient -n my-app
-# Expected output:
-# NAME             PHASE   AGE
-# my-app-client    Ready   30s
 ```
 
-## Step 5: Retrieve Client Credentials
+## Step 5: Use the Injected Client Credentials Secret
 
-The operator automatically creates a Kubernetes secret with OAuth2 credentials:
+The operator automatically creates a Kubernetes secret with OAuth2 credentials in the same namespace as the `KeycloakClient` resource.
+
+If you do not set `secretName`, the client chart defaults to `<release-fullname>-credentials`. In this quick start the Helm release name is `my-app-client`, the rendered client fullname becomes `my-app-client-keycloak-client`, and the generated Secret name becomes `my-app-client-keycloak-client-credentials`.
+
+In a normal deployment, your application should consume that Secret directly through environment-variable injection or a mounted volume. You should not need to read these values manually unless you are debugging.
+
+Example Deployment using `envFrom`:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  namespace: my-app
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/company/my-app:latest
+          envFrom:
+            - secretRef:
+                name: my-app-client-keycloak-client-credentials
+```
+
+Example Deployment using explicit environment-variable mapping:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app
+  namespace: my-app
+spec:
+  template:
+    spec:
+      containers:
+        - name: app
+          image: ghcr.io/company/my-app:latest
+          env:
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-client-keycloak-client-credentials
+                  key: client-id
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-client-keycloak-client-credentials
+                  key: client-secret
+            - name: ISSUER_URL
+              valueFrom:
+                secretKeyRef:
+                  name: my-app-client-keycloak-client-credentials
+                  key: issuer
+```
+
+The generated secret looks like this conceptually:
 
 ```bash
-# View all credentials
-kubectl get secret my-app-client-credentials -n my-app -o yaml
-
-# Extract specific values
-CLIENT_ID=$(kubectl get secret my-app-client-credentials -n my-app \
-  -o jsonpath='{.data.client_id}' | base64 -d)
-
-CLIENT_SECRET=$(kubectl get secret my-app-client-credentials -n my-app \
-  -o jsonpath='{.data.client_secret}' | base64 -d)
-
-ISSUER_URL=$(kubectl get secret my-app-client-credentials -n my-app \
-  -o jsonpath='{.data.issuer_url}' | base64 -d)
-
-echo "Client ID: $CLIENT_ID"
-echo "Client Secret: $CLIENT_SECRET"
-echo "Issuer URL: $ISSUER_URL"
+kubectl get secret my-app-client-keycloak-client-credentials -n my-app -o yaml
 ```
 
-Create an environment file for your application:
-
-```bash
-kubectl get secret my-app-client-credentials -n my-app -o json | \
-  jq -r '.data | to_entries[] | "\(.key | ascii_upcase)=\(.value | @base64d)"' > .env
-
-cat .env
-```
+The generated secret includes keys such as `client-id`, `client-secret` for confidential clients, `issuer`, `keycloak-url`, `realm`, `token-endpoint`, `userinfo-endpoint`, and `jwks-endpoint`.
 
 ## Step 6: Integrate with Your Application
 

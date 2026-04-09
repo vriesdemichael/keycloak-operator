@@ -1,88 +1,85 @@
 # Drift Detection
 
-The Keycloak Operator includes drift detection to monitor the actual state of Keycloak resources and compare them with Kubernetes Custom Resources (CRs). This helps identify:
+The operator can periodically compare Keycloak state with the Kubernetes resources that are supposed to own it.
 
-- **Orphaned resources**: Resources created by the operator but whose CR has been deleted
-- **Configuration drift**: Resources whose actual state differs from the CR specification
-- **Unmanaged resources**: Resources in Keycloak not managed by any operator instance
+Drift detection helps with:
 
-## Features
+- orphaned resources left behind after CR deletion
+- unmanaged resources that were not created by any operator instance
+- configuration drift between a CR and the live Keycloak object
 
-### Resource Ownership Tracking
+## How It Works
 
-Every Keycloak resource (realm, client, etc.) created by the operator is tagged with ownership attributes:
+Drift detection runs as a background timer inside the operator.
 
-```json
-{
-  "attributes": {
-    "io.kubernetes.managed-by": "keycloak-operator",
-    "io.kubernetes.operator-instance": "keycloak-operator-production",
-    "io.kubernetes.cr-namespace": "team-a",
-    "io.kubernetes.cr-name": "my-realm",
-    "io.kubernetes.created-at": "2025-10-28T12:00:00Z"
-  }
-}
+It:
+
+1. scans managed realms and clients
+2. checks whether the corresponding CR still exists
+3. evaluates whether the live Keycloak state has drifted from the CR
+4. reports drift through metrics and logs
+5. optionally remediates eligible drift when auto-remediation is enabled
+
+```mermaid
+flowchart TD
+    start[Timer fires] --> phase{Resource phase Ready or Degraded?}
+    phase -- No --> skip[Skip resource]
+    phase -- Yes --> scan[Inspect Keycloak state]
+    scan --> owned{Managed by this operator instance?}
+    owned -- No --> unmanaged[Mark unmanaged]
+    owned -- Yes --> exists{CR still exists?}
+    exists -- No --> orphan[Mark orphaned]
+    exists -- Yes --> diff{Spec drift detected?}
+    diff -- No --> done[Record healthy]
+    diff -- Yes --> drift[Mark config drift]
+    orphan --> remediate{Auto-remediate enabled and old enough?}
+    drift --> remediate
+    remediate -- No --> metrics[Expose metrics and logs]
+    remediate -- Yes --> recheck[Re-check CR existence and safety gates]
+    recheck --> action[Delete orphan or reconcile config]
+    action --> metrics
+    unmanaged --> metrics
+    skip --> metrics
+    done --> metrics
 ```
 
-These attributes enable:
-- Multi-operator deployments (each operator tracks its own resources)
-- Orphan detection (identify resources whose CR was deleted)
-- Drift detection (verify CR still matches actual state)
+## Important Requirement: Admin Events
 
-### Periodic Drift Scanning
+Admin events are mandatory for drift detection.
 
-The operator runs periodic background scans to check for drift:
+When drift detection is enabled, the reconciler enforces:
 
-1. **Fetch all resources** from Keycloak
-2. **Check ownership** using attributes
-3. **Verify CR existence** for operator-managed resources
-4. **Compare configuration** (future: detect spec drift)
-5. **Emit Prometheus metrics** for monitoring
+- `adminEventsEnabled: true`
+- `adminEventsDetailsEnabled: true`
 
-### Auto-Remediation (Optional)
+This is not optional. Drift detection depends on admin events to determine what changed and when.
 
-When enabled, the operator can automatically fix drift:
+## Helm Configuration
 
-- **Orphaned resources**: Delete from Keycloak if older than minimum age (default: 24 hours)
-- **Configuration drift**: Update Keycloak to match CR spec (supported for Realms and Clients)
-
-**Safety mechanisms:**
-- Minimum age check (default: 24 hours) prevents accidental deletion of newly created resources
-- Re-check CR existence before deletion to avoid race conditions
-- Only touches resources with this operator's instance ID
-
-## Configuration
-
-Configure drift detection via Helm values:
+Configure drift detection in the operator chart under `monitoring.driftDetection`.
 
 ```yaml
 monitoring:
   driftDetection:
-    # Enable drift detection
     enabled: true
-
-    # Scan interval in seconds (default: 300 = 5 minutes)
     intervalSeconds: 300
-
-    # Auto-remediate detected drift (default: false)
-    # WARNING: When enabled, orphaned resources will be automatically deleted
     autoRemediate: false
-
-    # Minimum age in hours before deleting orphaned resources (default: 24)
-    # Safety mechanism to prevent accidental deletion
     minimumAgeHours: 24
-
-    # Scope of drift detection
     scope:
       realms: true
       clients: true
-      identityProviders: true  # Future feature
-      roles: true               # Future feature
+      identityProviders: true
+      roles: true
 ```
 
-### Environment Variables
+Notes:
 
-If you're not using Helm, configure via environment variables:
+- `minimumAgeHours` is configurable and defaults to `24` when you do not set it.
+- auto-remediation only acts on drift that is at least `minimumAgeHours` old.
+
+## Environment Variables
+
+If you manage the operator without Helm, the equivalent settings are:
 
 ```bash
 DRIFT_DETECTION_ENABLED=true
@@ -95,49 +92,78 @@ DRIFT_DETECTION_SCOPE_IDENTITY_PROVIDERS=true
 DRIFT_DETECTION_SCOPE_ROLES=true
 ```
 
-## Prometheus Metrics
+## Phases That Are Scanned
 
-The operator exposes the following metrics for drift detection:
+Drift detection only processes resources in:
 
-### Drift Detection Metrics
+- `Ready`
+- `Degraded`
+
+Resources in other phases are skipped, including:
+
+- `Pending`
+- `Reconciling`
+- `Failed`
+- `Updating`
+- `Paused`
+
+That skip behavior avoids fighting normal reconciliation, error handling, or intentional pause windows.
+
+## Ownership and Multi-Operator Behavior
+
+Each operator instance manages exactly one Keycloak instance.
+
+Ownership markers written into Keycloak resources allow the operator to distinguish:
+
+- resources created by this operator instance
+- resources created by another operator instance
+- resources not managed by any operator instance
+
+This matters in multi-operator deployments because orphan cleanup and config remediation are scoped to the current operator instance.
+
+## Auto-Remediation
+
+When `autoRemediate=true`:
+
+- orphaned resources can be deleted after they exceed `minimumAgeHours`
+- configuration drift can be reconciled back toward the CR spec
+
+Safety checks include:
+
+- minimum age gate
+- CR existence re-check before deletion
+- operator-instance ownership verification
+
+## Metrics
+
+Drift detection exports these metrics:
 
 ```prometheus
-# Number of orphaned resources (created by this operator, CR deleted)
-keycloak_operator_orphaned_resources{resource_type, operator_instance}
-
-# Number of resources with configuration drift
-keycloak_operator_config_drift{resource_type, cr_namespace}
-
-# Number of unmanaged resources (not created by any operator)
+keycloak_operator_orphaned_resources{resource_type,operator_instance}
+keycloak_operator_config_drift{resource_type,cr_namespace}
 keycloak_operator_unmanaged_resources{resource_type}
-```
-
-### Remediation Metrics
-
-```prometheus
-# Total remediation actions performed
-keycloak_operator_remediation_total{resource_type, action, reason}
-
-# Total remediation errors
-keycloak_operator_remediation_errors_total{resource_type, action}
-```
-
-### Health Metrics
-
-```prometheus
-# Duration of drift detection scans
+keycloak_operator_remediation_total{resource_type,action,reason}
+keycloak_operator_remediation_errors_total{resource_type,action}
 keycloak_operator_drift_check_duration_seconds{resource_type}
-
-# Total drift check errors
 keycloak_operator_drift_check_errors_total{resource_type}
-
-# Unix timestamp of last successful drift check
 keycloak_operator_drift_check_last_success_timestamp
 ```
 
-## Example Prometheus Alerts
+Example queries:
 
-Create alerts to notify when drift is detected:
+```prometheus
+keycloak_operator_orphaned_resources > 0
+```
+
+```prometheus
+increase(keycloak_operator_drift_check_errors_total[5m]) > 0
+```
+
+```prometheus
+(time() - keycloak_operator_drift_check_last_success_timestamp) > 900
+```
+
+## Alerts
 
 ```yaml
 apiVersion: monitoring.coreos.com/v1
@@ -147,290 +173,26 @@ metadata:
 spec:
   groups:
     - name: keycloak-drift
-      interval: 30s
       rules:
-        # Alert on orphaned resources
         - alert: KeycloakOrphanedResources
           expr: keycloak_operator_orphaned_resources > 0
           for: 30m
-          labels:
-            severity: warning
-            component: keycloak-operator
-          annotations:
-            summary: "Orphaned Keycloak resources detected"
-            description: |
-              {{ $value }} orphaned {{ $labels.resource_type }} resource(s) detected.
-              Operator: {{ $labels.operator_instance }}
-
-        # Alert on configuration drift
-        - alert: KeycloakConfigurationDrift
-          expr: keycloak_operator_config_drift > 0
-          for: 15m
-          labels:
-            severity: info
-            component: keycloak-operator
-          annotations:
-            summary: "Keycloak configuration drift detected"
-            description: |
-              Configuration drift detected for {{ $labels.resource_type }} in {{ $labels.cr_namespace }}
-
-        # Alert on drift check failures
         - alert: KeycloakDriftCheckFailure
           expr: increase(keycloak_operator_drift_check_errors_total[5m]) > 3
           for: 5m
-          labels:
-            severity: warning
-            component: keycloak-operator
-          annotations:
-            summary: "Drift detection checks are failing"
-            description: |
-              Drift detection for {{ $labels.resource_type }} has failed {{ $value }} times in the last 5 minutes.
-
-        # Alert if drift checks haven't run recently
         - alert: KeycloakDriftCheckStale
           expr: (time() - keycloak_operator_drift_check_last_success_timestamp) > 900
           for: 5m
-          labels:
-            severity: warning
-            component: keycloak-operator
-          annotations:
-            summary: "Drift detection checks are not running"
-            description: |
-              Drift detection has not run successfully in {{ $value | humanizeDuration }}.
 ```
 
-## Usage Examples
+## Operational Notes
 
-### Scenario 1: Detect Orphaned Realms
+- drift detection is background protection, not a replacement for normal reconciliation
+- paused resources are intentionally skipped
+- enabling auto-remediation is safer in development first, then in production after you verify the ownership and age semantics
 
-1. **Create a realm**:
-   ```bash
-   kubectl apply -f my-realm.yaml
-   ```
+## See Also
 
-2. **Delete the CR** (simulating accidental deletion):
-   ```bash
-   kubectl delete keycloakrealm my-realm
-   ```
-
-3. **Check metrics** (after next drift scan):
-   ```bash
-   curl http://localhost:8081/metrics | grep orphaned_resources
-    # keycloak_operator_orphaned_resources{resource_type="realm",...} 1
-   ```
-
-4. **Manual cleanup** (if auto-remediation is disabled):
-   ```bash
-   # The realm still exists in Keycloak
-   # Delete it manually via Keycloak Admin UI or API
-   ```
-
-5. **Auto-cleanup** (if auto-remediation is enabled and age > 24h):
-   ```bash
-   # Wait 24 hours, then the operator will automatically delete the orphaned realm
-   # Check logs:
-   kubectl logs -n keycloak-system deployment/keycloak-operator | grep "Successfully deleted orphaned realm"
-   ```
-
-### Scenario 2: Multi-Operator Deployments
-
-When running multiple operator instances:
-
-```yaml
-# Operator 1 in production namespace
-operator:
-  instanceId: "keycloak-operator-production"
-
-# Operator 2 in staging namespace
-operator:
-  instanceId: "keycloak-operator-staging"
-```
-
-Each operator only manages resources it created:
-- Production operator ignores resources created by staging operator
-- Prevents conflicts and accidental deletions
-- Clear ownership boundaries
-
-### Scenario 3: Identify Unmanaged Resources
-
-Find Keycloak resources not managed by any operator:
-
-```bash
-# Query metrics
-curl http://localhost:8081/metrics | grep unmanaged_resources
-
-# Example output:
-# keycloak_operator_unmanaged_resources{resource_type="realm"} 1
-# keycloak_operator_unmanaged_resources{resource_type="client"} 1
-```
-
-These are resources that existed before the operator or were created manually.
-
-**Options:**
-- Leave them as-is (operator won't touch them)
-- Manually add ownership attributes to adopt them (not recommended)
-- Create matching CRs to bring them under operator management (recommended)
-
-## Troubleshooting
-
-### Drift detection is not running
-
-**Symptoms:** `keycloak_operator_drift_check_last_success_timestamp` is stale
-
-**Causes:**
-1. Drift detection is disabled in Helm values
-2. Operator is not running or crashing
-
-**Solutions:**
-```bash
-# Check if enabled
-helm get values keycloak-operator | grep driftDetection
-
-# Check operator logs
-kubectl logs -n keycloak-system deployment/keycloak-operator | grep drift
-
-# Ensure at least one realm CR exists
-kubectl get keycloakrealms -A
-```
-
-### Orphaned resources not being deleted
-
-**Symptoms:** `keycloak_operator_orphaned_resources` > 0 but resources not deleted
-
-**Causes:**
-1. Auto-remediation is disabled (check `autoRemediate: false`)
-2. Resource age < minimum age (default 24h)
-3. Remediation errors (check error metrics)
-
-**Solutions:**
-```bash
-# Check auto-remediation setting
-helm get values keycloak-operator | grep autoRemediate
-
-# Check resource age (must be > minimumAgeHours)
-# Resource created_at is in the attributes
-
-# Check for remediation errors
-curl http://localhost:8081/metrics | grep remediation_errors_total
-
-# Check operator logs for errors
-kubectl logs -n keycloak-system deployment/keycloak-operator | grep remediation
-```
-
-### False orphan detection
-
-**Symptoms:** Resources marked as orphaned but CR exists
-
-**Causes:**
-1. CR is in different namespace than expected
-2. Ownership attributes don't match actual CR name/namespace
-3. Permissions issue (operator can't read CR)
-
-**Solutions:**
-```bash
-# Verify CR exists and matches ownership attributes
-kubectl get keycloakrealm my-realm -n expected-namespace -o yaml
-
-# Check operator RBAC permissions
-kubectl auth can-i get keycloakrealms --as=system:serviceaccount:keycloak-system:keycloak-operator-keycloak-system
-
-# Check operator logs for permission errors
-kubectl logs -n keycloak-system deployment/keycloak-operator | grep -i "permission\|rbac"
-```
-
-## Migration from Existing Resources
-
-### Breaking Change Notice
-
-**⚠️ Resources created before this version will NOT be managed for drift detection.**
-
-Existing realms and clients lack ownership attributes and will be treated as "unmanaged" resources.
-
-### Migration Options
-
-#### Option 1: Recreate Resources (Recommended)
-
-1. Export existing resource configuration
-2. Delete the resource from Keycloak
-3. Recreate via CR (operator will add ownership attributes)
-
-```bash
-# Backup realm config
-kubectl get keycloakrealm my-realm -o yaml > my-realm-backup.yaml
-
-# Delete and recreate
-kubectl delete keycloakrealm my-realm
-kubectl apply -f my-realm-backup.yaml
-```
-
-#### Option 2: Manual Attribute Addition (Advanced)
-
-Manually add ownership attributes to existing Keycloak resources via Admin API:
-
-```bash
-# Get current realm
-GET /admin/realms/{realm-name}
-
-# Add attributes
-PATCH /admin/realms/{realm-name}
-{
-  "attributes": {
-    "io.kubernetes.managed-by": "keycloak-operator",
-    "io.kubernetes.operator-instance": "keycloak-operator-<namespace>",
-    "io.kubernetes.cr-namespace": "<cr-namespace>",
-    "io.kubernetes.cr-name": "<cr-name>",
-    "io.kubernetes.created-at": "2025-10-28T12:00:00Z"
-  }
-}
-```
-
-⚠️ **Risks:**
-- Incorrect attributes can cause drift detection to malfunction
-- Easy to make mistakes with namespace/name mapping
-- Not recommended unless you know what you're doing
-
-#### Option 3: Leave As Unmanaged (Simplest)
-
-Do nothing. Existing resources will show up as "unmanaged" in metrics but won't be affected by drift detection or auto-remediation.
-
-## Security Considerations
-
-### Ownership Attribute Tampering
-
-**Threat:** Someone manually modifies ownership attributes in Keycloak to evade drift detection
-
-**Mitigation:**
-- Keycloak Admin API should be restricted (not publicly accessible)
-- Use Keycloak RBAC to limit who can modify realms/clients
-- Audit logs should track attribute changes
-
-### Unauthorized Resource Deletion
-
-**Threat:** Auto-remediation deletes resources that shouldn't be deleted
-
-**Mitigation:**
-- Auto-remediation is disabled by default
-- 24-hour minimum age prevents accidental deletions
-- Operator logs all deletions for audit trail
-- Monitor `remediation_total` metric for unexpected deletions
-
-### Information Disclosure
-
-**Threat:** Prometheus metrics expose sensitive information about tenants
-
-**Mitigation:**
-- Metrics only expose resource names (not secrets, passwords, etc.)
-- Unmanaged resources are visible (could reveal what exists)
-- Use Prometheus authentication/authorization to restrict metric access
-- Consider disabling unmanaged resource metrics if needed
-
-## Future Enhancements
-
-- [x] **Config drift detection**: Compare actual Keycloak state with CR spec
-- [ ] **Identity provider drift detection**: Track IDP configuration changes
-- [ ] **Role drift detection**: Monitor role assignments
-- [x] **Drift remediation for config changes**: Auto-update Keycloak when CR changes
-- [ ] **Grafana dashboard**: Pre-built dashboard for drift visualization
-- [ ] **Webhook notifications**: Send alerts to Slack/Teams when drift detected
-- [ ] **Dry-run mode**: Log what would be remediated without actually doing it
-- [ ] **Per-resource remediation control**: Annotation to disable auto-remediation for specific resources
+- [ADR 019](../decisions/019-drift-detection-and-continuous-reconciliation.yaml)
+- [Multi-Tenant Guide](../how-to/multi-tenant.md)
+- [Observability](./observability.md)

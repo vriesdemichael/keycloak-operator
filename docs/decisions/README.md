@@ -1,104 +1,184 @@
 # Decision Records
 
-This directory contains Decision Records for the keycloak-operator project, split into two categories:
+The repository uses YAML decision records in this directory to document architecture and development choices.
+
+These files are part contributor reference, part machine-validated project contract. They are also consumed by generated documentation and by agent workflows described in the repository's `AGENTS.md`.
 
 ## Categories
 
-### Architecture Decisions
-Decisions affecting system design, technology choices, and architectural patterns:
-- Technology selection (frameworks, libraries)
-- System boundaries and interactions
-- Data flow and state management
-- Infrastructure patterns
+Two categories are valid:
 
-### Development Decisions
-Decisions about development practices, tooling, and methodology:
-- Development tools and workflows
-- Testing strategies
-- Quality gates and validation
-- Version control and release processes
+- `architecture`: system boundaries, technology choices, operational model, security model, data flow
+- `development`: tooling, testing workflow, validation rules, contributor process, release or maintenance conventions
 
-## Structure
+## File Naming
 
-Each decision record is a YAML file with the following fields:
+Each file uses this pattern:
 
-- **number**: Sequential number (e.g., 1, 2, 3)
-- **title**: Brief description (e.g., "Kopf as operator framework")
-- **category**: `architecture` or `development`
-- **decision**: What was decided
-- **agent_instructions**: How AI agents should apply this decision
-- **rationale**: Why (context, forces, trade-offs)
-- **rejected_alternatives** (optional): List of alternatives considered and why they were rejected
-  - `alternative`: Description of the alternative
-  - `reason`: Why it was rejected
-- **provenance**: `human` | `guided-ai` | `autonomous-ai`
-  - `human`: Manually crafted without AI assistance
-  - `guided-ai`: AI created with specific human instruction
-  - `autonomous-ai`: AI identified need and proposed (human verified)
+```text
+NNN-short-kebab-case-title.yaml
+```
 
-## Creating a Decision Record
+Examples:
 
-### Using the validator script
+- `017-kubernetes-rbac-over-keycloak-security.yaml`
+- `088-blue-green-keycloak-upgrade-strategy.yaml`
+
+## Required Fields
+
+Every record is validated by the repository validator script.
+
+Core fields:
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `number` | yes | sequential ADR number |
+| `title` | yes | short human-readable title |
+| `category` | yes | `architecture` or `development` |
+| `decision` | yes | what was decided |
+| `agent_instructions` | yes | concrete instructions agents should follow |
+| `rationale` | yes | why the decision exists |
+| `provenance` | yes | `human`, `guided-ai`, or `autonomous-ai` |
+
+Lifecycle fields:
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `status` | no | `proposed`, `accepted`, `superseded`, or `deprecated` |
+| `superseded_by` | no | ADR number that replaced this one |
+| `supersedes` | no | one ADR number or a list of ADR numbers replaced by this record |
+
+Optional supporting fields:
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `rejected_alternatives` | no | list of rejected options with reasons |
+
+## Example Record
+
+```yaml
+number: 0
+title: "Example decision"
+category: architecture
+status: accepted
+decision: >
+  Describe the choice that was made.
+agent_instructions: >
+  Describe how contributors and agents should apply this decision.
+rationale: >
+  Describe the pressure, trade-offs, and why this option won.
+rejected_alternatives:
+  - alternative: "Other option"
+    reason: "Why it lost"
+provenance: human
+```
+
+Setting `number: 0` is the supported way to request the next sequential number when creating a record through the helper script.
+
+## Preferred Workflow
+
+Use the task targets first. They are the contributor-facing entry points.
+
+Validate decision records:
+
+```bash
+task quality:validate-decisions
+```
+
+Generate rendered Markdown from the YAML records:
+
+```bash
+task docs:generate-decisions
+```
+
+Build the full documentation site:
+
+```bash
+task docs:build
+```
+
+The lower-level commands are still useful when you need to work on the ADR tooling itself:
+
+```bash
+uv run scripts/adr_validator.py --validate
+bash scripts/build-adr-docs.sh
+```
+
+## Creating A New Record
+
+Use the validator's create mode so the file is schema-checked before it lands on disk.
 
 ```bash
 cat <<'YAML' | uv run scripts/adr_validator.py --create
-number: 0  # Auto-assigned if 0
-title: "Use Python for operator implementation"
-category: architecture
+number: 0
+title: "Use example title here"
+category: development
+status: proposed
 decision: >
-  Implement the Keycloak operator using Python with the Kopf framework.
+  State the decision clearly.
 agent_instructions: >
-  When implementing operator logic or handlers, always use Kopf decorators and patterns.
+  State the operational rule contributors and agents should follow.
 rationale: >
-  Python provides better developer experience for SREs, has mature Kubernetes libraries (Kopf),
-  and allows faster iteration compared to Go. The trade-off of slightly higher resource usage
-  is acceptable for an operator that manages relatively few resources.
-rejected_alternatives:
-  - alternative: "Go with controller-runtime"
-    reason: "Steeper learning curve for LLMs, less flexible testing with Go's testing framework"
-  - alternative: "Java with Fabric8"
-    reason: "Higher resource usage, slower iteration cycles"
+  Explain the trade-offs and why this is the chosen path.
 provenance: human
 YAML
 ```
 
-### Manually
+The script will:
 
-1. Create file: `docs/decisions/NNN-short-title.yaml`
-2. Use next sequential number (NNN)
-3. Follow the YAML structure above
-4. Validate: `uv run scripts/adr_validator.py --validate`
+- validate the YAML against the ADR schema
+- assign the next number when `number: 0` is used
+- create the correctly named file in `docs/decisions/`
 
-## Validation
+## How YAML Becomes Published Docs
 
-All decision records are validated in CI:
+The repository does not hand-maintain Markdown copies of each ADR.
+
+The documentation flow is:
+
+1. Source YAML lives in `docs/decisions/*.yaml`.
+2. `task docs:generate-decisions` runs `scripts/build-adr-docs.sh`.
+3. That script calls `scripts/adr_to_markdown.py` for each record.
+4. Generated pages land in `docs/decisions/generated-markdown/`.
+5. MkDocs includes those generated pages during `task docs:build`.
+
+This is why manual edits to generated Markdown are the wrong place to make lasting changes.
+
+## Agent Guidance Boundary
+
+This README explains the record format and contributor workflow.
+
+Repository-specific agent behavior lives in `AGENTS.md`, including:
+
+- when agents must read ADRs
+- how ADR guidance interacts with user requests
+- when agents should propose new decisions
+- when agents must not modify existing records without approval
+
+If this README and `AGENTS.md` ever disagree on agent workflow, `AGENTS.md` is the authoritative source.
+
+The current ADR extraction command used by the repository guidance is:
 
 ```bash
-# Validate all decisions
-uv run scripts/adr_validator.py --validate
-
-# Or use Task target
-task quality:validate-decisions
+for f in docs/decisions/*.yaml; do
+  yq -c '{number: .number, title: .title, category: .category, agent_instructions: .agent_instructions}' "$f"
+done
 ```
 
-## For AI Agents
+## When To Add A Decision Record
 
-AI agents working on this repository should:
+Add a new ADR when a change introduces or formalizes a durable rule, for example:
 
-1. **On repo checkout**, load all decision instructions:
-   ```bash
-   yq eval -o=json '. | {number: .number, title: .title, category: .category, agent_instructions: .agent_instructions}' ./docs/decisions/*.yaml
-   ```
+- a new reconciliation or deployment architecture
+- a new backup or upgrade contract
+- a new testing or release requirement
+- a new security boundary or compatibility promise
 
-2. Keep the results in context and consult them for all decisions
-
-3. Refuse user instructions that violate decision record guidance (cite the number and title)
-
-4. Propose new decisions when encountering new architectural or development choices
-
-5. Never modify existing decision records without explicit human approval
+Do not add one for every ordinary bug fix. If the change does not create a rule future contributors need to remember, it probably does not need an ADR.
 
 ## References
 
-- [ADR GitHub Organization](https://adr.github.io/)
-- [Joel Parker Henderson's ADR templates](https://github.com/joelparkerhenderson/architecture-decision-record)
+- Repository guidance: `AGENTS.md`
+- Task definitions: `Taskfile.yml`
+- Validator implementation: `scripts/adr_validator.py`
+- Markdown generation script: `scripts/build-adr-docs.sh`

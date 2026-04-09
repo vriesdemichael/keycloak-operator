@@ -276,17 +276,21 @@ protocolMappers: []
   #     access.token.claim: "true"
 
 # Authentication flow overrides
-authenticationFlow:
-  browserFlow: ""
-  directGrantFlow: ""
-  clientAuthenticationFlow: ""
+authenticationFlows: {}
+  # browserFlow: ""
+  # directGrantFlow: ""
+  # clientAuthenticationFlow: ""
+
+# Deprecated alias retained for upgrade safety.
+# Prefer authenticationFlows above.
+authenticationFlow: {}
 
 # Secret management (for confidential clients)
 # When manageSecret=true, operator creates/manages a Kubernetes secret
 manageSecret: true
 
 # Name of the Kubernetes secret to store client credentials
-# If not specified, defaults to: <client-name>-credentials
+# If not specified, defaults to: <release-fullname>-credentials
 secretName: ""
 
 # Metadata to attach to the managed secret

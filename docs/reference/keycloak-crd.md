@@ -1,16 +1,23 @@
 # Keycloak CRD Reference
 
-Complete reference for the `Keycloak` Custom Resource Definition.
+Reference for the `Keycloak` custom resource.
 
-## Overview
-
-The `Keycloak` CRD defines a Keycloak instance - an identity and access management server. This resource allows you to declaratively manage Keycloak deployments with database connections, TLS configuration, ingress settings, and more.
+This CR defines the Keycloak instance managed by one operator installation. In normal deployments you create it through the operator Helm chart, but the CR remains the source of truth for the runtime contract.
 
 **API Version:** `vriesdemichael.github.io/v1`
 **Kind:** `Keycloak`
-**Plural:** `keycloaks`
-**Singular:** `keycloak`
-**Short Names:** `kc`
+**Short Name:** `kc`
+
+## Overview
+
+Important design constraints:
+
+- one operator instance manages one Keycloak instance in its own namespace
+- the operator supports Keycloak `24.0.0+`
+- the canonical internal model is generated from Keycloak `26.5.2`
+- `keycloakVersion` exists so custom images without a useful semver tag can still be reconciled safely
+
+For compatibility details, see [Keycloak Version Support](./keycloak-version-support.md).
 
 ## Minimal Example
 
@@ -19,535 +26,369 @@ The `Keycloak` CRD defines a Keycloak instance - an identity and access manageme
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
 metadata:
-  name: my-keycloak
+  name: example
   namespace: keycloak-system
 spec:
   database:
     type: postgresql
-    host: postgres-postgresql
-    database: keycloak
-    username: keycloak
-    passwordSecret:
-      name: postgres-password
-      key: password
+    cnpg:
+      clusterName: keycloak-db
 ```
 
 ## Spec Fields
 
 ### Core Configuration
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `image` | string | No | Uses operator default | Container image for Keycloak (e.g., `quay.io/keycloak/keycloak:26.4.1`) |
-| `replicas` | integer | No | `1` | Number of Keycloak replicas (minimum: 1) |
+| Field | Type | Notes |
+| --- | --- | --- |
+| `image` | string | Keycloak image to run. Default code constant is `quay.io/keycloak/keycloak:26.5.2`. |
+| `keycloakVersion` | string | Optional explicit version override for custom images whose tag is not parseable. |
+| `replicas` | integer | Minimum `1`. Multi-replica setups require the usual HA prerequisites. |
+| `optimized` | boolean | Use `--optimized` only for pre-built images. The model default is `false`. |
+| `operatorRef.namespace` | string | Operator namespace. Defaults to `keycloak-system` when not overridden. |
 
-**Example:**
+Example:
+
 ```yaml
 spec:
-  image: quay.io/keycloak/keycloak:26.4.1
-  replicas: 3
+  image: ghcr.io/example/keycloak-custom:stable
+  keycloakVersion: 26.5.2
+  replicas: 2
+  optimized: false
+  operatorRef:
+    namespace: keycloak-system
 ```
 
-### Database Configuration
+## Database Configuration
 
-The database configuration is **required**. The operator supports PostgreSQL, MySQL, MariaDB, Oracle, and Microsoft SQL Server.
+The current model is tiered. Prefer one of the sub-objects below instead of the older flat `host` and `database` shape.
 
-#### Basic Fields
+| Tier | Field | Purpose |
+| --- | --- | --- |
+| Tier 1 | `database.cnpg` | CloudNativePG-managed PostgreSQL. Connection details are derived from the CNPG cluster. |
+| Tier 2 | `database.managed` | Generic PostgreSQL that the operator can connect to directly. |
+| Tier 3 | `database.external` | Externally managed database. The operator can connect but cannot perform managed backups. |
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `database.type` | string | Yes | `postgresql` | Database type. Options: `postgresql`, `mysql`, `mariadb`, `oracle`, `mssql` |
-| `database.host` | string | Yes | - | Database hostname or IP address |
-| `database.port` | integer | No | Auto-detected | Database port (1-65535). Auto-detected based on database type if not specified |
-| `database.database` | string | Yes | - | Database name |
-| `database.username` | string | No* | - | Database username (*required if not using `credentialsSecret`) |
-| `database.passwordSecret` | object | No* | - | Secret reference for database password (*required if using `username`) |
-| `database.passwordSecret.name` | string | Yes | - | Name of the secret containing the password |
-| `database.passwordSecret.key` | string | No | `password` | Key in the secret |
-| `database.credentialsSecret` | string | No | - | Alternative: Kubernetes secret name with complete database credentials |
-| `database.connectionParams` | map[string]string | No | `{}` | Additional database connection parameters |
+Base field:
 
-**Example - PostgreSQL with username/password:**
+| Field | Type | Notes |
+| --- | --- | --- |
+| `database.type` | string | `postgresql`, `mysql`, `mariadb`, `oracle`, or `mssql` |
+
+### CNPG Tier
+
 ```yaml
 spec:
   database:
     type: postgresql
-    host: postgres-postgresql.default.svc.cluster.local
-    port: 5432
+    cnpg:
+      clusterName: keycloak-db
+      namespace: database
+```
+
+Behavior:
+
+- the operator resolves the effective host as `<clusterName>-rw`
+- the effective credentials secret becomes `<clusterName>-app`
+- this is the strongest fit for automated backup and blue-green upgrade support
+
+### Managed Tier
+
+```yaml
+spec:
+  database:
+    type: postgresql
+    managed:
+      host: postgres-rw.database.svc.cluster.local
+      database: keycloak
+      username: keycloak
+      passwordSecret:
+        name: postgres-password
+        key: password
+      pvcName: keycloak-db-data
+      volumeSnapshotClassName: csi-snapclass
+      sslMode: verify-full
+      connectionPool:
+        maxConnections: 50
+        minConnections: 10
+```
+
+Use this when the operator can reach the database directly but does not own the database lifecycle.
+
+### External Tier
+
+```yaml
+spec:
+  database:
+    type: postgresql
+    external:
+      host: postgres.example.com
+      port: 5432
+      database: keycloak
+      credentialsSecret: keycloak-db-credentials
+      sslMode: verify-full
+```
+
+Use this when the database is managed outside the cluster or outside the operator's control plane.
+
+### Legacy Flat Fields
+
+The older flat-field form still works for backward compatibility:
+
+```yaml
+spec:
+  database:
+    type: postgresql
+    host: postgres.example.com
     database: keycloak
     username: keycloak
     passwordSecret:
-      name: postgres-password
-      key: password
+      name: db-password
 ```
 
-**Example - CloudNativePG:**
-```yaml
-spec:
-  database:
-    type: postgresql
-    host: keycloak-postgres-rw  # CNPG read-write service
-    database: keycloak
-    username: keycloak
-    passwordSecret:
-      name: keycloak-postgres-app
-      key: password
-```
+The operator normalizes that legacy form to the same effective contract as the external tier. Prefer the explicit tiered shape for new manifests.
 
-**Example - Using credentialsSecret:**
-```yaml
-spec:
-  database:
-    type: postgresql
-    host: postgres-postgresql
-    database: keycloak
-    credentialsSecret: db-credentials  # Secret with keys: username, password
-```
+### Shared Database Fields
 
-#### Connection Pool
+These appear either on the top-level legacy form or within `managed` and `external`:
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `database.connectionPool.maxConnections` | integer | No | `20` | Maximum number of database connections |
-| `database.connectionPool.minConnections` | integer | No | `5` | Minimum number of database connections |
-| `database.connectionPool.connectionTimeout` | string | No | `30s` | Connection timeout duration |
+| Field | Type | Notes |
+| --- | --- | --- |
+| `host` | string | required for `managed` and `external` |
+| `port` | integer | defaults by database type |
+| `database` | string | logical database name |
+| `username` | string | optional when using `credentialsSecret` |
+| `passwordSecret.name` / `key` | object | direct password secret reference |
+| `credentialsSecret` | string | secret containing connection credentials |
+| `connectionParams` | map | additional JDBC parameters |
+| `connectionPool.maxConnections` | integer | default `20` |
+| `connectionPool.minConnections` | integer | default `5` |
+| `connectionPool.connectionTimeout` | string | default `30s` |
+| `sslMode` | string | `disable`, `allow`, `prefer`, `require`, `verify-ca`, `verify-full` |
+| `migrationStrategy` | string | `auto`, `manual`, `skip` |
 
-**Example:**
-```yaml
-spec:
-  database:
-    # ... other fields ...
-    connectionPool:
-      maxConnections: 50
-      minConnections: 10
-      connectionTimeout: "60s"
-```
+## Networking And Runtime
 
-#### SSL/TLS
+### Service, ingress, and TLS
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `database.sslMode` | string | No | `require` | SSL mode for database connections. Options: `disable`, `allow`, `prefer`, `require`, `verify-ca`, `verify-full` |
+| Field | Type | Notes |
+| --- | --- | --- |
+| `service.type` | string | `ClusterIP`, `NodePort`, `LoadBalancer`, `ExternalName` |
+| `service.httpPort` | integer | default `8080` |
+| `service.httpsPort` | integer | default `8443` |
+| `service.annotations` | map | provider-specific tuning |
+| `ingress.enabled` | boolean | create ingress |
+| `ingress.className` | string | ingress class |
+| `ingress.host` | string | external hostname |
+| `ingress.path` | string | default `/` |
+| `ingress.tlsEnabled` | boolean | default `true` |
+| `ingress.tlsSecretName` | string | ingress TLS secret |
+| `tls.enabled` | boolean | enable Keycloak-side TLS |
+| `tls.secretName` | string | `tls.crt` / `tls.key` secret |
+| `tls.hostname` | string | SNI hostname |
 
-**Example:**
-```yaml
-spec:
-  database:
-    # ... other fields ...
-    sslMode: verify-full  # Strict SSL with certificate verification
-```
+### Runtime tuning
 
-#### Migration
+| Field | Type | Notes |
+| --- | --- | --- |
+| `resources.requests` / `limits` | map | pod CPU and memory sizing |
+| `env` | list | Kubernetes-style env entries; supports `valueFrom` |
+| `jvmOptions` | list | additional JVM flags |
+| `serviceAccount` | string | custom workload identity service account |
+| `startupProbe` / `livenessProbe` / `readinessProbe` | object | Kubernetes probe overrides |
+| `podSecurityContext` | object | pod-level security controls |
+| `securityContext` | object | container-level security controls |
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `database.migrationStrategy` | string | No | `auto` | Database migration strategy. Options: `auto` (automatic), `manual` (skip migrations), `skip` |
+## Operational Controls
 
-**Example:**
-```yaml
-spec:
-  database:
-    # ... other fields ...
-    migrationStrategy: auto  # Automatically run schema migrations
-```
+These fields are newer than the older docs and are where most drift had accumulated.
 
-### TLS Configuration
+### Realm capacity
 
-Configure TLS/SSL termination for Keycloak.
+| Field | Type | Notes |
+| --- | --- | --- |
+| `realmCapacity.maxRealms` | integer | optional cap on managed realm count |
+| `realmCapacity.allowNewRealms` | boolean | stop accepting new realms without freezing existing ones |
+| `realmCapacity.capacityMessage` | string | operator-visible status message |
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `tls.enabled` | boolean | No | `false` | Enable TLS/SSL |
-| `tls.secretName` | string | No | - | Secret containing TLS certificate (keys: `tls.crt`, `tls.key`) |
-| `tls.hostname` | string | No | - | Hostname for TLS certificate (Server Name Indication) |
+### Upgrade orchestration
 
-**Example:**
-```yaml
-spec:
-  tls:
-    enabled: true
-    secretName: keycloak-tls
-    hostname: keycloak.example.com
-```
+| Field | Type | Notes |
+| --- | --- | --- |
+| `upgradePolicy.backupTimeout` | integer | backup timeout in seconds |
+| `upgradePolicy.strategy` | string | `Recreate` or `BlueGreen` |
+| `upgradePolicy.autoTeardown` | boolean | remove old deployment automatically after cutover |
 
-### Service Configuration
+`BlueGreen` requires a CNPG or managed database tier.
 
-Configure the Kubernetes service for Keycloak.
+### Maintenance mode
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `service.type` | string | No | `ClusterIP` | Service type. Options: `ClusterIP`, `NodePort`, `LoadBalancer` |
-| `service.httpPort` | integer | No | `8080` | HTTP port (1-65535) |
-| `service.httpsPort` | integer | No | `8443` | HTTPS port (1-65535) |
-| `service.annotations` | map[string]string | No | `{}` | Service annotations (e.g., for cloud load balancers) |
+| Field | Type | Notes |
+| --- | --- | --- |
+| `maintenanceMode.enabled` | boolean | enable ingress traffic controls during upgrade |
+| `maintenanceMode.mode` | string | `read-only` or `full-block` |
+| `maintenanceMode.excludePaths` | list | health and allow-list paths |
+| `maintenanceMode.blockedPaths` | list | regex-capable blocked paths in `read-only` mode |
 
-**Example:**
-```yaml
-spec:
-  service:
-    type: LoadBalancer
-    httpPort: 8080
-    httpsPort: 8443
-    annotations:
-      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
-```
+### Cache isolation
 
-### Ingress Configuration
+| Field | Type | Notes |
+| --- | --- | --- |
+| `cacheIsolation.clusterName` | string | explicit cache cluster label |
+| `cacheIsolation.autoSuffix` | boolean | append version to cluster name |
+| `cacheIsolation.autoRevision` | boolean | derive stable revision-based cluster name |
 
-Configure ingress for external access to Keycloak.
+### Tracing
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `ingress.enabled` | boolean | No | `false` | Enable ingress |
-| `ingress.host` | string | No | - | Ingress hostname (e.g., `keycloak.example.com`) |
-| `ingress.path` | string | No | `/` | Ingress path |
-| `ingress.tlsEnabled` | boolean | No | `true` | Enable TLS for ingress |
-| `ingress.tlsSecretName` | string | No | - | Secret name for ingress TLS certificate |
-| `ingress.className` | string | No | - | Ingress class name (e.g., `nginx`, `traefik`) |
-| `ingress.annotations` | map[string]string | No | `{}` | Ingress annotations |
+| Field | Type | Notes |
+| --- | --- | --- |
+| `tracing.enabled` | boolean | enable OTEL support |
+| `tracing.endpoint` | string | OTLP gRPC collector endpoint |
+| `tracing.serviceName` | string | trace service name |
+| `tracing.sampleRate` | float | `0.0` to `1.0` |
 
-**Example:**
-```yaml
-spec:
-  ingress:
-    enabled: true
-    host: keycloak.example.com
-    path: /
-    tlsEnabled: true
-    tlsSecretName: keycloak-ingress-tls
-    className: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-```
-
-### Resource Requirements
-
-Configure CPU and memory limits for Keycloak pods.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `resources.requests` | map[string]string | No | - | Resource requests (e.g., `cpu: "500m"`, `memory: "1Gi"`) |
-| `resources.limits` | map[string]string | No | - | Resource limits |
-
-**Example:**
-```yaml
-spec:
-  resources:
-    requests:
-      cpu: "1000m"
-      memory: "2Gi"
-    limits:
-      cpu: "2000m"
-      memory: "4Gi"
-```
-
-### Environment Variables
-
-Inject custom environment variables into Keycloak containers.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `env` | `[]EnvVar` | No | `[]` | Kubernetes-style environment variable entries |
-
-**Example:**
-```yaml
-spec:
-  env:
-    - name: KC_LOG_LEVEL
-      value: "INFO"
-    - name: KC_FEATURES
-      value: "token-exchange,admin-fine-grained-authz"
-    - name: KC_PROXY_HEADERS
-      valueFrom:
-        secretKeyRef:
-          name: keycloak-runtime-env
-          key: proxy-headers
-```
-
-**Common Keycloak environment variables:**
-- `KC_LOG_LEVEL` - Logging level (`INFO`, `DEBUG`, `WARN`, `ERROR`)
-- `KC_FEATURES` - Enable preview features
-- `KC_PROXY` - Proxy mode (`edge`, `reencrypt`, `passthrough`)
-- `KC_HTTP_RELATIVE_PATH` - Context path for Keycloak
-
-### JVM Configuration
-
-Configure JVM options for performance tuning.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `jvmOptions` | []string | No | `[]` | JVM options (e.g., heap size, GC settings) |
-
-**Example:**
-```yaml
-spec:
-  jvmOptions:
-    - "-Xms2048m"
-    - "-Xmx4096m"
-    - "-XX:+UseG1GC"
-    - "-XX:MaxGCPauseMillis=200"
-    - "-XX:+DisableExplicitGC"
-```
-
-**Common JVM options:**
-- `-Xms<size>` - Initial heap size
-- `-Xmx<size>` - Maximum heap size
-- `-XX:+UseG1GC` - Use G1 garbage collector (recommended)
-- `-XX:MaxGCPauseMillis=<ms>` - Target GC pause time
-- `-Djava.net.preferIPv4Stack=true` - Prefer IPv4
-
-### Service Account
-
-Assign a Kubernetes service account for workload identity.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `serviceAccount` | string | No | - | Service account name for Keycloak pods (for GCP Workload Identity, AWS IRSA, etc.) |
-
-**Example:**
-```yaml
-spec:
-  serviceAccount: keycloak-workload-identity
-```
-
-### Health Probes
-
-Override default health probe configurations.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `startupProbe` | object | No | Operator defaults | Kubernetes startup probe configuration |
-| `livenessProbe` | object | No | Operator defaults | Kubernetes liveness probe configuration |
-| `readinessProbe` | object | No | Operator defaults | Kubernetes readiness probe configuration |
-
-**Example:**
-```yaml
-spec:
-  startupProbe:
-    httpGet:
-      path: /health/started
-      port: 9000
-    initialDelaySeconds: 30
-    periodSeconds: 10
-    failureThreshold: 30
-  livenessProbe:
-    httpGet:
-      path: /health/live
-      port: 9000
-    periodSeconds: 30
-  readinessProbe:
-    httpGet:
-      path: /health/ready
-      port: 9000
-    periodSeconds: 10
-```
-
-### Security Context
-
-Configure pod and container security contexts.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `podSecurityContext` | object | No | - | Pod-level security context (fsGroup, runAsUser, etc.) |
-| `securityContext` | object | No | - | Container-level security context (capabilities, privileged, etc.) |
-
-**Example:**
-```yaml
-spec:
-  podSecurityContext:
-    runAsNonRoot: true
-    runAsUser: 1000
-    fsGroup: 1000
-  securityContext:
-    allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-        - ALL
-    readOnlyRootFilesystem: false
-```
+Built-in tracing support requires Keycloak `26.0.0+`.
 
 ## Status Fields
 
-The operator populates the `status` subresource with the current state of the Keycloak instance.
+The operator writes status under `status`.
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `phase` | string | Current phase: `Pending`, `Provisioning`, `Ready`, `Failed`, `Updating`, `Degraded` |
-| `message` | string | Human-readable status message |
-| `reason` | string | Reason for current phase |
-| `observedGeneration` | integer | Generation of spec that was last processed |
-| `adminUsername` | string | Keycloak admin username |
-| `adminSecret` | string | Name of secret containing admin password |
-| `internalUrl` | string | Internal cluster URL |
-| `externalUrl` | string | External URL (if ingress enabled) |
-| `endpoints.admin` | string | Admin console endpoint |
-| `endpoints.public` | string | Public endpoint for OIDC/SAML |
-| `endpoints.management` | string | Management endpoint (health, metrics) |
-| `deployment` | string | Name of the Keycloak deployment |
-| `service` | string | Name of the Keycloak service |
-| `readyReplicas` | integer | Number of ready replicas |
-| `lastHealthCheck` | string (datetime) | Last health check timestamp |
-| `databaseStatus` | string | Database connection status: `Connected`, `Connecting`, `Failed`, `Unknown` |
+### Common phases
 
-**Example status:**
-```yaml
-status:
-  phase: Ready
-  message: "Keycloak instance is healthy and ready"
-  observedGeneration: 1
-  adminUsername: admin
-  adminSecret: my-keycloak-admin-password
-  internalUrl: http://my-keycloak:8080
-  externalUrl: https://keycloak.example.com
-  endpoints:
-    admin: https://keycloak.example.com/admin
-    public: https://keycloak.example.com
-    management: http://my-keycloak:9000
-  deployment: my-keycloak
-  service: my-keycloak
-  readyReplicas: 3
-  databaseStatus: Connected
-```
+You will typically see phases such as:
 
-## Complete Examples
+- `Pending`
+- `Provisioning`
+- `Reconciling`
+- `Ready`
+- `Updating`
+- `Degraded`
+- `Failed`
+- `Paused`
+- `BackingUp`
 
-### Production Setup with HA
+### Important status fields
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `phase` | string | current lifecycle phase |
+| `message` / `reason` | string | human-readable summary and machine-leaning reason |
+| `observedGeneration` | integer | last applied spec generation |
+| `replicas`, `readyReplicas`, `availableReplicas` | integer | pod readiness and availability |
+| `deployment`, `service`, `ingress` | string | managed resource names |
+| `persistentVolumeClaims` | list | PVCs owned or tracked by the instance |
+| `authorizationSecretName` | string | realm-authorization secret for delegated namespace flows |
+| `endpoints.public`, `admin`, `internal`, `management` | string | resolved URLs |
+| `realmCount` | integer | currently managed realm count |
+| `acceptingNewRealms` | boolean | whether new realm creation is allowed |
+| `capacityStatus` | string | capacity message surfaced by the operator |
+| `version` | string | running Keycloak version |
+| `capabilities` | list | detected runtime capabilities |
+| `lastHealthCheck`, `healthStatus` | string | health observations |
+| `stats` | object | operational counters |
+| `blueGreen` | object | in-progress blue-green state machine details |
+
+`status.blueGreen.state` can move through states such as `BackingUp`, `ProvisioningGreen`, `WaitingForGreen`, `CuttingOver`, `TearingDownBlue`, `Completed`, and `Failed`.
+
+## Examples
+
+### Blue-green upgrade with CNPG
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
 metadata:
-  name: keycloak-prod
+  name: production
   namespace: keycloak-system
 spec:
-  image: quay.io/keycloak/keycloak:26.4.1
-  replicas: 3
-
+  image: quay.io/keycloak/keycloak:26.5.2
+  replicas: 2
+  optimized: false
   database:
     type: postgresql
-    host: postgres-ha-rw.database.svc.cluster.local
-    port: 5432
-    database: keycloak
-    username: keycloak
-    passwordSecret:
-      name: postgres-password
-      key: password
-    sslMode: verify-full
-    connectionPool:
-      maxConnections: 100
-      minConnections: 20
-      connectionTimeout: "30s"
-
-  service:
-    type: ClusterIP
-    httpPort: 8080
-    httpsPort: 8443
-
+    cnpg:
+      clusterName: keycloak-db
   ingress:
     enabled: true
-    host: auth.example.com
-    tlsEnabled: true
-    tlsSecretName: keycloak-tls
     className: nginx
-    annotations:
-      cert-manager.io/cluster-issuer: letsencrypt-prod
-      nginx.ingress.kubernetes.io/proxy-buffer-size: "128k"
-      nginx.ingress.kubernetes.io/affinity: "cookie"
+    host: auth.example.com
+    tlsSecretName: auth-example-com-tls
+  upgradePolicy:
+    strategy: BlueGreen
+    backupTimeout: 900
+    autoTeardown: true
+  maintenanceMode:
+    enabled: true
+    mode: read-only
+  cacheIsolation:
+    autoRevision: true
+```
 
+### Managed PostgreSQL with capacity control
+
+```yaml
+# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
+apiVersion: vriesdemichael.github.io/v1
+kind: Keycloak
+metadata:
+  name: shared-platform
+  namespace: keycloak-system
+spec:
+  database:
+    type: postgresql
+    managed:
+      host: postgres-rw.database.svc.cluster.local
+      database: keycloak
+      username: keycloak
+      passwordSecret:
+        name: postgres-password
+      pvcName: keycloak-db-data
+  realmCapacity:
+    maxRealms: 50
+    allowNewRealms: true
+    capacityMessage: Shared realm platform nearing limit
   resources:
     requests:
-      cpu: "2000m"
-      memory: "4Gi"
+      cpu: 1000m
+      memory: 2Gi
     limits:
-      cpu: "4000m"
-      memory: "8Gi"
-
-  jvmOptions:
-    - "-Xms4g"
-    - "-Xmx6g"
-    - "-XX:+UseG1GC"
-    - "-XX:MaxGCPauseMillis=200"
-
-  env:
-    KC_LOG_LEVEL: "INFO"
-    KC_PROXY: "edge"
-    KC_FEATURES: "token-exchange,admin-fine-grained-authz"
+      cpu: 2000m
+      memory: 4Gi
 ```
 
-### Development Setup
+### Custom image with explicit version and tracing
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
 apiVersion: vriesdemichael.github.io/v1
 kind: Keycloak
 metadata:
-  name: keycloak-dev
-  namespace: keycloak-dev
-spec:
-  replicas: 1
-
-  database:
-    type: postgresql
-    host: postgres
-    database: keycloak
-    username: keycloak
-    passwordSecret:
-      name: postgres-password
-
-  service:
-    type: NodePort
-
-  env:
-    KC_LOG_LEVEL: "DEBUG"
-```
-
-### With CloudNativePG
-
-```yaml
-# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/Keycloak.json
-apiVersion: vriesdemichael.github.io/v1
-kind: Keycloak
-metadata:
-  name: keycloak
+  name: observability-demo
   namespace: keycloak-system
 spec:
-  image: quay.io/keycloak/keycloak:26.4.1
-  replicas: 3
-
+  image: ghcr.io/example/keycloak-custom:stable
+  keycloakVersion: 26.5.2
+  tracing:
+    enabled: true
+    endpoint: http://otel-collector.observability.svc.cluster.local:4317
+    serviceName: keycloak-production
+    sampleRate: 0.25
   database:
     type: postgresql
-    host: keycloak-postgres-rw  # CloudNativePG read-write service
-    database: keycloak
-    username: keycloak
-    passwordSecret:
-      name: keycloak-postgres-app  # CNPG generates this secret
-      key: password
-    sslMode: require
-
-  ingress:
-    enabled: true
-    host: keycloak.example.com
-    className: nginx
+    external:
+      host: postgres.example.com
+      database: keycloak
+      credentialsSecret: keycloak-db-credentials
+      sslMode: verify-full
 ```
 
 ## See Also
 
-**Related CRD References:**
-
-- [KeycloakRealm CRD Reference](keycloak-realm-crd.md) - Configure realms on Keycloak instances
-- [KeycloakClient CRD Reference](keycloak-client-crd.md) - Configure OAuth2/OIDC clients
-
-**Deployment Guides:**
-
-- [End-to-End Setup](../how-to/end-to-end-setup.md) - Deploy Keycloak instance with operator
-- [Database Setup](../how-to/database-setup.md) - Configure PostgreSQL for production
-- [High Availability Deployment](../how-to/ha-deployment.md) - Multi-replica Keycloak setup
-- [Quick Start Guide](../quickstart/README.md) - Basic Keycloak instance deployment
-
-**Architecture & Operations:**
-
-- [Architecture](../concepts/architecture.md) - Operator design and reconciliation flow
-- [Troubleshooting: Keycloak Instance Issues](../operations/troubleshooting.md#keycloak-instance-issues) - Common deployment problems
-- [Observability](../guides/observability.md) - Monitoring Keycloak instances
+- [KeycloakRealm CRD Reference](./keycloak-realm-crd.md)
+- [Keycloak Version Support](./keycloak-version-support.md)
+- [High Availability Deployment](../how-to/ha-deployment.md)
+- [ADR 062: One Keycloak Per Operator](../decisions/generated-markdown/062-one-keycloak-per-operator.md)
+- [ADR 088: Blue-Green Keycloak Upgrade Strategy](../decisions/generated-markdown/088-blue-green-keycloak-upgrade-strategy.md)
+- [ADR 091: Legacy Flat DB Config Normalized To External Tier](../decisions/generated-markdown/091-legacy-flat-db-config-normalized-to-external-tier.md)
+- [ADR 092: Blue-Green Upgrade State Machine](../decisions/generated-markdown/092-blue-green-upgrade-state-machine.md)

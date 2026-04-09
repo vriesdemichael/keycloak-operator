@@ -118,8 +118,18 @@
         }
       }
     },
+    "authenticationFlows": {
+      "type": "object",
+      "description": "Authentication flow overrides for the generated KeycloakClient resource",
+      "properties": {
+        "browserFlow": {"type": "string"},
+        "directGrantFlow": {"type": "string"},
+        "clientAuthenticationFlow": {"type": "string"}
+      }
+    },
     "authenticationFlow": {
       "type": "object",
+      "description": "Deprecated singular alias. Prefer authenticationFlows.",
       "properties": {
         "browserFlow": {"type": "string"},
         "directGrantFlow": {"type": "string"},

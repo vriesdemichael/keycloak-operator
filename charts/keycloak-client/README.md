@@ -15,6 +15,8 @@ This chart creates a `KeycloakClient` custom resource that is reconciled by the 
 
 **Target Users:** Application developers who need OAuth2/OIDC authentication for their applications.
 
+Helm is the normal path here. Managing raw `KeycloakClient` manifests directly is supported, but it is an advanced/manual workflow. See [Helm vs Direct CR Deployments](../../docs/how-to/helm-vs-cr-deployments.md).
+
 ## Prerequisites
 
 - Kubernetes 1.27+
@@ -265,6 +267,8 @@ serviceAccountRoles:
       - write
 ```
 
+Referenced clients and roles must already exist in the target realm. Reconciliation fails fast if they do not.
+
 #### Protocol Mappers
 
 | Parameter | Description | Default |
@@ -298,9 +302,11 @@ protocolMappers:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `authenticationFlow.browserFlow` | Custom browser authentication flow | `""` |
-| `authenticationFlow.directGrantFlow` | Custom direct grant flow | `""` |
-| `authenticationFlow.clientAuthenticationFlow` | Custom client authentication flow | `""` |
+| `authenticationFlows.browserFlow` | Custom browser authentication flow | `""` |
+| `authenticationFlows.directGrantFlow` | Custom direct grant flow | `""` |
+| `authenticationFlows.clientAuthenticationFlow` | Custom client authentication flow | `""` |
+
+The generated `KeycloakClient` resource uses `authenticationFlows` (plural) to match the CRD and operator model. The older singular Helm value `authenticationFlow` is still accepted as a deprecated alias for upgrade safety, but new values files should use `authenticationFlows`.
 
 #### Secret Management
 
@@ -319,10 +325,81 @@ protocolMappers:
 When `manageSecret: true` and `publicClient: false`, the operator creates a secret containing:
 - `client-id` - The OAuth2 client ID
 - `client-secret` - The client secret
-- `issuer-url` - The OIDC issuer URL
-- `token-url` - The token endpoint
-- `auth-url` - The authorization endpoint
-- `userinfo-url` - The userinfo endpoint
+- `issuer` - The OIDC issuer URL
+- `keycloak-url` - The base Keycloak URL
+- `realm` - The realm name
+- `token-endpoint` - The token endpoint
+- `userinfo-endpoint` - The userinfo endpoint
+- `jwks-endpoint` - The JWKS endpoint
+
+If `secretName` is not set, the chart defaults to `<release-fullname>-credentials`.
+
+For example, a release named `my-client` renders the default Secret name as `my-client-keycloak-client-credentials`, because the chart fullname helper expands to `<release-name>-<chart-name>` unless the release name already contains `keycloak-client`.
+
+For same-namespace workloads, wire that Secret directly into the Deployment instead of manually extracting values from the CLI:
+
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webapp
+  namespace: my-team
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webapp
+  template:
+    metadata:
+      labels:
+        app: webapp
+    spec:
+      containers:
+        - name: webapp
+          image: ghcr.io/example/webapp:latest
+          env:
+            - name: OIDC_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: client-id
+            - name: OIDC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: client-secret
+            - name: OIDC_ISSUER
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: issuer
+            - name: OIDC_TOKEN_ENDPOINT
+              valueFrom:
+                secretKeyRef:
+                  name: my-client-keycloak-client-credentials
+                  key: token-endpoint
+```
+
+If your application expects a bulk env import, `envFrom` works as well:
+
+```yaml
+envFrom:
+  - secretRef:
+      name: my-client-keycloak-client-credentials
+```
+
+#### Secret Rotation
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `secretRotation.enabled` | Enable automated client secret rotation | `false` |
+| `secretRotation.rotationPeriod` | Rotation interval such as `90d` or `24h` | `90d` |
+| `secretRotation.rotationTime` | Optional target time in `HH:MM` format | `""` |
+| `secretRotation.timezone` | IANA timezone for scheduled rotation | `UTC` |
+
+Use secret rotation only for confidential clients whose consuming applications can tolerate credential updates.
+
+For operator-managed credential secrets, manual `clientSecret` binding, and restart-coordination guidance, see [Operations: Secret Management](../../docs/operations/secret-management.md).
 
 #### Extra Manifests
 
@@ -560,8 +637,8 @@ kubectl wait --for=jsonpath='{.status.phase}'=Ready \
 For confidential clients (non-public):
 
 ```bash
-# Get secret name (default: {client-name}-credentials)
-SECRET_NAME="my-client-credentials"
+# Get secret name (default: <release-fullname>-credentials)
+SECRET_NAME="my-client-keycloak-client-credentials"
 
 # Get client ID
 kubectl get secret $SECRET_NAME -n my-team \
@@ -675,7 +752,7 @@ kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator | gr
 
 ### No Client Secret Created
 
-**Symptom:** Secret `{client-name}-credentials` doesn't exist
+**Symptom:** The expected credentials Secret doesn't exist
 
 ```bash
 # Check if secret should be created
@@ -685,7 +762,7 @@ helm get values my-client -n my-team | grep manageSecret
 helm get values my-client -n my-team | grep publicClient
 ```
 
-**Solution:** Secrets are only created for confidential clients (`publicClient: false` and `manageSecret: true`)
+**Solution:** Secrets are only created for confidential clients (`publicClient: false` and `manageSecret: true`). If you did not set `secretName`, check the rendered default `<release-fullname>-credentials`, for example `my-client-keycloak-client-credentials`.
 
 ### OAuth2 Redirect URI Mismatch
 

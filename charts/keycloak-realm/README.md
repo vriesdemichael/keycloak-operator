@@ -16,6 +16,8 @@ This chart creates a `KeycloakRealm` custom resource that is reconciled by the K
 
 **Target Users:** Development teams who need isolated identity domains for their applications.
 
+This chart is the recommended deployment path for realms. Managing raw `KeycloakRealm` manifests directly is supported, but it is an advanced/manual workflow.
+
 ## Prerequisites
 
 - Kubernetes 1.27+
@@ -42,8 +44,7 @@ helm install my-realm keycloak-operator/keycloak-realm \
 realmName: my-app-realm
 displayName: "My Application"
 
-instanceRef:
-  name: keycloak
+operatorRef:
   namespace: keycloak-system
 
 # Grant these namespaces permission to create clients
@@ -58,8 +59,8 @@ security:
   bruteForceProtected: true
 
 themes:
-  loginTheme: my-custom-theme
-  accountTheme: my-custom-theme
+  login: my-custom-theme
+  account: my-custom-theme
 
 smtpServer:
   enabled: true
@@ -117,14 +118,22 @@ kubectl describe keycloakrealm my-realm -n my-team
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `instanceRef.name` | Name of the Keycloak instance | `keycloak` |
-| `instanceRef.namespace` | Namespace where Keycloak instance is running | `keycloak-system` |
+| `operatorRef.namespace` | Namespace where operator is running | `keycloak-system` |
 | `clientAuthorizationGrants` | List of namespaces that can create clients in this realm | `[]` |
 
 **Authorization:**
 - **Realm Creation:** Controlled by Kubernetes RBAC
 - **Client Creation:** Only namespaces in `clientAuthorizationGrants` can create clients
 - No tokens required - fully declarative authorization
+
+**Example:**
+
+```yaml
+clientAuthorizationGrants:
+  - team-a
+  - team-a-staging
+  - team-b
+```
 
 
 #### RBAC Configuration
@@ -404,9 +413,9 @@ operatorRef:
   namespace: keycloak-system
 
 themes:
-  loginTheme: my-company-theme
-  accountTheme: my-company-theme
-  emailTheme: my-company-theme
+  login: my-company-theme
+  account: my-company-theme
+  email: my-company-theme
 
 attributes:
   frontendUrl: "https://auth.example.com"

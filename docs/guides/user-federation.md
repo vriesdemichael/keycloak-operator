@@ -1,71 +1,105 @@
 # User Federation Guide
 
-This guide explains how to configure LDAP, Active Directory, and Kerberos user federation with the Keycloak Operator.
+This guide covers LDAP, Active Directory, and Kerberos-backed user federation for `KeycloakRealm` resources.
+
+Use the `keycloak-realm` Helm chart as the main entry point. Raw `KeycloakRealm` manifests are still supported, but they are the advanced path.
 
 ## Overview
 
-User federation allows Keycloak to authenticate users against external identity stores like LDAP directories or Active Directory. The operator supports:
+The realm chart exposes user federation through the top-level `userFederation` values key, which maps directly into `spec.userFederation` on the generated realm CR.
 
-- **LDAP** - Standard LDAP directories (OpenLDAP, FreeIPA, etc.)
-- **Active Directory** - Microsoft Active Directory with sAMAccountName/UPN support
-- **Kerberos** - SPNEGO/Kerberos authentication integrated with LDAP
+```yaml
+# values.yaml for charts/keycloak-realm
+userFederation:
+  - name: corporate-ldap
+    providerId: ldap
+    connectionUrl: ldap://ldap.example.com:389
+    bindDn: cn=readonly,dc=example,dc=com
+    bindCredentialSecret:
+      name: ldap-credentials
+      key: password
+    usersDn: ou=People,dc=example,dc=com
+    vendor: other
+    usernameLdapAttribute: uid
+    uuidLdapAttribute: entryUUID
+    userObjectClasses:
+      - inetOrgPerson
+      - organizationalPerson
+    editMode: READ_ONLY
+    syncSettings:
+      importEnabled: true
+      fullSyncPeriod: 86400
+      changedUsersSyncPeriod: 3600
+```
 
-## Prerequisites
+The values intentionally mirror the CR field names, so the same camelCase keys appear in Helm values and in `spec.userFederation`.
 
-1. A running Keycloak instance managed by the operator
-2. Network connectivity between Keycloak pods and your LDAP/AD server
-3. A bind account with read access to your directory
+## Secret Requirements
 
-## Configuration
+Referenced secrets such as `bindCredentialSecret` and `keytabSecret` must:
+
+- live in the same namespace as the `KeycloakRealm`
+- include the label `vriesdemichael.github.io/keycloak-allow-operator-read: "true"`
+
+Example:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ldap-credentials
+  namespace: my-namespace
+  labels:
+    vriesdemichael.github.io/keycloak-allow-operator-read: "true"
+stringData:
+  password: your-ldap-password
+```
+
+## Using Helm
 
 ### Basic LDAP Federation
 
 ```yaml
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakRealm
-metadata:
-  name: my-realm
-  namespace: my-namespace
-spec:
-  realmName: my-realm
-  operatorRef:
-    namespace: keycloak-system
-
-  userFederation:
-    - name: corporate-ldap
-      providerId: ldap
-      connectionUrl: "ldap://ldap.example.com:389"
-      bindDn: "cn=readonly,dc=example,dc=com"
-      bindCredentialSecret:
-        name: ldap-credentials
-        key: password
-      usersDn: "ou=People,dc=example,dc=com"
-      vendor: other
-      usernameLdapAttribute: uid
-      uuidLdapAttribute: entryUUID
-      userObjectClasses:
-        - inetOrgPerson
-        - organizationalPerson
-      editMode: READ_ONLY
-      syncSettings:
-        importEnabled: true
-        fullSyncPeriod: 86400  # Full sync daily
-        changedUsersSyncPeriod: 3600  # Changed users sync hourly
+userFederation:
+  - name: corporate-ldap
+    providerId: ldap
+    enabled: true
+    connectionUrl: ldap://ldap.example.com:389
+    startTls: true
+    bindDn: cn=readonly,dc=example,dc=com
+    bindCredentialSecret:
+      name: ldap-credentials
+      key: password
+    usersDn: ou=People,dc=example,dc=com
+    vendor: other
+    usernameLdapAttribute: uid
+    uuidLdapAttribute: entryUUID
+    userObjectClasses:
+      - inetOrgPerson
+      - organizationalPerson
+    editMode: READ_ONLY
+    syncSettings:
+      importEnabled: true
+      fullSyncPeriod: 86400
+      changedUsersSyncPeriod: 3600
+      syncRegistrations: false
 ```
 
-### Active Directory Configuration
+### Active Directory
 
 ```yaml
 userFederation:
   - name: corporate-ad
     providerId: ldap
-    connectionUrl: "ldaps://dc.corp.example.com:636"
-    bindDn: "CN=Keycloak Service,OU=ServiceAccounts,DC=corp,DC=example,DC=com"
+    enabled: true
+    connectionUrl: ldaps://dc.corp.example.com:636
+    startTls: false
+    bindDn: CN=Keycloak Service,OU=ServiceAccounts,DC=corp,DC=example,DC=com
     bindCredentialSecret:
       name: ad-credentials
       key: password
-    usersDn: "OU=Users,DC=corp,DC=example,DC=com"
-    vendor: ad  # Important: Set to 'ad' for Active Directory
+    usersDn: OU=Users,DC=corp,DC=example,DC=com
+    vendor: ad
     usernameLdapAttribute: sAMAccountName
     uuidLdapAttribute: objectGUID
     rdnLdapAttribute: cn
@@ -73,7 +107,7 @@ userFederation:
       - user
       - organizationalPerson
     trustEmail: true
-    startTls: false  # Using LDAPS on port 636
+    editMode: READ_ONLY
     mappers:
       - name: upn-mapper
         mapperType: user-attribute-ldap-mapper
@@ -83,166 +117,121 @@ userFederation:
           read.only: "true"
 ```
 
-### Kerberos/SPNEGO Authentication
-
-For environments using Kerberos authentication:
+### LDAP with Kerberos
 
 ```yaml
 userFederation:
   - name: kerberos-ldap
     providerId: ldap
-    connectionUrl: "ldap://ldap.example.com:389"
-    bindDn: "cn=readonly,dc=example,dc=com"
+    enabled: true
+    connectionUrl: ldap://ldap.example.com:389
+    bindDn: cn=readonly,dc=example,dc=com
     bindCredentialSecret:
       name: ldap-credentials
       key: password
-    usersDn: "ou=People,dc=example,dc=com"
+    usersDn: ou=People,dc=example,dc=com
     vendor: other
-
-    # Kerberos settings
     allowKerberosAuthentication: true
     kerberosRealm: EXAMPLE.COM
     serverPrincipal: HTTP/keycloak.example.com@EXAMPLE.COM
     keytabSecret:
       name: kerberos-keytab
       key: keytab
-    useKerberosForPasswordAuthentication: true
+    useKerberosForPasswordAuthentication: false
     debug: false
 ```
 
-## Creating Secrets
+## LDAP Security Choices
 
-Secrets must be labeled to allow operator access:
+Use one of these patterns:
 
-```bash
-# Create the bind credential secret
-kubectl create secret generic ldap-credentials \
-  --from-literal=password='your-ldap-password' \
-  -n your-namespace
+- Port `389` with `startTls: true` when the directory starts plaintext and upgrades to TLS.
+- Port `636` with `ldaps://...` and `startTls: false` when the directory expects implicit TLS from the start.
 
-# Label it for operator access
-kubectl label secret ldap-credentials \
-  vriesdemichael.github.io/keycloak-allow-operator-read=true \
-  -n your-namespace
-```
+Also review `useTruststoreSpi` if your environment requires custom CA trust behavior.
 
-For Kerberos keytab:
+## Common Mappers
 
-```bash
-# Create keytab secret from file
-kubectl create secret generic kerberos-keytab \
-  --from-file=keytab=/path/to/keycloak.keytab \
-  -n your-namespace
-
-kubectl label secret kerberos-keytab \
-  vriesdemichael.github.io/keycloak-allow-operator-read=true \
-  -n your-namespace
-```
-
-## Federation Mappers
-
-Mappers transform LDAP attributes to Keycloak user properties:
+User federation mappers live under `userFederation[].mappers` and use the `mapperType` field.
 
 ```yaml
-mappers:
-  # Map email attribute
-  - name: email-mapper
-    mapperType: user-attribute-ldap-mapper
-    config:
-      ldap.attribute: mail
-      user.model.attribute: email
-      read.only: "true"
-      always.read.value.from.ldap: "true"
-      is.mandatory.in.ldap: "false"
-
-  # Map first name
-  - name: first-name-mapper
-    mapperType: user-attribute-ldap-mapper
-    config:
-      ldap.attribute: givenName
-      user.model.attribute: firstName
-      read.only: "true"
-
-  # Map groups from LDAP
-  - name: group-mapper
-    mapperType: group-ldap-mapper
-    config:
-      groups.dn: "ou=Groups,dc=example,dc=com"
-      group.name.ldap.attribute: cn
-      group.object.classes: groupOfNames
-      membership.ldap.attribute: member
-      membership.user.ldap.attribute: dn
-      mode: READ_ONLY
+userFederation:
+  - name: corporate-ldap
+    providerId: ldap
+    mappers:
+      - name: email-mapper
+        mapperType: user-attribute-ldap-mapper
+        config:
+          ldap.attribute: mail
+          user.model.attribute: email
+          read.only: "true"
+      - name: group-mapper
+        mapperType: group-ldap-mapper
+        config:
+          groups.dn: ou=Groups,dc=example,dc=com
+          group.name.ldap.attribute: cn
+          membership.ldap.attribute: member
+          membership.user.ldap.attribute: dn
+          mode: READ_ONLY
 ```
 
-## Edit Modes
+## Kerberos Field Semantics
 
-| Mode | Description |
-|------|-------------|
-| `READ_ONLY` | Users are imported from LDAP but cannot be modified in Keycloak |
-| `WRITABLE` | Changes in Keycloak are synced back to LDAP |
-| `UNSYNCED` | Users are imported but changes are stored only in Keycloak |
+- `allowKerberosAuthentication`: enables Kerberos/SPNEGO as an authentication option.
+- `useKerberosForPasswordAuthentication`: sends password authentication through Kerberos instead of standard LDAP bind behavior.
 
-## Sync Settings
+Set the second field only when your directory and realm design specifically require password auth through Kerberos.
 
-| Setting | Description |
-|---------|-------------|
-| `importEnabled` | Whether to import users from LDAP |
-| `fullSyncPeriod` | Interval (seconds) for full sync, -1 to disable |
-| `changedUsersSyncPeriod` | Interval for syncing changed users, -1 to disable |
-| `syncRegistrations` | Sync newly registered users to LDAP (if WRITABLE) |
+## Status and Metrics
 
-## Monitoring
+Realm status includes `userFederationStatus` entries with fields such as:
 
-The operator exposes Prometheus metrics for federation monitoring:
+- `name`
+- `providerId`
+- `connected`
+- `lastConnectionTest`
+- `lastSyncResult`
+- `lastFullSync`
+- `lastChangedSync`
+- `usersImported`
+- `groupsImported`
+- `syncErrors`
+- `message`
 
-- `keycloak_operator_user_federation_status` - Connection status (1=connected)
-
-## Status
-
-Federation status is reported in the realm's status field:
+Example:
 
 ```bash
-kubectl get keycloakrealm my-realm -o jsonpath='{.status.userFederationStatus}'
+kubectl get keycloakrealm my-realm -n my-namespace -o jsonpath='{.status.userFederationStatus}' | jq
 ```
 
-Each provider reports:
-- `connected` - Whether the connection is healthy
-- `lastSyncResult` - Result of last sync (Success/Failed/Never)
-- `usersImported` - Number of imported users
-- `syncErrors` - Count of sync errors
+The operator also exports:
+
+```prometheus
+keycloak_operator_user_federation_status{realm,provider_id}
+```
+
+Value `1` means connected, `0` means disconnected.
 
 ## Troubleshooting
 
-### Connection Issues
+### Bind or connection failures
 
-1. Verify network connectivity from Keycloak pods:
-   ```bash
-   kubectl exec -it deploy/keycloak -- /bin/bash -c "nc -zv ldap.example.com 389"
-   ```
+- verify network reachability from Keycloak pods to the LDAP or AD server
+- verify the bind DN and secret contents
+- verify your TLS mode matches the port you chose
 
-2. Check that the bind credentials are correct
+### Sync does not run
 
-3. For LDAPS, ensure certificates are trusted
+- check `syncSettings.fullSyncPeriod`
+- check `syncSettings.changedUsersSyncPeriod`
+- remember `-1` disables the periodic sync timer
 
-### Sync Issues
+### Secret not readable
 
-1. Check operator logs for federation errors:
-   ```bash
-   kubectl logs -l app.kubernetes.io/name=keycloak-operator -f | grep federation
-   ```
+Make sure the secret is in the same namespace as the realm and labeled for operator access.
 
-2. Verify the `usersDn` path exists and contains users
+## See Also
 
-3. Check that `userObjectClasses` matches your LDAP schema
-
-### Kerberos Issues
-
-1. Verify the keytab contains the correct service principal:
-   ```bash
-   klist -k /path/to/keycloak.keytab
-   ```
-
-2. Ensure DNS is properly configured for Kerberos realm
-
-3. Check that Keycloak pods can reach the KDC on port 88
+- [KeycloakRealm CRD Reference](../reference/keycloak-realm-crd.md)
+- [Multi-Tenant Guide](../how-to/multi-tenant.md)
+- `charts/keycloak-realm/README.md` for chart-specific values context

@@ -1,51 +1,65 @@
-# Escape Hatch: Migrating Back to Your Previous Solution
+# Escape Hatch: Exit Paths And Migration Out
 
-You can evaluate this operator safely. If you decide not to adopt it, this guide explains exactly how to recover your realm configuration, clients, and — most critically — your users, and bring them back to your previous Keycloak setup.
+This guide documents practical paths for moving away from this operator if your requirements change. The most reliable path is still Keycloak-to-Keycloak migration, because that is the only route that can preserve the most user data with the least friction.
 
 !!! tip "Users are the priority"
-    Realm configuration is straightforward to re-import. Users are the harder part:
-    their hashed credentials, role assignments, and attributes must transfer intact so
-    users do not need to reset their passwords. This guide is written with that constraint first.
+    Realm and client configuration can be recreated. Users are harder: password hashes,
+    role assignments, and attributes are the parts you do not want to lose.
 
----
+## Before You Migrate Anywhere
 
-## Step 0 — Export Everything From This Operator's Keycloak
+Export first, validate the export, and only then start destructive work.
 
-Before you can migrate anywhere, export your data from the Keycloak instance managed by this operator. Use `kc.sh export` — **not** the web UI export, which strips client secrets and certain credential types.
+Use `kc.sh export`, not the admin console export, because the admin console path drops important data such as client secrets and some credential details.
 
-!!! warning "Scale down before exporting"
+## Step 1: Determine The Running Keycloak Version
+
+Use the managed `Keycloak` resource to determine the image you should export with:
+
+```bash
+kubectl get keycloak <name> -n <namespace> -o jsonpath='{.spec.image}{"\n"}'
+```
+
+Avoid hardcoding a stale Keycloak image version into export jobs.
+
+## Step 2: Export Everything From The Managed Keycloak
+
+Use [Exporting Realms & Users](../how-to/export-realms.md) as the primary workflow.
+
+If you need a Kubernetes Job for export, use the same Keycloak major version as the running instance.
+
+!!! warning "Scale down before exporting when consistency matters"
     To avoid consistency issues and database lock conflicts, scale the operator-managed
-    Keycloak StatefulSet to 0 replicas before running the export Job, then scale it back up
-    after copying the files.
+    Keycloak workload down before running the export Job, then scale it back up after
+    copying the files out.
 
     ```bash
     kubectl scale statefulset <keycloak-name>-keycloak -n keycloak-system --replicas=0
-    # ... run the export Job ...
+    # run export
     kubectl scale statefulset <keycloak-name>-keycloak -n keycloak-system --replicas=1
     ```
 
-### Export via a Kubernetes Job
+### Export Via Kubernetes Job
 
 ```yaml
-# escape-hatch-export-job.yaml
 apiVersion: batch/v1
 kind: Job
 metadata:
   name: keycloak-export
-  namespace: keycloak-system   # adjust to your namespace
+  namespace: keycloak-system
 spec:
   template:
     spec:
+      restartPolicy: Never
       containers:
         - name: keycloak
-          image: quay.io/keycloak/keycloak:26.0.0   # match your running version
+          image: quay.io/keycloak/keycloak:26.5.2  # Replace with the exact version from Step 1.
           command: ["/bin/sh", "-c"]
           args:
             - |
               /opt/keycloak/bin/kc.sh export \
                 --dir /tmp/export \
                 --users realm_file
-              # Keep the pod alive so you can copy the files out
               sleep 3600
           env:
             - name: KC_DB
@@ -62,173 +76,124 @@ spec:
                 secretKeyRef:
                   name: <db-credentials-secret>
                   key: password
-      restartPolicy: Never
 ```
 
-```bash
-kubectl create -f escape-hatch-export-job.yaml
+After the pod is running:
 
-# Wait for the pod to be Running, then copy the export
+```bash
 POD=$(kubectl get pods -n keycloak-system -l job-name=keycloak-export \
   -o jsonpath='{.items[0].metadata.name}')
 kubectl cp keycloak-system/$POD:/tmp/export ./keycloak-export
-
-# Clean up
 kubectl delete job keycloak-export -n keycloak-system
 ```
 
-The `./keycloak-export` directory will contain one JSON file per realm (e.g. `my-realm-realm.json`). Each file includes realm settings, clients with their secrets, and fully hashed user credentials.
+`kc.sh export` includes:
 
-!!! info "What `kc.sh export` includes"
-    - ✅ Realm configuration (roles, groups, flows, settings)
-    - ✅ Clients and their secrets
-    - ✅ Users with hashed passwords, attributes, and role assignments
-    - ✅ Groups and their memberships
-    - ❌ Active sessions (users stay logged in on the *old* instance only)
-    - ❌ Offline tokens
+- realm configuration
+- clients and their secrets
+- users with hashed passwords, attributes, and role assignments
+- groups and memberships
 
----
+It does not preserve active sessions or offline tokens in a way that replaces normal live state.
 
-## Scenario 1 — Back to Standalone Keycloak (Recommended)
+## Recommended Exit Path: Standalone Keycloak Or Another Keycloak Deployment
 
-This is the cleanest path. Standalone Keycloak accepts the full realm export produced by `kc.sh export` and restores everything including hashed user credentials.
+This is the cleanest path.
 
-**Users do not need to reset their passwords.**
-
-### Option A: Import at Keycloak Startup
-
-Pass the export directory as a startup argument. Keycloak imports the realm on first boot if it does not already exist.
+### Option A: Import At Startup
 
 ```bash
-# Docker/Podman
 docker run \
   -e KC_DB=postgres \
   -e KC_DB_URL=... \
   -e KC_DB_USERNAME=... \
   -e KC_DB_PASSWORD=... \
   -v $(pwd)/keycloak-export:/opt/keycloak/data/import:ro \
-  quay.io/keycloak/keycloak:26.0.0 \
+  ${KEYCLOAK_IMAGE} \
   start --import-realm
 ```
 
-On Kubernetes, mount the export from a PersistentVolumeClaim, an `emptyDir` populated by an initContainer, or object storage, and add `--import-realm` to the Keycloak command. Avoid using a ConfigMap: Kubernetes ConfigMaps have a ~1 MiB size limit and full realm exports (especially with users) can easily exceed it.
+On Kubernetes, mount the export from a PVC, `emptyDir` populated by an initContainer, or object storage. Avoid ConfigMaps for large exports.
 
-### Option B: Import via the Admin REST API (Running Instance)
+### Option B: Admin REST API Import
 
-If your standalone Keycloak instance is already running, use the Admin REST API to import each realm:
+If the target Keycloak instance is already running, use the admin API to create realms from the full export.
 
-```bash
-# Get an admin token
-TOKEN=$(curl -s -X POST \
-  "http://localhost:8080/realms/master/protocol/openid-connect/token" \
-  -d "grant_type=password&client_id=admin-cli&username=admin&password=<admin-pass>" \
-  | jq -r '.access_token')
+Prefer environment variables or secret-backed shell patterns for admin passwords rather than putting credentials directly into shell history.
 
-# Import a realm (creates it if it doesn't exist)
-curl -s -X POST \
-  "http://localhost:8080/admin/realms" \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d @keycloak-export/my-realm-realm.json
-```
+## Migration Toolkit Path
 
-!!! warning "Full-realm POST vs Partial Import"
-    `POST /admin/realms` with a full realm export JSON restores **everything** including
-    users. The `POST /admin/realms/{realm}/partialImport` endpoint is different — it does
-    **not** support full realm creation. Use the full endpoint shown above for this scenario.
+Use the toolkit when you want to transform exports into the operator’s Helm-first model or reuse the user-import workflow.
 
----
+See:
 
-## Scenario 2 — Back to the Realm Operator
+- [Migration Toolkit](../how-to/migration-toolkit.md)
+- [Exporting Realms & Users](../how-to/export-realms.md)
 
-!!! warning "Significant limitations ahead"
-    The realm operator has fundamental design constraints that this project was built to overcome. Read this section carefully.
+The toolkit is especially useful when you need to:
 
-The realm operator manages realm and client configuration via Kubernetes `KeycloakRealm` CRDs, but it:
+- transform realm exports into chart values
+- separate secret material from declarative config
+- import users with the supported `import-users` flow
 
-- **Stores client secrets in plaintext** inside CRD specs — a serious security concern in any GitOps flow
-- **Has no native user import mechanism** — users must be handled separately
-- **Requires credentials in Kubernetes Secrets** that are referenced from CRDs, increasing the attack surface
+## Realm Operator Path
 
-Proceed with this path only if you have a hard requirement to use the realm operator.
+This path is possible, but it should be treated cautiously.
 
-### Step 1 — Reconstruct Realm and Client CRDs
+The old realm-operator approach has weaker secret handling and a less attractive GitOps model. If you must target it, verify the exact target version before relying on any CRD mapping.
 
-The realm operator uses its own CRD format. You will need to manually map fields from your `kc.sh` export JSON to `KeycloakRealm` and `KeycloakClient` CRDs.
+Important caveats:
 
-There is no automated converter. Key mappings:
+- some workflows still encourage plaintext client secret handling in CRs
+- user import is not a first-class feature there
+- startup import or Keycloak-native export/import is safer than hand-maintained CR translation where possible
 
-| Export field | Realm Operator CRD path |
-|---|---|
-| `realm` | `.spec.realm.realm` |
-| `displayName` | `.spec.realm.displayName` |
-| `clients[].clientId` | `.spec.realm.clients[].clientId` |
-| `clients[].secret` | Referenced via `.spec.realm.clients[].secret.name` (K8s Secret) |
+If you must take this route:
 
-!!! danger "Client secrets in Git"
-    The realm operator's `KeycloakRealm` CRD encourages inlining client secrets. If you
-    commit these CRDs to Git, you are leaking secrets. Use a Kubernetes Secret and reference
-    it, or use ESO/Sealed Secrets before committing.
+1. validate the realm-operator version and CRD behavior
+2. verify how it expects client secrets and startup import flags
+3. prefer Keycloak-native export/import for users instead of manual reconstruction where possible
 
-### Step 2 — Import Users
+## Non-Keycloak Targets
 
-The realm operator does not import historical users. You have two paths:
+If the target is not Keycloak-compatible, assume password-hash preservation is off the table.
 
-**Option A — Keycloak startup import** (cleanest, requires access to the realm operator's Keycloak pod):
+Plan for:
 
-Mount your `kc.sh` export JSON and restart with `--import-realm`. This restores password hashes.
-Consult your realm operator's documentation for how to pass startup flags to its Keycloak instance.
+- user export and identity mapping
+- manual or scripted client recreation
+- password reset or re-enrollment workflows
 
-**Option B — Partial Import API**:
+## Storage Guidance For Large Exports
 
-The `keycloak-migrate import-users` command from this project's migration toolkit can also import into any reachable Keycloak instance, not just one managed by this operator:
+Avoid putting large export payloads into ConfigMaps.
 
-```bash
-# First, extract users.json from a transform run (or extract manually)
-keycloak-migrate transform \
-  --input keycloak-export/my-realm-realm.json \
-  --output-dir ./migration-output
+Prefer:
 
-# Then import into the realm operator's Keycloak
-keycloak-migrate import-users \
-  --input migration-output/my-realm/users.json \
-  --server-url http://<realm-operator-keycloak>:8080 \
-  --username admin \
-  --password <admin-password> \
-  --realm my-realm
-```
+- PersistentVolumeClaims
+- object storage such as S3-compatible buckets
+- temporary encrypted local storage during a controlled migration window
 
-!!! info "Password hashes via Partial Import"
-    The Partial Import API preserves hashed credentials when the source export was
-    produced by `kc.sh export`. Users will not need to reset passwords.
+## Minimal Exit Checklist
 
----
-
-## Scenario 3 — Any Other Target
-
-If your target is not standalone Keycloak or the realm operator (e.g., a SAML proxy, a custom IAM system, or a non-Keycloak SSO), there is no generic import path.
-
-**Recommendation**: Keep running this operator. It is production-ready and well-tested. If you have a specific integration concern, open an issue.
-
-If you must migrate away to a non-Keycloak system, you will need to:
-
-1. Export all users from Keycloak via the Admin REST API (`GET /admin/realms/{realm}/users`) — this does **not** include password hashes
-2. Force a password-reset flow on first login to your new system
-3. Re-configure all clients manually in the new system
-
-There is no path that preserves password hashes outside of Keycloak-to-Keycloak migration.
-
----
+1. export and validate realm data first
+2. back up the backing database if you still control it
+3. choose a Keycloak-to-Keycloak path whenever possible
+4. use the migration toolkit for transformed Helm output or user import workflows
+5. only decommission the old deployment after import verification succeeds
 
 ## Summary
 
-| Target | User passwords preserved? | Effort | Recommended? |
-|---|---|---|---|
-| Standalone Keycloak (`--import-realm`) | ✅ Yes | Low | ✅ Yes |
-| Standalone Keycloak (Admin API) | ✅ Yes | Low | ✅ Yes |
-| Realm operator + startup import | ✅ Yes (with care) | Medium | ⚠️ Partial |
-| Realm operator + `import-users` | ✅ Yes | Medium | ⚠️ Partial |
-| Non-Keycloak target | ❌ No — password reset required | High | ❌ No |
+| Target | User passwords preserved? | Effort | Notes |
+| --- | --- | --- | --- |
+| Standalone Keycloak with `--import-realm` | Yes | Low | Best overall exit path |
+| Another Keycloak deployment via admin API | Usually yes | Low to medium | Validate target behavior first |
+| Realm operator | Conditional | Medium | Verify target version and secret handling |
+| Non-Keycloak IAM target | No | High | Expect password reset or re-enrollment |
 
-For the export procedure used by all scenarios, see the [Realm Export Guide](../how-to/export-realms.md).
-For the `import-users` command options, see the [Migration Toolkit Guide](../how-to/migration-toolkit.md#import-users).
+## See Also
+
+- [Migration](./migration.md)
+- [Backup & Restore](./backup-restore.md)
+- [Exporting Realms & Users](../how-to/export-realms.md)
+- [Migration Toolkit](../how-to/migration-toolkit.md)

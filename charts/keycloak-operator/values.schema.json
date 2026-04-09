@@ -720,15 +720,33 @@
       "type": "object",
       "description": "Optional Keycloak instance deployment",
       "properties": {
-        "enabled": {
+        "managed": {
           "type": "boolean",
-          "description": "Deploy a Keycloak instance",
-          "default": false
+          "description": "Whether to deploy and manage a Keycloak instance in the operator namespace. If false, the chart targets an existing Keycloak instance using keycloak.url and keycloak.adminSecret.",
+          "default": true
         },
         "name": {
           "type": "string",
           "description": "Keycloak instance name",
           "default": "keycloak"
+        },
+        "url": {
+          "type": "string",
+          "description": "URL of the Keycloak instance. If managed=true, this is auto-calculated to the in-cluster service."
+        },
+        "adminUsername": {
+          "type": "string",
+          "description": "Admin username for managed or external Keycloak access",
+          "default": "admin"
+        },
+        "adminSecret": {
+          "type": "string",
+          "description": "Name of the Secret containing the admin password used by the operator to connect to Keycloak. In managed mode this defaults to <name>-admin-credentials. When managed=false, this must point to the external Keycloak admin password secret in the operator namespace."
+        },
+        "adminPasswordKey": {
+          "type": "string",
+          "description": "Key in keycloak.adminSecret containing the password used by the operator to connect to Keycloak",
+          "default": "password"
         },
         "replicas": {
           "type": "integer",
@@ -745,35 +763,6 @@
           "type": "string",
           "description": "Keycloak container image",
           "default": "quay.io/keycloak/keycloak"
-        },
-        "external": {
-          "type": "object",
-          "description": "External Keycloak Configuration",
-          "properties": {
-            "enabled": {
-              "type": "boolean",
-              "description": "Enable External Keycloak Mode",
-              "default": false
-            },
-            "url": {
-              "type": "string",
-              "description": "URL of the external Keycloak instance (e.g., https://keycloak.example.com)"
-            },
-            "adminSecret": {
-              "type": "string",
-              "description": "Name of the Secret containing admin credentials"
-            },
-            "adminUsername": {
-              "type": "string",
-              "description": "Username for admin access",
-              "default": "admin"
-            },
-            "adminPasswordKey": {
-              "type": "string",
-              "description": "Key in the secret containing the password",
-              "default": "password"
-            }
-          }
         },
         "database": {
           "type": "object",
@@ -982,25 +971,11 @@
         },
         "admin": {
           "type": "object",
-          "description": "Admin user configuration",
+          "description": "Managed Keycloak admin credential source configuration",
           "properties": {
-            "username": {
+            "existingSecret": {
               "type": "string",
-              "description": "Admin username",
-              "default": "admin"
-            },
-            "passwordSecret": {
-              "type": "object",
-              "description": "Secret containing admin password",
-              "properties": {
-                "name": {
-                  "type": "string"
-                },
-                "key": {
-                  "type": "string",
-                  "default": "password"
-                }
-              }
+              "description": "Existing Secret for a managed Keycloak admin user. The secret must contain username and password keys. When set, the operator copies those values into the generated <name>-admin-credentials proxy secret instead of generating credentials."
             }
           }
         },
