@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.2](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.7.1...chart-operator-v0.7.2) (2026-04-09)
+
+
+### Features
+
+* **chart-operator:** expose managed admin existing secret ([730eb96](https://github.com/vriesdemichael/keycloak-operator/commit/730eb96501eff830e155bc66636831fb50b5009f))
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator:** align chart docs and rendered values ([7b63931](https://github.com/vriesdemichael/keycloak-operator/commit/7b63931cebb6ed6a9c2db22f42280e1c621e25b8))
+
+
+### Documentation
+
+* align chart and setup documentation ([3f41a4c](https://github.com/vriesdemichael/keycloak-operator/commit/3f41a4c644a8f7dc8b6d5f51c11141dbfd658a97))
+* align Helm-first entrypoint documentation ([b4ef0ca](https://github.com/vriesdemichael/keycloak-operator/commit/b4ef0ca0daa9b6e0b896362668a57c108fa55f9b))
+
 ## [0.7.1](https://github.com/vriesdemichael/keycloak-operator/compare/chart-operator-v0.7.0...chart-operator-v0.7.1) (2026-04-09)
 
 
