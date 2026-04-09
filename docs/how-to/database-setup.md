@@ -4,6 +4,8 @@ This guide covers PostgreSQL database setup for Keycloak using CloudNativePG (CN
 
 For operator deployments, prefer the Helm chart values shown later in this guide. Raw `Keycloak` manifests remain useful for explaining the CRD shape, but the chart values are the recommended path for real installs.
 
+Database backup and restore behavior is now documented primarily in [Backup & Restore](../operations/backup-restore.md). Use this page for CNPG setup and database tier selection, then follow the operations guide for upgrade backups, restore drills, and recovery planning.
+
 ## Overview
 
 Keycloak requires a PostgreSQL database for storing:
@@ -847,7 +849,7 @@ spec:
 ## Related Documentation
 
 - [End-to-End Setup Guide](./end-to-end-setup.md)
-- [Backup & Restore Guide](./backup-restore.md)
+- [Backup & Restore Guide](../operations/backup-restore.md)
 - [High Availability Guide](./ha-deployment.md)
 - [Troubleshooting Guide](../operations/troubleshooting.md)
 - [CloudNativePG Documentation](https://cloudnative-pg.io/documentation/)
