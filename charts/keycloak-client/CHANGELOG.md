@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.6](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.4.5...chart-client-v0.4.6) (2026-04-09)
+
+
+### Bug Fixes
+
+* **chart-client+chart-operator:** align chart docs and rendered values ([7b63931](https://github.com/vriesdemichael/keycloak-operator/commit/7b63931cebb6ed6a9c2db22f42280e1c621e25b8))
+* **chart-client:** address PR review comments ([7818e0d](https://github.com/vriesdemichael/keycloak-operator/commit/7818e0d4f83c042ccde19e80fe2ef85ad65beb5f))
+
+
+### Documentation
+
+* align chart and setup documentation ([3f41a4c](https://github.com/vriesdemichael/keycloak-operator/commit/3f41a4c644a8f7dc8b6d5f51c11141dbfd658a97))
+* refresh operations recovery guides ([35b1b05](https://github.com/vriesdemichael/keycloak-operator/commit/35b1b0583e8ce16a9996c3ef3fa451b1b8d85eac))
+
 ## [0.4.5](https://github.com/vriesdemichael/keycloak-operator/compare/chart-client-v0.4.4...chart-client-v0.4.5) (2026-02-21)
 
 
