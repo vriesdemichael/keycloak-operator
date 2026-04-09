@@ -13,7 +13,7 @@
 # ============================================================================
 # Stage 1: Builder - Resolve and install dependencies
 # ============================================================================
-FROM python:3.14-alpine AS builder
+FROM python:3.14.4-alpine3.23@sha256:6f873e340e6786787a632c919ecfb1d2301eb33ccfbe9f0d0add16cbc0892116 AS builder
 
 ENV UV_LINK_MODE=copy \
     VIRTUAL_ENV=/app/.venv \
@@ -25,7 +25,7 @@ ENV UV_LINK_MODE=copy \
 # RUN apk add --no-cache build-base git
 
 # Install uv binary
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.9.3@sha256:ecfea7316b266ba82a5e9efb052339ca410dd774dc01e134a30890e6b85c7cd1 /uv /bin/uv
 
 WORKDIR /app
 
@@ -46,7 +46,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # ============================================================================
 # Stage 2: Production - Lean runtime image
 # ============================================================================
-FROM python:3.14-alpine AS production
+FROM python:3.14.4-alpine3.23@sha256:6f873e340e6786787a632c919ecfb1d2301eb33ccfbe9f0d0add16cbc0892116 AS production
 
 ENV PATH=/app/.venv/bin:$PATH \
     PYTHONPATH=/app/src \
@@ -113,7 +113,7 @@ USER root
 RUN apk add --no-cache build-base
 
 # Copy uv for installing test dependencies
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.9.3@sha256:ecfea7316b266ba82a5e9efb052339ca410dd774dc01e134a30890e6b85c7cd1 /uv /bin/uv
 
 # Copy lock file for reproducible test dep installation
 COPY pyproject.toml uv.lock /app/

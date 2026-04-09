@@ -74,6 +74,18 @@ jobs:
           echo "upload_sarif=${UPLOAD_SARIF}" >> $GITHUB_OUTPUT
           echo "Building ${IMAGE_VARIANT} image for Keycloak ${VERSION} (tracing=${TRACING}, upload_sarif=${UPLOAD_SARIF})"
 
+      - name: Resolve Keycloak base image digest
+        id: base-image
+        run: |
+          BASE_IMAGE="quay.io/keycloak/keycloak:${{ steps.params.outputs.keycloak_version }}"
+          BASE_DIGEST=$(docker buildx imagetools inspect "${BASE_IMAGE}" | awk '/^Digest:/ {print $2; exit}')
+          if [[ -z "${BASE_DIGEST}" ]]; then
+            echo "Failed to resolve digest for ${BASE_IMAGE}" >&2
+            exit 1
+          fi
+          echo "image=${BASE_IMAGE}@${BASE_DIGEST}" >> $GITHUB_OUTPUT
+          echo "digest=${BASE_DIGEST}" >> $GITHUB_OUTPUT
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
@@ -133,11 +145,12 @@ jobs:
             org.opencontainers.image.vendor=Michaël de Vries
             org.opencontainers.image.licenses=Apache-2.0
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.base.name=quay.io/keycloak/keycloak:${{ steps.params.outputs.keycloak_version }}
+            org.opencontainers.image.base.name=${{ steps.base-image.outputs.image }}
           cache-from: type=gha,scope=${{ steps.params.outputs.image_variant }}
           cache-to: type=gha,mode=max,scope=${{ steps.params.outputs.image_variant }}
           build-args: |
             KEYCLOAK_VERSION=${{ steps.params.outputs.keycloak_version }}
+            KEYCLOAK_IMAGE_DIGEST=${{ steps.base-image.outputs.digest }}
             TRACING_ENABLED=${{ steps.params.outputs.tracing }}
 
       - name: Scan optimized Keycloak image with Trivy
