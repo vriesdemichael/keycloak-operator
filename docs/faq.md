@@ -205,7 +205,7 @@ See [Secret Management](./operations/secret-management.md) and [RBAC Implementat
 
 ### How do I revoke access from a compromised namespace?
 
-Remove the namespace from the realm’s `clientAuthorizationGrants`, reconcile the realm, and rotate any affected client credentials.
+Remove the namespace from the realm’s `clientAuthorizationGrants`, reconcile the realm, delete the `KeycloakClient` objects in that namespace, and rotate any affected client credentials.
 
 If the namespace was consuming generated client secrets, also verify that the workload access path and any mirrored secrets are cleaned up.
 
