@@ -12,7 +12,7 @@ A GitOps-friendly Kubernetes operator for managing Keycloak instances, realms, a
 ### vs. Official Keycloak Operator
 - ✅ **True Multi-Tenancy**: Cross-namespace realm and client provisioning
 - ✅ **GitOps Native**: Namespace grant lists instead of manual secret distribution
-- ✅ **Declarative Authorization**: RBAC + namespace grants, no separate token system
+- ✅ **Declarative Provisioning Authorization**: Kubernetes RBAC + namespace grants for realm/client provisioning, while applications still use normal OAuth2/OIDC tokens
 - ✅ **Built for Production**: Rate limiting, drift detection, admission webhooks
 - ✅ **Comprehensive Status**: Rich status fields with observedGeneration tracking
 
@@ -107,22 +107,14 @@ flowchart LR
 
 ## 🔒 Security & Authorization
 
-The operator uses **Kubernetes RBAC** together with declarative namespace grant lists for provisioning authorization. There is no separate provisioning token system.
+The normal path is Helm-first. Platform teams install the operator chart, application teams install the realm and client charts, and the charts create the expected RBAC wiring for the supported flow.
+
+The operator uses **Kubernetes RBAC** together with declarative namespace grant lists for provisioning authorization. There is no separate provisioning token system for realm/client management. That statement is about operator-side provisioning access, not about the OAuth2/OIDC tokens issued by Keycloak to applications.
 
 ### Realm Creation
-Any user with RBAC permission to create `KeycloakRealm` resources can create realms. Control this with standard Kubernetes RoleBindings:
+Any user or GitOps controller with Kubernetes permission to install the `keycloak-realm` chart in a namespace can create realms there. Under the hood, the realm still lands as a `KeycloakRealm` resource, so standard Kubernetes RBAC remains the ultimate control point.
 
-```yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: realm-creator
-  namespace: my-app
-rules:
-  - apiGroups: ["vriesdemichael.github.io"]
-    resources: ["keycloakrealms"]
-    verbs: ["create", "update", "patch"]
-```
+If you choose to manage raw manifests directly instead of Helm, treat that as an advanced/manual workflow and wire the RBAC pieces yourself. See [Helm vs Direct CR Deployments](how-to/helm-vs-cr-deployments.md) and [RBAC Implementation](rbac-implementation.md).
 
 ### Client Creation
 Clients require **namespace authorization** from the realm. Realm owners grant access via `clientAuthorizationGrants`:

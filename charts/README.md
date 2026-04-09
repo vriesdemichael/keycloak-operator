@@ -2,6 +2,17 @@
 
 This directory contains three Helm charts for deploying and managing Keycloak infrastructure with GitOps compatibility.
 
+This README is a GitHub-facing landing page for the chart directory, not the canonical published docs entry point.
+
+If you are looking for user documentation, start here instead:
+
+- [Quick Start](../docs/quickstart/README.md)
+- [End-to-End Setup](../docs/how-to/end-to-end-setup.md)
+- [Helm vs Direct CR Deployments](../docs/how-to/helm-vs-cr-deployments.md)
+- [Operator Chart README](./keycloak-operator/README.md)
+- [Realm Chart README](./keycloak-realm/README.md)
+- [Client Chart README](./keycloak-client/README.md)
+
 These charts are the recommended deployment path. Managing raw `Keycloak`, `KeycloakRealm`, or `KeycloakClient` manifests directly is supported, but it is an advanced/manual workflow. See [Helm vs Direct CR Deployments](../docs/how-to/helm-vs-cr-deployments.md).
 
 ## Charts Overview
@@ -57,9 +68,6 @@ flowchart LR
   grants --> realm
   realm --> client
 ```
-
-## Quick Start
-
 
 ## Quick Start
 

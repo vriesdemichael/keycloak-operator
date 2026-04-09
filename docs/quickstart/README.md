@@ -135,15 +135,12 @@ helm install my-app-realm oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
 Wait for the realm to become ready:
 
 ```bash
-kubectl wait --for=condition=Ready keycloakrealm/my-app-realm \
+kubectl wait --for=condition=Ready keycloakrealm --all \
   -n my-app \
   --timeout=2m
 
 # Check status
 kubectl get keycloakrealm -n my-app
-# Expected output:
-# NAME            PHASE   AGE
-# my-app-realm    Ready   45s
 ```
 
 ## Step 4: Create OAuth2/OIDC Client
@@ -167,20 +164,19 @@ helm install my-app-client oci://ghcr.io/vriesdemichael/charts/keycloak-client \
 Wait for the client to become ready:
 
 ```bash
-kubectl wait --for=condition=Ready keycloakclient/my-app-client \
+kubectl wait --for=condition=Ready keycloakclient --all \
   -n my-app \
   --timeout=2m
 
 # Check status
 kubectl get keycloakclient -n my-app
-# Expected output:
-# NAME             PHASE   AGE
-# my-app-client    Ready   30s
 ```
 
 ## Step 5: Use the Injected Client Credentials Secret
 
 The operator automatically creates a Kubernetes secret with OAuth2 credentials in the same namespace as the `KeycloakClient` resource.
+
+If you do not set `secretName`, the client chart defaults to `<release-fullname>-credentials`. In this quick start the Helm release name is `my-app-client`, the rendered client fullname becomes `my-app-client-keycloak-client`, and the generated Secret name becomes `my-app-client-keycloak-client-credentials`.
 
 In a normal deployment, your application should consume that Secret directly through environment-variable injection or a mounted volume. You should not need to read these values manually unless you are debugging.
 
@@ -200,7 +196,7 @@ spec:
           image: ghcr.io/company/my-app:latest
           envFrom:
             - secretRef:
-                name: my-app-client-credentials
+                name: my-app-client-keycloak-client-credentials
 ```
 
 Example Deployment using explicit environment-variable mapping:
@@ -221,24 +217,24 @@ spec:
             - name: CLIENT_ID
               valueFrom:
                 secretKeyRef:
-                  name: my-app-client-credentials
+                  name: my-app-client-keycloak-client-credentials
                   key: client-id
             - name: CLIENT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: my-app-client-credentials
+                  name: my-app-client-keycloak-client-credentials
                   key: client-secret
             - name: ISSUER_URL
               valueFrom:
                 secretKeyRef:
-                  name: my-app-client-credentials
+                  name: my-app-client-keycloak-client-credentials
                   key: issuer
 ```
 
 The generated secret looks like this conceptually:
 
 ```bash
-kubectl get secret my-app-client-credentials -n my-app -o yaml
+kubectl get secret my-app-client-keycloak-client-credentials -n my-app -o yaml
 ```
 
 The generated secret includes keys such as `client-id`, `client-secret` for confidential clients, `issuer`, `keycloak-url`, `realm`, `token-endpoint`, `userinfo-endpoint`, and `jwks-endpoint`.

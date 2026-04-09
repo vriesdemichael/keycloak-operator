@@ -91,7 +91,7 @@ protocolMappers:
       userinfo.token.claim: "true"
 
 # Authentication flow overrides
-authenticationFlow:
+authenticationFlows:
   browserFlow: ""
   directGrantFlow: ""
   clientAuthenticationFlow: ""

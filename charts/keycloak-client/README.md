@@ -15,6 +15,8 @@ This chart creates a `KeycloakClient` custom resource that is reconciled by the 
 
 **Target Users:** Application developers who need OAuth2/OIDC authentication for their applications.
 
+Helm is the normal path here. Managing raw `KeycloakClient` manifests directly is supported, but it is an advanced/manual workflow. See [Helm vs Direct CR Deployments](../../docs/how-to/helm-vs-cr-deployments.md).
+
 ## Prerequisites
 
 - Kubernetes 1.27+
@@ -300,9 +302,11 @@ protocolMappers:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `authenticationFlow.browserFlow` | Custom browser authentication flow | `""` |
-| `authenticationFlow.directGrantFlow` | Custom direct grant flow | `""` |
-| `authenticationFlow.clientAuthenticationFlow` | Custom client authentication flow | `""` |
+| `authenticationFlows.browserFlow` | Custom browser authentication flow | `""` |
+| `authenticationFlows.directGrantFlow` | Custom direct grant flow | `""` |
+| `authenticationFlows.clientAuthenticationFlow` | Custom client authentication flow | `""` |
+
+The generated `KeycloakClient` resource uses `authenticationFlows` (plural) to match the CRD and operator model. The older singular Helm value `authenticationFlow` is still accepted as a deprecated alias for upgrade safety, but new values files should use `authenticationFlows`.
 
 #### Secret Management
 
@@ -329,6 +333,8 @@ When `manageSecret: true` and `publicClient: false`, the operator creates a secr
 - `jwks-endpoint` - The JWKS endpoint
 
 If `secretName` is not set, the chart defaults to `<release-fullname>-credentials`.
+
+For example, a release named `my-client` renders the default Secret name as `my-client-keycloak-client-credentials`, because the chart fullname helper expands to `<release-name>-<chart-name>` unless the release name already contains `keycloak-client`.
 
 For same-namespace workloads, wire that Secret directly into the Deployment instead of manually extracting values from the CLI:
 
@@ -631,8 +637,8 @@ kubectl wait --for=jsonpath='{.status.phase}'=Ready \
 For confidential clients (non-public):
 
 ```bash
-# Get secret name (default: {client-name}-credentials)
-SECRET_NAME="my-client-credentials"
+# Get secret name (default: <release-fullname>-credentials)
+SECRET_NAME="my-client-keycloak-client-credentials"
 
 # Get client ID
 kubectl get secret $SECRET_NAME -n my-team \
@@ -746,7 +752,7 @@ kubectl logs -n keycloak-system -l app.kubernetes.io/name=keycloak-operator | gr
 
 ### No Client Secret Created
 
-**Symptom:** Secret `{client-name}-credentials` doesn't exist
+**Symptom:** The expected credentials Secret doesn't exist
 
 ```bash
 # Check if secret should be created
@@ -756,7 +762,7 @@ helm get values my-client -n my-team | grep manageSecret
 helm get values my-client -n my-team | grep publicClient
 ```
 
-**Solution:** Secrets are only created for confidential clients (`publicClient: false` and `manageSecret: true`)
+**Solution:** Secrets are only created for confidential clients (`publicClient: false` and `manageSecret: true`). If you did not set `secretName`, check the rendered default `<release-fullname>-credentials`, for example `my-client-keycloak-client-credentials`.
 
 ### OAuth2 Redirect URI Mismatch
 
