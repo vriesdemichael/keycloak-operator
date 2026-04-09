@@ -25,7 +25,7 @@ runs:
   using: "composite"
   steps:
     - name: Set up Helm
-      uses: azure/setup-helm@v4
+      uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
 
     - name: Log in to GHCR
       shell: bash
@@ -60,14 +60,14 @@ runs:
     # Docker login is required for attest-build-provenance to push attestations
     # (Helm registry login doesn't share credentials with Docker)
     - name: Log in to GHCR (for attestation)
-      uses: docker/login-action@v3
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
       with:
         registry: ${{ inputs.registry-url }}
         username: ${{ inputs.github-actor }}
         password: ${{ inputs.github-token }}
 
     - name: Attest chart provenance
-      uses: actions/attest-build-provenance@v2
+      uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
       with:
         subject-name: ${{ inputs.registry-url }}/${{ inputs.registry-owner }}/charts/${{ inputs.chart-name }}
         subject-digest: ${{ steps.push.outputs.digest }}

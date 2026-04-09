@@ -63,7 +63,7 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Build operator
         uses: ./.github/actions/build-operator
@@ -75,7 +75,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run unit tests
         uses: ./.github/actions/unit-tests
@@ -90,7 +90,7 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run quality checks
         uses: ./.github/actions/code-quality
@@ -102,7 +102,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Validate documentation
         uses: ./.github/actions/docs-validation
@@ -118,7 +118,7 @@ jobs:
       actions: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Run security scans
         uses: ./.github/actions/security-scans
@@ -133,7 +133,7 @@ jobs:
       packages: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -159,17 +159,17 @@ jobs:
       packages: read
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: tools/migration-toolkit/go.mod
           cache-dependency-path: tools/migration-toolkit/go.sum
 
       - name: Download operator image
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: operator-image
           path: /tmp
@@ -182,13 +182,13 @@ jobs:
 
       - uses: ./.github/actions/setup-tools
 
-      - uses: helm/kind-action@v1.13.0
+      - uses: helm/kind-action@92086f6be054225fa813e0a4b13787fc9088faab # v1.13.0
         with:
           install_only: true
           version: v0.20.0
           kubectl_version: v1.30.0
 
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
         with:
           version: v3.14.0
 
@@ -227,7 +227,7 @@ jobs:
 
       - name: Upload test output on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: toolkit-integration-output-${{ github.run_id }}
           path: /tmp/toolkit-integration-output.txt
@@ -339,7 +339,7 @@ jobs:
       # First attempt
       - name: Run Release Please (attempt 1)
         id: release-1
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         continue-on-error: true
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
@@ -357,7 +357,7 @@ jobs:
       - name: Run Release Please (attempt 2)
         id: release-2
         if: steps.release-1.outcome == 'failure'
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         continue-on-error: true
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
@@ -374,7 +374,7 @@ jobs:
       - name: Run Release Please (attempt 3 - final)
         id: release-3
         if: steps.release-1.outcome == 'failure' && steps.release-2.outcome == 'failure'
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@16a9c90856f42705d54a6fda1823352bdc62cf38 # v4.4.0
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
           config-file: .github/release-please-config.json
@@ -603,7 +603,7 @@ jobs:
             echo "No releases or PR updates needed." >> $GITHUB_STEP_SUMMARY
           fi
 
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         if: steps.release.outputs.prs != '' && steps.release.outputs.prs != '[]'
 
       - name: Enable auto-merge for non-major releases
@@ -690,7 +690,7 @@ jobs:
       # Fallback: If prs output is empty (e.g., release-please failed after creating PRs,
       # then retry succeeded but reported "remained the same"), find existing release PRs
       # and ensure auto-merge is enabled on them.
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         if: steps.release.outputs.prs == '' || steps.release.outputs.prs == '[]'
 
       - name: Enable auto-merge for existing release PRs (fallback)
@@ -804,7 +804,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Publish operator image
         uses: ./.github/actions/publish-operator-image
@@ -827,7 +827,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -853,7 +853,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Publish chart
         uses: ./.github/actions/publish-helm-chart
@@ -903,7 +903,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Publish chart
         uses: ./.github/actions/publish-helm-chart
@@ -930,7 +930,7 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Publish chart
         uses: ./.github/actions/publish-helm-chart
@@ -954,9 +954,9 @@ jobs:
       attestations: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
         with:
           go-version-file: tools/migration-toolkit/go.mod
           cache-dependency-path: tools/migration-toolkit/go.sum
@@ -986,7 +986,7 @@ jobs:
           done
 
       - name: Generate SBOM
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
         with:
           path: tools/migration-toolkit
           format: cyclonedx-json
@@ -1001,7 +1001,7 @@ jobs:
           cat checksums.txt
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
           subject-path: tools/migration-toolkit/dist/keycloak-migrate-*
 
@@ -1043,7 +1043,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -1067,7 +1067,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
