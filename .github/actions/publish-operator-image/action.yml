@@ -99,7 +99,7 @@ runs:
         # via the referrers API and displayed as an "accessory" in the Harbor UI.
         oras attach \
           --artifact-type application/spdx+json \
-          --annotation "org.opencontainers.artifact.created=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" \
+          --annotation "org.opencontainers.artifact.created=${{ steps.version.outputs.created }}" \
           --annotation "org.opencontainers.artifact.description=SPDX SBOM for keycloak-operator v${{ steps.version.outputs.version }}" \
           "${{ inputs.registry }}/${{ inputs.image-name }}@${{ steps.build.outputs.digest }}" \
           "sbom.spdx.json:application/spdx+json"
