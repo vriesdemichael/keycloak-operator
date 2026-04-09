@@ -861,8 +861,8 @@ async def wait_for_port_forward_ready(
             if result == 0:
                 logger.debug(f"Port-forward ready on port {local_port}")
                 return
-        except Exception:
-            pass
+        except OSError as exc:
+            logger.debug("Port-forward check failed for port %s: %s", local_port, exc)
 
         await asyncio.sleep(interval)
 

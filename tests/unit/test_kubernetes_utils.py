@@ -1142,9 +1142,6 @@ class TestCheckPodLogsForBuildErrors:
             elif terminated_exit_code is not None:
                 container_status.state.waiting = None
                 container_status.state.terminated.exit_code = terminated_exit_code
-            else:
-                container_status.state.waiting = None
-                container_status.state.terminated = None
             pod.status.container_statuses = [container_status]
         else:
             pod.status.container_statuses = None
