@@ -7,8 +7,7 @@ updates:
   - package-ecosystem: "uv"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
       time: "06:00"
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 10
@@ -36,8 +35,7 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
       time: "06:00"
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 5
@@ -51,12 +49,36 @@ updates:
         patterns:
           - "*"
 
-  # Docker base images
   - package-ecosystem: "docker"
-    directory: "/"
+    directory: "/images/kerberos-test"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
+      time: "06:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "test"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/images/keycloak-optimized"
+    schedule:
+      interval: "daily"
+      time: "06:00"
+      timezone: "Europe/Amsterdam"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "test"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/images/operator"
+    schedule:
+      interval: "daily"
       time: "06:00"
       timezone: "Europe/Amsterdam"
     open-pull-requests-limit: 3
@@ -66,37 +88,15 @@ updates:
       - "dependencies"
       - "docker"
 
-  # Helm charts
-  - package-ecosystem: "github-actions"
-    directory: "/charts/keycloak-operator"
+  - package-ecosystem: "gomod"
+    directory: "/tools/migration-toolkit"
     schedule:
-      interval: "weekly"
-      day: "monday"
+      interval: "daily"
       time: "06:00"
       timezone: "Europe/Amsterdam"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 5
     commit-message:
-      prefix: "fix(chart-operator)"
+      prefix: "fix(migration-toolkit)"
     labels:
       - "dependencies"
-      - "helm"
-
-  - package-ecosystem: docker
-    directory: /images/kerberos-test
-    schedule:
-      interval: daily
-
-  - package-ecosystem: docker
-    directory: /images/keycloak-optimized
-    schedule:
-      interval: daily
-
-  - package-ecosystem: docker
-    directory: /images/operator
-    schedule:
-      interval: daily
-
-  - package-ecosystem: gomod
-    directory: /tools/migration-toolkit
-    schedule:
-      interval: daily
+      - "go"

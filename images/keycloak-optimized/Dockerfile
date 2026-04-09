@@ -6,8 +6,9 @@
 # Expected startup time: 20-30s (vs 70s+ for unoptimized)
 
 ARG KEYCLOAK_VERSION=26.4.1
+ARG KEYCLOAK_IMAGE_DIGEST=sha256:bbb299c7e58a2c61c683dc3439da3e2698e005ca88ba6fd249629311d70250ab
 
-FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION} AS builder
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}@${KEYCLOAK_IMAGE_DIGEST} AS builder
 
 # Configure for PostgreSQL (used in tests via CNPG)
 ENV KC_DB=postgres
@@ -42,7 +43,7 @@ WORKDIR /opt/keycloak
 RUN /opt/keycloak/bin/kc.sh build
 
 # Production image - copy optimized build
-FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION} AS production
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}@${KEYCLOAK_IMAGE_DIGEST} AS production
 
 # Copy the optimized Keycloak build from builder stage
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
