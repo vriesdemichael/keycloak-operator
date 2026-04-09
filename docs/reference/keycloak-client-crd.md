@@ -1,16 +1,12 @@
 # KeycloakClient CRD Reference
 
-Complete reference for the `KeycloakClient` Custom Resource Definition.
+Reference for the `KeycloakClient` custom resource.
 
-## Overview
-
-The `KeycloakClient` CRD defines a Keycloak client - an OAuth2/OIDC application that uses Keycloak for authentication and authorization. Clients can be web applications, mobile apps, APIs, or service-to-service integrations.
+A client represents an OAuth2, OIDC, SAML, or Docker registry integration managed inside a realm. The operator supports ordinary login clients, public SPA/mobile clients, bearer-only APIs, service-account clients, and resource-server authorization models.
 
 **API Version:** `vriesdemichael.github.io/v1`
 **Kind:** `KeycloakClient`
-**Plural:** `keycloakclients`
-**Singular:** `keycloakclient`
-**Short Names:** `kcc`
+**Short Name:** `kcc`
 
 ## Minimal Example
 
@@ -19,409 +15,296 @@ The `KeycloakClient` CRD defines a Keycloak client - an OAuth2/OIDC application 
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
-  name: my-app
-  namespace: my-team
+  name: webapp
+  namespace: team-a
 spec:
-  clientId: my-app
+  clientId: webapp
   realmRef:
-    name: my-realm
-    namespace: my-team
+    name: team-a
+    namespace: team-a
 ```
 
-## Spec Fields
+## Core Fields
 
-### Core Configuration
+| Field | Type | Notes |
+| --- | --- | --- |
+| `clientId` | string | required unique client identifier |
+| `clientName` | string | optional display name |
+| `description` | string | optional description |
+| `realmRef.name` | string | referenced realm resource |
+| `realmRef.namespace` | string | namespace of that realm resource |
+| `protocol` | string | `openid-connect`, `saml`, or `docker-v2` |
+| `publicClient` | boolean | public clients do not use client secrets |
+| `bearerOnly` | boolean | API-style client that validates tokens but does not initiate login |
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `clientId` | `string` | **Yes** | - | Unique client identifier (1-255 characters) |
-| `clientName` | `string` | No | - | Human-readable client name |
-| `description` | `string` | No | - | Client description |
+## URL Fields And Redirect Validation
 
-**Example:**
-```yaml
-spec:
-  clientId: webapp-production
-  clientName: "Production Web Application"
-  description: "Customer-facing web application"
-```
+Relevant fields:
 
-### Realm Reference (Required)
+- `redirectUris`
+- `webOrigins`
+- `postLogoutRedirectUris`
+- `rootUrl`
+- `adminUrl`
+- `baseUrl`
 
-Reference to the parent KeycloakRealm.
+The operator validates redirect URI wildcard use more strictly than the older docs described:
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `realmRef.name` | `string` | **Yes** | - | Name of the KeycloakRealm CR |
-| `realmRef.namespace` | `string` | **Yes** | - | Namespace of the KeycloakRealm CR |
+- bare `*` is rejected
+- wildcard use is valid at the end of a path, like `https://example.com/*`
+- wildcard use in the hostname is rejected
+- custom URI schemes are supported, such as `myapp://callback` or `myapp:*`
 
-**Example:**
-```yaml
-spec:
-  realmRef:
-    name: production-realm
-    namespace: production
-```
+Example:
 
-### Client Type Configuration
-
-Configure the basic client type and protocol.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `publicClient` | boolean | No | `false` | Whether this is a public client (no client secret). Use `true` for SPAs and mobile apps. |
-| `bearerOnly` | boolean | No | `false` | Bearer-only client (for APIs that only verify tokens, don't initiate login) |
-| `protocol` | `string` | No | `openid-connect` | Client protocol. Options: `openid-connect`, `saml`, `docker-v2` |
-
-**Client Types:**
-
-- **Confidential Client** (`publicClient: false`): Server-side applications that can securely store client secrets (traditional web apps, backend services)
-- **Public Client** (`publicClient: true`): Applications that cannot securely store secrets (SPAs, mobile apps, CLIs)
-- **Bearer-Only** (`bearerOnly: true`): APIs that only validate tokens, don't initiate login flows
-
-**Example - Confidential:**
-```yaml
-spec:
-  publicClient: false  # Server-side web app
-```
-
-**Example - Public:**
-```yaml
-spec:
-  publicClient: true  # Single Page Application
-```
-
-**Example - Bearer-Only:**
-```yaml
-spec:
-  bearerOnly: true  # Resource server / API
-  publicClient: false
-```
-
-### OAuth2/OIDC Configuration
-
-Configure redirect URIs and web origins for OAuth2/OIDC flows.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `redirectUris` | []`string` | No | `[]` | Valid redirect URIs (callback URLs). Use `*` for local development only. |
-| `webOrigins` | []`string` | No | `[]` | Valid web origins for CORS. Use `*` for local development only. |
-| `postLogoutRedirectUris` | []`string` | No | `[]` | Valid post-logout redirect URIs |
-
-**Example - Web Application:**
 ```yaml
 spec:
   redirectUris:
-    - "https://app.example.com/callback"
-    - "https://app.example.com/silent-renew"
+    - https://app.example.com/callback
+    - https://app.example.com/*
   webOrigins:
-    - "https://app.example.com"
+    - https://app.example.com
   postLogoutRedirectUris:
-    - "https://app.example.com"
+    - https://app.example.com
 ```
 
-**Example - Development (⚠️ Do not use in production):**
-```yaml
-spec:
-  redirectUris:
-    - "http://localhost:3000/*"
-  webOrigins:
-    - "*"  # Allow all origins
-```
+## Client Settings
 
-### Client Settings
+The `settings` block holds the bulk of client behavior.
 
-Advanced client configuration options.
+### Authentication and flow controls
 
-#### Basic Settings
+| Field | Notes |
+| --- | --- |
+| `settings.clientAuthenticatorType` | `client-secret`, `client-jwt`, `client-secret-jwt`, or `client-x509` |
+| `settings.standardFlowEnabled` | authorization code flow |
+| `settings.implicitFlowEnabled` | implicit flow, usually avoid for modern apps |
+| `settings.directAccessGrantsEnabled` | password grant |
+| `settings.serviceAccountsEnabled` | client credentials flow |
+| `settings.authorizationServicesEnabled` | required for fine-grained authorization |
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `settings.enabled` | boolean | No | `true` | Enable/disable the client |
-| `settings.alwaysDisplayInConsole` | boolean | No | `false` | Always display in admin console |
-| `settings.clientAuthenticatorType` | `string` | No | `client-secret` | Client authentication type. Options: `client-secret`, `client-jwt`, `client-secret-jwt`, `client-x509` |
+### Consent and token shaping
 
-#### OAuth2 Flow Configuration
+| Field | Notes |
+| --- | --- |
+| `settings.consentRequired` | require user consent |
+| `settings.displayOnConsentScreen` | visibility in consent UI |
+| `settings.includeInTokenScope` | include in scope calculations |
+| `settings.frontchannelLogout` | enable front-channel logout |
+| `settings.fullScopeAllowed` | allow full-scope role mapping |
+| `settings.accessTokenLifespan` | client override for access token lifespan |
+| `settings.refreshTokenLifespan` | client override for refresh token lifespan |
+| `settings.clientSessionIdleTimeout` | client session idle timeout |
+| `settings.clientSessionMaxLifespan` | client session max lifespan |
+| `settings.pkceCodeChallengeMethod` | `S256` or `plain` |
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `settings.standardFlowEnabled` | boolean | No | `true` | Enable standard flow (authorization code flow) - recommended for web apps |
-| `settings.implicitFlowEnabled` | boolean | No | `false` | Enable implicit flow (deprecated, use PKCE instead) |
-| `settings.directAccessGrantsEnabled` | boolean | No | `true` | Enable direct access grants (resource owner password credentials flow) |
-| `settings.serviceAccountsEnabled` | boolean | No | `false` | Enable service accounts (client credentials flow) for M2M |
+## Authentication Flow Overrides
 
-**OAuth2 Flow Guide:**
+The `authenticationFlows` section can point the client at realm-defined flow aliases:
 
-- **Authorization Code Flow** (`standardFlowEnabled: true`): Best for traditional web apps with backend
-- **Authorization Code + PKCE** (`standardFlowEnabled: true`, `publicClient: true`): Best for SPAs and mobile apps
-- **Client Credentials** (`serviceAccountsEnabled: true`): Best for machine-to-machine (service accounts)
-- **Resource Owner Password** (`directAccessGrantsEnabled: true`): Only use when other flows are not possible
+- `browserFlow`
+- `directGrantFlow`
+- `clientAuthenticationFlow`
 
-**Example - Web App:**
-```yaml
-spec:
-  publicClient: false
-  settings:
-    standardFlowEnabled: true
-    implicitFlowEnabled: false
-    directAccessGrantsEnabled: false
-    serviceAccountsEnabled: false
-```
+Example:
 
-**Example - SPA with PKCE:**
-```yaml
-spec:
-  publicClient: true
-  settings:
-    standardFlowEnabled: true
-    implicitFlowEnabled: false
-    directAccessGrantsEnabled: false
-```
-
-**Example - Service Account (M2M):**
-```yaml
-spec:
-  publicClient: false
-  settings:
-    standardFlowEnabled: false
-    directAccessGrantsEnabled: false
-    serviceAccountsEnabled: true
-```
-
-#### Consent and Token Settings
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `settings.consentRequired` | boolean | No | `false` | Require user consent |
-| `settings.displayOnConsentScreen` | boolean | No | `true` | Display on consent screen |
-| `settings.includeInTokenScope` | boolean | No | `true` | Include in token scope |
-| `settings.accessTokenLifespan` | integer | No | - | Access token lifespan in seconds (overrides realm default) |
-| `settings.refreshTokenLifespan` | integer | No | - | Refresh token lifespan in seconds (overrides realm default) |
-
-**Example:**
-```yaml
-spec:
-  settings:
-    consentRequired: true  # Require user consent
-    accessTokenLifespan: 600  # 10 minutes
-    refreshTokenLifespan: 86400  # 24 hours
-```
-
-### Authentication Flows
-
-Override default authentication flows for this client.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `authenticationFlows.browserFlow` | `string` | No | - | Browser authentication flow override |
-| `authenticationFlows.directGrantFlow` | `string` | No | - | Direct grant authentication flow override |
-| `authenticationFlows.clientAuthenticationFlow` | `string` | No | - | Client authentication flow override |
-
-**Example:**
 ```yaml
 spec:
   authenticationFlows:
-    browserFlow: browser-with-mfa
-    directGrantFlow: direct-grant-with-otp
+    browserFlow: browser-with-otp
+    clientAuthenticationFlow: hardened-confidential-client
 ```
 
-### Scopes and Mappers
+## Scopes, Mappers, Roles, And Service Accounts
 
-Configure client scopes and protocol mappers for claims customization.
+Supported sections include:
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `defaultClientScopes` | []`string` | No | `[]` | Default client scopes (always included) |
-| `optionalClientScopes` | []`string` | No | `[]` | Optional client scopes (user can opt-in) |
-| `protocolMappers` | []object | No | `[]` | Protocol mappers for custom claims |
-| `protocolMappers[].name` | `string` | **Yes** | - | Mapper name |
-| `protocolMappers[].protocol` | `string` | No | `openid-connect` | Protocol (e.g., `openid-connect`, `saml`) |
-| `protocolMappers[].protocolMapper` | `string` | **Yes** | - | Mapper type |
-| `protocolMappers[].config` | map[`string`]`string` | No | `{}` | Mapper configuration |
+- `defaultClientScopes`
+- `optionalClientScopes`
+- `protocolMappers`
+- `clientRoles`
+- `serviceAccountRoles.realmRoles`
+- `serviceAccountRoles.clientRoles`
 
-**Common Protocol Mappers:**
+That covers the common cases of:
 
-- `oidc-usermodel-attribute-mapper`: Map user attribute to claim
-- `oidc-usermodel-property-mapper`: Map user property to claim
-- `oidc-group-membership-mapper`: Map group memberships to claim
-- `oidc-audience-mapper`: Add audience to token
-- `oidc-hardcoded-claim-mapper`: Add static claim
+- mapping custom claims
+- attaching audiences
+- creating client roles
+- granting realm or client roles to the service-account user
 
-**Example - User Attribute Mapper:**
-```yaml
-spec:
-  protocolMappers:
-    - name: department-mapper
-      protocol: openid-connect
-      protocolMapper: oidc-usermodel-attribute-mapper
-      config:
-        user.attribute: department
-        claim.name: department
-        jsonType.label: String
-        id.token.claim: "true"
-        access.token.claim: "true"
-        userinfo.token.claim: "true"
-```
+## Fine-Grained Authorization
 
-**Example - Audience Mapper:**
-```yaml
-spec:
-  protocolMappers:
-    - name: api-audience
-      protocol: openid-connect
-      protocolMapper: oidc-audience-mapper
-      config:
-        included.client.audience: api-server
-        access.token.claim: "true"
-```
+This is the largest feature gap in the old page and is fully modeled now.
 
-**Example - Hardcoded Claim:**
-```yaml
-spec:
-  protocolMappers:
-    - name: environment-claim
-      protocol: openid-connect
-      protocolMapper: oidc-hardcoded-claim-mapper
-      config:
-        claim.name: environment
-        claim.value: production
-        access.token.claim: "true"
-```
+To use it:
 
-### Roles and Permissions
+- set `settings.authorizationServicesEnabled: true`
+- define `authorizationSettings`
 
-Configure client-specific roles and service account permissions.
+### Top-level authorization settings
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `clientRoles` | []`string` | No | `[]` | Client-specific roles to create |
-| `serviceAccountRoles.realmRoles` | []`string` | No | `[]` | Realm roles to assign to service account |
-| `serviceAccountRoles.clientRoles` | map[`string`][]`string` | No | `{}` | Client roles to assign to service account (by client ID) |
+| Field | Notes |
+| --- | --- |
+| `authorizationSettings.policyEnforcementMode` | `ENFORCING`, `PERMISSIVE`, or `DISABLED` |
+| `authorizationSettings.decisionStrategy` | `UNANIMOUS`, `AFFIRMATIVE`, or `CONSENSUS` |
+| `authorizationSettings.allowRemoteResourceManagement` | enable protection API management |
+| `authorizationSettings.scopes` | named actions such as `read` or `write` |
+| `authorizationSettings.resources` | protected resources and associated scopes |
+| `authorizationSettings.policies` | who is allowed |
+| `authorizationSettings.permissions` | what those policies apply to |
 
-**Example - Client Roles:**
-```yaml
-spec:
-  clientRoles:
-    - admin
-    - editor
-    - viewer
-```
+### Supported policy types
 
-**Example - Service Account with Permissions:**
+The model supports these policy containers:
+
+- `rolePolicies`
+- `userPolicies`
+- `groupPolicies`
+- `clientPolicies`
+- `timePolicies`
+- `regexPolicies`
+- `aggregatePolicies`
+- `javascriptPolicies`
+
+### Supported permission types
+
+The model supports:
+
+- `resourcePermissions`
+- `scopePermissions`
+
+### Security note on JavaScript policies
+
+`javascriptPolicies` are disabled by default at the model level unless `allowJavaScriptPolicies: true` is set.
+
+That is deliberate. JavaScript policies require Keycloak script-upload support and carry a real security review burden. Treat them as an exception, not a normal authorization tool.
+
+Example:
+
 ```yaml
 spec:
   settings:
-    serviceAccountsEnabled: true
-  serviceAccountRoles:
-    realmRoles:
-      - offline_access
-      - uma_authorization
-    clientRoles:
-      api-server:
-        - read:data
-        - write:data
-      admin-console:
-        - view-users
+    authorizationServicesEnabled: true
+  authorizationSettings:
+    policyEnforcementMode: ENFORCING
+    decisionStrategy: UNANIMOUS
+    scopes:
+      - name: read
+      - name: write
+    resources:
+      - name: documents
+        uris:
+          - /api/documents/*
+        scopes:
+          - read
+          - write
+    policies:
+      rolePolicies:
+        - name: document-editors
+          roles:
+            - name: editor
+      groupPolicies:
+        - name: finance-team
+          groups:
+            - /finance
+    permissions:
+      scopePermissions:
+        - name: documents-read
+          resources:
+            - documents
+          scopes:
+            - read
+          policies:
+            - finance-team
+        - name: documents-write
+          resources:
+            - documents
+          scopes:
+            - write
+          policies:
+            - document-editors
 ```
 
-### Advanced Configuration
+## Secret Management
 
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `attributes` | map[`string`]`string` | No | `{}` | Additional client attributes |
+The operator supports both managed and externally supplied secrets.
 
-**Example:**
+### Managed secret options
+
+| Field | Notes |
+| --- | --- |
+| `manageSecret` | create and maintain a Kubernetes secret for client credentials |
+| `secretName` | override the managed secret name |
+| `secretMetadata.labels` / `annotations` | decorate the managed secret |
+| `regenerateSecret` | force a new client secret on update |
+
+### Existing secret option
+
+Use `clientSecret` when the secret value already exists and should not be generated by the operator.
+
 ```yaml
 spec:
-  attributes:
-    pkce.code.challenge.method: S256  # Require PKCE with SHA-256
-    post.logout.redirect.uris: "+"  # Allow any registered redirect URI
-```
-
-### Secret Management
-
-Configure how client credentials are managed.
-
-| Field | Type | Required | Default | Description |
-|-------|------|----------|---------|-------------|
-| `regenerateSecret` | boolean | No | `false` | Regenerate client secret on update |
-| `secretName` | `string` | No | `<client-name>-client-secret` | Name of Kubernetes secret for client credentials |
-| `manageSecret` | boolean | No | `true` | Create and manage Kubernetes secret for credentials |
-| `secretMetadata.labels` | map[`string`]`string` | No | `{}` | Labels to add to the managed secret |
-| `secretMetadata.annotations` | map[`string`]`string` | No | `{}` | Annotations to add to the managed secret |
-| `clientSecret.name` | `string` | No | - | Name of existing secret containing the client secret |
-| `clientSecret.key` | `string` | No | - | Key in secret data containing the value |
-
-**Manual Client Secret:**
-To use an existing secret instead of generating one, specify `clientSecret`. This is useful for migrations or when secrets are managed externally (e.g., by SealedSecrets or ExternalSecrets). When set, `secretRotation` must be disabled.
-
-**Automatic Features:**
-- **Recreation:** If the managed secret is deleted, the operator automatically recreates it.
-- **Garbage Collection:** Secrets have an `OwnerReference` to the Client CR, ensuring they are deleted when the client is deleted.
-
-**Example:**
-```yaml
-spec:
-  manageSecret: true
-  secretName: webapp-credentials
-  regenerateSecret: false  # Only regenerate manually
-  secretMetadata:
-    labels:
-      app: webapp
-    annotations:
-      description: "Credentials for webapp"
-```
-
-**Example - Manual Secret:**
-```yaml
-spec:
-  clientId: legacy-app
-  manageSecret: true
-  # Use existing secret "legacy-secret"
   clientSecret:
     name: legacy-client-secret
     key: client-secret
-  secretRotation:
-    enabled: false  # Must be disabled when using manual secret
 ```
 
-The operator creates a secret with the following keys:
-- `client-id`: Client ID
-- `client-secret`: Client secret (confidential clients only)
-- `issuer`: OIDC issuer URL
-- `token-endpoint`: Token endpoint URL
-- `auth-endpoint`: Authorization endpoint URL
+Constraints enforced by validation:
+
+- `clientSecret` cannot be used with `publicClient: true`
+- `clientSecret` cannot be combined with `secretRotation.enabled: true`
+
+### Secret rotation
+
+The `secretRotation` block documents actual operator behavior:
+
+| Field | Type | Notes |
+| --- | --- | --- |
+| `secretRotation.enabled` | boolean | enable automatic secret rotation |
+| `secretRotation.rotationPeriod` | string | interval such as `90d`, `24h`, or `10s` |
+| `secretRotation.rotationTime` | string | optional `HH:MM` target time |
+| `secretRotation.timezone` | string | IANA timezone such as `UTC` or `Europe/Amsterdam` |
+
+Scheduling semantics:
+
+- the rotation period determines how often the secret becomes eligible
+- if `rotationTime` is set, the operator waits for the next matching wall-clock time in the configured timezone
+- if no `rotationTime` is set, rotation occurs as soon as the period is reached on the reconcile path
+
+The managed secret contains these keys when applicable:
+
+- `client-id`
+- `client-secret`
+- `issuer`
+- `token-endpoint`
+- `auth-endpoint`
 
 ## Status Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `phase` | `string` | Current phase: `Pending`, `Provisioning`, `Ready`, `Failed`, `Updating`, `Degraded` |
-| `message` | `string` | Human-readable status message |
-| `reason` | `string` | Reason for current phase |
-| `observedGeneration` | integer | Generation of spec that was last processed |
-| `clientId` | `string` | Client ID in Keycloak |
-| `internalId` | `string` | Internal Keycloak client ID (UUID) |
-| `realm` | `string` | Realm name |
-| `publicClient` | boolean | Whether this is a public client |
-| `keycloakInstance` | `string` | Keycloak instance managing this client |
-| `credentialsSecret` | `string` | Name of secret containing client credentials |
-| `endpoints.auth` | `string` | OIDC authorization endpoint |
-| `endpoints.token` | `string` | OIDC token endpoint |
-| `endpoints.userinfo` | `string` | OIDC userinfo endpoint |
-| `endpoints.jwks` | `string` | OIDC JWKS endpoint |
-| `endpoints.issuer` | `string` | OIDC issuer |
-| `endpoints.endSession` | `string` | OIDC end session endpoint |
-| `createdRoles` | []`string` | List of created client roles |
-| `appliedMappers` | []`string` | List of applied protocol mappers |
-| `lastHealthCheck` | `string` (datetime) | Last health check timestamp |
-| `lastUpdated` | `string` (datetime) | Last update timestamp |
+Important status fields:
 
-## Complete Examples
+| Field | Meaning |
+| --- | --- |
+| `phase`, `message`, `reason` | current reconciliation state |
+| `observedGeneration` | last processed generation |
+| `clientId`, `internalId` | logical and internal Keycloak identifiers |
+| `realm` | target realm name |
+| `publicClient` | whether the current client is public |
+| `keycloakInstance` | managing Keycloak instance reference |
+| `credentialsSecret` | secret name used for generated credentials |
+| `endpoints.*` | issuer, auth, token, userinfo, JWKS, and logout endpoints |
+| `authorizationGranted` | whether the realm currently authorizes this namespace |
+| `authorizationMessage` | authorization summary |
+| `createdRoles`, `appliedMappers` | reconciliation outputs |
+| `lastHealthCheck`, `lastUpdated` | timing metadata |
+| `lastReconcileEventTime` | drift-detection watermark |
 
-### Web Application (Confidential)
+Common phases are `Pending`, `Provisioning`, `Reconciling`, `Ready`, `Updating`, `Degraded`, and `Failed`.
 
-Traditional server-side web application with backend.
+## Examples
+
+### Confidential web app with managed secret rotation
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
@@ -429,41 +312,30 @@ apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
   name: webapp
-  namespace: production
+  namespace: team-a
 spec:
-  clientId: webapp-production
-  clientName: "Production Web App"
-
+  clientId: webapp
+  clientName: Team A Web App
   realmRef:
-    name: production-realm
-    namespace: production
-
-  publicClient: false  # Confidential client
-
+    name: team-a
+    namespace: team-a
   redirectUris:
-    - "https://app.example.com/callback"
-    - "https://app.example.com/silent-renew"
+    - https://app.example.com/callback
   webOrigins:
-    - "https://app.example.com"
+    - https://app.example.com
   postLogoutRedirectUris:
-    - "https://app.example.com"
-
+    - https://app.example.com
   settings:
-    standardFlowEnabled: true  # Authorization code flow
-    implicitFlowEnabled: false
+    standardFlowEnabled: true
     directAccessGrantsEnabled: false
-    serviceAccountsEnabled: false
-    consentRequired: false
-
-  defaultClientScopes:
-    - profile
-    - email
-    - roles
+  secretRotation:
+    enabled: true
+    rotationPeriod: 30d
+    rotationTime: "02:00"
+    timezone: UTC
 ```
 
-### Single Page Application (Public with PKCE)
-
-Modern SPA using authorization code flow with PKCE.
+### SPA with PKCE
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
@@ -471,217 +343,76 @@ apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
   name: spa
-  namespace: production
+  namespace: team-a
 spec:
-  clientId: spa-production
-
+  clientId: spa
   realmRef:
-    name: production-realm
-    namespace: production
-
-  publicClient: true  # Public client (no secret)
-
-  redirectUris:
-    - "https://app.example.com/callback"
-    - "https://app.example.com/silent-renew.html"
-  webOrigins:
-    - "https://app.example.com"
-
-  settings:
-    standardFlowEnabled: true  # Auth code + PKCE
-    implicitFlowEnabled: false
-    directAccessGrantsEnabled: false
-
-  attributes:
-    pkce.code.challenge.method: S256  # Require PKCE with SHA-256
-```
-
-### Mobile Application (Public with PKCE)
-
-Mobile app using custom URI schemes.
-
-```yaml
-# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
-metadata:
-  name: mobile-app
-  namespace: production
-spec:
-  clientId: mobile-app
-
-  realmRef:
-    name: production-realm
-    namespace: production
-
+    name: team-a
+    namespace: team-a
   publicClient: true
-
   redirectUris:
-    - "myapp://callback"  # Custom URI scheme
-    - "com.example.myapp://callback"  # Reverse domain notation
-
+    - https://spa.example.com/*
+  webOrigins:
+    - https://spa.example.com
   settings:
-    standardFlowEnabled: true  # Auth code + PKCE
+    standardFlowEnabled: true
     implicitFlowEnabled: false
     directAccessGrantsEnabled: false
-
-  attributes:
-    pkce.code.challenge.method: S256
+    pkceCodeChallengeMethod: S256
 ```
 
-### API / Resource Server (Bearer-Only)
-
-Backend API that only validates tokens.
+### Resource server with authorization services
 
 ```yaml
 # yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
 apiVersion: vriesdemichael.github.io/v1
 kind: KeycloakClient
 metadata:
-  name: api-server
-  namespace: production
+  name: documents-api
+  namespace: team-a
 spec:
-  clientId: api-server
-
+  clientId: documents-api
   realmRef:
-    name: production-realm
-    namespace: production
-
-  bearerOnly: true  # Only validates tokens, doesn't initiate login
-  publicClient: false
-```
-
-### Service Account (Machine-to-Machine)
-
-Backend service using client credentials flow.
-
-```yaml
-# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
-metadata:
-  name: backend-service
-  namespace: production
-spec:
-  clientId: backend-service
-
-  realmRef:
-    name: production-realm
-    namespace: production
-
-  publicClient: false
-
+    name: team-a
+    namespace: team-a
+  bearerOnly: true
   settings:
-    standardFlowEnabled: false  # No interactive flows
+    standardFlowEnabled: false
     directAccessGrantsEnabled: false
-    serviceAccountsEnabled: true  # Client credentials flow
-
-  serviceAccountRoles:
-    realmRoles:
-      - offline_access
-    clientRoles:
-      api-server:
-        - read:data
-        - write:data
-```
-
-### Client with Custom Claims
-
-Client with custom protocol mappers for additional claims.
-
-```yaml
-# yaml-language-server: $schema=https://vriesdemichael.github.io/keycloak-operator/schemas/v1/KeycloakClient.json
-apiVersion: vriesdemichael.github.io/v1
-kind: KeycloakClient
-metadata:
-  name: webapp-with-claims
-  namespace: production
-spec:
-  clientId: webapp
-
-  realmRef:
-    name: production-realm
-    namespace: production
-
-  redirectUris:
-    - "https://app.example.com/callback"
-
-  protocolMappers:
-    # Map user department to claim
-    - name: department
-      protocolMapper: oidc-usermodel-attribute-mapper
-      config:
-        user.attribute: department
-        claim.name: department
-        jsonType.label: String
-        id.token.claim: "true"
-        access.token.claim: "true"
-        userinfo.token.claim: "true"
-
-    # Map groups to claim
-    - name: groups
-      protocolMapper: oidc-group-membership-mapper
-      config:
-        claim.name: groups
-        full.path: "false"
-        id.token.claim: "true"
-        access.token.claim: "true"
-        userinfo.token.claim: "true"
-
-    # Add static environment claim
-    - name: environment
-      protocolMapper: oidc-hardcoded-claim-mapper
-      config:
-        claim.name: env
-        claim.value: production
-        access.token.claim: "true"
-
-    # Add audience
-    - name: api-audience
-      protocolMapper: oidc-audience-mapper
-      config:
-        included.client.audience: api-server
-        access.token.claim: "true"
-```
-
-## Retrieving Client Credentials
-
-For confidential clients, credentials are stored in a Kubernetes secret:
-
-```bash
-# Get client secret
-kubectl get secret webapp-client-secret \
-  -n production \
-  -o jsonpath='{.data.client-secret}' | base64 -d
-
-# Get all credentials
-kubectl get secret webapp-client-secret \
-  -n production \
-  -o json | jq '.data | map_values(@base64d)'
+    serviceAccountsEnabled: false
+    authorizationServicesEnabled: true
+  authorizationSettings:
+    policyEnforcementMode: ENFORCING
+    decisionStrategy: UNANIMOUS
+    scopes:
+      - name: read
+      - name: write
+    resources:
+      - name: documents
+        uris:
+          - /api/documents/*
+        scopes:
+          - read
+          - write
+    policies:
+      rolePolicies:
+        - name: editors
+          roles:
+            - name: editor
+    permissions:
+      scopePermissions:
+        - name: edit-documents
+          resources:
+            - documents
+          scopes:
+            - write
+          policies:
+            - editors
 ```
 
 ## See Also
 
-**Related CRD References:**
-
-- [Keycloak CRD Reference](keycloak-crd.md) - Configure Keycloak instances
-- [KeycloakRealm CRD Reference](keycloak-realm-crd.md) - Configure realms
-
-**Configuration Guides:**
-
-- [End-to-End Setup](../how-to/end-to-end-setup.md) - Complete client configuration with OAuth2 testing
-- [Quick Start Guide](../quickstart/README.md) - Create your first client
-
-**Examples:**
-
-- [Client Examples](../../examples/clients/) - Production-ready client configurations
-- Web Applications - Authorization Code Flow with PKCE
-- Single Page Applications - Implicit/Authorization Code Flow
-- Service Accounts - Client Credentials Flow
-- Mobile Apps - Authorization Code Flow with PKCE
-
-**Architecture & Operations:**
-
-- [Architecture](../concepts/architecture.md) - How client reconciliation works
-- [Security Model](../concepts/security.md#level-2-client-creation) - How clients authenticate
-- [Troubleshooting: Client Issues](../operations/troubleshooting.md#client-issues) - Common client problems
+- [KeycloakRealm CRD Reference](./keycloak-realm-crd.md)
+- [End-to-End Setup](../how-to/end-to-end-setup.md)
+- [RBAC Implementation](../rbac-implementation.md)
+- [ADR 017: Kubernetes RBAC Over Keycloak Security](../decisions/generated-markdown/017-kubernetes-rbac-over-keycloak-security.md)
