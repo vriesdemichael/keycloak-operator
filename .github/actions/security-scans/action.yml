@@ -18,32 +18,32 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: ${{ inputs.python-version }}
 
-    - uses: astral-sh/setup-uv@v7
+    - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
       with:
         enable-cache: true
         cache-dependency-glob: "pyproject.toml"
 
     # CodeQL SAST
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v4
+      uses: github/codeql-action/init@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
       with:
         languages: ${{ inputs.codeql-languages }}
         config-file: ${{ inputs.codeql-config-file }}
 
     - name: Autobuild
-      uses: github/codeql-action/autobuild@v4
+      uses: github/codeql-action/autobuild@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v4
+      uses: github/codeql-action/analyze@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
       with:
         category: "/language:python"
 
     - name: Download image
-      uses: actions/download-artifact@v6
+      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
       with:
         name: operator-image
         path: /tmp
@@ -64,7 +64,7 @@ runs:
       run: task quality:security
 
     - name: Trivy scan (SARIF)
-      uses: aquasecurity/trivy-action@master
+      uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # master
       if: success() || failure()
       with:
         image-ref: 'keycloak-operator:test'
@@ -74,7 +74,7 @@ runs:
         ignore-unfixed: true
 
     - name: Upload Trivy results
-      uses: github/codeql-action/upload-sarif@v4
+      uses: github/codeql-action/upload-sarif@c10b8064de6f491fea524254123dbe5e09572f13 # v4.35.1
       if: always()
       with:
         sarif_file: 'trivy-results.sarif'
@@ -82,7 +82,7 @@ runs:
 
     # SBOM generation
     - name: Generate SBOM
-      uses: anchore/sbom-action@v0
+      uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
       if: success() || failure()
       with:
         image: keycloak-operator:test
@@ -90,7 +90,7 @@ runs:
         output-file: sbom.spdx.json
 
     - name: Scan SBOM for vulnerabilities
-      uses: anchore/scan-action@v7
+      uses: anchore/scan-action@e1165082ffb1fe366ebaf02d8526e7c4989ea9d2 # v7.4.0
       if: success() || failure()
       with:
         sbom: sbom.spdx.json
@@ -98,7 +98,7 @@ runs:
         severity-cutoff: high
 
     - name: Upload SBOM artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
       if: always()
       with:
         name: sbom-test-image
@@ -107,7 +107,7 @@ runs:
 
     # Secret scanning
     - name: TruffleHog Secret Scan
-      uses: trufflesecurity/trufflehog@main
+      uses: trufflesecurity/trufflehog@47e7b7cd74f578e1e3145d48f669f22fd1330ca6 # main
       with:
         path: ./
         base: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || 'HEAD~1' }}

@@ -22,10 +22,10 @@ runs:
   using: "composite"
   steps:
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
     - name: Log in to GHCR
-      uses: docker/login-action@v3
+      uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.github-actor }}
@@ -45,7 +45,7 @@ runs:
 
     - name: Generate tags
       id: meta
-      uses: docker/metadata-action@v5
+      uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
       with:
         images: ${{ inputs.registry }}/${{ inputs.image-name }}
         tags: |
@@ -82,14 +82,14 @@ runs:
         echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
 
     - name: Generate SBOM
-      uses: anchore/sbom-action@v0
+      uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0.24.0
       with:
         image: ${{ inputs.registry }}/${{ inputs.image-name }}:v${{ steps.version.outputs.version }}
         format: spdx-json
         output-file: sbom.spdx.json
 
     - name: Attest SBOM
-      uses: actions/attest-sbom@v2
+      uses: actions/attest-sbom@bd218ad0dbcb3e146bd073d1d9c6d78e08aa8a0b # v2.4.0
       with:
         subject-name: ${{ inputs.registry }}/${{ inputs.image-name }}
         subject-digest: ${{ steps.build.outputs.digest }}
@@ -97,7 +97,7 @@ runs:
         push-to-registry: true
 
     - name: Upload SBOM artifact
-      uses: actions/upload-artifact@v5
+      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
       with:
         name: sbom-operator-v${{ steps.version.outputs.version }}
         path: sbom.spdx.json
