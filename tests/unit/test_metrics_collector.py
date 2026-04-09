@@ -129,12 +129,14 @@ class TestMetricsCollectorReconciliation:
         self, mock_total, mock_duration, mock_errors, collector
     ):
         """Failed reconciliation records error counter with error type."""
-        exc = ValueError("boom")
-        with pytest.raises(ValueError, match="boom"):
+        try:
             async with collector.track_reconciliation("client", "ns-b", "my-client"):
-                raise exc
+                raise ValueError("boom")
+        except ValueError as exc:
+            assert str(exc) == "boom"
+        else:
+            pytest.fail("Expected ValueError to be raised")
 
-        # Assertions are outside the with-block; the exception was caught by pytest.raises
         mock_total.labels.assert_called_with(
             resource_type="client",
             namespace="ns-b",
