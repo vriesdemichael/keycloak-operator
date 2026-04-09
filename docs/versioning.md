@@ -1,211 +1,142 @@
-# Documentation & Chart Versioning
+# Documentation & Release Versioning
 
-This project maintains versioned documentation and Helm charts to ensure you can access information and artifacts for any release.
+This project publishes several independently versioned artifacts. Use release tags and chart metadata as the source of truth when choosing what to deploy.
 
-## Documentation Versions
+## Components
 
-The documentation is versioned using [mike](https://github.com/jimporter/mike), which provides:
+The repository currently publishes these components:
 
-- **Version Selector**: A dropdown in the documentation header to switch between versions
-- **Stable Documentation**: Each operator chart release has its own documentation snapshot
-- **Development Version**: The `dev` version reflects the latest main branch
+| Component | Current version | Release tag format | Notes |
+| --- | --- | --- | --- |
+| Operator image | `v0.9.9` | `vX.Y.Z` | Container image published to GHCR |
+| Operator chart | `0.7.0` | `chart-operator-vX.Y.Z` | Deploys the operator and optional managed Keycloak |
+| Realm chart | `0.4.8` | `chart-realm-vX.Y.Z` | Deploys `KeycloakRealm` resources |
+| Client chart | `0.4.5` | `chart-client-vX.Y.Z` | Deploys `KeycloakClient` resources |
+| Migration toolkit | independent | `migration-toolkit-vX.Y.Z` | Standalone Go binary |
 
-!!! info "Chart-Driven Versioning"
-    Documentation versions follow the **operator chart** version, not the operator image version.
-    This ensures documentation stays synchronized with the Helm charts users actually deploy.
+The operator chart is intentionally versioned separately from the operator image.
 
-### Available Versions
+## Which Version Should Users Follow?
 
-- **latest** - Documentation for the most recent operator chart release
-- **dev** - Documentation from the main branch (may include unreleased features)
-- **v0.1.x** - Documentation for specific operator chart releases (e.g., v0.1.4, v0.1.3)
+- for operator deployment, follow the operator chart version
+- for operator runtime behavior, the chart `appVersion` tells you which operator image it deploys
+- for realm and client configuration, follow the realm and client chart versions independently
+- for migration commands, follow the migration toolkit release tag
 
-### Accessing Specific Versions
+The operator chart currently maps like this:
 
-Use the version selector in the top-left corner of the documentation, or access versions directly:
+| Artifact | Value |
+| --- | --- |
+| Operator chart version | `0.7.0` |
+| Operator chart `appVersion` | `v0.9.9` |
+| Result | chart `0.7.0` deploys operator image `v0.9.9` |
 
-- Latest: [https://vriesdemichael.github.io/keycloak-operator/](https://vriesdemichael.github.io/keycloak-operator/)
-- Development: [https://vriesdemichael.github.io/keycloak-operator/dev/](https://vriesdemichael.github.io/keycloak-operator/dev/)
-- Specific version: `https://vriesdemichael.github.io/keycloak-operator/v0.1.4/`
+That means a user may legitimately be running chart `0.7.0` with operator image `v0.9.9`, while the realm and client charts are on different versions.
 
-## Helm Chart Versions
+## OCI-First Installation
 
-All chart versions are preserved in the Helm repository. You can view available versions and install specific ones.
-
-### List Available Versions
+OCI is the primary installation path.
 
 ```bash
-# Add the Helm repository
-helm repo add keycloak-operator https://vriesdemichael.github.io/keycloak-operator/charts
-helm repo update
-
-# List all available versions
-helm search repo keycloak-operator --versions
+helm install keycloak-operator \
+    oci://ghcr.io/vriesdemichael/charts/keycloak-operator \
+    --namespace keycloak-system \
+    --create-namespace \
+    --version 0.7.0
 ```
 
-### Install Specific Version
-
 ```bash
-# Install a specific operator chart version
-helm install my-keycloak keycloak-operator/keycloak-operator --version 0.1.4
-
-# Install a specific realm chart version
-helm install my-realm keycloak-operator/keycloak-realm --version 0.1.2
-
-# Install a specific client chart version
-helm install my-client keycloak-operator/keycloak-client --version 0.1.1
+helm install my-realm \
+    oci://ghcr.io/vriesdemichael/charts/keycloak-realm \
+    --namespace my-team \
+    --version 0.4.8
 ```
 
-### Chart Version History
-
-Each chart maintains its own independent version:
-
-- **keycloak-operator** - The operator deployment chart
-- **keycloak-realm** - Realm management chart
-- **keycloak-client** - Client management chart
-
-All versions are available in the Helm repository index:
-[https://vriesdemichael.github.io/keycloak-operator/charts/index.yaml](https://vriesdemichael.github.io/keycloak-operator/charts/index.yaml)
-
-## Version Alignment
-
-Documentation versions align with the operator chart versions:
-
-| Component | Version | Description |
-|-----------|---------|-------------|
-| **Documentation** | v0.1.4 | Matches operator chart version |
-| **Operator Chart** | 0.1.4 | Helm chart for deploying the operator |
-| **Operator Image** | v0.2.14 | Container image (referenced in chart's `appVersion`) |
-| **Realm Chart** | 0.1.3 | Helm chart for realm resources |
-| **Client Chart** | 0.1.2 | Helm chart for client resources |
-
-!!! tip "Finding Compatible Versions"
-    The operator chart's `appVersion` field indicates which operator image version it deploys:
-    ```bash
-    helm show chart keycloak-operator/keycloak-operator --version 0.1.4 | grep appVersion
-    # Output: appVersion: "v0.2.14"
-    ```
-
-    Documentation version v0.1.4 corresponds to operator chart version 0.1.4, which deploys operator image v0.2.14.
-
-## Release Process
-
-### Operator Chart Releases
-
-When an operator chart release is published (e.g., `chart-operator-v0.1.4`):
-
-1. A new documentation version is created (e.g., `v0.1.4`) and set as `latest`
-2. The new chart version is added to the Helm repository
-3. All previous chart versions and documentation remain accessible
-4. The chart's `appVersion` indicates which operator image it deploys
-
-### Realm/Client Chart Releases
-
-When a realm or client chart release is published (e.g., `chart-realm-v0.1.3`):
-
-1. The `latest` documentation is updated in-place to reflect new features
-2. No new documentation version is created (prevents version explosion)
-3. The new chart version is added to the Helm repository
-4. All previous chart versions remain available
-
-### Operator Image Releases
-
-When an operator image release is published (e.g., `v0.2.14`):
-
-1. The operator chart's `appVersion` is updated automatically (via PR)
-2. This triggers an operator chart release
-3. Which then creates new versioned documentation (see above)
-
-### Development Updates
-
-When changes are pushed to the `main` branch:
-
-1. The `dev` documentation version is updated
-2. No new versioned documentation is created
-3. Helm charts are not published (only on release)
-
-## Migration Between Versions
-
-### Upgrading Operator
-
 ```bash
-# Check current version
-helm list
-
-# Update Helm repository
-helm repo update
-
-# Upgrade to latest version
-helm upgrade my-keycloak keycloak-operator/keycloak-operator
-
-# Or upgrade to specific version
-helm upgrade my-keycloak keycloak-operator/keycloak-operator --version 0.1.4
+helm install my-client \
+    oci://ghcr.io/vriesdemichael/charts/keycloak-client \
+    --namespace my-team \
+    --version 0.4.5
 ```
 
-### Documentation for Your Version
+## Documentation Versioning
 
-Always refer to documentation matching your installed operator chart version:
+Documentation is versioned with `mike`.
 
-1. Check your operator chart version:
-   ```bash
-   helm list -n keycloak-system
-   # Look at the CHART column, e.g., "keycloak-operator-0.1.4"
-   ```
+- `latest` tracks the most recent operator chart release snapshot
+- `dev` tracks the current main branch
+- versioned docs such as `v0.7.0` correspond to operator chart releases
 
-2. Find the matching documentation version in the version selector (e.g., `v0.1.4`)
+This means documentation snapshots are keyed to operator chart releases, not to every realm chart, client chart, or migration toolkit release.
 
-3. If your version is not listed, use the closest earlier version or `latest`
+Realm and client chart releases update the documentation content, but they do not automatically create a new versioned docs snapshot for every chart release.
 
-## Retention Policy
+## How To Pick Matching Documentation
 
-- **Documentation**: All versions are retained indefinitely
-- **Helm Charts**: All versions are retained indefinitely
-- **Container Images**: See [GitHub Container Registry retention policy](https://docs.github.com/en/packages/learn-github-packages/introduction-to-github-packages#retention-and-deletion)
+1. check the installed operator chart version
+2. open the matching docs snapshot if it exists
+3. use the realm and client chart versions that match your deployed releases, not assumptions based on the operator chart alone
 
-## Building Local Versioned Docs
-
-For development or offline use:
+Examples:
 
 ```bash
-# Install dependencies
-uv sync --group docs
+helm list -n keycloak-system
+helm show chart oci://ghcr.io/vriesdemichael/charts/keycloak-operator --version 0.7.0
+helm show chart oci://ghcr.io/vriesdemichael/charts/keycloak-realm --version 0.4.8
+helm show chart oci://ghcr.io/vriesdemichael/charts/keycloak-client --version 0.4.5
+```
 
-# List versions
+## Migration Toolkit Releases
+
+The migration toolkit is a separate component.
+
+- it is released from `tools/migration-toolkit/`
+- it uses `migration-toolkit-vX.Y.Z` tags
+- it should be treated as its own compatibility surface
+
+Download it from the GitHub Releases page for this repository:
+
+```bash
+gh release download migration-toolkit-v<version> \
+    --repo vriesdemichael/keycloak-operator \
+    --pattern '*keycloak-migrate*'
+```
+
+Release page:
+
+`https://github.com/vriesdemichael/keycloak-operator/releases?q=migration-toolkit`
+
+## About `pyproject.toml`
+
+The `pyproject.toml` version is currently `0.1.0`, but that is not the authoritative release version for deployed operator artifacts.
+
+For users, the authoritative sources are:
+
+- operator release tags such as `v0.9.9`
+- chart versions in each `Chart.yaml`
+- migration toolkit release tags
+
+Do not use `pyproject.toml` alone to decide what version of the operator is running in a cluster.
+
+## Local Documentation Work
+
+Use the Taskfile for normal local docs validation:
+
+```bash
+task docs:build
+```
+
+For maintainers working with versioned documentation metadata:
+
+```bash
 uv run --group docs mike list
-
-# Serve all versions locally
-uv run --group docs mike serve
-# Access at http://localhost:8000
-
-# Deploy a new version (maintainers only)
-uv run --group docs mike deploy --push v0.2.15 latest
 ```
 
-## Troubleshooting
+`mike serve` is for human local preview workflows, not for automated agent use.
 
-### Version Selector Not Showing
+## See Also
 
-If the version selector doesn't appear:
-
-1. Clear browser cache
-2. Verify you're on the main documentation site (not a GitHub Pages preview)
-3. Check that multiple versions exist (use `mike list`)
-
-### Chart Version Not Available
-
-If a chart version isn't showing:
-
-```bash
-# Force refresh the Helm repository
-helm repo update keycloak-operator
-
-# Check repository index directly
-curl https://vriesdemichael.github.io/keycloak-operator/charts/index.yaml
-
-# Search with debug output
-helm search repo keycloak-operator --versions --debug
-```
-
-### Older Documentation Missing Content
-
-Some pages may not exist in older versions if they were added later. The version selector shows when each version was created, helping you understand which features were available.
+- [Keycloak Version Support](./reference/keycloak-version-support.md)
+- [Migration & Upgrade Guide](./operations/migration.md)
+- [Quickstart](./quickstart/README.md)
+- [End-to-End Setup](./how-to/end-to-end-setup.md)

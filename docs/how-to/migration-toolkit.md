@@ -1,70 +1,117 @@
 # Migration Toolkit
 
-The migration toolkit (`keycloak-migrate`) transforms Keycloak realm export JSON files into Helm chart `values.yaml` files compatible with the `keycloak-realm` and `keycloak-client` charts.
+The migration toolkit (`keycloak-migrate`) transforms Keycloak realm export JSON into Helm values compatible with the `keycloak-realm` and `keycloak-client` charts.
 
-It is a standalone Go binary with zero runtime dependencies.
+It is a standalone Go binary and should be treated as a separate release component.
+
+## Who Should Read This?
+
+This guide is for you if you are:
+
+- migrating from a standalone or self-managed Keycloak deployment into this operator
+- migrating from the official Keycloak operator through export-and-transform workflows
+- reusing the toolkit’s `import-users` workflow after generating `users.json`
+
+If you are looking for the exit path away from this operator, start with [Escape Hatch](../operations/escape-hatch.md).
+
+## Version Compatibility
+
+The toolkit transforms exports generically, but the target operator only supports the Keycloak versions documented in [Keycloak Version Support](../reference/keycloak-version-support.md).
+
+That means a successful transform does not override the operator’s supported-version rules. Validate your target Keycloak version before deploying transformed output.
 
 ## Installation
 
-### Build from source
+Download the toolkit from the GitHub Releases page for this repository.
+
+Release tags use the `migration-toolkit-vX.Y.Z` format.
 
 ```bash
-# Clone the operator repository
-git clone https://github.com/vriesdemichael/keycloak-operator.git
-cd keycloak-operator
-
-# Build the binary (requires Go; see tools/migration-toolkit/go.mod for the minimum version)
-task toolkit:build
-
-# The binary is at .tmp/keycloak-migrate
-.tmp/keycloak-migrate version
+gh release download migration-toolkit-v<version> \
+  --repo vriesdemichael/keycloak-operator \
+  --pattern '*keycloak-migrate*'
 ```
 
-### Manual build
+You can also download the binary asset from:
 
-```bash
-cd tools/migration-toolkit
-go build -o keycloak-migrate .
-./keycloak-migrate version
-```
+`https://github.com/vriesdemichael/keycloak-operator/releases?q=migration-toolkit`
+
+After download, place the binary on your `PATH` or invoke it directly from your download directory.
 
 ## Quick Start
 
-1. **Export your realm** using the [Realm Export Guide](./export-realms.md).
+1. export your realm using [Exporting Realms & Users](./export-realms.md)
+2. transform the export into Helm values
+3. review secrets, unsupported features, and next steps
+4. deploy the generated values with Helm
+5. import users separately if needed
 
-2. **Transform the export:**
+Example:
 
-    ```bash
-    keycloak-migrate transform \
-      --input realm-export.json \
-      --output-dir ./migration-output \
-      --operator-namespace keycloak-system
-    ```
+```bash
+./keycloak-migrate transform \
+  --input realm-export.json \
+  --output-dir ./migration-output \
+  --operator-namespace keycloak-system
+```
 
-3. **Review the output:**
+Generated structure:
 
-    ```
-    migration-output/
-    └── my-realm/
-        ├── realm-values.yaml          # Helm values for keycloak-realm chart
-        ├── clients/
-        │   ├── my-app/
-        │   │   └── values.yaml        # Helm values for keycloak-client chart
-        │   └── another-client/
-        │       └── values.yaml
-        ├── secrets.yaml               # Secret/ExternalSecret/SealedSecret manifests
-        ├── secrets-inventory.json     # Extracted secrets (DO NOT COMMIT)
-        ├── users.json                 # Extracted users (for manual import)
-        ├── unsupported-features.json  # Features not yet supported by the operator
-        └── NEXT-STEPS.md             # Actionable migration checklist
-    ```
+```text
+migration-output/
+└── my-realm/
+    ├── realm-values.yaml
+    ├── clients/
+    │   └── my-app/
+    │       └── values.yaml
+    ├── secrets.yaml
+    ├── secrets-inventory.json
+    ├── users.json
+    ├── unsupported-features.json
+    └── NEXT-STEPS.md
+```
 
-4. **Deploy with Helm:**
+## Generated Output
 
-    ```bash
-    helm install my-realm keycloak-realm -f migration-output/my-realm/realm-values.yaml
-    helm install my-app keycloak-client -f migration-output/my-realm/clients/my-app/values.yaml
-    ```
+The generated files are meant to separate declarative configuration from sensitive material and migration follow-up work.
+
+### Secrets Output
+
+What you get depends on `--secret-mode`:
+
+- `plain` produces Kubernetes `Secret` manifests in `secrets.yaml`
+- `eso` produces `ExternalSecret` manifests that point at your external secret store
+- `sealed-secrets` produces `SealedSecret` manifests that still need sealing with your controller key
+
+`secrets-inventory.json` is an operator-facing migration artifact that contains the extracted secret material inventory. Treat it as sensitive and do not commit it.
+
+### `NEXT-STEPS.md`
+
+`NEXT-STEPS.md` is not filler text. It is generated from the actual transformation result and summarizes:
+
+- how many clients, secrets, and users were extracted
+- which secret mode was used
+- whether unsupported features were detected
+- the checklist items you still need to complete before or after deployment
+
+For plain-secret mode, it also warns that `secrets.yaml` contains regular Kubernetes `Secret` manifests and should be handled as sensitive material.
+
+## Minimal Expected Realm Output
+
+The generated `realm-values.yaml` should look structurally like this:
+
+```yaml
+realmName: my-realm
+displayName: "My Realm"
+operatorRef:
+  namespace: keycloak-system
+clientAuthorizationGrants:
+  - my-team
+rbac:
+  create: true
+```
+
+That is the contract you should validate against when reviewing generated output.
 
 ## Command Reference
 
@@ -177,23 +224,15 @@ The toolkit processes each `.json` file in the directory independently.
 
 ## Unsupported Features
 
-Some Keycloak features are not yet supported by the operator. The toolkit handles these gracefully:
+The toolkit still emits `unsupported-features.json` when the export contains items it cannot express in the generated Helm values.
 
-- **Warnings** are printed to stderr during transformation
-- **`unsupported-features.json`** lists all unsupported features with links to tracking GitHub issues
-- **`NEXT-STEPS.md`** documents manual actions needed after migration
+Current behavior:
 
-The toolkit never fails due to unsupported features — it transforms what it can and documents the rest.
+- warnings are printed during transformation
+- `unsupported-features.json` captures the unsupported items in structured form
+- `NEXT-STEPS.md` includes the follow-up checklist for anything that needs manual handling
 
-### Currently unsupported
-
-Refer to the generated `unsupported-features.json` for the full list. Common examples include:
-
-- Custom authentication flows and flow bindings ([#531](https://github.com/vriesdemichael/keycloak-operator/issues/531))
-- OTP policy ([#532](https://github.com/vriesdemichael/keycloak-operator/issues/532))
-- WebAuthn policy ([#533](https://github.com/vriesdemichael/keycloak-operator/issues/533))
-- Browser security headers ([#534](https://github.com/vriesdemichael/keycloak-operator/issues/534))
-- Scope mappings ([#535](https://github.com/vriesdemichael/keycloak-operator/issues/535))
+Do not treat this as a theoretical file. It is still part of the transform output, and the generated `unsupported-features.json` for your export is the authoritative source for what still needs manual handling.
 
 ## User Migration
 
@@ -202,14 +241,14 @@ The toolkit extracts users from the export into `users.json` but does **not** ge
 Use the `import-users` subcommand to import `users.json` into a running Keycloak instance managed by this operator:
 
 ```bash
-keycloak-migrate import-users \
+./keycloak-migrate import-users \
   --input migration-output/my-realm/users.json \
   --keycloak my-keycloak \
   --namespace keycloak-system \
   --realm my-realm
 ```
 
-For all options see [`import-users` command reference](#import-users) below. For background on user migration strategies, see the [Realm Export Guide — Import Users](./export-realms.md#3-import-users-data-migration).
+For all options see [`import-users` command reference](#import-users) below. For background on user migration strategies, see [Exporting Realms & Users](./export-realms.md).
 
 ---
 
@@ -218,7 +257,7 @@ For all options see [`import-users` command reference](#import-users) below. For
 Imports the `users.json` file produced by `transform` into a Keycloak realm using the Partial Import API. The import is idempotent by default (SKIP mode): running it twice does not duplicate users.
 
 ```bash
-keycloak-migrate import-users [flags]
+./keycloak-migrate import-users [flags]
 ```
 
 #### Input flags
@@ -274,14 +313,14 @@ For environments where RBAC does not permit reading secrets from the cluster.
 
 ```bash
 # Cluster credentials from current kubeconfig
-keycloak-migrate import-users \
+./keycloak-migrate import-users \
   --input ./migration/users.json \
   --keycloak my-keycloak \
   --namespace keycloak-system \
   --realm my-realm
 
 # Explicit credentials (e.g. in a CI pipeline)
-keycloak-migrate import-users \
+./keycloak-migrate import-users \
   --input ./migration/users.json \
   --server-url https://keycloak.example.com \
   --username admin \
@@ -289,14 +328,14 @@ keycloak-migrate import-users \
   --realm my-realm
 
 # Dry run to preview what would be sent
-keycloak-migrate import-users \
+./keycloak-migrate import-users \
   --input ./migration/users.json \
   --keycloak my-keycloak --namespace keycloak-system \
   --realm my-realm \
   --dry-run
 
 # Accept an older export file (skip age check)
-keycloak-migrate import-users \
+./keycloak-migrate import-users \
   --input ./migration/users.json \
   --keycloak my-keycloak --namespace keycloak-system \
   --realm my-realm \
@@ -305,41 +344,57 @@ keycloak-migrate import-users \
 
 ## Example: Full Migration
 
-```bash
-# 1. Export from Keycloak (see export-realms.md)
-
-# 2. Transform with ESO secret management
-keycloak-migrate transform \
-  --input ./exports/production-realm.json \
-  --output-dir ./gitops/keycloak \
-  --operator-namespace keycloak-system \
-  --realm-namespace production \
-  --secret-mode eso \
-  --eso-store vault-backend \
-  --client-grants team-a,team-b
-
-# 3. Review the output
-cat gitops/keycloak/production/NEXT-STEPS.md
-
-# 4. Populate secrets in your backend
-# (follow instructions in NEXT-STEPS.md)
-
-# 5. Deploy
-helm install prod-realm keycloak-realm \
-  -f gitops/keycloak/production/realm-values.yaml \
-  -n production
-
-for client_dir in gitops/keycloak/production/clients/*/; do
-  client_name=$(basename "$client_dir")
-  helm install "$client_name" keycloak-client \
-    -f "$client_dir/values.yaml" \
-    -n production
-done
-
-# 6. Import users (idempotent — safe to re-run)
-keycloak-migrate import-users \
-  --input gitops/keycloak/production/users.json \
-  --keycloak production-keycloak \
-  --namespace keycloak-system \
-  --realm production
+```yaml
+# Argo CD application for the realm
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prod-realm
+  annotations:
+    argocd.argoproj.io/sync-wave: "10"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/your-gitops-repo.git
+    targetRevision: main
+    path: gitops/keycloak/production/realm
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
 ```
+
+```yaml
+# Argo CD application for a client in an authorized namespace
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: prod-client-my-app
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/your-org/your-gitops-repo.git
+    targetRevision: main
+    path: gitops/keycloak/production/clients/my-app
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: production
+```
+
+Typical full migration flow:
+
+1. export the realm from the source Keycloak
+2. transform it with `./keycloak-migrate transform`
+3. review `unsupported-features.json` and `NEXT-STEPS.md`
+4. commit the generated realm and client values into your GitOps repository
+5. sync the realm application first
+6. sync client applications in later waves after the realm and its namespace grants are present
+7. run `./keycloak-migrate import-users` after the target realm is ready
+
+## See Also
+
+- [Exporting Realms & Users](./export-realms.md)
+- [Migration & Upgrade Guide](../operations/migration.md)
+- [Escape Hatch](../operations/escape-hatch.md)
+- [Keycloak Version Support](../reference/keycloak-version-support.md)
