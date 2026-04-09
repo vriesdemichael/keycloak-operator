@@ -42,7 +42,7 @@ WORKDIR /opt/keycloak
 RUN /opt/keycloak/bin/kc.sh build
 
 # Production image - copy optimized build
-FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
+FROM quay.io/keycloak/keycloak:${KEYCLOAK_VERSION} AS production
 
 # Copy the optimized Keycloak build from builder stage
 COPY --from=builder /opt/keycloak/ /opt/keycloak/
@@ -57,3 +57,20 @@ WORKDIR /opt/keycloak
 # - KEYCLOAK_ADMIN, KEYCLOAK_ADMIN_PASSWORD
 ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
 CMD ["start", "--optimized"]
+
+# OCI image labels - declared last to avoid busting the layer cache for expensive
+# COPY steps above. In multi-stage builds each stage must declare its own ARGs.
+# KEYCLOAK_VERSION is a global ARG (declared before the first FROM) so it must be
+# re-declared here to be usable within this stage.
+ARG KEYCLOAK_VERSION
+ARG REVISION=unknown
+ARG CREATED=unknown
+
+LABEL org.opencontainers.image.title="Keycloak (Optimized)" \
+      org.opencontainers.image.description="Pre-built optimized Keycloak image with PostgreSQL, health, metrics and proxy support" \
+      org.opencontainers.image.source="https://github.com/vriesdemichael/keycloak-operator" \
+      org.opencontainers.image.url="https://github.com/vriesdemichael/keycloak-operator" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.version="${KEYCLOAK_VERSION}" \
+      org.opencontainers.image.revision="${REVISION}" \
+      org.opencontainers.image.created="${CREATED}"
