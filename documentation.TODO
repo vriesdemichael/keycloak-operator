@@ -11,14 +11,12 @@
 ## docs/index.md
 
 - Replace the raw RBAC Role example with Helm-first guidance, or clearly mark it as an advanced/manual path.
-- Clarify that "no separate token system" refers to provisioning authorization, not normal OAuth2/OIDC tokens issued to applications.
+- Clarify the remaining "no separate token system" wording in the top-level comparison section so it is obviously about provisioning authorization, not the normal OAuth2/OIDC tokens issued to applications.
 
 ## docs/quickstart/README.md
 
 - Call out that the chart currently has `enabled`/`managed` drift in supporting templates, because that blocks documentation correctness until resolved.
-- Explain that applications should consume the generated credentials Secret directly in-cluster instead of manually reading the secret in the quick start.
-- Show at least one concrete example of how to inject the generated Secret into an application Deployment.
-- Add a short explanation of how the generated credentials secret name is derived from the client resource name.
+- Add a short explanation of how the generated credentials secret name is derived from the client resource name or Helm release name, instead of only showing the example secret name.
 
 ## docs/how-to/end-to-end-setup.md
 
@@ -33,51 +31,6 @@
 - Expand the production controls section further so it calls out the remaining operational knobs that were not yet covered, especially pause semantics, metrics host/port, and reconciliation timing details.
 - Make the one-Keycloak-per-namespace limit explicit in the README instead of leaving it implicit in webhook quota configuration.
 
-## charts/keycloak-realm/README.md
-
-- Add a proper SMTP secret-label example so users know how to grant the operator read access to the SMTP password secret.
-
 ## charts/keycloak-client/README.md
 
 - Investigate and fix the `authenticationFlow` versus `authenticationFlows` mismatch across the chart, schema, template, and documentation.
-
-## docs/rbac-implementation.md
-
-- Fix every use of the secret label so it matches the real required value `vriesdemichael.github.io/keycloak-allow-operator-read`.
-- Clarify that the Helm-managed RBAC creation path is the default and explain what changes when `rbac.create` is disabled.
-- Add a short explanation that the secret-label requirement is enforced by operator validation, not just recommended by convention.
-- Add a stronger cross-link to the multi-tenant guide for readers moving from RBAC concepts to practical namespace setup.
-- Consider converting the ASCII architecture diagram to Mermaid while this page is being refreshed.
-
-## docs/decisions/README.md
-
-- Align the documented ADR-inspection command with the authoritative workflow in `AGENTS.md` so contributors and agents are not given two different extraction patterns.
-- Expand the template and field reference to cover lifecycle fields such as `status`, `supersedes`, and `superseded_by`.
-- Make the task-based validation workflow the primary recommendation and present direct script use as the lower-level alternative.
-- Clarify that agent-specific ADR workflow rules live in `AGENTS.md`, while this README is the general contributor-facing field and process reference.
-- Document the supporting decision-doc generation scripts so users understand how YAML records become rendered docs.
-
-## docs/reference/keycloak-crd.md
-
-- Expand the spec reference to cover the newer Keycloak fields such as `keycloakVersion`, `optimized`, `operatorRef`, `realmCapacity`, `tracing`, `maintenanceMode`, `cacheIsolation`, and `upgradePolicy`.
-- Rewrite the database section around the current tiered architecture instead of treating the legacy flat-field shape as the main model.
-- Expand the documented status phases and status fields so backup, pause, capacity, and blue-green upgrade states are represented accurately.
-- Add current advanced examples for managed and external databases, blue-green upgrades, realm capacity, tracing, and custom-version images.
-- Add cross-links to the ADRs that define the newer database, upgrade, and cache-isolation behavior.
-- Resolve any documented default/value ambiguity such as the `optimized` field before presenting defaults as authoritative.
-
-## docs/reference/keycloak-realm-crd.md
-
-- Add missing top-level realm features such as `clientAuthorizationGrants`, password policy, OTP policy, WebAuthn policies, client profiles, client policies, organizations, flow bindings, and required actions.
-- Rework the page positioning or wording so it does not claim to be complete while omitting major supported sections.
-- Fix field-name drift such as non-canonical authentication execution naming and align examples with the current schema/model terminology.
-- Add clear notes for advanced or version-gated features, especially organizations and other security-related configuration areas.
-- Add stronger cross-links to the practical guides that explain how multi-namespace authorization and advanced security features are used operationally.
-
-## docs/reference/keycloak-client-crd.md
-
-- Add a full section for fine-grained authorization settings, including resources, scopes, policies, permissions, decision strategy, and enforcement mode.
-- Expand the secret-management documentation with the actual `secretRotation` configuration block and scheduling semantics.
-- Add at least one advanced example showing a client with authorization settings configured.
-- Add fuller prose explanations for URL-related fields and other client settings that currently only appear in tables.
-- Clarify any security-sensitive authorization options, such as JavaScript policy support, when documenting the advanced authorization section.
