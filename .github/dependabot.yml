@@ -87,6 +87,10 @@ updates:
     labels:
       - "dependencies"
       - "docker"
+    ignore:
+      # Never bump to Python pre-release versions (a, b, rc tags)
+      - dependency-name: "python"
+        versions: ["*a*", "*b*", "*rc*"]
 
   - package-ecosystem: "gomod"
     directory: "/tools/migration-toolkit"
